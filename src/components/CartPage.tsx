@@ -1,0 +1,163 @@
+import React from 'react';
+import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
+import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
+
+interface CartPageProps {
+  cartItems: any[];
+  user: any;
+  updateQuantity: (productId: string, variant: any, newQuantity: number) => void;
+  removeFromCart: (productId: string, variant: any) => void;
+  getTotalPrice: () => number;
+  onBack: () => void;
+  onCheckout: () => void;
+}
+
+const CartPage: React.FC<CartPageProps> = ({ 
+  cartItems, 
+  user, 
+  updateQuantity, 
+  removeFromCart, 
+  getTotalPrice, 
+  onBack, 
+  onCheckout 
+}) => {
+
+  if (cartItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white shadow-sm sticky top-0 z-10">
+          <div className="flex items-center p-4">
+            <button onClick={onBack} className="mr-4">
+              <ArrowLeft className="w-6 h-6 text-gray-600" />
+            </button>
+            <h1 className="text-lg font-semibold">Keranjang Belanja</h1>
+          </div>
+        </div>
+        
+        <div className="flex flex-col items-center justify-center h-96">
+          <ShoppingBag className="w-16 h-16 text-gray-300 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-600 mb-2">Keranjang Kosong</h3>
+          <p className="text-gray-500 text-center mb-6">
+            Belum ada produk di keranjang Anda.<br />
+            Yuk mulai belanja!
+          </p>
+          <button
+            onClick={onBack}
+            className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all"
+          >
+            Mulai Belanja
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const totalPrice = getTotalPrice();
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-32">
+      <div className="bg-white shadow-sm sticky top-0 z-10">
+        <div className="flex items-center p-4">
+          <button onClick={onBack} className="mr-4">
+            <ArrowLeft className="w-6 h-6 text-gray-600" />
+          </button>
+          <h1 className="text-lg font-semibold">Keranjang Belanja</h1>
+          <span className="ml-2 bg-pink-100 text-pink-600 text-xs px-2 py-1 rounded-full">
+            {cartItems.length}
+          </span>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-4">
+        {cartItems.map((item) => {
+          const price = user?.role === 'reseller' ? item.resellerPrice : item.retailPrice;
+          const itemTotal = price * item.quantity;
+          
+          return (
+            <div key={`${item.id}-${item.selectedVariant?.size}-${item.selectedVariant?.color}`} className="bg-white rounded-lg shadow-sm p-4">
+              <div className="flex space-x-4">
+                <img
+                  src={item.images[0]}
+                  alt={item.name}
+                  className="w-20 h-20 object-cover rounded-lg"
+                />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-800 mb-1">{item.name}</h3>
+                  
+                  {item.selectedVariant && (
+                    <p className="text-sm text-gray-500 mb-2">
+                      Ukuran: {item.selectedVariant.size} | Warna: {item.selectedVariant.color}
+                    </p>
+                  )}
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-lg font-bold text-pink-600">
+                        Rp {price.toLocaleString('id-ID')}
+                      </span>
+                      {user?.role === 'reseller' && (
+                        <span className="text-xs text-blue-600 font-medium">Harga Reseller</span>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+                        <button
+                          onClick={() => updateQuantity(item.id, item.selectedVariant, Math.max(1, item.quantity - 1))}
+                          className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="w-8 text-center font-semibold">{item.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item.id, item.selectedVariant, item.quantity + 1)}
+                          className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                      
+                      <button
+                        onClick={() => removeFromCart(item.id, item.selectedVariant)}
+                        className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-2 text-right">
+                    <span className="text-sm text-gray-600">Subtotal: </span>
+                    <span className="font-semibold text-gray-800">
+                      Rp {itemTotal.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Bottom Checkout Bar */}
+      <div className="fixed bottom-20 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-gray-600">Total ({cartItems.length} item)</span>
+          <span className="text-xl font-bold text-pink-600">
+            Rp {totalPrice.toLocaleString('id-ID')}
+          </span>
+        </div>
+        
+        <button
+          onClick={onCheckout}
+          className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-4 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all"
+        >
+          Checkout Sekarang
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default CartPage;
