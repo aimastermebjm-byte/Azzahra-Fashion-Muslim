@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdminProvider } from './contexts/AdminContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import HomePage from './components/HomePage';
 import ProductDetail from './components/ProductDetail';
 import CartPage from './components/CartPage';
@@ -12,6 +13,7 @@ import AdminDashboard from './components/AdminDashboard';
 import BottomNavigation from './components/BottomNavigation';
 import { useProducts } from './hooks/useProducts';
 import { useAdmin } from './contexts/AdminContext';
+import { AppStorage } from './utils/appStorage';
 
 type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-dashboard';
 
@@ -23,6 +25,11 @@ function AppContent() {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const { products, loading, updateProductStock } = useProducts();
   const { addOrder } = useAdmin();
+
+  // Initialize AppStorage on app start
+  useEffect(() => {
+    AppStorage.initializeApp();
+  }, []);
 
   const handleProductClick = (product: any) => {
     setSelectedProduct(product);
@@ -292,12 +299,14 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {renderCurrentPage()}
-      {!showLogin && currentPage !== 'admin-dashboard' && (
-        <BottomNavigation currentPage={currentPage} onPageChange={setCurrentPage} />
-      )}
-    </div>
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gray-50">
+        {renderCurrentPage()}
+        {!showLogin && currentPage !== 'admin-dashboard' && (
+          <BottomNavigation currentPage={currentPage} onPageChange={setCurrentPage} />
+        )}
+      </div>
+    </ErrorBoundary>
   );
 }
 

@@ -1,175 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Star, Search, Plus, X, ChevronUp, ChevronDown, Save, Package } from 'lucide-react';
-// import { supabase } from '../lib/supabase'; // Disabled for local testing
-
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  images: string[];
-  retailPrice: number;
-  resellerPrice: number;
-  stock: number;
-  status: 'ready' | 'po';
-  salesCount?: number;
-  isFeatured?: boolean;
-  featuredOrder?: number;
-}
+import { ArrowLeft, Star, Search, Plus, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { useProducts } from '../hooks/useProducts';
+import { AppStorage } from '../utils/appStorage';
 
 interface FeaturedProductsManagementProps {
   onBack: () => void;
 }
 
 const FeaturedProductsManagement: React.FC<FeaturedProductsManagementProps> = ({ onBack }) => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { products, loading } = useProducts();
   const [searchQuery, setSearchQuery] = useState('');
   const [saving, setSaving] = useState(false);
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    try {
-      // Use mock data for local testing
-      const mockProducts: Product[] = [
-        {
-          id: '1',
-          name: 'Hijab Segi Empat Premium',
-          category: 'hijab',
-          images: ['https://images.pexels.com/photos/8839887/pexels-photo-8839887.jpeg?auto=compress&cs=tinysrgb&w=400'],
-          retailPrice: 85000,
-          resellerPrice: 65000,
-          stock: 25,
-          status: 'ready',
-          salesCount: 15,
-          isFeatured: true,
-          featuredOrder: 1
-        },
-        {
-          id: '2',
-          name: 'Gamis Syari Elegant',
-          category: 'gamis',
-          images: ['https://images.pexels.com/photos/9594673/pexels-photo-9594673.jpeg?auto=compress&cs=tinysrgb&w=400'],
-          retailPrice: 250000,
-          resellerPrice: 200000,
-          stock: 15,
-          status: 'ready',
-          salesCount: 28,
-          isFeatured: true,
-          featuredOrder: 2
-        },
-        {
-          id: '3',
-          name: 'Khimar Instant Premium',
-          category: 'khimar',
-          images: ['https://images.pexels.com/photos/8839889/pexels-photo-8839889.jpeg?auto=compress&cs=tinysrgb&w=400'],
-          retailPrice: 120000,
-          resellerPrice: 95000,
-          stock: 8,
-          status: 'po',
-          salesCount: 8,
-          isFeatured: false,
-          featuredOrder: 0
-        },
-        {
-          id: '4',
-          name: 'Tunik Casual Modern',
-          category: 'tunik',
-          images: ['https://images.pexels.com/photos/9594675/pexels-photo-9594675.jpeg?auto=compress&cs=tinysrgb&w=400'],
-          retailPrice: 180000,
-          resellerPrice: 145000,
-          stock: 20,
-          status: 'ready',
-          salesCount: 22,
-          isFeatured: true,
-          featuredOrder: 3
-        },
-        {
-          id: '5',
-          name: 'Abaya Dubai Premium',
-          category: 'abaya',
-          images: ['https://images.pexels.com/photos/8839890/pexels-photo-8839890.jpeg?auto=compress&cs=tinysrgb&w=400'],
-          retailPrice: 350000,
-          resellerPrice: 280000,
-          stock: 12,
-          status: 'ready',
-          salesCount: 18,
-          isFeatured: true,
-          featuredOrder: 4
-        },
-        {
-          id: '6',
-          name: 'Hijab Pashmina Silk',
-          category: 'hijab',
-          images: ['https://images.pexels.com/photos/8839891/pexels-photo-8839891.jpeg?auto=compress&cs=tinysrgb&w=400'],
-          retailPrice: 95000,
-          resellerPrice: 75000,
-          stock: 30,
-          status: 'ready',
-          salesCount: 35,
-          isFeatured: false,
-          featuredOrder: 0
-        }
-      ];
-
-      const featured = mockProducts
-        .filter(p => p.isFeatured)
-        .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0));
-
-      setProducts(mockProducts);
-      setFeaturedProducts(featured);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Get featured products directly from AppStorage
+  const featuredProducts = AppStorage.getFeaturedProducts();
 
   const handleToggleFeatured = async (productId: string) => {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
-
     setSaving(true);
     try {
-      if (product.isFeatured) {
-        // Remove from featured
-        setProducts(products.map(p =>
-          p.id === productId
-            ? { ...p, isFeatured: false, featuredOrder: 0 }
-            : p
-        ));
-        setFeaturedProducts(featuredProducts.filter(p => p.id !== productId));
+      // Use AppStorage for reliable updates
+      const updatedProducts = AppStorage.toggleFeatured(productId);
 
-        // Update order for remaining featured products
-        const updatedFeatured = featuredProducts
-          .filter(p => p.id !== productId)
-          .map((p, index) => ({ ...p, featuredOrder: index + 1 }));
-        setFeaturedProducts(updatedFeatured);
-      } else {
-        // Add to featured (max 4 products)
-        if (featuredProducts.length >= 4) {
-          alert('Maksimal 4 produk unggulan!');
-          return;
-        }
+      // Show success message
+      const product = updatedProducts.find(p => p.id === productId);
+      const action = product?.isFeatured ? 'ditambahkan ke' : 'dihapus dari';
+      alert(`Produk berhasil ${action} produk unggulan!`);
 
-        const updatedProduct = {
-          ...product,
-          isFeatured: true,
-          featuredOrder: featuredProducts.length + 1
-        };
+      // Trigger custom event to notify other components
+      const featuredProducts = AppStorage.getFeaturedProducts();
+      window.dispatchEvent(new CustomEvent('featuredProductsUpdated', {
+        detail: featuredProducts
+      }));
 
-        setProducts(products.map(p =>
-          p.id === productId ? updatedProduct : p
-        ));
-        setFeaturedProducts([...featuredProducts, updatedProduct]);
-      }
-
-      // Simulate saving success
-      console.log('Featured products updated:', featuredProducts);
     } catch (error) {
       console.error('Error updating featured status:', error);
       alert('Gagal memperbarui status unggulan');
@@ -179,33 +41,17 @@ const FeaturedProductsManagement: React.FC<FeaturedProductsManagementProps> = ({
   };
 
   const handleReorder = async (productId: string, direction: 'up' | 'down') => {
-    const currentIndex = featuredProducts.findIndex(p => p.id === productId);
-    if (currentIndex === -1) return;
-
-    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    if (newIndex < 0 || newIndex >= featuredProducts.length) return;
-
     setSaving(true);
     try {
-      // Update local state
-      const reordered = [...featuredProducts];
-      const [moved] = reordered.splice(currentIndex, 1);
-      reordered.splice(newIndex, 0, moved);
+      // Use AppStorage for reliable reordering
+      const updatedProducts = AppStorage.reorderFeatured(productId, direction);
 
-      // Update featuredOrder values
-      const updated = reordered.map((product, index) => ({
-        ...product,
-        featuredOrder: index + 1
+      // Trigger custom event to notify other components
+      const featuredProducts = AppStorage.getFeaturedProducts();
+      window.dispatchEvent(new CustomEvent('featuredProductsUpdated', {
+        detail: featuredProducts
       }));
 
-      setFeaturedProducts(updated);
-      setProducts(products.map(p => {
-        const featured = updated.find(f => f.id === p.id);
-        return featured ? featured : p;
-      }));
-
-      // Simulate saving success
-      console.log('Products reordered:', updated);
     } catch (error) {
       console.error('Error reordering products:', error);
       alert('Gagal mengurutkan ulang produk');

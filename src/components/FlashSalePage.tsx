@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ShoppingCart, Zap, Clock, Fire, Percent } from 'lucide-react';
+import { ShoppingCart, Zap, Clock, Flame, Percent } from 'lucide-react';
 import ProductCard from './ProductCard';
 import { useFlashSale } from '../hooks/useFlashSale';
 
@@ -30,14 +30,47 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
     onAddToCart(product);
   };
 
-  // Filter flash sale products
+  // Filter flash sale products - BULLETPROOF VERSION
   const flashSaleProducts = useMemo(() => {
-    return products.filter(product => {
-      // Check if product is in active flash sale from localStorage or isFlashSale flag
-      const isInFlashSale = product.isFlashSale || (localStorage.getItem('azzahra-flashsale') &&
-        JSON.parse(localStorage.getItem('azzahra-flashsale') || '{}')?.products?.includes(product.id));
-      return isInFlashSale;
-    });
+    try {
+      // Safety check: ensure products is an array
+      if (!Array.isArray(products) || products.length === 0) {
+        console.warn('⚠️ FlashSale: Products array is empty or invalid');
+        return [];
+      }
+
+      // Safety check: filter out invalid products
+      const validProducts = products.filter(p => p && p.id && p.name);
+
+      // Check active flash sale config
+      let flashSaleConfig;
+      try {
+        const savedConfig = localStorage.getItem('azzahra-flashsale');
+        flashSaleConfig = savedConfig ? JSON.parse(savedConfig) : null;
+      } catch (e) {
+        console.warn('⚠️ Error parsing flash sale config:', e);
+        flashSaleConfig = null;
+      }
+
+      // Filter flash sale products
+      return validProducts.filter(product => {
+        try {
+          // Check if product is in active flash sale from localStorage or isFlashSale flag
+          const isInFlashSale = product.isFlashSale === true ||
+            (flashSaleConfig &&
+             flashSaleConfig.isActive === true &&
+             Array.isArray(flashSaleConfig.products) &&
+             flashSaleConfig.products.includes(product.id));
+          return isInFlashSale;
+        } catch (e) {
+          console.warn('⚠️ Error checking flash sale for product:', product.id, e);
+          return false;
+        }
+      });
+    } catch (error) {
+      console.error('🚨 Error in flashSaleProducts calculation:', error);
+      return [];
+    }
   }, [products]);
 
   
@@ -116,9 +149,9 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
 
           <div className="relative z-10">
             <div className="flex items-center justify-center mb-4">
-              <Fire className="w-12 h-12 text-yellow-300 mr-3" />
+              <Flame className="w-12 h-12 text-yellow-300 mr-3" />
               <h1 className="text-4xl font-bold text-white">FLASH SALE</h1>
-              <Fire className="w-12 h-12 text-yellow-300 ml-3" />
+              <Flame className="w-12 h-12 text-yellow-300 ml-3" />
             </div>
             <p className="text-xl text-white/90 mb-6">Diskon Hingga 70%</p>
 

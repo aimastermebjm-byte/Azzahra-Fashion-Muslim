@@ -7,7 +7,16 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    open: true
+    open: true,
+    hmr: {
+      overlay: true, // Show error overlay
+    },
+    headers: {
+      // Disable caching for development
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
   },
   build: {
     target: 'es2015',

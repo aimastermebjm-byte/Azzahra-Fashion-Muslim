@@ -32,7 +32,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, user }) => {
   const [reportEndDate, setReportEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [productFilter, setProductFilter] = useState('all'); // all, category, product
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('delivered');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [userFilter, setUserFilter] = useState('all');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);

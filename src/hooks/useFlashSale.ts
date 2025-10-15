@@ -12,30 +12,54 @@ const FLASH_SALE_KEY = 'azzahra-flashsale';
 export const useFlashSale = () => {
   const [flashSaleConfig, setFlashSaleConfig] = useState<FlashSaleConfig | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>('');
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Load flash sale config from localStorage
-    let savedConfig = localStorage.getItem(FLASH_SALE_KEY);
+    if (isInitialized) return; // Prevent re-initialization
 
-    if (savedConfig) {
-      try {
-        const config = JSON.parse(savedConfig);
-        setFlashSaleConfig(config);
-      } catch (e) {
-        console.error('Failed to load flash sale config');
+    try {
+      // Load flash sale config from localStorage
+      const savedConfig = localStorage.getItem(FLASH_SALE_KEY);
+
+      if (savedConfig) {
+        try {
+          const config = JSON.parse(savedConfig);
+          // Validate config structure
+          if (config && typeof config === 'object' && 'isActive' in config && 'endTime' in config) {
+            setFlashSaleConfig(config);
+            console.log('✅ Flash sale config loaded successfully');
+          } else {
+            console.warn('⚠️ Invalid flash sale config structure, using default');
+            throw new Error('Invalid config structure');
+          }
+        } catch (e) {
+          console.warn('⚠️ Failed to parse flash sale config, creating new one:', e);
+          throw e; // Continue to create default config
+        }
+      } else {
+        console.log('📝 No flash sale config found, creating default');
+        throw new Error('No config found');
       }
-    } else {
+    } catch (e) {
       // Create default flash sale for testing
       const defaultConfig: FlashSaleConfig = {
         isActive: true,
         startTime: new Date().toISOString(),
         endTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
-        products: ['2', '4', '6', '8'] // Product IDs from mock data
+        products: ['1', '2', '4', '6'] // Use valid product IDs from our data
       };
-      localStorage.setItem(FLASH_SALE_KEY, JSON.stringify(defaultConfig));
-      setFlashSaleConfig(defaultConfig);
+
+      try {
+        localStorage.setItem(FLASH_SALE_KEY, JSON.stringify(defaultConfig));
+        setFlashSaleConfig(defaultConfig);
+        console.log('✅ Default flash sale config created');
+      } catch (storageError) {
+        console.error('🚨 Failed to save flash sale config to localStorage:', storageError);
+      }
+    } finally {
+      setIsInitialized(true);
     }
-  }, []);
+  }, [isInitialized]);
 
   useEffect(() => {
     if (!flashSaleConfig || !flashSaleConfig.isActive) return;

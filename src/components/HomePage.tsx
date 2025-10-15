@@ -3,6 +3,8 @@ import { Search, ShoppingCart, User, Filter, ChevronLeft, ChevronRight, Star, Ar
 import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
+import { validateProducts } from '../utils/productUtils';
+import { AppStorage } from '../utils/appStorage';
 
 interface HomePageProps {
   user: any;
@@ -32,6 +34,7 @@ const HomePage: React.FC<HomePageProps> = ({
   const [statusFilter, setStatusFilter] = useState<'all' | 'ready' | 'po'>('all');
   const [sortBy, setSortBy] = useState<'terbaru' | 'terlaris' | 'termurah' | 'termahal' | 'terlama'>('terbaru');
   const [currentPage, setCurrentPage] = useState(1);
+  const [featuredUpdateTrigger, setFeaturedUpdateTrigger] = useState(0); // Force re-render
   const productsPerPage = 8;
 
   const handleBannerClick = (banner: any) => {
@@ -57,7 +60,30 @@ const HomePage: React.FC<HomePageProps> = ({
     onAddToCart(product);
   };
 
-  const filteredProducts = products.filter(product => {
+  // Validate and process products using utility functions
+  const safeProducts = React.useMemo(() => {
+    const validated = validateProducts(products);
+    // Ensure all required fields have default values
+    return validated.map(p => ({
+      ...p,
+      description: p.description || '',
+      category: p.category || 'other',
+      images: p.images || [],
+      variants: p.variants || { sizes: [], colors: [] },
+      retailPrice: p.retailPrice || 0,
+      resellerPrice: p.resellerPrice || 0,
+      costPrice: p.costPrice || 0,
+      stock: p.stock || 0,
+      status: p.status || 'ready',
+      isFlashSale: p.isFlashSale || false,
+      flashSalePrice: p.flashSalePrice || 0,
+      createdAt: p.createdAt || new Date(),
+      salesCount: p.salesCount || 0,
+      isFeatured: p.isFeatured || false
+    })) as Product[];
+  }, [products]);
+
+  const filteredProducts = safeProducts.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
@@ -86,20 +112,26 @@ const HomePage: React.FC<HomePageProps> = ({
     }
   });
 
-  // Get featured products
-  const featuredProducts = products
-    .filter(p => p.isFeatured)
-    .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0))
-    .slice(0, 4);
+  // Get featured products directly from AppStorage for consistency
+  const featuredProducts = React.useMemo(() => {
+    return AppStorage.getFeaturedProducts();
+  }, [products, featuredUpdateTrigger]); // Depend on products and trigger for re-render
 
-  // Regular products (excluding featured)
-  const regularProducts = sortedProducts.filter(p => !p.isFeatured);
+  // Regular products (excluding featured products) - BULLETPROOF VERSION
+  const regularProducts = React.useMemo(() => {
+    try {
+      if (!Array.isArray(sortedProducts) || !Array.isArray(featuredProducts)) {
+        console.warn('⚠️ Invalid product arrays for regular products calculation');
+        return sortedProducts || [];
+      }
 
-  // Debug
-  console.log('=== DEBUG ===');
-  console.log('Total products:', products.length);
-  console.log('Featured products:', featuredProducts.length);
-  console.log('Should show featured?', featuredProducts.length > 0);
+      const featuredIds = new Set(featuredProducts.map(p => p.id).filter(Boolean));
+      return sortedProducts.filter(p => p && p.id && !featuredIds.has(p.id));
+    } catch (error) {
+      console.error('🚨 Error in regularProducts calculation:', error);
+      return sortedProducts || [];
+    }
+  }, [sortedProducts, featuredProducts]);
 
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
@@ -109,6 +141,21 @@ const HomePage: React.FC<HomePageProps> = ({
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedCategory, statusFilter, sortBy]);
+
+  // Listen for featured products updates from admin
+  useEffect(() => {
+    const handleFeaturedProductsUpdated = (event: any) => {
+      console.log('Featured products updated in HomePage:', event.detail);
+      // Force re-render to get updated featured products from ProductStorage
+      setFeaturedUpdateTrigger(prev => prev + 1);
+    };
+
+    window.addEventListener('featuredProductsUpdated', handleFeaturedProductsUpdated);
+
+    return () => {
+      window.removeEventListener('featuredProductsUpdated', handleFeaturedProductsUpdated);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -121,6 +168,7 @@ const HomePage: React.FC<HomePageProps> = ({
     );
   }
 
+  
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
@@ -184,32 +232,40 @@ const HomePage: React.FC<HomePageProps> = ({
           <Star className="w-5 h-5 text-yellow-500 fill-current" />
           <h2 className="text-lg font-bold text-gray-800">Produk Unggulan</h2>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          {featuredProducts.length > 0 ? (
-            featuredProducts.map((product) => (
+
+        {/* Loading skeleton for featured products */}
+        {loading ? (
+          <div className="grid grid-cols-2 gap-4">
+            {[...Array(2)].map((_, index) => (
+              <div key={`skeleton-${index}`} className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="w-full h-48 bg-gray-200 animate-pulse"></div>
+                <div className="p-4">
+                  <div className="h-4 bg-gray-200 rounded mb-2 animate-pulse"></div>
+                  <div className="h-3 bg-gray-200 rounded mb-3 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : featuredProducts.length > 0 ? (
+          <div className="grid grid-cols-2 gap-4">
+            {featuredProducts.map((product) => (
               <ProductCard
-                key={product.id}
+                key={`featured-${product.id}`}
                 product={product}
                 onProductClick={onProductClick}
                 onAddToCart={handleAddToCart}
                 user={user}
                 isFeatured={true}
               />
-            ))
-          ) : (
-            // Tampilkan 4 produk pertama jika tidak ada featured
-            products.slice(0, 4).map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onProductClick={onProductClick}
-                onAddToCart={handleAddToCart}
-                user={user}
-                isFeatured={true}
-              />
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500 bg-white rounded-lg">
+            <Star className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+            <p>Belum ada produk unggulan</p>
+          </div>
+        )}
       </div>
 
       {/* Categories */}
