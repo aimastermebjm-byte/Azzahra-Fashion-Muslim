@@ -21,7 +21,7 @@ import { AppStorage } from './utils/appStorage';
 type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users';
 
 function AppContent() {
-  console.log('🔥 APPCONTENT FUNCTION CALLED - Version 2.0 with Supabase');
+  console.log('🔥 APPCONTENT FUNCTION CALLED - Version 3.0 FIXED DEPLOYMENT');
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showLogin, setShowLogin] = useState(false);
