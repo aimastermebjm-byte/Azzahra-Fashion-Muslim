@@ -13,7 +13,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPage
     { id: 'home' as Page, label: 'Beranda', icon: Home },
     { id: 'flash-sale' as Page, label: 'Flash Sale', icon: Zap },
     { id: 'orders' as Page, label: 'Pesanan', icon: Package },
-    { id: 'account' as Page, label: 'Pengaturan', icon: User },
+    { id: 'account' as Page, label: '⚙️ Pengaturan', icon: User },
   ];
 
   return (
