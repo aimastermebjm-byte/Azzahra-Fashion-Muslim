@@ -114,6 +114,8 @@ const HomePage: React.FC<HomePageProps> = ({
 
   // Get featured products directly from AppStorage for consistency
   const featuredProducts = React.useMemo(() => {
+    // Validate and sync featured products before returning
+    AppStorage.validateAndSyncFeaturedProducts();
     return AppStorage.getFeaturedProducts();
   }, [products, featuredUpdateTrigger]); // Depend on products and trigger for re-render
 
@@ -154,6 +156,54 @@ const HomePage: React.FC<HomePageProps> = ({
 
     return () => {
       window.removeEventListener('featuredProductsUpdated', handleFeaturedProductsUpdated);
+    };
+  }, []);
+
+  // Listen for products updates from admin
+  useEffect(() => {
+    const handleProductsUpdated = (event: any) => {
+      console.log('Products updated in HomePage:', event.detail);
+      // Force re-render to get updated products
+      setFeaturedUpdateTrigger(prev => prev + 1);
+    };
+
+    window.addEventListener('productsUpdated', handleProductsUpdated);
+
+    return () => {
+      window.removeEventListener('productsUpdated', handleProductsUpdated);
+    };
+  }, []);
+
+  // ENHANCED Listen for flash sale ended events with debouncing
+  useEffect(() => {
+    const handleFlashSaleEnded = (event: any) => {
+      console.log('🔥 Flash sale ended detected in HomePage:', event.detail);
+
+      // Force immediate re-render to get updated products
+      setFeaturedUpdateTrigger(prev => prev + 1);
+
+      // Force refresh featured products cache
+      AppStorage.refreshFeaturedProductsCache();
+
+      // If flash sale ended due to time expiry, trigger debounced page reload
+      if (event.detail?.reason === 'time_expired') {
+        // Clear existing timer if any
+        if (window.flashSaleRefreshTimer) {
+          clearTimeout(window.flashSaleRefreshTimer);
+        }
+
+        // Set new debounced timer for HomePage
+        window.flashSaleRefreshTimer = setTimeout(() => {
+          console.log('🔄 Auto-refreshing HomePage after flash sale time expired');
+          window.location.reload();
+        }, 4000);
+      }
+    };
+
+    window.addEventListener('flashSaleEnded', handleFlashSaleEnded);
+
+    return () => {
+      window.removeEventListener('flashSaleEnded', handleFlashSaleEnded);
     };
   }, []);
 

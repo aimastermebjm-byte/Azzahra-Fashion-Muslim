@@ -5,6 +5,8 @@ interface FlashSaleConfig {
   startTime: string;
   endTime: string;
   products: string[];
+  productIds?: string[];
+  flashSaleDiscount?: number;
 }
 
 const FLASH_SALE_KEY = 'azzahra-flashsale';
@@ -27,35 +29,24 @@ export const useFlashSale = () => {
           // Validate config structure
           if (config && typeof config === 'object' && 'isActive' in config && 'endTime' in config) {
             setFlashSaleConfig(config);
-            console.log('✅ Flash sale config loaded successfully');
+            console.log('✅ Flash sale config loaded successfully from localStorage');
+            console.log('📅 Flash sale ends at:', config.endTime);
+            console.log('⏰ Current time:', new Date().toISOString());
           } else {
             console.warn('⚠️ Invalid flash sale config structure, using default');
             throw new Error('Invalid config structure');
           }
         } catch (e) {
-          console.warn('⚠️ Failed to parse flash sale config, creating new one:', e);
-          throw e; // Continue to create default config
+          console.warn('⚠️ Failed to parse flash sale config:', e);
+          throw e;
         }
       } else {
-        console.log('📝 No flash sale config found, creating default');
-        throw new Error('No config found');
+        console.log('📝 No flash sale config found in localStorage');
+        console.log('ℹ️ Please create flash sale from admin dashboard first');
+        // Don't create default config - wait for admin to create one
       }
     } catch (e) {
-      // Create default flash sale for testing
-      const defaultConfig: FlashSaleConfig = {
-        isActive: true,
-        startTime: new Date().toISOString(),
-        endTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
-        products: ['1', '2', '4', '6'] // Use valid product IDs from our data
-      };
-
-      try {
-        localStorage.setItem(FLASH_SALE_KEY, JSON.stringify(defaultConfig));
-        setFlashSaleConfig(defaultConfig);
-        console.log('✅ Default flash sale config created');
-      } catch (storageError) {
-        console.error('🚨 Failed to save flash sale config to localStorage:', storageError);
-      }
+      console.error('🚨 Error initializing flash sale:', e);
     } finally {
       setIsInitialized(true);
     }
@@ -77,13 +68,59 @@ export const useFlashSale = () => {
 
         setTimeLeft(
           days > 0
-            ? `${days}h ${hours}j ${minutes}m ${seconds}d`
-            : `${hours}j ${minutes}m ${seconds}d`
+            ? `${days} hari ${hours} jam ${minutes} menit`
+            : hours > 0
+              ? `${hours} jam ${minutes} menit ${seconds} detik`
+              : `${minutes} menit ${seconds} detik`
         );
       } else {
-        // Flash sale ended
+        // Flash sale ended - ENHANCED CLEANUP
+        console.log('⏰ Flash sale has ended!');
+
+        // 1. Update local state
         setFlashSaleConfig(prev => prev ? { ...prev, isActive: false } : null);
+
+        // 2. Remove from localStorage
         localStorage.removeItem(FLASH_SALE_KEY);
+
+        // 3. Clean flash sale from products with enhanced data structure support
+        const savedProducts = localStorage.getItem('azzahra_products');
+        if (savedProducts) {
+          try {
+            const products = JSON.parse(savedProducts);
+            const cleanedProducts = products.map((product: any) => ({
+              ...product,
+              isFlashSale: false,
+              flashSalePrice: undefined,
+              flashSaleDiscount: undefined,
+              originalRetailPrice: product.originalRetailPrice || product.retailPrice,
+              retailPrice: product.originalRetailPrice || product.retailPrice
+            }));
+            localStorage.setItem('azzahra_products', JSON.stringify(cleanedProducts));
+            console.log('🧹 Cleaned flash sale from products:', cleanedProducts.length, 'products');
+          } catch (e) {
+            console.error('Error cleaning products after flash sale:', e);
+          }
+        }
+
+        // 4. Trigger multiple events for comprehensive UI updates
+        window.dispatchEvent(new CustomEvent('flashSaleEnded', {
+          detail: {
+            timestamp: new Date().toISOString(),
+            reason: 'time_expired'
+          }
+        }));
+
+        // 5. DEBOUNCED Force auto-refresh after cleanup
+        // Use debounced refresh to prevent multiple triggers
+        if (!window.flashSaleRefreshTimer) {
+          window.flashSaleRefreshTimer = setTimeout(() => {
+            console.log('🔄 Auto-refreshing page after flash sale cleanup');
+            window.location.reload();
+          }, 2000);
+        }
+
+        return; // Stop timer
       }
     }, 1000);
 
@@ -105,7 +142,13 @@ export const useFlashSale = () => {
   };
 
   const isProductInFlashSale = (productId: string) => {
-    return flashSaleConfig?.isActive && flashSaleConfig.products.includes(productId);
+    if (!flashSaleConfig?.isActive) return false;
+
+    // Check both products and productIds arrays for backward compatibility
+    const inProducts = flashSaleConfig.products.includes(productId);
+    const inProductIds = flashSaleConfig.productIds?.includes(productId) || false;
+
+    return inProducts || inProductIds;
   };
 
   return {

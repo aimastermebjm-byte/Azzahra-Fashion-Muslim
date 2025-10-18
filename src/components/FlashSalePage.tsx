@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { ShoppingCart, Zap, Clock, Flame, Percent } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { ShoppingCart, Zap, Flame, Percent } from 'lucide-react';
 import ProductCard from './ProductCard';
 import { useFlashSale } from '../hooks/useFlashSale';
 
@@ -9,7 +9,6 @@ interface FlashSalePageProps {
   products: any[];
   loading: boolean;
   onProductClick: (product: any) => void;
-  onLoginRequired: () => void;
   onCartClick: () => void;
   onAddToCart: (product: any) => void;
 }
@@ -20,17 +19,119 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
   products,
   loading,
   onProductClick,
-  onLoginRequired,
   onCartClick,
   onAddToCart
 }) => {
   const { timeLeft, isFlashSaleActive } = useFlashSale();
+  const [forceUpdate, setForceUpdate] = useState(0);
+
+  // ENHANCED Flash Sale Event Handling
+  useEffect(() => {
+    const handleFlashSaleEnded = (event: any) => {
+      console.log('🔄 Flash sale ended event received:', event.detail);
+      console.log('🔄 Updating FlashSalePage...');
+
+      // Force immediate re-render
+      setForceUpdate(prev => prev + 1);
+
+      // DEBOUNCED Additional auto-refresh if event indicates time expired
+      if (event.detail?.reason === 'time_expired') {
+        // Clear existing timer if any
+        if (window.flashSaleRefreshTimer) {
+          clearTimeout(window.flashSaleRefreshTimer);
+        }
+
+        // Set new debounced timer
+        window.flashSaleRefreshTimer = setTimeout(() => {
+          console.log('🔄 Auto-refreshing FlashSalePage after time expired');
+          window.location.reload();
+        }, 3000);
+      }
+    };
+
+    // Listen for multiple events
+    window.addEventListener('flashSaleEnded', handleFlashSaleEnded);
+
+    // Also listen for flash sale start/update events
+    const handleFlashSaleUpdated = () => {
+      console.log('🔄 Flash sale updated event received');
+      setForceUpdate(prev => prev + 1);
+    };
+
+    window.addEventListener('flashSaleUpdated', handleFlashSaleUpdated);
+
+    return () => {
+      window.removeEventListener('flashSaleEnded', handleFlashSaleEnded);
+      window.removeEventListener('flashSaleUpdated', handleFlashSaleUpdated);
+    };
+  }, []);
+
+  // ENHANCED Real-time Flash Sale Status Check
+  useEffect(() => {
+    const checkFlashSaleStatus = () => {
+      try {
+        const savedConfig = localStorage.getItem('azzahra-flashsale');
+        if (savedConfig) {
+          const config = JSON.parse(savedConfig);
+
+          if (config && config.isActive) {
+            const now = new Date().getTime();
+            const endTime = new Date(config.endTime).getTime();
+
+            // If flash sale has ended, trigger immediate cleanup
+            if (now >= endTime) {
+              console.log('⏰ FlashSalePage: Flash sale ended, triggering cleanup');
+
+              // Trigger flash sale ended event
+              window.dispatchEvent(new CustomEvent('flashSaleEnded', {
+                detail: {
+                  timestamp: new Date().toISOString(),
+                  reason: 'time_expired_page_check',
+                  source: 'FlashSalePage'
+                }
+              }));
+
+              // Remove flash sale config immediately
+              localStorage.removeItem('azzahra-flashsale');
+              config.isActive = false;
+
+              // Force update to refresh UI
+              setForceUpdate(prev => prev + 1);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error in FlashSalePage real-time check:', e);
+      }
+    };
+
+    // Check every 2 seconds for immediate response
+    checkFlashSaleStatus(); // Check immediately
+    const intervalId = setInterval(checkFlashSaleStatus, 2000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Listen for products updates from admin
+  useEffect(() => {
+    const handleProductsUpdated = (event: any) => {
+      console.log('Products updated in FlashSalePage:', event.detail);
+      // Force re-render to get updated products
+      setForceUpdate(prev => prev + 1);
+    };
+
+    window.addEventListener('productsUpdated', handleProductsUpdated);
+
+    return () => {
+      window.removeEventListener('productsUpdated', handleProductsUpdated);
+    };
+  }, []);
 
   const handleAddToCart = (product: any) => {
     onAddToCart(product);
   };
 
-  // Filter flash sale products - BULLETPROOF VERSION
+  // Filter flash sale products - ENHANCED BULLETPROOF VERSION
   const flashSaleProducts = useMemo(() => {
     try {
       // Safety check: ensure products is an array
@@ -42,25 +143,67 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
       // Safety check: filter out invalid products
       const validProducts = products.filter(p => p && p.id && p.name);
 
-      // Check active flash sale config
+      // Check active flash sale config with comprehensive validation
       let flashSaleConfig;
       try {
         const savedConfig = localStorage.getItem('azzahra-flashsale');
         flashSaleConfig = savedConfig ? JSON.parse(savedConfig) : null;
+
+        if (flashSaleConfig && flashSaleConfig.isActive) {
+          // Enhanced time validation
+          const now = new Date().getTime();
+          const endTime = new Date(flashSaleConfig.endTime).getTime();
+          const startTime = new Date(flashSaleConfig.startTime).getTime();
+
+          // Check if flash sale is actually still active by time
+          if (now < startTime) {
+            console.log('⏰ Flash sale has not started yet');
+            flashSaleConfig.isActive = false;
+          } else if (now >= endTime) {
+            console.log('⏰ Flash sale has ended! Deactivating...');
+            flashSaleConfig.isActive = false;
+            // Remove from localStorage immediately
+            localStorage.removeItem('azzahra-flashsale');
+          }
+        }
       } catch (e) {
         console.warn('⚠️ Error parsing flash sale config:', e);
         flashSaleConfig = null;
       }
 
-      // Filter flash sale products
+      // Filter flash sale products with enhanced logic
       return validProducts.filter(product => {
         try {
-          // Check if product is in active flash sale from localStorage or isFlashSale flag
-          const isInFlashSale = product.isFlashSale === true ||
-            (flashSaleConfig &&
-             flashSaleConfig.isActive === true &&
-             Array.isArray(flashSaleConfig.products) &&
-             flashSaleConfig.products.includes(product.id));
+          // Multiple validation layers
+          if (!product || !product.id) {
+            console.warn('⚠️ Invalid product found:', product);
+            return false;
+          }
+
+          // Check if product is in active flash sale
+          let isInFlashSale = false;
+
+          // Method 1: Product flag check
+          if (product.isFlashSale === true) {
+            isInFlashSale = true;
+          }
+
+          // Method 2: Flash sale config check
+          if (flashSaleConfig && flashSaleConfig.isActive === true) {
+            // Check both products and productIds arrays
+            const inProducts = Array.isArray(flashSaleConfig.products) && flashSaleConfig.products.includes(product.id);
+            const inProductIds = Array.isArray(flashSaleConfig.productIds) && flashSaleConfig.productIds.includes(product.id);
+
+            if (inProducts || inProductIds) {
+              isInFlashSale = true;
+            }
+          }
+
+          // Log filtered products for debugging
+          if (isInFlashSale) {
+            console.log(`✅ Product ${product.name} (${product.id}) is in flash sale`);
+          }
+
           return isInFlashSale;
         } catch (e) {
           console.warn('⚠️ Error checking flash sale for product:', product.id, e);
@@ -71,7 +214,7 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
       console.error('🚨 Error in flashSaleProducts calculation:', error);
       return [];
     }
-  }, [products]);
+  }, [products, forceUpdate, timeLeft]);
 
   
   if (loading) {

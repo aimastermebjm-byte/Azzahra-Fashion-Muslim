@@ -355,9 +355,22 @@ export class AppStorage {
   }
 
   static getFeaturedProducts(): Product[] {
-    return this.getProducts()
-      .filter(p => p.isFeatured)
-      .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0));
+    try {
+      const products = this.getProducts();
+      const featuredProducts = products
+        .filter(p => p.isFeatured === true)
+        .sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0));
+
+      console.log(`🌟 AppStorage: Found ${featuredProducts.length} featured products`);
+      featuredProducts.forEach((product, index) => {
+        console.log(`  ${index + 1}. ${product.name} (Order: ${product.featuredOrder})`);
+      });
+
+      return featuredProducts;
+    } catch (error) {
+      console.error('🚨 AppStorage: Error getting featured products:', error);
+      return [];
+    }
   }
 
   static reorderFeatured(productId: string, direction: 'up' | 'down'): Product[] {
@@ -423,7 +436,62 @@ export class AppStorage {
     }
 
     this.saveProducts(updatedProducts);
+
+    // Trigger global event for featured products update
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('featuredProductsUpdated', {
+        detail: {
+          action: product.isFeatured ? 'removed' : 'added',
+          productId: productId,
+          featuredProducts: updatedProducts.filter(p => p.isFeatured)
+        }
+      }));
+    }
+
     return updatedProducts;
+  }
+
+  // NEW: Force sync featured products and validate consistency
+  static validateAndSyncFeaturedProducts(): Product[] {
+    try {
+      const products = this.getProducts();
+      const featuredProducts = products.filter(p => p.isFeatured);
+
+      // Fix inconsistent featured orders
+      const sortedFeatured = featuredProducts.sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0));
+      const updatedProducts = products.map(product => {
+        const featuredIndex = sortedFeatured.findIndex(f => f.id === product.id);
+        if (featuredIndex !== -1) {
+          return { ...product, featuredOrder: featuredIndex + 1 };
+        }
+        return product;
+      });
+
+      // Save if there were changes
+      const hasChanges = JSON.stringify(products) !== JSON.stringify(updatedProducts);
+      if (hasChanges) {
+        this.saveProducts(updatedProducts);
+        console.log('🔧 AppStorage: Fixed featured products order consistency');
+      }
+
+      return updatedProducts;
+    } catch (error) {
+      console.error('🚨 AppStorage: Error validating featured products:', error);
+      return this.getProducts();
+    }
+  }
+
+  // NEW: Force refresh featured products cache
+  static refreshFeaturedProductsCache(): void {
+    // Clear and reload featured products cache
+    this.getFeaturedProducts(); // This will reload and log
+
+    // Trigger event to notify components
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('featuredProductsRefreshed', {
+        detail: { timestamp: new Date().toISOString() }
+      }));
+    }
   }
 
   // Orders

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Package, DollarSign, Users, TrendingUp, Clock, CheckCircle, Truck, XCircle, Eye, CreditCard as Edit, Search, Filter, Calendar, Download, PieChart, BarChart3, Star } from 'lucide-react';
+import { ArrowLeft, Package, DollarSign, Users, TrendingUp, Clock, CheckCircle, Truck, XCircle, Eye, CreditCard as Edit, Search, Filter, Calendar, Download, PieChart, BarChart3, Star, Trash2, Award } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import FlashSaleManagement from './FlashSaleManagement';
 import FeaturedProductsManagement from './FeaturedProductsManagement';
@@ -20,12 +20,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, user }) => {
     orders,
     updateOrderStatus,
     updateOrderPayment,
+    deleteOrder,
     getOrdersByStatus,
     getTotalRevenue,
     getTodayOrders
   } = useAdmin();
 
-  const [activeTab, setActiveTab] = useState('overview');
+  // Check for requested tab from localStorage
+  const getInitialTab = () => {
+    const requestedTab = localStorage.getItem('azzahra_admin_tab');
+    console.log('🎯 AdminDashboard: Requested tab from localStorage:', requestedTab);
+    localStorage.removeItem('azzahra_admin_tab'); // Clear the flag after using it
+
+    // Map the requested tab to actual tabs
+    const tabMapping: { [key: string]: string } = {
+      'products': 'overview', // Products management is in overview
+      'orders': 'orders',
+      'reports': 'reports',
+      'users': 'overview', // Users management is in overview
+      'flashsale': 'flashsale',
+      'featured': 'featured'
+    };
+
+    const finalTab = tabMapping[requestedTab || ''] || 'overview';
+    console.log('🎯 AdminDashboard: Mapped to tab:', finalTab);
+    return finalTab;
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [reportType, setReportType] = useState('sales'); // sales, products, inventory, cashflow, profit-loss
   const [reportPeriod, setReportPeriod] = useState('today');
   const [reportStartDate, setReportStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -168,6 +190,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, user }) => {
   const handleStatusUpdate = (orderId: string, newStatus: any) => {
     updateOrderStatus(orderId, newStatus);
     setSelectedOrder(null);
+  };
+
+  const handleDeleteOrder = (orderId: string, orderName: string) => {
+    if (confirm(`Apakah Anda yakin ingin menghapus pesanan ${orderId}?\n\n${orderName}\n\nTindakan ini tidak dapat dibatalkan!`)) {
+      deleteOrder(orderId);
+      alert('✅ Pesanan berhasil dihapus permanen');
+    }
   };
 
   // Get filtered orders for reports
@@ -565,14 +594,157 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, user }) => {
       <div className="p-4">
         {activeTab === 'overview' && (
           <div className="space-y-4">
+            {/* Products Management Section */}
+            <div className="bg-white rounded-lg shadow-sm p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-800">Kelola Produk</h3>
+                <button className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition-colors text-sm font-medium">
+                  + Tambah Produk
+                </button>
+              </div>
+
+              {/* Product Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="bg-blue-50 rounded-lg p-3">
+                  <h4 className="text-sm font-medium text-blue-800 mb-1">Total Produk</h4>
+                  <p className="text-xl font-bold text-blue-600">12</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-3">
+                  <h4 className="text-sm font-medium text-green-800 mb-1">Stok Tersedia</h4>
+                  <p className="text-xl font-bold text-green-600">156</p>
+                </div>
+                <div className="bg-purple-50 rounded-lg p-3">
+                  <h4 className="text-sm font-medium text-purple-800 mb-1">Kategori</h4>
+                  <p className="text-xl font-bold text-purple-600">5</p>
+                </div>
+                <div className="bg-orange-50 rounded-lg p-3">
+                  <h4 className="text-sm font-medium text-orange-800 mb-1">Harga Rata-rata</h4>
+                  <p className="text-xl font-bold text-orange-600">150K</p>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <button className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center">
+                  <Package className="w-6 h-6 mx-auto mb-2 text-blue-600" />
+                  <p className="text-sm font-medium">Lihat Semua</p>
+                </button>
+                <button className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center">
+                  <BarChart3 className="w-6 h-6 mx-auto mb-2 text-green-600" />
+                  <p className="text-sm font-medium">Statistik</p>
+                </button>
+                <button className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center">
+                  <Edit className="w-6 h-6 mx-auto mb-2 text-purple-600" />
+                  <p className="text-sm font-medium">Batch Edit</p>
+                </button>
+                <button className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center">
+                  <Download className="w-6 h-6 mx-auto mb-2 text-orange-600" />
+                  <p className="text-sm font-medium">Export</p>
+                </button>
+              </div>
+
+              {/* Product Categories */}
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Kategori Produk</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="p-3 bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg border border-pink-200">
+                    <p className="font-medium text-pink-800">Hijab</p>
+                    <p className="text-sm text-pink-600">4 produk • 45 stok</p>
+                  </div>
+                  <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                    <p className="font-medium text-blue-800">Gamis</p>
+                    <p className="text-sm text-blue-600">3 produk • 28 stok</p>
+                  </div>
+                  <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                    <p className="font-medium text-green-800">Khimar</p>
+                    <p className="text-sm text-green-600">3 produk • 38 stok</p>
+                  </div>
+                  <div className="p-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-200">
+                    <p className="font-medium text-orange-800">Lainnya</p>
+                    <p className="text-sm text-orange-600">2 produk • 45 stok</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent Products */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Produk Terbaru</h4>
+                <div className="space-y-2">
+                  {[
+                    { name: 'Hijab Segi Empat Premium', category: 'Hijab', stock: 25, price: 85000 },
+                    { name: 'Gamis Syari Elegant', category: 'Gamis', stock: 15, price: 165000 },
+                    { name: 'Khimar Instant Premium', category: 'Khimar', stock: 20, price: 95000 },
+                    { name: 'Tunik Casual Modern', category: 'Tunik', stock: 30, price: 125000 }
+                  ].map((product, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-pink-100 to-purple-100 rounded-lg flex items-center justify-center">
+                          <Package className="w-5 h-5 text-pink-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{product.name}</p>
+                          <p className="text-xs text-gray-500">{product.category}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-gray-800">Rp {product.price.toLocaleString('id-ID')}</p>
+                        <p className="text-xs text-gray-500">Stok: {product.stock}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* User Management Section (for Owner/Admin) */}
+            {(user?.role === 'owner' || user?.role === 'admin') && (
+              <div className="bg-white rounded-lg shadow-sm p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-gray-800">Kelola Pengguna</h3>
+                  <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium">
+                    + Tambah User
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div className="bg-blue-50 rounded-lg p-3">
+                    <h4 className="text-sm font-medium text-blue-800 mb-1">Total User</h4>
+                    <p className="text-xl font-bold text-blue-600">248</p>
+                    <p className="text-xs text-blue-600">12 reseller, 236 customer</p>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-3">
+                    <h4 className="text-sm font-medium text-green-800 mb-1">User Aktif</h4>
+                    <p className="text-xl font-bold text-green-600">189</p>
+                    <p className="text-xs text-green-600">76% aktivasi</p>
+                  </div>
+                  <div className="bg-purple-50 rounded-lg p-3">
+                    <h4 className="text-sm font-medium text-purple-800 mb-1">User Baru</h4>
+                    <p className="text-xl font-bold text-purple-600">15</p>
+                    <p className="text-xs text-purple-600">bulan ini</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center">
+                    <Users className="w-6 h-6 mx-auto mb-2 text-blue-600" />
+                    <p className="text-sm font-medium">Lihat Semua User</p>
+                  </button>
+                  <button className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center">
+                    <Award className="w-6 h-6 mx-auto mb-2 text-purple-600" />
+                    <p className="text-sm font-medium">Kelola Reseller</p>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Recent Orders */}
             <div className="bg-white rounded-lg shadow-sm p-4">
               <h3 className="font-semibold mb-3">Pesanan Terbaru</h3>
               <div className="space-y-3">
-                {orders.slice(0, 5).map((order) => {
+                {orders.slice(0, 3).map((order) => {
                   const statusInfo = statusConfig[order.status as keyof typeof statusConfig];
                   const StatusIcon = statusInfo.icon;
-                  
+
                   return (
                     <div key={order.id} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
                       <div className="flex-1">
@@ -656,13 +828,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, user }) => {
                       <div className="text-sm text-gray-600">
                         {order.items.length} item • {order.paymentMethod === 'transfer' ? 'Transfer' : 'COD'}
                       </div>
-                      <button
-                        onClick={() => setSelectedOrder(order)}
-                        className="flex items-center space-x-1 text-pink-600 hover:text-pink-700 text-sm font-medium"
-                      >
-                        <Eye className="w-4 h-4" />
-                        <span>Detail</span>
-                      </button>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => setSelectedOrder(order)}
+                          className="flex items-center space-x-1 text-pink-600 hover:text-pink-700 text-sm font-medium"
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span>Detail</span>
+                        </button>
+                        {user?.role === 'owner' && (
+                          <button
+                            onClick={() => handleDeleteOrder(order.id, order.userName)}
+                            className="flex items-center space-x-1 text-red-600 hover:text-red-700 text-sm font-medium"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>Hapus</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

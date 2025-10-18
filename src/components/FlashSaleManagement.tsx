@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, CreditCard as Edit, Trash2, Calendar, Clock, Tag, Filter, Search, Check, X } from 'lucide-react';
+import { ArrowLeft, CreditCard as Edit, Trash2, Tag, Filter, Search, Check, X } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { useProducts } from '../hooks/useProducts';
 import { FlashSale, Product } from '../types';
@@ -11,15 +11,14 @@ interface FlashSaleManagementProps {
 const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => {
   const { flashSales, createFlashSale, updateFlashSale, deleteFlashSale } = useAdmin();
   const { products, applyFlashSaleToProducts, removeFlashSaleFromProducts } = useProducts();
-  
-  const [activeTab, setActiveTab] = useState('list');
-  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const [activeTab, setActiveTab] = useState('create');
   const [editingFlashSale, setEditingFlashSale] = useState<FlashSale | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
-  
+
   const [formData, setFormData] = useState({
     name: '',
     startDate: '',
@@ -36,7 +35,7 @@ const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => 
       const now = new Date();
       flashSales.forEach(flashSale => {
         const isCurrentlyActive = flashSale.startDate <= now && flashSale.endDate >= now;
-        
+
         if (flashSale.isActive && now > flashSale.endDate) {
           // Flash sale ended, deactivate and remove from products
           updateFlashSale(flashSale.id, { isActive: false });
@@ -64,8 +63,8 @@ const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => 
   };
 
   const handleProductSelect = (productId: string) => {
-    setSelectedProducts(prev => 
-      prev.includes(productId) 
+    setSelectedProducts(prev =>
+      prev.includes(productId)
         ? prev.filter(id => id !== productId)
         : [...prev, productId]
     );
@@ -73,7 +72,7 @@ const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => 
 
   const handleSelectAll = () => {
     const filteredProductIds = getFilteredProducts().map(p => p.id);
-    setSelectedProducts(prev => 
+    setSelectedProducts(prev =>
       prev.length === filteredProductIds.length ? [] : filteredProductIds
     );
   };
@@ -117,11 +116,40 @@ const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => 
         alert('Flash sale berhasil dibuat! Cek halaman produk untuk melihat perubahan harga.');
       }
 
+      // ALSO UPDATE THE USEFLASH SALE LOCALSTORAGE CONFIG
+      const localStorageConfig = {
+        isActive: startDateTime <= now && endDateTime >= now,
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+        products: selectedProducts,
+        name: formData.name,
+        discountType: formData.discountType,
+        discountValue: formData.discountValue
+      };
+
+      // Save to localStorage for useFlashSale hook compatibility
+      localStorage.setItem('azzahra-flashsale', JSON.stringify(localStorageConfig));
+      console.log('✅ Flash sale also saved to localStorage for useFlashSale hook');
+
+      // Apply discounts to products using useProducts hook
+      const flashSaleForProducts = {
+        id: 'admin-flashsale-' + Date.now(),
+        name: formData.name,
+        startDate: startDateTime,
+        endDate: endDateTime,
+        isActive: startDateTime <= now && endDateTime >= now,
+        productIds: selectedProducts,
+        discountType: formData.discountType,
+        discountValue: formData.discountValue
+      };
+
+      applyFlashSaleToProducts(flashSaleForProducts);
+
       // Don't reset form immediately, wait a bit
       setTimeout(() => {
         resetForm();
       }, 1000);
-      
+
     } catch (error) {
       console.error('Error creating/updating flash sale:', error);
       alert('Terjadi kesalahan saat membuat flash sale');
@@ -139,7 +167,6 @@ const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => 
       discountValue: 0
     });
     setSelectedProducts([]);
-    setShowCreateModal(false);
     setEditingFlashSale(null);
   };
 
@@ -155,7 +182,7 @@ const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => 
       discountValue: flashSale.discountValue
     });
     setSelectedProducts(flashSale.productIds);
-    setShowCreateModal(true);
+    setActiveTab('create');
   };
 
   const handleDelete = (flashSale: FlashSale) => {
@@ -221,12 +248,7 @@ const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => 
             <ArrowLeft className="w-6 h-6" />
           </button>
           <h1 className="text-xl font-bold">Kelola Flash Sale</h1>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-white/20 p-2 rounded-full hover:bg-white/30"
-          >
-            <Plus className="w-6 h-6" />
-          </button>
+          <div className="w-10"></div>
         </div>
 
         {/* Stats */}
@@ -254,6 +276,7 @@ const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => 
       <div className="bg-white shadow-sm">
         <div className="flex overflow-x-auto px-4">
           {[
+            { id: 'create', label: 'Buat Flash Sale' },
             { id: 'list', label: 'Daftar Flash Sale' },
             { id: 'products', label: 'Pilih Produk' }
           ].map((tab) => (
@@ -274,6 +297,173 @@ const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => 
 
       {/* Content */}
       <div className="p-4">
+        {activeTab === 'create' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-xl font-bold mb-4">
+                {editingFlashSale ? 'Edit Flash Sale' : 'Buat Flash Sale Baru'}
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nama Flash Sale
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="Contoh: Flash Sale Ramadan"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Tanggal Mulai
+                      </label>
+                      <input
+                        type="date"
+                        name="startDate"
+                        value={formData.startDate}
+                        onChange={handleInputChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Jam Mulai
+                      </label>
+                      <input
+                        type="time"
+                        name="startTime"
+                        value={formData.startTime}
+                        onChange={handleInputChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Tanggal Selesai
+                      </label>
+                      <input
+                        type="date"
+                        name="endDate"
+                        value={formData.endDate}
+                        onChange={handleInputChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Jam Selesai
+                      </label>
+                      <input
+                        type="time"
+                        name="endTime"
+                        value={formData.endTime}
+                        onChange={handleInputChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Jenis Diskon
+                      </label>
+                      <select
+                        name="discountType"
+                        value={formData.discountType}
+                        onChange={handleInputChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      >
+                        <option value="fixed">Nominal (Rp)</option>
+                        <option value="percentage">Persentase (%)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nilai Diskon
+                      </label>
+                      <input
+                        type="number"
+                        name="discountValue"
+                        value={formData.discountValue}
+                        onChange={handleInputChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        placeholder={formData.discountType === 'percentage' ? '10' : '100000'}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-semibold mb-3">Preview Flash Sale</h3>
+                    <div className="bg-gradient-to-r from-red-500 to-pink-500 rounded-lg p-4 text-white">
+                      <h4 className="font-bold text-lg mb-2">
+                        {formData.name || 'Nama Flash Sale'}
+                      </h4>
+                      <div className="text-sm space-y-1">
+                        <p>Durasi: {formData.startDate && formData.endDate ?
+                          `${new Date(formData.startDate).toLocaleDateString('id-ID')} - ${new Date(formData.endDate).toLocaleDateString('id-ID')}`
+                          : 'Pilih tanggal'
+                        }</p>
+                        <p>Diskon: {formData.discountType === 'percentage' ?
+                          `${formData.discountValue}%` :
+                          `Rp ${formData.discountValue.toLocaleString('id-ID')}`
+                        }</p>
+                        <p>Produk: {selectedProducts.length} item</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-sm text-yellow-800">
+                      <strong>Pilih Produk:</strong> {selectedProducts.length} produk dipilih
+                      {selectedProducts.length === 0 && (
+                        <span className="block text-red-600 mt-1">
+                          Pilih produk di tab "Pilih Produk" terlebih dahulu
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex space-x-3 mt-6 pt-6 border-t">
+                <button
+                  onClick={resetForm}
+                  className="px-6 py-3 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
+                >
+                  Reset Form
+                </button>
+                <button
+                  onClick={() => setActiveTab('products')}
+                  className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                >
+                  {selectedProducts.length > 0 ? 'Edit Produk' : 'Pilih Produk'}
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={selectedProducts.length === 0 || !formData.name || !formData.startDate || !formData.endDate}
+                  className="flex-1 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {editingFlashSale ? 'Update' : 'Buat'} Flash Sale
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'list' && (
           <div className="space-y-4">
             {flashSales.length === 0 ? (
@@ -282,7 +472,7 @@ const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => 
                 <h3 className="text-lg font-semibold text-gray-600 mb-2">Belum Ada Flash Sale</h3>
                 <p className="text-gray-500 mb-4">Buat flash sale pertama Anda</p>
                 <button
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={() => setActiveTab('create')}
                   className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600"
                 >
                   Buat Flash Sale
@@ -297,12 +487,12 @@ const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => 
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg">{flashSale.name}</h3>
                         <p className="text-sm text-gray-600">
-                          {flashSale.startDate.toLocaleDateString('id-ID')} {flashSale.startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} - 
+                          {flashSale.startDate.toLocaleDateString('id-ID')} {flashSale.startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} -
                           {flashSale.endDate.toLocaleDateString('id-ID')} {flashSale.endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {flashSale.productIds.length} produk • 
-                          {flashSale.discountType === 'percentage' 
+                          {flashSale.productIds.length} produk •
+                          {flashSale.discountType === 'percentage'
                             ? ` ${flashSale.discountValue}% off`
                             : ` Rp ${flashSale.discountValue.toLocaleString('id-ID')} off`
                           }
@@ -312,7 +502,7 @@ const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => 
                         {statusInfo.label}
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEdit(flashSale)}
@@ -427,9 +617,9 @@ const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => 
                       </div>
                     )}
                   </div>
-                  
+
                   <h3 className="font-semibold mb-2 line-clamp-2">{product.name}</h3>
-                  
+
                   <div className="space-y-1">
                     {product.isFlashSale && product.originalRetailPrice ? (
                       <>
@@ -446,12 +636,12 @@ const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => 
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="mt-2 flex items-center justify-between text-sm">
                     <span className="text-gray-600">Stok: {product.stock}</span>
                     <span className="capitalize text-gray-600">{product.category}</span>
                   </div>
-                  
+
                   <div className="mt-2 text-xs text-gray-500">
                     Dibuat: {product.createdAt.toLocaleDateString('id-ID')}
                   </div>
@@ -461,143 +651,6 @@ const FlashSaleManagement: React.FC<FlashSaleManagementProps> = ({ onBack }) => 
           </div>
         )}
       </div>
-
-      {/* Create/Edit Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">
-              {editingFlashSale ? 'Edit Flash Sale' : 'Buat Flash Sale Baru'}
-            </h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nama Flash Sale
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="Contoh: Flash Sale Ramadan"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tanggal Mulai
-                  </label>
-                  <input
-                    type="date"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Jam Mulai
-                  </label>
-                  <input
-                    type="time"
-                    name="startTime"
-                    value={formData.startTime}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tanggal Selesai
-                  </label>
-                  <input
-                    type="date"
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Jam Selesai
-                  </label>
-                  <input
-                    type="time"
-                    name="endTime"
-                    value={formData.endTime}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Jenis Diskon
-                  </label>
-                  <select
-                    name="discountType"
-                    value={formData.discountType}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  >
-                    <option value="fixed">Nominal (Rp)</option>
-                    <option value="percentage">Persentase (%)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nilai Diskon
-                  </label>
-                  <input
-                    type="number"
-                    name="discountValue"
-                    value={formData.discountValue}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    placeholder={formData.discountType === 'percentage' ? '10' : '100000'}
-                  />
-                </div>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm text-gray-600 mb-2">
-                  Produk Dipilih: <span className="font-semibold">{selectedProducts.length}</span>
-                </p>
-                {selectedProducts.length === 0 && (
-                  <p className="text-sm text-red-600">
-                    Pilih produk di tab "Pilih Produk" terlebih dahulu
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex space-x-3 mt-6">
-              <button
-                onClick={resetForm}
-                className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-lg hover:bg-gray-200"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="flex-1 bg-red-500 text-white py-3 rounded-lg hover:bg-red-600"
-              >
-                {editingFlashSale ? 'Update' : 'Buat'} Flash Sale
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

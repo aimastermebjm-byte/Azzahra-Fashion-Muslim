@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Clock, Zap, ChevronUp, MessageCircle, Star } from 'lucide-react';
 import { Product } from '../types';
 
@@ -20,6 +20,48 @@ const ProductCard: React.FC<ProductCardProps> = ({
   user
 }) => {
   const [showResellerMenu, setShowResellerMenu] = useState(false);
+  const [isFlashSaleActive, setIsFlashSaleActive] = useState(product.isFlashSale);
+
+  // Check flash sale status in real-time
+  useEffect(() => {
+    const checkFlashSaleStatus = () => {
+      const savedConfig = localStorage.getItem('azzahra-flashsale');
+      if (savedConfig) {
+        try {
+          const config = JSON.parse(savedConfig);
+          const now = new Date().getTime();
+          const endTime = new Date(config.endTime).getTime();
+
+          // Flash sale is active if product.isFlashSale is true and time hasn't ended
+          const isStillActive = product.isFlashSale && config.isActive && now < endTime;
+          setIsFlashSaleActive(isStillActive);
+        } catch (e) {
+          console.error('Error checking flash sale status:', e);
+          setIsFlashSaleActive(false);
+        }
+      } else {
+        // No flash sale config means flash sale is not active
+        setIsFlashSaleActive(false);
+      }
+    };
+
+    // Check immediately and then every 2 seconds
+    checkFlashSaleStatus();
+    const interval = setInterval(checkFlashSaleStatus, 2000);
+
+    // Listen for flash sale ended events
+    const handleFlashSaleEnded = () => {
+      console.log('🔥 ProductCard received flash sale ended event');
+      setIsFlashSaleActive(false);
+    };
+
+    window.addEventListener('flashSaleEnded', handleFlashSaleEnded);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('flashSaleEnded', handleFlashSaleEnded);
+    };
+  }, [product.isFlashSale]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -60,7 +102,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const getPrice = () => {
-    if (product.isFlashSale && product.flashSalePrice > 0) {
+    if (isFlashSaleActive && product.flashSalePrice > 0) {
       return (
         <div className="space-y-1">
           <div className="flex items-center space-x-2">

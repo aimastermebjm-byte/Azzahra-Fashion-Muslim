@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Package, Clock, Truck, CheckCircle, Search, XCircle, CreditCard, Upload, X } from 'lucide-react';
+import { Package, Clock, Truck, CheckCircle, Search, XCircle, CreditCard, Upload, X, Copy } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 
 interface OrdersPageProps {
@@ -30,14 +30,19 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
     }
   };
 
+  const handleCopyAccount = (accountNumber: string, bankName: string) => {
+    navigator.clipboard.writeText(accountNumber);
+    alert(`✅ Nomor rekening ${bankName} berhasil disalin!\n\n${accountNumber}\na.n. Fahrin`);
+  };
+
   const handleSubmitPayment = async () => {
     if (!selectedOrder || !paymentProof) return;
-    
+
     try {
       // Update order with payment proof but keep status as pending
       await updateOrderPayment(selectedOrder.id, paymentProof.name, 'awaiting_verification');
       closePaymentModal();
-      const message = selectedOrder.paymentProof 
+      const message = selectedOrder.paymentProof
         ? 'Bukti pembayaran berhasil diupload ulang! Menunggu verifikasi admin.'
         : 'Bukti pembayaran berhasil dikirim! Menunggu verifikasi admin.';
       alert(message);
@@ -225,22 +230,51 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
             {/* Bank Transfer Info */}
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
               <h4 className="font-semibold text-blue-800 mb-3">Transfer ke Rekening:</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>BRI:</span>
-                  <span className="font-mono">1234-5678-9012</span>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-blue-200">
+                  <div>
+                    <span className="font-medium text-gray-700">BCA</span>
+                    <div className="font-mono text-xs text-gray-600">0511456494</div>
+                  </div>
+                  <button
+                    onClick={() => handleCopyAccount('0511456494', 'BCA')}
+                    className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-xs font-medium transition-colors"
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>Salin</span>
+                  </button>
                 </div>
-                <div className="flex justify-between">
-                  <span>BCA:</span>
-                  <span className="font-mono">9876-5432-1098</span>
+                <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-blue-200">
+                  <div>
+                    <span className="font-medium text-gray-700">BRI</span>
+                    <div className="font-mono text-xs text-gray-600">066301000115566</div>
+                  </div>
+                  <button
+                    onClick={() => handleCopyAccount('066301000115566', 'BRI')}
+                    className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-xs font-medium transition-colors"
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>Salin</span>
+                  </button>
                 </div>
-                <div className="flex justify-between">
-                  <span>Mandiri:</span>
-                  <span className="font-mono">1122-3344-5566</span>
+                <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-blue-200">
+                  <div>
+                    <span className="font-medium text-gray-700">MANDIRI</span>
+                    <div className="font-mono text-xs text-gray-600">310011008896</div>
+                  </div>
+                  <button
+                    onClick={() => handleCopyAccount('310011008896', 'MANDIRI')}
+                    className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-xs font-medium transition-colors"
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>Salin</span>
+                  </button>
                 </div>
-                <p className="text-blue-700 font-semibold mt-2">
-                  a.n. Azzahra Fashion
-                </p>
+                <div className="text-center mt-3 p-2 bg-blue-100 rounded-lg">
+                  <p className="text-blue-700 font-semibold text-sm">
+                    a.n. Fahrin
+                  </p>
+                </div>
               </div>
             </div>
 

@@ -9,15 +9,19 @@ import LoginForm from './components/LoginForm';
 import FlashSalePage from './components/FlashSalePage';
 import OrdersPage from './components/OrdersPage';
 import AccountPage from './components/AccountPage';
-import AdminDashboard from './components/AdminDashboard';
+import AdminProductsPage from './components/AdminProductsPage';
+import AdminOrdersPage from './components/AdminOrdersPage';
+import AdminReportsPage from './components/AdminReportsPage';
+import AdminUsersPage from './components/AdminUsersPage';
 import BottomNavigation from './components/BottomNavigation';
 import { useProducts } from './hooks/useProducts';
 import { useAdmin } from './contexts/AdminContext';
 import { AppStorage } from './utils/appStorage';
 
-type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-dashboard';
+type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users';
 
 function AppContent() {
+  console.log('🔥 APPCONTENT FUNCTION CALLED');
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showLogin, setShowLogin] = useState(false);
@@ -26,9 +30,50 @@ function AppContent() {
   const { products, loading, updateProductStock } = useProducts();
   const { addOrder } = useAdmin();
 
-  // Initialize AppStorage on app start
+  // Initialize AppStorage and restore user session on app start
   useEffect(() => {
+    console.log('🚀 App initializing... Checking localStorage');
     AppStorage.initializeApp();
+
+    // Validate and sync featured products on app startup
+    AppStorage.validateAndSyncFeaturedProducts();
+    console.log('🚀 App initialized with featured products validation');
+
+    // Restore user session from localStorage
+    const savedUser = localStorage.getItem('azzahra_current_user');
+    const savedCart = localStorage.getItem('azzahra_cart');
+
+    console.log('📦 Found in localStorage:', {
+      savedUser: savedUser ? 'YES' : 'NO',
+      savedCart: savedCart ? 'YES' : 'NO',
+      allKeys: Object.keys(localStorage)
+    });
+
+    if (savedUser) {
+      try {
+        const user = JSON.parse(savedUser);
+        setUser(user);
+        console.log('✅ User session restored:', user.name, user.role);
+      } catch (error) {
+        console.error('❌ Error restoring user session:', error);
+        localStorage.removeItem('azzahra_current_user');
+      }
+    } else {
+      console.log('ℹ️ No saved user session found');
+    }
+
+    if (savedCart) {
+      try {
+        const cart = JSON.parse(savedCart);
+        setCartItems(cart);
+        console.log('✅ Cart restored:', cart.length, 'items');
+      } catch (error) {
+        console.error('❌ Error restoring cart:', error);
+        localStorage.removeItem('azzahra_cart');
+      }
+    } else {
+      console.log('ℹ️ No saved cart found');
+    }
   }, []);
 
   const handleProductClick = (product: any) => {
@@ -48,14 +93,24 @@ function AppContent() {
   const handleLoginWithUser = (user: any) => {
     setShowLogin(false);
     setUser(user);
-    console.log('User logged in:', user);
+
+    // Save user session to localStorage
+    localStorage.setItem('azzahra_current_user', JSON.stringify(user));
+    console.log('✅ User logged in and session saved:', user.name, user.role);
+    console.log('📦 Current localStorage keys:', Object.keys(localStorage));
   };
 
   const handleLogout = () => {
-    console.log('User logging out');
+    console.log('🔃 User logging out');
     setUser(null);
     setCartItems([]);
     setCurrentPage('home');
+
+    // Clear user session from localStorage
+    localStorage.removeItem('azzahra_current_user');
+    localStorage.removeItem('azzahra_cart');
+    console.log('✅ User session cleared from localStorage');
+    console.log('📦 Remaining localStorage keys:', Object.keys(localStorage));
   };
 
   const handleAddToCart = (product: any, variant: any, quantity: number) => {
@@ -63,25 +118,33 @@ function AppContent() {
       ...product,
       selectedVariant: variant,
       quantity,
-      cartId: `${product.id}-${variant?.size}-${variant?.color}`
+      cartId: `${product.id}-${variant?.size}-${variant?.color}`,
+      addedAt: new Date().toISOString()
     };
-    
+
     setCartItems(prev => {
-      const existingIndex = prev.findIndex(item => 
-        item.id === product.id && 
+      const existingIndex = prev.findIndex(item =>
+        item.id === product.id &&
         item.selectedVariant?.size === variant?.size &&
         item.selectedVariant?.color === variant?.color
       );
-      
+
+      let updatedCart;
       if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex].quantity += quantity;
-        return updated;
+        updatedCart = [...prev];
+        updatedCart[existingIndex].quantity += quantity;
+        updatedCart[existingIndex].addedAt = new Date().toISOString();
+      } else {
+        updatedCart = [...prev, cartItem];
       }
-      
-      return [...prev, cartItem];
+
+      // Save cart to localStorage
+      localStorage.setItem('azzahra_cart', JSON.stringify(updatedCart));
+      console.log('💾 Cart saved to localStorage:', updatedCart.length, 'items');
+
+      return updatedCart;
     });
-    
+
     // Show success message
     alert('Produk berhasil ditambahkan ke keranjang!');
   };
@@ -116,30 +179,43 @@ function AppContent() {
     }, 500);
   };
   const updateCartQuantity = (productId: string, variant: any, newQuantity: number) => {
-    setCartItems(prev => 
-      prev.map(item => 
-        item.id === productId && 
+    setCartItems(prev => {
+      const updatedCart = prev.map(item =>
+        item.id === productId &&
         item.selectedVariant?.size === variant?.size &&
         item.selectedVariant?.color === variant?.color
           ? { ...item, quantity: Math.max(1, newQuantity) }
           : item
-      )
-    );
+      );
+
+      // Save updated cart to localStorage
+      localStorage.setItem('azzahra_cart', JSON.stringify(updatedCart));
+
+      return updatedCart;
+    });
   };
 
   const removeFromCart = (productId: string, variant: any) => {
-    setCartItems(prev => 
-      prev.filter(item => 
-        !(item.id === productId && 
+    setCartItems(prev => {
+      const updatedCart = prev.filter(item =>
+        !(item.id === productId &&
           item.selectedVariant?.size === variant?.size &&
           item.selectedVariant?.color === variant?.color)
-      )
-    );
+      );
+
+      // Save updated cart to localStorage
+      localStorage.setItem('azzahra_cart', JSON.stringify(updatedCart));
+
+      return updatedCart;
+    });
   };
 
   const clearCart = () => {
     setCartItems([]);
-    
+
+    // Clear cart from localStorage
+    localStorage.removeItem('azzahra_cart');
+
     // Update product stock when order is completed
     cartItems.forEach(item => {
       updateProductStock(item.id, item.quantity);
@@ -148,7 +224,7 @@ function AppContent() {
 
   const handleOrderComplete = (orderData: any) => {
     const orderId = 'AZF' + Date.now().toString().slice(-8);
-    
+
     // Add order to admin system
     addOrder({
       id: orderId,
@@ -171,15 +247,17 @@ function AppContent() {
       finalTotal: getTotalPrice() + 15000,
       notes: orderData.notes
     });
-    
+
     // Update stock for each item
     cartItems.forEach(item => {
       updateProductStock(item.id, item.quantity);
     });
-    
-    // Clear cart
+
+    // Clear cart and localStorage
     setCartItems([]);
-    
+    localStorage.removeItem('azzahra_cart');
+    console.log('Cart cleared after order completion');
+
     return orderId;
   };
 
@@ -201,6 +279,24 @@ function AppContent() {
     setCurrentPage('flash-sale');
   };
 
+  // Admin navigation functions for specific pages
+  const handleNavigateToAdminProducts = () => {
+    setCurrentPage('admin-products');
+  };
+
+  const handleNavigateToAdminOrders = () => {
+    setCurrentPage('admin-orders');
+  };
+
+  const handleNavigateToAdminReports = () => {
+    setCurrentPage('admin-reports');
+  };
+
+  const handleNavigateToAdminUsers = () => {
+    setCurrentPage('admin-users');
+  };
+
+  
   const renderCurrentPage = () => {
     if (showLogin) {
       return (
@@ -243,11 +339,29 @@ function AppContent() {
         return <OrdersPage user={user} />;
       case 'account':
         console.log('App: Rendering AccountPage with user:', user);
-        return <AccountPage user={user} onLogout={handleLogout} onNavigateToAdmin={() => setCurrentPage('admin-dashboard')} />;
-      case 'admin-dashboard':
-        console.log('App: Rendering AdminDashboard with user:', user);
-        return <AdminDashboard onBack={() => setCurrentPage('account')} user={user} />;
-      case 'product-detail':
+        return (
+          <AccountPage
+            user={user}
+            onLogout={handleLogout}
+            onNavigateToAdminProducts={handleNavigateToAdminProducts}
+            onNavigateToAdminOrders={handleNavigateToAdminOrders}
+            onNavigateToAdminReports={handleNavigateToAdminReports}
+            onNavigateToAdminUsers={handleNavigateToAdminUsers}
+          />
+        );
+        case 'admin-products':
+        console.log('App: Rendering AdminProductsPage with user:', user);
+        return <AdminProductsPage onBack={() => setCurrentPage('account')} user={user} />;
+      case 'admin-orders':
+        console.log('App: Rendering AdminOrdersPage with user:', user);
+        return <AdminOrdersPage onBack={() => setCurrentPage('account')} user={user} />;
+      case 'admin-reports':
+        console.log('App: Rendering AdminReportsPage with user:', user);
+        return <AdminReportsPage onBack={() => setCurrentPage('account')} user={user} />;
+      case 'admin-users':
+        console.log('App: Rendering AdminUsersPage with user:', user);
+        return <AdminUsersPage onBack={() => setCurrentPage('account')} user={user} />;
+        case 'product-detail':
         return (
           <ProductDetail
             product={selectedProduct!}
@@ -302,7 +416,7 @@ function AppContent() {
     <ErrorBoundary>
       <div className="min-h-screen bg-gray-50">
         {renderCurrentPage()}
-        {!showLogin && currentPage !== 'admin-dashboard' && (
+        {!showLogin && !currentPage.startsWith('admin-') && (
           <BottomNavigation currentPage={currentPage} onPageChange={setCurrentPage} />
         )}
       </div>

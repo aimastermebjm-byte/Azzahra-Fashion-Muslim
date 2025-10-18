@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, FlashSale } from '../types';
+import { AppStorage } from '../utils/appStorage';
 
 interface Order {
   id: string;
@@ -43,6 +44,7 @@ interface AdminContextType {
   addOrder: (order: Omit<Order, 'createdAt' | 'updatedAt'>) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   updateOrderPayment: (orderId: string, paymentProof: string) => void;
+  deleteOrder: (orderId: string) => void;
   getOrdersByStatus: (status: Order['status']) => Order[];
   getTotalRevenue: () => number;
   getTodayOrders: () => Order[];
@@ -58,73 +60,23 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [orders, setOrders] = useState<Order[]>([]);
   const [flashSales, setFlashSales] = useState<FlashSale[]>([]);
 
-  // Mock orders for demo
+  // Load orders from AppStorage on mount
   useEffect(() => {
-    const mockOrders: Order[] = [
-      {
-        id: 'AZF12345678',
-        userId: '1',
-        userName: 'Siti Aminah',
-        userEmail: 'siti@example.com',
-        items: [
-          {
-            productId: '2',
-            productName: 'Gamis Syari Elegant',
-            selectedVariant: { size: 'M', color: 'Navy' },
-            quantity: 1,
-            price: 200000,
-            total: 200000
-          }
-        ],
-        shippingInfo: {
-          name: 'Siti Aminah',
-          phone: '081234567890',
-          address: 'Jl. Merdeka No. 123, Jakarta Selatan',
-          isDropship: false
-        },
-        paymentMethod: 'transfer',
-        paymentProof: 'bukti_transfer_123.jpg',
-        paymentProofUrl: 'https://images.pexels.com/photos/4386321/pexels-photo-4386321.jpeg?auto=compress&cs=tinysrgb&w=400',
-        status: 'awaiting_verification',
-        totalAmount: 200000,
-        shippingCost: 15000,
-        finalTotal: 215000,
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-      },
-      {
-        id: 'AZF12345679',
-        userId: '2',
-        userName: 'Fatimah Zahra',
-        userEmail: 'fatimah@example.com',
-        items: [
-          {
-            productId: '1',
-            productName: 'Hijab Segi Empat Premium',
-            selectedVariant: { size: 'M', color: 'Hitam' },
-            quantity: 2,
-            price: 65000,
-            total: 130000
-          }
-        ],
-        shippingInfo: {
-          name: 'Fatimah Zahra',
-          phone: '081234567891',
-          address: 'Jl. Sudirman No. 456, Bandung',
-          isDropship: true,
-          dropshipName: 'Toko Hijab Cantik',
-          dropshipPhone: '081234567892'
-        },
-        paymentMethod: 'cash',
-        status: 'processing',
-        totalAmount: 130000,
-        shippingCost: 15000,
-        finalTotal: 145000,
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
-      }
-    ];
-    setOrders(mockOrders);
+    const savedOrders = AppStorage.getOrders();
+    setOrders(savedOrders);
+    console.log('📋 Orders loaded from AppStorage:', savedOrders.length);
+  }, []);
+
+  // Listen for order updates
+  useEffect(() => {
+    const handleOrderUpdate = () => {
+      const updatedOrders = AppStorage.getOrders();
+      setOrders(updatedOrders);
+      console.log('📋 Orders updated:', updatedOrders.length);
+    };
+
+    window.addEventListener('orderUpdated', handleOrderUpdate);
+    return () => window.removeEventListener('orderUpdated', handleOrderUpdate);
   }, []);
 
   const addOrder = (orderData: Omit<Order, 'createdAt' | 'updatedAt'>) => {
@@ -133,33 +85,76 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: new Date(),
       updatedAt: new Date()
     };
+
+    // Save to AppStorage (permanent storage)
+    AppStorage.saveOrder(newOrder);
+
+    // Update local state
     setOrders(prev => [newOrder, ...prev]);
+
+    console.log('💾 Order saved permanently:', newOrder.id);
+
+    // Trigger event to notify other components
+    window.dispatchEvent(new CustomEvent('orderUpdated', { detail: newOrder }));
   };
 
   const updateOrderStatus = (orderId: string, status: Order['status']) => {
-    setOrders(prev => 
-      prev.map(order => 
-        order.id === orderId 
+    // Update in AppStorage
+    AppStorage.updateOrderStatus(orderId, status);
+
+    // Update local state
+    setOrders(prev =>
+      prev.map(order =>
+        order.id === orderId
           ? { ...order, status, updatedAt: new Date() }
           : order
       )
     );
+
+    console.log('📋 Order status updated:', orderId, '→', status);
+
+    // Trigger event to notify other components
+    window.dispatchEvent(new CustomEvent('orderUpdated', { detail: { orderId, status } }));
   };
 
   const updateOrderPayment = (orderId: string, paymentProof: string, status: Order['status'] = 'pending') => {
-    setOrders(prev => 
-      prev.map(order => 
-        order.id === orderId 
-          ? { 
-              ...order, 
-              paymentProof, 
-              paymentProofUrl: 'https://images.pexels.com/photos/4386321/pexels-photo-4386321.jpeg?auto=compress&cs=tinysrgb&w=400',
-              status: status,
-              updatedAt: new Date() 
-            }
-          : order
-      )
+    // Update in AppStorage
+    const updatedOrders = orders.map(order =>
+      order.id === orderId
+        ? {
+            ...order,
+            paymentProof,
+            paymentProofUrl: 'https://images.pexels.com/photos/4386321/pexels-photo-4386321.jpeg?auto=compress&cs=tinysrgb&w=400',
+            status,
+            updatedAt: new Date()
+          }
+        : order
     );
+
+    // Save updated orders to AppStorage
+    localStorage.setItem('azzahra_orders', JSON.stringify(updatedOrders));
+
+    // Update local state
+    setOrders(updatedOrders);
+
+    console.log('💳 Order payment updated:', orderId);
+
+    // Trigger event to notify other components
+    window.dispatchEvent(new CustomEvent('orderUpdated', { detail: { orderId, paymentProof, status } }));
+  };
+
+  const deleteOrder = (orderId: string) => {
+    // Remove from AppStorage
+    const updatedOrders = orders.filter(order => order.id !== orderId);
+    localStorage.setItem('azzahra_orders', JSON.stringify(updatedOrders));
+
+    // Update local state
+    setOrders(updatedOrders);
+
+    console.log('🗑️ Order deleted permanently:', orderId);
+
+    // Trigger event to notify other components
+    window.dispatchEvent(new CustomEvent('orderUpdated', { detail: { orderId, deleted: true } }));
   };
 
   const getOrdersByStatus = (status: Order['status']) => {
@@ -251,6 +246,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       addOrder,
       updateOrderStatus,
       updateOrderPayment,
+      deleteOrder,
       getOrdersByStatus,
       getTotalRevenue,
       getTodayOrders,

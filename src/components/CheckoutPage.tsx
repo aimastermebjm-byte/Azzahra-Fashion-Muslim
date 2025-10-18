@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, Phone, User, Package, CreditCard, Plus, Edit2, Trash2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, User, Package, CreditCard, Plus, Edit2, Trash2, Copy } from 'lucide-react';
 import { useAddresses } from '../hooks/useAddresses';
 import AddressForm from './AddressForm';
 
@@ -107,6 +107,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   };
 
+  const handleCopyAccount = (accountNumber: string, bankName: string) => {
+    navigator.clipboard.writeText(accountNumber);
+    alert(`✅ Nomor rekening ${bankName} berhasil disalin!\n\n${accountNumber}\na.n. Fahrin`);
+  };
+
   const handleSubmitOrder = () => {
     if (!formData.name || !formData.phone || !formData.address) {
       alert('Mohon lengkapi semua data pengiriman');
@@ -132,7 +137,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     // Show success message with instructions for payment
     if (formData.paymentMethod === 'transfer') {
-      alert(`🎉 Pesanan berhasil dibuat!\n\nID Pesanan: ${newOrderId}\nTotal: Rp ${finalTotal.toLocaleString('id-ID')}\n\nSilakan transfer ke:\n• BRI: 1234-5678-9012\n• BCA: 9876-5432-1098\n• Mandiri: 1122-3344-5566\n\nKemudian upload bukti pembayaran di menu "Pesanan"`);
+      alert(`🎉 Pesanan berhasil dibuat!\n\nID Pesanan: ${newOrderId}\nTotal: Rp ${finalTotal.toLocaleString('id-ID')}\n\nSilakan transfer ke:\n• BCA: 0511456494\n• BRI: 066301000115566\n• MANDIRI: 310011008896\n\na.n. Fahrin\n\nKemudian upload bukti pembayaran di menu "Pesanan"`);
     } else {
       alert(`🎉 Pesanan berhasil dibuat!\n\nID Pesanan: ${newOrderId}\nTotal: Rp ${finalTotal.toLocaleString('id-ID')}\n\nPembayaran Cash on Delivery (COD)\nBarang akan dikirim setelah konfirmasi.`);
     }
