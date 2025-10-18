@@ -21,7 +21,7 @@ import { AppStorage } from './utils/appStorage';
 type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users';
 
 function AppContent() {
-  console.log('🚨 URGENT VERSION 6.0 - PLEASE UPDATE NOW! 🚨');
+  console.log('🔥 FINAL VERSION 7.0 - AccountPage FIX! 🔥');
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showLogin, setShowLogin] = useState(false);

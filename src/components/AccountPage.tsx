@@ -30,8 +30,9 @@ const AccountPage: React.FC<AccountPageProps> = ({
   });
 
   // Debug log
-  console.log('AccountPage rendered - User role:', user?.role);
-  console.log('User:', user);
+  console.log('🔥 AccountPage NEW VERSION rendered - User role:', user?.role);
+  console.log('🔥 User object:', user);
+  console.log('🔥 AccountPage loaded with complete settings menu!');
 
   const { updateProfile } = useSupabaseAuth();
 
