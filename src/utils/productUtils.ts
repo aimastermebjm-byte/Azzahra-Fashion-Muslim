@@ -83,7 +83,6 @@ export function validateProducts(products: any[]): SafeProduct[] {
     .map(validateProduct)
     .filter((p): p is SafeProduct => p !== null);
 
-  console.log(`✅ validateProducts: ${validProducts.length}/${products.length} products are valid`);
   return validProducts;
 }
 

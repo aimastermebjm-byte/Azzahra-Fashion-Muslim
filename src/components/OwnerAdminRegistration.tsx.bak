@@ -1,0 +1,367 @@
+import React, { useState } from 'react';
+import { UserPlus, Mail, Lock, Eye, EyeOff, Crown, Star, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
+
+interface OwnerAdminRegistrationProps {
+  onBack: () => void;
+  onSuccess: (userData: any) => void;
+}
+
+const OwnerAdminRegistration: React.FC<OwnerAdminRegistrationProps> = ({ onBack, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'owner' as 'owner' | 'admin',
+    phone: ''
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email) && !email.includes('@azzahra.com');
+  };
+
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      setError('Nama harus diisi');
+      return false;
+    }
+    if (!validateEmail(formData.email)) {
+      setError('Gunakan email yang valid (Gmail/Yahoo/etc). Email @azzahra.com tidak diperbolehkan.');
+      return false;
+    }
+    if (formData.password.length < 6) {
+      setError('Password minimal 6 karakter');
+      return false;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError('Password tidak cocok');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    if (!validateForm()) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Import supabase dynamically
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+      console.log('🔄 Creating Supabase user account...');
+
+      // Step 1: Create Supabase Auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+            role: formData.role,
+            phone: formData.phone || null
+          }
+        }
+      });
+
+      if (authError) {
+        throw new Error(`Gagal membuat akun: ${authError.message}`);
+      }
+
+      console.log('✅ Supabase auth user created:', authData.user?.id);
+
+      // Step 2: Wait a moment for user to be created
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Step 3: Create profile in database
+      if (authData.user) {
+        const profileData = {
+          id: authData.user.id,
+          name: formData.name,
+          email: formData.email,
+          role: formData.role,
+          phone: formData.phone || null,
+          points: 0
+        };
+
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert(profileData);
+
+        if (profileError) {
+          console.error('⚠️ Profile creation error:', profileError);
+          // Don't throw error here, user can still use auth
+        } else {
+          console.log('✅ Profile created successfully');
+        }
+      }
+
+      setSuccess(true);
+      console.log('✅ Registration successful for:', formData.name, formData.role);
+
+      // Store in localStorage for immediate use
+      const userData = {
+        id: authData.user?.id || `temp-${Date.now()}`,
+        name: formData.name,
+        email: formData.email,
+        role: formData.role,
+        phone: formData.phone || null,
+        points: 0,
+        created_at: new Date().toISOString()
+      };
+
+      localStorage.setItem('temp_user_session', JSON.stringify(userData));
+      localStorage.setItem('azzahra_current_user', JSON.stringify(userData));
+
+      // Auto-login after successful registration
+      setTimeout(() => {
+        onSuccess(userData);
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('❌ Registration error:', error);
+      setError(error.message || 'Terjadi kesalahan saat registrasi');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setError('');
+  };
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Registrasi Berhasil!</h2>
+          <p className="text-gray-600 mb-4">
+            Akun {formData.role === 'owner' ? 'Owner' : 'Admin'} telah dibuat
+          </p>
+          <div className="bg-gray-50 rounded-lg p-4 mb-4">
+            <p className="text-sm text-gray-600">
+              <strong>Nama:</strong> {formData.name}<br />
+              <strong>Email:</strong> {formData.email}<br />
+              <strong>Role:</strong> {formData.role === 'owner' ? 'Owner' : 'Admin'}
+            </p>
+          </div>
+          <p className="text-sm text-green-600">
+            Sedang mengalihkan ke dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+        <button
+          onClick={onBack}
+          className="mb-6 flex items-center text-gray-600 hover:text-gray-800 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Kembali
+        </button>
+
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserPlus className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Registrasi Owner/Admin</h2>
+          <p className="text-gray-600">Buat akun Owner atau Admin dengan email valid</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Role Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Pilih Role</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleInputChange('role', 'owner')}
+                className={`p-3 rounded-lg border-2 transition-all ${
+                  formData.role === 'owner'
+                    ? 'border-red-500 bg-red-50 text-red-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <Crown className="w-5 h-5 mx-auto mb-1" />
+                <span className="text-sm font-medium">Owner</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleInputChange('role', 'admin')}
+                className={`p-3 rounded-lg border-2 transition-all ${
+                  formData.role === 'admin'
+                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <Star className="w-5 h-5 mx-auto mb-1" />
+                <span className="text-sm font-medium">Admin</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => handleInputChange('name', e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              placeholder="Masukkan nama lengkap"
+              required
+            />
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email (Gmail/Yahoo)</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                className={`w-full pl-10 pr-3 p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                  formData.email && formData.email.includes('@azzahra.com')
+                    ? 'border-red-300 bg-red-50'
+                    : 'border-gray-300'
+                }`}
+                placeholder="nama@gmail.com"
+                required
+              />
+            </div>
+            {formData.email && formData.email.includes('@azzahra.com') && (
+              <p className="mt-1 text-xs text-red-600 flex items-center">
+                <AlertCircle className="w-3 h-3 mr-1" />
+                Gunakan email Gmail/Yahoo, bukan @azzahra.com
+              </p>
+            )}
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">No. Telepon (Opsional)</label>
+            <input
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => handleInputChange('phone', e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              placeholder="08123456789"
+            />
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                className="w-full pl-10 pr-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                placeholder="Minimal 6 karakter"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Confirm Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Konfirmasi Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                value={formData.confirmPassword}
+                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                className={`w-full pl-10 pr-10 p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                  formData.confirmPassword && formData.password !== formData.confirmPassword
+                    ? 'border-red-300 bg-red-50'
+                    : 'border-gray-300'
+                }`}
+                placeholder="Ulangi password"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              >
+                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+            {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+              <p className="mt-1 text-xs text-red-600">Password tidak cocok</p>
+            )}
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-sm text-red-600 flex items-center">
+                <AlertCircle className="w-4 h-4 mr-2" />
+                {error}
+              </p>
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:from-pink-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Mendaftarkan...
+              </div>
+            ) : (
+              'Daftar Sekarang'
+            )}
+          </button>
+
+          {/* Note */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-xs text-blue-600">
+              <strong>Catatan:</strong> Gunakan email yang valid (Gmail, Yahoo, dll) agar bisa login ke Supabase. Email @azzahra.com tidak akan berfungsi.
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default OwnerAdminRegistration;

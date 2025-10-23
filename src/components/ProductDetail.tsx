@@ -111,9 +111,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         <div className="bg-white">
           <div className="relative">
             <img
-              src={product.images[selectedImageIndex]}
+              src={product.images?.[selectedImageIndex] || product.image || '/placeholder-product.jpg'}
               alt={product.name}
               className="w-full h-96 object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/placeholder-product.jpg';
+              }}
             />
             
             {product.isFlashSale && (
@@ -129,7 +133,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             )}
           </div>
           
-          {product.images.length > 1 && (
+          {product.images && product.images.length > 1 && (
             <div className="flex space-x-2 p-4 overflow-x-auto">
               {product.images.map((image, index) => (
                 <button
@@ -139,7 +143,15 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                     selectedImageIndex === index ? 'border-pink-500' : 'border-gray-200'
                   }`}
                 >
-                  <img src={image} alt={`${product.name} ${index + 1}`} className="w-full h-full object-cover" />
+                  <img
+                    src={image}
+                    alt={`${product.name} ${index + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/placeholder-product.jpg';
+                    }}
+                  />
                 </button>
               ))}
             </div>

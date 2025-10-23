@@ -5,7 +5,8 @@ import HomePage from './components/HomePage';
 import ProductDetail from './components/ProductDetail';
 import CartPage from './components/CartPage';
 import CheckoutPage from './components/CheckoutPage';
-import LoginForm from './components/LoginForm';
+import LoginFormSimple from './components/LoginFormSimple';
+import FirebaseRegistration from './components/FirebaseRegistration';
 import FlashSalePage from './components/FlashSalePage';
 import OrdersPage from './components/OrdersPage';
 import AccountPage from './components/AccountPage';
@@ -14,23 +15,27 @@ import AdminOrdersPage from './components/AdminOrdersPage';
 import AdminReportsPage from './components/AdminReportsPage';
 import AdminUsersPage from './components/AdminUsersPage';
 import BottomNavigation from './components/BottomNavigation';
-import { useProducts } from './hooks/useProducts';
+import { OngkirTestPage } from './pages/OngkirTestPage';
+import { useFirebaseProducts } from './hooks/useFirebaseProducts';
+import { useFirebaseAuth } from './hooks/useFirebaseAuth';
 import { useAdmin } from './contexts/AdminContext';
 import { AppStorage } from './utils/appStorage';
 
-type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users';
+type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'ongkir-test';
 
 function AppContent() {
-  console.log('🔥 FINAL VERSION 7.0 - AccountPage FIX! 🔥');
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showLogin, setShowLogin] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [showRegistration, setShowRegistration] = useState(false);
   const [cartItems, setCartItems] = useState<any[]>([]);
-  const { products, loading, updateProductStock } = useProducts();
+
+  // Firebase Authentication
+  const { user, login, logout } = useFirebaseAuth();
+  const { products, loading, updateProductStock } = useFirebaseProducts();
   const { addOrder } = useAdmin();
 
-  // Initialize AppStorage and restore user session on app start
+  // Initialize AppStorage on app start
   useEffect(() => {
     console.log('🚀 App initializing... Checking localStorage');
     AppStorage.initializeApp();
@@ -39,29 +44,8 @@ function AppContent() {
     AppStorage.validateAndSyncFeaturedProducts();
     console.log('🚀 App initialized with featured products validation');
 
-    // Restore user session from localStorage
-    const savedUser = localStorage.getItem('azzahra_current_user');
+    // Restore cart from localStorage (keep cart persistence)
     const savedCart = localStorage.getItem('azzahra_cart');
-
-    console.log('📦 Found in localStorage:', {
-      savedUser: savedUser ? 'YES' : 'NO',
-      savedCart: savedCart ? 'YES' : 'NO',
-      allKeys: Object.keys(localStorage)
-    });
-
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser);
-        setUser(user);
-        console.log('✅ User session restored:', user.name, user.role);
-      } catch (error) {
-        console.error('❌ Error restoring user session:', error);
-        localStorage.removeItem('azzahra_current_user');
-      }
-    } else {
-      console.log('ℹ️ No saved user session found');
-    }
-
     if (savedCart) {
       try {
         const cart = JSON.parse(savedCart);
@@ -74,6 +58,16 @@ function AppContent() {
     } else {
       console.log('ℹ️ No saved cart found');
     }
+
+    // Handle URL routing for special pages
+    const handleRouting = () => {
+      const path = window.location.pathname;
+      if (path === '/ongkir-test') {
+        setCurrentPage('ongkir-test');
+      }
+    };
+
+    handleRouting();
   }, []);
 
   const handleProductClick = (product: any) => {
@@ -87,30 +81,31 @@ function AppContent() {
 
   const handleLoginSuccess = () => {
     setShowLogin(false);
-    // This will be handled by LoginForm component
+    // This will be handled by LoginForm component and Firebase Auth
   };
 
   const handleLoginWithUser = (user: any) => {
     setShowLogin(false);
-    setUser(user);
+    console.log('✅ Firebase user logged in:', user.name, user.role);
+  };
 
-    // Save user session to localStorage
-    localStorage.setItem('azzahra_current_user', JSON.stringify(user));
-    console.log('✅ User logged in and session saved:', user.name, user.role);
-    console.log('📦 Current localStorage keys:', Object.keys(localStorage));
+  const handleRegistrationSuccess = (user: any) => {
+    setShowRegistration(false);
+    console.log('✅ Firebase user registered:', user.name, user.role);
   };
 
   const handleLogout = () => {
-    console.log('🔃 User logging out');
-    setUser(null);
+    console.log('🔃 User logging out from Firebase');
+
+    // Firebase logout
+    logout();
     setCartItems([]);
     setCurrentPage('home');
 
-    // Clear user session from localStorage
-    localStorage.removeItem('azzahra_current_user');
+    // Clear cart from localStorage (keep only cart, not user)
     localStorage.removeItem('azzahra_cart');
-    console.log('✅ User session cleared from localStorage');
-    console.log('📦 Remaining localStorage keys:', Object.keys(localStorage));
+    console.log('✅ Firebase logout successful');
+    console.log('📦 Cart cleared from localStorage');
   };
 
   const handleAddToCart = (product: any, variant: any, quantity: number) => {
@@ -279,6 +274,10 @@ function AppContent() {
     setCurrentPage('flash-sale');
   };
 
+  const handleNavigateToOngkirTest = () => {
+    setCurrentPage('ongkir-test');
+  };
+
   // Admin navigation functions for specific pages
   const handleNavigateToAdminProducts = () => {
     setCurrentPage('admin-products');
@@ -300,7 +299,7 @@ function AppContent() {
   const renderCurrentPage = () => {
     if (showLogin) {
       return (
-        <LoginForm 
+        <LoginFormSimple
           onSuccess={handleLoginWithUser}
           onClose={() => setShowLogin(false)}
         />
@@ -320,6 +319,7 @@ function AppContent() {
             onCartClick={handleCartClick}
             onAddToCart={handleQuickAddToCart}
             onNavigateToFlashSale={handleNavigateToFlashSale}
+            onNavigateToOngkirTest={handleNavigateToOngkirTest}
           />
         );
       case 'flash-sale':
@@ -361,6 +361,8 @@ function AppContent() {
       case 'admin-users':
         console.log('App: Rendering AdminUsersPage with user:', user);
         return <AdminUsersPage onBack={() => setCurrentPage('account')} user={user} />;
+      case 'ongkir-test':
+        return <OngkirTestPage onBack={() => setCurrentPage('home')} />;
         case 'product-detail':
         return (
           <ProductDetail
@@ -418,6 +420,26 @@ function AppContent() {
         {renderCurrentPage()}
         {!showLogin && !currentPage.startsWith('admin-') && (
           <BottomNavigation currentPage={currentPage} onPageChange={setCurrentPage} />
+        )}
+
+        {/* Login Modal */}
+        {showLogin && (
+          <LoginFormSimple
+            onSuccess={handleLoginWithUser}
+            onClose={() => setShowLogin(false)}
+            onShowRegister={() => {
+              setShowLogin(false);
+              setShowRegistration(true);
+            }}
+          />
+        )}
+
+        {/* Registration Modal */}
+        {showRegistration && (
+          <FirebaseRegistration
+            onSuccess={handleRegistrationSuccess}
+            onClose={() => setShowRegistration(false)}
+          />
         )}
       </div>
     </ErrorBoundary>

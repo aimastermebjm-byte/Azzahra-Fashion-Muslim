@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ShoppingCart, User, Filter, ChevronLeft, ChevronRight, Star, ArrowUpDown } from 'lucide-react';
+import { Search, ShoppingCart, User, Filter, ChevronLeft, ChevronRight, Star, ArrowUpDown, Clock } from 'lucide-react';
 import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
-import { AppStorage } from '../utils/appStorage';
+import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
 
 interface HomePageProps {
   user: any;
@@ -35,7 +35,34 @@ const HomePage: React.FC<HomePageProps> = ({
   const [sortBy, setSortBy] = useState<'terbaru' | 'terlaris' | 'termurah' | 'termahal' | 'terlama'>('terbaru');
   const [currentPage, setCurrentPage] = useState(1);
   const [featuredUpdateTrigger, setFeaturedUpdateTrigger] = useState(0); // Force re-render
+  const [flashSaleUpdateTrigger, setFlashSaleUpdateTrigger] = useState(0); // Force re-render
   const productsPerPage = 8;
+
+  // Flash sale hook for countdown timer
+  const { timeLeft, isFlashSaleActive, flashSaleConfig } = useFirebaseFlashSale();
+
+  // Force refresh timer to handle potential sync issues
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [lastSyncTime, setLastSyncTime] = useState<string>('');
+
+  // Periodic refresh timer to ensure data stays synchronized
+  useEffect(() => {
+    console.log('🔄 HomePage: Starting periodic refresh timer');
+
+    const interval = setInterval(() => {
+      console.log('⏰ HomePage: Periodic refresh triggered');
+      setRefreshTrigger(prev => prev + 1);
+      setLastSyncTime(new Date().toLocaleTimeString('id-ID'));
+    }, 15000); // Refresh every 15 seconds
+
+    // Initial sync time
+    setLastSyncTime(new Date().toLocaleTimeString('id-ID'));
+
+    return () => {
+      clearInterval(interval);
+      console.log('🔄 HomePage: Periodic refresh timer stopped');
+    };
+  }, []);
 
   const handleBannerClick = (banner: any) => {
     console.log('Banner clicked:', banner);
@@ -112,28 +139,25 @@ const HomePage: React.FC<HomePageProps> = ({
     }
   });
 
-  // Get featured products directly from AppStorage for consistency
+  // Get featured products from current products
   const featuredProducts = React.useMemo(() => {
-    // Validate and sync featured products before returning
-    AppStorage.validateAndSyncFeaturedProducts();
-    return AppStorage.getFeaturedProducts();
-  }, [products, featuredUpdateTrigger]); // Depend on products and trigger for re-render
+    // Use products from props instead of AppStorage
+    const featured = safeProducts.filter(p => p.isFeatured);
+    // Return only actual featured products (no fallback)
+    return featured;
+  }, [safeProducts, featuredUpdateTrigger]); // Depend on safeProducts and trigger for re-render
 
-  // Regular products (excluding featured products) - BULLETPROOF VERSION
+  // Regular products (ALL PRODUCTS - not excluding featured)
   const regularProducts = React.useMemo(() => {
     try {
-      if (!Array.isArray(sortedProducts) || !Array.isArray(featuredProducts)) {
-        console.warn('⚠️ Invalid product arrays for regular products calculation');
-        return sortedProducts || [];
+      if (!Array.isArray(sortedProducts)) {
+        return safeProducts || [];
       }
-
-      const featuredIds = new Set(featuredProducts.map(p => p.id).filter(Boolean));
-      return sortedProducts.filter(p => p && p.id && !featuredIds.has(p.id));
+      return sortedProducts;
     } catch (error) {
-      console.error('🚨 Error in regularProducts calculation:', error);
-      return sortedProducts || [];
+      return safeProducts || [];
     }
-  }, [sortedProducts, featuredProducts]);
+  }, [sortedProducts, safeProducts]);
 
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
@@ -147,30 +171,45 @@ const HomePage: React.FC<HomePageProps> = ({
   // Listen for featured products updates from admin
   useEffect(() => {
     const handleFeaturedProductsUpdated = (event: any) => {
-      console.log('Featured products updated in HomePage:', event.detail);
-      // Force re-render to get updated featured products from ProductStorage
+      // Force re-render to get updated featured products
       setFeaturedUpdateTrigger(prev => prev + 1);
+      // Also trigger general refresh to ensure data consistency
+      setTimeout(() => {
+        setRefreshTrigger(prev => prev + 1);
+      }, 100);
     };
 
+    const handleProductsUpdated = (event: any) => {
+      // Force a complete re-fetch of all products
+      setRefreshTrigger(prev => prev + 1);
+    };
+
+    const handleFlashSaleUpdated = (event: any) => {
+      // Force immediate re-render for flash sale products
+      setFlashSaleUpdateTrigger(prev => prev + 1);
+      // Also trigger general refresh to ensure data consistency
+      setTimeout(() => {
+        setRefreshTrigger(prev => prev + 1);
+      }, 100);
+    };
+
+    // Listen for various product update events
     window.addEventListener('featuredProductsUpdated', handleFeaturedProductsUpdated);
+    window.addEventListener('productsUpdated', handleProductsUpdated);
+    window.addEventListener('flashSaleUpdated', handleFlashSaleUpdated);
+
+    // Also listen for any other relevant events
+    window.addEventListener('productAdded', handleProductsUpdated);
+    window.addEventListener('productUpdated', handleProductsUpdated);
+    window.addEventListener('productDeleted', handleProductsUpdated);
 
     return () => {
       window.removeEventListener('featuredProductsUpdated', handleFeaturedProductsUpdated);
-    };
-  }, []);
-
-  // Listen for products updates from admin
-  useEffect(() => {
-    const handleProductsUpdated = (event: any) => {
-      console.log('Products updated in HomePage:', event.detail);
-      // Force re-render to get updated products
-      setFeaturedUpdateTrigger(prev => prev + 1);
-    };
-
-    window.addEventListener('productsUpdated', handleProductsUpdated);
-
-    return () => {
       window.removeEventListener('productsUpdated', handleProductsUpdated);
+      window.removeEventListener('flashSaleUpdated', handleFlashSaleUpdated);
+      window.removeEventListener('productAdded', handleProductsUpdated);
+      window.removeEventListener('productUpdated', handleProductsUpdated);
+      window.removeEventListener('productDeleted', handleProductsUpdated);
     };
   }, []);
 
@@ -182,8 +221,8 @@ const HomePage: React.FC<HomePageProps> = ({
       // Force immediate re-render to get updated products
       setFeaturedUpdateTrigger(prev => prev + 1);
 
-      // Force refresh featured products cache
-      AppStorage.refreshFeaturedProductsCache();
+      // Force refresh featured products cache - DISABLED for Supabase only
+      // AppStorage.refreshFeaturedProductsCache();
 
       // If flash sale ended due to time expiry, trigger debounced page reload
       if (event.detail?.reason === 'time_expired') {
@@ -275,6 +314,136 @@ const HomePage: React.FC<HomePageProps> = ({
       <div className="p-4">
         <BannerCarousel onBannerClick={handleBannerClick} />
       </div>
+
+      {/* Flash Sale Section */}
+      <div className="px-4 mb-6">
+        <div className="bg-gradient-to-br from-red-600 via-red-500 to-orange-500 rounded-xl p-5 text-white shadow-xl relative overflow-hidden">
+          {/* Premium animated background pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -mr-16 -mt-16 animate-pulse"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full -ml-12 -mb-12 animate-pulse delay-75"></div>
+          </div>
+
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-full shadow-lg">
+                  <span className="text-3xl">⚡</span>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold bg-gradient-to-r from-yellow-200 to-white bg-clip-text text-transparent">
+                    Flash Sale
+                  </h2>
+                  <p className="text-red-100 text-sm font-medium">
+                    {isFlashSaleActive ? 'Diskon Terbatas!' : 'Nantikan Flash Sale Kami Selanjutnya'}
+                  </p>
+                  {isFlashSaleActive && timeLeft && (
+                    <div className="flex items-center space-x-2 mt-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
+                      <Clock className="w-4 h-4 text-yellow-200" />
+                      <span className="text-sm font-bold text-yellow-200">{timeLeft}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={onNavigateToFlashSale}
+                className="bg-white text-red-500 px-4 py-2 rounded-full text-sm font-bold hover:bg-red-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                {isFlashSaleActive ? 'Lihat Semua' : 'Lihat Produk'}
+              </button>
+            </div>
+          </div>
+
+          {/* Flash Sale Products */}
+          {loading ? (
+            <div className="grid grid-cols-2 gap-3">
+              {[...Array(2)].map((_, index) => (
+                <div key={`flash-skeleton-${index}`} className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
+                  <div className="w-full h-24 bg-white/20 rounded animate-pulse mb-2"></div>
+                  <div className="h-3 bg-white/20 rounded animate-pulse mb-1"></div>
+                  <div className="h-3 bg-white/20 rounded w-3/4 animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {safeProducts
+                .filter(product => product.isFlashSale && isFlashSaleActive)
+                .slice(0, 2)
+                .map((product) => (
+                  <div
+                    key={`flash-${product.id}`}
+                    onClick={() => onProductClick(product)}
+                    className="bg-white/10 rounded-lg p-3 backdrop-blur-sm hover:bg-white/20 transition-colors cursor-pointer"
+                  >
+                    <div className="relative">
+                      <img
+                        src={product.images?.[0] || '/placeholder-product.jpg'}
+                        alt={product.name}
+                        className="w-full h-24 object-cover rounded mb-2"
+                      />
+                      <div className="absolute top-1 right-1 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
+                        -{Math.round(((product.retailPrice - product.flashSalePrice) / product.retailPrice) * 100)}%
+                      </div>
+                    </div>
+                    <h3 className="text-white font-medium text-sm mb-1 truncate">{product.name}</h3>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-white font-bold text-sm">
+                        Rp {product.flashSalePrice.toLocaleString('id-ID')}
+                      </span>
+                      <span className="text-red-200 line-through text-xs">
+                        Rp {product.retailPrice.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+
+          {safeProducts.filter(product => product.isFlashSale && isFlashSaleActive).length === 0 && !loading && (
+            <div className="text-center py-4 text-red-100">
+              <span className="text-3xl">🚫</span>
+              <p className="text-sm mt-1">Tidak ada Flash Sale saat ini</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Premium Flash Sale Countdown Display */}
+      {isFlashSaleActive && timeLeft && (
+        <div className="px-4 mb-4">
+          <div className="bg-gradient-to-br from-red-600 via-red-500 to-pink-500 rounded-xl p-5 text-white shadow-xl relative overflow-hidden">
+            {/* Premium animated background pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-2 left-2 w-20 h-20 bg-white rounded-full -ml-10 -mt-10 animate-pulse"></div>
+              <div className="absolute bottom-2 right-2 w-16 h-16 bg-white rounded-full -mr-8 -mb-8 animate-pulse delay-100"></div>
+            </div>
+
+            <div className="relative z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="relative">
+                    <div className="w-4 h-4 bg-yellow-400 rounded-full animate-pulse"></div>
+                    <div className="absolute inset-0 w-4 h-4 bg-yellow-300 rounded-full animate-ping"></div>
+                  </div>
+                  <div>
+                    <span className="font-bold text-xl bg-gradient-to-r from-yellow-200 to-white bg-clip-text text-transparent">
+                      ⚡ Flash Sale Berlangsung!
+                    </span>
+                    <p className="text-red-100 text-sm font-medium mt-1">Diskon Terbatas, Siapa Cepat Dia Dapat!</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-red-100 font-medium mb-1">Berakhir dalam:</div>
+                  <div className="font-black text-2xl bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
+                    {timeLeft}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Featured Products */}
       <div className="px-4 mb-6">

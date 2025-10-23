@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, Package, Heart, MapPin, Settings, LogOut, Crown, Star, User as UserIcon, Shield, Eye, EyeOff, RefreshCw, Award, BarChart3, Users, TrendingUp, Package as PackageIcon, Mail, Phone, Key } from 'lucide-react';
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+// import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+// import { useSupabaseAuthSimple } from '../hooks/useSupabaseAuthSimple';
 
 interface AccountPageProps {
   user: any;
@@ -13,7 +14,7 @@ interface AccountPageProps {
 }
 
 const AccountPage: React.FC<AccountPageProps> = ({
-  user,
+  user: propUser,
   onLogout,
   onNavigateToAdminProducts,
   onNavigateToAdminOrders,
@@ -29,12 +30,18 @@ const AccountPage: React.FC<AccountPageProps> = ({
     confirmPassword: ''
   });
 
+  // Use auth hook directly to get user data as fallback
+  // const { user: hookUser, loading: authLoading } = useSupabaseAuthSimple();
+  // const { updateProfile } = useSupabaseAuth();
+
+  // Use prop user if available, otherwise use hook user
+  const user = propUser;
+
   // Debug log
-  console.log('🔥 AccountPage NEW VERSION rendered - User role:', user?.role);
+  console.log('🔥 AccountPage rendered - user role:', user?.role);
+  console.log('🔥 AccountPage rendered - final user role:', user?.role);
   console.log('🔥 User object:', user);
   console.log('🔥 AccountPage loaded with complete settings menu!');
-
-  const { updateProfile } = useSupabaseAuth();
 
   const handleLogout = () => {
     onLogout();
@@ -68,12 +75,52 @@ const AccountPage: React.FC<AccountPageProps> = ({
     }
   };
 
+  
   if (!user) {
+    console.log('⚠️ AccountPage: User is null, checking for stored sessions');
+    // Try to restore user from localStorage as a fallback
+    try {
+      // Check for temp_user_session (used by useSupabaseAuthSimple)
+      let savedUser = localStorage.getItem('temp_user_session');
+
+      // Also check for legacy azzahra_current_user key
+      if (!savedUser) {
+        savedUser = localStorage.getItem('azzahra_current_user');
+      }
+
+      if (savedUser) {
+        console.log('🔄 AccountPage: Found stored user session, reloading page to restore...');
+        console.log('💡 This should trigger the useSupabaseAuthSimple hook to restore the session properly');
+        // This will trigger a re-render with the restored user
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
+        return (
+          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Memulihkan sesi pengguna...</p>
+            </div>
+          </div>
+        );
+      } else {
+        console.log('ℹ️ AccountPage: No stored user session found');
+      }
+    } catch (error) {
+      console.error('❌ AccountPage: Failed to restore user session:', error);
+    }
+
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
-          <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">Silakan login terlebih dahulu</p>
+          <User className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+          <p className="text-gray-600 mb-4">Silakan login terlebih dahulu</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Muat Ulang Halaman
+          </button>
         </div>
       </div>
     );

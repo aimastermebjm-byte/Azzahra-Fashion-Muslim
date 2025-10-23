@@ -3,7 +3,6 @@ import { ArrowLeft, Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame
 import { Product } from '../types';
 import { useFirebaseProducts } from '../hooks/useFirebaseProducts';
 import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
-import { ProductTableSkeleton, FlashSaleStatusSkeleton, MenuSkeleton } from './LoadingSkeleton';
 
 interface AdminProductsPageProps {
   onBack: () => void;
@@ -21,34 +20,6 @@ interface FlashSaleConfig {
 const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) => {
   const { products, loading, updateProduct, addProduct, deleteProduct } = useFirebaseProducts();
   const { flashSaleConfig, timeLeft, isFlashSaleActive, startFlashSale, stopFlashSale } = useFirebaseFlashSale();
-
-  // Debug logging untuk flash sale
-  useEffect(() => {
-    const flashSaleProducts = products.filter(p => p.isFlashSale);
-    console.log('🔍 DEBUG AdminProductsPage:');
-    console.log('📊 Total products:', products.length);
-    console.log('🔥 Flash sale products:', flashSaleProducts.length);
-    console.log('⚡ Flash sale config active:', isFlashSaleActive);
-    console.log('⏰ Time left:', timeLeft);
-    console.log('📋 Flash sale config:', flashSaleConfig);
-
-    if (flashSaleProducts.length > 0) {
-      console.log('🔥 Flash sale product details:', flashSaleProducts.map(p => ({
-        name: p.name,
-        id: p.id,
-        isFlashSale: p.isFlashSale,
-        flashSalePrice: p.flashSalePrice
-      })));
-    }
-
-    // Detect inconsistency
-    if (flashSaleProducts.length > 0 && !isFlashSaleActive) {
-      console.error('🚨 INCONSISTENCY DETECTED: Products marked as flash sale but flash sale is not active!');
-      flashSaleProducts.forEach(p => {
-        console.error(`🚨 Product "${p.name}" stuck in flash sale mode`);
-      });
-    }
-  }, [products, isFlashSaleActive, flashSaleConfig, timeLeft]);
 
   // State management
   const [showAddModal, setShowAddModal] = useState(false);
@@ -388,40 +359,6 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           </div>
         )}
 
-        {/* Emergency Flash Sale Cleanup - Debug Mode */}
-        {products.filter(p => p.isFlashSale).length > 0 && !isFlashSaleActive && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-yellow-800">⚠️ Flash Sale Cleanup Needed</h3>
-              <span className="text-xs text-yellow-600">
-                {products.filter(p => p.isFlashSale).length} products stuck
-              </span>
-            </div>
-            <p className="text-xs text-yellow-700 mb-3">
-              Flash sale is not active but {products.filter(p => p.isFlashSale).length} products still have flash sale status.
-              This may cause display issues.
-            </p>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={handleFlashSaleEnd}
-                className="bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700 transition-colors text-xs"
-              >
-                🧹 Force Clean Up
-              </button>
-              <button
-                onClick={() => {
-                  const stuckProducts = products.filter(p => p.isFlashSale);
-                  console.log('🚨 Stuck flash sale products:', stuckProducts);
-                  alert(`Stuck products: ${stuckProducts.map(p => p.name).join(', ')}`);
-                }}
-                className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 transition-colors text-xs"
-              >
-                📋 Show Details
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Main Actions */}
         <div className="bg-white rounded-lg shadow-sm p-4">
           <div className="flex items-center justify-between mb-4">
@@ -538,7 +475,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
           {/* Product Table */}
           {loading ? (
-            <ProductTableSkeleton />
+            <div className="text-center py-8">
+              <p className="text-gray-500">Memuat produk...</p>
+            </div>
           ) : currentProducts.length === 0 ? (
             <div className="text-center py-8">
               <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />

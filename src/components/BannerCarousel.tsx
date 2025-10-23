@@ -17,16 +17,8 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ onBannerClick }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [banners, setBanners] = useState<Banner[]>([]);
 
-  // Default banners + dynamic banners from admin
-  const defaultBanners: Banner[] = [
-    {
-      id: 'flashsale-default',
-      title: 'Flash Sale ⚡',
-      image: '/api/placeholder/400/200',
-      link: '/flash-sale',
-      type: 'flashsale'
-    }
-  ];
+  // Default banners + dynamic banners from admin (flash sale banner removed as requested)
+  const defaultBanners: Banner[] = [];
 
   useEffect(() => {
     // Load banners from localStorage or API

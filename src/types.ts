@@ -24,6 +24,7 @@ export interface Product {
   salesCount?: number;
   isFeatured?: boolean;
   featuredOrder?: number;
+  image: string; // Main image (backward compatibility)
 }
 
 export interface FlashSale {

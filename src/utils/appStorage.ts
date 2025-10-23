@@ -72,10 +72,10 @@ export class AppStorage {
   static initializeApp(): void {
     console.log('🚀 Initializing Azzahra Fashion Muslim App...');
 
-    // Initialize products
-    if (!localStorage.getItem(this.KEYS.PRODUCTS)) {
-      this.initializeProducts();
-    }
+    // Initialize products - DISABLED for Supabase only
+    // if (!localStorage.getItem(this.KEYS.PRODUCTS)) {
+    //   this.initializeProducts();
+    // }
 
     // Initialize users
     if (!localStorage.getItem(this.KEYS.USERS)) {

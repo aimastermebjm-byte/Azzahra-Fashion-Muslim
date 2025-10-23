@@ -6,7 +6,11 @@ interface Address {
   phone: string;
   fullAddress: string;
   province: string;
+  provinceId?: string;
   city: string;
+  cityId?: string;
+  district?: string;
+  subdistrict?: string;
   postalCode: string;
   isDefault: boolean;
 }

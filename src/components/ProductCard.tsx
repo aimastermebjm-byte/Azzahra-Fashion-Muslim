@@ -169,9 +169,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
     >
       <div className="relative">
         <img
-          src={product.images[0]}
+          src={product.image || product.images?.[0] || '/placeholder-product.jpg'}
           alt={product.name}
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            const parent = target.parentElement;
+            if (parent) {
+              parent.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+              parent.innerHTML = '<div class="flex items-center justify-center h-full text-white text-center p-4"><div><div class="text-2xl mb-2">📦</div><div class="text-sm">No Image</div></div></div>';
+            }
+          }}
         />
         {getStatusBadge()}
         {isFeatured && (

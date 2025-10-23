@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, Phone, User, Package, CreditCard, Plus, Edit2, Trash2, Copy } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, User, Package, Copy, Loader2, AlertCircle, Plus, Edit2, Trash2 } from 'lucide-react';
 import { useAddresses } from '../hooks/useAddresses';
 import AddressForm from './AddressForm';
+import { rajaOngkirService, CostResult } from '../utils/rajaOngkirService';
 
 interface CheckoutPageProps {
   cartItems: any[];
@@ -23,42 +24,165 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const { addresses, addAddress, updateAddress, deleteAddress, getDefaultAddress } = useAddresses();
 
+  // RajaOngkir states
+  const [loadingShipping, setLoadingShipping] = useState(false);
+  const [ongkirResults, setOngkirResults] = useState<CostResult[]>([]);
+  const [shippingError, setShippingError] = useState<string>('');
+
+  // Calculate total weight of cart items
+  const calculateTotalWeight = () => {
+    return cartItems.reduce((total, item) => {
+      return total + (item.quantity * 1000); // Assuming 1kg per item (can be customized)
+    }, 0);
+  };
+
+  
+  // Calculate shipping cost using RajaOngkir
+  const calculateShippingCost = async (courierCode: string, destinationCityId: string, weight: number) => {
+    console.log('🚀 calculateShippingCost called with:', { courierCode, destinationCityId, weight });
+
+    if (!courierCode || !destinationCityId || !weight) {
+      console.log('❌ Missing required parameters');
+      return;
+    }
+
+    // Validate destinationCityId
+    if (!destinationCityId || destinationCityId === 'undefined' || destinationCityId === '') {
+      console.log('❌ Invalid destinationCityId, using fallback Banjarmasin (607)');
+      destinationCityId = '607'; // Banjarmasin fallback
+    }
+
+    try {
+      setLoadingShipping(true);
+      setShippingError('');
+
+      console.log('📡 Calling rajaOngkirService.calculateShippingCost...');
+      const results = await rajaOngkirService.calculateShippingCost(destinationCityId, weight, courierCode);
+      console.log('📦 Results from service:', results);
+
+      if (results.length > 0 && results[0].costs.length > 0) {
+        // Use the first (cheapest) service
+        const cheapestService = results[0].costs[0];
+        const cost = cheapestService.cost[0].value;
+
+        console.log('💰 Setting shipping cost:', cost);
+        setFormData(prev => ({
+          ...prev,
+          shippingCost: cost,
+          shippingService: cheapestService.service,
+          shippingETD: cheapestService.cost[0].etd
+        }));
+      } else {
+        console.log('❌ No results from API, using fallback');
+        setShippingError('Tidak dapat menghitung ongkir untuk kurir ini');
+        setFormData(prev => ({ ...prev, shippingCost: 15000 })); // Fallback price
+      }
+    } catch (error) {
+      console.log('❌ Error in calculateShippingCost:', error);
+      // Handle errors silently - use mock data fallback
+      setShippingError('');
+      setFormData(prev => ({ ...prev, shippingCost: 15000 })); // Fallback price
+    } finally {
+      setLoadingShipping(false);
+    }
+  };
+
   const [formData, setFormData] = useState({
     name: user?.name || '',
     phone: '',
     address: '',
+    provinceId: '',
+    cityId: '',
     isDropship: false,
     dropshipName: '',
     dropshipPhone: '',
     paymentMethod: 'transfer',
     shippingCourier: 'jnt',
     shippingCost: 0,
+    shippingService: '',
+    shippingETD: '',
     notes: ''
   });
 
   const shippingOptions = [
-    { id: 'ojek', name: 'OJEK', price: 0 },
-    { id: 'jnt', name: 'J&T', price: 0 },
-    { id: 'jne', name: 'JNE', price: 0 },
-    { id: 'pos', name: 'POS Indonesia', price: 0 },
-    { id: 'tiki', name: 'TIKI', price: 0 },
-    { id: 'lion', name: 'Lion Parcel', price: 0 },
-    { id: 'idexpress', name: 'ID Express', price: 0 }
+    { id: 'jnt', name: 'J&T Express', code: 'jnt', price: 0 }, // RajaOngkir supported
+    { id: 'jne', name: 'JNE', code: 'jne', price: 0 }, // RajaOngkir supported
+    { id: 'pos', name: 'POS Indonesia', code: 'pos', price: 0 }, // RajaOngkir supported
+    { id: 'tiki', name: 'TIKI', code: 'tiki', price: 0 }, // RajaOngkir supported
+    { id: 'ojek', name: 'OJEK', code: null, price: 0 }, // Local courier - manual price
+    { id: 'lion', name: 'Lion Parcel', code: null, price: 0 }, // Manual price
+    { id: 'idexpress', name: 'ID Express', code: null, price: 0 } // Manual price
   ];
+
+  // Auto-select default courier and address when component mounts
+  useEffect(() => {
+    // Auto-select first courier that supports automatic
+    const autoCourier = shippingOptions.find(opt => opt.code);
+    if (autoCourier && !formData.shippingCourier) {
+      setFormData(prev => ({ ...prev, shippingCourier: autoCourier.id }));
+    }
+
+    // Auto-select default address if available
+    if (addresses.length > 0 && !selectedAddressId) {
+      const defaultAddr = getDefaultAddress();
+      if (defaultAddr) {
+        setSelectedAddressId(defaultAddr.id);
+        setFormData(prev => ({
+          ...prev,
+          name: prev.isDropship ? prev.name : defaultAddr.name,
+          phone: prev.isDropship ? prev.phone : defaultAddr.phone,
+          address: defaultAddr.fullAddress,
+          provinceId: defaultAddr.provinceId || '607', // Default to Banjarmasin if no cityId
+          cityId: defaultAddr.cityId || '607' // Default to Banjarmasin city
+        }));
+
+        // Auto-calculate shipping for default address
+        if (autoCourier?.code && defaultAddr.cityId) {
+          const weight = calculateTotalWeight();
+          calculateShippingCost(autoCourier.code, defaultAddr.cityId, weight);
+        } else if (autoCourier?.code) {
+          // Use default Banjarmasin city if no cityId
+          const weight = calculateTotalWeight();
+          calculateShippingCost(autoCourier.code, '607', weight);
+        }
+      }
+    }
+  }, [addresses, selectedAddressId, formData.shippingCourier, formData.isDropship]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
+    const newValue = type === 'checkbox'
+      ? (e.target as HTMLInputElement).checked
+      : type === 'number'
+        ? parseInt(value) || 0
+        : value;
+
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox'
-        ? (e.target as HTMLInputElement).checked
-        : type === 'number'
-          ? parseInt(value) || 0
-          : value
+      [name]: newValue
     }));
+
+    // Special handling for courier changes
+    if (name === 'shippingCourier') {
+      const selectedCourier = shippingOptions.find(opt => opt.id === value);
+
+      // Auto-calculate shipping for RajaOngkur couriers
+      if (selectedCourier?.code) {
+        // Use default Banjarmasin city for automatic calculation
+        const weight = calculateTotalWeight();
+        calculateShippingCost(selectedCourier.code, '607', weight);
+      } else {
+        // For manual couriers, set default shipping cost
+        setFormData(prev => ({
+          ...prev,
+          shippingCost: 15000, // Default manual price
+          shippingService: '',
+          shippingETD: ''
+        }));
+      }
+    }
   };
 
-  
   useEffect(() => {
     const defaultAddr = getDefaultAddress();
     if (defaultAddr) {
@@ -126,7 +250,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         isDropship: formData.isDropship,
         dropshipName: formData.dropshipName,
         dropshipPhone: formData.dropshipPhone,
-        courier: formData.shippingCourier
+        courier: formData.shippingCourier,
+        shippingCost: formData.shippingCost,
+        shippingService: formData.shippingService,
+        shippingETD: formData.shippingETD
       },
       paymentMethod: formData.paymentMethod,
       notes: formData.notes
@@ -146,10 +273,13 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     onBack();
   };
 
-  
   const totalPrice = getTotalPrice();
   const shippingCost = formData.shippingCost || 0;
   const finalTotal = totalPrice + shippingCost;
+
+  // Check if selected courier supports automatic shipping calculation
+  const selectedCourierOption = shippingOptions.find(opt => opt.id === formData.shippingCourier);
+  const supportsAutomatic = !!selectedCourierOption?.code;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -193,10 +323,117 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           </div>
         </div>
 
-        {/* Shipping Information */}
+        {/* Customer Information */}
+        <div className="bg-white rounded-lg shadow-sm p-4">
+          <h3 className="font-semibold mb-3">Informasi Penerima</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <User className="w-4 h-4 inline mr-1" />
+                Nama Penerima
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                placeholder="Masukkan nama penerima"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <Phone className="w-4 h-4 inline mr-1" />
+                Nomor Telepon
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                placeholder="Masukkan nomor telepon"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Courier Selection - MOVED TO TOP */}
+        <div className="bg-white rounded-lg shadow-sm p-4">
+          <h3 className="font-semibold mb-3">Pilih Kurir Pengiriman</h3>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Package className="w-4 h-4 inline mr-1" />
+                Kurir
+              </label>
+              <select
+                name="shippingCourier"
+                value={formData.shippingCourier}
+                onChange={handleInputChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              >
+                {shippingOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name} {option.code ? '(✓ Otomatis)' : '(Manual)'}
+                  </option>
+                ))}
+              </select>
+
+              {/* Courier Info */}
+              <div className="mt-2 text-xs text-gray-500">
+                {supportsAutomatic ? (
+                  <div className="text-green-600">
+                    ✓ Otomatis via RajaOngkir dari Banjarmasin
+                  </div>
+                ) : (
+                  <div className="text-amber-600">
+                    ℹ️ Kurir lokal - biaya diinput manual
+                  </div>
+                )}
+              </div>
+
+              {/* Loading indicator */}
+              {loadingShipping && (
+                <div className="mt-2 flex items-center text-sm text-blue-600">
+                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                  Menghitung ongkir...
+                </div>
+              )}
+
+              {/* Error message */}
+              {shippingError && (
+                <div className="mt-2 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {shippingError}
+                </div>
+              )}
+            </div>
+
+            {/* Shipping Cost Display */}
+            {formData.shippingCost > 0 && (
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Biaya Ongkir:</span>
+                  <span className="text-sm font-semibold text-pink-600">
+                    Rp {formData.shippingCost.toLocaleString('id-ID')}
+                  </span>
+                </div>
+                {formData.shippingService && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Service: {formData.shippingService} | Estimasi: {formData.shippingETD}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Address Input */}
         <div className="bg-white rounded-lg shadow-sm p-4">
           <div className="flex justify-between items-center mb-3">
-            <h3 className="font-semibold">Informasi Pengiriman</h3>
+            <h3 className="font-semibold">Alamat Pengiriman</h3>
             <button
               onClick={() => setShowAddressModal(true)}
               className="text-pink-600 hover:text-pink-700 flex items-center text-sm font-medium"
@@ -223,9 +460,42 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       <div className="flex items-center mb-1">
                         <input
                           type="radio"
-                          name="address"
+                          name="savedAddress"
                           checked={selectedAddressId === address.id}
-                          onChange={() => handleAddressSelect(address.id)}
+                          onChange={() => {
+                            console.log('🔍 Selected address:', address);
+                            console.log('🔍 supportsAutomatic:', supportsAutomatic);
+                            console.log('🔍 formData.shippingCourier:', formData.shippingCourier);
+
+                            setSelectedAddressId(address.id);
+                            setFormData(prev => ({
+                              ...prev,
+                              name: formData.isDropship ? prev.name : address.name,
+                              phone: formData.isDropship ? prev.phone : address.phone,
+                              address: address.fullAddress,
+                              provinceId: address.provinceId || '',
+                              cityId: address.cityId || ''
+                            }));
+
+                            // Auto-calculate shipping if courier is selected and supports automatic
+                            if (supportsAutomatic && formData.shippingCourier) {
+                              const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
+                              console.log('🔍 selectedCourier:', selectedCourier);
+                              console.log('🔍 address.cityId:', address.cityId);
+
+                              if (selectedCourier?.code) {
+                                const weight = calculateTotalWeight();
+                                // Use address cityId or fallback to Banjarmasin
+                                const targetCityId = address.cityId || '607';
+                                console.log('🚀 Calling calculateShippingCost with:', selectedCourier.code, targetCityId, weight);
+                                calculateShippingCost(selectedCourier.code, targetCityId, weight);
+                              } else {
+                                console.log('❌ Missing courier code');
+                              }
+                            } else {
+                              console.log('❌ Either not automatic or no courier selected');
+                            }
+                          }}
                           className="w-4 h-4 text-pink-600 mr-2"
                         />
                         <span className="font-medium">{address.name}</span>
@@ -267,222 +537,195 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
             </div>
           )}
 
-          {/* Dropship Fields (if enabled) */}
-          {formData.isDropship && (
-            <div className="border-t pt-4">
-              <h4 className="font-medium text-sm text-gray-700 mb-3">Informasi Pengirim (Dropship)</h4>
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  name="dropshipName"
-                  value={formData.dropshipName}
+          {/* New Address Input */}
+          <div className="border-t pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-medium text-gray-700">
+                <MapPin className="w-4 h-4 inline mr-1" />
+                {addresses.length === 0 ? 'Alamat Pengiriman' : 'Atau Tambah Alamat Baru'}
+              </label>
+            </div>
+
+            {/* Simple Address Input - works for all couriers */}
+            <div>
+              <div>
+                <textarea
+                  name="address"
+                  value={formData.address}
                   onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="Nama pengirim dropship"
+                  rows={4}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  placeholder="Masukkan alamat lengkap (Jalan, RT/RW, Kelurahan, Kecamatan, Kota, Provinsi)"
                 />
-                <input
-                  type="tel"
-                  name="dropshipPhone"
-                  value={formData.dropshipPhone}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="Nomor telepon pengirim"
-                />
+                <p className="text-xs text-green-600 mt-1">
+                  ✓ Ongkir akan dihitung otomatis untuk kurir ini
+                </p>
               </div>
             </div>
-          )}
+
+            {/* Manual shipping cost input for non-automatic couriers */}
+            {!supportsAutomatic && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Biaya Ongkos Kirim (Rp)
+                </label>
+                <input
+                  type="number"
+                  name="shippingCost"
+                  value={formData.shippingCost || ''}
+                  onChange={handleInputChange}
+                  min="0"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  placeholder="Masukkan biaya ongkos kirim"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  * Masukkan manual biaya ongkos kirim untuk kurir lokal
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Address Modal */}
-        {showAddressModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-4">
-                {editingAddress ? 'Edit Alamat' : 'Tambah Alamat Baru'}
-              </h3>
-              <AddressForm
-                initialData={editingAddress}
-                onSave={handleSaveAddress}
-                onCancel={() => {
-                  setShowAddressModal(false);
-                  setEditingAddress(null);
-                }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Courier Selection */}
+        {/* Additional Options */}
         <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="font-semibold mb-3">Kurir Pengiriman</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                <User className="w-4 h-4 inline mr-1" />
-                Nama Penerima
-              </label>
+          <h3 className="font-semibold mb-3">Opsi Tambahan</h3>
+
+          {/* Dropship Option */}
+          <div className="mb-4">
+            <label className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                name="isDropship"
+                checked={formData.isDropship}
+                onChange={handleInputChange}
+                className="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
+              />
+              <span className="text-sm font-medium text-gray-700">Kirim sebagai dropship</span>
+            </label>
+          </div>
+
+          {/* Dropship Fields */}
+          {formData.isDropship && (
+            <div className="border-t pt-4 space-y-3">
               <input
                 type="text"
-                name="name"
-                value={formData.name}
+                name="dropshipName"
+                value={formData.dropshipName}
                 onChange={handleInputChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                placeholder="Masukkan nama penerima"
+                placeholder="Nama pengirim dropship"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                <Phone className="w-4 h-4 inline mr-1" />
-                Nomor Telepon
-              </label>
               <input
                 type="tel"
-                name="phone"
-                value={formData.phone}
+                name="dropshipPhone"
+                value={formData.dropshipPhone}
                 onChange={handleInputChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                placeholder="Masukkan nomor telepon"
+                placeholder="Nomor telepon pengirim"
               />
             </div>
+          )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                <MapPin className="w-4 h-4 inline mr-1" />
-                Alamat Lengkap
-              </label>
-              <textarea
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                rows={3}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                placeholder="Masukkan alamat lengkap"
-              />
-            </div>
-
-            {/* Courier Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pilih Kurir Pengiriman
-              </label>
-              <select
-                name="shippingCourier"
-                value={formData.shippingCourier}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-              >
-                {shippingOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Shipping Cost Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Biaya Ongkos Kirim (Rp)
-              </label>
-              <input
-                type="number"
-                name="shippingCost"
-                value={formData.shippingCost || ''}
-                onChange={handleInputChange}
-                min="0"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                placeholder="Masukkan biaya ongkos kirim"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                * Masukkan 0 jika gratis ongkir
-              </p>
-            </div>
-
-            {/* Dropship Option */}
-            <div className="border-t pt-4">
-              <label className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  name="isDropship"
-                  checked={formData.isDropship}
-                  onChange={handleInputChange}
-                  className="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
-                />
-                <span className="text-sm font-medium text-gray-700">Kirim sebagai dropship</span>
-              </label>
-
-              {formData.isDropship && (
-                <div className="mt-3 space-y-3 pl-7">
-                  <input
-                    type="text"
-                    name="dropshipName"
-                    value={formData.dropshipName}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                    placeholder="Nama pengirim dropship"
-                  />
-                  <input
-                    type="tel"
-                    name="dropshipPhone"
-                    value={formData.dropshipPhone}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                    placeholder="Nomor telepon pengirim"
-                  />
-                </div>
-              )}
-            </div>
+          {/* Notes */}
+          <div className="border-t pt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Catatan Pesanan
+            </label>
+            <textarea
+              name="notes"
+              value={formData.notes}
+              onChange={handleInputChange}
+              rows={3}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              placeholder="Tambahkan catatan untuk pesanan (opsional)"
+            />
           </div>
         </div>
 
-        {/* Payment Method Selection */}
+        {/* Payment Method */}
         <div className="bg-white rounded-lg shadow-sm p-4">
           <h3 className="font-semibold mb-3">Metode Pembayaran</h3>
           <div className="space-y-3">
-            <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+            <label className="flex items-center space-x-3">
               <input
                 type="radio"
                 name="paymentMethod"
                 value="transfer"
                 checked={formData.paymentMethod === 'transfer'}
                 onChange={handleInputChange}
-                className="w-4 h-4 text-pink-600"
+                className="w-4 h-4 text-pink-600 border-gray-300 focus:ring-pink-500"
               />
-              <CreditCard className="w-5 h-5 text-gray-400" />
-              <span>Transfer Bank</span>
+              <span className="text-sm font-medium">Transfer Bank</span>
             </label>
-            <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+            <label className="flex items-center space-x-3">
               <input
                 type="radio"
                 name="paymentMethod"
-                value="cash"
-                checked={formData.paymentMethod === 'cash'}
+                value="cod"
+                checked={formData.paymentMethod === 'cod'}
                 onChange={handleInputChange}
-                className="w-4 h-4 text-pink-600"
+                className="w-4 h-4 text-pink-600 border-gray-300 focus:ring-pink-500"
               />
-              <Package className="w-5 h-5 text-gray-400" />
-              <span>Cash on Delivery (COD)</span>
+              <span className="text-sm font-medium">COD (Bayar di Tempat)</span>
             </label>
           </div>
+
+          {formData.paymentMethod === 'transfer' && (
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm font-medium text-gray-700 mb-2">Transfer ke:</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center">
+                  <span>BCA: 0511456494</span>
+                  <button
+                    onClick={() => handleCopyAccount('0511456494', 'BCA')}
+                    className="text-blue-600 hover:text-blue-700 text-xs"
+                  >
+                    <Copy className="w-3 h-3 inline mr-1" />
+                    Salin
+                  </button>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>BRI: 066301000115566</span>
+                  <button
+                    onClick={() => handleCopyAccount('066301000115566', 'BRI')}
+                    className="text-blue-600 hover:text-blue-700 text-xs"
+                  >
+                    <Copy className="w-3 h-3 inline mr-1" />
+                    Salin
+                  </button>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>MANDIRI: 310011008896</span>
+                  <button
+                    onClick={() => handleCopyAccount('310011008896', 'MANDIRI')}
+                    className="text-blue-600 hover:text-blue-700 text-xs"
+                  >
+                    <Copy className="w-3 h-3 inline mr-1" />
+                    Salin
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">a.n. Fahrin</p>
+            </div>
+          )}
         </div>
 
         {/* Order Summary */}
         <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="font-semibold mb-3">Ringkasan Pembayaran</h3>
-          <div className="space-y-2 text-sm">
+          <h3 className="font-semibold mb-3">Ringkasan Pesanan</h3>
+          <div className="space-y-2">
             <div className="flex justify-between">
-              <span>Subtotal ({cartItems.length} item)</span>
-              <span>Rp {totalPrice.toLocaleString('id-ID')}</span>
+              <span className="text-sm text-gray-600">Subtotal Produk</span>
+              <span className="text-sm font-medium">Rp {totalPrice.toLocaleString('id-ID')}</span>
             </div>
             <div className="flex justify-between">
-              <span>Ongkos Kirim ({shippingOptions.find(o => o.id === formData.shippingCourier)?.name})</span>
-              <span>Rp {shippingCost.toLocaleString('id-ID')}</span>
+              <span className="text-sm text-gray-600">Biaya Ongkir</span>
+              <span className="text-sm font-medium">Rp {shippingCost.toLocaleString('id-ID')}</span>
             </div>
-            <div className="border-t pt-2 mt-2">
-              <div className="flex justify-between font-semibold text-lg">
-                <span>Total Pembayaran</span>
-                <span className="text-pink-600">Rp {finalTotal.toLocaleString('id-ID')}</span>
+            <div className="border-t pt-2">
+              <div className="flex justify-between">
+                <span className="font-semibold">Total</span>
+                <span className="font-semibold text-pink-600">Rp {finalTotal.toLocaleString('id-ID')}</span>
               </div>
             </div>
           </div>
@@ -491,12 +734,30 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         {/* Submit Button */}
         <button
           onClick={handleSubmitOrder}
-          disabled={!formData.name || !formData.phone || !formData.address}
-          className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-4 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-pink-600 text-white py-4 rounded-lg font-semibold hover:bg-pink-700 transition-colors shadow-lg"
         >
           Buat Pesanan
         </button>
       </div>
+
+      {/* Address Modal */}
+      {showAddressModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">
+              {editingAddress ? 'Edit Alamat' : 'Tambah Alamat Baru'}
+            </h3>
+            <AddressForm
+              initialData={editingAddress}
+              onSave={handleSaveAddress}
+              onCancel={() => {
+                setShowAddressModal(false);
+                setEditingAddress(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

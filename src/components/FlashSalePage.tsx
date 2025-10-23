@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ShoppingCart, Zap, Flame, Percent } from 'lucide-react';
 import ProductCard from './ProductCard';
-import { useFlashSale } from '../hooks/useFlashSale';
+import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
 
 interface FlashSalePageProps {
   user: any;
@@ -22,8 +22,15 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
   onCartClick,
   onAddToCart
 }) => {
-  const { timeLeft, isFlashSaleActive } = useFlashSale();
+  const { timeLeft, isFlashSaleActive, loading: flashSaleLoading } = useFirebaseFlashSale();
   const [forceUpdate, setForceUpdate] = useState(0);
+
+  // Debug flash sale hook values
+  console.log('⚡ FlashSalePage Debug:', {
+    isFlashSaleActive,
+    timeLeft,
+    flashSaleLoading
+  });
 
   // ENHANCED Flash Sale Event Handling
   useEffect(() => {
@@ -225,14 +232,14 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
     );
   }
 
-  // Show banner if no flash sale products
+  // Show simple message if no flash sale products
   if (flashSaleProducts.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-xl font-bold text-white">Flash Sale ⚡</h1>
-            <button 
+            <button
               onClick={onCartClick}
               className="relative p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
             >
@@ -245,18 +252,40 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
             </button>
           </div>
 
-          {/* Banner */}
-          <div className="text-center py-20">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 max-w-2xl mx-auto">
-              <div className="text-6xl mb-6">⚡</div>
-              <h2 className="text-4xl font-bold text-white mb-4">
-                Flash Sale Segera Hadir!
+          {/* Premium Flash Sale Coming Soon Banner */}
+          <div className="bg-gradient-to-br from-gray-700 via-gray-600 to-gray-500 rounded-2xl p-8 text-center max-w-3xl mx-auto shadow-2xl relative overflow-hidden">
+            {/* Premium animated background pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-4 left-4 w-32 h-32 bg-white rounded-full -ml-16 -mt-16 animate-pulse"></div>
+              <div className="absolute bottom-4 right-4 w-24 h-24 bg-white rounded-full -mr-12 -mb-12 animate-pulse delay-100"></div>
+            </div>
+
+            <div className="relative z-10">
+              <div className="bg-white/20 backdrop-blur-sm p-4 rounded-full w-20 h-20 mx-auto mb-6 shadow-lg">
+                <span className="text-4xl">⏰</span>
+              </div>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-200 to-white bg-clip-text text-transparent mb-4">
+                Flash Sale Sedang Disiapkan
               </h2>
-              <p className="text-xl text-white/80 mb-8">
-                Tunggu flash sale kami selanjutnya dengan diskon hingga 70%
+              <p className="text-gray-200 text-lg mb-2">
+                Nantikan Flash Sale Kami Selanjutnya!
               </p>
-              <div className="bg-yellow-400 text-gray-800 px-8 py-4 rounded-full inline-block font-bold text-lg">
-                🔥 Coming Soon 🔥
+              <p className="text-gray-300 text-sm mb-8">
+                Diskon spesial dan penawaran terbatas akan segera hadir. Pastikan Anda tidak ketinggalan!
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={() => window.history.back()}
+                  className="bg-white text-gray-700 px-6 py-3 rounded-full font-bold hover:bg-gray-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  Kembali
+                </button>
+                <button
+                  onClick={() => window.location.href = '/'}
+                  className="bg-purple-600 text-white px-6 py-3 rounded-full font-bold hover:bg-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  Lihat Produk Lainnya
+                </button>
               </div>
             </div>
           </div>
