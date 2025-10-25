@@ -61,24 +61,61 @@ export const COURIERS = [
 ];
 
 class RajaOngkirService {
-  // Note: Using mock data for now to avoid CORS issues in production
+  private baseUrl = '/api/rajaongkir';
 
   async getProvinces(): Promise<Province[]> {
-    // Always use mock data to avoid CORS and API issues
-    console.log('📍 Using mock provinces data');
-    return this.getMockProvinces();
+    try {
+      console.log('📍 Fetching real provinces from RajaOngkir API');
+      const response = await fetch(`${this.baseUrl}/provinces`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch provinces');
+      }
+
+      const data = await response.json();
+      return data.rajaongkir.results;
+    } catch (error) {
+      console.error('❌ Error fetching provinces, falling back to mock data:', error);
+      return this.getMockProvinces();
+    }
   }
 
   async getCities(provinceId?: string): Promise<City[]> {
-    // Always use mock data to avoid CORS and API issues
-    console.log('🏙️ Using mock cities data for province:', provinceId);
-    return this.getMockCities(provinceId);
+    try {
+      console.log('🏙️ Fetching real cities from RajaOngkir API for province:', provinceId);
+      const url = provinceId
+        ? `${this.baseUrl}/cities?province=${provinceId}`
+        : `${this.baseUrl}/cities`;
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch cities');
+      }
+
+      const data = await response.json();
+      return data.rajaongkir.results;
+    } catch (error) {
+      console.error('❌ Error fetching cities, falling back to mock data:', error);
+      return this.getMockCities(provinceId);
+    }
   }
 
   async getSubdistricts(cityId: string): Promise<Subdistrict[]> {
-    // Always use mock data to avoid CORS and API issues
-    console.log('🏘️ Using mock subdistricts data for city:', cityId);
-    return this.getMockSubdistricts(cityId);
+    try {
+      console.log('🏘️ Fetching real subdistricts from RajaOngkir API for city:', cityId);
+      const response = await fetch(`${this.baseUrl}/subdistricts?city=${cityId}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch subdistricts');
+      }
+
+      const data = await response.json();
+      return data.rajaongkir.results;
+    } catch (error) {
+      console.error('❌ Error fetching subdistricts, falling back to mock data:', error);
+      return this.getMockSubdistricts(cityId);
+    }
   }
 
   async calculateShippingCost(
@@ -86,9 +123,34 @@ class RajaOngkirService {
     weight: number,
     courier: string
   ): Promise<CostResult[]> {
-    // Always use mock data for now to avoid CORS and API issues
-    console.log('📦 Using mock shipping cost calculation');
-    return this.getMockCost('607', destinationCityId, weight, courier);
+    try {
+      console.log('📦 Calculating REAL shipping cost from RajaOngkir API');
+      console.log('📋 Parameters:', { origin: '607', destination: destinationCityId, weight, courier });
+
+      const response = await fetch(`${this.baseUrl}/cost`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          origin: '607', // Banjarmasin
+          destination: destinationCityId,
+          weight: weight,
+          courier: courier
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to calculate shipping cost');
+      }
+
+      const data = await response.json();
+      console.log('✅ Real shipping cost result:', data.rajaongkir.results);
+      return data.rajaongkir.results;
+    } catch (error) {
+      console.error('❌ Error calculating shipping cost, falling back to mock data:', error);
+      return this.getMockCost('607', destinationCityId, weight, courier);
+    }
   }
 
   private getMockProvinces(): Province[] {
