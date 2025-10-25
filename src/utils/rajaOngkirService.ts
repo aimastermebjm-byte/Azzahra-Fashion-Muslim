@@ -261,32 +261,95 @@ class RajaOngkirService {
   }
 
   private getMockSubdistricts(cityId: string): Subdistrict[] {
-    // Mock subdistricts data for major cities
+    // Comprehensive mock subdistricts data for major cities
     const subdistrictsMap: { [key: string]: Subdistrict[] } = {
       '607': [ // Banjarmasin
         { subdistrict_id: '60701', subdistrict_name: 'Banjarmasin Utara', city_id: '607', city: 'Banjarmasin', province: 'Kalimantan Selatan', province_id: '13', type: 'Kecamatan' },
         { subdistrict_id: '60702', subdistrict_name: 'Banjarmasin Tengah', city_id: '607', city: 'Banjarmasin', province: 'Kalimantan Selatan', province_id: '13', type: 'Kecamatan' },
         { subdistrict_id: '60703', subdistrict_name: 'Banjarmasin Selatan', city_id: '607', city: 'Banjarmasin', province: 'Kalimantan Selatan', province_id: '13', type: 'Kecamatan' },
         { subdistrict_id: '60704', subdistrict_name: 'Banjarmasin Barat', city_id: '607', city: 'Banjarmasin', province: 'Kalimantan Selatan', province_id: '13', type: 'Kecamatan' },
-        { subdistrict_id: '60705', subdistrict_name: 'Banjarmasin Timur', city_id: '607', city: 'Banjarmasin', province: 'Kalimantan Selatan', province_id: '13', type: 'Kecamatan' }
+        { subdistrict_id: '60705', subdistrict_name: 'Banjarmasin Timur', city_id: '607', city: 'Banjarmasin', province: 'Kalimantan Selatan', province_id: '13', type: 'Kecamatan' },
+        { subdistrict_id: '60706', subdistrict_name: 'Surgi Mufti', city_id: '607', city: 'Banjarmasin', province: 'Kalimantan Selatan', province_id: '13', type: 'Kelurahan' },
+        { subdistrict_id: '60707', subdistrict_name: 'Antasan Besar', city_id: '607', city: 'Banjarmasin', province: 'Kalimantan Selatan', province_id: '13', type: 'Kelurahan' },
+        { subdistrict_id: '60708', subdistrict_name: 'Pekapuran Raya', city_id: '607', city: 'Banjarmasin', province: 'Kalimantan Selatan', province_id: '13', type: 'Kelurahan' },
+        { subdistrict_id: '60709', subdistrict_name: 'Kertak Hanyar', city_id: '607', city: 'Banjarmasin', province: 'Kalimantan Selatan', province_id: '13', type: 'Kecamatan' },
+        { subdistrict_id: '60710', subdistrict_name: 'Landasan Ulin', city_id: '607', city: 'Banjarmasin', province: 'Kalimantan Selatan', province_id: '13', type: 'Kecamatan' }
+      ],
+      '608': [ // Banjarbaru
+        { subdistrict_id: '60801', subdistrict_name: 'Banjarbaru Utara', city_id: '608', city: 'Banjarbaru', province: 'Kalimantan Selatan', province_id: '13', type: 'Kecamatan' },
+        { subdistrict_id: '60802', subdistrict_name: 'Banjarbaru Selatan', city_id: '608', city: 'Banjarbaru', province: 'Kalimantan Selatan', province_id: '13', type: 'Kecamatan' },
+        { subdistrict_id: '60803', subdistrict_name: 'Cempaka', city_id: '608', city: 'Banjarbaru', province: 'Kalimantan Selatan', province_id: '13', type: 'Kecamatan' },
+        { subdistrict_id: '60804', subdistrict_name: 'Landasan Ulin Tengah', city_id: '608', city: 'Banjarbaru', province: 'Kalimantan Selatan', province_id: '13', type: 'Kecamatan' },
+        { subdistrict_id: '60805', subdistrict_name: 'Landasan Ulin Utara', city_id: '608', city: 'Banjarbaru', province: 'Kalimantan Selatan', province_id: '13', type: 'Kecamatan' }
       ],
       '177': [ // Surabaya
         { subdistrict_id: '17701', subdistrict_name: 'Gubeng', city_id: '177', city: 'Surabaya', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' },
         { subdistrict_id: '17702', subdistrict_name: 'Sukolilo', city_id: '177', city: 'Surabaya', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' },
         { subdistrict_id: '17703', subdistrict_name: 'Tegalsari', city_id: '177', city: 'Surabaya', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' },
         { subdistrict_id: '17704', subdistrict_name: 'Simokerto', city_id: '177', city: 'Surabaya', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' },
-        { subdistrict_id: '17705', subdistrict_name: 'Tambaksari', city_id: '177', city: 'Surabaya', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' }
+        { subdistrict_id: '17705', subdistrict_name: 'Tambaksari', city_id: '177', city: 'Surabaya', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' },
+        { subdistrict_id: '17706', subdistrict_name: 'Kenjeran', city_id: '177', city: 'Surabaya', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' },
+        { subdistrict_id: '17707', subdistrict_name: 'Sukomanunggal', city_id: '177', city: 'Surabaya', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' },
+        { subdistrict_id: '17708', subdistrict_name: 'Wiyung', city_id: '177', city: 'Surabaya', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' },
+        { subdistrict_id: '17709', subdistrict_name: 'Dukuh Pakis', city_id: '177', city: 'Surabaya', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' },
+        { subdistrict_id: '17710', subdistrict_name: 'Asemrowo', city_id: '177', city: 'Surabaya', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' }
       ],
       '6': [ // Medan
         { subdistrict_id: '601', subdistrict_name: 'Medan Barat', city_id: '6', city: 'Medan', province: 'Sumatera Utara', province_id: '33', type: 'Kecamatan' },
         { subdistrict_id: '602', subdistrict_name: 'Medan Timur', city_id: '6', city: 'Medan', province: 'Sumatera Utara', province_id: '33', type: 'Kecamatan' },
         { subdistrict_id: '603', subdistrict_name: 'Medan Selatan', city_id: '6', city: 'Medan', province: 'Sumatera Utara', province_id: '33', type: 'Kecamatan' },
-        { subdistrict_id: '604', subdistrict_name: 'Medan Utara', city_id: '6', city: 'Medan', province: 'Sumatera Utara', province_id: '33', type: 'Kecamatan' }
+        { subdistrict_id: '604', subdistrict_name: 'Medan Utara', city_id: '6', city: 'Medan', province: 'Sumatera Utara', province_id: '33', type: 'Kecamatan' },
+        { subdistrict_id: '605', subdistrict_name: 'Medan Area', city_id: '6', city: 'Medan', province: 'Sumatera Utara', province_id: '33', type: 'Kecamatan' },
+        { subdistrict_id: '606', subdistrict_name: 'Medan Kota', city_id: '6', city: 'Medan', province: 'Sumatera Utara', province_id: '33', type: 'Kecamatan' },
+        { subdistrict_id: '607', subdistrict_name: 'Medan Maimun', city_id: '6', city: 'Medan', province: 'Sumatera Utara', province_id: '33', type: 'Kecamatan' },
+        { subdistrict_id: '608', subdistrict_name: 'Medan Polonia', city_id: '6', city: 'Medan', province: 'Sumatera Utara', province_id: '33', type: 'Kecamatan' },
+        { subdistrict_id: '609', subdistrict_name: 'Medan Selayang', city_id: '6', city: 'Medan', province: 'Sumatera Utara', province_id: '33', type: 'Kecamatan' },
+        { subdistrict_id: '610', subdistrict_name: 'Medan Sunggal', city_id: '6', city: 'Medan', province: 'Sumatera Utara', province_id: '33', type: 'Kecamatan' }
+      ],
+      '96': [ // Bandung
+        { subdistrict_id: '9601', subdistrict_name: 'Coblong', city_id: '96', city: 'Bandung', province: 'Jawa Barat', province_id: '9', type: 'Kecamatan' },
+        { subdistrict_id: '9602', subdistrict_name: 'Cidadap', city_id: '96', city: 'Bandung', province: 'Jawa Barat', province_id: '9', type: 'Kecamatan' },
+        { subdistrict_id: '9603', subdistrict_name: 'Cicendo', city_id: '96', city: 'Bandung', province: 'Jawa Barat', province_id: '9', type: 'Kecamatan' },
+        { subdistrict_id: '9604', subdistrict_name: 'Cibeunying Kaler', city_id: '96', city: 'Bandung', province: 'Jawa Barat', province_id: '9', type: 'Kecamatan' },
+        { subdistrict_id: '9605', subdistrict_name: 'Cibeunying Kidul', city_id: '96', city: 'Bandung', province: 'Jawa Barat', province_id: '9', type: 'Kecamatan' },
+        { subdistrict_id: '9606', subdistrict_name: 'Sumur Bandung', city_id: '96', city: 'Bandung', province: 'Jawa Barat', province_id: '9', type: 'Kecamatan' },
+        { subdistrict_id: '9607', subdistrict_name: 'Bandung Kulon', city_id: '96', city: 'Bandung', province: 'Jawa Barat', province_id: '9', type: 'Kecamatan' },
+        { subdistrict_id: '9608', subdistrict_name: 'Andir', city_id: '96', city: 'Bandung', province: 'Jawa Barat', province_id: '9', type: 'Kecamatan' },
+        { subdistrict_id: '9609', subdistrict_name: 'Cicendo', city_id: '96', city: 'Bandung', province: 'Jawa Barat', province_id: '9', type: 'Kecamatan' },
+        { subdistrict_id: '9610', subdistrict_name: 'Batununggal', city_id: '96', city: 'Bandung', province: 'Jawa Barat', province_id: '9', type: 'Kecamatan' }
+      ],
+      '137': [ // Semarang
+        { subdistrict_id: '13701', subdistrict_name: 'Semarang Tengah', city_id: '137', city: 'Semarang', province: 'Jawa Tengah', province_id: '10', type: 'Kecamatan' },
+        { subdistrict_id: '13702', subdistrict_name: 'Semarang Utara', city_id: '137', city: 'Semarang', province: 'Jawa Tengah', province_id: '10', type: 'Kecamatan' },
+        { subdistrict_id: '13703', subdistrict_name: 'Semarang Barat', city_id: '137', city: 'Semarang', province: 'Jawa Tengah', province_id: '10', type: 'Kecamatan' },
+        { subdistrict_id: '13704', subdistrict_name: 'Semarang Selatan', city_id: '137', city: 'Semarang', province: 'Jawa Tengah', province_id: '10', type: 'Kecamatan' },
+        { subdistrict_id: '13705', subdistrict_name: 'Semarang Timur', city_id: '137', city: 'Semarang', province: 'Jawa Tengah', province_id: '10', type: 'Kecamatan' },
+        { subdistrict_id: '13706', subdistrict_name: 'Candisari', city_id: '137', city: 'Semarang', province: 'Jawa Tengah', province_id: '10', type: 'Kecamatan' },
+        { subdistrict_id: '13707', subdistrict_name: 'Gajahmungkur', city_id: '137', city: 'Semarang', province: 'Jawa Tengah', province_id: '10', type: 'Kecamatan' },
+        { subdistrict_id: '13708', subdistrict_name: 'Pedurungan', city_id: '137', city: 'Semarang', province: 'Jawa Tengah', province_id: '10', type: 'Kecamatan' },
+        { subdistrict_id: '13709', subdistrict_name: 'Tembalang', city_id: '137', city: 'Semarang', province: 'Jawa Tengah', province_id: '10', type: 'Kecamatan' },
+        { subdistrict_id: '13710', subdistrict_name: 'Banyumanik', city_id: '137', city: 'Semarang', province: 'Jawa Tengah', province_id: '10', type: 'Kecamatan' }
+      ],
+      '173': [ // Malang
+        { subdistrict_id: '17301', subdistrict_name: 'Klojen', city_id: '173', city: 'Malang', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' },
+        { subdistrict_id: '17302', subdistrict_name: 'Blimbing', city_id: '173', city: 'Malang', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' },
+        { subdistrict_id: '17303', subdistrict_name: 'Sukun', city_id: '173', city: 'Malang', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' },
+        { subdistrict_id: '17304', subdistrict_name: 'Lowokwaru', city_id: '173', city: 'Malang', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' },
+        { subdistrict_id: '17305', subdistrict_name: 'Kedungkandang', city_id: '173', city: 'Malang', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' }
+      ],
+      '171': [ // Kediri
+        { subdistrict_id: '17101', subdistrict_name: 'Kediri Kota', city_id: '171', city: 'Kediri', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' },
+        { subdistrict_id: '17102', subdistrict_name: 'Pesantren', city_id: '171', city: 'Kediri', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' },
+        { subdistrict_id: '17103', subdistrict_name: 'Mojoroto', city_id: '171', city: 'Kediri', province: 'Jawa Timur', province_id: '11', type: 'Kecamatan' }
       ]
     };
 
     return subdistrictsMap[cityId] || [
-      { subdistrict_id: '1', subdistrict_name: 'Kecamatan Default', city_id: cityId, city: 'Unknown', province: 'Unknown', province_id: '0', type: 'Kecamatan' }
+      { subdistrict_id: '1', subdistrict_name: 'Kecamatan Utama', city_id: cityId, city: 'Unknown', province: 'Unknown', province_id: '0', type: 'Kecamatan' },
+      { subdistrict_id: '2', subdistrict_name: 'Kecamatan Barat', city_id: cityId, city: 'Unknown', province: 'Unknown', province_id: '0', type: 'Kecamatan' },
+      { subdistrict_id: '3', subdistrict_name: 'Kecamatan Timur', city_id: cityId, city: 'Unknown', province: 'Unknown', province_id: '0', type: 'Kecamatan' },
+      { subdistrict_id: '4', subdistrict_name: 'Kecamatan Selatan', city_id: cityId, city: 'Unknown', province: 'Unknown', province_id: '0', type: 'Kecamatan' },
+      { subdistrict_id: '5', subdistrict_name: 'Kecamatan Pusat', city_id: cityId, city: 'Unknown', province: 'Unknown', province_id: '0', type: 'Kecamatan' }
     ];
   }
 
