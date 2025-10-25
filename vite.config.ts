@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '0.0.0.0',
-    port: 5177,
+    port: 5000,
     open: true,
     hmr: {
       overlay: true, // Show error overlay
@@ -22,6 +22,18 @@ export default defineConfig({
     fs: {
       // Ensure file system changes are detected immediately
       strict: false
+    },
+    proxy: {
+      // RajaOngkir API proxy
+      '/api/rajaongkir': {
+        target: 'https://api.rajaongkir.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/rajaongkir/, ''),
+        secure: true,
+        headers: {
+          'key': 'L3abavkD5358dc66be91f537G8MkpZHi'
+        }
+      }
     }
   },
   build: {

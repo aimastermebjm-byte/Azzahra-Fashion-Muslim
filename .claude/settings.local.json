@@ -39,7 +39,12 @@
       "Bash(git add:*)",
       "Bash(git reset:*)",
       "Bash(git commit:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(npm create vite@latest:*)",
+      "Bash(start:*)",
+      "Bash(npx tsx:*)",
+      "Bash(node:*)",
+      "Bash(npx vite:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test RajaOngkir API</title>
+</head>
+<body>
+    <h1>Test RajaOngkir API</h1>
+    <button onclick="testProvinces()">Test Provinces</button>
+    <button onclick="testCost()">Test Cost</button>
+    <div id="result"></div>
+
+    <script>
+        const API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
+        const BASE_URL = 'https://api.rajaongkir.com/starter';
+
+        async function testProvinces() {
+            try {
+                const response = await fetch(`${BASE_URL}/province`, {
+                    headers: {
+                        'key': API_KEY,
+                    },
+                });
+                const data = await response.json();
+                document.getElementById('result').innerHTML = `
+                    <h3>Provinces Test:</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testCost() {
+            try {
+                const formData = new FormData();
+                formData.append('origin', '607'); // Banjarmasin
+                formData.append('destination', '152'); // Jakarta Pusat
+                formData.append('weight', '1000');
+                formData.append('courier', 'jnt');
+
+                const response = await fetch(`${BASE_URL}/cost`, {
+                    method: 'POST',
+                    headers: {
+                        'key': API_KEY,
+                    },
+                    body: formData,
+                });
+                const data = await response.json();
+                document.getElementById('result').innerHTML = `
+                    <h3>Cost Test (Banjarmasin -> Jakarta):</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
