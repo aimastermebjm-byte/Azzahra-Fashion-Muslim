@@ -124,28 +124,21 @@ class RajaOngkirService {
     courier: string
   ): Promise<CostResult[]> {
     try {
-      console.log('📦 Calculating REAL shipping cost from Komerce API');
+      console.log('📦 Calculating REAL shipping cost from RajaOngkir API');
       console.log('📋 Parameters:', { origin: '607', destination: destinationCityId, weight, courier });
 
-      // Convert weight to kg (Komerce uses kg, frontend uses grams)
-      const weightInKg = Math.max(1, weight / 1000);
-
-      // Use GET method for Komerce API with query parameters
-      const params = new URLSearchParams({
-        shipper_destination_id: '607', // Banjarmasin
-        receiver_destination_id: destinationCityId,
-        weight: weightInKg.toString(),
-        item_value: '100000', // Default item value
-        cod: 'no',
-        origin_pin_point: '-3.3186111,114.5908333', // Banjarmasin coordinates
-        destination_pin_point: '-6.2087634,106.845599' // Jakarta coordinates (default)
-      });
-
-      const response = await fetch(`${this.baseUrl}/cost?${params.toString()}`, {
-        method: 'GET',
+      // Use POST method for RajaOngkir API with JSON body
+      const response = await fetch(`${this.baseUrl}/cost`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        body: JSON.stringify({
+          origin: '607', // Banjarmasin
+          destination: destinationCityId,
+          weight: weight, // RajaOngkir expects grams
+          courier: courier
+        })
       });
 
       if (!response.ok) {
@@ -155,7 +148,7 @@ class RajaOngkirService {
       const data = await response.json();
       console.log('✅ Real shipping cost result:', data);
 
-      // Return transformed format (backend already transforms Komerce response)
+      // Return RajaOngkir standard format
       return data.rajaongkir.results;
     } catch (error) {
       console.error('❌ Error calculating shipping cost, falling back to mock data:', error);

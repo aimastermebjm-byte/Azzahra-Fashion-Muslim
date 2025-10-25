@@ -1,6 +1,6 @@
-// Komerce API Configuration (Komship Delivery API)
-const KOMERCE_API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
-const KOMERCE_BASE_URL = 'https://api-sandbox.collaborator.komerce.id';
+// RajaOngkir API Configuration (Standard API)
+const RAJAONGKIR_API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
+const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter';
 
 // Realistic mock data based on typical Indonesian shipping costs
 const REALISTIC_MOCK_COSTS = {
@@ -16,107 +16,89 @@ export default async function handler(req, res) {
   try {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
       res.status(200).end();
       return;
     }
 
-    if (req.method !== 'GET') {
+    if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const {
-      shipper_destination_id: origin,
-      receiver_destination_id: destination,
-      weight,
-      item_value = 100000,
-      cod = 'no',
-      origin_pin_point = '-3.3186111,114.5908333', // Banjarmasin coordinates
-      destination_pin_point = '-6.2087634,106.845599' // Jakarta coordinates (default)
-    } = req.query;
+    const { origin, destination, weight, courier } = req.body;
 
-    if (!origin || !destination || !weight) {
+    if (!origin || !destination || !weight || !courier) {
       return res.status(400).json({
-        error: 'Missing required parameters: shipper_destination_id, receiver_destination_id, weight',
-        received: { origin, destination, weight, item_value, cod }
+        error: 'Missing required parameters: origin, destination, weight, courier',
+        received: { origin, destination, weight, courier }
       });
     }
 
-    console.log('🚀 Komerce API Request:', {
-      shipper_destination_id: origin,
-      receiver_destination_id: destination,
-      weight: `${weight} kg`,
-      item_value,
-      cod,
-      origin_pin_point,
-      destination_pin_point,
-      apiKey: KOMERCE_API_KEY ? 'Set' : 'Missing'
+    console.log('🚀 RajaOngkir API Request:', {
+      origin,
+      destination,
+      weight,
+      courier,
+      apiKey: RAJAONGKIR_API_KEY ? 'Set' : 'Missing'
     });
 
-    // Build URL with query parameters for Komerce API
-    const params = new URLSearchParams({
-      shipper_destination_id: origin.toString(),
-      receiver_destination_id: destination.toString(),
-      weight: weight.toString(),
-      item_value: item_value.toString(),
-      cod: cod.toString(),
-      origin_pin_point: origin_pin_point,
-      destination_pin_point: destination_pin_point
-    });
+    // RajaOngkir standard API - POST with form data
+    const formData = new URLSearchParams();
+    formData.append('key', RAJAONGKIR_API_KEY);
+    formData.append('origin', origin);
+    formData.append('destination', destination);
+    formData.append('weight', weight.toString());
+    formData.append('courier', courier);
 
-    const url = `${KOMERCE_BASE_URL}/tariff/api/v1/calculate?${params.toString()}`;
-    console.log('📡 Komerce API URL:', url);
-
-    const response = await fetch(url, {
-      method: 'GET',
+    const response = await fetch(`${RAJAONGKIR_BASE_URL}/cost`, {
+      method: 'POST',
       headers: {
-        'x-api-key': KOMERCE_API_KEY,
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'key': RAJAONGKIR_API_KEY
+      },
+      body: formData.toString()
     });
 
-    console.log('📊 Komerce Response Status:', response.status);
+    console.log('📊 RajaOngkir Response Status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Komerce API Error:', errorText);
+      console.error('❌ RajaOngkir API Error:', errorText);
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('✅ Komerce API Response:', data);
+    console.log('✅ RajaOngkir API Response:', data);
 
-    // Check if we need to use mock data
-    let useMockData = false;
-    if (!data.data?.calculate_reguler || !Array.isArray(data.data.calculate_reguler) || data.data.calculate_reguler.length === 0) {
-      useMockData = true;
-      console.log('⚠️ Komerce returned no valid data, using mock data');
-    }
+    // RajaOngkir standard API returns data in rajaongkir.results format
+    let transformedResponse = data;
 
-    let transformedResponse;
-    if (useMockData) {
-      // Use mock data
-      const { origin, destination, weight } = req.query;
+    // Check if real API returned valid data
+    if (!data.rajaongkir?.results || data.rajaongkir.results.length === 0) {
+      console.log('⚠️ RajaOngkir returned no valid data, using mock data');
+
+      // Use mock data as fallback
+      const { origin, destination, weight } = req.body;
       const weightNum = parseFloat(weight) || 1;
       const distanceFactor = Math.abs(parseInt(destination) - parseInt(origin)) / 100;
 
-      const mockResults = Object.entries(REALISTIC_MOCK_COSTS).map(([code, data]) => {
+      const mockResults = Object.entries(REALISTIC_MOCK_COSTS).map(([code, courierData]) => {
         const distanceCost = Math.floor(distanceFactor * 5000) + 5000;
-        const weightCost = Math.max(1, weightNum) * data.baseCost;
+        const weightCost = Math.max(1, weightNum) * courierData.baseCost;
         const totalCost = Math.round(weightCost + distanceCost);
 
         return {
           code: code.toUpperCase(),
-          name: data.name,
+          name: courierData.name,
           costs: [{
             service: 'Regular Package',
-            description: `${data.name} - Regular`,
+            description: `${courierData.name} - Regular`,
             cost: [{
               value: totalCost,
-              etd: data.etd,
+              etd: courierData.etd,
               note: 'Mock calculation (API unavailable)'
             }]
           }]
@@ -131,63 +113,36 @@ export default async function handler(req, res) {
       };
       console.log('🔄 Using realistic mock data');
     } else {
-      // Use real Komerce data
-      transformedResponse = {
-        rajaongkir: {
-          status: {
-            code: data.meta?.code || 200,
-            description: data.meta?.message || "OK"
-          },
-          results: []
-        }
-      };
-
-      // Transform regular shipping data
-      data.data.calculate_reguler.forEach(item => {
-        transformedResponse.rajaongkir.results.push({
-          code: item.shipping_name?.toLowerCase() || 'unknown',
-          name: item.shipping_name || 'Unknown',
-          costs: [{
-            service: item.service_name || 'Regular',
-            description: `${item.shipping_name} ${item.service_name}`,
-            cost: [{
-              value: item.shipping_cost_net || item.shipping_cost || 0,
-              etd: item.etd || '2-4 days',
-              note: `COD: ${item.is_cod ? 'Yes' : 'No'}`
-            }]
-          }]
-        });
-      });
-      console.log('✅ Using real Komerce data');
+      console.log('✅ Using real RajaOngkir data');
     }
 
     res.status(200).json(transformedResponse);
   } catch (error) {
-    console.error('💥 Komerce Cost API Error:', {
+    console.error('💥 RajaOngkir Cost API Error:', {
       message: error.message,
       stack: error.stack,
-      query: req.query
+      body: req.body
     });
 
     // Fallback to realistic mock data when API fails
-    const { origin, destination, weight } = req.query;
+    const { origin, destination, weight } = req.body;
     const weightNum = parseFloat(weight) || 1;
     const distanceFactor = Math.abs(parseInt(destination) - parseInt(origin)) / 100;
 
-    const mockResults = Object.entries(REALISTIC_MOCK_COSTS).map(([code, data]) => {
+    const mockResults = Object.entries(REALISTIC_MOCK_COSTS).map(([code, courierData]) => {
       const distanceCost = Math.floor(distanceFactor * 5000) + 5000;
-      const weightCost = Math.max(1, weightNum) * data.baseCost;
+      const weightCost = Math.max(1, weightNum) * courierData.baseCost;
       const totalCost = Math.round(weightCost + distanceCost);
 
       return {
         code: code.toUpperCase(),
-        name: data.name,
+        name: courierData.name,
         costs: [{
           service: 'Regular Package',
-          description: `${data.name} - Regular`,
+          description: `${courierData.name} - Regular`,
           cost: [{
             value: totalCost,
-            etd: data.etd,
+            etd: courierData.etd,
             note: 'Mock calculation (API failed)'
           }]
         }]
