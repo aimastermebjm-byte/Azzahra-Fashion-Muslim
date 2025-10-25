@@ -89,19 +89,60 @@ export default async function handler(req, res) {
     const data = await response.json();
     console.log('✅ Komerce API Response:', data);
 
-    // Transform Komerce response to match expected format
-    const transformedResponse = {
-      rajaongkir: {
-        status: {
-          code: data.meta?.code || 200,
-          description: data.meta?.message || "OK"
-        },
-        results: []
-      }
-    };
+    // Check if we need to use mock data
+    let useMockData = false;
+    if (!data.data?.calculate_reguler || !Array.isArray(data.data.calculate_reguler) || data.data.calculate_reguler.length === 0) {
+      useMockData = true;
+      console.log('⚠️ Komerce returned no valid data, using mock data');
+    }
 
-    // Transform regular shipping data
-    if (data.data?.calculate_reguler) {
+    let transformedResponse;
+    if (useMockData) {
+      // Use mock data
+      const { origin, destination, weight } = req.query;
+      const weightNum = parseFloat(weight) || 1;
+      const distanceFactor = Math.abs(parseInt(destination) - parseInt(origin)) / 100;
+
+      const mockResults = Object.entries(REALISTIC_MOCK_COSTS).map(([code, data]) => {
+        const distanceCost = Math.floor(distanceFactor * 5000) + 5000;
+        const weightCost = Math.max(1, weightNum) * data.baseCost;
+        const totalCost = Math.round(weightCost + distanceCost);
+
+        return {
+          code: code.toUpperCase(),
+          name: data.name,
+          costs: [{
+            service: 'Regular Package',
+            description: `${data.name} - Regular`,
+            cost: [{
+              value: totalCost,
+              etd: data.etd,
+              note: 'Mock calculation (API unavailable)'
+            }]
+          }]
+        };
+      });
+
+      transformedResponse = {
+        rajaongkir: {
+          status: { code: 200, description: "OK" },
+          results: mockResults
+        }
+      };
+      console.log('🔄 Using realistic mock data');
+    } else {
+      // Use real Komerce data
+      transformedResponse = {
+        rajaongkir: {
+          status: {
+            code: data.meta?.code || 200,
+            description: data.meta?.message || "OK"
+          },
+          results: []
+        }
+      };
+
+      // Transform regular shipping data
       data.data.calculate_reguler.forEach(item => {
         transformedResponse.rajaongkir.results.push({
           code: item.shipping_name?.toLowerCase() || 'unknown',
@@ -117,6 +158,7 @@ export default async function handler(req, res) {
           }]
         });
       });
+      console.log('✅ Using real Komerce data');
     }
 
     res.status(200).json(transformedResponse);
@@ -132,9 +174,8 @@ export default async function handler(req, res) {
     const weightNum = parseFloat(weight) || 1;
     const distanceFactor = Math.abs(parseInt(destination) - parseInt(origin)) / 100;
 
-    // Get available couriers (use all since we don't know which ones are available)
     const mockResults = Object.entries(REALISTIC_MOCK_COSTS).map(([code, data]) => {
-      const distanceCost = Math.floor(distanceFactor * 5000) + 5000; // 5k-10k distance cost
+      const distanceCost = Math.floor(distanceFactor * 5000) + 5000;
       const weightCost = Math.max(1, weightNum) * data.baseCost;
       const totalCost = Math.round(weightCost + distanceCost);
 
@@ -147,7 +188,7 @@ export default async function handler(req, res) {
           cost: [{
             value: totalCost,
             etd: data.etd,
-            note: 'Mock calculation (API unavailable)'
+            note: 'Mock calculation (API failed)'
           }]
         }]
       };
@@ -160,7 +201,7 @@ export default async function handler(req, res) {
       }
     };
 
-    console.log('🔄 Using realistic mock data:', mockResponse);
+    console.log('🔄 Using fallback mock data:', mockResponse);
     res.status(200).json(mockResponse);
   }
 }
