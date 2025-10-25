@@ -1,33 +1,40 @@
-const RAJAONGKIR_API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
-const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter';
+// RajaOngkir Komerce API Configuration
+const KOMERCE_API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
+const KOMERCE_BASE_URL = 'https://api-sandbox.collaborator.komerce.id';
 
 export default async function handler(req, res) {
   try {
-    if (req.method !== 'POST') {
+    if (req.method !== 'GET') {
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { origin, destination, weight, courier } = req.body;
+    const { origin, destination, weight, courier } = req.query;
 
-    if (!origin || !destination || !weight || !courier) {
+    if (!origin || !destination || !weight) {
       return res.status(400).json({
-        error: 'Missing required parameters: origin, destination, weight, courier'
+        error: 'Missing required parameters: origin, destination, weight'
       });
     }
 
-    const formData = new URLSearchParams();
-    formData.append('origin', origin);
-    formData.append('destination', destination);
-    formData.append('weight', weight.toString());
-    formData.append('courier', courier);
+    // Use Komerce Calculate API - GET method with query parameters
+    let url = `${KOMERCE_BASE_URL}/tariff/api/v1/calculate`;
+    const params = new URLSearchParams({
+      origin: origin,
+      destination: destination,
+      weight: weight.toString()
+    });
 
-    const response = await fetch(`${RAJAONGKIR_BASE_URL}/cost`, {
-      method: 'POST',
+    if (courier) {
+      params.append('courier', courier);
+    }
+
+    url += `?${params.toString()}`;
+
+    const response = await fetch(url, {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'key': RAJAONGKIR_API_KEY
-      },
-      body: formData.toString()
+        'x-api-key': KOMERCE_API_KEY,
+        'Content-Type': 'application/json'
+      }
     });
 
     if (!response.ok) {
@@ -38,7 +45,7 @@ export default async function handler(req, res) {
 
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') {
@@ -48,9 +55,9 @@ export default async function handler(req, res) {
 
     res.status(200).json(data);
   } catch (error) {
-    console.error('RajaOngkir Cost API Error:', error);
+    console.error('Komerce Cost API Error:', error);
     res.status(500).json({
-      error: 'Failed to calculate shipping cost from RajaOngkir API',
+      error: 'Failed to calculate shipping cost from Komerce API',
       details: error.message || 'Unknown error'
     });
   }

@@ -1,16 +1,23 @@
-const RAJAONGKIR_API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
-const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter';
+// RajaOngkir Komerce API Configuration
+const KOMERCE_API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
+const KOMERCE_BASE_URL = 'https://api-sandbox.collaborator.komerce.id';
 
 export default async function handler(req, res) {
   try {
-    const { province } = req.query;
+    const { search, province } = req.query;
 
-    let url = `${RAJAONGKIR_BASE_URL}/city?key=${RAJAONGKIR_API_KEY}`;
-    if (province) {
-      url += `&province=${province}`;
+    // Use Komerce Search Destination API
+    let url = `${KOMERCE_BASE_URL}/tariff/api/v1/destination/`;
+    if (search) {
+      url += `?search=${encodeURIComponent(search)}`;
     }
 
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'x-api-key': KOMERCE_API_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -30,9 +37,9 @@ export default async function handler(req, res) {
 
     res.status(200).json(data);
   } catch (error) {
-    console.error('RajaOngkir API Error:', error);
+    console.error('Cities API Error:', error);
     res.status(500).json({
-      error: 'Failed to fetch cities from RajaOngkir API',
+      error: 'Failed to fetch cities from Komerce API',
       details: error.message || 'Unknown error'
     });
   }

@@ -124,20 +124,22 @@ class RajaOngkirService {
     courier: string
   ): Promise<CostResult[]> {
     try {
-      console.log('📦 Calculating REAL shipping cost from RajaOngkir API');
+      console.log('📦 Calculating REAL shipping cost from Komerce API');
       console.log('📋 Parameters:', { origin: '607', destination: destinationCityId, weight, courier });
 
-      const response = await fetch(`${this.baseUrl}/cost`, {
-        method: 'POST',
+      // Use GET method for Komerce API with query parameters
+      const params = new URLSearchParams({
+        origin: '607', // Banjarmasin
+        destination: destinationCityId,
+        weight: weight.toString(),
+        courier: courier
+      });
+
+      const response = await fetch(`${this.baseUrl}/cost?${params.toString()}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          origin: '607', // Banjarmasin
-          destination: destinationCityId,
-          weight: weight,
-          courier: courier
-        })
+        }
       });
 
       if (!response.ok) {
@@ -145,8 +147,27 @@ class RajaOngkirService {
       }
 
       const data = await response.json();
-      console.log('✅ Real shipping cost result:', data.rajaongkir.results);
-      return data.rajaongkir.results;
+      console.log('✅ Real shipping cost result:', data);
+
+      // Transform Komerce response to match expected format
+      if (data.data && Array.isArray(data.data)) {
+        return data.data.map(item => ({
+          code: item.courier || courier.toUpperCase(),
+          name: item.courier_name || courier.toUpperCase(),
+          costs: [{
+            service: item.service || 'Regular',
+            description: item.description || 'Regular Package',
+            cost: [{
+              value: item.price || 0,
+              etd: item.etd || '2-4 days',
+              note: 'Real calculation from Komerce API'
+            }]
+          }]
+        }));
+      }
+
+      // Fallback if structure is different
+      return this.getMockCost('607', destinationCityId, weight, courier);
     } catch (error) {
       console.error('❌ Error calculating shipping cost, falling back to mock data:', error);
       return this.getMockCost('607', destinationCityId, weight, courier);
