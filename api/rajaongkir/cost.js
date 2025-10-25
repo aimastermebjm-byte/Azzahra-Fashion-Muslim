@@ -2,14 +2,98 @@
 const RAJAONGKIR_API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
 const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter';
 
-// Realistic mock data based on typical Indonesian shipping costs
-const REALISTIC_MOCK_COSTS = {
-  'jnt': { name: 'J&T Express', baseCost: 15000, etd: '2-3 hari' },
-  'jne': { name: 'JNE', baseCost: 18000, etd: '2-4 hari' },
-  'pos': { name: 'POS Indonesia', baseCost: 20000, etd: '3-5 hari' },
-  'tiki': { name: 'TIKI', baseCost: 17000, etd: '2-3 hari' },
-  'sicepat': { name: 'SiCepat Express', baseCost: 16000, etd: '1-2 hari' },
-  'wahana': { name: 'Wahana', baseCost: 12000, etd: '3-6 hari' }
+// Realistic mock data based on typical Indonesian shipping costs from Banjarmasin
+const ROUTED_MOCK_COSTS = {
+  'jnt': {
+    name: 'J&T Express',
+    service: 'EZ',
+    routes: {
+      '177': 45000, // Surabaya
+      '6': 85000,   // Medan
+      '96': 55000,  // Bandung
+      '137': 48000, // Semarang
+      '173': 52000, // Malang
+      '607': 15000, // Banjarmasin (local)
+      '608': 12000  // Banjarbaru (local)
+    },
+    default: 35000, // Other cities
+    etd: '2-3 hari'
+  },
+  'jne': {
+    name: 'JNE',
+    service: 'REG',
+    routes: {
+      '177': 48000, // Surabaya
+      '6': 92000,   // Medan
+      '96': 58000,  // Bandung
+      '137': 52000, // Semarang
+      '173': 55000, // Malang
+      '607': 18000, // Banjarmasin (local)
+      '608': 15000  // Banjarbaru (local)
+    },
+    default: 38000, // Other cities
+    etd: '2-4 hari'
+  },
+  'pos': {
+    name: 'POS Indonesia',
+    service: 'Paket Kilat Khusus',
+    routes: {
+      '177': 35000, // Surabaya
+      '6': 65000,   // Medan
+      '96': 45000,  // Bandung
+      '137': 40000, // Semarang
+      '173': 42000, // Malang
+      '607': 12000, // Banjarmasin (local)
+      '608': 10000  // Banjarbaru (local)
+    },
+    default: 28000, // Other cities
+    etd: '3-5 hari'
+  },
+  'tiki': {
+    name: 'TIKI',
+    service: 'REG',
+    routes: {
+      '177': 50000, // Surabaya
+      '6': 95000,   // Medan
+      '96': 60000,  // Bandung
+      '137': 54000, // Semarang
+      '173': 58000, // Malang
+      '607': 20000, // Banjarmasin (local)
+      '608': 17000  // Banjarbaru (local)
+    },
+    default: 40000, // Other cities
+    etd: '2-3 hari'
+  },
+  'sicepat': {
+    name: 'SiCepat Express',
+    service: 'REG',
+    routes: {
+      '177': 55000, // Surabaya
+      '6': 98000,   // Medan
+      '96': 65000,  // Bandung
+      '137': 58000, // Semarang
+      '173': 62000, // Malang
+      '607': 22000, // Banjarmasin (local)
+      '608': 18000  // Banjarbaru (local)
+    },
+    default: 45000, // Other cities
+    etd: '1-2 hari'
+  },
+  'wahana': {
+    name: 'Wahana',
+    service: 'REG',
+    routes: {
+      '177': 28000, // Surabaya
+      '6': 55000,   // Medan
+      '96': 38000,  // Bandung
+      '137': 32000, // Semarang
+      '173': 35000, // Malang
+      '607': 10000, // Banjarmasin (local)
+      '608': 8000   // Banjarbaru (local)
+    },
+    default: 22000, // Other cities
+    etd: '3-6 hari'
+  }
 };
 
 export default async function handler(req, res) {
@@ -80,26 +164,26 @@ export default async function handler(req, res) {
     if (!data.rajaongkir?.results || data.rajaongkir.results.length === 0) {
       console.log('⚠️ RajaOngkir returned no valid data, using mock data');
 
-      // Use mock data as fallback
-      const { origin, destination, weight } = req.body;
+      // Use realistic mock data as fallback
+      const { destination, weight } = req.body;
       const weightNum = parseFloat(weight) || 1;
-      const distanceFactor = Math.abs(parseInt(destination) - parseInt(origin)) / 100;
+      const weightMultiplier = Math.max(1, Math.ceil(weightNum / 1000)); // Round up to nearest kg
 
-      const mockResults = Object.entries(REALISTIC_MOCK_COSTS).map(([code, courierData]) => {
-        const distanceCost = Math.floor(distanceFactor * 5000) + 5000;
-        const weightCost = Math.max(1, weightNum) * courierData.baseCost;
-        const totalCost = Math.round(weightCost + distanceCost);
+      const mockResults = Object.entries(ROUTED_MOCK_COSTS).map(([code, courierData]) => {
+        // Get route-specific cost or default
+        const routeCost = courierData.routes[destination] || courierData.default;
+        const totalCost = routeCost * weightMultiplier;
 
         return {
           code: code.toUpperCase(),
           name: courierData.name,
           costs: [{
-            service: 'Regular Package',
-            description: `${courierData.name} - Regular`,
+            service: courierData.service,
+            description: `${courierData.name} - ${courierData.service}`,
             cost: [{
               value: totalCost,
               etd: courierData.etd,
-              note: 'Mock calculation (API unavailable)'
+              note: 'Mock calculation - realistic pricing'
             }]
           }]
         };
@@ -125,25 +209,27 @@ export default async function handler(req, res) {
     });
 
     // Fallback to realistic mock data when API fails
-    const { origin, destination, weight } = req.body;
+    const { destination, weight } = req.body;
     const weightNum = parseFloat(weight) || 1;
-    const distanceFactor = Math.abs(parseInt(destination) - parseInt(origin)) / 100;
+    const weightMultiplier = Math.max(1, Math.ceil(weightNum / 1000)); // Round up to nearest kg
 
-    const mockResults = Object.entries(REALISTIC_MOCK_COSTS).map(([code, courierData]) => {
-      const distanceCost = Math.floor(distanceFactor * 5000) + 5000;
-      const weightCost = Math.max(1, weightNum) * courierData.baseCost;
-      const totalCost = Math.round(weightCost + distanceCost);
+    const mockResults = Object.entries(ROUTED_MOCK_COSTS).map(([code, courierData]) => {
+      // Get route-specific cost or default
+      const routeCost = courierData.routes[destination] || courierData.default;
+      const totalCost = routeCost * weightMultiplier;
+
+      console.log(`💰 MOCK COST API for ${code} to ${destination}: Rp ${totalCost.toLocaleString('id-ID')} (${weightMultiplier}kg)`);
 
       return {
         code: code.toUpperCase(),
         name: courierData.name,
         costs: [{
-          service: 'Regular Package',
-          description: `${courierData.name} - Regular`,
+          service: courierData.service,
+          description: `${courierData.name} - ${courierData.service}`,
           cost: [{
             value: totalCost,
             etd: courierData.etd,
-            note: 'Mock calculation (API failed)'
+            note: 'Mock calculation - realistic pricing'
           }]
         }]
       };
