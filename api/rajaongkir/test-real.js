@@ -92,21 +92,45 @@ export default async function handler(req, res) {
     let costTest = { status: 'failed', results: [] };
 
     try {
+      console.log('🔍 Testing provinces API...');
+      console.log('URL:', `${RAJAONGKIR_BASE_URL}/province?key=${RAJAONGKIR_API_KEY}`);
+
       const provincesResponse = await fetch(`${RAJAONGKIR_BASE_URL}/province?key=${RAJAONGKIR_API_KEY}`);
+      console.log('Provinces response status:', provincesResponse.status);
+      console.log('Provinces response headers:', Object.fromEntries(provincesResponse.headers.entries()));
+
       if (provincesResponse.ok) {
         const provincesData = await provincesResponse.json();
+        console.log('Provinces response data:', provincesData);
         const provinces = provincesData.rajaongkir?.results || [];
         provincesTest = {
           status: provinces.length > 0 ? 'success' : 'failed',
           count: provinces.length,
-          sample: provinces.slice(0, 3)
+          sample: provinces.slice(0, 3),
+          fullResponse: provincesData
+        };
+      } else {
+        const errorText = await provincesResponse.text();
+        console.log('Provinces API error response:', errorText);
+        provincesTest = {
+          status: 'failed',
+          error: `HTTP ${provincesResponse.status}: ${errorText}`,
+          count: 0,
+          sample: []
         };
       }
     } catch (e) {
-      console.log('Provinces test error:', e.message);
+      console.log('Provinces test network error:', e.message);
+      provincesTest = {
+        status: 'failed',
+        error: `Network error: ${e.message}`,
+        count: 0,
+        sample: []
+      };
     }
 
     try {
+      console.log('🔍 Testing cost API...');
       const formData = new URLSearchParams();
       formData.append('key', RAJAONGKIR_API_KEY);
       formData.append('origin', '607');
@@ -114,21 +138,41 @@ export default async function handler(req, res) {
       formData.append('weight', '1000');
       formData.append('courier', 'jne');
 
+      console.log('Cost request body:', formData.toString());
+
       const costResponse = await fetch(`${RAJAONGKIR_BASE_URL}/cost`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData.toString()
       });
 
+      console.log('Cost response status:', costResponse.status);
+      console.log('Cost response headers:', Object.fromEntries(costResponse.headers.entries()));
+
       if (costResponse.ok) {
         const costData = await costResponse.json();
+        console.log('Cost response data:', costData);
         costTest = {
           status: 'success',
-          results: costData.rajaongkir?.results || []
+          results: costData.rajaongkir?.results || [],
+          fullResponse: costData
+        };
+      } else {
+        const errorText = await costResponse.text();
+        console.log('Cost API error response:', errorText);
+        costTest = {
+          status: 'failed',
+          error: `HTTP ${costResponse.status}: ${errorText}`,
+          results: []
         };
       }
     } catch (e) {
-      console.log('Cost test error:', e.message);
+      console.log('Cost test network error:', e.message);
+      costTest = {
+        status: 'failed',
+        error: `Network error: ${e.message}`,
+        results: []
+      };
     }
 
     res.status(200).json({
