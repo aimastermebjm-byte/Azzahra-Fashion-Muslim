@@ -3,9 +3,6 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "engines": {
-    "node": ">=18.0.0"
-  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -13,8 +10,7 @@
     "preview": "vite preview",
     "deploy": "npm run build && vercel --prod",
     "deploy:dev": "vercel",
-    "deploy-windows": "deploy.bat",
-    "vercel-build": "vite build"
+    "deploy-windows": "deploy.bat"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.75.1",
