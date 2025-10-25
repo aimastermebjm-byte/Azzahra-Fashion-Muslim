@@ -1,18 +1,15 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+const RAJAONGKIR_DELIVERY_API_KEY = 'LVhqbq325358dc66be91f537xYjLL3Zi';
+const RAJAONGKIR_DELIVERY_URL = 'https://pro.rajaongkir.com/api';
 
-const RAJAONGKIR_API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
-const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter';
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req, res) {
   try {
-    const { province } = req.query;
+    const { city } = req.query;
 
-    let url = `${RAJAONGKIR_BASE_URL}/city?key=${RAJAONGKIR_API_KEY}`;
-    if (province) {
-      url += `&province=${province}`;
+    if (!city) {
+      return res.status(400).json({ error: 'City parameter is required' });
     }
 
-    const response = await fetch(url);
+    const response = await fetch(`${RAJAONGKIR_DELIVERY_URL}/subdistrict?key=${RAJAONGKIR_DELIVERY_API_KEY}&city=${city}`);
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -34,8 +31,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } catch (error) {
     console.error('RajaOngkir API Error:', error);
     res.status(500).json({
-      error: 'Failed to fetch cities from RajaOngkir API',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Failed to fetch subdistricts from RajaOngkir API',
+      details: error.message || 'Unknown error'
     });
   }
 }

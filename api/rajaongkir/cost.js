@@ -1,9 +1,7 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-
 const RAJAONGKIR_API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
 const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req, res) {
   try {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Method not allowed' });
@@ -53,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('RajaOngkir Cost API Error:', error);
     res.status(500).json({
       error: 'Failed to calculate shipping cost from RajaOngkir API',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error.message || 'Unknown error'
     });
   }
 }

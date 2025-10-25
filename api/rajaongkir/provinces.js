@@ -1,9 +1,7 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-
 const RAJAONGKIR_API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
 const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req, res) {
   try {
     const response = await fetch(`${RAJAONGKIR_BASE_URL}/province?key=${RAJAONGKIR_API_KEY}`);
 
@@ -28,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('RajaOngkir API Error:', error);
     res.status(500).json({
       error: 'Failed to fetch provinces from RajaOngkir API',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error.message || 'Unknown error'
     });
   }
 }
