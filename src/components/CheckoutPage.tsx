@@ -59,13 +59,28 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       console.log('📡 Calling rajaOngkirService.calculateShippingCost...');
       const results = await rajaOngkirService.calculateShippingCost(destinationCityId, weight, courierCode);
       console.log('📦 Results from service:', results);
+      console.log('📦 Results type:', typeof results);
+      console.log('📦 Results length:', results?.length);
 
-      if (results.length > 0 && results[0].costs.length > 0) {
+      // Log detailed structure
+      if (results && results.length > 0) {
+        console.log('📦 First result:', JSON.stringify(results[0], null, 2));
+        if (results[0].costs) {
+          console.log('📦 Costs array:', results[0].costs);
+          if (results[0].costs.length > 0) {
+            console.log('📦 First cost:', JSON.stringify(results[0].costs[0], null, 2));
+          }
+        }
+      }
+
+      if (results && results.length > 0 && results[0].costs && results[0].costs.length > 0) {
         // Use the first (cheapest) service
         const cheapestService = results[0].costs[0];
         const cost = cheapestService.cost[0].value;
 
         console.log('💰 Setting shipping cost:', cost);
+        console.log('💰 Service details:', cheapestService);
+
         setFormData(prev => ({
           ...prev,
           shippingCost: cost,
@@ -73,7 +88,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           shippingETD: cheapestService.cost[0].etd
         }));
       } else {
-        console.log('❌ No results from API, using fallback');
+        console.log('❌ No valid results from API, using fallback');
+        console.log('❌ Results structure:', JSON.stringify(results, null, 2));
         setShippingError('Tidak dapat menghitung ongkir untuk kurir ini');
         setFormData(prev => ({ ...prev, shippingCost: 15000 })); // Fallback price
       }
