@@ -140,8 +140,7 @@ export default async function handler(req, res) {
     const response = await fetch(`${RAJAONGKIR_BASE_URL}/cost`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'key': RAJAONGKIR_API_KEY
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: formData.toString()
     });
