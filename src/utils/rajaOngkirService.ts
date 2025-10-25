@@ -419,19 +419,45 @@ class RajaOngkirService {
   }
 
   private getMockCost(origin: string, destination: string, weight: number, courier: string): CostResult[] {
-    const baseCosts: { [key: string]: number } = {
-      'jnt': 15000,
-      'jne': 18000,
-      'pos': 20000,
-      'tiki': 17000,
-      'sicepat': 16000,
-      'wahana': 12000
+    // Realistic base costs for different routes (Banjarmasin as origin)
+    const routeCosts: { [key: string]: { [key: string]: number } } = {
+      // Major cities from Banjarmasin
+      '177': { // Surabaya
+        'jnt': 45000, 'jne': 48000, 'pos': 35000, 'tiki': 50000, 'sicepat': 55000, 'wahana': 28000
+      },
+      '6': { // Medan
+        'jnt': 85000, 'jne': 92000, 'pos': 65000, 'tiki': 95000, 'sicepat': 98000, 'wahana': 55000
+      },
+      '96': { // Bandung
+        'jnt': 55000, 'jne': 58000, 'pos': 45000, 'tiki': 60000, 'sicepat': 65000, 'wahana': 38000
+      },
+      '137': { // Semarang
+        'jnt': 48000, 'jne': 52000, 'pos': 40000, 'tiki': 54000, 'sicepat': 58000, 'wahana': 32000
+      },
+      '173': { // Malang
+        'jnt': 52000, 'jne': 55000, 'pos': 42000, 'tiki': 58000, 'sicepat': 62000, 'wahana': 35000
+      },
+      '607': { // Banjarmasin (local)
+        'jnt': 15000, 'jne': 18000, 'pos': 12000, 'tiki': 20000, 'sicepat': 22000, 'wahana': 10000
+      },
+      '608': { // Banjarbaru (local)
+        'jnt': 12000, 'jne': 15000, 'pos': 10000, 'tiki': 17000, 'sicepat': 18000, 'wahana': 8000
+      }
     };
 
-    const baseCost = baseCosts[courier] || 15000;
-    const weightMultiplier = Math.max(1, weight / 1000);
-    const distanceCost = Math.floor(Math.random() * 10000) + 5000;
-    const totalCost = Math.round(baseCost * weightMultiplier + distanceCost);
+    // Default costs for other cities
+    const defaultCosts: { [key: string]: number } = {
+      'jnt': 35000,
+      'jne': 38000,
+      'pos': 28000,
+      'tiki': 40000,
+      'sicepat': 45000,
+      'wahana': 22000
+    };
+
+    const routeCost = routeCosts[destination]?.[courier] || defaultCosts[courier] || 35000;
+    const weightMultiplier = Math.max(1, Math.ceil(weight / 1000)); // Round up to nearest kg
+    const totalCost = routeCost * weightMultiplier;
 
     const etdMap: { [key: string]: string } = {
       'jnt': '2-3 hari',
@@ -442,16 +468,29 @@ class RajaOngkirService {
       'wahana': '3-6 hari'
     };
 
+    const serviceMap: { [key: string]: { service: string; description: string } } = {
+      'jnt': { service: 'EZ', description: 'Regular Package' },
+      'jne': { service: 'REG', description: 'Regular Package' },
+      'pos': { service: 'Paket Kilat Khusus', description: 'Express Package' },
+      'tiki': { service: 'REG', description: 'Regular Package' },
+      'sicepat': { service: 'REG', description: 'Regular Package' },
+      'wahana': { service: 'REG', description: 'Regular Package' }
+    };
+
+    const courierInfo = serviceMap[courier] || { service: 'REG', description: 'Regular Package' };
+
+    console.log(`💰 MOCK COST for ${courier} to ${destination}: Rp ${totalCost.toLocaleString('id-ID')} (${weightMultiplier}kg)`);
+
     return [{
       code: courier.toUpperCase(),
       name: COURIERS.find(c => c.code === courier)?.name || courier.toUpperCase(),
       costs: [{
-        service: 'Regular Package',
-        description: 'Paket reguler',
+        service: courierInfo.service,
+        description: courierInfo.description,
         cost: [{
           value: totalCost,
           etd: etdMap[courier] || '2-4 hari',
-          note: 'Mock calculation'
+          note: 'Mock calculation - realistic pricing'
         }]
       }]
     }];
