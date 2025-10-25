@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "deploy": "npm run build && vercel --prod",
     "deploy:dev": "vercel",
-    "deploy-windows": "deploy.bat"
+    "deploy-windows": "deploy.bat",
+    "vercel-build": "vite build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.75.1",
