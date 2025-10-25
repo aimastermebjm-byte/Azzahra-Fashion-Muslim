@@ -87,10 +87,69 @@ export default async function handler(req, res) {
     console.log('API Key:', RAJAONGKIR_API_KEY ? `${RAJAONGKIR_API_KEY.substring(0, 8)}...` : 'Missing');
     console.log('API Key length:', RAJAONGKIR_API_KEY.length);
 
+    // Get actual test results to return
+    let provincesTest = { status: 'failed', count: 0, sample: [] };
+    let costTest = { status: 'failed', results: [] };
+
+    try {
+      const provincesResponse = await fetch(`${RAJAONGKIR_BASE_URL}/province?key=${RAJAONGKIR_API_KEY}`);
+      if (provincesResponse.ok) {
+        const provincesData = await provincesResponse.json();
+        const provinces = provincesData.rajaongkir?.results || [];
+        provincesTest = {
+          status: provinces.length > 0 ? 'success' : 'failed',
+          count: provinces.length,
+          sample: provinces.slice(0, 3)
+        };
+      }
+    } catch (e) {
+      console.log('Provinces test error:', e.message);
+    }
+
+    try {
+      const formData = new URLSearchParams();
+      formData.append('key', RAJAONGKIR_API_KEY);
+      formData.append('origin', '607');
+      formData.append('destination', '177');
+      formData.append('weight', '1000');
+      formData.append('courier', 'jne');
+
+      const costResponse = await fetch(`${RAJAONGKIR_BASE_URL}/cost`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString()
+      });
+
+      if (costResponse.ok) {
+        const costData = await costResponse.json();
+        costTest = {
+          status: 'success',
+          results: costData.rajaongkir?.results || []
+        };
+      }
+    } catch (e) {
+      console.log('Cost test error:', e.message);
+    }
+
     res.status(200).json({
+      success: true,
       message: 'RajaOngkir API connection test completed',
       timestamp: new Date().toISOString(),
-      apiStatus: 'Check Vercel logs for detailed results'
+      environment: process.env.NODE_ENV || 'development',
+      apiKeyConfigured: !!RAJAONGKIR_API_KEY,
+      apiKeyLength: RAJAONGKIR_API_KEY ? RAJAONGKIR_API_KEY.length : 0,
+      testResults: {
+        provincesTest,
+        costTest
+      },
+      conclusion: {
+        usingRealAPI: provincesTest.count > 10 && costTest.status === 'success',
+        recommendation: provincesTest.count > 10 ? 'API connected to real RajaOngkir servers' : 'Still using mock data',
+        hasRealPricing: costTest.results.some(result =>
+          result.costs && result.costs[0] && result.costs[0].cost[0] &&
+          result.costs[0].cost[0].value > 20000 && result.costs[0].cost[0].value < 200000
+        )
+      }
     });
 
   } catch (error) {
