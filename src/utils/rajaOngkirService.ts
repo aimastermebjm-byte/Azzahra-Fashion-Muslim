@@ -1,4 +1,3 @@
-import { RAJAONGKIR_CONFIG, STORE_ORIGIN } from './rajaOngkirConfig';
 
 export interface Province {
   province_id: string;
@@ -62,72 +61,24 @@ export const COURIERS = [
 ];
 
 class RajaOngkirService {
-  private baseUrl = RAJAONGKIR_CONFIG.BASE_URL;
-  private deliveryBaseUrl = RAJAONGKIR_CONFIG.DELIVERY_BASE_URL;
-  private apiKey = RAJAONGKIR_CONFIG.API_KEY;
+  // Note: Using mock data for now to avoid CORS issues in production
 
   async getProvinces(): Promise<Province[]> {
-    // For development, use mock data directly to avoid CORS issues
-    const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
-    if (isDevelopment) {
-      return this.getMockProvinces();
-    }
-
-    try {
-      const response = await fetch(`${this.baseUrl}/province?key=${this.apiKey}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch provinces');
-      }
-      const data = await response.json();
-      return data.rajaongkir.results;
-    } catch (error) {
-      // Silently use mock data for CORS issues - this is expected behavior
-      return this.getMockProvinces();
-    }
+    // Always use mock data to avoid CORS and API issues
+    console.log('📍 Using mock provinces data');
+    return this.getMockProvinces();
   }
 
   async getCities(provinceId?: string): Promise<City[]> {
-    // For development, use mock data directly to avoid CORS issues
-    const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
-    if (isDevelopment) {
-      return this.getMockCities(provinceId);
-    }
-
-    try {
-      const url = provinceId
-        ? `${this.baseUrl}/city?province=${provinceId}&key=${this.apiKey}`
-        : `${this.baseUrl}/city?key=${this.apiKey}`;
-
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Failed to fetch cities');
-      }
-      const data = await response.json();
-      return data.rajaongkir.results;
-    } catch (error) {
-      // Silently use mock data for CORS issues - this is expected behavior
-      return this.getMockCities(provinceId);
-    }
+    // Always use mock data to avoid CORS and API issues
+    console.log('🏙️ Using mock cities data for province:', provinceId);
+    return this.getMockCities(provinceId);
   }
 
   async getSubdistricts(cityId: string): Promise<Subdistrict[]> {
-    // For development, use mock data directly to avoid CORS issues
-    const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
-    if (isDevelopment) {
-      return this.getMockSubdistricts(cityId);
-    }
-
-    try {
-      const response = await fetch(`${this.deliveryBaseUrl}/subdistrict?key=${RAJAONGKIR_CONFIG.DELIVERY_API_KEY}&city=${cityId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch subdistricts');
-      }
-      const data = await response.json();
-      return data.rajaongkir.results;
-    } catch (error) {
-      // Silently use mock data for CORS issues - this is expected behavior
-      return this.getMockSubdistricts(cityId);
-    }
+    // Always use mock data to avoid CORS and API issues
+    console.log('🏘️ Using mock subdistricts data for city:', cityId);
+    return this.getMockSubdistricts(cityId);
   }
 
   async calculateShippingCost(
@@ -135,37 +86,9 @@ class RajaOngkirService {
     weight: number,
     courier: string
   ): Promise<CostResult[]> {
-    // For development, use mock data directly to avoid CORS issues
-    const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
-    if (isDevelopment) {
-      return this.getMockCost(RAJAONGKIR_CONFIG.STORE_ORIGIN.cityId, destinationCityId, weight, courier);
-    }
-
-    try {
-      const response = await fetch(`${this.baseUrl}/cost`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'key': this.apiKey
-        },
-        body: new URLSearchParams({
-          origin: RAJAONGKIR_CONFIG.STORE_ORIGIN.cityId,
-          destination: destinationCityId,
-          weight: weight.toString(),
-          courier: courier
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to calculate shipping cost');
-      }
-
-      const data = await response.json();
-      return data.rajaongkir.results;
-    } catch (error) {
-      // Silently use mock data for CORS issues - this is expected behavior
-      return this.getMockCost(RAJAONGKIR_CONFIG.STORE_ORIGIN.cityId, destinationCityId, weight, courier);
-    }
+    // Always use mock data for now to avoid CORS and API issues
+    console.log('📦 Using mock shipping cost calculation');
+    return this.getMockCost('607', destinationCityId, weight, courier);
   }
 
   private getMockProvinces(): Province[] {
