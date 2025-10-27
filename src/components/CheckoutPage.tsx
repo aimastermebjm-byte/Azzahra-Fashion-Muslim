@@ -21,28 +21,30 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   // Load cart from backend
   const loadCart = async () => {
-    if (!user?.uid) return;
-
     try {
       setLoading(true);
-      const items = await cartService.getCart(user.uid);
-      setCartItems(items);
-      console.log('🛒 Checkout: Cart loaded from backend:', items.length, 'items');
+      const items = await cartService.getCart();
+      setCartItems(items || []);
+      console.log('🛒 Checkout: Cart loaded from backend:', items?.length || 0, 'items');
     } catch (error) {
       console.error('❌ Failed to load cart for checkout:', error);
+      setCartItems([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (user?.uid) {
-      loadCart();
-    }
+    loadCart(); // Load regardless of user state
   }, [user]);
 
   const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return cartItems.reduce((total, item) => {
+      if (!item) return total;
+      const itemPrice = item.price || 0;
+      const itemQuantity = item.quantity || 1;
+      return total + (itemPrice * itemQuantity);
+    }, 0);
   };
 
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -315,29 +317,41 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         <div className="bg-white rounded-lg shadow-sm p-4">
           <h3 className="font-semibold mb-3">Produk Pesanan</h3>
           <div className="space-y-3">
-            {cartItems.map((item) => (
-              <div key={`${item.id}-${item.selectedVariant?.size}-${item.selectedVariant?.color}`} className="flex space-x-3">
-                <img
-                  src={item.images[0]}
-                  alt={item.name}
-                  className="w-16 h-16 object-cover rounded-lg"
-                />
-                <div className="flex-1">
-                  <h4 className="font-medium text-sm">{item.name}</h4>
-                  {item.selectedVariant && (
-                    <p className="text-xs text-gray-500">
-                      {item.selectedVariant.size} - {item.selectedVariant.color}
-                    </p>
-                  )}
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-sm font-semibold text-pink-600">
-                      Rp {(user?.role === 'reseller' ? item.resellerPrice : item.retailPrice).toLocaleString('id-ID')}
-                    </span>
-                    <span className="text-sm text-gray-500">x{item.quantity}</span>
+            {cartItems.map((item, index) => {
+              // Safety checks
+              if (!item) return null;
+
+              const itemName = item.name || 'Product';
+              const itemImage = item.image || `data:image/svg+xml;base64,${btoa('<svg width="80" height="80" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" fill="#f3f4f6"/><text x="40" y="45" text-anchor="middle" fill="#6b7280" font-size="12" font-family="Arial">Product</text></svg>')}`;
+              const itemPrice = item.price || 0;
+              const itemQuantity = item.quantity || 1;
+              const variant = item.variant || {};
+              const productId = item.productId || item.id || `product-${index}`;
+
+              return (
+                <div key={`${productId}-${variant.size || 'default'}-${variant.color || 'default'}`} className="flex space-x-3">
+                  <img
+                    src={itemImage}
+                    alt={itemName}
+                    className="w-16 h-16 object-cover rounded-lg"
+                  />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm">{itemName}</h4>
+                    {variant && (variant.size || variant.color) && (
+                      <p className="text-xs text-gray-500">
+                        {variant.size || 'Standard'} - {variant.color || 'Default'}
+                      </p>
+                    )}
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-sm font-semibold text-pink-600">
+                        Rp {itemPrice.toLocaleString('id-ID')}
+                      </span>
+                      <span className="text-sm text-gray-500">x{itemQuantity}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            }).filter(Boolean)}
           </div>
         </div>
 
