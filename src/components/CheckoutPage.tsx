@@ -58,7 +58,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setShippingError('');
 
       console.log('📡 Calling komerceService.calculateShippingCost...');
-      const results = await komerceService.calculateShippingCost('607', destinationCityId, weight, courierCode);
+      const results = await komerceService.calculateShippingCost('2425', destinationCityId, weight, courierCode);
       console.log('📦 Results from service:', results);
       console.log('📦 Results type:', typeof results);
       console.log('📦 Results length:', results?.length);
