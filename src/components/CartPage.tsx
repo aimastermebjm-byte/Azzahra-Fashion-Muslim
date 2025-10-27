@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { cartService } from '../services/cartService';
 import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag, RefreshCw } from 'lucide-react';
 
@@ -24,7 +23,7 @@ const CartPage: React.FC<CartPageProps> = ({
 
     try {
       setLoading(true);
-      const items = await cartService.getCart(user.uid);
+      const items = await cartService.getCart();
       setCartItems(items);
       console.log('🛒 Cart loaded from backend:', items.length, 'items');
     } catch (error) {
@@ -49,10 +48,12 @@ const CartPage: React.FC<CartPageProps> = ({
 
         // Sync each item to backend
         for (const item of localItems) {
-          await cartService.addToCart(user.uid, {
+          await cartService.addToCart({
             productId: item.productId,
             variant: item.variant,
-            quantity: item.quantity
+            quantity: item.quantity,
+            name: item.name || 'Product',
+            price: item.price || 0
           });
         }
 
@@ -80,10 +81,21 @@ const CartPage: React.FC<CartPageProps> = ({
     if (!user?.uid) return;
 
     try {
+      // Find the item in cart to get its ID
+      const item = cartItems.find(item =>
+        item.productId === productId &&
+        JSON.stringify(item.variant) === JSON.stringify(variant)
+      );
+
+      if (!item) {
+        console.error('❌ Item not found in cart');
+        return;
+      }
+
       if (newQuantity === 0) {
-        await cartService.removeFromCart(user.uid, productId, variant);
+        await cartService.removeFromCart(item.id);
       } else {
-        await cartService.updateQuantity(user.uid, productId, variant, newQuantity);
+        await cartService.updateQuantity(item.id, newQuantity);
       }
       await loadCart(); // Reload cart
     } catch (error) {
@@ -95,7 +107,18 @@ const CartPage: React.FC<CartPageProps> = ({
     if (!user?.uid) return;
 
     try {
-      await cartService.removeFromCart(user.uid, productId, variant);
+      // Find the item in cart to get its ID
+      const item = cartItems.find(item =>
+        item.productId === productId &&
+        JSON.stringify(item.variant) === JSON.stringify(variant)
+      );
+
+      if (!item) {
+        console.error('❌ Item not found in cart');
+        return;
+      }
+
+      await cartService.removeFromCart(item.id);
       await loadCart(); // Reload cart
     } catch (error) {
       console.error('❌ Failed to remove from cart:', error);
@@ -190,62 +213,58 @@ const CartPage: React.FC<CartPageProps> = ({
 
       <div className="p-4 space-y-4">
         {cartItems.map((item) => {
-          const price = user?.role === 'reseller' ? item.resellerPrice : item.retailPrice;
-          const itemTotal = price * item.quantity;
-          
+          const itemTotal = item.price * item.quantity;
+
           return (
-            <div key={`${item.id}-${item.selectedVariant?.size}-${item.selectedVariant?.color}`} className="bg-white rounded-lg shadow-sm p-4">
+            <div key={`${item.productId}-${item.variant?.size || 'default'}-${item.variant?.color || 'default'}`} className="bg-white rounded-lg shadow-sm p-4">
               <div className="flex space-x-4">
                 <img
-                  src={item.images[0]}
+                  src={item.image || 'https://via.placeholder.com/80x80?text=Product'}
                   alt={item.name}
                   className="w-20 h-20 object-cover rounded-lg"
                 />
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-800 mb-1">{item.name}</h3>
-                  
-                  {item.selectedVariant && (
+
+                  {item.variant && (
                     <p className="text-sm text-gray-500 mb-2">
-                      Ukuran: {item.selectedVariant.size} | Warna: {item.selectedVariant.color}
+                      Ukuran: {item.variant.size || 'Standard'} | Warna: {item.variant.color || 'Default'}
                     </p>
                   )}
-                  
+
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col">
                       <span className="text-lg font-bold text-pink-600">
-                        Rp {price.toLocaleString('id-ID')}
+                        Rp {item.price.toLocaleString('id-ID')}
                       </span>
-                      {user?.role === 'reseller' && (
-                        <span className="text-xs text-blue-600 font-medium">Harga Reseller</span>
-                      )}
                     </div>
-                    
+
                     <div className="flex items-center space-x-3">
                       <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
                         <button
-                          onClick={() => updateQuantity(item.id, item.selectedVariant, Math.max(1, item.quantity - 1))}
+                          onClick={() => updateQuantity(item.productId, item.variant, Math.max(1, item.quantity - 1))}
                           className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors"
                         >
                           <Minus className="w-4 h-4" />
                         </button>
                         <span className="w-8 text-center font-semibold">{item.quantity}</span>
                         <button
-                          onClick={() => updateQuantity(item.id, item.selectedVariant, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.productId, item.variant, item.quantity + 1)}
                           className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors"
                         >
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
-                      
+
                       <button
-                        onClick={() => removeFromCart(item.id, item.selectedVariant)}
+                        onClick={() => removeFromCart(item.productId, item.variant)}
                         className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-md transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="mt-2 text-right">
                     <span className="text-sm text-gray-600">Subtotal: </span>
                     <span className="font-semibold text-gray-800">
