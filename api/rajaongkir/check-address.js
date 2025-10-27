@@ -7,18 +7,53 @@ export default async function handler(req, res) {
   try {
     console.log('🔍 Checking Komerce address API...');
 
-    // Test 1: Get provinces
+    // Test 1: Get provinces with search parameter
     console.log('\nTest 1: Get all provinces');
     try {
-      const response = await fetch(`${KOMERCE_BASE_URL}/destination/domestic-destination?key=${KOMERCE_API_KEY}`, {
+      // Try without search first
+      const response1 = await fetch(`${KOMERCE_BASE_URL}/destination/domestic-destination?key=${KOMERCE_API_KEY}`, {
         method: 'GET',
         headers: {
           'key': KOMERCE_API_KEY
         }
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response1.ok) {
+        const data = await response1.json();
+        console.log('✅ Provinces Response:', JSON.stringify(data, null, 2));
+      } else {
+        const errorText1 = await response1.text();
+        console.log('❌ Provinces API Error (no search):', errorText1);
+
+        // Try with search parameter
+        console.log('\nTrying with search parameter...');
+        const response2 = await fetch(`${KOMERCE_BASE_URL}/destination/domestic-destination?key=${KOMERCE_API_KEY}&search=kalimantan`, {
+          method: 'GET',
+          headers: {
+            'key': KOMERCE_API_KEY
+          }
+        });
+
+        if (response2.ok) {
+          const data2 = await response2.json();
+          console.log('✅ Provinces Response (with search):', JSON.stringify(data2, null, 2));
+
+          // Process data from search response
+          return res.status(200).json({
+            success: true,
+            message: 'Address API check completed',
+            timestamp: new Date().toISOString(),
+            data: data2,
+            note: 'Used search parameter for provinces'
+          });
+        } else {
+          const errorText2 = await response2.text();
+          console.log('❌ Provinces API Error (with search):', errorText2);
+        }
+      }
+
+      if (response1.ok) {
+        const data = await response1.json();
         console.log('✅ Provinces Response:', JSON.stringify(data, null, 2));
 
         // Look for Kalimantan Selatan
