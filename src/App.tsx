@@ -377,22 +377,16 @@ function AppContent() {
         );
       case 'cart':
         return (
-          <CartPage 
-            cartItems={cartItems}
+          <CartPage
             user={user}
-            updateQuantity={updateCartQuantity}
-            removeFromCart={removeFromCart}
-            getTotalPrice={getTotalPrice}
             onBack={() => setCurrentPage('home')}
             onCheckout={handleCheckout}
           />
         );
       case 'checkout':
         return (
-          <CheckoutPage 
-            cartItems={cartItems}
+          <CheckoutPage
             user={user}
-            getTotalPrice={getTotalPrice}
             clearCart={handleOrderComplete}
             onBack={() => setCurrentPage('cart')}
           />

@@ -1,29 +1,112 @@
-import React from 'react';
-import { useCart } from '../contexts/CartContext';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
+import { cartService } from '../services/cartService';
+import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag, RefreshCw } from 'lucide-react';
 
 interface CartPageProps {
-  cartItems: any[];
   user: any;
-  updateQuantity: (productId: string, variant: any, newQuantity: number) => void;
-  removeFromCart: (productId: string, variant: any) => void;
-  getTotalPrice: () => number;
   onBack: () => void;
   onCheckout: () => void;
 }
 
-const CartPage: React.FC<CartPageProps> = ({ 
-  cartItems, 
-  user, 
-  updateQuantity, 
-  removeFromCart, 
-  getTotalPrice, 
-  onBack, 
-  onCheckout 
+const CartPage: React.FC<CartPageProps> = ({
+  user,
+  onBack,
+  onCheckout
 }) => {
+  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
 
-  if (cartItems.length === 0) {
+  // Load cart from backend
+  const loadCart = async () => {
+    if (!user?.uid) return;
+
+    try {
+      setLoading(true);
+      const items = await cartService.getCart(user.uid);
+      setCartItems(items);
+      console.log('🛒 Cart loaded from backend:', items.length, 'items');
+    } catch (error) {
+      console.error('❌ Failed to load cart:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sync cart from local storage to backend
+  const syncCartToBackend = async () => {
+    if (!user?.uid) return;
+
+    try {
+      setSyncing(true);
+      console.log('🔄 Syncing cart to backend...');
+
+      // Get local cart
+      const localCart = localStorage.getItem(`cart_${user.uid}`);
+      if (localCart) {
+        const localItems = JSON.parse(localCart);
+
+        // Sync each item to backend
+        for (const item of localItems) {
+          await cartService.addToCart(user.uid, {
+            productId: item.productId,
+            variant: item.variant,
+            quantity: item.quantity
+          });
+        }
+
+        // Clear local cart after sync
+        localStorage.removeItem(`cart_${user.uid}`);
+
+        // Reload cart from backend
+        await loadCart();
+        console.log('✅ Cart synced successfully');
+      }
+    } catch (error) {
+      console.error('❌ Failed to sync cart:', error);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.uid) {
+      loadCart();
+    }
+  }, [user]);
+
+  const updateQuantity = async (productId: string, variant: any, newQuantity: number) => {
+    if (!user?.uid) return;
+
+    try {
+      if (newQuantity === 0) {
+        await cartService.removeFromCart(user.uid, productId, variant);
+      } else {
+        await cartService.updateQuantity(user.uid, productId, variant, newQuantity);
+      }
+      await loadCart(); // Reload cart
+    } catch (error) {
+      console.error('❌ Failed to update quantity:', error);
+    }
+  };
+
+  const removeFromCart = async (productId: string, variant: any) => {
+    if (!user?.uid) return;
+
+    try {
+      await cartService.removeFromCart(user.uid, productId, variant);
+      await loadCart(); // Reload cart
+    } catch (error) {
+      console.error('❌ Failed to remove from cart:', error);
+    }
+  };
+
+  const getTotalPrice = () => {
+    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="bg-white shadow-sm sticky top-0 z-10">
@@ -34,7 +117,35 @@ const CartPage: React.FC<CartPageProps> = ({
             <h1 className="text-lg font-semibold">Keranjang Belanja</h1>
           </div>
         </div>
-        
+
+        <div className="flex flex-col items-center justify-center h-96">
+          <RefreshCw className="w-16 h-16 text-gray-300 mb-4 animate-spin" />
+          <h3 className="text-lg font-semibold text-gray-600 mb-2">Memuat Keranjang...</h3>
+        </div>
+      </div>
+    );
+  }
+
+  if (cartItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white shadow-sm sticky top-0 z-10">
+          <div className="flex items-center p-4">
+            <button onClick={onBack} className="mr-4">
+              <ArrowLeft className="w-6 h-6 text-gray-600" />
+            </button>
+            <h1 className="text-lg font-semibold">Keranjang Belanja</h1>
+            <button
+              onClick={syncCartToBackend}
+              disabled={syncing}
+              className="ml-auto mr-2 p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50"
+              title="Sync keranjang dari lokal"
+            >
+              <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+        </div>
+
         <div className="flex flex-col items-center justify-center h-96">
           <ShoppingBag className="w-16 h-16 text-gray-300 mb-4" />
           <h3 className="text-lg font-semibold text-gray-600 mb-2">Keranjang Kosong</h3>
@@ -66,6 +177,14 @@ const CartPage: React.FC<CartPageProps> = ({
           <span className="ml-2 bg-pink-100 text-pink-600 text-xs px-2 py-1 rounded-full">
             {cartItems.length}
           </span>
+          <button
+            onClick={syncCartToBackend}
+            disabled={syncing}
+            className="ml-auto mr-2 p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50"
+            title="Sync keranjang dari lokal ke server"
+          >
+            <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
 

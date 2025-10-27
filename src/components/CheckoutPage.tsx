@@ -3,22 +3,48 @@ import { ArrowLeft, MapPin, Phone, User, Package, Copy, Loader2, AlertCircle, Pl
 import { useAddresses } from '../hooks/useAddresses';
 import AddressForm from './AddressForm';
 import { komerceService, KomerceCostResult } from '../utils/komerceService';
+import { cartService } from '../services/cartService';
 
 interface CheckoutPageProps {
-  cartItems: any[];
   user: any;
-  getTotalPrice: () => number;
   clearCart: (orderData: any) => string;
   onBack: () => void;
 }
 
 const CheckoutPage: React.FC<CheckoutPageProps> = ({
-  cartItems,
   user,
-  getTotalPrice,
   clearCart,
   onBack
 }) => {
+  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load cart from backend
+  const loadCart = async () => {
+    if (!user?.uid) return;
+
+    try {
+      setLoading(true);
+      const items = await cartService.getCart(user.uid);
+      setCartItems(items);
+      console.log('🛒 Checkout: Cart loaded from backend:', items.length, 'items');
+    } catch (error) {
+      console.error('❌ Failed to load cart for checkout:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.uid) {
+      loadCart();
+    }
+  }, [user]);
+
+  const getTotalPrice = () => {
+    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  };
+
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [editingAddress, setEditingAddress] = useState<any>(null);
