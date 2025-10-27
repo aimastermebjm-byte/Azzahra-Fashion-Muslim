@@ -119,6 +119,30 @@ const CartPage: React.FC<CartPageProps> = ({
     }
   };
 
+  const clearAllCart = async () => {
+    if (!window.confirm('Apakah Anda yakin ingin menghapus semua produk di keranjang?')) {
+      return;
+    }
+
+    try {
+      console.log('🗑️ Clearing all cart items...');
+
+      // Remove each item individually
+      for (const item of cartItems) {
+        if (item && item.id) {
+          await cartService.removeFromCart(item.id);
+        }
+      }
+
+      await loadCart(); // Reload cart
+      console.log('✅ All cart items cleared');
+      alert('Semua produk di keranjang telah dihapus');
+    } catch (error) {
+      console.error('❌ Failed to clear cart:', error);
+      alert('Gagal menghapus keranjang. Silakan coba lagi.');
+    }
+  };
+
   const getTotalPrice = () => {
     return cartItems.reduce((total, item) => {
       if (!item) return total;
@@ -199,6 +223,15 @@ const CartPage: React.FC<CartPageProps> = ({
           <span className="ml-2 bg-pink-100 text-pink-600 text-xs px-2 py-1 rounded-full">
             {cartItems.length}
           </span>
+          {cartItems.length > 0 && (
+            <button
+              onClick={clearAllCart}
+              className="ml-auto mr-2 p-2 text-red-600 hover:bg-red-50 rounded-lg"
+              title="Hapus semua produk"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          )}
           <button
             onClick={syncCartToBackend}
             disabled={syncing}
