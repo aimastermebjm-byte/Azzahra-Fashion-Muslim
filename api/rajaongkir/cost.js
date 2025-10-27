@@ -1,6 +1,6 @@
-// RajaOngkir API Configuration (Standard API)
+// Komerce API Configuration (RajaOngkir via Komerce)
 const RAJAONGKIR_API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
-const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter';
+const RAJAONGKIR_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
 
 // Realistic mock data based on typical Indonesian shipping costs from Banjarmasin
 const ROUTED_MOCK_COSTS = {
@@ -137,10 +137,11 @@ export default async function handler(req, res) {
     formData.append('weight', weight.toString());
     formData.append('courier', courier);
 
-    const response = await fetch(`${RAJAONGKIR_BASE_URL}/cost`, {
+    const response = await fetch(`${RAJAONGKIR_BASE_URL}/calculate/domestic-cost`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'API-KEY': RAJAONGKIR_API_KEY
       },
       body: formData.toString()
     });
