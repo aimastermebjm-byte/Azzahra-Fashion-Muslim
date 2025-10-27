@@ -129,23 +129,23 @@ export default async function handler(req, res) {
       apiKey: RAJAONGKIR_API_KEY ? 'Set' : 'Missing'
     });
 
-    // Komerce API - POST with JSON body
-    const requestBody = JSON.stringify({
-      origin: origin,
-      destination: destination,
-      weight: parseInt(weight),
-      courier: courier
-    });
+    // Komerce API - POST with form data (per official documentation)
+    const formData = new URLSearchParams();
+    formData.append('origin', origin);
+    formData.append('destination', destination);
+    formData.append('weight', weight.toString());
+    formData.append('courier', courier);
+    formData.append('price', 'lowest'); // Get lowest shipping cost
 
-    console.log('📋 Komerce Request Body:', requestBody);
+    console.log('📋 Komerce Request Body:', formData.toString());
 
     const response = await fetch(`${RAJAONGKIR_BASE_URL}/calculate/domestic-cost`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': RAJAONGKIR_API_KEY
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'key': RAJAONGKIR_API_KEY  // Correct header format per documentation
       },
-      body: requestBody
+      body: formData.toString()
     });
 
     console.log('📊 RajaOngkir Response Status:', response.status);
@@ -157,14 +157,36 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
-    console.log('✅ RajaOngkir API Response:', data);
+    console.log('✅ Komerce API Response:', data);
 
-    // RajaOngkir standard API returns data in rajaongkir.results format
-    let transformedResponse = data;
+    // Transform Komerce response to RajaOngkir format for compatibility
+    let transformedResponse;
 
-    // Check if real API returned valid data
-    if (!data.rajaongkir?.results || data.rajaongkir.results.length === 0) {
-      console.log('⚠️ RajaOngkir returned no valid data, using mock data');
+    if (data.meta?.code === 200 && data.data && data.data.length > 0) {
+      // Transform Komerce format to RajaOngkir format
+      const results = data.data.map(item => ({
+        code: item.code.toUpperCase(),
+        name: item.name,
+        costs: [{
+          service: item.service,
+          description: item.description,
+          cost: [{
+            value: item.cost,
+            etd: item.etd,
+            note: 'Real Komerce API calculation'
+          }]
+        }]
+      }));
+
+      transformedResponse = {
+        rajaongkir: {
+          status: { code: 200, description: "OK" },
+          results: results
+        }
+      };
+      console.log('✅ Using real Komerce data');
+      } else {
+      console.log('⚠️ Komerce returned no valid data, using mock data');
 
       // Use realistic mock data as fallback
       const { destination, weight } = req.body;
