@@ -19,15 +19,15 @@ const CartPage: React.FC<CartPageProps> = ({
 
   // Load cart from backend
   const loadCart = async () => {
-    if (!user?.uid) return;
-
     try {
       setLoading(true);
       const items = await cartService.getCart();
-      setCartItems(items);
-      console.log('🛒 Cart loaded from backend:', items.length, 'items');
+      console.log('🛒 Cart loaded:', items);
+      setCartItems(items || []);
+      console.log('🛒 Cart loaded from backend:', items?.length || 0, 'items');
     } catch (error) {
       console.error('❌ Failed to load cart:', error);
+      setCartItems([]);
     } finally {
       setLoading(false);
     }
@@ -72,14 +72,10 @@ const CartPage: React.FC<CartPageProps> = ({
   };
 
   useEffect(() => {
-    if (user?.uid) {
-      loadCart();
-    }
-  }, [user]);
+    loadCart(); // Load cart regardless of user state
+  }, [user]); // Reload when user changes
 
   const updateQuantity = async (productId: string, variant: any, newQuantity: number) => {
-    if (!user?.uid) return;
-
     try {
       // Find the item in cart to get its ID
       const item = cartItems.find(item =>
@@ -104,8 +100,6 @@ const CartPage: React.FC<CartPageProps> = ({
   };
 
   const removeFromCart = async (productId: string, variant: any) => {
-    if (!user?.uid) return;
-
     try {
       // Find the item in cart to get its ID
       const item = cartItems.find(item =>
