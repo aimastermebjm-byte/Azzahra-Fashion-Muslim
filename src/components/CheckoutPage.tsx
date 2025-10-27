@@ -84,16 +84,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           shippingETD: cheapestService.etd
         }));
       } else {
-        console.log('❌ No valid results from API, using fallback');
+        console.log('❌ No valid results from API');
         console.log('❌ Results structure:', JSON.stringify(results, null, 2));
         setShippingError('Tidak dapat menghitung ongkir untuk kurir ini');
-        setFormData(prev => ({ ...prev, shippingCost: 15000 })); // Fallback price
       }
     } catch (error) {
       console.log('❌ Error in calculateShippingCost:', error);
-      // Handle errors silently - use mock data fallback
-      setShippingError('');
-      setFormData(prev => ({ ...prev, shippingCost: 15000 })); // Fallback price
+      setShippingError('Gagal menghitung ongkir. Silakan coba lagi.');
+      // NO FALLBACK - Show error to user
     } finally {
       setLoadingShipping(false);
     }
@@ -184,10 +182,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         const weight = calculateTotalWeight();
         calculateShippingCost(selectedCourier.code, '607', weight);
       } else {
-        // For manual couriers, set default shipping cost
+        // For manual couriers, require manual input
         setFormData(prev => ({
           ...prev,
-          shippingCost: 15000, // Default manual price
+          shippingCost: 0, // No default - require manual input
           shippingService: '',
           shippingETD: ''
         }));
@@ -263,7 +261,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         dropshipName: formData.dropshipName,
         dropshipPhone: formData.dropshipPhone,
         courier: formData.shippingCourier,
-        shippingCost: formData.shippingCost,
+        shippingCost: formData.shippingCost > 0 ? formData.shippingCost : null,
         shippingService: formData.shippingService,
         shippingETD: formData.shippingETD
       },

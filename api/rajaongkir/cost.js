@@ -162,9 +162,10 @@ export default async function handler(req, res) {
       body: req.body
     });
 
+    // NO MOCK DATA FALLBACK - Return error directly
     return res.status(500).json({
       meta: {
-        message: 'Internal server error',
+        message: `API Error: ${error.message}`,
         code: 500,
         status: 'error'
       },
