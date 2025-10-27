@@ -27,7 +27,7 @@ export default async function handler(req, res) {
 
         // Try with search parameter
         console.log('\nTrying with search parameter...');
-        const response2 = await fetch(`${KOMERCE_BASE_URL}/destination/domestic-destination?key=${KOMERCE_API_KEY}&search=kalimantan`, {
+        const response2 = await fetch(`${KOMERCE_BASE_URL}/destination/domestic-destination?key=${KOMERCE_API_KEY}&search=surgi`, {
           method: 'GET',
           headers: {
             'key': KOMERCE_API_KEY
@@ -132,7 +132,7 @@ export default async function handler(req, res) {
           }
         }
       } else {
-        const errorText = await response.text();
+        const errorText = await response1.text();
         console.log('❌ Provinces API Error:', errorText);
       }
     } catch (error) {
