@@ -2,6 +2,8 @@
 // This service handles cart synchronization between localStorage and Firebase
 
 import { auth } from '../utils/firebaseClient';
+import { doc, getDoc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { db } from '../utils/firebaseClient';
 
 export interface CartItem {
   id: string;
@@ -255,24 +257,41 @@ class CartService {
 
   private async getCartFromFirebase(userId: string): Promise<CartItem[] | null> {
     try {
-      // Note: This would need Firebase Firestore implementation
-      // For now, return null to use localStorage
-      // TODO: Implement Firebase Firestore integration when needed
-      return null;
+      console.log('🔥 Loading cart from Firebase for user:', userId);
+
+      const cartRef = doc(db, 'user_carts', userId);
+      const cartDoc = await getDoc(cartRef);
+
+      if (cartDoc.exists()) {
+        const data = cartDoc.data();
+        const items = data?.items || [];
+        console.log('✅ Cart loaded from Firebase:', items.length, 'items');
+        return items;
+      } else {
+        console.log('ℹ️ No cart found in Firebase for user:', userId);
+        return null;
+      }
     } catch (error) {
-      console.error('Error getting cart from Firebase:', error);
+      console.error('❌ Error getting cart from Firebase:', error);
       return null;
     }
   }
 
   private async saveCartToFirebase(userId: string, cart: CartItem[]): Promise<void> {
     try {
-      // Note: This would need Firebase Firestore implementation
-      // For now, do nothing
-      // TODO: Implement Firebase Firestore integration when needed
-      console.log('Cart would be saved to Firebase for user:', userId, 'Items:', cart.length);
+      console.log('🔥 Saving cart to Firebase for user:', userId, 'Items:', cart.length);
+
+      const cartRef = doc(db, 'user_carts', userId);
+      await setDoc(cartRef, {
+        userId: userId,
+        items: cart,
+        lastUpdated: new Date().toISOString()
+      });
+
+      console.log('✅ Cart saved to Firebase successfully');
     } catch (error) {
-      console.error('Error saving cart to Firebase:', error);
+      console.error('❌ Error saving cart to Firebase:', error);
+      throw error;
     }
   }
 
