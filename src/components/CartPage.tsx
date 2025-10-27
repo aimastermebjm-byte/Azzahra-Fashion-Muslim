@@ -126,7 +126,12 @@ const CartPage: React.FC<CartPageProps> = ({
   };
 
   const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return cartItems.reduce((total, item) => {
+      if (!item) return total;
+      const itemPrice = item.price || 0;
+      const itemQuantity = item.quantity || 1;
+      return total + (itemPrice * itemQuantity);
+    }, 0);
   };
 
   if (loading) {
@@ -212,44 +217,57 @@ const CartPage: React.FC<CartPageProps> = ({
       </div>
 
       <div className="p-4 space-y-4">
-        {cartItems.map((item) => {
-          const itemTotal = item.price * item.quantity;
+        {cartItems.map((item, index) => {
+          // Safety checks for item properties
+          if (!item) {
+            console.error('❌ Cart item is null or undefined at index:', index);
+            return null;
+          }
+
+          const itemPrice = item.price || 0;
+          const itemQuantity = item.quantity || 1;
+          const itemTotal = itemPrice * itemQuantity;
+
+          const itemName = item.name || 'Product';
+          const itemImage = item.image || 'https://via.placeholder.com/80x80?text=Product';
+          const productId = item.productId || item.id || `product-${index}`;
+          const variant = item.variant || {};
 
           return (
-            <div key={`${item.productId}-${item.variant?.size || 'default'}-${item.variant?.color || 'default'}`} className="bg-white rounded-lg shadow-sm p-4">
+            <div key={`${productId}-${variant.size || 'default'}-${variant.color || 'default'}`} className="bg-white rounded-lg shadow-sm p-4">
               <div className="flex space-x-4">
                 <img
-                  src={item.image || 'https://via.placeholder.com/80x80?text=Product'}
-                  alt={item.name}
+                  src={itemImage}
+                  alt={itemName}
                   className="w-20 h-20 object-cover rounded-lg"
                 />
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-800 mb-1">{item.name}</h3>
+                  <h3 className="font-semibold text-gray-800 mb-1">{itemName}</h3>
 
-                  {item.variant && (
+                  {variant && (variant.size || variant.color) && (
                     <p className="text-sm text-gray-500 mb-2">
-                      Ukuran: {item.variant.size || 'Standard'} | Warna: {item.variant.color || 'Default'}
+                      Ukuran: {variant.size || 'Standard'} | Warna: {variant.color || 'Default'}
                     </p>
                   )}
 
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col">
                       <span className="text-lg font-bold text-pink-600">
-                        Rp {item.price.toLocaleString('id-ID')}
+                        Rp {itemPrice.toLocaleString('id-ID')}
                       </span>
                     </div>
 
                     <div className="flex items-center space-x-3">
                       <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
                         <button
-                          onClick={() => updateQuantity(item.productId, item.variant, Math.max(1, item.quantity - 1))}
+                          onClick={() => updateQuantity(productId, variant, Math.max(1, itemQuantity - 1))}
                           className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors"
                         >
                           <Minus className="w-4 h-4" />
                         </button>
-                        <span className="w-8 text-center font-semibold">{item.quantity}</span>
+                        <span className="w-8 text-center font-semibold">{itemQuantity}</span>
                         <button
-                          onClick={() => updateQuantity(item.productId, item.variant, item.quantity + 1)}
+                          onClick={() => updateQuantity(productId, variant, itemQuantity + 1)}
                           className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors"
                         >
                           <Plus className="w-4 h-4" />
@@ -257,7 +275,7 @@ const CartPage: React.FC<CartPageProps> = ({
                       </div>
 
                       <button
-                        onClick={() => removeFromCart(item.productId, item.variant)}
+                        onClick={() => removeFromCart(productId, variant)}
                         className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-md transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -275,7 +293,7 @@ const CartPage: React.FC<CartPageProps> = ({
               </div>
             </div>
           );
-        })}
+        }).filter(Boolean)}
       </div>
 
       {/* Bottom Checkout Bar */}
