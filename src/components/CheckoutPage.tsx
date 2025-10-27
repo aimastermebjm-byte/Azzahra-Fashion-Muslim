@@ -178,9 +178,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
       // Auto-calculate shipping for RajaOngkur couriers
       if (selectedCourier?.code) {
-        // Use default Banjarmasin city for automatic calculation
+        // Use Surgi Mufti, Banjarmasin Utara for automatic calculation
         const weight = calculateTotalWeight();
-        calculateShippingCost(selectedCourier.code, '607', weight);
+        calculateShippingCost(selectedCourier.code, '2425', weight);
       } else {
         // For manual couriers, require manual input
         setFormData(prev => ({
