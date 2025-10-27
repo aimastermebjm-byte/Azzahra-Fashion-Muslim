@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, MapPin, Phone, User, Package, Copy, Loader2, AlertCircle, Plus, Edit2, Trash2 } from 'lucide-react';
 import { useAddresses } from '../hooks/useAddresses';
 import AddressForm from './AddressForm';
-import { rajaOngkirService, CostResult } from '../utils/rajaOngkirService';
+import { komerceService, KomerceCostResult } from '../utils/komerceService';
 
 interface CheckoutPageProps {
   cartItems: any[];
@@ -24,9 +24,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const { addresses, addAddress, updateAddress, deleteAddress, getDefaultAddress } = useAddresses();
 
-  // RajaOngkir states
+  // Komerce states
   const [loadingShipping, setLoadingShipping] = useState(false);
-  const [ongkirResults, setOngkirResults] = useState<CostResult[]>([]);
+  const [ongkirResults, setOngkirResults] = useState<KomerceCostResult[]>([]);
   const [shippingError, setShippingError] = useState<string>('');
 
   // Calculate total weight of cart items
@@ -56,8 +56,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setLoadingShipping(true);
       setShippingError('');
 
-      console.log('📡 Calling rajaOngkirService.calculateShippingCost...');
-      const results = await rajaOngkirService.calculateShippingCost(destinationCityId, weight, courierCode);
+      console.log('📡 Calling komerceService.calculateShippingCost...');
+      const results = await komerceService.calculateShippingCost('607', destinationCityId, weight, courierCode);
       console.log('📦 Results from service:', results);
       console.log('📦 Results type:', typeof results);
       console.log('📦 Results length:', results?.length);
@@ -65,18 +65,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       // Log detailed structure
       if (results && results.length > 0) {
         console.log('📦 First result:', JSON.stringify(results[0], null, 2));
-        if (results[0].costs) {
-          console.log('📦 Costs array:', results[0].costs);
-          if (results[0].costs.length > 0) {
-            console.log('📦 First cost:', JSON.stringify(results[0].costs[0], null, 2));
-          }
-        }
       }
 
-      if (results && results.length > 0 && results[0].costs && results[0].costs.length > 0) {
-        // Use the first (cheapest) service
-        const cheapestService = results[0].costs[0];
-        const cost = cheapestService.cost[0].value;
+      if (results && results.length > 0) {
+        // Komerce returns direct data structure (no nested costs)
+        const cheapestService = results[0]; // Komerce already returns sorted by price
+        const cost = cheapestService.cost;
 
         console.log('💰 Setting shipping cost:', cost);
         console.log('💰 Service details:', cheapestService);
@@ -85,7 +79,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           ...prev,
           shippingCost: cost,
           shippingService: cheapestService.service,
-          shippingETD: cheapestService.cost[0].etd
+          shippingETD: cheapestService.etd
         }));
       } else {
         console.log('❌ No valid results from API, using fallback');
