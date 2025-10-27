@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const { origin, destination, weight, courier, price = 'lowest' } = req.body;
+    const { origin, destination, weight, courier, price = 'lowest', getAllCouriers = false } = req.body;
 
     // Validate required parameters
     if (!origin || !destination || !weight || !courier) {
@@ -50,47 +50,106 @@ export default async function handler(req, res) {
       apiKey: KOMERCE_API_KEY ? 'Set' : 'Missing'
     });
 
-    // Prepare form data as per Komerce documentation
-    const formData = new URLSearchParams();
-    formData.append('origin', origin.toString());
-    formData.append('destination', destination.toString());
-    formData.append('weight', weight.toString());
-    formData.append('courier', courier);
-    formData.append('price', price);
+    // Available couriers
+    const availableCouriers = ['jne', 'jnt', 'pos', 'tiki', 'sicepat', 'wahana'];
 
-    console.log('📋 Request Body:', formData.toString());
+    let results = [];
 
-    // Make request to Komerce API
-    const response = await fetch(`${KOMERCE_BASE_URL}/calculate/domestic-cost`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'key': KOMERCE_API_KEY
-      },
-      body: formData.toString()
-    });
+    if (getAllCouriers) {
+      // Get costs for ALL couriers
+      console.log('🚀 Getting costs for ALL couriers...');
 
-    console.log('📊 Komerce Response Status:', response.status);
+      for (const courierCode of availableCouriers) {
+        try {
+          const formData = new URLSearchParams();
+          formData.append('origin', origin.toString());
+          formData.append('destination', destination.toString());
+          formData.append('weight', weight.toString());
+          formData.append('courier', courierCode);
+          formData.append('price', price);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Komerce API Error:', errorText);
+          console.log(`📋 Request for ${courierCode}:`, formData.toString());
 
-      return res.status(response.status).json({
-        meta: {
-          message: `API Error: ${errorText}`,
-          code: response.status,
-          status: 'error'
+          const response = await fetch(`${KOMERCE_BASE_URL}/calculate/domestic-cost`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'key': KOMERCE_API_KEY
+            },
+            body: formData.toString()
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.meta?.status === 'success' && data.data && data.data.length > 0) {
+              results = results.concat(data.data);
+              console.log(`✅ ${courierCode} results:`, data.data.length);
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Error getting ${courierCode}:`, error.message);
+        }
+      }
+    } else {
+      // Get cost for single courier (existing behavior)
+      const formData = new URLSearchParams();
+      formData.append('origin', origin.toString());
+      formData.append('destination', destination.toString());
+      formData.append('weight', weight.toString());
+      formData.append('courier', courier);
+      formData.append('price', price);
+
+      console.log('📋 Request Body:', formData.toString());
+
+      const response = await fetch(`${KOMERCE_BASE_URL}/calculate/domestic-cost`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'key': KOMERCE_API_KEY
         },
-        data: null
+        body: formData.toString()
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Komerce API Error:', errorText);
+
+        return res.status(response.status).json({
+          meta: {
+            message: `API Error: ${errorText}`,
+            code: response.status,
+            status: 'error'
+          },
+          data: null
+        });
+      }
+
+      const data = await response.json();
+      console.log('✅ Komerce API Response:', JSON.stringify(data, null, 2));
+
+      // Return Komerce response directly (already in correct format)
+      return res.status(200).json(data);
     }
 
-    const data = await response.json();
-    console.log('✅ Komerce API Response:', JSON.stringify(data, null, 2));
+    // Return results for getAllCouriers mode
+    if (getAllCouriers) {
+      console.log('✅ All couriers results:', results.length, 'items');
 
-    // Return Komerce response directly (already in correct format)
-    return res.status(200).json(data);
+      // Sort by cost (lowest first)
+      results.sort((a, b) => a.cost - b.cost);
+
+      const allCouriersResponse = {
+        meta: {
+          message: 'Success Get All Couriers Domestic Shipping costs',
+          code: 200,
+          status: 'success'
+        },
+        data: results
+      };
+
+      console.log('✅ Returning all couriers response');
+      return res.status(200).json(allCouriersResponse);
+    }
 
   } catch (error) {
     console.error('💥 Komerce API Error:', {

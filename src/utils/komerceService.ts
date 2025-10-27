@@ -62,7 +62,8 @@ class KomerceService {
           destination,
           weight,
           courier,
-          price
+          price,
+          getAllCouriers: false
         })
       });
 
@@ -82,6 +83,52 @@ class KomerceService {
       }
     } catch (error) {
       console.error('❌ Error calculating shipping cost:', error);
+      throw error;
+    }
+  }
+
+  // New method to get ALL couriers at once
+  async getAllCouriersCost(
+    origin: string,
+    destination: string,
+    weight: number,
+    price: 'lowest' | 'highest' = 'lowest'
+  ): Promise<KomerceCostResult[]> {
+    try {
+      console.log('📦 Getting ALL couriers shipping cost from Komerce API');
+      console.log('📋 Parameters:', { origin, destination, weight, price });
+
+      const response = await fetch(`${this.baseUrl}/cost`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          origin,
+          destination,
+          weight,
+          courier: 'all', // dummy value
+          price,
+          getAllCouriers: true
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data: KomerceResponse = await response.json();
+      console.log('✅ All couriers API Response:', data);
+
+      if (data.meta.status === 'success' && data.data) {
+        console.log('✅ All couriers results:', data.data.length);
+        return data.data;
+      } else {
+        console.log('❌ Komerce API returned error:', data.meta.message);
+        throw new Error(data.meta.message);
+      }
+    } catch (error) {
+      console.error('❌ Error getting all couriers cost:', error);
       throw error;
     }
   }
