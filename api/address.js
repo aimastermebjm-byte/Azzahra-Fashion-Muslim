@@ -124,14 +124,14 @@ export default async function handler(req, res) {
       case 'provinces':
         transformedData = dataArray.map(item => ({
           province_id: item.id.toString(),
-          province: item.province_name
+          province: item.name || item.province_name
         }));
         break;
 
       case 'cities':
         transformedData = dataArray.map(item => ({
           city_id: item.id.toString(),
-          city_name: item.city_name,
+          city_name: item.name || item.city_name,
           province: item.province_name,
           province_id: provinceId,
           type: item.type || 'Kota'
@@ -141,7 +141,7 @@ export default async function handler(req, res) {
       case 'districts':
         transformedData = dataArray.map(item => ({
           district_id: item.id.toString(),
-          district_name: item.district_name,
+          district_name: item.name || item.district_name,
           city_id: cityId,
           province: item.province_name
         }));
@@ -150,7 +150,7 @@ export default async function handler(req, res) {
       case 'subdistricts':
         transformedData = dataArray.map(item => ({
           subdistrict_id: item.id.toString(),
-          subdistrict_name: item.subdistrict_name,
+          subdistrict_name: item.name || item.subdistrict_name,
           district_id: districtId,
           city: item.city_name,
           province: item.province_name
