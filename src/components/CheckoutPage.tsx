@@ -28,6 +28,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [loadingShipping, setLoadingShipping] = useState(false);
   const [ongkirResults, setOngkirResults] = useState<KomerceCostResult[]>([]);
   const [shippingError, setShippingError] = useState<string>('');
+  const [selectedService, setSelectedService] = useState<KomerceCostResult | null>(null);
+  const [showAllCouriers, setShowAllCouriers] = useState(false);
 
   // Calculate total weight of cart items
   const calculateTotalWeight = () => {

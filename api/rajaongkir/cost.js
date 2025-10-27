@@ -97,9 +97,13 @@ export default async function handler(req, res) {
       formData.append('destination', destination.toString());
       formData.append('weight', weight.toString());
       formData.append('courier', courier);
-      formData.append('price', price);
 
-      console.log('📋 Request Body:', formData.toString());
+      // Try to get all services by not specifying price
+      if (price && price !== 'all') {
+        formData.append('price', price);
+      }
+
+      console.log('📋 Request Body (single courier):', formData.toString());
 
       const response = await fetch(`${KOMERCE_BASE_URL}/calculate/domestic-cost`, {
         method: 'POST',
