@@ -159,72 +159,66 @@ export default async function handler(req, res) {
     const data = await response.json();
     console.log('✅ Komerce API Response:', data);
 
-    // Transform Komerce response to RajaOngkir format for compatibility
-    let transformedResponse;
-
-    if (data.meta?.code === 200 && data.data && data.data.length > 0) {
-      // Transform Komerce format to RajaOngkir format
-      const results = data.data.map(item => ({
-        code: item.code.toUpperCase(),
-        name: item.name,
+    // Simple check - if API works, return the data directly in expected format
+    if (data && data.meta && data.meta.code === 200) {
+      // Transform Komerce response to our expected format
+      const results = (data.data || []).map(item => ({
+        code: (item.code || '').toUpperCase(),
+        name: item.name || 'Unknown',
         costs: [{
-          service: item.service,
-          description: item.description,
+          service: item.service || 'REG',
+          description: item.description || 'Regular Package',
           cost: [{
-            value: item.cost,
-            etd: item.etd,
+            value: item.cost || 0,
+            etd: item.etd || '2-4 hari',
             note: 'Real Komerce API calculation'
           }]
         }]
       }));
 
-      transformedResponse = {
+      const transformedResponse = {
         rajaongkir: {
           status: { code: 200, description: "OK" },
           results: results
         }
       };
       console.log('✅ Using real Komerce data');
-      } else {
-      console.log('⚠️ Komerce returned no valid data, using mock data');
-
-      // Use realistic mock data as fallback
-      const { destination, weight } = req.body;
-      const weightNum = parseFloat(weight) || 1;
-      const weightMultiplier = Math.max(1, Math.ceil(weightNum / 1000)); // Round up to nearest kg
-
-      const mockResults = Object.entries(ROUTED_MOCK_COSTS).map(([code, courierData]) => {
-        // Get route-specific cost or default
-        const routeCost = courierData.routes[destination] || courierData.default;
-        const totalCost = routeCost * weightMultiplier;
-
-        return {
-          code: code.toUpperCase(),
-          name: courierData.name,
-          costs: [{
-            service: courierData.service,
-            description: `${courierData.name} - ${courierData.service}`,
-            cost: [{
-              value: totalCost,
-              etd: courierData.etd,
-              note: 'Mock calculation - realistic pricing'
-            }]
-          }]
-        };
-      });
-
-      transformedResponse = {
-        rajaongkir: {
-          status: { code: 200, description: "OK" },
-          results: mockResults
-        }
-      };
-      console.log('🔄 Using realistic mock data');
-    } else {
-      console.log('✅ Using real RajaOngkir data');
+      return res.status(200).json(transformedResponse);
     }
 
-    res.status(200).json(transformedResponse);
+    // Fallback to mock data if API doesn't work
+    console.log('⚠️ Komerce API failed, using mock data');
+    const { destination, weight } = req.body;
+    const weightNum = parseFloat(weight) || 1;
+    const weightMultiplier = Math.max(1, Math.ceil(weightNum / 1000));
+
+    const mockResults = Object.entries(ROUTED_MOCK_COSTS).map(([code, courierData]) => {
+      const routeCost = courierData.routes[destination] || courierData.default;
+      const totalCost = routeCost * weightMultiplier;
+
+      return {
+        code: code.toUpperCase(),
+        name: courierData.name,
+        costs: [{
+          service: courierData.service,
+          description: `${courierData.name} - ${courierData.service}`,
+          cost: [{
+            value: totalCost,
+            etd: courierData.etd,
+            note: 'Mock calculation - realistic pricing'
+          }]
+        }]
+      };
+    });
+
+    const mockResponse = {
+      rajaongkir: {
+        status: { code: 200, description: "OK" },
+        results: mockResults
+      }
+    };
+    console.log('🔄 Using fallback mock data');
+    return res.status(200).json(mockResponse);
   } catch (error) {
     console.error('💥 RajaOngkir Cost API Error:', {
       message: error.message,
