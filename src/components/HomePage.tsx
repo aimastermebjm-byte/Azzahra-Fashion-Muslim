@@ -5,10 +5,10 @@ import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
 import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
+import { cartService } from '../services/cartService';
 
 interface HomePageProps {
   user: any;
-  cartItems: any[];
   products: Product[];
   loading: boolean;
   onProductClick: (product: Product) => void;
@@ -20,7 +20,6 @@ interface HomePageProps {
 
 const HomePage: React.FC<HomePageProps> = ({
   user,
-  cartItems,
   products,
   loading,
   onProductClick,
@@ -32,6 +31,7 @@ const HomePage: React.FC<HomePageProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'ready' | 'po'>('all');
+  const [cartCount, setCartCount] = useState(0);
   const [sortBy, setSortBy] = useState<'terbaru' | 'terlaris' | 'termurah' | 'termahal' | 'terlama'>('terbaru');
   const [currentPage, setCurrentPage] = useState(1);
   const [featuredUpdateTrigger, setFeaturedUpdateTrigger] = useState(0); // Force re-render
@@ -45,6 +45,28 @@ const HomePage: React.FC<HomePageProps> = ({
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [lastSyncTime, setLastSyncTime] = useState<string>('');
 
+  // Load cart count from backend
+  const loadCartCount = async () => {
+    if (!user?.uid) return;
+
+    try {
+      const cartItems = await cartService.getCart(user.uid);
+      setCartCount(cartItems.length);
+    } catch (error) {
+      console.error('❌ Failed to load cart count:', error);
+      setCartCount(0);
+    }
+  };
+
+  // Load cart count when user changes
+  useEffect(() => {
+    if (user?.uid) {
+      loadCartCount();
+    } else {
+      setCartCount(0);
+    }
+  }, [user]);
+
   // Periodic refresh timer to ensure data stays synchronized
   useEffect(() => {
     console.log('🔄 HomePage: Starting periodic refresh timer');
@@ -53,6 +75,7 @@ const HomePage: React.FC<HomePageProps> = ({
       console.log('⏰ HomePage: Periodic refresh triggered');
       setRefreshTrigger(prev => prev + 1);
       setLastSyncTime(new Date().toLocaleTimeString('id-ID'));
+      loadCartCount(); // Refresh cart count too
     }, 15000); // Refresh every 15 seconds
 
     // Initial sync time
@@ -62,7 +85,7 @@ const HomePage: React.FC<HomePageProps> = ({
       clearInterval(interval);
       console.log('🔄 HomePage: Periodic refresh timer stopped');
     };
-  }, []);
+  }, [user]);
 
   const handleBannerClick = (banner: any) => {
     console.log('Banner clicked:', banner);
@@ -301,9 +324,9 @@ const HomePage: React.FC<HomePageProps> = ({
             className="relative p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-shadow"
           >
             <ShoppingCart className="w-6 h-6 text-gray-600" />
-            {cartItems.length > 0 && (
+            {cartCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {cartItems.length}
+                {cartCount}
               </span>
             )}
           </button>
