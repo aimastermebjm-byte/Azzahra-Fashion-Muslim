@@ -141,7 +141,7 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'API-KEY': RAJAONGKIR_API_KEY
+        'x-api-key': RAJAONGKIR_API_KEY
       },
       body: formData.toString()
     });
