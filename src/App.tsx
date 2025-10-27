@@ -20,6 +20,7 @@ import { useFirebaseProducts } from './hooks/useFirebaseProducts';
 import { useFirebaseAuth } from './hooks/useFirebaseAuth';
 import { useAdmin } from './contexts/AdminContext';
 import { AppStorage } from './utils/appStorage';
+import { cartService } from './services/cartService';
 
 type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'ongkir-test';
 
@@ -28,7 +29,6 @@ function AppContent() {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
-  const [cartItems, setCartItems] = useState<any[]>([]);
 
   // Firebase Authentication
   const { user, login, logout } = useFirebaseAuth();
@@ -44,20 +44,8 @@ function AppContent() {
     AppStorage.validateAndSyncFeaturedProducts();
     console.log('🚀 App initialized with featured products validation');
 
-    // Restore cart from localStorage (keep cart persistence)
-    const savedCart = localStorage.getItem('azzahra_cart');
-    if (savedCart) {
-      try {
-        const cart = JSON.parse(savedCart);
-        setCartItems(cart);
-        console.log('✅ Cart restored:', cart.length, 'items');
-      } catch (error) {
-        console.error('❌ Error restoring cart:', error);
-        localStorage.removeItem('azzahra_cart');
-      }
-    } else {
-      console.log('ℹ️ No saved cart found');
-    }
+    // Cart management now handled by cartService in components
+    // No longer need localStorage cart restoration
 
     // Handle URL routing for special pages
     const handleRouting = () => {
@@ -108,66 +96,51 @@ function AppContent() {
     console.log('📦 Cart cleared from localStorage');
   };
 
-  const handleAddToCart = (product: any, variant: any, quantity: number) => {
-    const cartItem = {
-      ...product,
-      selectedVariant: variant,
-      quantity,
-      cartId: `${product.id}-${variant?.size}-${variant?.color}`,
-      addedAt: new Date().toISOString()
-    };
-
-    setCartItems(prev => {
-      const existingIndex = prev.findIndex(item =>
-        item.id === product.id &&
-        item.selectedVariant?.size === variant?.size &&
-        item.selectedVariant?.color === variant?.color
-      );
-
-      let updatedCart;
-      if (existingIndex >= 0) {
-        updatedCart = [...prev];
-        updatedCart[existingIndex].quantity += quantity;
-        updatedCart[existingIndex].addedAt = new Date().toISOString();
-      } else {
-        updatedCart = [...prev, cartItem];
-      }
-
-      // Save cart to localStorage
-      localStorage.setItem('azzahra_cart', JSON.stringify(updatedCart));
-      console.log('💾 Cart saved to localStorage:', updatedCart.length, 'items');
-
-      return updatedCart;
-    });
-
-    // Show success message
-    alert('Produk berhasil ditambahkan ke keranjang!');
-  };
-
-  const handleQuickAddToCart = (product: any) => {
-    if (!user) {
+  const handleAddToCart = async (product: any, variant: any, quantity: number) => {
+    if (!user?.uid) {
+      console.log('❌ Cannot add to cart: User not logged in');
       handleLoginRequired();
       return;
     }
-    
+
+    try {
+      await cartService.addToCart(user.uid, {
+        productId: product.id,
+        variant: variant,
+        quantity: quantity
+      });
+      console.log('✅ Product added to cart:', product.name);
+      alert('Produk berhasil ditambahkan ke keranjang!');
+    } catch (error) {
+      console.error('❌ Failed to add to cart:', error);
+      alert('Gagal menambahkan produk ke keranjang');
+    }
+  };
+
+  const handleQuickAddToCart = async (product: any) => {
+    if (!user?.uid) {
+      handleLoginRequired();
+      return;
+    }
+
     // Add with default variant (first available)
     const defaultVariant = {
       size: product.variants.sizes[0],
       color: product.variants.colors[0]
     };
-    
-    handleAddToCart(product, defaultVariant, 1);
+
+    await handleAddToCart(product, defaultVariant, 1);
   };
 
-  const handleBuyNow = (product: any, variant: any, quantity: number) => {
-    if (!user) {
+  const handleBuyNow = async (product: any, variant: any, quantity: number) => {
+    if (!user?.uid) {
       handleLoginRequired();
       return;
     }
 
     // Add to cart first
-    handleAddToCart(product, variant, quantity);
-    
+    await handleAddToCart(product, variant, quantity);
+
     // Then go to checkout
     setTimeout(() => {
       setCurrentPage('checkout');
@@ -217,51 +190,58 @@ function AppContent() {
     });
   };
 
-  const handleOrderComplete = (orderData: any) => {
+  const handleOrderComplete = async (orderData: any) => {
+    if (!user?.uid) {
+      console.error('❌ Cannot complete order: User not logged in');
+      return null;
+    }
+
     const orderId = 'AZF' + Date.now().toString().slice(-8);
 
-    // Add order to admin system
-    addOrder({
-      id: orderId,
-      userId: user.id,
-      userName: user.name,
-      userEmail: user.email,
-      items: cartItems.map(item => ({
-        productId: item.id,
-        productName: item.name,
-        selectedVariant: item.selectedVariant,
-        quantity: item.quantity,
-        price: user?.role === 'reseller' ? item.resellerPrice : item.retailPrice,
-        total: (user?.role === 'reseller' ? item.resellerPrice : item.retailPrice) * item.quantity
-      })),
-      shippingInfo: orderData.shippingInfo,
-      paymentMethod: orderData.paymentMethod,
-      status: 'pending',
-      totalAmount: getTotalPrice(),
-      shippingCost: 15000,
-      finalTotal: getTotalPrice() + 15000,
-      notes: orderData.notes
-    });
+    try {
+      // Get cart items from backend
+      const cartItems = await cartService.getCart(user.uid);
 
-    // Update stock for each item
-    cartItems.forEach(item => {
-      updateProductStock(item.id, item.quantity);
-    });
+      // Add order to admin system
+      addOrder({
+        id: orderId,
+        userId: user.id,
+        userName: user.name,
+        userEmail: user.email,
+        items: cartItems.map(item => ({
+          productId: item.productId,
+          productName: item.name || 'Product',
+          selectedVariant: item.variant,
+          quantity: item.quantity,
+          price: item.price || 0,
+          total: (item.price || 0) * item.quantity
+        })),
+        shippingInfo: orderData.shippingInfo,
+        paymentMethod: orderData.paymentMethod,
+        status: 'pending',
+        totalAmount: orderData.totalAmount || 0,
+        shippingCost: orderData.shippingCost || 0,
+        finalTotal: orderData.finalTotal || 0,
+        notes: orderData.notes
+      });
 
-    // Clear cart and localStorage
-    setCartItems([]);
-    localStorage.removeItem('azzahra_cart');
-    console.log('Cart cleared after order completion');
+      // Update stock for each item
+      cartItems.forEach(item => {
+        updateProductStock(item.productId, item.quantity);
+      });
 
-    return orderId;
+      // Clear cart from backend
+      await cartService.clearCart(user.uid);
+
+      console.log('✅ Order completed and cart cleared:', orderId);
+      return orderId;
+    } catch (error) {
+      console.error('❌ Error completing order:', error);
+      return null;
+    }
   };
 
-  const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => {
-      const price = user?.role === 'reseller' ? item.resellerPrice : item.retailPrice;
-      return total + (price * item.quantity);
-    }, 0);
-  };
+  // getTotalPrice moved to components since cart is now managed by cartService
   const handleCartClick = () => {
     setCurrentPage('cart');
   };
@@ -311,7 +291,6 @@ function AppContent() {
         return (
           <HomePage
             user={user}
-            cartItems={cartItems}
             products={products}
             loading={loading}
             onProductClick={handleProductClick}
@@ -395,7 +374,6 @@ function AppContent() {
         return (
           <HomePage
             user={user}
-            cartItems={cartItems}
             products={products}
             loading={loading}
             onProductClick={handleProductClick}
