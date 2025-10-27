@@ -54,8 +54,18 @@ export default async function handler(req, res) {
     const data = await response.json();
     console.log('Districts response:', JSON.stringify(data, null, 2));
 
+    // Handle different response structures
+    let districtsArray = [];
+    if (Array.isArray(data)) {
+      districtsArray = data;
+    } else if (data.data && Array.isArray(data.data)) {
+      districtsArray = data.data;
+    } else if (data.rajaongkir && data.rajaongkir.results && Array.isArray(data.rajaongkir.results)) {
+      districtsArray = data.rajaongkir.results;
+    }
+
     // Transform Komerce response to match expected format
-    const transformedData = data.map(district => ({
+    const transformedData = districtsArray.map(district => ({
       district_id: district.id.toString(),
       district_name: district.district_name,
       city_id: cityId,

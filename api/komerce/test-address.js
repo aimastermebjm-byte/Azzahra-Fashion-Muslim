@@ -45,13 +45,25 @@ export default async function handler(req, res) {
 
       console.log('Provinces status:', provincesResponse.status);
       const provincesData = await provincesResponse.json();
-      console.log('Provinces count:', provincesData.length);
+      console.log('Raw provinces response:', JSON.stringify(provincesData, null, 2));
+
+      // Handle different response structures
+      let provincesArray = [];
+      if (Array.isArray(provincesData)) {
+        provincesArray = provincesData;
+      } else if (provincesData.data && Array.isArray(provincesData.data)) {
+        provincesArray = provincesData.data;
+      } else if (provincesData.rajaongkir && provincesData.rajaongkir.results && Array.isArray(provincesData.rajaongkir.results)) {
+        provincesArray = provincesData.rajaongkir.results;
+      }
+
+      console.log('Provinces count:', provincesArray.length);
 
       testResults.tests.provinces = {
         status: provincesResponse.status,
         success: provincesResponse.ok,
-        count: provincesData.length,
-        sampleData: provincesData.slice(0, 3).map(p => ({
+        count: provincesArray.length,
+        sampleData: provincesArray.slice(0, 3).map(p => ({
           id: p.id,
           province_name: p.province_name
         }))
@@ -79,13 +91,25 @@ export default async function handler(req, res) {
 
       console.log('Cities status:', citiesResponse.status);
       const citiesData = await citiesResponse.json();
-      console.log('Cities count:', citiesData.length);
+      console.log('Raw cities response:', JSON.stringify(citiesData, null, 2));
+
+      // Handle different response structures
+      let citiesArray = [];
+      if (Array.isArray(citiesData)) {
+        citiesArray = citiesData;
+      } else if (citiesData.data && Array.isArray(citiesData.data)) {
+        citiesArray = citiesData.data;
+      } else if (citiesData.rajaongkir && citiesData.rajaongkir.results && Array.isArray(citiesData.rajaongkir.results)) {
+        citiesArray = citiesData.rajaongkir.results;
+      }
+
+      console.log('Cities count:', citiesArray.length);
 
       testResults.tests.cities = {
         status: citiesResponse.status,
         success: citiesResponse.ok,
-        count: citiesData.length,
-        sampleData: citiesData.slice(0, 3).map(c => ({
+        count: citiesArray.length,
+        sampleData: citiesArray.slice(0, 3).map(c => ({
           id: c.id,
           city_name: c.city_name,
           type: c.type
@@ -114,13 +138,25 @@ export default async function handler(req, res) {
 
       console.log('Districts status:', districtsResponse.status);
       const districtsData = await districtsResponse.json();
-      console.log('Districts count:', districtsData.length);
+      console.log('Raw districts response:', JSON.stringify(districtsData, null, 2));
+
+      // Handle different response structures
+      let districtsArray = [];
+      if (Array.isArray(districtsData)) {
+        districtsArray = districtsData;
+      } else if (districtsData.data && Array.isArray(districtsData.data)) {
+        districtsArray = districtsData.data;
+      } else if (districtsData.rajaongkir && districtsData.rajaongkir.results && Array.isArray(districtsData.rajaongkir.results)) {
+        districtsArray = districtsData.rajaongkir.results;
+      }
+
+      console.log('Districts count:', districtsArray.length);
 
       testResults.tests.districts = {
         status: districtsResponse.status,
         success: districtsResponse.ok,
-        count: districtsData.length,
-        sampleData: districtsData.slice(0, 3).map(d => ({
+        count: districtsArray.length,
+        sampleData: districtsArray.slice(0, 3).map(d => ({
           id: d.id,
           district_name: d.district_name
         }))
@@ -148,13 +184,25 @@ export default async function handler(req, res) {
 
       console.log('Subdistricts status:', subdistrictsResponse.status);
       const subdistrictsData = await subdistrictsResponse.json();
-      console.log('Subdistricts count:', subdistrictsData.length);
+      console.log('Raw subdistricts response:', JSON.stringify(subdistrictsData, null, 2));
+
+      // Handle different response structures
+      let subdistrictsArray = [];
+      if (Array.isArray(subdistrictsData)) {
+        subdistrictsArray = subdistrictsData;
+      } else if (subdistrictsData.data && Array.isArray(subdistrictsData.data)) {
+        subdistrictsArray = subdistrictsData.data;
+      } else if (subdistrictsData.rajaongkir && subdistrictsData.rajaongkir.results && Array.isArray(subdistrictsData.rajaongkir.results)) {
+        subdistrictsArray = subdistrictsData.rajaongkir.results;
+      }
+
+      console.log('Subdistricts count:', subdistrictsArray.length);
 
       testResults.tests.subdistricts = {
         status: subdistrictsResponse.status,
         success: subdistrictsResponse.ok,
-        count: subdistrictsData.length,
-        sampleData: subdistrictsData.slice(0, 3).map(s => ({
+        count: subdistrictsArray.length,
+        sampleData: subdistrictsArray.slice(0, 3).map(s => ({
           id: s.id,
           subdistrict_name: s.subdistrict_name
         }))
