@@ -129,21 +129,23 @@ export default async function handler(req, res) {
       apiKey: RAJAONGKIR_API_KEY ? 'Set' : 'Missing'
     });
 
-    // RajaOngkir standard API - POST with form data
-    const formData = new URLSearchParams();
-    formData.append('key', RAJAONGKIR_API_KEY);
-    formData.append('origin', origin);
-    formData.append('destination', destination);
-    formData.append('weight', weight.toString());
-    formData.append('courier', courier);
+    // Komerce API - POST with JSON body
+    const requestBody = JSON.stringify({
+      origin: origin,
+      destination: destination,
+      weight: parseInt(weight),
+      courier: courier
+    });
+
+    console.log('📋 Komerce Request Body:', requestBody);
 
     const response = await fetch(`${RAJAONGKIR_BASE_URL}/calculate/domestic-cost`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
         'x-api-key': RAJAONGKIR_API_KEY
       },
-      body: formData.toString()
+      body: requestBody
     });
 
     console.log('📊 RajaOngkir Response Status:', response.status);
