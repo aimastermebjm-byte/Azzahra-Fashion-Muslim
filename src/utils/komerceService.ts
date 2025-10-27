@@ -49,9 +49,6 @@ class KomerceService {
     price: 'lowest' | 'highest' = 'lowest'
   ): Promise<KomerceCostResult[]> {
     try {
-      console.log('📦 Calculating shipping cost from Komerce API');
-      console.log('📋 Parameters:', { origin, destination, weight, courier, price });
-
       const response = await fetch(`${this.baseUrl}/cost`, {
         method: 'POST',
         headers: {
@@ -72,17 +69,13 @@ class KomerceService {
       }
 
       const data: KomerceResponse = await response.json();
-      console.log('✅ Komerce API Response:', data);
 
       if (data.meta.status === 'success' && data.data) {
-        console.log('✅ Real shipping cost results:', data.data.length);
         return data.data;
       } else {
-        console.log('❌ Komerce API returned error:', data.meta.message);
         throw new Error(data.meta.message);
       }
     } catch (error) {
-      console.error('❌ Error calculating shipping cost:', error);
       throw error;
     }
   }
@@ -95,9 +88,6 @@ class KomerceService {
     price: 'lowest' | 'highest' = 'lowest'
   ): Promise<KomerceCostResult[]> {
     try {
-      console.log('📦 Getting ALL couriers shipping cost from Komerce API');
-      console.log('📋 Parameters:', { origin, destination, weight, price });
-
       const response = await fetch(`${this.baseUrl}/cost`, {
         method: 'POST',
         headers: {
@@ -118,17 +108,13 @@ class KomerceService {
       }
 
       const data: KomerceResponse = await response.json();
-      console.log('✅ All couriers API Response:', data);
 
       if (data.meta.status === 'success' && data.data) {
-        console.log('✅ All couriers results:', data.data.length);
         return data.data;
       } else {
-        console.log('❌ Komerce API returned error:', data.meta.message);
         throw new Error(data.meta.message);
       }
     } catch (error) {
-      console.error('❌ Error getting all couriers cost:', error);
       throw error;
     }
   }

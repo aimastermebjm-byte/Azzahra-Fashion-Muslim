@@ -40,16 +40,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   
   // Calculate shipping cost using RajaOngkir
   const calculateShippingCost = async (courierCode: string, destinationCityId: string, weight: number) => {
-    console.log('🚀 calculateShippingCost called with:', { courierCode, destinationCityId, weight });
-
     if (!courierCode || !destinationCityId || !weight) {
-      console.log('❌ Missing required parameters');
       return;
     }
 
     // Validate destinationCityId
     if (!destinationCityId || destinationCityId === 'undefined' || destinationCityId === '') {
-      console.log('❌ Invalid destinationCityId, using fallback Banjarmasin (607)');
       destinationCityId = '607'; // Banjarmasin fallback
     }
 
@@ -57,21 +53,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setLoadingShipping(true);
       setShippingError('');
 
-      console.log('📡 Calling komerceService.calculateShippingCost...');
       const results = await komerceService.calculateShippingCost('2425', destinationCityId, weight, courierCode);
-      console.log('📦 Results from service:', results);
-      console.log('📦 Results type:', typeof results);
-      console.log('📦 Results length:', results?.length);
-
-      // Log detailed structure
-      if (results && results.length > 0) {
-        console.log('📦 First result:', JSON.stringify(results[0], null, 2));
-      }
 
       if (results && results.length > 0) {
         // Komerce returns multiple services! Let user choose
-        console.log('💰 Multiple services available:', results.length);
-
         // Store all results and auto-select cheapest service by default
         setOngkirResults(results);
         const cheapestService = results[0];
@@ -84,12 +69,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           shippingETD: cheapestService.etd
         }));
       } else {
-        console.log('❌ No valid results from API');
-        console.log('❌ Results structure:', JSON.stringify(results, null, 2));
         setShippingError('Tidak dapat menghitung ongkir untuk kurir ini');
       }
     } catch (error) {
-      console.log('❌ Error in calculateShippingCost:', error);
       setShippingError('Gagal menghitung ongkir. Silakan coba lagi.');
       // NO FALLBACK - Show error to user
     } finally {
@@ -509,10 +491,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           name="savedAddress"
                           checked={selectedAddressId === address.id}
                           onChange={() => {
-                            console.log('🔍 Selected address:', address);
-                            console.log('🔍 supportsAutomatic:', supportsAutomatic);
-                            console.log('🔍 formData.shippingCourier:', formData.shippingCourier);
-
                             setSelectedAddressId(address.id);
                             setFormData(prev => ({
                               ...prev,
@@ -526,20 +504,13 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                             // Auto-calculate shipping if courier is selected and supports automatic
                             if (supportsAutomatic && formData.shippingCourier) {
                               const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
-                              console.log('🔍 selectedCourier:', selectedCourier);
-                              console.log('🔍 address.cityId:', address.cityId);
 
                               if (selectedCourier?.code) {
                                 const weight = calculateTotalWeight();
                                 // Use address cityId or fallback to Banjarmasin
                                 const targetCityId = address.cityId || '607';
-                                console.log('🚀 Calling calculateShippingCost with:', selectedCourier.code, targetCityId, weight);
                                 calculateShippingCost(selectedCourier.code, targetCityId, weight);
-                              } else {
-                                console.log('❌ Missing courier code');
                               }
-                            } else {
-                              console.log('❌ Either not automatic or no courier selected');
                             }
                           }}
                           className="w-4 h-4 text-pink-600 mr-2"

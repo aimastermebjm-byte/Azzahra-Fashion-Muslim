@@ -41,15 +41,7 @@ export default async function handler(req, res) {
       });
     }
 
-    console.log('🚀 Komerce API Request:', {
-      origin,
-      destination,
-      weight,
-      courier,
-      price,
-      apiKey: KOMERCE_API_KEY ? 'Set' : 'Missing'
-    });
-
+    
     // Available couriers
     const availableCouriers = ['jne', 'jnt', 'pos', 'tiki', 'sicepat', 'wahana'];
 
@@ -57,7 +49,6 @@ export default async function handler(req, res) {
 
     if (getAllCouriers) {
       // Get costs for ALL couriers
-      console.log('🚀 Getting costs for ALL couriers...');
 
       for (const courierCode of availableCouriers) {
         try {
@@ -67,8 +58,6 @@ export default async function handler(req, res) {
           formData.append('weight', weight.toString());
           formData.append('courier', courierCode);
           formData.append('price', price);
-
-          console.log(`📋 Request for ${courierCode}:`, formData.toString());
 
           const response = await fetch(`${KOMERCE_BASE_URL}/calculate/domestic-cost`, {
             method: 'POST',
@@ -83,11 +72,10 @@ export default async function handler(req, res) {
             const data = await response.json();
             if (data.meta?.status === 'success' && data.data && data.data.length > 0) {
               results = results.concat(data.data);
-              console.log(`✅ ${courierCode} results:`, data.data.length);
             }
           }
         } catch (error) {
-          console.error(`❌ Error getting ${courierCode}:`, error.message);
+          // Continue to next courier
         }
       }
     } else {
@@ -103,8 +91,7 @@ export default async function handler(req, res) {
         formData.append('price', price);
       }
 
-      console.log('📋 Request Body (single courier):', formData.toString());
-
+      
       const response = await fetch(`${KOMERCE_BASE_URL}/calculate/domestic-cost`, {
         method: 'POST',
         headers: {
@@ -129,7 +116,6 @@ export default async function handler(req, res) {
       }
 
       const data = await response.json();
-      console.log('✅ Komerce API Response:', JSON.stringify(data, null, 2));
 
       // Return Komerce response directly (already in correct format)
       return res.status(200).json(data);
@@ -137,8 +123,7 @@ export default async function handler(req, res) {
 
     // Return results for getAllCouriers mode
     if (getAllCouriers) {
-      console.log('✅ All couriers results:', results.length, 'items');
-
+      
       // Sort by cost (lowest first)
       results.sort((a, b) => a.cost - b.cost);
 
@@ -151,8 +136,7 @@ export default async function handler(req, res) {
         data: results
       };
 
-      console.log('✅ Returning all couriers response');
-      return res.status(200).json(allCouriersResponse);
+            return res.status(200).json(allCouriersResponse);
     }
 
   } catch (error) {
