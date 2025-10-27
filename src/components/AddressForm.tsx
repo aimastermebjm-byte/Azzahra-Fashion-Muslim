@@ -267,10 +267,10 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
     if (!formData.name.trim()) newErrors.name = 'Nama harus diisi';
     if (!formData.phone.trim()) newErrors.phone = 'Nomor telepon harus diisi';
-    if (!formData.provinceId.trim()) newErrors.provinceId = 'Provinsi harus diisi';
-    if (!formData.cityId.trim()) newErrors.cityId = 'Kota harus diisi';
-    if (!formData.districtId.trim()) newErrors.districtId = 'Kecamatan harus diisi';
-    if (!formData.subdistrictId.trim()) newErrors.subdistrictId = 'Kelurahan harus diisi';
+    if (!formData.provinceId) newErrors.provinceId = 'Provinsi harus diisi';
+    if (!formData.cityId) newErrors.cityId = 'Kota harus diisi';
+    if (!formData.districtId) newErrors.districtId = 'Kecamatan harus diisi';
+    if (!formData.subdistrictId) newErrors.subdistrictId = 'Kelurahan harus diisi';
     if (!formData.postalCode.trim()) newErrors.postalCode = 'Kode pos harus diisi';
 
     setErrors(newErrors);

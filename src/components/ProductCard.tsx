@@ -199,14 +199,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
       </div>
       
       <div className="p-4">
-        <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2 group-hover:text-pink-600 transition-colors">
+        <h3 className="font-semibold text-gray-800 mb-3 line-clamp-2 group-hover:text-pink-600 transition-colors">
           {product.name}
         </h3>
-        
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-          {product.description}
-        </p>
-        
+
         {getPrice()}
       </div>
     </div>
