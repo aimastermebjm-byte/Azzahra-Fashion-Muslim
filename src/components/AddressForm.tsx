@@ -144,7 +144,7 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   const loadProvinces = async () => {
     setLoadingProvinces(true);
     try {
-      const response = await fetch('/api/komerce/provinces');
+      const response = await fetch('/api/address?type=provinces');
       const data = await response.json();
 
       if (data.success && data.data) {
@@ -162,7 +162,7 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
     setLoadingCities(true);
     try {
-      const response = await fetch(`/api/komerce/cities?provinceId=${formData.provinceId}`);
+      const response = await fetch(`/api/address?type=cities&provinceId=${formData.provinceId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
@@ -180,7 +180,7 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
     setLoadingDistricts(true);
     try {
-      const response = await fetch(`/api/komerce/districts?cityId=${formData.cityId}`);
+      const response = await fetch(`/api/address?type=districts&cityId=${formData.cityId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
@@ -198,7 +198,7 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
     setLoadingSubdistricts(true);
     try {
-      const response = await fetch(`/api/komerce/subdistricts?districtId=${formData.districtId}`);
+      const response = await fetch(`/api/address?type=subdistricts&districtId=${formData.districtId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
