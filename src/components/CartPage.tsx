@@ -23,6 +23,15 @@ const CartPage: React.FC<CartPageProps> = ({
       setLoading(true);
       const items = await cartService.getCart();
       console.log('🛒 Cart loaded:', items);
+      console.log('🛒 Cart item details:', items?.map((item, i) => ({
+        index: i,
+        id: item?.id,
+        productId: item?.productId,
+        name: item?.name,
+        price: item?.price,
+        image: item?.image ? 'has image' : 'no image',
+        quantity: item?.quantity
+      })));
       setCartItems(items || []);
       console.log('🛒 Cart loaded from backend:', items?.length || 0, 'items');
     } catch (error) {
@@ -256,7 +265,7 @@ const CartPage: React.FC<CartPageProps> = ({
           const itemTotal = itemPrice * itemQuantity;
 
           const itemName = item.name || 'Product';
-          const itemImage = item.image || 'https://via.placeholder.com/80x80?text=Product';
+          const itemImage = item.image || `data:image/svg+xml;base64,${btoa('<svg width="80" height="80" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" fill="#f3f4f6"/><text x="40" y="45" text-anchor="middle" fill="#6b7280" font-size="12" font-family="Arial">Product</text></svg>')}`;
           const productId = item.productId || item.id || `product-${index}`;
           const variant = item.variant || {};
 

@@ -104,12 +104,18 @@ function AppContent() {
     }
 
     try {
-      await cartService.addToCart(user.uid, {
+      // Get the correct price based on user role
+      const price = user?.role === 'reseller' ? product.resellerPrice : product.retailPrice;
+
+      await cartService.addToCart({
         productId: product.id,
+        name: product.name,
+        price: price,
+        image: product.images?.[0] || '',
         variant: variant,
         quantity: quantity
       });
-      console.log('✅ Product added to cart:', product.name);
+      console.log('✅ Product added to cart:', product.name, 'Price:', price);
       alert('Produk berhasil ditambahkan ke keranjang!');
     } catch (error) {
       console.error('❌ Failed to add to cart:', error);
