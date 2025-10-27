@@ -1,6 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Loader2, AlertCircle } from 'lucide-react';
-import { rajaOngkirService, Province, City, Subdistrict } from '../utils/rajaOngkirService';
+
+// Types for address data
+interface Province {
+  province_id: string;
+  province: string;
+}
+
+interface City {
+  city_id: string;
+  city_name: string;
+  province: string;
+  province_id: string;
+  type: string;
+  postal_code: string;
+}
+
+interface Subdistrict {
+  subdistrict_id: string;
+  subdistrict_name: string;
+  city_id: string;
+  city: string;
+  province: string;
+  province_id: string;
+  type: string;
+}
 
 interface Address {
   name: string;
@@ -57,35 +81,32 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
   // Load cities when province changes
   useEffect(() => {
-    if (formData.provinceId) {
-      loadCities(formData.provinceId);
+    if (formData.province) {
+      loadCities();
       // Reset dependent fields
       setCities([]);
       setSubdistricts([]);
       setFormData(prev => ({
         ...prev,
-        cityId: '',
         city: '',
         district: '',
         subdistrict: '',
-        subdistrictId: '',
-        postalCode: ''
+                postalCode: ''
       }));
     }
-  }, [formData.provinceId]);
+  }, [formData.province]);
 
   // Load subdistricts when city changes
   useEffect(() => {
-    if (formData.cityId) {
-      loadSubdistricts(formData.cityId);
+    if (formData.city) {
+      loadSubdistricts();
       // Reset dependent fields
       setSubdistricts([]);
       setFormData(prev => ({
         ...prev,
         district: '',
         subdistrict: '',
-        subdistrictId: '',
-        postalCode: ''
+                postalCode: ''
       }));
     }
   }, [formData.cityId]);
@@ -101,48 +122,24 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         }));
       }
     }
-  }, [formData.subdistrictId, formData.cityId, cities]);
+  }, [formData.subdistrict, formData.city]);
 
   const loadProvinces = async () => {
-    try {
-      setLoadingProvinces(true);
-      setError('');
-      const provincesData = await rajaOngkirService.getProvinces();
-      setProvinces(provincesData);
-    } catch (err) {
-      setError('Gagal memuat data provinsi');
-      console.error('Error loading provinces:', err);
-    } finally {
-      setLoadingProvinces(false);
-    }
+    // Disabled: API service removed
+    setProvinces([]);
+    setLoadingProvinces(false);
   };
 
-  const loadCities = async (provinceId: string) => {
-    try {
-      setLoadingCities(true);
-      setError('');
-      const citiesData = await rajaOngkirService.getCities(provinceId);
-      setCities(citiesData);
-    } catch (err) {
-      setError('Gagal memuat data kota');
-      console.error('Error loading cities:', err);
-    } finally {
-      setLoadingCities(false);
-    }
+  const loadCities = async () => {
+    // Disabled: API service removed
+    setCities([]);
+    setLoadingCities(false);
   };
 
-  const loadSubdistricts = async (cityId: string) => {
-    try {
-      setLoadingSubdistricts(true);
-      setError('');
-      const subdistrictsData = await rajaOngkirService.getSubdistricts(cityId);
-      setSubdistricts(subdistrictsData);
-    } catch (err) {
-      setError('Gagal memuat data kecamatan');
-      console.error('Error loading subdistricts:', err);
-    } finally {
-      setLoadingSubdistricts(false);
-    }
+  const loadSubdistricts = async () => {
+    // Disabled: API service removed
+    setSubdistricts([]);
+    setLoadingSubdistricts(false);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -155,21 +152,10 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         [name]: newValue
       };
 
-      // Special handling for province change
-      if (name === 'provinceId') {
-        const selectedProvince = provinces.find(p => p.province_id === value);
-        if (selectedProvince) {
-          updated.province = selectedProvince.province;
-        }
-      }
-
-      // Special handling for city change
-      if (name === 'cityId') {
-        const selectedCity = cities.find(c => c.city_id === value);
-        if (selectedCity) {
-          updated.city = selectedCity.city_name;
-          updated.postalCode = selectedCity.postal_code;
-        }
+      // Special handling for city change (for postal code lookup in future)
+      if (name === 'city') {
+        // Manual input - no postal code lookup for now
+        updated.postalCode = '';
       }
 
       // Special handling for subdistrict change
@@ -195,8 +181,8 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
     if (!formData.name.trim()) newErrors.name = 'Nama harus diisi';
     if (!formData.phone.trim()) newErrors.phone = 'Nomor telepon harus diisi';
-    if (!formData.provinceId.trim()) newErrors.provinceId = 'Provinsi harus diisi';
-    if (!formData.cityId.trim()) newErrors.cityId = 'Kota harus diisi';
+    if (!formData.province.trim()) newErrors.province = 'Provinsi harus diisi';
+    if (!formData.city.trim()) newErrors.city = 'Kota harus diisi';
     if (!formData.district.trim()) newErrors.district = 'Kecamatan harus diisi';
     if (!formData.subdistrict.trim()) newErrors.subdistrict = 'Kelurahan harus diisi';
     if (!formData.postalCode.trim()) newErrors.postalCode = 'Kode pos harus diisi';
@@ -274,22 +260,16 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
           <MapPin className="w-4 h-4 inline mr-1" />
           Provinsi *
         </label>
-        <select
-          name="provinceId"
-          value={formData.provinceId}
+        <input
+          type="text"
+          name="province"
+          value={formData.province}
           onChange={handleChange}
+          placeholder="Contoh: Kalimantan Selatan"
           className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${
-            errors.provinceId ? 'border-red-500' : 'border-gray-300'
+            errors.province ? 'border-red-500' : 'border-gray-300'
           }`}
-          disabled={loadingProvinces}
-        >
-          <option value="">Pilih provinsi</option>
-          {provinces.map(province => (
-            <option key={province.province_id} value={province.province_id}>
-              {province.province}
-            </option>
-          ))}
-        </select>
+        />
         {loadingProvinces && (
           <div className="mt-2 flex items-center text-sm text-gray-500">
             <Loader2 className="w-4 h-4 animate-spin mr-1" />
