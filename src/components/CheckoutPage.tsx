@@ -29,7 +29,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [ongkirResults, setOngkirResults] = useState<KomerceCostResult[]>([]);
   const [shippingError, setShippingError] = useState<string>('');
   const [selectedService, setSelectedService] = useState<KomerceCostResult | null>(null);
-  const [showAllCouriers, setShowAllCouriers] = useState(false);
 
   // Calculate total weight of cart items
   const calculateTotalWeight = () => {
@@ -70,16 +69,17 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       }
 
       if (results && results.length > 0) {
-        // Komerce returns direct data structure (no nested costs)
-        const cheapestService = results[0]; // Komerce already returns sorted by price
-        const cost = cheapestService.cost;
+        // Komerce returns multiple services! Let user choose
+        console.log('💰 Multiple services available:', results.length);
 
-        console.log('💰 Setting shipping cost:', cost);
-        console.log('💰 Service details:', cheapestService);
+        // Store all results and auto-select cheapest service by default
+        setOngkirResults(results);
+        const cheapestService = results[0];
+        setSelectedService(cheapestService);
 
         setFormData(prev => ({
           ...prev,
-          shippingCost: cost,
+          shippingCost: cheapestService.cost,
           shippingService: cheapestService.service,
           shippingETD: cheapestService.etd
         }));
@@ -426,6 +426,37 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
             {/* Shipping Cost Display */}
             {formData.shippingCost > 0 && (
               <div className="bg-gray-50 p-3 rounded-lg">
+                {/* Service Selection Dropdown */}
+                {ongkirResults.length > 1 && (
+                  <div className="mb-3">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Pilih Layanan:
+                    </label>
+                    <select
+                      value={selectedService?.service || ''}
+                      onChange={(e) => {
+                        const selected = ongkirResults.find(result => result.service === e.target.value);
+                        if (selected) {
+                          setSelectedService(selected);
+                          setFormData(prev => ({
+                            ...prev,
+                            shippingCost: selected.cost,
+                            shippingService: selected.service,
+                            shippingETD: selected.etd
+                          }));
+                        }
+                      }}
+                      className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    >
+                      {ongkirResults.map((service, index) => (
+                        <option key={index} value={service.service}>
+                          {service.service} - Rp {service.cost.toLocaleString('id-ID')} ({service.etd})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-700">Biaya Ongkir:</span>
                   <span className="text-sm font-semibold text-pink-600">
@@ -435,6 +466,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 {formData.shippingService && (
                   <p className="text-xs text-gray-500 mt-1">
                     Service: {formData.shippingService} | Estimasi: {formData.shippingETD}
+                    {ongkirResults.length > 1 && (
+                      <span className="ml-2 text-blue-600">
+                        ({ongkirResults.length} layanan tersedia)
+                      </span>
+                    )}
                   </p>
                 )}
               </div>
