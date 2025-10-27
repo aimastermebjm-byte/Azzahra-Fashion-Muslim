@@ -13,17 +13,21 @@ interface City {
   province: string;
   province_id: string;
   type: string;
-  postal_code: string;
+}
+
+interface District {
+  district_id: string;
+  district_name: string;
+  city_id: string;
+  province: string;
 }
 
 interface Subdistrict {
   subdistrict_id: string;
   subdistrict_name: string;
-  city_id: string;
+  district_id: string;
   city: string;
   province: string;
-  province_id: string;
-  type: string;
 }
 
 interface Address {
@@ -35,6 +39,7 @@ interface Address {
   city: string;
   cityId: string;
   district: string;
+  districtId: string;
   subdistrict: string;
   subdistrictId: string;
   postalCode: string;
@@ -57,6 +62,7 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
     city: initialData?.city || '',
     cityId: initialData?.cityId || '',
     district: initialData?.district || '',
+    districtId: initialData?.districtId || '',
     subdistrict: initialData?.subdistrict || '',
     subdistrictId: initialData?.subdistrictId || '',
     postalCode: initialData?.postalCode || '',
@@ -65,10 +71,12 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [cities, setCities] = useState<City[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
   const [subdistricts, setSubdistricts] = useState<Subdistrict[]>([]);
 
   const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [loadingSubdistricts, setLoadingSubdistricts] = useState(false);
   const [error, setError] = useState('');
 
@@ -81,65 +89,126 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
   // Load cities when province changes
   useEffect(() => {
-    if (formData.province) {
+    if (formData.provinceId) {
       loadCities();
       // Reset dependent fields
       setCities([]);
+      setDistricts([]);
       setSubdistricts([]);
       setFormData(prev => ({
         ...prev,
         city: '',
+        cityId: '',
         district: '',
+        districtId: '',
         subdistrict: '',
-                postalCode: ''
+        subdistrictId: '',
+        postalCode: ''
       }));
     }
-  }, [formData.province]);
+  }, [formData.provinceId]);
 
-  // Load subdistricts when city changes
+  // Load districts when city changes
   useEffect(() => {
-    if (formData.city) {
+    if (formData.cityId) {
+      loadDistricts();
+      // Reset dependent fields
+      setDistricts([]);
+      setSubdistricts([]);
+      setFormData(prev => ({
+        ...prev,
+        district: '',
+        districtId: '',
+        subdistrict: '',
+        subdistrictId: '',
+        postalCode: ''
+      }));
+    }
+  }, [formData.cityId]);
+
+  // Load subdistricts when district changes
+  useEffect(() => {
+    if (formData.districtId) {
       loadSubdistricts();
       // Reset dependent fields
       setSubdistricts([]);
       setFormData(prev => ({
         ...prev,
-        district: '',
         subdistrict: '',
-                postalCode: ''
+        subdistrictId: '',
+        postalCode: ''
       }));
     }
-  }, [formData.cityId]);
-
-  // Update postal code when subdistrict is selected
-  useEffect(() => {
-    if (formData.subdistrictId && cities.length > 0) {
-      const selectedCity = cities.find(c => c.city_id === formData.cityId);
-      if (selectedCity) {
-        setFormData(prev => ({
-          ...prev,
-          postalCode: selectedCity.postal_code
-        }));
-      }
-    }
-  }, [formData.subdistrict, formData.city]);
+  }, [formData.districtId]);
 
   const loadProvinces = async () => {
-    // Disabled: API service removed
-    setProvinces([]);
-    setLoadingProvinces(false);
+    setLoadingProvinces(true);
+    try {
+      const response = await fetch('/api/komerce/provinces');
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setProvinces(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading provinces:', error);
+    } finally {
+      setLoadingProvinces(false);
+    }
   };
 
   const loadCities = async () => {
-    // Disabled: API service removed
-    setCities([]);
-    setLoadingCities(false);
+    if (!formData.provinceId) return;
+
+    setLoadingCities(true);
+    try {
+      const response = await fetch(`/api/komerce/cities?provinceId=${formData.provinceId}`);
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setCities(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading cities:', error);
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+
+  const loadDistricts = async () => {
+    if (!formData.cityId) return;
+
+    setLoadingDistricts(true);
+    try {
+      const response = await fetch(`/api/komerce/districts?cityId=${formData.cityId}`);
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setDistricts(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading districts:', error);
+    } finally {
+      setLoadingDistricts(false);
+    }
   };
 
   const loadSubdistricts = async () => {
-    // Disabled: API service removed
-    setSubdistricts([]);
-    setLoadingSubdistricts(false);
+    if (!formData.districtId) return;
+
+    setLoadingSubdistricts(true);
+    try {
+      const response = await fetch(`/api/komerce/subdistricts?districtId=${formData.districtId}`);
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setSubdistricts(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading subdistricts:', error);
+    } finally {
+      setLoadingSubdistricts(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -152,17 +221,34 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         [name]: newValue
       };
 
-      // Special handling for city change (for postal code lookup in future)
-      if (name === 'city') {
-        // Manual input - no postal code lookup for now
-        updated.postalCode = '';
+      // Special handling for province change
+      if (name === 'provinceId') {
+        const selectedProvince = provinces.find(p => p.province_id === value);
+        if (selectedProvince) {
+          updated.province = selectedProvince.province;
+        }
+      }
+
+      // Special handling for city change
+      if (name === 'cityId') {
+        const selectedCity = cities.find(c => c.city_id === value);
+        if (selectedCity) {
+          updated.city = `${selectedCity.type} ${selectedCity.city_name}`;
+        }
+      }
+
+      // Special handling for district change
+      if (name === 'districtId') {
+        const selectedDistrict = districts.find(d => d.district_id === value);
+        if (selectedDistrict) {
+          updated.district = selectedDistrict.district_name;
+        }
       }
 
       // Special handling for subdistrict change
       if (name === 'subdistrictId') {
         const selectedSubdistrict = subdistricts.find(s => s.subdistrict_id === value);
         if (selectedSubdistrict) {
-          updated.district = selectedSubdistrict.subdistrict_name;
           updated.subdistrict = selectedSubdistrict.subdistrict_name;
         }
       }
@@ -181,10 +267,10 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
     if (!formData.name.trim()) newErrors.name = 'Nama harus diisi';
     if (!formData.phone.trim()) newErrors.phone = 'Nomor telepon harus diisi';
-    if (!formData.province.trim()) newErrors.province = 'Provinsi harus diisi';
-    if (!formData.city.trim()) newErrors.city = 'Kota harus diisi';
-    if (!formData.district.trim()) newErrors.district = 'Kecamatan harus diisi';
-    if (!formData.subdistrict.trim()) newErrors.subdistrict = 'Kelurahan harus diisi';
+    if (!formData.provinceId.trim()) newErrors.provinceId = 'Provinsi harus diisi';
+    if (!formData.cityId.trim()) newErrors.cityId = 'Kota harus diisi';
+    if (!formData.districtId.trim()) newErrors.districtId = 'Kecamatan harus diisi';
+    if (!formData.subdistrictId.trim()) newErrors.subdistrictId = 'Kelurahan harus diisi';
     if (!formData.postalCode.trim()) newErrors.postalCode = 'Kode pos harus diisi';
 
     setErrors(newErrors);
@@ -260,16 +346,22 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
           <MapPin className="w-4 h-4 inline mr-1" />
           Provinsi *
         </label>
-        <input
-          type="text"
-          name="province"
-          value={formData.province}
+        <select
+          name="provinceId"
+          value={formData.provinceId}
           onChange={handleChange}
-          placeholder="Contoh: Kalimantan Selatan"
           className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${
-            errors.province ? 'border-red-500' : 'border-gray-300'
+            errors.provinceId ? 'border-red-500' : 'border-gray-300'
           }`}
-        />
+          disabled={loadingProvinces}
+        >
+          <option value="">Pilih provinsi</option>
+          {provinces.map(province => (
+            <option key={province.province_id} value={province.province_id}>
+              {province.province}
+            </option>
+          ))}
+        </select>
         {loadingProvinces && (
           <div className="mt-2 flex items-center text-sm text-gray-500">
             <Loader2 className="w-4 h-4 animate-spin mr-1" />
@@ -317,15 +409,46 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
           Kecamatan *
         </label>
         <select
+          name="districtId"
+          value={formData.districtId}
+          onChange={handleChange}
+          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${
+            errors.districtId ? 'border-red-500' : 'border-gray-300'
+          }`}
+          disabled={!formData.cityId || loadingDistricts}
+        >
+          <option value="">Pilih kecamatan</option>
+          {districts.map(district => (
+            <option key={district.district_id} value={district.district_id}>
+              {district.district_name}
+            </option>
+          ))}
+        </select>
+        {loadingDistricts && (
+          <div className="mt-2 flex items-center text-sm text-gray-500">
+            <Loader2 className="w-4 h-4 animate-spin mr-1" />
+            Memuat kecamatan...
+          </div>
+        )}
+        {errors.districtId && (
+          <p className="text-red-500 text-xs mt-1">{errors.districtId}</p>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Kelurahan/Desa *
+        </label>
+        <select
           name="subdistrictId"
           value={formData.subdistrictId}
           onChange={handleChange}
           className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${
-            errors.district ? 'border-red-500' : 'border-gray-300'
+            errors.subdistrictId ? 'border-red-500' : 'border-gray-300'
           }`}
-          disabled={!formData.cityId || loadingSubdistricts}
+          disabled={!formData.districtId || loadingSubdistricts}
         >
-          <option value="">Pilih kecamatan</option>
+          <option value="">Pilih kelurahan/desa</option>
           {subdistricts.map(subdistrict => (
             <option key={subdistrict.subdistrict_id} value={subdistrict.subdistrict_id}>
               {subdistrict.subdistrict_name}
@@ -335,30 +458,11 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         {loadingSubdistricts && (
           <div className="mt-2 flex items-center text-sm text-gray-500">
             <Loader2 className="w-4 h-4 animate-spin mr-1" />
-            Memuat kecamatan...
+            Memuat kelurahan/desa...
           </div>
         )}
-        {errors.district && (
-          <p className="text-red-500 text-xs mt-1">{errors.district}</p>
-        )}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Kelurahan/Desa *
-        </label>
-        <input
-          type="text"
-          name="subdistrict"
-          value={formData.subdistrict}
-          onChange={handleChange}
-          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${
-            errors.subdistrict ? 'border-red-500' : 'border-gray-300'
-          }`}
-          placeholder="Masukkan nama kelurahan/desa"
-        />
-        {errors.subdistrict && (
-          <p className="text-red-500 text-xs mt-1">{errors.subdistrict}</p>
+        {errors.subdistrictId && (
+          <p className="text-red-500 text-xs mt-1">{errors.subdistrictId}</p>
         )}
       </div>
 
