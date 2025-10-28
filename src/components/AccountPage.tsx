@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Package, Heart, MapPin, Settings, LogOut, Crown, Star, User as UserIcon, Shield, Eye, EyeOff, RefreshCw, Award, BarChart3, Users, TrendingUp, Package as PackageIcon, Mail, Phone, Key } from 'lucide-react';
+import { User, Package, Heart, MapPin, LogOut, Crown, Star, User as UserIcon, Shield, Eye, EyeOff, RefreshCw, Award, BarChart3, Users, TrendingUp, Package as PackageIcon, Mail, Phone, Key } from 'lucide-react';
 // import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 // import { useSupabaseAuthSimple } from '../hooks/useSupabaseAuthSimple';
 
@@ -175,19 +175,16 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     <p className="font-medium">{user.phone || 'Belum diisi'}</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3">
+                <button
+                  onClick={onNavigateToAddressManagement}
+                  className="flex items-center space-x-3 w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors"
+                >
                   <MapPin className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Alamat</p>
-                    <p className="font-medium">Kelola Alamat</p>
+                  <div className="flex-1">
+                    <p className="font-medium">Alamat Saya</p>
+                    <p className="text-sm text-gray-500">Kelola alamat pengiriman</p>
                   </div>
-                  <button
-                    onClick={onNavigateToAddressManagement}
-                    className="ml-auto text-pink-600 hover:text-pink-700 font-medium text-sm"
-                  >
-                    Kelola →
-                  </button>
-                </div>
+                </button>
               </div>
             </div>
 
@@ -322,19 +319,16 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     <p className="font-medium">{user.phone || 'Belum diisi'}</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3">
+                <button
+                  onClick={onNavigateToAddressManagement}
+                  className="flex items-center space-x-3 w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors"
+                >
                   <MapPin className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Alamat</p>
-                    <p className="font-medium">Kelola Alamat</p>
+                  <div className="flex-1">
+                    <p className="font-medium">Alamat Saya</p>
+                    <p className="text-sm text-gray-500">Kelola alamat pengiriman</p>
                   </div>
-                  <button
-                    onClick={onNavigateToAddressManagement}
-                    className="ml-auto text-pink-600 hover:text-pink-700 font-medium text-sm"
-                  >
-                    Kelola →
-                  </button>
-                </div>
+                </button>
               </div>
             </div>
 
@@ -493,19 +487,16 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     <p className="font-medium">{user.phone || 'Belum diisi'}</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3">
+                <button
+                  onClick={onNavigateToAddressManagement}
+                  className="flex items-center space-x-3 w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors"
+                >
                   <MapPin className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Alamat</p>
-                    <p className="font-medium">Kelola Alamat</p>
+                  <div className="flex-1">
+                    <p className="font-medium">Alamat Saya</p>
+                    <p className="text-sm text-gray-500">Kelola alamat pengiriman</p>
                   </div>
-                  <button
-                    onClick={onNavigateToAddressManagement}
-                    className="ml-auto text-pink-600 hover:text-pink-700 font-medium text-sm"
-                  >
-                    Kelola →
-                  </button>
-                </div>
+                </button>
               </div>
             </div>
 
@@ -661,7 +652,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                 </button>
                 <button className="w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors">
                   <div className="flex items-center space-x-3">
-                    <Settings className="w-5 h-5 text-gray-400" />
+                    <Shield className="w-5 h-5 text-gray-400" />
                     <div className="flex-1">
                       <p className="font-medium">Pengaturan Sistem</p>
                       <p className="text-sm text-gray-500">Konfigurasi aplikasi</p>
@@ -701,19 +692,16 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     <p className="font-medium">{user.phone || 'Belum diisi'}</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3">
+                <button
+                  onClick={onNavigateToAddressManagement}
+                  className="flex items-center space-x-3 w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors"
+                >
                   <MapPin className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Alamat</p>
-                    <p className="font-medium">Kelola Alamat</p>
+                  <div className="flex-1">
+                    <p className="font-medium">Alamat Saya</p>
+                    <p className="text-sm text-gray-500">Kelola alamat pengiriman</p>
                   </div>
-                  <button
-                    onClick={onNavigateToAddressManagement}
-                    className="ml-auto text-pink-600 hover:text-pink-700 font-medium text-sm"
-                  >
-                    Kelola →
-                  </button>
-                </div>
+                </button>
               </div>
             </div>
 
@@ -869,7 +857,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                 </button>
                 <button className="w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors">
                   <div className="flex items-center space-x-3">
-                    <Settings className="w-5 h-5 text-gray-400" />
+                    <Shield className="w-5 h-5 text-gray-400" />
                     <div className="flex-1">
                       <p className="font-medium">Sistem</p>
                       <p className="text-sm text-gray-500">Konfigurasi aplikasi</p>
