@@ -10,6 +10,7 @@ interface AccountPageProps {
   onNavigateToAdminOrders?: () => void;
   onNavigateToAdminReports?: () => void;
   onNavigateToAdminUsers?: () => void;
+  onNavigateToAddressManagement?: () => void;
   // Flash sale and featured products are now managed in AdminProductsPage
 }
 
@@ -19,7 +20,8 @@ const AccountPage: React.FC<AccountPageProps> = ({
   onNavigateToAdminProducts,
   onNavigateToAdminOrders,
   onNavigateToAdminReports,
-  onNavigateToAdminUsers
+  onNavigateToAdminUsers,
+  onNavigateToAddressManagement
 }) => {
     const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -173,6 +175,19 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     <p className="font-medium">{user.phone || 'Belum diisi'}</p>
                   </div>
                 </div>
+                <div className="flex items-center space-x-3">
+                  <MapPin className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-500">Alamat</p>
+                    <p className="font-medium">Kelola Alamat</p>
+                  </div>
+                  <button
+                    onClick={onNavigateToAddressManagement}
+                    className="ml-auto text-pink-600 hover:text-pink-700 font-medium text-sm"
+                  >
+                    Kelola →
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -274,16 +289,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     </div>
                   </div>
                 </button>
-                <button className="w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center space-x-3">
-                    <MapPin className="w-5 h-5 text-gray-400" />
-                    <div className="flex-1">
-                      <p className="font-medium">Alamat Pengiriman</p>
-                      <p className="text-sm text-gray-500">Kelola alamat Anda</p>
-                    </div>
-                  </div>
-                </button>
-              </div>
+                              </div>
             </div>
           </div>
         );
@@ -315,6 +321,19 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     <p className="text-sm text-gray-500">Telepon</p>
                     <p className="font-medium">{user.phone || 'Belum diisi'}</p>
                   </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <MapPin className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-500">Alamat</p>
+                    <p className="font-medium">Kelola Alamat</p>
+                  </div>
+                  <button
+                    onClick={onNavigateToAddressManagement}
+                    className="ml-auto text-pink-600 hover:text-pink-700 font-medium text-sm"
+                  >
+                    Kelola →
+                  </button>
                 </div>
               </div>
             </div>
@@ -432,16 +451,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     </div>
                   </div>
                 </button>
-                <button className="w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center space-x-3">
-                    <MapPin className="w-5 h-5 text-gray-400" />
-                    <div className="flex-1">
-                      <p className="font-medium">Alamat Pengiriman</p>
-                      <p className="text-sm text-gray-500">Kelola alamat Anda</p>
-                    </div>
-                  </div>
-                </button>
-                <button className="w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors">
+                                <button className="w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors">
                   <div className="flex items-center space-x-3">
                     <Award className="w-5 h-5 text-gray-400" />
                     <div className="flex-1">
@@ -482,6 +492,19 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     <p className="text-sm text-gray-500">Telepon</p>
                     <p className="font-medium">{user.phone || 'Belum diisi'}</p>
                   </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <MapPin className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-500">Alamat</p>
+                    <p className="font-medium">Kelola Alamat</p>
+                  </div>
+                  <button
+                    onClick={onNavigateToAddressManagement}
+                    className="ml-auto text-pink-600 hover:text-pink-700 font-medium text-sm"
+                  >
+                    Kelola →
+                  </button>
                 </div>
               </div>
             </div>
@@ -677,6 +700,19 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     <p className="text-sm text-gray-500">Telepon</p>
                     <p className="font-medium">{user.phone || 'Belum diisi'}</p>
                   </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <MapPin className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-500">Alamat</p>
+                    <p className="font-medium">Kelola Alamat</p>
+                  </div>
+                  <button
+                    onClick={onNavigateToAddressManagement}
+                    className="ml-auto text-pink-600 hover:text-pink-700 font-medium text-sm"
+                  >
+                    Kelola →
+                  </button>
                 </div>
               </div>
             </div>

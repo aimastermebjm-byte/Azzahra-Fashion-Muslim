@@ -10,6 +10,7 @@ import FirebaseRegistration from './components/FirebaseRegistration';
 import FlashSalePage from './components/FlashSalePage';
 import OrdersPage from './components/OrdersPage';
 import AccountPage from './components/AccountPage';
+import AddressManagementPage from './components/AddressManagementPage';
 import AdminProductsPage from './components/AdminProductsPage';
 import AdminOrdersPage from './components/AdminOrdersPage';
 import AdminReportsPage from './components/AdminReportsPage';
@@ -25,7 +26,7 @@ import { ordersService } from './services/ordersService';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from './utils/firebaseClient';
 
-type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'ongkir-test';
+type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'ongkir-test';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -340,6 +341,15 @@ function AppContent() {
             onNavigateToAdminOrders={handleNavigateToAdminOrders}
             onNavigateToAdminReports={handleNavigateToAdminReports}
             onNavigateToAdminUsers={handleNavigateToAdminUsers}
+            onNavigateToAddressManagement={() => setCurrentPage('address-management')}
+          />
+        );
+      case 'address-management':
+        console.log('App: Rendering AddressManagementPage with user:', user);
+        return (
+          <AddressManagementPage
+            user={user}
+            onBack={() => setCurrentPage('account')}
           />
         );
         case 'admin-products':

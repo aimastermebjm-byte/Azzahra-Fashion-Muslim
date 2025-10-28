@@ -1,8 +1,8 @@
-// Address Management Service
-// Handle CRUD operations for user addresses with Firebase sync
+// Address Management Service - Pure Firebase Real-time System
+// Single source of truth: Firebase Firestore only
 
 import { auth } from '../utils/firebaseClient';
-import { doc, getDoc, setDoc, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, query, where, deleteDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 
 export interface Address {
@@ -26,9 +26,9 @@ export interface Address {
 }
 
 class AddressService {
-  private readonly storageKey = 'user_addresses';
+  private readonly collection = 'user_addresses';
 
-  // Get all addresses for current user
+  // Get all addresses for current user from Firebase only
   async getUserAddresses(): Promise<Address[]> {
     try {
       const user = auth.currentUser;
@@ -38,8 +38,8 @@ class AddressService {
 
       console.log('🏠 Loading addresses from Firebase for user:', user.uid);
 
-      // Load from Firebase Firestore
-      const addressesRef = collection(db, 'user_addresses');
+      // Load from Firebase Firestore only
+      const addressesRef = collection(db, this.collection);
       const q = query(addressesRef, where('userId', '==', user.uid));
       const querySnapshot = await getDocs(q);
 
@@ -48,28 +48,55 @@ class AddressService {
         const data = doc.data() as Omit<Address, 'id'>;
         addresses.push({
           ...data,
-          id: doc.id
+          id: doc.id,
+          createdAt: data.createdAt || new Date().toISOString(),
+          updatedAt: data.updatedAt || data.createdAt || new Date().toISOString()
         });
       });
 
       console.log('✅ Addresses loaded from Firebase:', addresses.length, 'addresses');
-
-      // Cache to localStorage for offline access
-      this.saveCachedAddresses(user.uid, addresses);
-
       return addresses;
     } catch (error) {
       console.error('❌ Error getting user addresses:', error);
-      // Fallback to cached addresses
-      const user = auth.currentUser;
-      if (user) {
-        return this.getCachedAddresses(user.uid);
-      }
       return [];
     }
   }
 
-  // Save new address
+  // Set up real-time address listener
+  onAddressesChange(callback: (addresses: Address[]) => void): () => void {
+    const user = auth.currentUser;
+    if (!user) {
+      console.log('❌ No user for real-time address listener');
+      return () => {};
+    }
+
+    console.log('🔄 Setting up real-time address listener for user:', user.uid);
+
+    const addressesRef = collection(db, this.collection);
+    const q = query(addressesRef, where('userId', '==', user.uid));
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const addresses: Address[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data() as Omit<Address, 'id'>;
+        addresses.push({
+          ...data,
+          id: doc.id,
+          createdAt: data.createdAt || new Date().toISOString(),
+          updatedAt: data.updatedAt || data.createdAt || new Date().toISOString()
+        });
+      });
+
+      console.log('📦 Real-time addresses update:', addresses.length, 'addresses');
+      callback(addresses);
+    }, (error) => {
+      console.error('❌ Real-time address listener error:', error);
+    });
+
+    return unsubscribe;
+  }
+
+  // Save new address to Firebase only
   async saveAddress(addressData: Omit<Address, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<Address> {
     try {
       const user = auth.currentUser;
@@ -79,9 +106,9 @@ class AddressService {
 
       console.log('🏠 Saving address to Firebase...');
 
-      // If this is set as default, unset other default addresses
+      // If this is set as default, unset other default addresses in Firebase
       if (addressData.isDefault) {
-        await this.unsetAllDefaultAddresses(user.uid);
+        await this.unsetAllDefaultAddressesInFirebase(user.uid);
       }
 
       const newAddress: Address = {
@@ -92,17 +119,11 @@ class AddressService {
         updatedAt: new Date().toISOString()
       };
 
-      // Save to Firebase Firestore
-      const addressRef = doc(db, 'user_addresses', newAddress.id);
+      // Save to Firebase Firestore only
+      const addressRef = doc(db, this.collection, newAddress.id);
       await setDoc(addressRef, newAddress);
 
       console.log('✅ Address saved to Firebase:', newAddress.id);
-
-      // Cache to localStorage
-      const addresses = this.getCachedAddresses(user.uid);
-      addresses.push(newAddress);
-      this.saveCachedAddresses(user.uid, addresses);
-
       return newAddress;
     } catch (error) {
       console.error('❌ Error saving address:', error);
@@ -110,7 +131,7 @@ class AddressService {
     }
   }
 
-  // Update existing address
+  // Update existing address in Firebase only
   async updateAddress(id: string, updateData: Partial<Omit<Address, 'id' | 'userId' | 'createdAt'>>): Promise<Address> {
     try {
       const user = auth.currentUser;
@@ -118,35 +139,37 @@ class AddressService {
         throw new Error('User not authenticated');
       }
 
-      // If this is set as default, unset other default addresses
-      if (updateData.isDefault) {
-        await this.unsetAllDefaultAddresses(user.uid);
-      }
+      // Get existing address from Firebase
+      const addressRef = doc(db, this.collection, id);
+      const addressDoc = await getDoc(addressRef);
 
-      const addresses = this.getCachedAddresses(user.uid);
-      const addressIndex = addresses.findIndex(addr => addr.id === id);
-
-      if (addressIndex === -1) {
+      if (!addressDoc.exists() || addressDoc.data().userId !== user.uid) {
         throw new Error('Address not found');
       }
 
+      // If this is set as default, unset other default addresses in Firebase
+      if (updateData.isDefault) {
+        await this.unsetAllDefaultAddressesInFirebase(user.uid);
+      }
+
       const updatedAddress: Address = {
-        ...addresses[addressIndex],
+        ...addressDoc.data() as Address,
         ...updateData,
-        updatedAt: new Date()
+        updatedAt: new Date().toISOString()
       };
 
-      addresses[addressIndex] = updatedAddress;
-      this.saveCachedAddresses(user.uid, addresses);
+      // Update in Firebase only
+      await setDoc(addressRef, updatedAddress);
+      console.log('✅ Address updated in Firebase:', id);
 
       return updatedAddress;
     } catch (error) {
-      console.error('Error updating address:', error);
+      console.error('❌ Error updating address:', error);
       throw error;
     }
   }
 
-  // Delete address
+  // Delete address from Firebase only
   async deleteAddress(id: string): Promise<void> {
     try {
       const user = auth.currentUser;
@@ -154,23 +177,36 @@ class AddressService {
         throw new Error('User not authenticated');
       }
 
-      const addresses = this.getCachedAddresses(user.uid);
-      const filteredAddresses = addresses.filter(addr => addr.id !== id);
+      console.log('🗑️ Deleting address from Firebase:', id);
 
-      // If deleted address was default, set first address as default
-      if (addresses.find(addr => addr.id === id)?.isDefault && filteredAddresses.length > 0) {
-        filteredAddresses[0].isDefault = true;
-        filteredAddresses[0].updatedAt = new Date();
+      // Check if address exists and belongs to user
+      const addressRef = doc(db, this.collection, id);
+      const addressDoc = await getDoc(addressRef);
+
+      if (!addressDoc.exists() || addressDoc.data().userId !== user.uid) {
+        throw new Error('Address not found');
       }
 
-      this.saveCachedAddresses(user.uid, filteredAddresses);
+      const wasDefault = addressDoc.data().isDefault;
+
+      // Delete from Firebase
+      await deleteDoc(addressRef);
+      console.log('✅ Address deleted from Firebase:', id);
+
+      // If deleted address was default, set first remaining address as default
+      if (wasDefault) {
+        const remainingAddresses = await this.getUserAddresses();
+        if (remainingAddresses.length > 0) {
+          await this.setAsDefault(remainingAddresses[0].id);
+        }
+      }
     } catch (error) {
-      console.error('Error deleting address:', error);
+      console.error('❌ Error deleting address:', error);
       throw error;
     }
   }
 
-  // Set address as default
+  // Set address as default in Firebase only
   async setAsDefault(id: string): Promise<Address> {
     try {
       const user = auth.currentUser;
@@ -178,70 +214,76 @@ class AddressService {
         throw new Error('User not authenticated');
       }
 
-      // Unset all default addresses
-      await this.unsetAllDefaultAddresses(user.uid);
+      // Unset all default addresses in Firebase
+      await this.unsetAllDefaultAddressesInFirebase(user.uid);
 
       // Set selected address as default
       return await this.updateAddress(id, { isDefault: true });
     } catch (error) {
-      console.error('Error setting default address:', error);
+      console.error('❌ Error setting default address:', error);
       throw error;
     }
   }
 
-  // Get default address
+  // Get default address from Firebase only
   async getDefaultAddress(): Promise<Address | null> {
     try {
       const addresses = await this.getUserAddresses();
       return addresses.find(addr => addr.isDefault) || null;
     } catch (error) {
-      console.error('Error getting default address:', error);
+      console.error('❌ Error getting default address:', error);
       return null;
     }
   }
 
-  // Get address by ID
+  // Get address by ID from Firebase only
   async getAddressById(id: string): Promise<Address | null> {
     try {
-      const addresses = await this.getUserAddresses();
-      return addresses.find(addr => addr.id === id) || null;
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const addressRef = doc(db, this.collection, id);
+      const addressDoc = await getDoc(addressRef);
+
+      if (!addressDoc.exists() || addressDoc.data().userId !== user.uid) {
+        return null;
+      }
+
+      const data = addressDoc.data() as Address;
+      return {
+        ...data,
+        createdAt: data.createdAt || new Date().toISOString(),
+        updatedAt: data.updatedAt || data.createdAt || new Date().toISOString()
+      };
     } catch (error) {
-      console.error('Error getting address by ID:', error);
+      console.error('❌ Error getting address by ID:', error);
       return null;
     }
   }
 
-  // Helper methods for localStorage
-  private getCachedAddresses(userId: string): Address[] {
+  // Unset all default addresses in Firebase
+  private async unsetAllDefaultAddressesInFirebase(userId: string): Promise<void> {
     try {
-      const cached = localStorage.getItem(`${this.storageKey}_${userId}`);
-      return cached ? JSON.parse(cached) : [];
-    } catch (error) {
-      console.error('Error getting cached addresses:', error);
-      return [];
-    }
-  }
+      const addressesRef = collection(db, this.collection);
+      const q = query(addressesRef, where('userId', '==', userId), where('isDefault', '==', true));
+      const querySnapshot = await getDocs(q);
 
-  private saveCachedAddresses(userId: string, addresses: Address[]): void {
-    try {
-      localStorage.setItem(`${this.storageKey}_${userId}`, JSON.stringify(addresses));
-    } catch (error) {
-      console.error('Error saving cached addresses:', error);
-    }
-  }
+      const updatePromises = querySnapshot.docs.map((doc) =>
+        setDoc(doc.ref, { isDefault: false, updatedAt: new Date().toISOString() }, { merge: true })
+      );
 
-  private async unsetAllDefaultAddresses(userId: string): Promise<void> {
-    const addresses = this.getCachedAddresses(userId);
-    const updatedAddresses = addresses.map(addr => ({
-      ...addr,
-      isDefault: false,
-      updatedAt: new Date()
-    }));
-    this.saveCachedAddresses(userId, updatedAddresses);
+      await Promise.all(updatePromises);
+      console.log('✅ All default addresses unset in Firebase');
+    } catch (error) {
+      console.error('❌ Error unsetting default addresses:', error);
+      throw error;
+    }
   }
 
   private generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
   }
 
   // Format address for display
