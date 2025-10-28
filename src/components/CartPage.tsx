@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { cartService } from '../services/cartService';
+import { useRealTimeCart } from '../hooks/useRealTimeCart';
 import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 
 interface CartPageProps {
@@ -13,43 +14,12 @@ const CartPage: React.FC<CartPageProps> = ({
   onBack,
   onCheckout
 }) => {
-  const [cartItems, setCartItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Load cart from backend
-  const loadCart = async () => {
-    try {
-      setLoading(true);
-      const items = await cartService.getCart();
-      console.log('🛒 Cart loaded:', items);
-      console.log('🛒 Cart item details:', items?.map((item, i) => ({
-        index: i,
-        id: item?.id,
-        productId: item?.productId,
-        name: item?.name,
-        price: item?.price,
-        image: item?.image ? 'has image' : 'no image',
-        quantity: item?.quantity
-      })));
-      setCartItems(items || []);
-      console.log('🛒 Cart loaded from backend:', items?.length || 0, 'items');
-    } catch (error) {
-      console.error('❌ Failed to load cart:', error);
-      setCartItems([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  
-  useEffect(() => {
-    loadCart(); // Load cart regardless of user state
-  }, [user]); // Reload when user changes
+  const { cartItems, loading, error } = useRealTimeCart();
 
   const updateQuantity = async (productId: string, variant: any, newQuantity: number) => {
     try {
       // Find the item in cart to get its ID
-      const item = cartItems.find(item =>
+      const item = cartItems.find((item: any) =>
         item.productId === productId &&
         JSON.stringify(item.variant) === JSON.stringify(variant)
       );
@@ -64,7 +34,6 @@ const CartPage: React.FC<CartPageProps> = ({
       } else {
         await cartService.updateQuantity(item.id, newQuantity);
       }
-      await loadCart(); // Reload cart
     } catch (error) {
       console.error('❌ Failed to update quantity:', error);
     }
@@ -73,7 +42,7 @@ const CartPage: React.FC<CartPageProps> = ({
   const removeFromCart = async (productId: string, variant: any) => {
     try {
       // Find the item in cart to get its ID
-      const item = cartItems.find(item =>
+      const item = cartItems.find((item: any) =>
         item.productId === productId &&
         JSON.stringify(item.variant) === JSON.stringify(variant)
       );
@@ -84,15 +53,13 @@ const CartPage: React.FC<CartPageProps> = ({
       }
 
       await cartService.removeFromCart(item.id);
-      await loadCart(); // Reload cart
     } catch (error) {
       console.error('❌ Failed to remove from cart:', error);
     }
   };
 
-  
   const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => {
+    return cartItems.reduce((total: number, item: any) => {
       if (!item) return total;
       const itemPrice = item.price || 0;
       const itemQuantity = item.quantity || 1;
@@ -115,6 +82,33 @@ const CartPage: React.FC<CartPageProps> = ({
         <div className="flex flex-col items-center justify-center h-96">
           <div className="w-16 h-16 border-4 border-gray-300 border-t-pink-500 rounded-full animate-spin mb-4"></div>
           <h3 className="text-lg font-semibold text-gray-600 mb-2">Memuat Keranjang...</h3>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white shadow-sm sticky top-0 z-10">
+          <div className="flex items-center p-4">
+            <button onClick={onBack} className="mr-4">
+              <ArrowLeft className="w-6 h-6 text-gray-600" />
+            </button>
+            <h1 className="text-lg font-semibold">Keranjang Belanja</h1>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center justify-center h-96">
+          <ShoppingBag className="w-16 h-16 text-red-300 mb-4" />
+          <h3 className="text-lg font-semibold text-red-600 mb-2">Error Loading Cart</h3>
+          <p className="text-gray-500 text-center mb-6">{error}</p>
+          <button
+            onClick={onBack}
+            className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all"
+          >
+            Kembali
+          </button>
         </div>
       </div>
     );

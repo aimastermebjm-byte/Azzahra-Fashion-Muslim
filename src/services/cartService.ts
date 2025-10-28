@@ -1,8 +1,8 @@
-// Cart Service - Sync cart across devices using user account
-// This service handles cart synchronization between localStorage and Firebase
+// Cart Service - Pure Firebase Real-time Cart System
+// Single source of truth: Firebase Firestore only
 
 import { auth } from '../utils/firebaseClient';
-import { doc, getDoc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 
 export interface CartItem {
@@ -26,42 +26,70 @@ export interface UserCart {
 }
 
 class CartService {
-  private readonly LOCAL_STORAGE_KEY = 'azzahra_cart';
   private readonly FIREBASE_COLLECTION = 'user_carts';
 
-  // Get current user's cart (sync from Firebase or localStorage)
+  // Get current user's cart from Firebase only
   async getCart(): Promise<CartItem[]> {
     try {
       const user = auth.currentUser;
 
-      if (user) {
-        // Logged in user - try to sync from Firebase first
-        const firebaseCart = await this.getCartFromFirebase(user.uid);
-        if (firebaseCart && firebaseCart.length > 0) {
-          // Sync to localStorage as backup
-          this.saveCartToLocalStorage(firebaseCart);
-          return firebaseCart;
-        } else {
-          // No Firebase cart, use localStorage and sync to Firebase
-          const localCart = this.getCartFromLocalStorage();
-          if (localCart.length > 0) {
-            await this.saveCartToFirebase(user.uid, localCart);
-          }
-          return localCart;
-        }
+      if (!user) {
+        console.log('❌ No user logged in - cart requires authentication');
+        return [];
+      }
+
+      console.log('🔥 Loading cart from Firebase for user:', user.uid);
+      const firebaseCart = await this.getCartFromFirebase(user.uid);
+
+      if (firebaseCart && firebaseCart.length > 0) {
+        console.log('✅ Cart loaded from Firebase:', firebaseCart.length, 'items');
+        return firebaseCart;
       } else {
-        // Guest user - use localStorage only
-        return this.getCartFromLocalStorage();
+        console.log('ℹ️ No cart found in Firebase - returning empty cart');
+        return [];
       }
     } catch (error) {
-      console.error('Error getting cart:', error);
-      return this.getCartFromLocalStorage();
+      console.error('❌ Error getting cart from Firebase:', error);
+      return [];
     }
+  }
+
+  // Set up real-time cart listener
+  onCartChange(callback: (items: CartItem[]) => void): () => void {
+    const user = auth.currentUser;
+    if (!user) {
+      console.log('❌ No user for real-time cart listener');
+      return () => {};
+    }
+
+    console.log('🔄 Setting up real-time cart listener for user:', user.uid);
+
+    const cartRef = doc(db, this.FIREBASE_COLLECTION, user.uid);
+    const unsubscribe = onSnapshot(cartRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        const items = data?.items || [];
+        console.log('📦 Real-time cart update:', items.length, 'items');
+        callback(items);
+      } else {
+        console.log('📦 Real-time cart update: empty cart');
+        callback([]);
+      }
+    }, (error) => {
+      console.error('❌ Real-time cart listener error:', error);
+    });
+
+    return unsubscribe;
   }
 
   // Add item to cart
   async addToCart(item: Omit<CartItem, 'id' | 'addedAt'>): Promise<CartItem[]> {
     try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated - cannot add to cart');
+      }
+
       const cartItem: CartItem = {
         ...item,
         id: this.generateId(),
@@ -70,8 +98,8 @@ class CartService {
 
       const currentCart = await this.getCart();
       const existingItemIndex = currentCart.findIndex(
-        cartItem => cartItem.productId === item.productId &&
-        JSON.stringify(cartItem.variant) === JSON.stringify(item.variant)
+        existingItem => existingItem.productId === item.productId &&
+        JSON.stringify(existingItem.variant) === JSON.stringify(item.variant)
       );
 
       let updatedCart: CartItem[];
@@ -88,13 +116,9 @@ class CartService {
         updatedCart = [...currentCart, cartItem];
       }
 
-      // Save both locally and to Firebase
-      this.saveCartToLocalStorage(updatedCart);
-
-      const user = auth.currentUser;
-      if (user) {
-        await this.saveCartToFirebase(user.uid, updatedCart);
-      }
+      // Save to Firebase only
+      await this.saveCartToFirebase(user.uid, updatedCart);
+      console.log('✅ Cart updated in Firebase:', updatedCart.length, 'items');
 
       return updatedCart;
     } catch (error) {
@@ -106,23 +130,23 @@ class CartService {
   // Update item quantity
   async updateQuantity(itemId: string, quantity: number): Promise<CartItem[]> {
     try {
-      const currentCart = await this.getCart();
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated - cannot update cart');
+      }
 
       if (quantity === 0) {
         return this.removeFromCart(itemId);
       }
 
+      const currentCart = await this.getCart();
       const updatedCart = currentCart.map(item =>
         item.id === itemId ? { ...item, quantity } : item
       );
 
-      // Save both locally and to Firebase
-      this.saveCartToLocalStorage(updatedCart);
-
-      const user = auth.currentUser;
-      if (user) {
-        await this.saveCartToFirebase(user.uid, updatedCart);
-      }
+      // Save to Firebase only
+      await this.saveCartToFirebase(user.uid, updatedCart);
+      console.log('✅ Cart quantity updated in Firebase');
 
       return updatedCart;
     } catch (error) {
@@ -134,16 +158,17 @@ class CartService {
   // Remove item from cart
   async removeFromCart(itemId: string): Promise<CartItem[]> {
     try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated - cannot remove from cart');
+      }
+
       const currentCart = await this.getCart();
       const updatedCart = currentCart.filter(item => item.id !== itemId);
 
-      // Save both locally and to Firebase
-      this.saveCartToLocalStorage(updatedCart);
-
-      const user = auth.currentUser;
-      if (user) {
-        await this.saveCartToFirebase(user.uid, updatedCart);
-      }
+      // Save to Firebase only
+      await this.saveCartToFirebase(user.uid, updatedCart);
+      console.log('✅ Item removed from Firebase cart:', itemId);
 
       return updatedCart;
     } catch (error) {
@@ -155,69 +180,41 @@ class CartService {
   // Clear entire cart
   async clearCart(): Promise<void> {
     try {
-      console.log('🗑️ Clearing cart from ALL sources...');
+      console.log('🗑️ Clearing cart from Firebase...');
 
-      // Step 1: Clear localStorage immediately
-      this.saveCartToLocalStorage([]);
-      console.log('💾 LocalStorage cleared');
-
-      // Step 2: Clear Firebase Firestore
       const user = auth.currentUser;
-      if (user) {
-        await this.saveCartToFirebase(user.uid, []);
-        console.log('🔥 Firebase Firestore cleared for user:', user.uid);
-
-        // Step 3: Double-check Firebase is really cleared
-        await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
-        const verifyEmpty = await this.getCartFromFirebase(user.uid);
-        if (verifyEmpty && verifyEmpty.length > 0) {
-          console.warn('⚠️ Firebase still has items, forcing clear again...');
-          await this.saveCartToFirebase(user.uid, []);
-        }
+      if (!user) {
+        console.log('❌ No user logged in - cannot clear cart');
+        return;
       }
 
-      console.log('✅ Cart PERMANENTLY cleared from all devices');
+      // Clear from Firebase only
+      await this.saveCartToFirebase(user.uid, []);
+      console.log('🔥 Firebase cart cleared for user:', user.uid);
+
+      // Verification step
+      await new Promise(resolve => setTimeout(resolve, 300)); // Brief wait
+      const verifyEmpty = await this.getCartFromFirebase(user.uid);
+      if (verifyEmpty && verifyEmpty.length > 0) {
+        console.warn('⚠️ Firebase still has items, forcing clear again...');
+        await this.saveCartToFirebase(user.uid, []);
+      }
+
+      console.log('✅ Cart PERMANENTLY cleared from Firebase - all devices');
     } catch (error) {
       console.error('❌ Error clearing cart:', error);
       throw error;
     }
   }
 
-  // Sync cart when user logs in/out
-  async syncCartOnLogin(user: any): Promise<CartItem[]> {
-    try {
-      const localCart = this.getCartFromLocalStorage();
-
-      // Get user's cart from Firebase
-      const firebaseCart = await this.getCartFromFirebase(user.uid);
-
-      let finalCart: CartItem[];
-
-      if (firebaseCart && firebaseCart.length > 0) {
-        // Merge local and Firebase carts (avoid duplicates)
-        const mergedCart = this.mergeCarts(localCart, firebaseCart);
-        finalCart = mergedCart;
-      } else {
-        // Use local cart and save to Firebase
-        finalCart = localCart;
-      }
-
-      // Save final cart to both places
-      this.saveCartToLocalStorage(finalCart);
-      await this.saveCartToFirebase(user.uid, finalCart);
-
-      return finalCart;
-    } catch (error) {
-      console.error('Error syncing cart on login:', error);
-      return this.getCartFromLocalStorage();
-    }
-  }
-
-  // Handle user logout
+  // Handle user logout - clear cart from Firebase
   async handleLogout(): Promise<void> {
     try {
-      // Clear local cart when logging out
-      this.saveCartToLocalStorage([]);
+      const user = auth.currentUser;
+      if (user) {
+        await this.clearCart();
+        console.log('✅ Cart cleared on logout');
+      }
     } catch (error) {
       console.error('Error handling logout:', error);
     }
@@ -245,30 +242,6 @@ class CartService {
   }
 
   // Private methods
-  private getCartFromLocalStorage(): CartItem[] {
-    try {
-      const stored = localStorage.getItem(this.LOCAL_STORAGE_KEY);
-      if (!stored) return [];
-
-      const parsed = JSON.parse(stored);
-      return parsed.map((item: any) => ({
-        ...item,
-        addedAt: item.addedAt
-      }));
-    } catch (error) {
-      console.error('Error getting cart from localStorage:', error);
-      return [];
-    }
-  }
-
-  private saveCartToLocalStorage(cart: CartItem[]): void {
-    try {
-      localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(cart));
-    } catch (error) {
-      console.error('Error saving cart to localStorage:', error);
-    }
-  }
-
   private async getCartFromFirebase(userId: string): Promise<CartItem[] | null> {
     try {
       console.log('🔥 Loading cart from Firebase for user:', userId);
@@ -309,24 +282,7 @@ class CartService {
     }
   }
 
-  private mergeCarts(localCart: CartItem[], firebaseCart: CartItem[]): CartItem[] {
-    const mergedCart = [...firebaseCart];
-
-    // Add items from local cart that don't exist in Firebase cart
-    localCart.forEach(localItem => {
-      const existsInFirebase = firebaseCart.some(firebaseItem =>
-        firebaseItem.productId === localItem.productId &&
-        JSON.stringify(firebaseItem.variant) === JSON.stringify(localItem.variant)
-      );
-
-      if (!existsInFirebase) {
-        mergedCart.push(localItem);
-      }
-    });
-
-    return mergedCart;
-  }
-
+  
   private generateId(): string {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
