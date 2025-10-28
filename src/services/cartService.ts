@@ -155,19 +155,28 @@ class CartService {
   // Clear entire cart
   async clearCart(): Promise<void> {
     try {
-      console.log('🗑️ Clearing cart from localStorage and Firebase...');
+      console.log('🗑️ Clearing cart from ALL sources...');
 
-      // Clear localStorage
+      // Step 1: Clear localStorage immediately
       this.saveCartToLocalStorage([]);
+      console.log('💾 LocalStorage cleared');
 
-      // Clear Firebase
+      // Step 2: Clear Firebase Firestore
       const user = auth.currentUser;
       if (user) {
         await this.saveCartToFirebase(user.uid, []);
-        console.log('🔥 Firebase cart cleared for user:', user.uid);
+        console.log('🔥 Firebase Firestore cleared for user:', user.uid);
+
+        // Step 3: Double-check Firebase is really cleared
+        await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
+        const verifyEmpty = await this.getCartFromFirebase(user.uid);
+        if (verifyEmpty && verifyEmpty.length > 0) {
+          console.warn('⚠️ Firebase still has items, forcing clear again...');
+          await this.saveCartToFirebase(user.uid, []);
+        }
       }
 
-      console.log('✅ Cart cleared from all sources');
+      console.log('✅ Cart PERMANENTLY cleared from all devices');
     } catch (error) {
       console.error('❌ Error clearing cart:', error);
       throw error;
