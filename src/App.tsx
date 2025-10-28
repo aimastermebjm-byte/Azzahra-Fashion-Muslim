@@ -173,9 +173,9 @@ function AppContent() {
       // Add order to admin system
       addOrder({
         id: orderId,
-        userId: user.id,
-        userName: user.name,
-        userEmail: user.email,
+        userId: user.uid,
+        userName: user.name || user.displayName || 'User',
+        userEmail: user.email || 'user@example.com',
         items: cartItems.map(item => ({
           productId: item.productId,
           productName: item.name || 'Product',
@@ -203,16 +203,23 @@ function AppContent() {
 
       // Save order to Firebase for cross-device sync using OrdersService
       const orderRecord = {
-        items: orderData.items || [],
+        items: orderData.items || cartItems.map(item => ({
+          productId: item.productId,
+          productName: item.name || 'Product',
+          selectedVariant: item.variant,
+          quantity: item.quantity,
+          price: item.price || 0,
+          total: (item.price || 0) * item.quantity
+        })),
         shippingInfo: orderData.shippingInfo,
         paymentMethod: orderData.paymentMethod,
         status: 'pending' as const,
         totalAmount: orderData.totalAmount || 0,
         shippingCost: orderData.shippingCost || 0,
         finalTotal: orderData.finalTotal || 0,
-        notes: orderData.notes,
-        userName: user.name,
-        userEmail: user.email,
+        notes: orderData.notes || '',
+        userName: user.name || user.displayName || 'User',
+        userEmail: user.email || 'user@example.com',
         userId: user.uid,
         id: orderId
       };
