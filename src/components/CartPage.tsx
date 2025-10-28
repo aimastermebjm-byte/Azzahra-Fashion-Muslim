@@ -136,12 +136,8 @@ const CartPage: React.FC<CartPageProps> = ({
     try {
       console.log('🗑️ Clearing all cart items...');
 
-      // Remove each item individually
-      for (const item of cartItems) {
-        if (item && item.id) {
-          await cartService.removeFromCart(item.id);
-        }
-      }
+      // Use the clearCart function which handles all items at once
+      await cartService.clearCart();
 
       await loadCart(); // Reload cart
       console.log('✅ All cart items cleared');
