@@ -21,6 +21,8 @@ import { useFirebaseAuth } from './hooks/useFirebaseAuth';
 import { useAdmin } from './contexts/AdminContext';
 import { AppStorage } from './utils/appStorage';
 import { cartService } from './services/cartService';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from './utils/firebaseClient';
 
 type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'ongkir-test';
 
@@ -206,7 +208,7 @@ function AppContent() {
 
     try {
       // Get cart items from backend
-      const cartItems = await cartService.getCart(user.uid);
+      const cartItems = await cartService.getCart();
 
       // Add order to admin system
       addOrder({
@@ -237,7 +239,40 @@ function AppContent() {
       });
 
       // Clear cart from backend
-      await cartService.clearCart(user.uid);
+      await cartService.clearCart();
+
+      // Save order to Firebase for cross-device sync
+      const orderRecord = {
+        id: orderId,
+        userId: user.uid,
+        userName: user.name,
+        userEmail: user.email,
+        items: orderData.items || [],
+        shippingInfo: orderData.shippingInfo,
+        paymentMethod: orderData.paymentMethod,
+        status: 'pending',
+        totalAmount: orderData.totalAmount || 0,
+        shippingCost: orderData.shippingCost || 0,
+        finalTotal: orderData.finalTotal || 0,
+        notes: orderData.notes,
+        createdAt: new Date().toISOString(),
+        timestamp: Date.now()
+      };
+
+      try {
+        // Save to Firebase Firestore
+        await setDoc(doc(db, 'orders', orderId), orderRecord);
+        console.log('🔥 Order saved to Firebase:', orderId);
+
+        // Also save to AppStorage (localStorage) as backup
+        AppStorage.saveOrder(orderRecord);
+        console.log('💾 Order saved to AppStorage:', orderId);
+      } catch (firebaseError) {
+        console.error('❌ Error saving order to Firebase:', firebaseError);
+        // Fallback to AppStorage only
+        AppStorage.saveOrder(orderRecord);
+        console.log('💾 Order saved to AppStorage (fallback):', orderId);
+      }
 
       console.log('✅ Order completed and cart cleared:', orderId);
       return orderId;
