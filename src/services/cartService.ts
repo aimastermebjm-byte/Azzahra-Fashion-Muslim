@@ -155,6 +155,8 @@ class CartService {
   // Clear entire cart
   async clearCart(): Promise<void> {
     try {
+      console.log('🗑️ Clearing cart from localStorage and Firebase...');
+
       // Clear localStorage
       this.saveCartToLocalStorage([]);
 
@@ -162,9 +164,12 @@ class CartService {
       const user = auth.currentUser;
       if (user) {
         await this.saveCartToFirebase(user.uid, []);
+        console.log('🔥 Firebase cart cleared for user:', user.uid);
       }
+
+      console.log('✅ Cart cleared from all sources');
     } catch (error) {
-      console.error('Error clearing cart:', error);
+      console.error('❌ Error clearing cart:', error);
       throw error;
     }
   }
