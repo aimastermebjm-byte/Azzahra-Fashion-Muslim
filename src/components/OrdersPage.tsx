@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Package, Clock, Truck, CheckCircle, Search, XCircle, CreditCard, Upload, X, Copy } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
+import { useFirebaseOrders } from '../hooks/useFirebaseOrders';
 
 interface OrdersPageProps {
   user: any;
@@ -11,7 +12,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
-  const { orders, updateOrderPayment } = useAdmin();
+  const { orders, loading, error } = useFirebaseOrders();
+  const { updateOrderPayment } = useAdmin();
 
   const handlePayNow = (order: any) => {
     setSelectedOrder(order);
@@ -40,7 +42,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
 
     try {
       // Update order with payment proof but keep status as pending
-      await updateOrderPayment(selectedOrder.id, paymentProof.name, 'awaiting_verification');
+      updateOrderPayment(selectedOrder.id, paymentProof.name);
       closePaymentModal();
       const message = selectedOrder.paymentProof
         ? 'Bukti pembayaran berhasil diupload ulang! Menunggu verifikasi admin.'
@@ -51,13 +53,10 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
     }
   };
 
-  // Filter orders by current user
-  const userOrders = orders.filter(order => order.userId === user?.id);
-
-  // Filter orders by active tab
-  const filteredUserOrders = activeTab === 'all' 
-    ? userOrders 
-    : userOrders.filter(order => order.status === activeTab);
+  // Filter orders by active tab (orders are already filtered by user in useFirebaseOrders)
+  const filteredUserOrders = activeTab === 'all'
+    ? orders
+    : orders.filter(order => order.status === activeTab);
 
   const statusConfig = {
     pending: { label: 'Menunggu Pembayaran', icon: Clock, color: 'text-orange-600 bg-orange-100' },
@@ -118,7 +117,18 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
 
       {/* Orders List */}
       <div className="p-4 space-y-4">
-        {filteredUserOrders.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+            <p className="text-gray-500">Memuat pesanan...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <Package className="w-16 h-16 text-red-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-red-600 mb-2">Error Loading Pesanan</h3>
+            <p className="text-gray-500">{error}</p>
+          </div>
+        ) : filteredUserOrders.length === 0 ? (
           <div className="text-center py-12">
             <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-600 mb-2">Belum Ada Pesanan</h3>
@@ -134,7 +144,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <p className="font-semibold text-gray-800">#{order.id}</p>
-                    <p className="text-sm text-gray-500">{order.createdAt.toLocaleDateString('id-ID')}</p>
+                    <p className="text-sm text-gray-500">{new Date(order.createdAt).toLocaleDateString('id-ID')}</p>
                   </div>
                   <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
                     <StatusIcon className="w-3 h-3" />

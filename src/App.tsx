@@ -21,6 +21,7 @@ import { useFirebaseAuth } from './hooks/useFirebaseAuth';
 import { useAdmin } from './contexts/AdminContext';
 import { AppStorage } from './utils/appStorage';
 import { cartService } from './services/cartService';
+import { ordersService } from './services/ordersService';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from './utils/firebaseClient';
 
@@ -89,13 +90,15 @@ function AppContent() {
 
     // Firebase logout
     logout();
-    setCartItems([]);
     setCurrentPage('home');
 
-    // Clear cart from localStorage (keep only cart, not user)
+    // Clear cart from cartService and localStorage
+    cartService.clearCart().catch(error => {
+      console.error('❌ Error clearing cart on logout:', error);
+    });
     localStorage.removeItem('azzahra_cart');
     console.log('✅ Firebase logout successful');
-    console.log('📦 Cart cleared from localStorage');
+    console.log('📦 Cart cleared from cartService and localStorage');
   };
 
   const handleAddToCart = async (product: any, variant: any, quantity: number) => {
@@ -154,50 +157,7 @@ function AppContent() {
       setCurrentPage('checkout');
     }, 500);
   };
-  const updateCartQuantity = (productId: string, variant: any, newQuantity: number) => {
-    setCartItems(prev => {
-      const updatedCart = prev.map(item =>
-        item.id === productId &&
-        item.selectedVariant?.size === variant?.size &&
-        item.selectedVariant?.color === variant?.color
-          ? { ...item, quantity: Math.max(1, newQuantity) }
-          : item
-      );
-
-      // Save updated cart to localStorage
-      localStorage.setItem('azzahra_cart', JSON.stringify(updatedCart));
-
-      return updatedCart;
-    });
-  };
-
-  const removeFromCart = (productId: string, variant: any) => {
-    setCartItems(prev => {
-      const updatedCart = prev.filter(item =>
-        !(item.id === productId &&
-          item.selectedVariant?.size === variant?.size &&
-          item.selectedVariant?.color === variant?.color)
-      );
-
-      // Save updated cart to localStorage
-      localStorage.setItem('azzahra_cart', JSON.stringify(updatedCart));
-
-      return updatedCart;
-    });
-  };
-
-  const clearCart = () => {
-    setCartItems([]);
-
-    // Clear cart from localStorage
-    localStorage.removeItem('azzahra_cart');
-
-    // Update product stock when order is completed
-    cartItems.forEach(item => {
-      updateProductStock(item.id, item.quantity);
-    });
-  };
-
+  
   const handleOrderComplete = async (orderData: any) => {
     if (!user?.uid) {
       console.error('❌ Cannot complete order: User not logged in');
@@ -241,36 +201,42 @@ function AppContent() {
       // Clear cart from backend
       await cartService.clearCart();
 
-      // Save order to Firebase for cross-device sync
+      // Save order to Firebase for cross-device sync using OrdersService
       const orderRecord = {
-        id: orderId,
-        userId: user.uid,
-        userName: user.name,
-        userEmail: user.email,
         items: orderData.items || [],
         shippingInfo: orderData.shippingInfo,
         paymentMethod: orderData.paymentMethod,
-        status: 'pending',
+        status: 'pending' as const,
         totalAmount: orderData.totalAmount || 0,
         shippingCost: orderData.shippingCost || 0,
         finalTotal: orderData.finalTotal || 0,
         notes: orderData.notes,
-        createdAt: new Date().toISOString(),
-        timestamp: Date.now()
+        userName: user.name,
+        userEmail: user.email,
+        userId: user.uid,
+        id: orderId
       };
 
       try {
-        // Save to Firebase Firestore
-        await setDoc(doc(db, 'orders', orderId), orderRecord);
-        console.log('🔥 Order saved to Firebase:', orderId);
+        // Save to Firebase using OrdersService
+        await ordersService.createOrder(orderRecord);
+        console.log('🔥 Order saved to Firebase via OrdersService:', orderId);
 
         // Also save to AppStorage (localStorage) as backup
-        AppStorage.saveOrder(orderRecord);
-        console.log('💾 Order saved to AppStorage:', orderId);
+        AppStorage.saveOrder({
+          ...orderRecord,
+          createdAt: new Date().toISOString(),
+          timestamp: Date.now()
+        });
+        console.log('💾 Order saved to AppStorage as backup:', orderId);
       } catch (firebaseError) {
-        console.error('❌ Error saving order to Firebase:', firebaseError);
+        console.error('❌ Error saving order via OrdersService:', firebaseError);
         // Fallback to AppStorage only
-        AppStorage.saveOrder(orderRecord);
+        AppStorage.saveOrder({
+          ...orderRecord,
+          createdAt: new Date().toISOString(),
+          timestamp: Date.now()
+        });
         console.log('💾 Order saved to AppStorage (fallback):', orderId);
       }
 
