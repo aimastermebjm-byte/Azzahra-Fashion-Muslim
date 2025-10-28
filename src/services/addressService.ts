@@ -1,7 +1,9 @@
 // Address Management Service
-// Handle CRUD operations for user addresses
+// Handle CRUD operations for user addresses with Firebase sync
 
 import { auth } from '../utils/firebaseClient';
+import { doc, getDoc, setDoc, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore';
+import { db } from '../utils/firebaseClient';
 
 export interface Address {
   id: string;
@@ -19,8 +21,8 @@ export interface Address {
   subdistrictId: string;
   postalCode: string;
   isDefault: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 class AddressService {
@@ -34,17 +36,35 @@ class AddressService {
         throw new Error('User not authenticated');
       }
 
-      // Try to get from localStorage first (offline-first)
-      const cachedAddresses = this.getCachedAddresses(user.uid);
-      if (cachedAddresses.length > 0) {
-        return cachedAddresses;
-      }
+      console.log('🏠 Loading addresses from Firebase for user:', user.uid);
 
-      // If no cached addresses, return empty array
-      // TODO: Implement Firebase/Firestore integration when needed
-      return [];
+      // Load from Firebase Firestore
+      const addressesRef = collection(db, 'user_addresses');
+      const q = query(addressesRef, where('userId', '==', user.uid));
+      const querySnapshot = await getDocs(q);
+
+      const addresses: Address[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data() as Omit<Address, 'id'>;
+        addresses.push({
+          ...data,
+          id: doc.id
+        });
+      });
+
+      console.log('✅ Addresses loaded from Firebase:', addresses.length, 'addresses');
+
+      // Cache to localStorage for offline access
+      this.saveCachedAddresses(user.uid, addresses);
+
+      return addresses;
     } catch (error) {
-      console.error('Error getting user addresses:', error);
+      console.error('❌ Error getting user addresses:', error);
+      // Fallback to cached addresses
+      const user = auth.currentUser;
+      if (user) {
+        return this.getCachedAddresses(user.uid);
+      }
       return [];
     }
   }
@@ -57,6 +77,8 @@ class AddressService {
         throw new Error('User not authenticated');
       }
 
+      console.log('🏠 Saving address to Firebase...');
+
       // If this is set as default, unset other default addresses
       if (addressData.isDefault) {
         await this.unsetAllDefaultAddresses(user.uid);
@@ -66,20 +88,24 @@ class AddressService {
         ...addressData,
         id: this.generateId(),
         userId: user.uid,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
 
-      // Get existing addresses
+      // Save to Firebase Firestore
+      const addressRef = doc(db, 'user_addresses', newAddress.id);
+      await setDoc(addressRef, newAddress);
+
+      console.log('✅ Address saved to Firebase:', newAddress.id);
+
+      // Cache to localStorage
       const addresses = this.getCachedAddresses(user.uid);
       addresses.push(newAddress);
-
-      // Save to localStorage
       this.saveCachedAddresses(user.uid, addresses);
 
       return newAddress;
     } catch (error) {
-      console.error('Error saving address:', error);
+      console.error('❌ Error saving address:', error);
       throw error;
     }
   }
