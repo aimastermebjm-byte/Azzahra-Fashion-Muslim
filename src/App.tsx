@@ -171,16 +171,26 @@ function AppContent() {
       // Get cart items from backend
       const cartItems = await cartService.getCart();
 
+      // Calculate totals from cart items
+      const calculatedSubtotal = cartItems.reduce((total, item) => {
+        const itemPrice = item.price || 0;
+        const itemQuantity = item.quantity || 1;
+        return total + (itemPrice * itemQuantity);
+      }, 0);
+
+      const calculatedShippingCost = orderData.shippingCost || 0;
+      const calculatedFinalTotal = calculatedSubtotal + calculatedShippingCost;
+
       // Add order to admin system
       addOrder({
         id: orderId,
         userId: user.uid,
-        userName: user.name || user.displayName || 'User',
+        userName: user.displayName || 'User',
         userEmail: user.email || 'user@example.com',
         items: cartItems.map(item => ({
           productId: item.productId,
           productName: item.name || 'Product',
-          selectedVariant: item.variant,
+          selectedVariant: item.variant || { size: '', color: '' },
           quantity: item.quantity,
           price: item.price || 0,
           total: (item.price || 0) * item.quantity
@@ -188,9 +198,9 @@ function AppContent() {
         shippingInfo: orderData.shippingInfo,
         paymentMethod: orderData.paymentMethod,
         status: 'pending',
-        totalAmount: orderData.totalAmount || 0,
-        shippingCost: orderData.shippingCost || 0,
-        finalTotal: orderData.finalTotal || 0,
+        totalAmount: calculatedSubtotal,
+        shippingCost: calculatedShippingCost,
+        finalTotal: calculatedFinalTotal,
         notes: orderData.notes
       });
 
@@ -204,10 +214,10 @@ function AppContent() {
 
       // Save order to Firebase for cross-device sync using OrdersService
       const orderRecord = {
-        items: orderData.items || cartItems.map(item => ({
+        items: cartItems.map(item => ({
           productId: item.productId,
           productName: item.name || 'Product',
-          selectedVariant: item.variant,
+          selectedVariant: item.variant || { size: '', color: '' },
           quantity: item.quantity,
           price: item.price || 0,
           total: (item.price || 0) * item.quantity
@@ -215,14 +225,14 @@ function AppContent() {
         shippingInfo: orderData.shippingInfo,
         paymentMethod: orderData.paymentMethod,
         status: 'pending' as const,
-        totalAmount: orderData.totalAmount || 0,
-        shippingCost: orderData.shippingCost || 0,
-        finalTotal: orderData.finalTotal || 0,
+        totalAmount: calculatedSubtotal,
+        shippingCost: calculatedShippingCost,
+        finalTotal: calculatedFinalTotal,
         notes: orderData.notes || '',
-        userName: user.name || user.displayName || 'User',
+        userName: user.displayName || 'User',
         userEmail: user.email || 'user@example.com',
         userId: user.uid,
-        id: orderId
+        timestamp: Date.now()
       };
 
       try {
