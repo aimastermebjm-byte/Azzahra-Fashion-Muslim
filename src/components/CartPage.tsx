@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { cartService } from '../services/cartService';
-import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 
 interface CartPageProps {
   user: any;
@@ -15,8 +15,7 @@ const CartPage: React.FC<CartPageProps> = ({
 }) => {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-
+  
   // Load cart from backend
   const loadCart = async () => {
     try {
@@ -42,44 +41,7 @@ const CartPage: React.FC<CartPageProps> = ({
     }
   };
 
-  // Sync cart from local storage to backend
-  const syncCartToBackend = async () => {
-    if (!user?.uid) return;
-
-    try {
-      setSyncing(true);
-      console.log('🔄 Syncing cart to backend...');
-
-      // Get local cart
-      const localCart = localStorage.getItem(`cart_${user.uid}`);
-      if (localCart) {
-        const localItems = JSON.parse(localCart);
-
-        // Sync each item to backend
-        for (const item of localItems) {
-          await cartService.addToCart({
-            productId: item.productId,
-            variant: item.variant,
-            quantity: item.quantity,
-            name: item.name || 'Product',
-            price: item.price || 0
-          });
-        }
-
-        // Clear local cart after sync
-        localStorage.removeItem(`cart_${user.uid}`);
-
-        // Reload cart from backend
-        await loadCart();
-        console.log('✅ Cart synced successfully');
-      }
-    } catch (error) {
-      console.error('❌ Failed to sync cart:', error);
-    } finally {
-      setSyncing(false);
-    }
-  };
-
+  
   useEffect(() => {
     loadCart(); // Load cart regardless of user state
   }, [user]); // Reload when user changes
@@ -128,26 +90,7 @@ const CartPage: React.FC<CartPageProps> = ({
     }
   };
 
-  const clearAllCart = async () => {
-    if (!window.confirm('Apakah Anda yakin ingin menghapus semua produk di keranjang?')) {
-      return;
-    }
-
-    try {
-      console.log('🗑️ Clearing all cart items...');
-
-      // Use the clearCart function which handles all items at once
-      await cartService.clearCart();
-
-      await loadCart(); // Reload cart
-      console.log('✅ All cart items cleared');
-      alert('Semua produk di keranjang telah dihapus');
-    } catch (error) {
-      console.error('❌ Failed to clear cart:', error);
-      alert('Gagal menghapus keranjang. Silakan coba lagi.');
-    }
-  };
-
+  
   const getTotalPrice = () => {
     return cartItems.reduce((total, item) => {
       if (!item) return total;
@@ -170,7 +113,7 @@ const CartPage: React.FC<CartPageProps> = ({
         </div>
 
         <div className="flex flex-col items-center justify-center h-96">
-          <RefreshCw className="w-16 h-16 text-gray-300 mb-4 animate-spin" />
+          <div className="w-16 h-16 border-4 border-gray-300 border-t-pink-500 rounded-full animate-spin mb-4"></div>
           <h3 className="text-lg font-semibold text-gray-600 mb-2">Memuat Keranjang...</h3>
         </div>
       </div>
@@ -186,14 +129,6 @@ const CartPage: React.FC<CartPageProps> = ({
               <ArrowLeft className="w-6 h-6 text-gray-600" />
             </button>
             <h1 className="text-lg font-semibold">Keranjang Belanja</h1>
-            <button
-              onClick={syncCartToBackend}
-              disabled={syncing}
-              className="ml-auto mr-2 p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50"
-              title="Sync keranjang dari lokal"
-            >
-              <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
-            </button>
           </div>
         </div>
 
@@ -228,23 +163,6 @@ const CartPage: React.FC<CartPageProps> = ({
           <span className="ml-2 bg-pink-100 text-pink-600 text-xs px-2 py-1 rounded-full">
             {cartItems.length}
           </span>
-          {cartItems.length > 0 && (
-            <button
-              onClick={clearAllCart}
-              className="ml-auto mr-2 p-2 text-red-600 hover:bg-red-50 rounded-lg"
-              title="Hapus semua produk"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
-          )}
-          <button
-            onClick={syncCartToBackend}
-            disabled={syncing}
-            className="ml-auto mr-2 p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50"
-            title="Sync keranjang dari lokal ke server"
-          >
-            <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
-          </button>
         </div>
       </div>
 
@@ -291,12 +209,21 @@ const CartPage: React.FC<CartPageProps> = ({
 
                     <div className="flex items-center space-x-3">
                       <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
-                        <button
-                          onClick={() => updateQuantity(productId, variant, Math.max(1, itemQuantity - 1))}
-                          className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
+                        {itemQuantity > 1 ? (
+                          <button
+                            onClick={() => updateQuantity(productId, variant, itemQuantity - 1)}
+                            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => removeFromCart(productId, variant)}
+                            className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                         <span className="w-8 text-center font-semibold">{itemQuantity}</span>
                         <button
                           onClick={() => updateQuantity(productId, variant, itemQuantity + 1)}
@@ -305,13 +232,6 @@ const CartPage: React.FC<CartPageProps> = ({
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
-
-                      <button
-                        onClick={() => removeFromCart(productId, variant)}
-                        className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
                   </div>
 
