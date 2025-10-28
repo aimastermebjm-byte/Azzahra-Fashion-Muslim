@@ -16,7 +16,7 @@ export interface CartItem {
     size?: string;
     color?: string;
   };
-  addedAt: Date;
+  addedAt: Date | string;
 }
 
 export interface UserCart {
@@ -65,7 +65,7 @@ class CartService {
       const cartItem: CartItem = {
         ...item,
         id: this.generateId(),
-        addedAt: new Date()
+        addedAt: new Date().toISOString()
       };
 
       const currentCart = await this.getCart();
@@ -239,7 +239,7 @@ class CartService {
       const parsed = JSON.parse(stored);
       return parsed.map((item: any) => ({
         ...item,
-        addedAt: new Date(item.addedAt)
+        addedAt: item.addedAt
       }));
     } catch (error) {
       console.error('Error getting cart from localStorage:', error);

@@ -17,9 +17,9 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Allow read/write access to cart for authenticated users
-    match /cart/{cartId} {
-      allow read, write: if request.auth != null;
+    // Allow read/write access to user carts for authenticated users
+    match /user_carts/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     // Allow read/write access to categories for authenticated users
