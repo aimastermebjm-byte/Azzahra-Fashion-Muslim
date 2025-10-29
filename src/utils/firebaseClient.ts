@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -25,7 +25,7 @@ export const auth = getAuth(firebaseApp);
 export const app = firebaseApp;
 
 // Export auth functions
-export { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut };
+export { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile };
 
 // Function to get public URL for Firebase Storage
 export const getPublicImageUrl = (imagePath: string): string => {

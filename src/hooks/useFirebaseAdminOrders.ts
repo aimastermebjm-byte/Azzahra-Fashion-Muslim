@@ -1,29 +1,11 @@
 import { useState, useEffect } from 'react';
 import { auth } from '../utils/firebaseClient';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, where } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { ordersService } from '../services/ordersService';
+import { Order } from './useFirebaseOrders';
 
-export interface Order {
-  id: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  items: any[];
-  shippingInfo: any;
-  paymentMethod: string;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'awaiting_verification' | 'paid';
-  totalAmount: number;
-  shippingCost: number;
-  finalTotal: number;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  timestamp: number;
-  paymentProof?: string;
-}
-
-export const useFirebaseOrders = () => {
+export const useFirebaseAdminOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,13 +22,13 @@ export const useFirebaseOrders = () => {
           return;
         }
 
-        console.log('📦 Setting up orders listener for user:', user.uid);
+        console.log('📦 Setting up admin orders listener for all orders');
 
-        // Set up real-time listener for orders (tanpa orderBy sementara)
+        // Set up real-time listener for ALL orders (admin)
         const ordersRef = collection(db, 'orders');
         const q = query(
           ordersRef,
-          where('userId', '==', user.uid)
+          orderBy('timestamp', 'desc')
         );
 
         unsubscribe = onSnapshot(
@@ -63,20 +45,20 @@ export const useFirebaseOrders = () => {
               });
             });
 
-            console.log('✅ Orders loaded from Firebase:', loadedOrders.length, 'orders');
+            console.log('✅ All orders loaded from Firebase for admin:', loadedOrders.length, 'orders');
             setOrders(loadedOrders);
             setLoading(false);
             setError(null);
           },
           async (error) => {
-            console.error('❌ Error listening to orders:', error);
+            console.error('❌ Error listening to admin orders:', error);
             setError(error.message);
             setLoading(false);
 
             // Fallback to ordersService
             console.log('🔄 Falling back to ordersService...');
             try {
-              const fallbackOrders = await ordersService.getUserOrders();
+              const fallbackOrders = await ordersService.getAllOrders();
               setOrders(fallbackOrders);
               setError(null);
             } catch (fallbackError) {
@@ -85,7 +67,7 @@ export const useFirebaseOrders = () => {
           }
         );
       } catch (error) {
-        console.error('❌ Error setting up orders listener:', error);
+        console.error('❌ Error setting up admin orders listener:', error);
         setError(error instanceof Error ? error.message : 'Unknown error');
         setLoading(false);
       }

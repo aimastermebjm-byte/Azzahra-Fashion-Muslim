@@ -3,8 +3,11 @@ import {
   auth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signOut
+  signOut,
+  updateProfile
 } from '../utils/firebaseClient';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { db } from '../utils/firebaseClient';
 
 interface User {
   uid: string;
@@ -43,6 +46,26 @@ export const useFirebaseAuth = () => {
     return unsubscribe;
   }, []);
 
+  // Save user profile to Firestore
+  const saveUserProfile = async (firebaseUser: any, role: string) => {
+    try {
+      const userRef = doc(db, 'users', firebaseUser.uid);
+      const userData = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
+        role: role,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      await setDoc(userRef, userData, { merge: true });
+      console.log('✅ User profile saved to Firestore:', userData);
+    } catch (error) {
+      console.error('❌ Error saving user profile:', error);
+    }
+  };
+
   // Determine user role based on email
   const determineUserRole = (email: string): 'customer' | 'reseller' | 'admin' | 'owner' => {
     const lowerEmail = email.toLowerCase();
@@ -64,12 +87,16 @@ export const useFirebaseAuth = () => {
       const firebaseUser = userCredential.user;
 
       if (firebaseUser) {
+        const role = determineUserRole(firebaseUser.email || '');
         const appUser: User = {
           uid: firebaseUser.uid,
           email: firebaseUser.email || '',
           displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
-          role: determineUserRole(firebaseUser.email || '')
+          role: role
         };
+
+        // Save user profile to Firestore
+        await saveUserProfile(firebaseUser, role);
 
         setUser(appUser);
         console.log('✅ Firebase login successful:', appUser);
@@ -95,16 +122,20 @@ export const useFirebaseAuth = () => {
 
       if (firebaseUser && displayName) {
         // Update display name
-        await firebaseUser.updateProfile({ displayName });
+        await updateProfile(firebaseUser, { displayName });
       }
 
       if (firebaseUser) {
+        const userRole = (role as 'customer' | 'reseller' | 'admin' | 'owner') || determineUserRole(firebaseUser.email || '');
         const appUser: User = {
           uid: firebaseUser.uid,
           email: firebaseUser.email || '',
           displayName: displayName || firebaseUser.email?.split('@')[0] || '',
-          role: (role as 'customer' | 'reseller' | 'admin' | 'owner') || determineUserRole(firebaseUser.email || '')
+          role: userRole
         };
+
+        // Save user profile to Firestore
+        await saveUserProfile(firebaseUser, userRole);
 
         setUser(appUser);
         console.log('✅ Firebase registration successful:', appUser);

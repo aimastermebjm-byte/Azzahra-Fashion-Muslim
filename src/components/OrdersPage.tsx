@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Package, Clock, Truck, CheckCircle, Search, XCircle, CreditCard, Upload, X, Copy } from 'lucide-react';
-import { useAdmin } from '../contexts/AdminContext';
+import { ordersService } from '../services/ordersService';
 import { useFirebaseOrders } from '../hooks/useFirebaseOrders';
 
 interface OrdersPageProps {
@@ -13,8 +13,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const { orders, loading, error } = useFirebaseOrders();
-  const { updateOrderPayment } = useAdmin();
-
+  
   const handlePayNow = (order: any) => {
     setSelectedOrder(order);
     setShowPaymentModal(true);
@@ -41,15 +40,28 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
     if (!selectedOrder || !paymentProof) return;
 
     try {
-      // Update order with payment proof but keep status as pending
-      updateOrderPayment(selectedOrder.id, paymentProof.name);
-      closePaymentModal();
-      const message = selectedOrder.paymentProof
-        ? 'Bukti pembayaran berhasil diupload ulang! Menunggu verifikasi admin.'
-        : 'Bukti pembayaran berhasil dikirim! Menunggu verifikasi admin.';
-      alert(message);
+      console.log('💳 Uploading payment proof to Firebase:', selectedOrder.id, paymentProof.name);
+
+      // Update order with payment proof and change status to awaiting_verification
+      const success = await ordersService.updateOrderPayment(
+        selectedOrder.id,
+        paymentProof.name,
+        'awaiting_verification'
+      );
+
+      if (success) {
+        closePaymentModal();
+        const message = selectedOrder.paymentProof
+          ? 'Bukti pembayaran berhasil diupload ulang! Menunggu verifikasi admin.'
+          : 'Bukti pembayaran berhasil dikirim! Menunggu verifikasi admin.';
+        alert(message);
+        console.log('✅ Payment proof uploaded successfully, status changed to awaiting_verification');
+      } else {
+        alert('❌ Gagal mengupload bukti pembayaran. Silakan coba lagi.');
+      }
     } catch (error) {
-      console.error('Error submitting payment:', error);
+      console.error('❌ Error submitting payment:', error);
+      alert('❌ Gagal mengupload bukti pembayaran. Silakan coba lagi.');
     }
   };
 

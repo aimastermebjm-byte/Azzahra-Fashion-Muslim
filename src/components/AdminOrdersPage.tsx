@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Package, Clock, CheckCircle, Truck, XCircle, Eye, Search, Filter, Calendar, Download, X, Upload, CreditCard, MapPin, Phone, Mail, Edit2, Check, User } from 'lucide-react';
-import { useAdmin } from '../contexts/AdminContext';
+import { useFirebaseAdminOrders } from '../hooks/useFirebaseAdminOrders';
+import { ordersService } from '../services/ordersService';
 
 interface AdminOrdersPageProps {
   onBack: () => void;
@@ -8,15 +9,44 @@ interface AdminOrdersPageProps {
 }
 
 const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
-  const { orders, updateOrderStatus, updateOrderPayment, deleteOrder, getOrdersByStatus, getTotalRevenue, getTodayOrders } = useAdmin();
+  const { orders, loading, error } = useFirebaseAdminOrders();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState('');
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [paymentProof, setPaymentProof] = useState('');
   const [verificationNotes, setVerificationNotes] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+
+  // Firebase order management functions
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    return await ordersService.updateOrderStatus(orderId, newStatus);
+  };
+
+  const updateOrderPayment = async (orderId: string, proof: string, status?: string) => {
+    return await ordersService.updateOrderPayment(orderId, proof, status);
+  };
+
+  const deleteOrder = async (orderId: string) => {
+    return await ordersService.deleteOrder(orderId);
+  };
+
+  // Get orders by status
+  const getOrdersByStatus = (status: string) => {
+    return orders.filter(order => order.status === status);
+  };
+
+  // Get total revenue
+  const getTotalRevenue = () => {
+    return orders.reduce((total, order) => total + order.finalTotal, 0);
+  };
+
+  // Get today's orders
+  const getTodayOrders = () => {
+    const today = new Date().toISOString().split('T')[0];
+    return orders.filter(order => order.createdAt.startsWith(today));
+  };
 
   // Listen for order updates
   useEffect(() => {
@@ -50,10 +80,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
 
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
 
-    const matchesDate = dateFilter === '' ||
-      new Date(order.createdAt).toISOString().split('T')[0] === dateFilter;
-
-    return matchesSearch && matchesStatus && matchesDate;
+    return matchesSearch && matchesStatus;
   });
 
   const handleViewOrder = (order: any) => {
@@ -70,17 +97,22 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
     updateOrderStatus(orderId, status as any);
   };
 
-  const handleConfirmVerification = (status: 'paid' | 'cancelled') => {
+  const handleConfirmVerification = async (status: 'paid' | 'cancelled') => {
     if (selectedOrder) {
-      if (status === 'paid') {
-        updateOrderPayment(selectedOrder.id, paymentProof || 'payment_verified', status);
-      } else {
-        updateOrderStatus(selectedOrder.id, status);
+      try {
+        if (status === 'paid') {
+          await updateOrderPayment(selectedOrder.id, paymentProof || 'payment_verified', 'paid');
+        } else {
+          await updateOrderStatus(selectedOrder.id, status);
+        }
+        setShowVerificationModal(false);
+        setSelectedOrder(null);
+        setPaymentProof('');
+        setVerificationNotes('');
+      } catch (error) {
+        console.error('❌ Error confirming verification:', error);
+        alert('Gagal memperbarui verifikasi pesanan');
       }
-      setShowVerificationModal(false);
-      setSelectedOrder(null);
-      setPaymentProof('');
-      setVerificationNotes('');
     }
   };
 
