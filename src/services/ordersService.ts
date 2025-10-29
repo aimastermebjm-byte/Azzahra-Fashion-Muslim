@@ -109,34 +109,34 @@ class OrdersService {
     }
   }
 
-  // Update order payment verification with file upload
+  // Update order payment verification - Firebase Firestore focus
   async updateOrderPayment(orderId: string, proof: File | string, status?: string): Promise<boolean> {
     try {
-      console.log('💳 Updating order payment in Firebase:', orderId);
+      console.log('💳 Updating order payment in Firebase Firestore:', orderId);
 
       let paymentProofUrl = '';
       let paymentProofName = '';
 
       if (proof instanceof File) {
-        // Try upload file to Firebase Storage
+        paymentProofName = proof.name;
+
+        // Try upload to Firebase Storage (optional)
         try {
-          console.log('📤 Uploading payment proof file to Storage...');
+          console.log('📤 Uploading payment proof file to Firebase Storage...');
           const storageRef = ref(storage, `payment-proofs/${orderId}/${proof.name}`);
           await uploadBytes(storageRef, proof);
           paymentProofUrl = await getDownloadURL(storageRef);
-          paymentProofName = proof.name;
           console.log('✅ Payment proof uploaded to Storage:', paymentProofUrl);
         } catch (storageError) {
-          console.warn('⚠️ Storage upload failed, saving filename only:', storageError);
-          // Fallback: Save only filename if Storage fails (CORS issue)
-          paymentProofName = proof.name;
+          console.warn('⚠️ Storage upload failed (CORS), but saving to Firestore:', storageError);
+          // Storage gagal tidak masalah, data utama tetap ke Firestore
           paymentProofUrl = '';
         }
       } else {
-        // Handle string input (backward compatibility)
         paymentProofName = proof;
       }
 
+      // ALWAYS save to Firebase Firestore (ini yang penting!)
       const updateData: any = {
         paymentProof: paymentProofName,
         paymentProofUrl: paymentProofUrl,
@@ -147,13 +147,14 @@ class OrdersService {
         updateData.status = status;
       }
 
+      // Update data di Firebase Firestore (ini wajib berhasil!)
       const orderRef = doc(db, this.collection, orderId);
       await updateDoc(orderRef, updateData);
 
-      console.log('✅ Order payment updated successfully');
+      console.log('✅ Order payment updated in Firebase Firestore successfully');
       return true;
     } catch (error) {
-      console.error('❌ Error updating order payment:', error);
+      console.error('❌ Error updating order payment in Firebase Firestore:', error);
       return false;
     }
   }
