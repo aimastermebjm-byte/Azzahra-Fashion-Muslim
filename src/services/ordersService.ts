@@ -1,8 +1,6 @@
 // Orders Service - Sync orders across devices using Firebase
 import { auth } from '../utils/firebaseClient';
 import { doc, setDoc, collection, getDocs, query, where, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../utils/firebaseClient';
 import { db } from '../utils/firebaseClient';
 
 export interface Order {
@@ -109,37 +107,52 @@ class OrdersService {
     }
   }
 
-  // Update order payment verification - Firebase Firestore focus
+  // Update order payment verification - FREE Base64 in Firestore
   async updateOrderPayment(orderId: string, proof: File | string, status?: string): Promise<boolean> {
     try {
       console.log('💳 Updating order payment in Firebase Firestore:', orderId);
 
-      let paymentProofUrl = '';
       let paymentProofName = '';
+      let paymentProofData = '';
 
       if (proof instanceof File) {
         paymentProofName = proof.name;
 
-        // Try upload to Firebase Storage (optional)
+        // Convert file to base64 and save directly to Firestore (FREE!)
         try {
-          console.log('📤 Uploading payment proof file to Firebase Storage...');
-          const storageRef = ref(storage, `payment-proofs/${orderId}/${proof.name}`);
-          await uploadBytes(storageRef, proof);
-          paymentProofUrl = await getDownloadURL(storageRef);
-          console.log('✅ Payment proof uploaded to Storage:', paymentProofUrl);
-        } catch (storageError) {
-          console.warn('⚠️ Storage upload failed (CORS), but saving to Firestore:', storageError);
-          // Storage gagal tidak masalah, data utama tetap ke Firestore
-          paymentProofUrl = '';
+          console.log('📤 Converting payment proof to base64 (FREE storage)...');
+
+          const reader = new FileReader();
+          const base64Promise = new Promise((resolve, reject) => {
+            reader.onload = () => {
+              const result = reader.result as string;
+              // Remove data URL prefix to save space
+              const base64Data = result.split(',')[1] || result;
+              resolve(base64Data);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(proof);
+          });
+
+          paymentProofData = await base64Promise;
+          console.log('✅ Payment proof converted to base64, size:', paymentProofData.length, 'characters');
+          console.log('💰 FREE storage in Firestore - No Firebase Storage cost!');
+
+        } catch (conversionError) {
+          console.error('❌ Error converting file to base64:', conversionError);
+          // Fallback: Just save filename
+          paymentProofName = proof.name;
+          paymentProofData = '';
         }
       } else {
         paymentProofName = proof;
       }
 
-      // ALWAYS save to Firebase Firestore (ini yang penting!)
+      // Save EVERYTHING to Firebase Firestore (100% FREE!)
       const updateData: any = {
         paymentProof: paymentProofName,
-        paymentProofUrl: paymentProofUrl,
+        paymentProofData: paymentProofData, // Base64 image data
+        paymentProofUrl: '', // Empty since we use base64
         updatedAt: new Date().toISOString()
       };
 
@@ -151,7 +164,7 @@ class OrdersService {
       const orderRef = doc(db, this.collection, orderId);
       await updateDoc(orderRef, updateData);
 
-      console.log('✅ Order payment updated in Firebase Firestore successfully');
+      console.log('✅ Order payment updated in Firebase Firestore (FREE storage!)');
       return true;
     } catch (error) {
       console.error('❌ Error updating order payment in Firebase Firestore:', error);
