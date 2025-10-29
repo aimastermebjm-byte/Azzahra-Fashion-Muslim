@@ -432,7 +432,15 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                       className="w-full max-w-md rounded-lg border-2 border-green-200"
                     />
                   ) : (
-                    <p className="text-sm text-green-800">Bukti pembayaran telah tersimpan</p>
+                    <div className="text-sm text-green-800">
+                      <p className="font-medium">📎 File Bukti Pembayaran:</p>
+                      <p className="bg-white p-2 rounded border border-green-200 mt-1">
+                        {selectedOrder.paymentProof}
+                      </p>
+                      <p className="text-xs mt-2 text-gray-600">
+                        (File telah tersimpan di database)
+                      </p>
+                    </div>
                   )}
                 </div>
               )}
