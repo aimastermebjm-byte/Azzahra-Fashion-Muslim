@@ -426,11 +426,18 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                     Bukti Pembayaran
                   </h3>
                   {selectedOrder.paymentProofUrl ? (
-                    <img
-                      src={selectedOrder.paymentProofUrl}
-                      alt="Payment Proof"
-                      className="w-full max-w-md rounded-lg border-2 border-green-200"
-                    />
+                    <div>
+                      <img
+                        src={selectedOrder.paymentProofUrl}
+                        alt="Payment Proof"
+                        className="w-full max-w-md rounded-lg border-2 border-green-200"
+                        onClick={() => window.open(selectedOrder.paymentProofUrl, '_blank')}
+                        style={{ cursor: 'pointer' }}
+                      />
+                      <p className="text-xs text-gray-600 mt-2 text-center">
+                        💡 Klik gambar untuk memperbesar
+                      </p>
+                    </div>
                   ) : (
                     <div className="text-sm text-green-800">
                       <p className="font-medium">📎 File Bukti Pembayaran:</p>
@@ -438,7 +445,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                         {selectedOrder.paymentProof}
                       </p>
                       <p className="text-xs mt-2 text-gray-600">
-                        (File telah tersimpan di database)
+                        (File telah tersimpan - menunggu upload ulang dengan sistem baru)
                       </p>
                     </div>
                   )}

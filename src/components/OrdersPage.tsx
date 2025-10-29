@@ -45,7 +45,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
       // Update order with payment proof and change status to awaiting_verification
       const success = await ordersService.updateOrderPayment(
         selectedOrder.id,
-        paymentProof.name,
+        paymentProof, // Send File object instead of filename
         'awaiting_verification'
       );
 

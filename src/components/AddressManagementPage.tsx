@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, MapPin, Edit, Trash2, Check, X, Home } from 'lucide-react';
+import { ArrowLeft, Plus, MapPin, Edit, Trash2, Check, Home } from 'lucide-react';
 import { addressService, Address } from '../services/addressService';
+import AddressForm from './AddressForm';
 
 interface AddressManagementPageProps {
   user: any;
@@ -13,21 +14,6 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    fullAddress: '',
-    province: '',
-    provinceId: '',
-    city: '',
-    cityId: '',
-    district: '',
-    districtId: '',
-    subdistrict: '',
-    subdistrictId: '',
-    postalCode: '',
-    isDefault: false
-  });
 
   // Load addresses with real-time listener
   useEffect(() => {
@@ -41,43 +27,13 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
   }, []);
 
   const handleAddAddress = () => {
-    setFormData({
-      name: '',
-      phone: '',
-      fullAddress: '',
-      province: '',
-      provinceId: '',
-      city: '',
-      cityId: '',
-      district: '',
-      districtId: '',
-      subdistrict: '',
-      subdistrictId: '',
-      postalCode: '',
-      isDefault: addresses.length === 0 // First address is default
-    });
     setShowAddForm(true);
     setEditingAddress(null);
   };
 
   const handleEditAddress = (address: Address) => {
-    setFormData({
-      name: address.name,
-      phone: address.phone,
-      fullAddress: address.fullAddress,
-      province: address.province,
-      provinceId: address.provinceId,
-      city: address.city,
-      cityId: address.cityId,
-      district: address.district,
-      districtId: address.districtId,
-      subdistrict: address.subdistrict,
-      subdistrictId: address.subdistrictId,
-      postalCode: address.postalCode,
-      isDefault: address.isDefault
-    });
-    setShowAddForm(true);
     setEditingAddress(address);
+    setShowAddForm(true);
   };
 
   const handleDeleteAddress = async (id: string) => {
@@ -104,43 +60,49 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name || !formData.phone || !formData.fullAddress || !formData.postalCode) {
-      alert('Mohon lengkapi semua field yang wajib diisi.');
-      return;
-    }
-
+  const handleAddressSubmit = async (addressData: any) => {
     try {
       if (editingAddress) {
+        // Convert AddressForm data to AddressService format
         await addressService.updateAddress(editingAddress.id, {
-          ...formData,
+          name: addressData.name,
+          phone: addressData.phone,
+          fullAddress: addressData.fullAddress,
+          province: addressData.province,
+          provinceId: addressData.provinceId,
+          city: addressData.city,
+          cityId: addressData.cityId,
+          district: addressData.district,
+          districtId: addressData.districtId,
+          subdistrict: addressData.subdistrict,
+          subdistrictId: addressData.subdistrictId,
+          postalCode: addressData.postalCode,
+          isDefault: addressData.isDefault,
           updatedAt: new Date().toISOString()
         });
         console.log('✅ Address updated');
       } else {
-        await addressService.saveAddress(formData);
+        // Add new address
+        await addressService.saveAddress({
+          name: addressData.name,
+          phone: addressData.phone,
+          fullAddress: addressData.fullAddress,
+          province: addressData.province,
+          provinceId: addressData.provinceId,
+          city: addressData.city,
+          cityId: addressData.cityId,
+          district: addressData.district,
+          districtId: addressData.districtId,
+          subdistrict: addressData.subdistrict,
+          subdistrictId: addressData.subdistrictId,
+          postalCode: addressData.postalCode,
+          isDefault: addressData.isDefault
+        });
         console.log('✅ Address saved');
       }
 
       setShowAddForm(false);
       setEditingAddress(null);
-      setFormData({
-        name: '',
-        phone: '',
-        fullAddress: '',
-        province: '',
-        provinceId: '',
-        city: '',
-        cityId: '',
-        district: '',
-        districtId: '',
-        subdistrict: '',
-        subdistrictId: '',
-        postalCode: '',
-        isDefault: false
-      });
     } catch (error) {
       console.error('❌ Error saving address:', error);
       alert('Gagal menyimpan alamat. Silakan coba lagi.');
@@ -154,94 +116,28 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
   if (showAddForm) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="bg-white shadow-sm sticky top-0 z-10">
-          <div className="flex items-center p-4">
-            <button onClick={() => setShowAddForm(false)} className="mr-4">
-              <X className="w-6 h-6 text-gray-600" />
-            </button>
-            <h1 className="text-lg font-semibold">
-              {editingAddress ? 'Edit Alamat' : 'Tambah Alamat Baru'}
-            </h1>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nama Penerima *
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-              placeholder="Nama lengkap"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nomor Telepon *
-            </label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-              placeholder="08xx-xxxx-xxxx"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Alamat Lengkap *
-            </label>
-            <textarea
-              value={formData.fullAddress}
-              onChange={(e) => setFormData({ ...formData, fullAddress: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-              rows={3}
-              placeholder="Jl. xxx No. xx, RT/RW xx/xx"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Kode Pos *
-            </label>
-            <input
-              type="text"
-              value={formData.postalCode}
-              onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-              placeholder="xxxxx"
-              required
-            />
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="isDefault"
-              checked={formData.isDefault}
-              onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
-              className="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
-            />
-            <label htmlFor="isDefault" className="text-sm font-medium text-gray-700">
-              Jadikan alamat utama
-            </label>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all"
-          >
-            {editingAddress ? 'Update Alamat' : 'Simpan Alamat'}
-          </button>
-        </form>
+        <AddressForm
+          initialData={editingAddress ? {
+            name: editingAddress.name,
+            phone: editingAddress.phone,
+            fullAddress: editingAddress.fullAddress,
+            province: editingAddress.province,
+            provinceId: editingAddress.provinceId,
+            city: editingAddress.city,
+            cityId: editingAddress.cityId,
+            district: editingAddress.district,
+            districtId: editingAddress.districtId,
+            subdistrict: editingAddress.subdistrict,
+            subdistrictId: editingAddress.subdistrictId,
+            postalCode: editingAddress.postalCode,
+            isDefault: editingAddress.isDefault
+          } : null}
+          onSave={handleAddressSubmit}
+          onCancel={() => {
+            setShowAddForm(false);
+            setEditingAddress(null);
+          }}
+        />
       </div>
     );
   }

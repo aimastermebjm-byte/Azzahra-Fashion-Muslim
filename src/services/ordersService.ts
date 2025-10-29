@@ -1,6 +1,8 @@
 // Orders Service - Sync orders across devices using Firebase
 import { auth } from '../utils/firebaseClient';
 import { doc, setDoc, collection, getDocs, query, where, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../utils/firebaseClient';
 import { db } from '../utils/firebaseClient';
 
 export interface Order {
@@ -107,13 +109,30 @@ class OrdersService {
     }
   }
 
-  // Update order payment verification
-  async updateOrderPayment(orderId: string, proof: string, status?: string): Promise<boolean> {
+  // Update order payment verification with file upload
+  async updateOrderPayment(orderId: string, proof: File | string, status?: string): Promise<boolean> {
     try {
       console.log('💳 Updating order payment in Firebase:', orderId);
 
+      let paymentProofUrl = '';
+      let paymentProofName = '';
+
+      if (proof instanceof File) {
+        // Upload file to Firebase Storage
+        console.log('📤 Uploading payment proof file to Storage...');
+        const storageRef = ref(storage, `payment-proofs/${orderId}/${proof.name}`);
+        await uploadBytes(storageRef, proof);
+        paymentProofUrl = await getDownloadURL(storageRef);
+        paymentProofName = proof.name;
+        console.log('✅ Payment proof uploaded to Storage:', paymentProofUrl);
+      } else {
+        // Handle string input (backward compatibility)
+        paymentProofName = proof;
+      }
+
       const updateData: any = {
-        paymentProof: proof,
+        paymentProof: paymentProofName,
+        paymentProofUrl: paymentProofUrl,
         updatedAt: new Date().toISOString()
       };
 
