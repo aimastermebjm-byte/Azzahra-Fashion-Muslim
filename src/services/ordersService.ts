@@ -118,13 +118,20 @@ class OrdersService {
       let paymentProofName = '';
 
       if (proof instanceof File) {
-        // Upload file to Firebase Storage
-        console.log('📤 Uploading payment proof file to Storage...');
-        const storageRef = ref(storage, `payment-proofs/${orderId}/${proof.name}`);
-        await uploadBytes(storageRef, proof);
-        paymentProofUrl = await getDownloadURL(storageRef);
-        paymentProofName = proof.name;
-        console.log('✅ Payment proof uploaded to Storage:', paymentProofUrl);
+        // Try upload file to Firebase Storage
+        try {
+          console.log('📤 Uploading payment proof file to Storage...');
+          const storageRef = ref(storage, `payment-proofs/${orderId}/${proof.name}`);
+          await uploadBytes(storageRef, proof);
+          paymentProofUrl = await getDownloadURL(storageRef);
+          paymentProofName = proof.name;
+          console.log('✅ Payment proof uploaded to Storage:', paymentProofUrl);
+        } catch (storageError) {
+          console.warn('⚠️ Storage upload failed, saving filename only:', storageError);
+          // Fallback: Save only filename if Storage fails (CORS issue)
+          paymentProofName = proof.name;
+          paymentProofUrl = '';
+        }
       } else {
         // Handle string input (backward compatibility)
         paymentProofName = proof;
