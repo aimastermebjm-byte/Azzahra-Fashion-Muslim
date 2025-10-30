@@ -40,6 +40,7 @@ export const COURIERS = [
 
 class KomerceService {
   private baseUrl = '/api/rajaongkir';
+  private useCache = true; // Enable caching by default
 
   async calculateShippingCost(
     origin: string,
@@ -49,7 +50,10 @@ class KomerceService {
     price: 'lowest' | 'highest' = 'lowest'
   ): Promise<KomerceCostResult[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/cost`, {
+      const endpoint = this.useCache ? `${this.baseUrl}/cost-cached` : `${this.baseUrl}/cost`;
+      console.log(`🚚 Using ${this.useCache ? 'CACHED' : 'DIRECT'} endpoint:`, endpoint);
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +92,10 @@ class KomerceService {
     price: 'lowest' | 'highest' = 'lowest'
   ): Promise<KomerceCostResult[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/cost`, {
+      const endpoint = this.useCache ? `${this.baseUrl}/cost-cached` : `${this.baseUrl}/cost`;
+      console.log(`🚚 Using ${this.useCache ? 'CACHED' : 'DIRECT'} endpoint:`, endpoint);
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
