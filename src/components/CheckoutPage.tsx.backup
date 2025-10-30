@@ -190,12 +190,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       if (selectedCourier?.code) {
         // Use Surgi Mufti, Banjarmasin Utara for automatic calculation
         const weight = calculateTotalWeight();
-        // Get customer's main address as destination (NOT origin!)
-        const mainAddress = getDefaultAddress();
-        if (mainAddress) {
-          const destinationId = mainAddress.subdistrictId || mainAddress.cityId;
-          calculateShippingCost(selectedCourier.code, destinationId, weight);
-        }
+        calculateShippingCost(selectedCourier.code, '2425', weight);
       } else {
         // For manual couriers, require manual input
         setFormData(prev => ({
