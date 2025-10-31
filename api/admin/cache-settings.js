@@ -159,57 +159,14 @@ async function authenticateOwner(req) {
     const userDoc = await getFirestoreDocument('users', userId);
 
     if (!userDoc.exists) {
-      // Auto-create user with owner role if not exists
-      console.log(`⚠️ User ${userId} not found in database, attempting auto-creation...`);
-      console.log(`📝 Token data available: email=${decoded.email}, name=${decoded.name}`);
+      console.error(`❌ User ${userId} not found in Firestore database`);
+      console.error(`📝 Email from token: ${decoded.email}`);
+      console.error(`💡 Solution: User must be manually created in Firestore with role 'owner'`);
+      console.error(`🔗 Create at: https://console.firebase.google.com/project/azzahra-fashion-muslim-ab416/firestore/data~2Fusers`);
 
-      const createResult = await createOwnerUser(userId, decoded);
-
-      if (!createResult.success) {
-        console.error(`❌ Failed to create user: ${createResult.error}`);
-        console.log(`🔄 Fallback: checking if user was created by concurrent request...`);
-
-        // Try to read again (might be created by concurrent request)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const retryDoc = await getFirestoreDocument('users', userId);
-
-        if (retryDoc.exists && retryDoc.data.role === 'owner') {
-          console.log(`✅ User found after retry - was created by concurrent request`);
-          return {
-            success: true,
-            userId,
-            role: retryDoc.data.role,
-            userData: retryDoc.data
-          };
-        }
-
-        return {
-          success: false,
-          message: `User not found and failed to create. Error: ${createResult.error}`
-        };
-      }
-
-      console.log(`✅ User creation attempt completed, result: ${createResult.success}`);
-
-      // Get the newly created user document
-      const newUserDoc = await getFirestoreDocument('users', userId);
-      if (!newUserDoc.exists) {
-        console.error(`❌ Failed to retrieve created user document`);
-        return { success: false, message: 'User was created but retrieval failed' };
-      }
-
-      const userRole = newUserDoc.data.role;
-      if (userRole !== 'owner') {
-        console.error(`❌ Wrong role assigned: ${userRole} (expected: owner)`);
-        return { success: false, message: `Access denied. Expected owner role, got: ${userRole}` };
-      }
-
-      console.log(`✅ Auto-created owner user successfully: ${userId}`);
       return {
-        success: true,
-        userId,
-        role: userRole,
-        userData: newUserDoc.data
+        success: false,
+        message: `User not found in database. Please create user manually in Firestore with role 'owner'. User ID: ${userId}, Email: ${decoded.email}`
       };
     }
 
