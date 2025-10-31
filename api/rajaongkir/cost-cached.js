@@ -20,7 +20,11 @@ async function getFirestoreDocument(collectionPath, documentId) {
     const response = await fetch(url);
     if (response.ok) {
       const data = await response.json();
-      return {
+      // Convert timestamp to Date object
+        const expiresAt = data.fields.expires_at?.timestampValue;
+        const cachedAt = data.fields.cached_at?.timestampValue;
+
+        return {
         exists: true,
         data: {
           origin: data.fields.origin?.stringValue,
@@ -28,8 +32,8 @@ async function getFirestoreDocument(collectionPath, documentId) {
           weight: data.fields.weight?.integerValue,
           courier: data.fields.courier?.stringValue,
           results: JSON.parse(data.fields.results?.stringValue || '[]'),
-          cached_at: data.fields.cached_at?.timestampValue,
-          expires_at: data.fields.expires_at?.timestampValue,
+          cached_at: cachedAt,
+          expires_at: new Date(expiresAt),
           hit_count: data.fields.hit_count?.integerValue || 0
         }
       };
