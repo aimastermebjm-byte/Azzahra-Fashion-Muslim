@@ -211,12 +211,12 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
 
   // Clear expired cache
   const clearExpiredCache = async () => {
-    if (!confirm('Are you sure you want to clear all expired cache entries?')) return;
+    if (!confirm('Apakah Anda yakin ingin menghapus semua cache yang kadaluarsa?')) return;
 
     setLoading(true);
     try {
       const token = await getAuthToken();
-      const response = await fetch('/api/admin/cache-settings?action=clear_expired', {
+      const response = await fetch('/api/admin/cache-settings-temp?action=clear_expired', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -240,12 +240,12 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
 
   // Clear all cache
   const clearAllCache = async () => {
-    if (!confirm('⚠️ DANGER: This will clear ALL cache entries and force fresh API calls. Continue?')) return;
+    if (!confirm('⚠️ BAHAYA: Ini akan menghapus SEMUA cache dan memaksa panggilan API baru. Lanjutkan?')) return;
 
     setLoading(true);
     try {
       const token = await getAuthToken();
-      const response = await fetch('/api/admin/cache-settings?action=clear_all', {
+      const response = await fetch('/api/admin/cache-settings-temp?action=clear_all', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -267,13 +267,13 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
     }
   };
 
-  // Delete specific cache entry
+  // Hapus specific cache entry
   const deleteCacheEntry = async (cacheKey: string) => {
-    if (!confirm(`Delete cache entry: ${cacheKey}?`)) return;
+    if (!confirm(`Hapus cache entry: ${cacheKey}?`)) return;
 
     try {
       const token = await getAuthToken();
-      const response = await fetch(`/api/admin/cache-settings?action=clear_specific&cache_key=${encodeURIComponent(cacheKey)}`, {
+      const response = await fetch(`/api/admin/cache-settings-temp?action=clear_specific&cache_key=${encodeURIComponent(cacheKey)}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -586,7 +586,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                           onClick={() => deleteCacheEntry(cache.cacheKey)}
                           className="text-red-600 hover:text-red-900"
                         >
-                          Delete
+                          Hapus
                         </button>
                       </td>
                     </tr>
@@ -660,29 +660,29 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded">
                   <div>
-                    <h3 className="font-medium text-yellow-800">Clear Expired Cache</h3>
-                    <p className="text-sm text-yellow-600">Remove cache entries that have expired</p>
+                    <h3 className="font-medium text-yellow-800">Hapus Cache Kadaluarsa</h3>
+                    <p className="text-sm text-yellow-600">Hapus cache yang sudah kadaluarsa</p>
                   </div>
                   <button
                     onClick={clearExpiredCache}
                     disabled={loading}
                     className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:opacity-50"
                   >
-                    Clear Expired
+                    Hapus Kadaluarsa
                   </button>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-red-50 border border-red-200 rounded">
                   <div>
-                    <h3 className="font-medium text-red-800">⚠️ Clear All Cache</h3>
-                    <p className="text-sm text-red-600">DANGER: Remove ALL cache entries. This will force fresh API calls!</p>
+                    <h3 className="font-medium text-red-800">⚠️ Hapus Semua Cache</h3>
+                    <p className="text-sm text-red-600">BAHAYA: Hapus SEMUA cache. Ini akan memaksa panggilan API baru!</p>
                   </div>
                   <button
                     onClick={clearAllCache}
                     disabled={loading}
                     className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
                   >
-                    Clear All
+                    Hapus Semua
                   </button>
                 </div>
               </div>

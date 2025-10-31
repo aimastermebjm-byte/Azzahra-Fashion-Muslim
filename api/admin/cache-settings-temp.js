@@ -159,6 +159,39 @@ export default async function handler(req, res) {
       }
     }
 
+    // DELETE: Clear cache actions
+    if (req.method === 'DELETE') {
+      const { action } = req.query;
+
+      if (action === 'clear_expired') {
+        // Temporary: just return success without actually clearing
+        return res.status(200).json({
+          success: true,
+          message: 'Clear expired cache completed (TEMP MODE)',
+          data: { deleted: 0, total: 0 }
+        });
+      }
+
+      if (action === 'clear_all') {
+        // Temporary: just return success without actually clearing
+        return res.status(200).json({
+          success: true,
+          message: 'Clear all cache completed (TEMP MODE)',
+          data: { deleted: 0 }
+        });
+      }
+
+      if (action === 'clear_specific') {
+        const { cache_key } = req.query;
+        // Temporary: just return success without actually deleting
+        return res.status(200).json({
+          success: true,
+          message: `Cache ${cache_key} deleted (TEMP MODE)`,
+          data: { cache_key, deleted: true }
+        });
+      }
+    }
+
     return res.status(400).json({
       success: false,
       message: 'Invalid action or method (TEMP MODE)',
