@@ -78,27 +78,40 @@ async function authenticateOwner(req) {
   const token = authHeader.substring(7);
 
   try {
-    // Decode JWT token (simplified - in production, use Firebase Admin SDK)
-    const decoded = JSON.parse(atob(token.split('.')[1]));
-    const userId = decoded.user_id || decoded.uid;
+    // Decode JWT token safely
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return { success: false, message: 'Invalid token format' };
+    }
+
+    const decoded = JSON.parse(atob(parts[1]));
+    const userId = decoded.user_id || decoded.uid || decoded.sub;
 
     if (!userId) {
-      return { success: false, message: 'Invalid token format' };
+      return { success: false, message: 'Invalid token: no user ID found' };
+    }
+
+    // Check token expiration
+    const currentTime = Math.floor(Date.now() / 1000);
+    if (decoded.exp && decoded.exp < currentTime) {
+      return { success: false, message: 'Token expired' };
     }
 
     // Check user role from Firestore
     const userDoc = await getFirestoreDocument('users', userId);
 
     if (!userDoc.exists) {
-      return { success: false, message: 'User not found' };
+      return { success: false, message: 'User not found in database' };
     }
 
     const userRole = userDoc.data.role;
 
     if (userRole !== 'owner') {
+      console.log(`❌ Access denied for user ${userId}: role is ${userRole}, not owner`);
       return { success: false, message: 'Access denied. Owner role required.' };
     }
 
+    console.log(`✅ Owner authenticated: ${userId} (${userDoc.data.name || 'Unknown'})`);
     return {
       success: true,
       userId,
@@ -107,7 +120,7 @@ async function authenticateOwner(req) {
     };
   } catch (error) {
     console.error('Authentication error:', error);
-    return { success: false, message: 'Invalid token' };
+    return { success: false, message: 'Invalid or expired token' };
   }
 }
 

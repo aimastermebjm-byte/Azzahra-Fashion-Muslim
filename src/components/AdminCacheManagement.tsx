@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getAuth } from 'firebase/auth';
 
 interface CacheSettings {
   cache_ttl_hours: number;
@@ -61,18 +62,33 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
   });
 
   // Get auth token for API calls
-  const getAuthToken = () => {
-    // This should come from Firebase auth token
-    return localStorage.getItem('firebaseAuthToken') || '';
+  const getAuthToken = async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (user) {
+        const token = await user.getIdToken();
+        console.log('🔐 Firebase auth token obtained for cache management');
+        return token;
+      } else {
+        console.error('❌ No Firebase user found');
+        return '';
+      }
+    } catch (error) {
+      console.error('❌ Error getting Firebase auth token:', error);
+      return '';
+    }
   };
 
   // Load cache settings
   const loadCacheSettings = async () => {
     setLoading(true);
     try {
+      const token = await getAuthToken();
       const response = await fetch('/api/admin/cache-settings?action=settings', {
         headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -95,9 +111,10 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
   const loadCacheList = async () => {
     setLoading(true);
     try {
+      const token = await getAuthToken();
       const response = await fetch('/api/admin/cache-settings?action=list', {
         headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -121,11 +138,12 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
   const updateSettings = async (newSettings: Partial<CacheSettings>) => {
     setLoading(true);
     try {
+      const token = await getAuthToken();
       const response = await fetch('/api/admin/cache-settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           action: 'update_settings',
@@ -157,11 +175,12 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
 
     setLoading(true);
     try {
+      const token = await getAuthToken();
       const response = await fetch('/api/admin/cache-settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           action: 'refresh_cache',
@@ -194,10 +213,11 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
 
     setLoading(true);
     try {
+      const token = await getAuthToken();
       const response = await fetch('/api/admin/cache-settings?action=clear_expired', {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -222,10 +242,11 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
 
     setLoading(true);
     try {
+      const token = await getAuthToken();
       const response = await fetch('/api/admin/cache-settings?action=clear_all', {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -249,10 +270,11 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
     if (!confirm(`Delete cache entry: ${cacheKey}?`)) return;
 
     try {
+      const token = await getAuthToken();
       const response = await fetch(`/api/admin/cache-settings?action=clear_specific&cache_key=${encodeURIComponent(cacheKey)}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
+          'Authorization': `Bearer ${token}`
         }
       });
 
