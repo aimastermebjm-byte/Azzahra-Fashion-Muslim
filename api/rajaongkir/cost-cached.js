@@ -7,7 +7,29 @@ const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
 
 // Firebase Admin SDK for caching
 // Note: For Vercel deployment, we'll use Firebase REST API instead of Admin SDK
-const CACHE_TTL_HOURS = 24; // Cache for 24 hours
+// Cache TTL: 1 month (30 days) - owner can configure via admin panel
+let CACHE_TTL_HOURS = 30 * 24; // 30 days = 720 hours
+
+// Load cache TTL from settings if available
+async function loadCacheTTLFromSettings() {
+  try {
+    const FIREBASE_PROJECT_ID = 'azzahra-fashion-muslim-ab416';
+    const FIREBASE_API_KEY = 'AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs';
+    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/settings/cache_config?key=${FIREBASE_API_KEY}`;
+
+    const response = await fetch(url);
+    if (response.ok) {
+      const data = await response.json();
+      const ttl = data.fields.cache_ttl_hours?.integerValue;
+      if (ttl && ttl > 0) {
+        CACHE_TTL_HOURS = ttl;
+        console.log(`📅 Loaded cache TTL from settings: ${ttl} hours`);
+      }
+    }
+  } catch (error) {
+    console.log('⚠️  Using default cache TTL (could not load from settings)');
+  }
+}
 
 // Helper functions for Firebase REST API (for Vercel compatibility)
 async function getFirestoreDocument(collectionPath, documentId) {
@@ -130,6 +152,9 @@ function isCacheValid(expiresAt) {
 
 export default async function handler(req, res) {
   try {
+    // Load cache TTL from settings (owner configurable)
+    await loadCacheTTLFromSettings();
+
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');

@@ -15,6 +15,7 @@ import AdminProductsPage from './components/AdminProductsPage';
 import AdminOrdersPage from './components/AdminOrdersPage';
 import AdminReportsPage from './components/AdminReportsPage';
 import AdminUsersPage from './components/AdminUsersPage';
+import AdminCacheManagement from './components/AdminCacheManagement';
 import BottomNavigation from './components/BottomNavigation';
 import { OngkirTestPage } from './pages/OngkirTestPage';
 import { useFirebaseProducts } from './hooks/useFirebaseProducts';
@@ -26,7 +27,7 @@ import { ordersService } from './services/ordersService';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from './utils/firebaseClient';
 
-type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'ongkir-test';
+type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'admin-cache' | 'ongkir-test';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -300,6 +301,10 @@ function AppContent() {
     setCurrentPage('admin-users');
   };
 
+  const handleNavigateToAdminCache = () => {
+    setCurrentPage('admin-cache');
+  };
+
   
   const renderCurrentPage = () => {
     if (showLogin) {
@@ -351,6 +356,7 @@ function AppContent() {
             onNavigateToAdminOrders={handleNavigateToAdminOrders}
             onNavigateToAdminReports={handleNavigateToAdminReports}
             onNavigateToAdminUsers={handleNavigateToAdminUsers}
+            onNavigateToAdminCache={handleNavigateToAdminCache}
             onNavigateToAddressManagement={() => setCurrentPage('address-management')}
           />
         );
@@ -374,6 +380,9 @@ function AppContent() {
       case 'admin-users':
         console.log('App: Rendering AdminUsersPage with user:', user);
         return <AdminUsersPage onBack={() => setCurrentPage('account')} user={user} />;
+      case 'admin-cache':
+        console.log('App: Rendering AdminCacheManagement with user:', user);
+        return <AdminCacheManagement onBack={() => setCurrentPage('account')} user={user} />;
       case 'ongkir-test':
         return <OngkirTestPage onBack={() => setCurrentPage('home')} />;
         case 'product-detail':

@@ -10,6 +10,7 @@ interface AccountPageProps {
   onNavigateToAdminOrders?: () => void;
   onNavigateToAdminReports?: () => void;
   onNavigateToAdminUsers?: () => void;
+  onNavigateToAdminCache?: () => void;
   onNavigateToAddressManagement?: () => void;
   // Flash sale and featured products are now managed in AdminProductsPage
 }
@@ -21,6 +22,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
   onNavigateToAdminOrders,
   onNavigateToAdminReports,
   onNavigateToAdminUsers,
+  onNavigateToAdminCache,
   onNavigateToAddressManagement
 }) => {
     const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -738,6 +740,27 @@ const AccountPage: React.FC<AccountPageProps> = ({
                   <p className="text-sm">Kelola User</p>
                 </button>
               </div>
+
+              {/* Owner-only Cache Management */}
+              {user?.role === 'owner' && (
+                <div className="mt-4">
+                  <h3 className="font-semibold text-gray-800 mb-3">Owner Tools</h3>
+                  <button
+                    onClick={onNavigateToAdminCache}
+                    className="w-full p-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                      </svg>
+                      <div className="flex-1 text-left">
+                        <p className="font-medium">Cache Management</p>
+                        <p className="text-sm opacity-90">Kelola cache ongkir</p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Owner Stats */}
