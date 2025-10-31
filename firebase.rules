@@ -59,5 +59,10 @@ service cloud.firestore {
     match /flashSales/{flashSaleId} {
       allow read, write: if true; // Temporary fix
     }
+
+    // Allow read/write access to shipping cache for cost optimization
+    match /shipping_cache/{cacheId} {
+      allow read, write: if true; // Allow public access for caching system
+    }
   }
 }

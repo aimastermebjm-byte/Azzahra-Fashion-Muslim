@@ -11,8 +11,8 @@ const CACHE_TTL_HOURS = 24; // Cache for 24 hours
 
 // Helper functions for Firebase REST API (for Vercel compatibility)
 async function getFirestoreDocument(collectionPath, documentId) {
-  const FIREBASE_PROJECT_ID = 'azzahra-fashion-muslim';
-  const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
+  const FIREBASE_PROJECT_ID = 'azzahra-fashion-muslim-ab416';
+  const FIREBASE_API_KEY = 'AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs';
 
   const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${collectionPath}/${documentId}?key=${FIREBASE_API_KEY}`;
 
@@ -42,8 +42,8 @@ async function getFirestoreDocument(collectionPath, documentId) {
 }
 
 async function setFirestoreDocument(collectionPath, documentId, data) {
-  const FIREBASE_PROJECT_ID = 'azzahra-fashion-muslim';
-  const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
+  const FIREBASE_PROJECT_ID = 'azzahra-fashion-muslim-ab416';
+  const FIREBASE_API_KEY = 'AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs';
 
   const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${collectionPath}/${documentId}?key=${FIREBASE_API_KEY}`;
 
