@@ -83,9 +83,44 @@ async function setFirestoreDocument(collectionPath, documentId, data) {
   }
 }
 
-// Generate cache key
+// Smart weight rounding: 1.25kg threshold system
+// 0-1250g = 1kg, 1251-2250g = 2kg, 2251-3250g = 3kg, etc.
+function calculateBillableWeight(actualWeight) {
+  if (actualWeight <= 1250) {
+    return 1000; // 1kg
+  }
+
+  // For weight above 1250g, calculate with 250g tolerance per kg
+  const baseKg = Math.floor(actualWeight / 1000);
+  const remainingGrams = actualWeight % 1000;
+
+  if (remainingGrams > 250) {
+    return (baseKg + 1) * 1000; // Round up to next kg
+  } else {
+    return baseKg * 1000; // Keep current kg
+  }
+}
+
+// Generate cache key with smart weight rounding
 function generateCacheKey(origin, destination, weight, courier) {
-  return `${origin}_${destination}_${weight}_${courier}`;
+  const billableWeight = calculateBillableWeight(weight);
+  return `${origin}_${destination}_${billableWeight}_${courier}`;
+}
+
+// Get billable weight info for logging/debugging
+function getWeightInfo(actualWeight) {
+  const billableWeight = calculateBillableWeight(actualWeight);
+  const chargedKg = billableWeight / 1000;
+
+  return {
+    actualWeight: actualWeight,
+    actualWeightKg: actualWeight / 1000,
+    billableWeight: billableWeight,
+    chargedKg: chargedKg,
+    explanation: actualWeight <= 1250
+      ? `${actualWeight}g = 1kg (minimum weight)`
+      : `${actualWeight}g = ${chargedKg}kg (rounded with 250g tolerance)`
+  };
 }
 
 // Check if cache is still valid
@@ -130,10 +165,16 @@ export default async function handler(req, res) {
       });
     }
 
+    // Calculate billable weight and log
+    const weightInfo = getWeightInfo(weight);
+    const billableWeight = weightInfo.billableWeight;
+
     console.log('🚚 SHIPPING API REQUEST:', {
       origin,
       destination,
-      weight,
+      actualWeight: weight,
+      billableWeight: billableWeight,
+      weightExplanation: weightInfo.explanation,
       courier,
       getAllCouriers,
       timestamp: new Date().toISOString()
@@ -151,9 +192,10 @@ export default async function handler(req, res) {
       console.log('📦 Checking cache for ALL COURIERS...');
 
       for (const courierCode of availableCouriers) {
-        const cacheKey = generateCacheKey(origin, destination, weight, courierCode);
+        const cacheKey = generateCacheKey(origin, destination, billableWeight, courierCode);
         cacheKeys.push(cacheKey);
 
+        console.log(`🔍 Checking cache for ${courierCode}: ${cacheKey}`);
         const cacheDoc = await getFirestoreDocument('shipping_cache', cacheKey);
 
         if (cacheDoc.exists && isCacheValid(cacheDoc.data.expires_at)) {
@@ -168,24 +210,24 @@ export default async function handler(req, res) {
           });
         } else {
           console.log(`❌ CACHE MISS for ${courierCode}:`, cacheKey);
-          // Fetch from API for this courier
+          // Fetch from API for this courier using BILLABLE weight
           try {
-            const apiResults = await fetchCourierFromAPI(courierCode, origin, destination, weight, price);
+            const apiResults = await fetchCourierFromAPI(courierCode, origin, destination, billableWeight, price);
             if (apiResults && apiResults.length > 0) {
               results = results.concat(apiResults);
 
-              // Save to cache
+              // Save to cache with BILLABLE weight
               const expiresAt = new Date(Date.now() + (CACHE_TTL_HOURS * 60 * 60 * 1000));
               await setFirestoreDocument('shipping_cache', cacheKey, {
                 origin,
                 destination,
-                weight,
+                weight: billableWeight, // Store billable weight
                 courier: courierCode,
                 results: apiResults,
                 expires_at: expiresAt,
                 hit_count: 1
               });
-              console.log(`💾 CACHE SAVED for ${courierCode}:`, cacheKey);
+              console.log(`💾 CACHE SAVED for ${courierCode}:`, cacheKey, `(using ${billableWeight}g)`);
             }
           } catch (error) {
             console.error(`❌ API Error for ${courierCode}:`, error.message);
@@ -194,7 +236,7 @@ export default async function handler(req, res) {
       }
     } else {
       // Single courier mode
-      const cacheKey = generateCacheKey(origin, destination, weight, courier);
+      const cacheKey = generateCacheKey(origin, destination, billableWeight, courier);
       console.log('📦 Checking cache for single courier:', cacheKey);
 
       const cacheDoc = await getFirestoreDocument('shipping_cache', cacheKey);
@@ -204,7 +246,9 @@ export default async function handler(req, res) {
         console.log('📊 Cache stats:', {
           cached_at: cacheDoc.data.cached_at,
           expires_at: cacheDoc.data.expires_at,
-          hit_count: cacheDoc.data.hit_count + 1
+          hit_count: cacheDoc.data.hit_count + 1,
+          billableWeight: billableWeight,
+          weightExplanation: weightInfo.explanation
         });
 
         // Update hit count
@@ -213,14 +257,15 @@ export default async function handler(req, res) {
           hit_count: cacheDoc.data.hit_count + 1
         });
 
-        // Return cached response
+        // Return cached response with weight info
         const cachedResponse = {
           meta: {
             message: 'Success Get Domestic Shipping costs (CACHED)',
             code: 200,
             status: 'success',
             cached: true,
-            cached_at: cacheDoc.data.cached_at
+            cached_at: cacheDoc.data.cached_at,
+            weightInfo: weightInfo
           },
           data: cacheDoc.data.results
         };
@@ -228,22 +273,22 @@ export default async function handler(req, res) {
         return res.status(200).json(cachedResponse);
       } else {
         console.log('❌ CACHE MISS:', cacheKey);
-        // Fetch from API
-        results = await fetchCourierFromAPI(courier, origin, destination, weight, price);
+        // Fetch from API using BILLABLE weight
+        results = await fetchCourierFromAPI(courier, origin, destination, billableWeight, price);
 
         if (results && results.length > 0) {
-          // Save to cache
+          // Save to cache with BILLABLE weight
           const expiresAt = new Date(Date.now() + (CACHE_TTL_HOURS * 60 * 60 * 1000));
           await setFirestoreDocument('shipping_cache', cacheKey, {
             origin,
             destination,
-            weight,
+            weight: billableWeight, // Store billable weight
             courier,
             results,
             expires_at: expiresAt,
             hit_count: 1
           });
-          console.log('💾 CACHE SAVED:', cacheKey);
+          console.log('💾 CACHE SAVED:', cacheKey, `(using ${billableWeight}g - ${weightInfo.explanation})`);
         }
       }
     }
@@ -259,7 +304,8 @@ export default async function handler(req, res) {
           code: 200,
           status: 'success',
           cached: cacheHit,
-          cache_keys: cacheKeys
+          cache_keys: cacheKeys,
+          weightInfo: weightInfo
         },
         data: results
       };
