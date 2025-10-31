@@ -67,6 +67,52 @@ async function setFirestoreDocument(collectionPath, documentId, data) {
   }
 }
 
+// Auto-create owner user in Firestore
+async function createOwnerUser(userId, decodedToken) {
+  try {
+    const FIREBASE_PROJECT_ID = 'azzahra-fashion-muslim-ab416';
+    const FIREBASE_API_KEY = 'AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs';
+
+    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/users/${userId}?key=${FIREBASE_API_KEY}`;
+
+    const firestoreData = {
+      fields: {
+        uid: { stringValue: userId },
+        email: { stringValue: decodedToken.email || decodedToken.email_verified ? decodedToken.email : 'unknown@example.com' },
+        displayName: { stringValue: decodedToken.name || decodedToken.display_name || 'Owner' },
+        name: { stringValue: decodedToken.name || decodedToken.display_name || 'Owner' },
+        role: { stringValue: 'owner' },
+        createdAt: { timestampValue: new Date().toISOString() },
+        updatedAt: { timestampValue: new Date().toISOString() },
+        isActive: { booleanValue: true },
+        phone: { stringValue: '' },
+        address: { stringValue: '' }
+      }
+    };
+
+    console.log(`📝 Creating owner user document: ${userId}`);
+    console.log(`Email from token:`, decodedToken.email);
+
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(firestoreData)
+    });
+
+    if (response.ok) {
+      console.log(`✅ Owner user created successfully: ${userId}`);
+      return { success: true };
+    } else {
+      const errorText = await response.text();
+      console.error(`❌ Failed to create owner user: ${response.status} - ${errorText}`);
+      return { success: false, error: errorText };
+    }
+  } catch (error) {
+    console.error('❌ Error creating owner user:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 // Authenticate and check if user is owner
 async function authenticateOwner(req) {
   const authHeader = req.headers.authorization;
@@ -101,7 +147,32 @@ async function authenticateOwner(req) {
     const userDoc = await getFirestoreDocument('users', userId);
 
     if (!userDoc.exists) {
-      return { success: false, message: 'User not found in database' };
+      // Auto-create user with owner role if not exists
+      console.log(`⚠️ User ${userId} not found in database, creating with owner role...`);
+
+      const createResult = await createOwnerUser(userId, decoded);
+      if (!createResult.success) {
+        return { success: false, message: 'User not found and failed to create' };
+      }
+
+      // Get the newly created user document
+      const newUserDoc = await getFirestoreDocument('users', userId);
+      if (!newUserDoc.exists) {
+        return { success: false, message: 'Failed to create user record' };
+      }
+
+      const userRole = newUserDoc.data.role;
+      if (userRole !== 'owner') {
+        return { success: false, message: 'Access denied. Owner role required.' };
+      }
+
+      console.log(`✅ Auto-created owner user: ${userId}`);
+      return {
+        success: true,
+        userId,
+        role: userRole,
+        userData: newUserDoc.data
+      };
     }
 
     const userRole = userDoc.data.role;
