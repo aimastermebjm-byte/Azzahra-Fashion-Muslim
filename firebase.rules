@@ -36,6 +36,8 @@ service cloud.firestore {
     // Allow read/write access to user profiles for the user themselves
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Allow admin service account to read/write user data for management
+      allow read, write: if request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'owner'];
     }
 
     // Allow read/write access to user addresses for the user themselves
