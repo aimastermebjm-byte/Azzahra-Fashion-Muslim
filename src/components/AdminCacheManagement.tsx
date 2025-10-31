@@ -295,11 +295,11 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
 
   // Format duration
   const formatDuration = (hours: number) => {
-    if (hours < 24) return `${hours} hours`;
+    if (hours < 24) return `${hours} jam`;
     const days = Math.floor(hours / 24);
     const remainingHours = hours % 24;
-    if (remainingHours === 0) return `${days} days`;
-    return `${days} days ${remainingHours} hours`;
+    if (remainingHours === 0) return `${days} hari`;
+    return `${days} hari ${remainingHours} jam`;
   };
 
   // Format date
@@ -325,8 +325,8 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="max-w-4xl mx-auto">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h2 className="text-red-800 text-xl font-semibold mb-2">Access Denied</h2>
-            <p className="text-red-600">Only users with 'owner' role can access cache management.</p>
+            <h2 className="text-red-800 text-xl font-semibold mb-2">Akses Ditolak</h2>
+            <p className="text-red-600">Hanya pengguna dengan role 'owner' yang bisa mengakses manajemen cache.</p>
             <button
               onClick={onBack}
               className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
@@ -346,14 +346,14 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">🗄️ Cache Management</h1>
-              <p className="text-gray-600 mt-1">Manage shipping cost cache settings and monitor performance</p>
+              <h1 className="text-2xl font-bold text-gray-900">🗄️ Manajemen Cache</h1>
+              <p className="text-gray-600 mt-1">Kelola pengaturan cache biaya pengiriman dan pantau performa</p>
             </div>
             <button
               onClick={onBack}
               className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
             >
-              ← Back to Admin
+              ← Kembali ke Admin
             </button>
           </div>
         </div>
@@ -381,7 +381,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                ⚙️ Settings
+                ⚙️ Pengaturan
               </button>
               <button
                 onClick={() => setActiveTab('list')}
@@ -391,7 +391,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                📋 Cache List
+                📋 Daftar Cache
               </button>
               <button
                 onClick={() => setActiveTab('actions')}
@@ -401,7 +401,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                🔄 Actions
+                🔄 Aksi
               </button>
             </nav>
           </div>
@@ -410,13 +410,13 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
         {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold mb-6">Cache Configuration</h2>
+            <h2 className="text-lg font-semibold mb-6">Konfigurasi Cache</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Cache TTL */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cache TTL (Time To Live)
+                  Cache TTL (Masa Aktif)
                 </label>
                 <div className="flex items-center space-x-2">
                   <input
@@ -427,10 +427,10 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                     onChange={(e) => setSettings({ ...settings, cache_ttl_hours: parseInt(e.target.value) })}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                   />
-                  <span className="text-sm text-gray-600">hours</span>
+                  <span className="text-sm text-gray-600">jam</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Current: {formatDuration(settings.cache_ttl_hours)}
+                  Saat ini: {formatDuration(settings.cache_ttl_hours)}
                 </p>
               </div>
 
@@ -492,7 +492,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                 disabled={loading}
                 className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                {loading ? 'Saving...' : 'Save Settings'}
+                {loading ? 'Menyimpan...' : 'Simpan Pengaturan'}
               </button>
             </div>
           </div>
@@ -508,7 +508,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                 disabled={loading}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                {loading ? 'Loading...' : '🔄 Refresh'}
+                {loading ? 'Memuat...' : '🔄 Refresh'}
               </button>
             </div>
 
