@@ -85,4 +85,10 @@ const debugCacheData = async () => {
   console.log('3. Cache write succeeded but data corrupted');
 };
 
-debugCacheData().catch(console.error);
+// Make function available globally
+window.debugCacheData = debugCacheData;
+
+// Auto-run if needed
+// debugCacheData().catch(console.error);
+
+console.log('🚀 Cache Data Debug loaded. Run debugCacheData() in console to debug.');
