@@ -131,10 +131,22 @@ async function authenticateOwner(req) {
     }
 
     const decoded = JSON.parse(atob(parts[1]));
-    const userId = decoded.user_id || decoded.uid || decoded.sub;
+
+    console.log('🔍 Token payload analysis:');
+    console.log('  - uid:', decoded.uid);
+    console.log('  - sub:', decoded.sub);
+    console.log('  - user_id:', decoded.user_id);
+    console.log('  - email:', decoded.email);
+    console.log('  - name:', decoded.name);
+    console.log('  - display_name:', decoded.display_name);
+
+    const userId = decoded.uid || decoded.sub || decoded.user_id;
+
+    console.log(`📋 Extracted userId: ${userId}`);
 
     if (!userId) {
-      return { success: false, message: 'Invalid token: no user ID found' };
+      console.error('❌ No user ID found in token payload');
+      return { success: false, message: `Invalid token: no user ID found. Available fields: ${Object.keys(decoded).join(', ')}` };
     }
 
     // Check token expiration
@@ -148,25 +160,51 @@ async function authenticateOwner(req) {
 
     if (!userDoc.exists) {
       // Auto-create user with owner role if not exists
-      console.log(`⚠️ User ${userId} not found in database, creating with owner role...`);
+      console.log(`⚠️ User ${userId} not found in database, attempting auto-creation...`);
+      console.log(`📝 Token data available: email=${decoded.email}, name=${decoded.name}`);
 
       const createResult = await createOwnerUser(userId, decoded);
+
       if (!createResult.success) {
-        return { success: false, message: 'User not found and failed to create' };
+        console.error(`❌ Failed to create user: ${createResult.error}`);
+        console.log(`🔄 Fallback: checking if user was created by concurrent request...`);
+
+        // Try to read again (might be created by concurrent request)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const retryDoc = await getFirestoreDocument('users', userId);
+
+        if (retryDoc.exists && retryDoc.data.role === 'owner') {
+          console.log(`✅ User found after retry - was created by concurrent request`);
+          return {
+            success: true,
+            userId,
+            role: retryDoc.data.role,
+            userData: retryDoc.data
+          };
+        }
+
+        return {
+          success: false,
+          message: `User not found and failed to create. Error: ${createResult.error}`
+        };
       }
+
+      console.log(`✅ User creation attempt completed, result: ${createResult.success}`);
 
       // Get the newly created user document
       const newUserDoc = await getFirestoreDocument('users', userId);
       if (!newUserDoc.exists) {
-        return { success: false, message: 'Failed to create user record' };
+        console.error(`❌ Failed to retrieve created user document`);
+        return { success: false, message: 'User was created but retrieval failed' };
       }
 
       const userRole = newUserDoc.data.role;
       if (userRole !== 'owner') {
-        return { success: false, message: 'Access denied. Owner role required.' };
+        console.error(`❌ Wrong role assigned: ${userRole} (expected: owner)`);
+        return { success: false, message: `Access denied. Expected owner role, got: ${userRole}` };
       }
 
-      console.log(`✅ Auto-created owner user: ${userId}`);
+      console.log(`✅ Auto-created owner user successfully: ${userId}`);
       return {
         success: true,
         userId,
