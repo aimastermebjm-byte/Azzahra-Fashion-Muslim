@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { ShoppingCart, Zap, Flame, Percent } from 'lucide-react';
 import ProductCard from './ProductCard';
 import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
@@ -22,8 +22,7 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
   onAddToCart
 }) => {
   const { timeLeft, isFlashSaleActive, loading: flashSaleLoading } = useFirebaseFlashSale();
-  const { cartItems, loading: cartLoading } = useRealTimeCart();
-  const [forceUpdate, setForceUpdate] = useState(0);
+  const { cartItems } = useRealTimeCart();
 
   // Debug flash sale hook values
   console.log('⚡ FlashSalePage Debug:', {
@@ -57,107 +56,11 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
     });
   }
 
-  // ENHANCED Flash Sale Event Handling
-  useEffect(() => {
-    const handleFlashSaleEnded = (event: any) => {
-      console.log('🔄 Flash sale ended event received:', event.detail);
-      console.log('🔄 Updating FlashSalePage...');
+  // Flash sale events now handled by useFirebaseFlashSale hook - real-time updates from Firebase
 
-      // Force immediate re-render
-      setForceUpdate(prev => prev + 1);
+  // Flash sale status now handled by useFirebaseFlashSale hook - no need for localStorage checking
 
-      // DEBOUNCED Additional auto-refresh if event indicates time expired
-      if (event.detail?.reason === 'time_expired') {
-        // Clear existing timer if any
-        if (window.flashSaleRefreshTimer) {
-          clearTimeout(window.flashSaleRefreshTimer);
-        }
-
-        // Set new debounced timer
-        window.flashSaleRefreshTimer = setTimeout(() => {
-          console.log('🔄 Auto-refreshing FlashSalePage after time expired');
-          window.location.reload();
-        }, 3000);
-      }
-    };
-
-    // Listen for multiple events
-    window.addEventListener('flashSaleEnded', handleFlashSaleEnded);
-
-    // Also listen for flash sale start/update events
-    const handleFlashSaleUpdated = () => {
-      console.log('🔄 Flash sale updated event received');
-      setForceUpdate(prev => prev + 1);
-    };
-
-    window.addEventListener('flashSaleUpdated', handleFlashSaleUpdated);
-
-    return () => {
-      window.removeEventListener('flashSaleEnded', handleFlashSaleEnded);
-      window.removeEventListener('flashSaleUpdated', handleFlashSaleUpdated);
-    };
-  }, []);
-
-  // ENHANCED Real-time Flash Sale Status Check
-  useEffect(() => {
-    const checkFlashSaleStatus = () => {
-      try {
-        const savedConfig = localStorage.getItem('azzahra-flashsale');
-        if (savedConfig) {
-          const config = JSON.parse(savedConfig);
-
-          if (config && config.isActive) {
-            const now = new Date().getTime();
-            const endTime = new Date(config.endTime).getTime();
-
-            // If flash sale has ended, trigger immediate cleanup
-            if (now >= endTime) {
-              console.log('⏰ FlashSalePage: Flash sale ended, triggering cleanup');
-
-              // Trigger flash sale ended event
-              window.dispatchEvent(new CustomEvent('flashSaleEnded', {
-                detail: {
-                  timestamp: new Date().toISOString(),
-                  reason: 'time_expired_page_check',
-                  source: 'FlashSalePage'
-                }
-              }));
-
-              // Remove flash sale config immediately
-              localStorage.removeItem('azzahra-flashsale');
-              config.isActive = false;
-
-              // Force update to refresh UI
-              setForceUpdate(prev => prev + 1);
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Error in FlashSalePage real-time check:', e);
-      }
-    };
-
-    // Check every 2 seconds for immediate response
-    checkFlashSaleStatus(); // Check immediately
-    const intervalId = setInterval(checkFlashSaleStatus, 2000);
-
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // Listen for products updates from admin
-  useEffect(() => {
-    const handleProductsUpdated = (event: any) => {
-      console.log('Products updated in FlashSalePage:', event.detail);
-      // Force re-render to get updated products
-      setForceUpdate(prev => prev + 1);
-    };
-
-    window.addEventListener('productsUpdated', handleProductsUpdated);
-
-    return () => {
-      window.removeEventListener('productsUpdated', handleProductsUpdated);
-    };
-  }, []);
+  // Product updates now handled by parent component re-render when products prop changes
 
   const handleAddToCart = (product: any) => {
     onAddToCart(product);
