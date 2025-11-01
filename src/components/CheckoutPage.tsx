@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, MapPin, Phone, User, Package, Copy, Loader2, AlertCircle, Plus, Edit2, Trash2 } from 'lucide-react';
-import { useAddresses } from '../hooks/useAddresses';
+import { addressService } from '../services/addressService';
 import AddressForm from './AddressForm';
 import { komerceService, KomerceCostResult } from '../utils/komerceService';
 import { cartService } from '../services/cartService';
@@ -50,7 +50,69 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [editingAddress, setEditingAddress] = useState<any>(null);
-  const { addresses, addAddress, updateAddress, deleteAddress, getDefaultAddress } = useAddresses();
+
+  // Address management with Firebase
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(true);
+
+  // Load addresses from Firebase
+  const loadAddresses = async () => {
+    try {
+      setAddressesLoading(true);
+      const userAddresses = await addressService.getUserAddresses();
+      setAddresses(userAddresses);
+      console.log('🏠 Addresses loaded from Firebase:', userAddresses.length);
+    } catch (error) {
+      console.error('❌ Failed to load addresses:', error);
+      setAddresses([]);
+    } finally {
+      setAddressesLoading(false);
+    }
+  };
+
+  // Set up real-time address listener
+  useEffect(() => {
+    const unsubscribe = addressService.onAddressesChange((userAddresses) => {
+      setAddresses(userAddresses);
+      console.log('📦 Real-time addresses updated:', userAddresses.length);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const addAddress = async (addressData: any) => {
+    try {
+      const newAddress = await addressService.saveAddress(addressData);
+      console.log('✅ Address added to Firebase:', newAddress.id);
+    } catch (error) {
+      console.error('❌ Failed to add address:', error);
+      throw error;
+    }
+  };
+
+  const updateAddress = async (id: string, updateData: any) => {
+    try {
+      const updatedAddress = await addressService.updateAddress(id, updateData);
+      console.log('✅ Address updated in Firebase:', id);
+    } catch (error) {
+      console.error('❌ Failed to update address:', error);
+      throw error;
+    }
+  };
+
+  const deleteAddress = async (id: string) => {
+    try {
+      await addressService.deleteAddress(id);
+      console.log('✅ Address deleted from Firebase:', id);
+    } catch (error) {
+      console.error('❌ Failed to delete address:', error);
+      throw error;
+    }
+  };
+
+  const getDefaultAddress = () => {
+    return addresses.find(addr => addr.isDefault) || addresses[0];
+  };
 
   // Komerce states
   const [loadingShipping, setLoadingShipping] = useState(false);
