@@ -1,5 +1,5 @@
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from './firebaseClient';
 
 export interface FirebaseUsageStats {
   firestore: {
