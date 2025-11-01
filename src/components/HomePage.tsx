@@ -432,41 +432,7 @@ const HomePage: React.FC<HomePageProps> = ({
         </div>
       </div>
 
-      {/* Premium Flash Sale Countdown Display */}
-      {isFlashSaleActive && timeLeft && (
-        <div className="px-4 mb-4">
-          <div className="bg-gradient-to-br from-red-600 via-red-500 to-pink-500 rounded-xl p-5 text-white shadow-xl relative overflow-hidden">
-            {/* Premium animated background pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-2 left-2 w-20 h-20 bg-white rounded-full -ml-10 -mt-10 animate-pulse"></div>
-              <div className="absolute bottom-2 right-2 w-16 h-16 bg-white rounded-full -mr-8 -mb-8 animate-pulse delay-100"></div>
-            </div>
-
-            <div className="relative z-10">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="relative">
-                    <div className="w-4 h-4 bg-yellow-400 rounded-full animate-pulse"></div>
-                    <div className="absolute inset-0 w-4 h-4 bg-yellow-300 rounded-full animate-ping"></div>
-                  </div>
-                  <div>
-                    <span className="font-bold text-xl bg-gradient-to-r from-yellow-200 to-white bg-clip-text text-transparent">
-                      ⚡ Flash Sale Berlangsung!
-                    </span>
-                    <p className="text-red-100 text-sm font-medium mt-1">Diskon Terbatas, Siapa Cepat Dia Dapat!</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-red-100 font-medium mb-1">Berakhir dalam:</div>
-                  <div className="font-black text-2xl bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
-                    {timeLeft}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+          {/* Flash Sale Countdown Display removed - using top section only */}
 
       {/* Featured Products */}
       <div className="px-4 mb-6">
