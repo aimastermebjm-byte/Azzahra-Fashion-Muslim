@@ -192,8 +192,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     { id: 'pos', name: 'POS Indonesia', code: 'pos', price: 0 }, // RajaOngkir supported
     { id: 'tiki', name: 'TIKI', code: 'tiki', price: 0 }, // RajaOngkir supported
     { id: 'ojek', name: 'OJEK', code: null, price: 0 }, // Local courier - manual price
-    { id: 'lion', name: 'Lion Parcel', code: null, price: 0 }, // Manual price
-    { id: 'idexpress', name: 'ID Express', code: null, price: 0 } // Manual price
+    { id: 'lion', name: 'Lion Parcel', code: 'lion', price: 0 }, // Automatic via Komerce
+    { id: 'idexpress', name: 'IDExpress', code: 'ide', price: 0 } // Automatic via Komerce
   ];
 
   // Auto-select default courier and address when component mounts
