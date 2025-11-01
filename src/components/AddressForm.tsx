@@ -85,17 +85,39 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   // In-memory cache to reduce API calls within browser session
   const [addressCache, setAddressCache] = useState<Map<string, any>>(new Map());
 
-  // Load provinces on component mount
+  // Load provinces on component mount (preload for instant dropdown)
   useEffect(() => {
+    // Start loading provinces immediately
     loadProvinces();
-  }, []);
+
+    // Preload popular provinces data in background for better UX
+    // This ensures that when user selects common provinces, cities are already cached
+    const popularProvinceIds = ['11', '12', '31', '34', '10', '6']; // Jabar, Jateng, DKI, Jatim, DIY, Banten
+    popularProvinceIds.forEach(async (provinceId) => {
+      try {
+        // Preload cities for popular provinces (background, non-blocking)
+        const cacheKey = `cities_${provinceId}`;
+        if (!addressCache.has(cacheKey)) {
+          const response = await fetch(`/api/address-cached?type=cities&provinceId=${provinceId}`);
+          const data = await response.json();
+          if (data.success && data.data) {
+            setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
+          }
+        }
+      } catch (error) {
+        // Silently fail preload - not critical
+        console.log(`Background preload cities for province ${provinceId} skipped`);
+      }
+    });
+  }, []); // Only run once on mount
 
   // Load cities when province changes
   useEffect(() => {
     if (formData.provinceId) {
+      // Load cities immediately (eager loading)
       loadCities();
-      // Reset dependent fields
-      setCities([]);
+
+      // Only reset dependent fields (keep cities loading in background)
       setDistricts([]);
       setSubdistricts([]);
       setFormData(prev => ({
@@ -114,9 +136,10 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   // Load districts when city changes
   useEffect(() => {
     if (formData.cityId) {
+      // Load districts immediately (eager loading)
       loadDistricts();
-      // Reset dependent fields
-      setDistricts([]);
+
+      // Only reset dependent fields (keep districts loading in background)
       setSubdistricts([]);
       setFormData(prev => ({
         ...prev,
@@ -132,9 +155,10 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   // Load subdistricts when district changes
   useEffect(() => {
     if (formData.districtId) {
+      // Load subdistricts immediately (eager loading)
       loadSubdistricts();
-      // Reset dependent fields
-      setSubdistricts([]);
+
+      // Only reset dependent fields
       setFormData(prev => ({
         ...prev,
         subdistrict: '',
@@ -187,11 +211,11 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
       if (addressCache.has(cacheKey)) {
         const cachedData = addressCache.get(cacheKey);
         setCities(cachedData);
-        console.log('🎯 Cities loaded from IN-MEMORY cache:', cachedData.length, 'items for province', formData.provinceId);
+        console.log('⚡ Cities loaded instantly from IN-MEMORY cache:', cachedData.length, 'items for province', formData.provinceId);
         return;
       }
 
-      console.log('🌐 Loading cities from API (no cache) for province:', formData.provinceId);
+      console.log('🌐 Loading cities from API for province:', formData.provinceId);
       const response = await fetch(`/api/address-cached?type=cities&provinceId=${formData.provinceId}`);
       const data = await response.json();
 
@@ -199,12 +223,12 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         setCities(data.data);
         // Save to in-memory cache
         setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
-        console.log('✅ Cities loaded from API & cached in memory:', data.data.length, 'items for province', formData.provinceId);
+        console.log('✅ Cities loaded from API & cached:', data.data.length, 'items for province', formData.provinceId);
       } else {
-        console.error('❌ Failed to load cities from cache:', data.message);
+        console.error('❌ Failed to load cities:', data.message);
       }
     } catch (error) {
-      console.error('Error loading cities from cache:', error);
+      console.error('Error loading cities:', error);
     } finally {
       setLoadingCities(false);
     }
@@ -221,11 +245,11 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
       if (addressCache.has(cacheKey)) {
         const cachedData = addressCache.get(cacheKey);
         setDistricts(cachedData);
-        console.log('🎯 Districts loaded from IN-MEMORY cache:', cachedData.length, 'items for city', formData.cityId);
+        console.log('⚡ Districts loaded instantly from IN-MEMORY cache:', cachedData.length, 'items for city', formData.cityId);
         return;
       }
 
-      console.log('🌐 Loading districts from API (no cache) for city:', formData.cityId);
+      console.log('🌐 Loading districts from API for city:', formData.cityId);
       const response = await fetch(`/api/address-cached?type=districts&cityId=${formData.cityId}`);
       const data = await response.json();
 
@@ -233,12 +257,12 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         setDistricts(data.data);
         // Save to in-memory cache
         setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
-        console.log('✅ Districts loaded from API & cached in memory:', data.data.length, 'items for city', formData.cityId);
+        console.log('✅ Districts loaded from API & cached:', data.data.length, 'items for city', formData.cityId);
       } else {
-        console.error('❌ Failed to load districts from cache:', data.message);
+        console.error('❌ Failed to load districts:', data.message);
       }
     } catch (error) {
-      console.error('Error loading districts from cache:', error);
+      console.error('Error loading districts:', error);
     } finally {
       setLoadingDistricts(false);
     }
@@ -255,11 +279,11 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
       if (addressCache.has(cacheKey)) {
         const cachedData = addressCache.get(cacheKey);
         setSubdistricts(cachedData);
-        console.log('🎯 Subdistricts loaded from IN-MEMORY cache:', cachedData.length, 'items for district', formData.districtId);
+        console.log('⚡ Subdistricts loaded instantly from IN-MEMORY cache:', cachedData.length, 'items for district', formData.districtId);
         return;
       }
 
-      console.log('🌐 Loading subdistricts from API (no cache) for district:', formData.districtId);
+      console.log('🌐 Loading subdistricts from API for district:', formData.districtId);
       const response = await fetch(`/api/address-cached?type=subdistricts&districtId=${formData.districtId}`);
       const data = await response.json();
 
@@ -267,12 +291,12 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         setSubdistricts(data.data);
         // Save to in-memory cache
         setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
-        console.log('✅ Subdistricts loaded from API & cached in memory:', data.data.length, 'items for district', formData.districtId);
+        console.log('✅ Subdistricts loaded from API & cached:', data.data.length, 'items for district', formData.districtId);
       } else {
-        console.error('❌ Failed to load subdistricts from cache:', data.message);
+        console.error('❌ Failed to load subdistricts:', data.message);
       }
     } catch (error) {
-      console.error('Error loading subdistricts from cache:', error);
+      console.error('Error loading subdistricts:', error);
     } finally {
       setLoadingSubdistricts(false);
     }
