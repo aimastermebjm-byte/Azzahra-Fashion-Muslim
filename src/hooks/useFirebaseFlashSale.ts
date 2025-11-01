@@ -212,11 +212,15 @@ export const useFirebaseFlashSale = () => {
   };
 
   const isProductInFlashSale = (productId: string) => {
-    if (!flashSaleConfig?.isActive) return false;
+    if (!flashSaleConfig?.isActive || !productId) return false;
 
     // Check both products and productIds arrays for backward compatibility
-    const inProducts = flashSaleConfig.products.includes(productId);
-    const inProductIds = flashSaleConfig.productIds?.includes(productId) || false;
+    // Add safety checks for undefined arrays
+    const products = flashSaleConfig.products || [];
+    const productIds = flashSaleConfig.productIds || [];
+
+    const inProducts = products.includes(productId);
+    const inProductIds = productIds.includes(productId);
 
     return inProducts || inProductIds;
   };
