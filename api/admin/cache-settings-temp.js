@@ -52,9 +52,9 @@ async function getCacheSettings() {
   };
 }
 
-// List all cache documents with detailed info
-async function listAllCacheDocuments() {
-  const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/shipping_cache?key=${FIREBASE_API_KEY}`;
+// List cache documents from specific collection
+async function listCacheDocuments(collectionName) {
+  const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${collectionName}?key=${FIREBASE_API_KEY}`;
 
   try {
     const response = await fetch(url);
@@ -64,9 +64,14 @@ async function listAllCacheDocuments() {
     }
     return [];
   } catch (error) {
-    console.error('Error listing cache documents:', error.message);
+    console.error(`Error listing ${collectionName} documents:`, error.message);
     return [];
   }
+}
+
+// List all cache documents with detailed info (backward compatibility)
+async function listAllCacheDocuments() {
+  return await listCacheDocuments('shipping_cache');
 }
 
 export default async function handler(req, res) {
@@ -106,12 +111,46 @@ export default async function handler(req, res) {
       }
 
       if (action === 'list') {
-        const documents = await listAllCacheDocuments();
+        // Get shipping cache
+        const shippingDocuments = await listCacheDocuments('shipping_cache');
+
+        // Get address cache
+        const addressCollections = ['address_provinces', 'address_cities', 'address_districts', 'address_subdistricts'];
+        const addressCacheData = [];
+
+        for (const collection of addressCollections) {
+          const docs = await listCacheDocuments(collection);
+          docs.forEach(doc => {
+            const name = doc.name;
+            const cacheKey = name.split('/').pop();
+            const fields = doc.fields;
+
+            const cachedAt = new Date(fields.created_at?.timestampValue || fields.cached_at?.timestampValue);
+            const expiresAt = new Date(fields.expires_at?.timestampValue);
+            const isExpired = expiresAt < new Date();
+
+            addressCacheData.push({
+              cacheKey,
+              collection,
+              type: 'address',
+              data_type: collection.replace('address_', ''),
+              cached_at: cachedAt.toISOString(),
+              expires_at: expiresAt.toISOString(),
+              hit_count: fields.hit_count?.integerValue || 0,
+              is_expired: isExpired,
+              age_days: Math.floor((new Date() - cachedAt) / (1000 * 60 * 60 * 24)),
+              data_count: JSON.parse(fields.data?.stringValue || '[]').length
+            });
+          });
+        }
+
         const cacheSettings = await getCacheSettings();
+        const allDocuments = [...shippingDocuments, ...addressCacheData];
 
-        console.log(`📊 Found ${documents.length} cache documents`);
+        console.log(`📊 Found ${shippingDocuments.length} shipping + ${addressCacheData.length} address cache documents`);
 
-        const cacheInfo = documents.map(doc => {
+        // Map shipping cache documents
+        const shippingCacheInfo = shippingDocuments.map(doc => {
           const name = doc.name;
           const cacheKey = name.split('/').pop();
           const fields = doc.fields;
@@ -122,6 +161,7 @@ export default async function handler(req, res) {
 
           return {
             cacheKey,
+            type: 'shipping',
             origin: fields.origin?.stringValue,
             destination: fields.destination?.stringValue,
             weight: fields.weight?.integerValue,
@@ -137,10 +177,16 @@ export default async function handler(req, res) {
           };
         });
 
+        const cacheInfo = [...shippingCacheInfo, ...addressCacheData];
+
         const summary = {
           total: cacheInfo.length,
           expired: cacheInfo.filter(c => c.is_expired).length,
           active: cacheInfo.filter(c => !c.is_expired).length,
+          shipping_total: shippingCacheInfo.length,
+          address_total: addressCacheData.length,
+          shipping_expired: shippingCacheInfo.filter(c => c.is_expired).length,
+          address_expired: addressCacheData.filter(c => c.is_expired).length,
           oldest_cache: cacheInfo.length > 0 ? Math.min(...cacheInfo.map(c => c.age_days)) : 0,
           newest_cache: cacheInfo.length > 0 ? Math.max(...cacheInfo.map(c => c.age_days)) : 0
         };

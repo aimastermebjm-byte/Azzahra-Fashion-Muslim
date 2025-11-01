@@ -513,22 +513,63 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
             </div>
 
             {cacheSummary && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-blue-50 p-4 rounded">
-                  <div className="text-2xl font-bold text-blue-600">{cacheSummary.total}</div>
-                  <div className="text-sm text-blue-800">Total Cache</div>
+              <div className="space-y-4 mb-6">
+                {/* Total Summary */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-blue-50 p-4 rounded">
+                    <div className="text-2xl font-bold text-blue-600">{cacheSummary.total}</div>
+                    <div className="text-sm text-blue-800">Total Cache</div>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded">
+                    <div className="text-2xl font-bold text-green-600">{cacheSummary.active}</div>
+                    <div className="text-sm text-green-800">Active</div>
+                  </div>
+                  <div className="bg-red-50 p-4 rounded">
+                    <div className="text-2xl font-bold text-red-600">{cacheSummary.expired}</div>
+                    <div className="text-sm text-red-800">Expired</div>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded">
+                    <div className="text-2xl font-bold text-gray-600">{cacheSummary.oldest_cache}</div>
+                    <div className="text-sm text-gray-800">Oldest (days)</div>
+                  </div>
                 </div>
-                <div className="bg-green-50 p-4 rounded">
-                  <div className="text-2xl font-bold text-green-600">{cacheSummary.active}</div>
-                  <div className="text-sm text-green-800">Active</div>
-                </div>
-                <div className="bg-red-50 p-4 rounded">
-                  <div className="text-2xl font-bold text-red-600">{cacheSummary.expired}</div>
-                  <div className="text-sm text-red-800">Expired</div>
-                </div>
-                <div className="bg-gray-50 p-4 rounded">
-                  <div className="text-2xl font-bold text-gray-600">{cacheSummary.oldest_cache}</div>
-                  <div className="text-sm text-gray-800">Oldest (days)</div>
+
+                {/* Cache Type Summary */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-purple-50 p-4 rounded">
+                    <div className="text-lg font-semibold text-purple-800 mb-2">📦 Ongkir Cache</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="text-center">
+                        <div className="text-xl font-bold text-purple-600">{cacheSummary.shipping_total || 0}</div>
+                        <div className="text-xs text-purple-600">Total</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xl font-bold text-green-600">{(cacheSummary.shipping_total || 0) - (cacheSummary.shipping_expired || 0)}</div>
+                        <div className="text-xs text-green-600">Active</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xl font-bold text-red-600">{cacheSummary.shipping_expired || 0}</div>
+                        <div className="text-xs text-red-600">Expired</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-orange-50 p-4 rounded">
+                    <div className="text-lg font-semibold text-orange-800 mb-2">🏠 Address Cache</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="text-center">
+                        <div className="text-xl font-bold text-orange-600">{cacheSummary.address_total || 0}</div>
+                        <div className="text-xs text-orange-600">Total</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xl font-bold text-green-600">{(cacheSummary.address_total || 0) - (cacheSummary.address_expired || 0)}</div>
+                        <div className="text-xs text-green-600">Active</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xl font-bold text-red-600">{cacheSummary.address_expired || 0}</div>
+                        <div className="text-xs text-red-600">Expired</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
