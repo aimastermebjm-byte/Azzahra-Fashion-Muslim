@@ -205,8 +205,8 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     });
 
-    // Available couriers
-    const availableCouriers = ['jne', 'jnt', 'pos', 'tiki', 'sicepat', 'wahana'];
+    // Available couriers (updated based on test results)
+    const availableCouriers = ['jne', 'jnt', 'pos', 'tiki', 'ide', 'lion'];
 
     let results = [];
     let cacheHit = false;
