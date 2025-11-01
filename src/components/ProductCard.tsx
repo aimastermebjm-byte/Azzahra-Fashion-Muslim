@@ -102,6 +102,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const getPrice = () => {
+    // Debug ProductCard pricing logic
+    console.log('🏷️ ProductCard Debug:', {
+      productName: product.name,
+      isFlashSaleActive,
+      isFlashSaleProp: isFlashSale,
+      retailPrice: product.retailPrice,
+      flashSalePrice: product.flashSalePrice,
+      originalRetailPrice: product.originalRetailPrice,
+      calculatedOriginalPrice: product.originalRetailPrice || product.retailPrice,
+      discountPercent: Math.round((1 - product.flashSalePrice / (product.originalRetailPrice || product.retailPrice)) * 100)
+    });
+
     if (isFlashSaleActive && product.flashSalePrice > 0) {
       return (
         <div className="space-y-1">
