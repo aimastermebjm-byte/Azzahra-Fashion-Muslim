@@ -1,5 +1,5 @@
-// Unified Address API - Supports both RajaOngkir and Komerce with Caching
-// Single endpoint for all address operations with Firestore caching
+// Address API with Firestore Caching
+// Reduces API calls by caching provinces, cities, districts, subdistricts
 
 const KOMERCE_API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
 const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
@@ -149,6 +149,37 @@ export default async function handler(req, res) {
         });
     }
 
+    // Generate cache key
+    let cacheKey = expectedType;
+    let cacheCollection = `address_${expectedType}`;
+
+    switch (expectedType) {
+      case 'cities':
+        cacheKey = `cities_${provinceId}`;
+        break;
+      case 'districts':
+        cacheKey = `districts_${cityId}`;
+        break;
+      case 'subdistricts':
+        cacheKey = `subdistricts_${districtId}`;
+        break;
+    }
+
+    console.log(`🔍 Checking cache for ${expectedType}: ${cacheKey}`);
+
+    // Try to get from cache first
+    let dataArray = await getCachedData(cacheCollection, cacheKey);
+
+    if (dataArray) {
+      console.log(`✅ ${expectedType} loaded from cache (${dataArray.length} items)`);
+      return res.status(200).json({
+        success: true,
+        message: `${expectedType} loaded from cache`,
+        data: dataArray
+      });
+    }
+
+    console.log(`❌ CACHE MISS for ${expectedType}, calling API...`);
     console.log(`🌐 Fetching ${expectedType} from: ${apiUrl}`);
 
     const response = await fetch(apiUrl, {
@@ -170,7 +201,6 @@ export default async function handler(req, res) {
     console.log(`Raw ${expectedType} response:`, JSON.stringify(data, null, 2));
 
     // Handle different response structures
-    let dataArray = [];
     if (Array.isArray(data)) {
       dataArray = data;
       console.log(`${expectedType} is direct array`);
@@ -182,65 +212,75 @@ export default async function handler(req, res) {
       console.log(`${expectedType} found in rajaongkir.results`);
     } else {
       console.log(`${expectedType} unknown structure, keys:`, Object.keys(data));
+      dataArray = [];
     }
 
     console.log(`${expectedType} array length:`, dataArray.length);
 
+    // Save to cache
+    if (dataArray.length > 0) {
+      await setCachedData(cacheCollection, cacheKey, dataArray, CACHE_TTL[expectedType] || 24);
+    }
+
     // Transform data based on type
-    let transformedData;
-    switch (type) {
+    let transformedData = [];
+    switch (expectedType) {
       case 'provinces':
         transformedData = dataArray.map(item => ({
-          province_id: item.id.toString(),
-          province: item.name || item.province_name
+          province_id: item.province_id || item.id,
+          province: item.province || item.name
         }));
         break;
 
       case 'cities':
         transformedData = dataArray.map(item => ({
-          city_id: item.id.toString(),
-          city_name: item.name || item.city_name,
-          province: item.province_name,
-          province_id: provinceId,
-          type: item.type || 'Kota'
+          city_id: item.city_id || item.id,
+          city_name: item.city_name || item.name,
+          province_id: item.province_id,
+          province: item.province,
+          type: item.type
         }));
         break;
 
       case 'districts':
         transformedData = dataArray.map(item => ({
-          district_id: item.id.toString(),
-          district_name: item.name || item.district_name,
-          city_id: cityId,
-          province: item.province_name
+          district_id: item.district_id || item.id,
+          district_name: item.district_name || item.name,
+          city_id: item.city_id,
+          city_name: item.city_name
         }));
         break;
 
       case 'subdistricts':
         transformedData = dataArray.map(item => ({
-          subdistrict_id: item.id.toString(),
-          subdistrict_name: item.name || item.subdistrict_name,
-          district_id: districtId,
-          city: item.city_name,
-          province: item.province_name
+          subdistrict_id: item.subdistrict_id || item.id,
+          subdistrict_name: item.subdistrict_name || item.name,
+          district_id: item.district_id,
+          district_name: item.district_name,
+          city_id: item.city_id,
+          city_name: item.city_name
         }));
         break;
     }
 
-    console.log(`✅ Successfully processed ${transformedData.length} ${expectedType}`);
+    console.log(`✅ ${expectedType} processed: ${transformedData.length} items`);
 
     return res.status(200).json({
       success: true,
-      message: `${expectedType} retrieved successfully`,
+      message: `${expectedType} loaded successfully`,
       data: transformedData
     });
 
   } catch (error) {
-    console.error('💥 Address API error:', error);
+    console.error('💥 Address API Error:', {
+      message: error.message,
+      stack: error.stack,
+      query: req.query
+    });
 
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch address data',
-      error: error.message,
+      message: `Address API error: ${error.message}`,
       data: null
     });
   }

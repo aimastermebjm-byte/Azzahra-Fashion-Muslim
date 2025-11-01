@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Loader2, AlertCircle } from 'lucide-react';
-import { rajaOngkirService, Province, City, Subdistrict } from '../utils/rajaOngkirService';
+import { addressServiceCached, Province, City, District, Subdistrict } from '../utils/addressServiceCached';
 
 interface AddressSelectorProps {
   onAddressChange: (address: {
@@ -65,10 +65,10 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
     }
   }, [selectedProvinceId]);
 
-  // Load subdistricts when city changes
+  // Load districts when city changes
   useEffect(() => {
     if (selectedCityId) {
-      loadSubdistricts(selectedCityId);
+      loadDistricts(selectedCityId);
       // Reset dependent fields
       setSubdistricts([]);
       setSelectedSubdistrictId('');
@@ -76,6 +76,20 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
       setSubdistrict('');
     }
   }, [selectedCityId]);
+
+  // Load subdistricts when district changes
+  useEffect(() => {
+    if (district) {
+      // Find district by name to get ID
+      const selectedDistrict = districts.find(d => d.district_name === district);
+      if (selectedDistrict) {
+        loadSubdistricts(selectedDistrict.district_id);
+        // Reset subdistrict field
+        setSelectedSubdistrictId('');
+        setSubdistrict('');
+      }
+    }
+  }, [district, districts]);
 
   // Update address when all fields are filled
   useEffect(() => {
@@ -103,7 +117,7 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
     try {
       setLoadingProvinces(true);
       setError('');
-      const provincesData = await rajaOngkirService.getProvinces();
+      const provincesData = await addressServiceCached.getProvinces();
       setProvinces(provincesData);
     } catch (err) {
       setError('Gagal memuat data provinsi');
@@ -117,7 +131,7 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
     try {
       setLoadingCities(true);
       setError('');
-      const citiesData = await rajaOngkirService.getCities(provinceId);
+      const citiesData = await addressServiceCached.getCities(provinceId);
       setCities(citiesData);
     } catch (err) {
       setError('Gagal memuat data kota');
@@ -127,11 +141,25 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
     }
   };
 
-  const loadSubdistricts = async (cityId: string) => {
+  const loadDistricts = async (cityId: string) => {
+    try {
+      setLoadingCities(true); // Reuse loadingCities state
+      setError('');
+      const districtsData = await addressServiceCached.getDistricts(cityId);
+      setDistricts(districtsData);
+    } catch (err) {
+      setError('Gagal memuat data kecamatan');
+      console.error('Error loading districts:', err);
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+
+  const loadSubdistricts = async (districtId: string) => {
     try {
       setLoadingSubdistricts(true);
       setError('');
-      const subdistrictsData = await rajaOngkirService.getSubdistricts(cityId);
+      const subdistrictsData = await addressServiceCached.getSubdistricts(districtId);
       setSubdistricts(subdistrictsData);
     } catch (err) {
       setError('Gagal memuat data kecamatan');
