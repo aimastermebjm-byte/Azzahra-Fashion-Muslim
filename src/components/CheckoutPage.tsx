@@ -663,29 +663,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
           {/* New Address Input */}
           <div className="border-t pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <label className="text-sm font-medium text-gray-700">
-                <MapPin className="w-4 h-4 inline mr-1" />
-                {addresses.length === 0 ? 'Alamat Pengiriman' : 'Atau Tambah Alamat Baru'}
-              </label>
-            </div>
-
-            {/* Simple Address Input - works for all couriers */}
-            <div>
-              <div>
-                <textarea
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  rows={4}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="Masukkan alamat lengkap (Jalan, RT/RW, Kelurahan, Kecamatan, Kota, Provinsi)"
-                />
-                <p className="text-xs text-green-600 mt-1">
-                  ✓ Ongkir akan dihitung otomatis untuk kurir ini
-                </p>
-              </div>
-            </div>
+            {/* Address input removed - users must select from saved addresses */}
 
             {/* Manual shipping cost input for non-automatic couriers */}
             {!supportsAutomatic && (
