@@ -34,9 +34,7 @@ export const COURIERS = [
   { code: 'jne', name: 'Jalur Nugraha Ekakurir (JNE)' },
   { code: 'pos', name: 'POS Indonesia' },
   { code: 'tiki', name: 'TIKI' },
-  { code: 'sicepat', name: 'SiCepat Express' },
-  { code: 'wahana', name: 'Wahana Prestasi Logistik' },
-  { code: 'idexpress', name: 'IDExpress' },
+  { code: 'ide', name: 'IDExpress' },
   { code: 'lion', name: 'Lion Parcel' }
 ];
 
