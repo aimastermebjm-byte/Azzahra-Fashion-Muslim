@@ -138,90 +138,31 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
     onAddToCart(product);
   };
 
-  // Filter flash sale products - ENHANCED BULLETPROOF VERSION
+  // Flash sale products - SAME LOGIC AS HOME PAGE for consistency
   const flashSaleProducts = useMemo(() => {
     try {
-      // Safety check: ensure products is an array
+      // Safety check: ensure products is an array (same as HomePage)
       if (!Array.isArray(products) || products.length === 0) {
         console.warn('⚠️ FlashSale: Products array is empty or invalid');
         return [];
       }
 
-      // Safety check: filter out invalid products
+      // Simple validation like HomePage
       const validProducts = products.filter(p => p && p.id && p.name);
 
-      // Check active flash sale config with comprehensive validation
-      let flashSaleConfig;
-      try {
-        const savedConfig = localStorage.getItem('azzahra-flashsale');
-        flashSaleConfig = savedConfig ? JSON.parse(savedConfig) : null;
-
-        if (flashSaleConfig && flashSaleConfig.isActive) {
-          // Enhanced time validation
-          const now = new Date().getTime();
-          const endTime = new Date(flashSaleConfig.endTime).getTime();
-          const startTime = new Date(flashSaleConfig.startTime).getTime();
-
-          // Check if flash sale is actually still active by time
-          if (now < startTime) {
-            console.log('⏰ Flash sale has not started yet');
-            flashSaleConfig.isActive = false;
-          } else if (now >= endTime) {
-            console.log('⏰ Flash sale has ended! Deactivating...');
-            flashSaleConfig.isActive = false;
-            // Remove from localStorage immediately
-            localStorage.removeItem('azzahra-flashsale');
-          }
-        }
-      } catch (e) {
-        console.warn('⚠️ Error parsing flash sale config:', e);
-        flashSaleConfig = null;
-      }
-
-      // Filter flash sale products with enhanced logic
-      return validProducts.filter(product => {
-        try {
-          // Multiple validation layers
-          if (!product || !product.id) {
-            console.warn('⚠️ Invalid product found:', product);
-            return false;
-          }
-
-          // Check if product is in active flash sale
-          let isInFlashSale = false;
-
-          // Method 1: Product flag check
-          if (product.isFlashSale === true) {
-            isInFlashSale = true;
-          }
-
-          // Method 2: Flash sale config check
-          if (flashSaleConfig && flashSaleConfig.isActive === true) {
-            // Check both products and productIds arrays
-            const inProducts = Array.isArray(flashSaleConfig.products) && flashSaleConfig.products.includes(product.id);
-            const inProductIds = Array.isArray(flashSaleConfig.productIds) && flashSaleConfig.productIds.includes(product.id);
-
-            if (inProducts || inProductIds) {
-              isInFlashSale = true;
-            }
-          }
-
-          // Log filtered products for debugging
-          if (isInFlashSale) {
-            console.log(`✅ Product ${product.name} (${product.id}) is in flash sale`);
-          }
-
-          return isInFlashSale;
-        } catch (e) {
-          console.warn('⚠️ Error checking flash sale for product:', product.id, e);
-          return false;
-        }
+      // SAME FILTERING LOGIC AS HOME PAGE: product.isFlashSale && isFlashSaleActive
+      const filtered = validProducts.filter(product => {
+        return product.isFlashSale && isFlashSaleActive;
       });
+
+      console.log(`🔍 FlashSalePage: Found ${filtered.length} flash sale products (same logic as HomePage)`);
+
+      return filtered;
     } catch (error) {
       console.error('🚨 Error in flashSaleProducts calculation:', error);
       return [];
     }
-  }, [products, forceUpdate, timeLeft]);
+  }, [products, isFlashSaleActive]);
 
   
   if (loading) {
