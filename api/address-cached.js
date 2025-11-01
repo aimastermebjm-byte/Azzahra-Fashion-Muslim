@@ -203,10 +203,53 @@ export default async function handler(req, res) {
 
     if (dataArray) {
       console.log(`✅ ${expectedType} loaded from cache (${dataArray.length} items)`);
+
+      // Transform cached data to match frontend expectations
+      let transformedData = [];
+      switch (expectedType) {
+        case 'provinces':
+          transformedData = dataArray.map(item => ({
+            province_id: item.province_id || item.id,
+            province: item.province || item.name
+          }));
+          break;
+
+        case 'cities':
+          transformedData = dataArray.map(item => ({
+            city_id: item.city_id || item.id,
+            city_name: item.city_name || item.name,
+            province_id: item.province_id,
+            province: item.province,
+            type: item.type
+          }));
+          break;
+
+        case 'districts':
+          transformedData = dataArray.map(item => ({
+            district_id: item.district_id || item.id,
+            district_name: item.district_name || item.name,
+            city_id: item.city_id,
+            city_name: item.city_name
+          }));
+          break;
+
+        case 'subdistricts':
+          transformedData = dataArray.map(item => ({
+            subdistrict_id: item.subdistrict_id || item.id,
+            subdistrict_name: item.subdistrict_name || item.name,
+            district_id: item.district_id,
+            district_name: item.district_name,
+            city_id: item.city_id,
+            city_name: item.city_name
+          }));
+          break;
+      }
+
+      console.log(`✅ ${expectedType} transformed from cache: ${transformedData.length} items`);
       return res.status(200).json({
         success: true,
         message: `${expectedType} loaded from cache`,
-        data: dataArray
+        data: transformedData
       });
     }
 
@@ -247,13 +290,6 @@ export default async function handler(req, res) {
     }
 
     console.log(`${expectedType} array length:`, dataArray.length);
-
-    // Save to cache
-    if (dataArray.length > 0) {
-      const ttl = cacheTTL[expectedType] || 24;
-      console.log(`💾 Saving ${expectedType} cache with TTL: ${ttl} hours`);
-      await setCachedData(cacheCollection, cacheKey, dataArray, ttl);
-    }
 
     // Transform data based on type
     let transformedData = [];
@@ -297,6 +333,13 @@ export default async function handler(req, res) {
     }
 
     console.log(`✅ ${expectedType} processed: ${transformedData.length} items`);
+
+    // Save TRANSFORMED data to cache (not raw data)
+    if (transformedData.length > 0) {
+      const ttl = cacheTTL[expectedType] || 24;
+      console.log(`💾 Saving TRANSFORMED ${expectedType} cache with TTL: ${ttl} hours`);
+      await setCachedData(cacheCollection, cacheKey, transformedData, ttl);
+    }
 
     return res.status(200).json({
       success: true,
