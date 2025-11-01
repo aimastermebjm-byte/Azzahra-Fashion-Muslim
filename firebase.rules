@@ -68,5 +68,19 @@ service cloud.firestore {
     match /shipping_cache/{cacheId} {
       allow read, write: if true; // Allow public access for caching system
     }
+
+    // Allow read/write access to address cache for dropdown optimization
+    match /address_provinces/{cacheId} {
+      allow read, write: if true; // Allow public access for caching system
+    }
+    match /address_cities/{cacheId} {
+      allow read, write: if true; // Allow public access for caching system
+    }
+    match /address_districts/{cacheId} {
+      allow read, write: if true; // Allow public access for caching system
+    }
+    match /address_subdistricts/{cacheId} {
+      allow read, write: if true; // Allow public access for caching system
+    }
   }
 }
