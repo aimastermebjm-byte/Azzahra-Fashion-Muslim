@@ -6,13 +6,36 @@ const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
 const FIREBASE_PROJECT_ID = 'azzahra-fashion-muslim-ab416';
 const FIREBASE_API_KEY = 'AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs';
 
-// Cache TTL (hours)
-const CACHE_TTL = {
+// Cache TTL (hours) - will be loaded from settings
+const DEFAULT_CACHE_TTL = {
   provinces: 24 * 30 * 6,  // 6 months - provinces rarely change
   cities: 24 * 30,        // 1 month
   districts: 24 * 30,     // 1 month
   subdistricts: 24 * 30   // 1 month
 };
+
+// Load cache TTL from settings
+async function loadAddressCacheTTL() {
+  try {
+    const FIREBASE_PROJECT_ID = 'azzahra-fashion-muslim-ab416';
+    const FIREBASE_API_KEY = 'AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs';
+    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/settings/cache_config?key=${FIREBASE_API_KEY}`;
+
+    const response = await fetch(url);
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        provinces: data.fields.address_provinces_ttl_hours?.integerValue || DEFAULT_CACHE_TTL.provinces,
+        cities: data.fields.address_cities_ttl_hours?.integerValue || DEFAULT_CACHE_TTL.cities,
+        districts: data.fields.address_districts_ttl_hours?.integerValue || DEFAULT_CACHE_TTL.districts,
+        subdistricts: data.fields.address_subdistricts_ttl_hours?.integerValue || DEFAULT_CACHE_TTL.subdistricts
+      };
+    }
+  } catch (error) {
+    console.log('⚠️ Using default address cache TTL (could not load from settings)');
+  }
+  return DEFAULT_CACHE_TTL;
+}
 
 // Firebase cache functions
 async function getCachedData(collectionName, documentId) {
@@ -74,6 +97,9 @@ async function setCachedData(collectionName, documentId, data, ttlHours) {
 
 export default async function handler(req, res) {
   try {
+    // Load cache TTL from settings (owner configurable)
+    const cacheTTL = await loadAddressCacheTTL();
+
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -219,7 +245,9 @@ export default async function handler(req, res) {
 
     // Save to cache
     if (dataArray.length > 0) {
-      await setCachedData(cacheCollection, cacheKey, dataArray, CACHE_TTL[expectedType] || 24);
+      const ttl = cacheTTL[expectedType] || 24;
+      console.log(`💾 Saving ${expectedType} cache with TTL: ${ttl} hours`);
+      await setCachedData(cacheCollection, cacheKey, dataArray, ttl);
     }
 
     // Transform data based on type

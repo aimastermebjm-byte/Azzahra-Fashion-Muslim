@@ -36,9 +36,12 @@ interface CacheSummary {
 }
 
 const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ user, onBack }) => {
-  const [activeTab, setActiveTab] = useState<'settings' | 'list' | 'actions'>('settings');
+  const [activeTab, setActiveTab] = useState<'shipping-settings' | 'shipping-list' | 'shipping-actions' | 'address-settings' | 'address-list'>('shipping-settings');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+
+  // Cache type: 'shipping' or 'address'
+  const [cacheType, setCacheType] = useState<'shipping' | 'address'>('shipping');
 
   // Settings state
   const [settings, setSettings] = useState<CacheSettings>({
@@ -369,87 +372,145 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
+        {/* Cache Type Selector */}
+        <div className="bg-white rounded-lg shadow-sm mb-4">
           <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6">
+            <nav className="flex space-x-1 px-6">
               <button
-                onClick={() => setActiveTab('settings')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'settings'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                onClick={() => setCacheType('shipping')}
+                className={`py-3 px-4 border-b-2 font-medium text-sm rounded-t-lg ${
+                  cacheType === 'shipping'
+                    ? 'border-purple-500 text-purple-600 bg-purple-50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
-                ⚙️ Pengaturan
+                📦 Cache Ongkir
               </button>
               <button
-                onClick={() => setActiveTab('list')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'list'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                onClick={() => setCacheType('address')}
+                className={`py-3 px-4 border-b-2 font-medium text-sm rounded-t-lg ${
+                  cacheType === 'address'
+                    ? 'border-orange-500 text-orange-600 bg-orange-50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
-                📋 Daftar Cache
-              </button>
-              <button
-                onClick={() => setActiveTab('actions')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'actions'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                🔄 Aksi
+                🏠 Cache Alamat
               </button>
             </nav>
           </div>
         </div>
 
-        {/* Settings Tab */}
-        {activeTab === 'settings' && (
+        {/* Sub Tabs */}
+        <div className="bg-white rounded-lg shadow-sm mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="flex space-x-8 px-6">
+              {cacheType === 'shipping' ? (
+                <>
+                  <button
+                    onClick={() => setActiveTab('shipping-settings')}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'shipping-settings'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    ⚙️ Pengaturan Ongkir
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('shipping-list')}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'shipping-list'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    📋 Daftar Cache Ongkir
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('shipping-actions')}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'shipping-actions'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    🔄 Aksi Ongkir
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setActiveTab('address-settings')}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'address-settings'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    ⚙️ Pengaturan Alamat
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('address-list')}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'address-list'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    📋 Daftar Cache Alamat
+                  </button>
+                </>
+              )}
+            </nav>
+          </div>
+        </div>
+
+        {/* Shipping Settings Tab */}
+        {activeTab === 'shipping-settings' && cacheType === 'shipping' && (
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold mb-6">Konfigurasi Cache</h2>
+            <h2 className="text-lg font-semibold mb-6">Pengaturan Cache Ongkir</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Cache TTL */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cache TTL (Masa Aktif)
+                  Cache TTL Ongkir (Masa Aktif)
                 </label>
                 <div className="flex items-center space-x-2">
                   <input
                     type="number"
                     min="1"
                     max="8760"
-                    value={settings.cache_ttl_hours}
-                    onChange={(e) => setSettings({ ...settings, cache_ttl_hours: parseInt(e.target.value) })}
+                    value={settings.shipping_cache_ttl_hours || 168}
+                    onChange={(e) => setSettings({ ...settings, shipping_cache_ttl_hours: parseInt(e.target.value) })}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                   />
                   <span className="text-sm text-gray-600">jam</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Saat ini: {formatDuration(settings.cache_ttl_hours)}
+                  Default: 168 jam (7 hari) - untuk mencegah kerugian akibat perubahan harga
                 </p>
               </div>
 
               {/* Max Cache Age */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Max Cache Age
+                  Maksimal Umur Cache Ongkir
                 </label>
                 <div className="flex items-center space-x-2">
                   <input
                     type="number"
                     min="1"
                     max="365"
-                    value={settings.max_cache_age_days}
-                    onChange={(e) => setSettings({ ...settings, max_cache_age_days: parseInt(e.target.value) })}
+                    value={settings.shipping_max_cache_age_days || 14}
+                    onChange={(e) => setSettings({ ...settings, shipping_max_cache_age_days: parseInt(e.target.value) })}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                   />
-                  <span className="text-sm text-gray-600">days</span>
+                  <span className="text-sm text-gray-600">hari</span>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Cache otomatis dihapus setelah ini. Default: 14 hari
+                </p>
               </div>
 
               {/* Checkboxes */}
@@ -457,31 +518,31 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={settings.auto_cleanup_expired}
-                    onChange={(e) => setSettings({ ...settings, auto_cleanup_expired: e.target.checked })}
+                    checked={settings.shipping_auto_cleanup_expired !== false}
+                    onChange={(e) => setSettings({ ...settings, shipping_auto_cleanup_expired: e.target.checked })}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="text-sm text-gray-700">Auto cleanup expired cache entries</span>
+                  <span className="text-sm text-gray-700">Otomatis Hapus Cache Ongkir Kadaluarsa</span>
                 </label>
 
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={settings.refresh_all_couriers}
-                    onChange={(e) => setSettings({ ...settings, refresh_all_couriers: e.target.checked })}
+                    checked={settings.shipping_refresh_all_couriers !== false}
+                    onChange={(e) => setSettings({ ...settings, shipping_refresh_all_couriers: e.target.checked })}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="text-sm text-gray-700">Refresh all couriers when updating cache</span>
+                  <span className="text-sm text-gray-700">Refresh Semua Kurir Saat Update Cache</span>
                 </label>
 
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    checked={settings.notify_on_price_change}
-                    onChange={(e) => setSettings({ ...settings, notify_on_price_change: e.target.checked })}
+                    checked={settings.shipping_notify_on_price_change || false}
+                    onChange={(e) => setSettings({ ...settings, shipping_notify_on_price_change: e.target.checked })}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="text-sm text-gray-700">Notify when cache prices change</span>
+                  <span className="text-sm text-gray-700">Notifikasi jika Harga Ongkir Berubah</span>
                 </label>
               </div>
             </div>
@@ -492,17 +553,130 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                 disabled={loading}
                 className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                {loading ? 'Menyimpan...' : 'Simpan Pengaturan'}
+                {loading ? 'Menyimpan...' : 'Simpan Pengaturan Ongkir'}
               </button>
             </div>
           </div>
         )}
 
-        {/* Cache List Tab */}
-        {activeTab === 'list' && (
+        {/* Address Settings Tab */}
+        {activeTab === 'address-settings' && cacheType === 'address' && (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-semibold mb-6">Pengaturan Cache Alamat</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Address Cache TTL Settings */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cache TTL Provinsi
+                </label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    min="24"
+                    max="8760"
+                    value={settings.address_provinces_ttl_hours || 4320}
+                    onChange={(e) => setSettings({ ...settings, address_provinces_ttl_hours: parseInt(e.target.value) })}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <span className="text-sm text-gray-600">jam</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Default: 4320 jam (6 bulan) - provinsi jarang berubah
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cache TTL Kota/Kabupaten
+                </label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    min="24"
+                    max="8760"
+                    value={settings.address_cities_ttl_hours || 720}
+                    onChange={(e) => setSettings({ ...settings, address_cities_ttl_hours: parseInt(e.target.value) })}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <span className="text-sm text-gray-600">jam</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Default: 720 jam (30 hari)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cache TTL Kecamatan
+                </label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    min="24"
+                    max="8760"
+                    value={settings.address_districts_ttl_hours || 720}
+                    onChange={(e) => setSettings({ ...settings, address_districts_ttl_hours: parseInt(e.target.value) })}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <span className="text-sm text-gray-600">jam</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Default: 720 jam (30 hari)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cache TTL Kelurahan/Desa
+                </label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    min="24"
+                    max="8760"
+                    value={settings.address_subdistricts_ttl_hours || 720}
+                    onChange={(e) => setSettings({ ...settings, address_subdistricts_ttl_hours: parseInt(e.target.value) })}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <span className="text-sm text-gray-600">jam</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Default: 720 jam (30 hari)
+                </p>
+              </div>
+
+              {/* Address Checkboxes */}
+              <div className="md:col-span-2 space-y-3">
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={settings.address_auto_cleanup_expired !== false}
+                    onChange={(e) => setSettings({ ...settings, address_auto_cleanup_expired: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Otomatis Hapus Cache Alamat Kadaluarsa</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => updateSettings(settings)}
+                disabled={loading}
+                className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loading ? 'Menyimpan...' : 'Simpan Pengaturan Alamat'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Shipping Cache List Tab */}
+        {activeTab === 'shipping-list' && cacheType === 'shipping' && (
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold">Cache Entries</h2>
+              <h2 className="text-lg font-semibold">📦 Cache Ongkir</h2>
               <button
                 onClick={loadCacheList}
                 disabled={loading}
@@ -513,63 +687,22 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
             </div>
 
             {cacheSummary && (
-              <div className="space-y-4 mb-6">
-                {/* Total Summary */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-blue-50 p-4 rounded">
-                    <div className="text-2xl font-bold text-blue-600">{cacheSummary.total}</div>
-                    <div className="text-sm text-blue-800">Total Cache</div>
-                  </div>
-                  <div className="bg-green-50 p-4 rounded">
-                    <div className="text-2xl font-bold text-green-600">{cacheSummary.active}</div>
-                    <div className="text-sm text-green-800">Active</div>
-                  </div>
-                  <div className="bg-red-50 p-4 rounded">
-                    <div className="text-2xl font-bold text-red-600">{cacheSummary.expired}</div>
-                    <div className="text-sm text-red-800">Expired</div>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded">
-                    <div className="text-2xl font-bold text-gray-600">{cacheSummary.oldest_cache}</div>
-                    <div className="text-sm text-gray-800">Oldest (days)</div>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-purple-50 p-4 rounded">
+                  <div className="text-2xl font-bold text-purple-600">{cacheSummary.shipping_total || 0}</div>
+                  <div className="text-sm text-purple-800">Total Ongkir Cache</div>
                 </div>
-
-                {/* Cache Type Summary */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-purple-50 p-4 rounded">
-                    <div className="text-lg font-semibold text-purple-800 mb-2">📦 Ongkir Cache</div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="text-center">
-                        <div className="text-xl font-bold text-purple-600">{cacheSummary.shipping_total || 0}</div>
-                        <div className="text-xs text-purple-600">Total</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xl font-bold text-green-600">{(cacheSummary.shipping_total || 0) - (cacheSummary.shipping_expired || 0)}</div>
-                        <div className="text-xs text-green-600">Active</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xl font-bold text-red-600">{cacheSummary.shipping_expired || 0}</div>
-                        <div className="text-xs text-red-600">Expired</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-orange-50 p-4 rounded">
-                    <div className="text-lg font-semibold text-orange-800 mb-2">🏠 Address Cache</div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="text-center">
-                        <div className="text-xl font-bold text-orange-600">{cacheSummary.address_total || 0}</div>
-                        <div className="text-xs text-orange-600">Total</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xl font-bold text-green-600">{(cacheSummary.address_total || 0) - (cacheSummary.address_expired || 0)}</div>
-                        <div className="text-xs text-green-600">Active</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xl font-bold text-red-600">{cacheSummary.address_expired || 0}</div>
-                        <div className="text-xs text-red-600">Expired</div>
-                      </div>
-                    </div>
-                  </div>
+                <div className="bg-green-50 p-4 rounded">
+                  <div className="text-2xl font-bold text-green-600">{(cacheSummary.shipping_total || 0) - (cacheSummary.shipping_expired || 0)}</div>
+                  <div className="text-sm text-green-800">Active</div>
+                </div>
+                <div className="bg-red-50 p-4 rounded">
+                  <div className="text-2xl font-bold text-red-600">{cacheSummary.shipping_expired || 0}</div>
+                  <div className="text-sm text-red-800">Expired</div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded">
+                  <div className="text-2xl font-bold text-gray-600">{cacheSummary.oldest_cache}</div>
+                  <div className="text-sm text-gray-800">Oldest (days)</div>
                 </div>
               </div>
             )}
@@ -599,7 +732,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {cacheList.map((cache) => (
+                  {cacheList.filter(cache => cache.type === 'shipping').map((cache) => (
                     <tr key={cache.cacheKey} className={cache.is_expired ? 'bg-red-50' : ''}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {cache.origin} → {cache.destination}
@@ -608,7 +741,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                         {cache.weight}g
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {cache.courier.toUpperCase()}
+                        {cache.courier?.toUpperCase() || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {cache.age_days} days
@@ -635,21 +768,131 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                 </tbody>
               </table>
 
-              {cacheList.length === 0 && (
+              {cacheList.filter(cache => cache.type === 'shipping').length === 0 && (
                 <div className="text-center py-8 text-gray-500">
-                  No cache entries found
+                  Tidak ada cache ongkir yang ditemukan
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Actions Tab */}
-        {activeTab === 'actions' && (
+        {/* Address Cache List Tab */}
+        {activeTab === 'address-list' && cacheType === 'address' && (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold">🏠 Cache Alamat</h2>
+              <button
+                onClick={loadCacheList}
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loading ? 'Memuat...' : '🔄 Refresh'}
+              </button>
+            </div>
+
+            {cacheSummary && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-orange-50 p-4 rounded">
+                  <div className="text-2xl font-bold text-orange-600">{cacheSummary.address_total || 0}</div>
+                  <div className="text-sm text-orange-800">Total Address Cache</div>
+                </div>
+                <div className="bg-green-50 p-4 rounded">
+                  <div className="text-2xl font-bold text-green-600">{(cacheSummary.address_total || 0) - (cacheSummary.address_expired || 0)}</div>
+                  <div className="text-sm text-green-800">Active</div>
+                </div>
+                <div className="bg-red-50 p-4 rounded">
+                  <div className="text-2xl font-bold text-red-600">{cacheSummary.address_expired || 0}</div>
+                  <div className="text-sm text-red-800">Expired</div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded">
+                  <div className="text-2xl font-bold text-gray-600">{cacheSummary.newest_cache}</div>
+                  <div className="text-sm text-gray-800">Newest (days)</div>
+                </div>
+              </div>
+            )}
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Cache Key
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Data Count
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Age
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {cacheList.filter(cache => cache.type === 'address').map((cache) => (
+                    <tr key={cache.cacheKey} className={cache.is_expired ? 'bg-red-50' : ''}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {cache.cacheKey}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded bg-orange-100 text-orange-800">
+                          {cache.data_type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {cache.data_count || 0} items
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {cache.age_days} days
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          cache.is_expired
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {cache.is_expired ? 'Expired' : 'Active'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => deleteCacheEntry(cache.cacheKey)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Hapus
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {cacheList.filter(cache => cache.type === 'address').length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  Tidak ada cache alamat yang ditemukan
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Shipping Actions Tab */}
+        {activeTab === 'shipping-actions' && cacheType === 'shipping' && (
           <div className="space-y-6">
             {/* Refresh Cache */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold mb-6">🔄 Refresh Cache</h2>
+              <h2 className="text-lg font-semibold mb-6">🔄 Refresh Cache Ongkir</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Paksa refresh cache ongkir untuk rute dan berat tertentu. Berguna jika ada perubahan harga kurir.
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <input
                   type="text"
@@ -682,8 +925,8 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                   <option value="jnt">J&T</option>
                   <option value="pos">POS</option>
                   <option value="tiki">TIKI</option>
-                  <option value="sicepat">SiCepat</option>
-                  <option value="wahana">Wahana</option>
+                  <option value="ide">IDExpress</option>
+                  <option value="lion">Lion Parcel</option>
                 </select>
               </div>
               <button
@@ -691,18 +934,18 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                 disabled={loading}
                 className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                {loading ? 'Refreshing...' : '🔄 Refresh Cache'}
+                {loading ? 'Refreshing...' : '🔄 Refresh Cache Ongkir'}
               </button>
             </div>
 
             {/* Cache Cleanup */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold mb-6">🧹 Cache Cleanup</h2>
+              <h2 className="text-lg font-semibold mb-6">🧹 Cache Cleanup Ongkir</h2>
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded">
                   <div>
-                    <h3 className="font-medium text-yellow-800">Hapus Cache Kadaluarsa</h3>
-                    <p className="text-sm text-yellow-600">Hapus cache yang sudah kadaluarsa</p>
+                    <h3 className="font-medium text-yellow-800">Hapus Cache Ongkir Kadaluarsa</h3>
+                    <p className="text-sm text-yellow-600">Hapus cache ongkir yang sudah kadaluarsa</p>
                   </div>
                   <button
                     onClick={clearExpiredCache}
@@ -715,8 +958,8 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
 
                 <div className="flex items-center justify-between p-4 bg-red-50 border border-red-200 rounded">
                   <div>
-                    <h3 className="font-medium text-red-800">⚠️ Hapus Semua Cache</h3>
-                    <p className="text-sm text-red-600">BAHAYA: Hapus SEMUA cache. Ini akan memaksa panggilan API baru!</p>
+                    <h3 className="font-medium text-red-800">⚠️ Hapus Semua Cache Ongkir</h3>
+                    <p className="text-sm text-red-600">BAHAYA: Hapus SEMUA cache ongkir. Ini akan memaksa panggilan API baru!</p>
                   </div>
                   <button
                     onClick={clearAllCache}

@@ -42,12 +42,24 @@ async function getCacheSettings() {
     return settingsDoc.data;
   }
 
-  // Default settings
+  // Default settings (separated by cache type)
   return {
-    cache_ttl_hours: 30 * 24, // 1 month (30 days)
-    max_cache_age_days: 60,
+    // Shipping cache settings
+    shipping_cache_ttl_hours: 7 * 24, // 7 days (revenue critical)
+    shipping_max_cache_age_days: 14,
+    shipping_auto_cleanup_expired: true,
+    shipping_refresh_all_couriers: true,
+    shipping_notify_on_price_change: true,
+
+    // Address cache settings
+    address_provinces_ttl_hours: 24 * 30 * 6, // 6 months
+    address_cities_ttl_hours: 24 * 30, // 1 month
+    address_districts_ttl_hours: 24 * 30, // 1 month
+    address_subdistricts_ttl_hours: 24 * 30, // 1 month
+    address_auto_cleanup_expired: true,
+
+    // Global settings
     auto_cleanup_expired: true,
-    refresh_all_couriers: true,
     notify_on_price_change: false
   };
 }
