@@ -35,7 +35,9 @@ export const COURIERS = [
   { code: 'pos', name: 'POS Indonesia' },
   { code: 'tiki', name: 'TIKI' },
   { code: 'sicepat', name: 'SiCepat Express' },
-  { code: 'wahana', name: 'Wahana Prestasi Logistik' }
+  { code: 'wahana', name: 'Wahana Prestasi Logistik' },
+  { code: 'idexpress', name: 'IDExpress' },
+  { code: 'lion', name: 'Lion Parcel' }
 ];
 
 class KomerceService {
