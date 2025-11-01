@@ -34,14 +34,27 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
 
   // Debug products data structure
   if (products && products.length > 0) {
-    console.log('🔍 Available products with flashSale flag:', products.filter(p => p.isFlashSale).map(p => ({
-      id: p.id,
-      name: p.name,
-      retailPrice: p.retailPrice,
-      flashSalePrice: p.flashSalePrice,
-      originalRetailPrice: p.originalRetailPrice,
-      isFlashSale: p.isFlashSale
-    })));
+    const flashSaleProducts = products.filter(p => p.isFlashSale);
+    console.log('🔍 FlashSale products found:', flashSaleProducts.length);
+
+    flashSaleProducts.forEach((product, index) => {
+      console.log(`📦 Product ${index + 1}:`, {
+        id: product.id,
+        name: product.name,
+        retailPrice: product.retailPrice,
+        flashSalePrice: product.flashSalePrice,
+        originalRetailPrice: product.originalRetailPrice,
+        isFlashSale: product.isFlashSale,
+        // Check all possible price fields
+        allPriceFields: {
+          retailPrice: product.retailPrice,
+          flashSalePrice: product.flashSalePrice,
+          originalRetailPrice: product.originalRetailPrice,
+          resellerPrice: product.resellerPrice,
+          price: product.price
+        }
+      });
+    });
   }
 
   // ENHANCED Flash Sale Event Handling
