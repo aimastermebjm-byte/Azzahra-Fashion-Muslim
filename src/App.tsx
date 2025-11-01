@@ -333,9 +333,8 @@ function AppContent() {
         );
       case 'flash-sale':
         return (
-          <FlashSalePage 
+          <FlashSalePage
             user={user}
-            cartItems={cartItems}
             products={products}
             loading={loading}
             onProductClick={handleProductClick}

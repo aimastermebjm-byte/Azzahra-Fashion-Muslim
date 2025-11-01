@@ -2,10 +2,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ShoppingCart, Zap, Flame, Percent } from 'lucide-react';
 import ProductCard from './ProductCard';
 import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
+import { useRealTimeCart } from '../hooks/useRealTimeCart';
 
 interface FlashSalePageProps {
   user: any;
-  cartItems: any[];
   products: any[];
   loading: boolean;
   onProductClick: (product: any) => void;
@@ -15,7 +15,6 @@ interface FlashSalePageProps {
 
 const FlashSalePage: React.FC<FlashSalePageProps> = ({
   user,
-  cartItems,
   products,
   loading,
   onProductClick,
@@ -23,6 +22,7 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
   onAddToCart
 }) => {
   const { timeLeft, isFlashSaleActive, loading: flashSaleLoading } = useFirebaseFlashSale();
+  const { cartItems, loading: cartLoading } = useRealTimeCart();
   const [forceUpdate, setForceUpdate] = useState(0);
 
   // Debug flash sale hook values
