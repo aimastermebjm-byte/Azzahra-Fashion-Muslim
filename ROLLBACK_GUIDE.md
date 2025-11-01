@@ -1,9 +1,14 @@
 # 🎯 ROLLBACK GUIDE - STABLE PRODUCTION
 
-## 📍 MOST STABLE COMMIT: `478e16f`
-**Tag:** `STABLE-PRODUCTION-v1.0`
+## 📍 MOST STABLE COMMIT: `54b9aeb`
+**Tag:** `STABLE-PRODUCTION-v2.0`
 
 ## ✅ WHAT WORKS IN THIS COMMIT:
+- ✅ **Flash Sale System**: HomePage ↔ FlashSalePage pricing sync fixed
+- ✅ **Flash Sale Detection**: Firebase-based (no localStorage conflicts)
+- ✅ **Product Cards**: FlashSale pricing display working correctly
+- ✅ **Array Safety**: Undefined array error prevention
+- ✅ **Session Continuity**: Documentation system for context preservation
 - ✅ **Shipping Calculation**: Origin 2425 → Customer Address (Banjarmasin → Cililin = Rp 28,000)
 - ✅ **Address Dropdowns**: Province → City → District → Subdistrict
 - ✅ **RajaOngkir API**: Komerce integration working
@@ -16,20 +21,20 @@
 
 ### Option 1: Hard Reset (Recommended for emergencies)
 ```bash
-git reset --hard STABLE-PRODUCTION-v1.0
+git reset --hard 54b9aeb
 git push origin main --force
 ```
 
 ### Option 2: Soft Reset (Keeps local changes)
 ```bash
-git reset --soft STABLE-PRODUCTION-v1.0
-git commit -m "Rollback to stable production"
+git reset --soft 54b9aeb
+git commit -m "Rollback to stable production v2.0"
 git push origin main
 ```
 
 ### Option 3: Using Commit Hash
 ```bash
-git reset --hard 478e16f
+git reset --hard 54b9aeb
 git push origin main --force
 ```
 
@@ -37,13 +42,17 @@ git push origin main --force
 ```bash
 # Check you're on the right commit
 git log --oneline -1
-# Should show: 478e16f 🔧 FIX: Shipping destination now uses customer address
+# Should show: 54b9aeb 📝 ADD: Session continuity system to prevent context loss
 
 # Check deployment status
 vercel logs --limit 5
 ```
 
 ## ⚠️  WHEN TO ROLLBACK:
+- FlashSale pricing not syncing between HomePage and FlashSalePage
+- FlashSale products showing normal prices instead of discounted prices
+- "Cannot read properties of undefined (reading 'includes')" error
+- FlashSale page crashes or shows empty
 - Shipping costs showing wrong values (Rp 32,000 instead of Rp 28,000)
 - Address dropdowns not working
 - API endpoints returning errors
@@ -52,11 +61,14 @@ vercel logs --limit 5
 
 ## 📞 ROLLBACK VERIFICATION:
 After rollback, test these:
-1. **Shipping**: Banjarmasin → Cililin should be Rp 28,000
-2. **Address**: All dropdown levels should work
-3. **Checkout**: Full checkout process should complete
-4. **Console**: Debug logging should show correct API calls
+1. **FlashSale**: HomePage and FlashSalePage should show same discounted prices
+2. **FlashSale**: Products should display "Flash Sale" pricing correctly
+3. **FlashSale**: No undefined array errors in console
+4. **Shipping**: Banjarmasin → Cililin should be Rp 28,000
+5. **Address**: All dropdown levels should work
+6. **Checkout**: Full checkout process should complete
+7. **Console**: Debug logging should show correct API calls
 
 ---
-**🎯 THIS IS YOUR SAFE POINT - Tag created on 2025-10-30**
+**🎯 THIS IS YOUR SAFE POINT - Updated on 2025-11-01**
 **🤖 Generated with Claude Code**
