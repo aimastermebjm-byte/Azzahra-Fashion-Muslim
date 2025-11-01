@@ -32,6 +32,18 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
     flashSaleLoading
   });
 
+  // Debug products data structure
+  if (products && products.length > 0) {
+    console.log('🔍 Available products with flashSale flag:', products.filter(p => p.isFlashSale).map(p => ({
+      id: p.id,
+      name: p.name,
+      retailPrice: p.retailPrice,
+      flashSalePrice: p.flashSalePrice,
+      originalRetailPrice: p.originalRetailPrice,
+      isFlashSale: p.isFlashSale
+    })));
+  }
+
   // ENHANCED Flash Sale Event Handling
   useEffect(() => {
     const handleFlashSaleEnded = (event: any) => {
