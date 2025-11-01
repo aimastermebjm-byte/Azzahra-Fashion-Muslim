@@ -144,14 +144,18 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   const loadProvinces = async () => {
     setLoadingProvinces(true);
     try {
-      const response = await fetch('/api/address?type=provinces');
+      console.log('🏠 Loading provinces from cache API...');
+      const response = await fetch('/api/address-cached?type=provinces');
       const data = await response.json();
 
       if (data.success && data.data) {
         setProvinces(data.data);
+        console.log('✅ Provinces loaded from cache:', data.data.length, 'items');
+      } else {
+        console.error('❌ Failed to load provinces from cache:', data.message);
       }
     } catch (error) {
-      console.error('Error loading provinces:', error);
+      console.error('Error loading provinces from cache:', error);
     } finally {
       setLoadingProvinces(false);
     }
@@ -162,14 +166,18 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
     setLoadingCities(true);
     try {
-      const response = await fetch(`/api/address?type=cities&provinceId=${formData.provinceId}`);
+      console.log('🏠 Loading cities from cache API for province:', formData.provinceId);
+      const response = await fetch(`/api/address-cached?type=cities&provinceId=${formData.provinceId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
         setCities(data.data);
+        console.log('✅ Cities loaded from cache:', data.data.length, 'items');
+      } else {
+        console.error('❌ Failed to load cities from cache:', data.message);
       }
     } catch (error) {
-      console.error('Error loading cities:', error);
+      console.error('Error loading cities from cache:', error);
     } finally {
       setLoadingCities(false);
     }
@@ -180,14 +188,18 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
     setLoadingDistricts(true);
     try {
-      const response = await fetch(`/api/address?type=districts&cityId=${formData.cityId}`);
+      console.log('🏠 Loading districts from cache API for city:', formData.cityId);
+      const response = await fetch(`/api/address-cached?type=districts&cityId=${formData.cityId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
         setDistricts(data.data);
+        console.log('✅ Districts loaded from cache:', data.data.length, 'items');
+      } else {
+        console.error('❌ Failed to load districts from cache:', data.message);
       }
     } catch (error) {
-      console.error('Error loading districts:', error);
+      console.error('Error loading districts from cache:', error);
     } finally {
       setLoadingDistricts(false);
     }
@@ -198,14 +210,18 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
     setLoadingSubdistricts(true);
     try {
-      const response = await fetch(`/api/address?type=subdistricts&districtId=${formData.districtId}`);
+      console.log('🏠 Loading subdistricts from cache API for district:', formData.districtId);
+      const response = await fetch(`/api/address-cached?type=subdistricts&districtId=${formData.districtId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
         setSubdistricts(data.data);
+        console.log('✅ Subdistricts loaded from cache:', data.data.length, 'items');
+      } else {
+        console.error('❌ Failed to load subdistricts from cache:', data.message);
       }
     } catch (error) {
-      console.error('Error loading subdistricts:', error);
+      console.error('Error loading subdistricts from cache:', error);
     } finally {
       setLoadingSubdistricts(false);
     }
