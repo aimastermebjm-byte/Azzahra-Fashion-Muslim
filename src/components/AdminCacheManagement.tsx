@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
+import FirebaseUsageDashboard from './Admin/FirebaseUsageDashboard';
 
 interface CacheSettings {
   cache_ttl_hours: number;
@@ -36,7 +37,7 @@ interface CacheSummary {
 }
 
 const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ user, onBack }) => {
-  const [activeTab, setActiveTab] = useState<'shipping-settings' | 'shipping-list' | 'shipping-actions' | 'address-settings' | 'address-list'>('shipping-settings');
+  const [activeTab, setActiveTab] = useState<'shipping-settings' | 'shipping-list' | 'shipping-actions' | 'address-settings' | 'address-list' | 'firebase-usage'>('shipping-settings');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
@@ -90,7 +91,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
     try {
       const token = await getAuthToken();
       // TEMPORARY: Use bypass endpoint for testing
-      const response = await fetch('/api/admin/cache-settings-temp?action=settings', {
+      const response = await fetch('/api/admin/cache-settings?action=settings', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -117,7 +118,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
     try {
       const token = await getAuthToken();
       // TEMPORARY: Use bypass endpoint for testing
-      const response = await fetch('/api/admin/cache-settings-temp?action=list', {
+      const response = await fetch('/api/admin/cache-settings?action=list', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -219,7 +220,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
     setLoading(true);
     try {
       const token = await getAuthToken();
-      const response = await fetch('/api/admin/cache-settings-temp?action=clear_expired', {
+      const response = await fetch('/api/admin/cache-settings?action=clear_expired', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -248,7 +249,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
     setLoading(true);
     try {
       const token = await getAuthToken();
-      const response = await fetch('/api/admin/cache-settings-temp?action=clear_all', {
+      const response = await fetch('/api/admin/cache-settings?action=clear_all', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -276,7 +277,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
 
     try {
       const token = await getAuthToken();
-      const response = await fetch(`/api/admin/cache-settings-temp?action=clear_specific&cache_key=${encodeURIComponent(cacheKey)}`, {
+      const response = await fetch(`/api/admin/cache-settings?action=clear_specific&cache_key=${encodeURIComponent(cacheKey)}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -396,12 +397,23 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
               >
                 🏠 Cache Alamat
               </button>
+              <button
+                onClick={() => setActiveTab('firebase-usage')}
+                className={`py-3 px-4 border-b-2 font-medium text-sm rounded-t-lg ${
+                  activeTab === 'firebase-usage'
+                    ? 'border-red-500 text-red-600 bg-red-50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                🔥 Firebase Usage
+              </button>
             </nav>
           </div>
         </div>
 
-        {/* Sub Tabs */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
+        {/* Sub Tabs - Hide when Firebase Usage is active */}
+        {activeTab !== 'firebase-usage' && (
+          <div className="bg-white rounded-lg shadow-sm mb-6">
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6">
               {cacheType === 'shipping' ? (
@@ -464,6 +476,12 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
             </nav>
           </div>
         </div>
+        )}
+
+        {/* Firebase Usage Tab */}
+        {activeTab === 'firebase-usage' && (
+          <FirebaseUsageDashboard />
+        )}
 
         {/* Shipping Settings Tab */}
         {activeTab === 'shipping-settings' && cacheType === 'shipping' && (
