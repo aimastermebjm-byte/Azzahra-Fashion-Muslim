@@ -68,12 +68,15 @@ async function setCachedData(collectionName, documentId, data, ttlHours) {
 
     const expiresAt = new Date(Date.now() + (ttlHours * 60 * 60 * 1000));
 
+    // Using the same structure as working shipping cache
     const firestoreData = {
       fields: {
         data: { stringValue: JSON.stringify(data) },
         expires_at: { timestampValue: expiresAt.toISOString() },
-        created_at: { timestampValue: new Date().toISOString() },
-        hit_count: { integerValue: 1 }
+        cached_at: { timestampValue: new Date().toISOString() },
+        hit_count: { integerValue: 1 },
+        cache_type: { stringValue: 'address' },
+        address_type: { stringValue: collectionName.replace('address_', '') }
       }
     };
 
@@ -88,7 +91,9 @@ async function setCachedData(collectionName, documentId, data, ttlHours) {
     if (response.ok) {
       console.log(`💾 CACHE SAVED for ${collectionName}/${documentId} (expires: ${expiresAt.toISOString()})`);
     } else {
-      console.error('Cache save error:', await response.text());
+      const errorText = await response.text();
+      console.error('❌ Cache save error:', errorText);
+      console.error('📝 Failed data structure:', JSON.stringify(firestoreData, null, 2));
     }
   } catch (error) {
     console.error('Cache write error:', error);
