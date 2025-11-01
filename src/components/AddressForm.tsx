@@ -82,6 +82,9 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
   const [errors, setErrors] = useState<Partial<Address>>({});
 
+  // In-memory cache to reduce API calls within browser session
+  const [addressCache, setAddressCache] = useState<Map<string, any>>(new Map());
+
   // Load provinces on component mount
   useEffect(() => {
     loadProvinces();
@@ -144,18 +147,30 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   const loadProvinces = async () => {
     setLoadingProvinces(true);
     try {
-      console.log('🏠 Loading provinces from TEMP cache API...');
-      const response = await fetch('/api/address-cached-temp?type=provinces');
+      const cacheKey = 'provinces';
+
+      // Check in-memory cache first
+      if (addressCache.has(cacheKey)) {
+        const cachedData = addressCache.get(cacheKey);
+        setProvinces(cachedData);
+        console.log('🎯 Provinces loaded from IN-MEMORY cache:', cachedData.length, 'items');
+        return;
+      }
+
+      console.log('🌐 Loading provinces from API (no cache)...');
+      const response = await fetch('/api/address-cached?type=provinces');
       const data = await response.json();
 
       if (data.success && data.data) {
         setProvinces(data.data);
-        console.log('✅ Provinces loaded from TEMP cache:', data.data.length, 'items');
+        // Save to in-memory cache
+        setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
+        console.log('✅ Provinces loaded from API & cached in memory:', data.data.length, 'items');
       } else {
-        console.error('❌ Failed to load provinces from TEMP cache:', data.message);
+        console.error('❌ Failed to load provinces from cache:', data.message);
       }
     } catch (error) {
-      console.error('Error loading provinces from TEMP cache:', error);
+      console.error('Error loading provinces from cache:', error);
     } finally {
       setLoadingProvinces(false);
     }
@@ -166,18 +181,30 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
     setLoadingCities(true);
     try {
-      console.log('🏠 Loading cities from TEMP cache API for province:', formData.provinceId);
-      const response = await fetch(`/api/address-cached-temp?type=cities&provinceId=${formData.provinceId}`);
+      const cacheKey = `cities_${formData.provinceId}`;
+
+      // Check in-memory cache first
+      if (addressCache.has(cacheKey)) {
+        const cachedData = addressCache.get(cacheKey);
+        setCities(cachedData);
+        console.log('🎯 Cities loaded from IN-MEMORY cache:', cachedData.length, 'items for province', formData.provinceId);
+        return;
+      }
+
+      console.log('🌐 Loading cities from API (no cache) for province:', formData.provinceId);
+      const response = await fetch(`/api/address-cached?type=cities&provinceId=${formData.provinceId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
         setCities(data.data);
-        console.log('✅ Cities loaded from TEMP cache:', data.data.length, 'items');
+        // Save to in-memory cache
+        setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
+        console.log('✅ Cities loaded from API & cached in memory:', data.data.length, 'items for province', formData.provinceId);
       } else {
-        console.error('❌ Failed to load cities from TEMP cache:', data.message);
+        console.error('❌ Failed to load cities from cache:', data.message);
       }
     } catch (error) {
-      console.error('Error loading cities from TEMP cache:', error);
+      console.error('Error loading cities from cache:', error);
     } finally {
       setLoadingCities(false);
     }
@@ -188,18 +215,30 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
     setLoadingDistricts(true);
     try {
-      console.log('🏠 Loading districts from TEMP cache API for city:', formData.cityId);
-      const response = await fetch(`/api/address-cached-temp?type=districts&cityId=${formData.cityId}`);
+      const cacheKey = `districts_${formData.cityId}`;
+
+      // Check in-memory cache first
+      if (addressCache.has(cacheKey)) {
+        const cachedData = addressCache.get(cacheKey);
+        setDistricts(cachedData);
+        console.log('🎯 Districts loaded from IN-MEMORY cache:', cachedData.length, 'items for city', formData.cityId);
+        return;
+      }
+
+      console.log('🌐 Loading districts from API (no cache) for city:', formData.cityId);
+      const response = await fetch(`/api/address-cached?type=districts&cityId=${formData.cityId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
         setDistricts(data.data);
-        console.log('✅ Districts loaded from TEMP cache:', data.data.length, 'items');
+        // Save to in-memory cache
+        setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
+        console.log('✅ Districts loaded from API & cached in memory:', data.data.length, 'items for city', formData.cityId);
       } else {
-        console.error('❌ Failed to load districts from TEMP cache:', data.message);
+        console.error('❌ Failed to load districts from cache:', data.message);
       }
     } catch (error) {
-      console.error('Error loading districts from TEMP cache:', error);
+      console.error('Error loading districts from cache:', error);
     } finally {
       setLoadingDistricts(false);
     }
@@ -210,18 +249,30 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
     setLoadingSubdistricts(true);
     try {
-      console.log('🏠 Loading subdistricts from TEMP cache API for district:', formData.districtId);
-      const response = await fetch(`/api/address-cached-temp?type=subdistricts&districtId=${formData.districtId}`);
+      const cacheKey = `subdistricts_${formData.districtId}`;
+
+      // Check in-memory cache first
+      if (addressCache.has(cacheKey)) {
+        const cachedData = addressCache.get(cacheKey);
+        setSubdistricts(cachedData);
+        console.log('🎯 Subdistricts loaded from IN-MEMORY cache:', cachedData.length, 'items for district', formData.districtId);
+        return;
+      }
+
+      console.log('🌐 Loading subdistricts from API (no cache) for district:', formData.districtId);
+      const response = await fetch(`/api/address-cached?type=subdistricts&districtId=${formData.districtId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
         setSubdistricts(data.data);
-        console.log('✅ Subdistricts loaded from TEMP cache:', data.data.length, 'items');
+        // Save to in-memory cache
+        setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
+        console.log('✅ Subdistricts loaded from API & cached in memory:', data.data.length, 'items for district', formData.districtId);
       } else {
-        console.error('❌ Failed to load subdistricts from TEMP cache:', data.message);
+        console.error('❌ Failed to load subdistricts from cache:', data.message);
       }
     } catch (error) {
-      console.error('Error loading subdistricts from TEMP cache:', error);
+      console.error('Error loading subdistricts from cache:', error);
     } finally {
       setLoadingSubdistricts(false);
     }
