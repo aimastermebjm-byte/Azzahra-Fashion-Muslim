@@ -189,13 +189,50 @@ export default async function handler(req, res) {
           const isExpired = safeExpiresAt < now;
           const ageDays = Math.floor((now - safeCachedAt) / (1000 * 60 * 60 * 24));
 
-          return {
+          // Debug: Log the fields to see what data we have
+          console.log('🔍 Debug shipping cache fields:', {
             cacheKey,
-            type: 'shipping',
             origin: fields.origin?.stringValue,
             destination: fields.destination?.stringValue,
             weight: fields.weight?.integerValue,
             courier: fields.courier?.stringValue,
+            allFields: Object.keys(fields)
+          });
+
+          // Try to extract route info from different field names
+          let origin = fields.origin?.stringValue || fields.from?.stringValue || fields.originCity?.stringValue;
+          let destination = fields.destination?.stringValue || fields.to?.stringValue || fields.destinationCity?.stringValue;
+          let weight = fields.weight?.integerValue || fields.berat?.integerValue;
+          let courier = fields.courier?.stringValue || fields.kurir?.stringValue || fields.expedisi?.stringValue;
+
+          // If still no route info, try to parse from cache key or results
+          if (!origin || !destination) {
+            try {
+              const results = JSON.parse(fields.results?.stringValue || '[]');
+              if (results.length > 0 && results[0].origin && results[0].destination) {
+                origin = origin || results[0].origin;
+                destination = destination || results[0].destination;
+                weight = weight || results[0].weight;
+                courier = courier || results[0].courier;
+              }
+            } catch (e) {
+              console.log('Could not parse results for route info');
+            }
+          }
+
+          // Final fallback with generic values
+          origin = origin || 'Unknown Origin';
+          destination = destination || 'Unknown Destination';
+          weight = weight || 1000; // Default 1kg
+          courier = courier || 'Unknown';
+
+          return {
+            cacheKey,
+            type: 'shipping',
+            origin,
+            destination,
+            weight,
+            courier,
             cached_at: safeCachedAt.toISOString(),
             expires_at: safeExpiresAt.toISOString(),
             hit_count: fields.hit_count?.integerValue || 0,
