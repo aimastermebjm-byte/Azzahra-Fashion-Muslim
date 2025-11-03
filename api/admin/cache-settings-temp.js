@@ -299,13 +299,20 @@ export default async function handler(req, res) {
       const { action } = req.body;
 
       if (action === 'update_settings') {
-        const { settings } = req.body;
+        const { settings: newSettings } = req.body;
+
+        // Get current settings and merge with new settings
+        const currentSettings = await getCacheSettings();
+        const updatedSettings = { ...currentSettings, ...newSettings };
 
         // For now, just return success (settings are not actually saved to Firestore)
         return res.status(200).json({
           success: true,
           message: 'Cache settings updated (TEMP MODE)',
-          data: { settings }
+          data: {
+            settings: updatedSettings,
+            updated_settings: updatedSettings // for backward compatibility
+          }
         });
       }
 

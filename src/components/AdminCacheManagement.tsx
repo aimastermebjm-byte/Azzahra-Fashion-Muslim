@@ -176,7 +176,9 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
       const data = await response.json();
 
       if (data.success) {
-        setSettings(data.data.updated_settings);
+        // Backend returns data.data.settings in TEMP MODE
+        const updatedSettings = data.data.settings || data.data.updated_settings || newSettings;
+        setSettings(prev => ({ ...prev, ...updatedSettings }));
         setMessage({ type: 'success', text: 'Cache settings updated successfully' });
       } else {
         setMessage({ type: 'error', text: data.message });
