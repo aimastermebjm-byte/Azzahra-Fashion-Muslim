@@ -1,4 +1,4 @@
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from './firebaseClient';
 
 export interface FirebaseUsageStats {
@@ -22,7 +22,7 @@ export class FirebaseUsageMonitor {
   private static lastUpdate: number = 0;
   private static readonly CACHE_DURATION = 30000; // 30 seconds cache
 
-  // Optimized version with static data to prevent hanging
+  // Real Firebase connection with timeout protection
   static async getCurrentUsage(): Promise<FirebaseUsageStats> {
     const now = Date.now();
 
@@ -35,7 +35,6 @@ export class FirebaseUsageMonitor {
     console.log('📊 Fetching fresh Firebase usage stats');
 
     try {
-      // Use lightweight static data for performance
       const stats: FirebaseUsageStats = {
         firestore: {
           totalDocuments: 0,
@@ -52,64 +51,82 @@ export class FirebaseUsageMonitor {
         },
       };
 
-      // Quick count of main collections (non-blocking)
-      const mainCollections = ['users', 'products', 'carts', 'orders', 'shippingCache'];
+      // Real Firebase collections to check
+      const collectionsToCheck = [
+        'users', 'products', 'carts', 'orders', 'shipping_cache',
+        'address_provinces', 'address_cities', 'address_districts', 'address_subdistricts'
+      ];
+
       let totalDocs = 0;
       let totalReads = 0;
       let totalWrites = 0;
+      const validCollections: string[] = [];
 
-      // Use Promise.all with timeout to prevent hanging
-      const collectionPromises = mainCollections.map(async (collectionName) => {
+      // Check each collection with timeout
+      for (const collectionName of collectionsToCheck) {
         try {
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout')), 2000)
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Collection timeout')), 3000)
           );
 
-          const queryPromise = getDocs(collection(db, collectionName));
-          const snapshot = await Promise.race([queryPromise, timeoutPromise]) as any;
+          const collectionRef = collection(db, collectionName);
+          const queryPromise = getDocs(collectionRef);
+
+          const snapshot = await Promise.race([queryPromise, timeoutPromise]);
 
           const docCount = snapshot.size;
-          totalDocs += docCount;
-          totalReads += Math.ceil(docCount / 10); // Estimate reads
-          totalWrites += Math.ceil(docCount / 20); // Estimate writes
-
-          return collectionName;
-        } catch (error) {
-          console.warn(`Could not count ${collectionName}:`, error);
-          return null;
+          if (docCount > 0) {
+            totalDocs += docCount;
+            totalReads += Math.ceil(docCount / 8); // Estimate reads based on doc count
+            totalWrites += Math.ceil(docCount / 15); // Estimate writes
+            validCollections.push(collectionName);
+            console.log(`📁 ${collectionName}: ${docCount} documents`);
+          }
+        } catch (error: any) {
+          console.log(`⚠️ ${collectionName}: ${error?.message || 'Unknown error'}`);
         }
-      });
+      }
 
-      // Wait for all collections with timeout
-      const results = await Promise.race([
-        Promise.all(collectionPromises),
-        new Promise(resolve => setTimeout(() => resolve([]), 5000))
-      ]);
+      // Real user count from users collection
+      try {
+        const usersRef = collection(db, 'users');
+        const usersSnapshot = await Promise.race([
+          getDocs(usersRef),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Users timeout')), 3000))
+        ]);
+        stats.auth.totalUsers = usersSnapshot.size;
+        console.log(`👥 Auth users: ${usersSnapshot.size}`);
+      } catch (error: any) {
+        console.log(`⚠️ Users count failed: ${error?.message || 'Unknown error'}`);
+        stats.auth.totalUsers = Math.max(1, Math.floor(totalDocs / 20));
+      }
 
-      const validCollections = results.filter(Boolean);
-
+      // Update firestore stats with real data
       stats.firestore = {
         totalDocuments: totalDocs,
         collections: validCollections,
-        estimatedReads: totalReads * 2, // Rough daily estimate
-        estimatedWrites: totalWrites,   // Rough daily estimate
+        estimatedReads: Math.min(totalReads * 3, 45000), // Cap at reasonable daily estimate
+        estimatedWrites: Math.min(totalWrites * 2, 18000), // Cap at reasonable daily estimate
       };
 
-      // Static estimates for storage and auth
+      // Estimate storage based on document count
+      const estimatedSizeMB = totalDocs * 0.05; // ~50KB per document average
       stats.storage = {
-        totalFiles: Math.max(5, Math.floor(totalDocs / 10)),
-        estimatedSize: totalDocs > 100 ? `${(totalDocs * 2.5).toFixed(1)} MB` : '~2.5 MB',
-      };
-
-      stats.auth = {
-        totalUsers: Math.max(1, Math.floor(totalDocs / 15)),
+        totalFiles: Math.max(5, Math.floor(totalDocs / 8)),
+        estimatedSize: estimatedSizeMB > 1 ? `${estimatedSizeMB.toFixed(1)} MB` : '~0.1 MB',
       };
 
       // Cache the results
       this.cachedStats = stats;
       this.lastUpdate = now;
 
-      console.log('📊 Firebase usage stats updated:', stats);
+      console.log('📊 Firebase usage stats updated:', {
+        totalDocs,
+        collections: validCollections.length,
+        users: stats.auth.totalUsers,
+        storage: stats.storage.estimatedSize
+      });
+
       return stats;
 
     } catch (error) {
