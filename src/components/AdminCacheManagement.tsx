@@ -3,7 +3,7 @@ import { getAuth } from 'firebase/auth';
 
 interface CacheSettings {
   // Auto check setting - ini yang penting!
-  auto_check_months: number; // Berapa bulan sekali cek otomatis (1, 2, 3 dst)
+  auto_check_days: number; // Berapa hari sekali cek otomatis (1, 7, 30 dst)
 
   // Legacy properties untuk backward compatibility
   cache_ttl_hours: number;
@@ -55,10 +55,10 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
   // Settings state
   const [settings, setSettings] = useState<CacheSettings>({
     // Auto check setting - yang paling penting!
-    auto_check_months: 1, // Setiap 1 bulan otomatis cek
+    auto_check_days: 30, // Setiap 30 hari otomatis cek (1 bulan)
     auto_check_enabled: true,
 
-    // Calculate next auto check date (bulan depan)
+    // Calculate next auto check date (30 hari lagi)
     next_auto_check: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0],
 
     // Legacy settings untuk compatibility
@@ -502,15 +502,15 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                   <input
                     type="number"
                     min="1"
-                    max="12"
-                    value={settings.auto_check_months || 1}
-                    onChange={(e) => setSettings({ ...settings, auto_check_months: parseInt(e.target.value) || 1 })}
+                    max="365"
+                    value={settings.auto_check_days || 30}
+                    onChange={(e) => setSettings({ ...settings, auto_check_days: parseInt(e.target.value) || 30 })}
                     className="w-24 px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-center"
                   />
-                  <span className="text-sm text-gray-600">bulan sekali</span>
+                  <span className="text-sm text-gray-600">hari sekali</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Setiap {settings.auto_check_months || 1} bulan, sistem otomatis cek harga ongkir untuk semua kurir
+                  Setiap {settings.auto_check_days || 30} hari, sistem otomatis cek harga ongkir untuk semua kurir
                 </p>
               </div>
 

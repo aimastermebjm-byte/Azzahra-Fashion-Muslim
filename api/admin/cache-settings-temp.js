@@ -34,6 +34,49 @@ async function getFirestoreDocument(collectionPath, documentId) {
   }
 }
 
+// Save document to Firebase
+async function saveFirestoreDocument(collectionPath, documentId, data) {
+  const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${collectionPath}/${documentId}?key=${FIREBASE_API_KEY}`;
+
+  try {
+    // Convert data to Firestore format
+    const fields = {};
+    Object.keys(data).forEach(key => {
+      const value = data[key];
+      if (typeof value === 'string') {
+        fields[key] = { stringValue: value };
+      } else if (typeof value === 'number') {
+        fields[key] = { integerValue: value };
+      } else if (typeof value === 'boolean') {
+        fields[key] = { booleanValue: value };
+      }
+    });
+
+    const payload = {
+      fields: fields
+    };
+
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      return { success: true };
+    } else {
+      const errorData = await response.json();
+      console.error('Error saving document:', errorData);
+      return { success: false, error: errorData };
+    }
+  } catch (error) {
+    console.error('Error saving document:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 // Get current cache settings
 async function getCacheSettings() {
   const settingsDoc = await getFirestoreDocument('settings', 'cache_config');
@@ -44,13 +87,13 @@ async function getCacheSettings() {
 
   // Default settings - Sistem Auto Check Sederhana
   const now = new Date();
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const nextCheckDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 hari lagi
 
   return {
     // Auto check setting - YANG PALING PENTING!
-    auto_check_months: 1, // Setiap 1 bulan otomatis cek harga
+    auto_check_days: 30, // Setiap 30 hari otomatis cek harga
     auto_check_enabled: true,
-    next_auto_check: nextMonth.toISOString().split('T')[0], // Tanggal 1 bulan depan
+    next_auto_check: nextCheckDate.toISOString().split('T')[0], // Tanggal 30 hari lagi
     last_auto_check: now.toISOString().split('T')[0],
 
     // Cache settings (berdasarkan auto check)
@@ -305,10 +348,22 @@ export default async function handler(req, res) {
         const currentSettings = await getCacheSettings();
         const updatedSettings = { ...currentSettings, ...newSettings };
 
-        // For now, just return success (settings are not actually saved to Firestore)
+        // Save to Firebase
+        const saveResult = await saveFirestoreDocument('settings', 'cache_config', updatedSettings);
+
+        if (!saveResult.success) {
+          return res.status(500).json({
+            success: false,
+            message: `Failed to save settings: ${saveResult.error}`,
+            data: null
+          });
+        }
+
+        console.log('✅ Settings saved to Firebase:', updatedSettings);
+
         return res.status(200).json({
           success: true,
-          message: 'Cache settings updated (TEMP MODE)',
+          message: 'Cache settings updated and saved to Firebase',
           data: {
             settings: updatedSettings,
             updated_settings: updatedSettings // for backward compatibility
@@ -333,28 +388,39 @@ export default async function handler(req, res) {
       }
 
       if (action === 'auto_check_monthly') {
-        const { auto_check_months, sample_route } = req.body;
+        const { auto_check_days, sample_route } = req.body;
         const settings = await getCacheSettings();
 
         // Calculate next auto check date
         const now = new Date();
-        const nextCheckDate = new Date(now.getFullYear(), now.getMonth() + auto_check_months, 1);
+        const nextCheckDate = new Date(now.getTime() + (auto_check_days * 24 * 60 * 60 * 1000));
 
         // Update settings
         const updatedSettings = {
           ...settings,
-          auto_check_months: auto_check_months || settings.auto_check_months,
+          auto_check_days: auto_check_days || settings.auto_check_days,
           next_auto_check: nextCheckDate.toISOString().split('T')[0],
           last_auto_check: now.toISOString().split('T')[0]
         };
 
+        // Save to Firebase
+        const saveResult = await saveFirestoreDocument('settings', 'cache_config', updatedSettings);
+
+        if (!saveResult.success) {
+          return res.status(500).json({
+            success: false,
+            message: `Failed to save auto check settings: ${saveResult.error}`,
+            data: null
+          });
+        }
+
         return res.status(200).json({
           success: true,
-          message: 'Auto check schedule updated (TEMP MODE)',
+          message: 'Auto check schedule updated and saved to Firebase',
           data: {
             settings: updatedSettings,
             next_check_date: updatedSettings.next_auto_check,
-            check_interval_months: updatedSettings.auto_check_months
+            check_interval_days: updatedSettings.auto_check_days
           }
         });
       }
