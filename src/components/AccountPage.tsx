@@ -11,7 +11,6 @@ interface AccountPageProps {
   onNavigateToAdminReports?: () => void;
   onNavigateToAdminUsers?: () => void;
   onNavigateToAdminCache?: () => void;
-  onNavigateToFirebaseUsage?: () => void;
   onNavigateToAddressManagement?: () => void;
   // Flash sale and featured products are now managed in AdminProductsPage
 }
@@ -24,7 +23,6 @@ const AccountPage: React.FC<AccountPageProps> = ({
   onNavigateToAdminReports,
   onNavigateToAdminUsers,
   onNavigateToAdminCache,
-  onNavigateToFirebaseUsage,
   onNavigateToAddressManagement
 }) => {
     const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -761,19 +759,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                       </div>
                     </div>
                   </button>
-                  <button
-                    onClick={onNavigateToFirebaseUsage}
-                    className="w-full p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <BarChart3 className="w-6 h-6" />
-                      <div className="flex-1 text-left">
-                        <p className="font-medium">Firebase Usage</p>
-                        <p className="text-sm opacity-90">Monitor penggunaan Firebase</p>
-                      </div>
-                    </div>
-                  </button>
-                </div>
+                  </div>
               )}
             </div>
 
