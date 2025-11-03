@@ -431,7 +431,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    ⚙️ Pengaturan Ongkir
+                    ⚙️ Auto Check
                   </button>
                   <button
                     onClick={() => setActiveTab('shipping-list')}
@@ -482,86 +482,49 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
           </div>
         </div>
 
-        {/* Shipping Settings Tab */}
+        {/* Shipping Settings Tab - Simple Auto Check System */}
         {activeTab === 'shipping-settings' && cacheType === 'shipping' && (
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold mb-6">Pengaturan Cache Ongkir</h2>
+            <h2 className="text-lg font-semibold mb-2">Pengaturan Cache Otomatis</h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Sistem akan otomatis mengecek harga ongkir setiap beberapa bulan. Jika harga masih sama, cache akan diperpanjang.
+            </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Cache TTL */}
+            <div className="max-w-md">
+              {/* Auto Check Months */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cache TTL Ongkir (Masa Aktif)
+                  Cek Otomatis Setiap
                 </label>
                 <div className="flex items-center space-x-2">
                   <input
                     type="number"
                     min="1"
-                    max="8760"
-                    value={settings.shipping_cache_ttl_hours || 168}
-                    onChange={(e) => setSettings({ ...settings, shipping_cache_ttl_hours: parseInt(e.target.value) })}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                    max="12"
+                    value={settings.auto_check_months || 1}
+                    onChange={(e) => setSettings({ ...settings, auto_check_months: parseInt(e.target.value) || 1 })}
+                    className="w-24 px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-center"
                   />
-                  <span className="text-sm text-gray-600">jam</span>
+                  <span className="text-sm text-gray-600">bulan sekali</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Default: 168 jam (7 hari) - untuk mencegah kerugian akibat perubahan harga
+                  Setiap {settings.auto_check_months || 1} bulan, sistem otomatis cek harga ongkir untuk semua kurir
                 </p>
               </div>
 
-              {/* Max Cache Age */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Maksimal Umur Cache Ongkir
-                </label>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="number"
-                    min="1"
-                    max="365"
-                    value={settings.shipping_max_cache_age_days || 14}
-                    onChange={(e) => setSettings({ ...settings, shipping_max_cache_age_days: parseInt(e.target.value) })}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <span className="text-sm text-gray-600">hari</span>
+              {/* Auto Check Status */}
+              {settings.last_auto_check && (
+                <div className="mt-6 p-4 bg-gray-50 rounded">
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Status Auto Check</h3>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <p>Terakhir cek: {new Date(settings.last_auto_check).toLocaleDateString('id-ID')}</p>
+                    {settings.next_auto_check && (
+                      <p>Cek berikutnya: {new Date(settings.next_auto_check).toLocaleDateString('id-ID')}</p>
+                    )}
+                    <p>Status: {settings.auto_check_enabled ? '✅ Aktif' : '❌ Nonaktif'}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Cache otomatis dihapus setelah ini. Default: 14 hari
-                </p>
-              </div>
-
-              {/* Checkboxes */}
-              <div className="md:col-span-2 space-y-3">
-                <label className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    checked={settings.shipping_auto_cleanup_expired !== false}
-                    onChange={(e) => setSettings({ ...settings, shipping_auto_cleanup_expired: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Otomatis Hapus Cache Ongkir Kadaluarsa</span>
-                </label>
-
-                <label className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    checked={settings.shipping_refresh_all_couriers !== false}
-                    onChange={(e) => setSettings({ ...settings, shipping_refresh_all_couriers: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Refresh Semua Kurir Saat Update Cache</span>
-                </label>
-
-                <label className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    checked={settings.shipping_notify_on_price_change || false}
-                    onChange={(e) => setSettings({ ...settings, shipping_notify_on_price_change: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Notifikasi jika Harga Ongkir Berubah</span>
-                </label>
-              </div>
+              )}
             </div>
 
             <div className="mt-6 flex justify-end">
@@ -570,7 +533,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
                 disabled={loading}
                 className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                {loading ? 'Menyimpan...' : 'Simpan Pengaturan Ongkir'}
+                {loading ? 'Menyimpan...' : 'Simpan Pengaturan'}
               </button>
             </div>
           </div>
