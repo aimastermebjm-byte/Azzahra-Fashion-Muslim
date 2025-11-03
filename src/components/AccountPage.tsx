@@ -11,6 +11,7 @@ interface AccountPageProps {
   onNavigateToAdminReports?: () => void;
   onNavigateToAdminUsers?: () => void;
   onNavigateToAdminCache?: () => void;
+  onNavigateToFirebaseUsage?: () => void;
   onNavigateToAddressManagement?: () => void;
   // Flash sale and featured products are now managed in AdminProductsPage
 }
@@ -23,6 +24,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
   onNavigateToAdminReports,
   onNavigateToAdminUsers,
   onNavigateToAdminCache,
+  onNavigateToFirebaseUsage,
   onNavigateToAddressManagement
 }) => {
     const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -747,7 +749,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                   <h3 className="font-semibold text-gray-800 mb-3">Owner Tools</h3>
                   <button
                     onClick={onNavigateToAdminCache}
-                    className="w-full p-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                    className="w-full p-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors mb-3"
                   >
                     <div className="flex items-center space-x-3">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -755,7 +757,19 @@ const AccountPage: React.FC<AccountPageProps> = ({
                       </svg>
                       <div className="flex-1 text-left">
                         <p className="font-medium">Cache Management</p>
-                        <p className="text-sm opacity-90">Kelola cache ongkir</p>
+                        <p className="text-sm opacity-90">Kelola cache ongkir & alamat</p>
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={onNavigateToFirebaseUsage}
+                    className="w-full p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <BarChart3 className="w-6 h-6" />
+                      <div className="flex-1 text-left">
+                        <p className="font-medium">Firebase Usage</p>
+                        <p className="text-sm opacity-90">Monitor penggunaan Firebase</p>
                       </div>
                     </div>
                   </button>
