@@ -1,9 +1,13 @@
-// Firebase usage stats using same API as cache management
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from './firebaseClient';
+
+// Firebase usage stats using Firebase SDK for full access
+// (Cache management uses REST API, but we need SDK for authenticated access)
 const FIREBASE_PROJECT_ID = 'azzahra-fashion-muslim-ab416';
 const FIREBASE_API_KEY = 'AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs';
 
-// Helper function to get all documents from collection
-async function getCollectionDocuments(collectionName: string) {
+// Helper function to get all documents from collection (fallback REST API)
+async function getCollectionDocumentsREST(collectionName: string) {
   const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${collectionName}?key=${FIREBASE_API_KEY}`;
 
   try {
@@ -14,7 +18,19 @@ async function getCollectionDocuments(collectionName: string) {
     }
     return [];
   } catch (error: any) {
-    console.log(`⚠️ ${collectionName}: ${error?.message || 'Unknown error'}`);
+    console.log(`⚠️ ${collectionName} REST: ${error?.message || 'Unknown error'}`);
+    return [];
+  }
+}
+
+// Helper function to get documents using Firebase SDK (primary method)
+async function getCollectionDocumentsSDK(collectionName: string) {
+  try {
+    const collectionRef = collection(db, collectionName);
+    const snapshot = await getDocs(collectionRef);
+    return snapshot.docs;
+  } catch (error: any) {
+    console.log(`⚠️ ${collectionName} SDK: ${error?.message || 'Unknown error'}`);
     return [];
   }
 }
@@ -40,7 +56,7 @@ export class FirebaseUsageMonitor {
   private static lastUpdate: number = 0;
   private static readonly CACHE_DURATION = 30000; // 30 seconds cache
 
-  // Use same API as cache management for consistency
+  // Use Firebase SDK for authenticated access with REST API fallback
   static async getCurrentUsage(): Promise<FirebaseUsageStats> {
     const now = Date.now();
 
@@ -50,7 +66,7 @@ export class FirebaseUsageMonitor {
       return this.cachedStats;
     }
 
-    console.log('📊 Fetching fresh Firebase usage stats (using Firestore REST API)');
+    console.log('📊 Fetching fresh Firebase usage stats (using Firebase SDK)');
 
     try {
       const stats: FirebaseUsageStats = {
@@ -69,7 +85,7 @@ export class FirebaseUsageMonitor {
         },
       };
 
-      // Collections to check (same as cache management)
+      // Collections to check
       const collectionsToCheck = [
         'users', 'products', 'carts', 'orders', 'shipping_cache',
         'address_provinces', 'address_cities', 'address_districts', 'address_subdistricts'
@@ -80,10 +96,10 @@ export class FirebaseUsageMonitor {
       let totalWrites = 0;
       const validCollections: string[] = [];
 
-      // Check each collection using REST API (same as cache management)
+      // Check each collection using Firebase SDK (primary method)
       for (const collectionName of collectionsToCheck) {
         try {
-          const docs = await getCollectionDocuments(collectionName);
+          const docs = await getCollectionDocumentsSDK(collectionName);
           const docCount = docs.length;
 
           if (docCount > 0) {
@@ -96,18 +112,45 @@ export class FirebaseUsageMonitor {
             console.log(`📁 ${collectionName}: 0 documents`);
           }
         } catch (error: any) {
-          console.log(`⚠️ ${collectionName}: ${error?.message || 'Unknown error'}`);
+          console.log(`⚠️ ${collectionName} SDK failed: ${error?.message || 'Unknown error'}`);
+
+          // Fallback to REST API
+          try {
+            const restDocs = await getCollectionDocumentsREST(collectionName);
+            const restDocCount = restDocs.length;
+
+            if (restDocCount > 0) {
+              totalDocs += restDocCount;
+              totalReads += Math.ceil(restDocCount / 8);
+              totalWrites += Math.ceil(restDocCount / 15);
+              validCollections.push(collectionName);
+              console.log(`📁 ${collectionName}: ${restDocCount} documents (REST API)`);
+            } else {
+              console.log(`📁 ${collectionName}: 0 documents (REST API)`);
+            }
+          } catch (restError: any) {
+            console.log(`⚠️ ${collectionName} REST failed: ${restError?.message || 'Unknown error'}`);
+          }
         }
       }
 
       // User count from users collection
       try {
-        const usersDocs = await getCollectionDocuments('users');
+        const usersDocs = await getCollectionDocumentsSDK('users');
         stats.auth.totalUsers = usersDocs.length;
         console.log(`👥 Auth users: ${usersDocs.length}`);
       } catch (error: any) {
-        console.log(`⚠️ Users count failed: ${error?.message || 'Unknown error'}`);
-        stats.auth.totalUsers = Math.max(1, Math.floor(totalDocs / 20));
+        console.log(`⚠️ Users SDK failed: ${error?.message || 'Unknown error'}`);
+
+        // Fallback to REST API
+        try {
+          const restUsersDocs = await getCollectionDocumentsREST('users');
+          stats.auth.totalUsers = restUsersDocs.length;
+          console.log(`👥 Auth users: ${restUsersDocs.length} (REST API)`);
+        } catch (restError: any) {
+          console.log(`⚠️ Users REST failed: ${restError?.message || 'Unknown error'}`);
+          stats.auth.totalUsers = Math.max(1, Math.floor(totalDocs / 20));
+        }
       }
 
       // Update firestore stats with real data
