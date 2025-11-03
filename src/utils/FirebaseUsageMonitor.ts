@@ -1,5 +1,23 @@
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from './firebaseClient';
+// Firebase usage stats using same API as cache management
+const FIREBASE_PROJECT_ID = 'azzahra-fashion-muslim-ab416';
+const FIREBASE_API_KEY = 'AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs';
+
+// Helper function to get all documents from collection
+async function getCollectionDocuments(collectionName: string) {
+  const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${collectionName}?key=${FIREBASE_API_KEY}`;
+
+  try {
+    const response = await fetch(url);
+    if (response.ok) {
+      const data = await response.json();
+      return data.documents || [];
+    }
+    return [];
+  } catch (error: any) {
+    console.log(`⚠️ ${collectionName}: ${error?.message || 'Unknown error'}`);
+    return [];
+  }
+}
 
 export interface FirebaseUsageStats {
   firestore: {
@@ -22,7 +40,7 @@ export class FirebaseUsageMonitor {
   private static lastUpdate: number = 0;
   private static readonly CACHE_DURATION = 30000; // 30 seconds cache
 
-  // Real Firebase connection with timeout protection
+  // Use same API as cache management for consistency
   static async getCurrentUsage(): Promise<FirebaseUsageStats> {
     const now = Date.now();
 
@@ -32,7 +50,7 @@ export class FirebaseUsageMonitor {
       return this.cachedStats;
     }
 
-    console.log('📊 Fetching fresh Firebase usage stats');
+    console.log('📊 Fetching fresh Firebase usage stats (using Firestore REST API)');
 
     try {
       const stats: FirebaseUsageStats = {
@@ -51,7 +69,7 @@ export class FirebaseUsageMonitor {
         },
       };
 
-      // Real Firebase collections to check
+      // Collections to check (same as cache management)
       const collectionsToCheck = [
         'users', 'products', 'carts', 'orders', 'shipping_cache',
         'address_provinces', 'address_cities', 'address_districts', 'address_subdistricts'
@@ -62,40 +80,31 @@ export class FirebaseUsageMonitor {
       let totalWrites = 0;
       const validCollections: string[] = [];
 
-      // Check each collection with timeout
+      // Check each collection using REST API (same as cache management)
       for (const collectionName of collectionsToCheck) {
         try {
-          const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Collection timeout')), 3000)
-          );
+          const docs = await getCollectionDocuments(collectionName);
+          const docCount = docs.length;
 
-          const collectionRef = collection(db, collectionName);
-          const queryPromise = getDocs(collectionRef);
-
-          const snapshot = await Promise.race([queryPromise, timeoutPromise]);
-
-          const docCount = snapshot.size;
           if (docCount > 0) {
             totalDocs += docCount;
-            totalReads += Math.ceil(docCount / 8); // Estimate reads based on doc count
+            totalReads += Math.ceil(docCount / 8); // Estimate reads
             totalWrites += Math.ceil(docCount / 15); // Estimate writes
             validCollections.push(collectionName);
             console.log(`📁 ${collectionName}: ${docCount} documents`);
+          } else {
+            console.log(`📁 ${collectionName}: 0 documents`);
           }
         } catch (error: any) {
           console.log(`⚠️ ${collectionName}: ${error?.message || 'Unknown error'}`);
         }
       }
 
-      // Real user count from users collection
+      // User count from users collection
       try {
-        const usersRef = collection(db, 'users');
-        const usersSnapshot = await Promise.race([
-          getDocs(usersRef),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Users timeout')), 3000))
-        ]);
-        stats.auth.totalUsers = usersSnapshot.size;
-        console.log(`👥 Auth users: ${usersSnapshot.size}`);
+        const usersDocs = await getCollectionDocuments('users');
+        stats.auth.totalUsers = usersDocs.length;
+        console.log(`👥 Auth users: ${usersDocs.length}`);
       } catch (error: any) {
         console.log(`⚠️ Users count failed: ${error?.message || 'Unknown error'}`);
         stats.auth.totalUsers = Math.max(1, Math.floor(totalDocs / 20));
