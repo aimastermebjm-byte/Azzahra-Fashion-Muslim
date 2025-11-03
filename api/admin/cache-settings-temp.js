@@ -39,6 +39,8 @@ async function saveFirestoreDocument(collectionPath, documentId, data) {
   const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${collectionPath}/${documentId}?key=${FIREBASE_API_KEY}`;
 
   try {
+    console.log('💾 Saving to Firebase:', { collectionPath, documentId, data });
+
     // Convert data to Firestore format
     const fields = {};
     Object.keys(data).forEach(key => {
@@ -49,12 +51,19 @@ async function saveFirestoreDocument(collectionPath, documentId, data) {
         fields[key] = { integerValue: value };
       } else if (typeof value === 'boolean') {
         fields[key] = { booleanValue: value };
+      } else if (value === undefined || value === null) {
+        // Skip undefined/null values
+        console.log(`⚠️ Skipping field ${key}:`, value);
+      } else {
+        console.log(`⚠️ Unknown field type for ${key}:`, typeof value, value);
       }
     });
 
     const payload = {
       fields: fields
     };
+
+    console.log('📤 Firebase payload:', JSON.stringify(payload, null, 2));
 
     const response = await fetch(url, {
       method: 'PATCH',
@@ -64,15 +73,18 @@ async function saveFirestoreDocument(collectionPath, documentId, data) {
       body: JSON.stringify(payload)
     });
 
+    const responseText = await response.text();
+    console.log('📥 Firebase response:', response.status, responseText);
+
     if (response.ok) {
       return { success: true };
     } else {
-      const errorData = await response.json();
-      console.error('Error saving document:', errorData);
+      const errorData = responseText ? JSON.parse(responseText) : { error: responseText };
+      console.error('❌ Error saving document:', errorData);
       return { success: false, error: errorData };
     }
   } catch (error) {
-    console.error('Error saving document:', error);
+    console.error('💥 Error saving document:', error);
     return { success: false, error: error.message };
   }
 }
