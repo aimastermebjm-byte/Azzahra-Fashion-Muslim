@@ -82,5 +82,10 @@ service cloud.firestore {
     match /address_subdistricts/{cacheId} {
       allow read, write: if true; // Allow public access for caching system
     }
+
+    // Allow read/write access to settings for cache configuration
+    match /settings/{settingId} {
+      allow read, write: if true; // Allow public access for settings management
+    }
   }
 }
