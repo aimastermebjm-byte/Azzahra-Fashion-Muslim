@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
 
 interface CacheSettings {
+  // Legacy property for backward compatibility
   cache_ttl_hours: number;
   max_cache_age_days: number;
   auto_cleanup_expired: boolean;
@@ -9,6 +10,20 @@ interface CacheSettings {
   notify_on_price_change: boolean;
   updated_at?: string;
   updated_by?: string;
+
+  // Shipping cache specific settings
+  shipping_cache_ttl_hours?: number;
+  shipping_max_cache_age_days?: number;
+  shipping_auto_cleanup_expired?: boolean;
+  shipping_refresh_all_couriers?: boolean;
+  shipping_notify_on_price_change?: boolean;
+
+  // Address cache specific settings
+  address_provinces_ttl_hours?: number;
+  address_cities_ttl_hours?: number;
+  address_districts_ttl_hours?: number;
+  address_subdistricts_ttl_hours?: number;
+  address_auto_cleanup_expired?: boolean;
 }
 
 interface CacheInfo {
@@ -45,11 +60,26 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
 
   // Settings state
   const [settings, setSettings] = useState<CacheSettings>({
+    // Legacy settings
     cache_ttl_hours: 30 * 24, // 1 month default
     max_cache_age_days: 60,
     auto_cleanup_expired: true,
     refresh_all_couriers: true,
-    notify_on_price_change: false
+    notify_on_price_change: false,
+
+    // Shipping cache settings with defaults
+    shipping_cache_ttl_hours: 7 * 24, // 7 days (revenue critical)
+    shipping_max_cache_age_days: 14,
+    shipping_auto_cleanup_expired: true,
+    shipping_refresh_all_couriers: true,
+    shipping_notify_on_price_change: true,
+
+    // Address cache settings with defaults
+    address_provinces_ttl_hours: 24 * 30 * 6, // 6 months
+    address_cities_ttl_hours: 24 * 30, // 1 month
+    address_districts_ttl_hours: 24 * 30, // 1 month
+    address_subdistricts_ttl_hours: 24 * 30, // 1 month
+    address_auto_cleanup_expired: true
   });
 
   // Cache list state
