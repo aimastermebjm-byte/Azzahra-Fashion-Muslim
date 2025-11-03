@@ -288,6 +288,38 @@ export default async function handler(req, res) {
       }
     }
 
+    // POST: Update settings and refresh cache actions
+    if (req.method === 'POST') {
+      const { action } = req.body;
+
+      if (action === 'update_settings') {
+        const { settings } = req.body;
+
+        // For now, just return success (settings are not actually saved to Firestore)
+        return res.status(200).json({
+          success: true,
+          message: 'Cache settings updated (TEMP MODE)',
+          data: { settings }
+        });
+      }
+
+      if (action === 'refresh_cache') {
+        const { origin, destination, weight, courier } = req.body;
+
+        // For now, just return success (cache is not actually refreshed)
+        return res.status(200).json({
+          success: true,
+          message: 'Cache refreshed successfully (TEMP MODE)',
+          data: {
+            origin,
+            destination,
+            weight: weight || 1000,
+            courier
+          }
+        });
+      }
+    }
+
     // DELETE: Clear cache actions
     if (req.method === 'DELETE') {
       const { action } = req.query;

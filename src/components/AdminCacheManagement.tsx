@@ -144,7 +144,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
     setLoading(true);
     try {
       const token = await getAuthToken();
-      const response = await fetch('/api/admin/cache-settings', {
+      const response = await fetch('/api/admin/cache-settings-temp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -181,7 +181,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
     setLoading(true);
     try {
       const token = await getAuthToken();
-      const response = await fetch('/api/admin/cache-settings', {
+      const response = await fetch('/api/admin/cache-settings-temp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
