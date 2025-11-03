@@ -358,7 +358,15 @@ export default async function handler(req, res) {
 
         // Get current settings and merge with new settings
         const currentSettings = await getCacheSettings();
-        const updatedSettings = { ...currentSettings, ...newSettings };
+        let updatedSettings = { ...currentSettings, ...newSettings };
+
+        // Recalculate next_auto_check if auto_check_days changed
+        if (newSettings.auto_check_days && newSettings.auto_check_days !== currentSettings.auto_check_days) {
+          const now = new Date();
+          const nextCheckDate = new Date(now.getTime() + (newSettings.auto_check_days * 24 * 60 * 60 * 1000));
+          updatedSettings.next_auto_check = nextCheckDate.toISOString().split('T')[0];
+          console.log(`📅 Recalculated next_auto_check to ${updatedSettings.next_auto_check} based on ${newSettings.auto_check_days} days`);
+        }
 
         // Save to Firebase (RESTORED - Now with proper Firestore rules)
         const saveResult = await saveFirestoreDocument('settings', 'cache_config', updatedSettings);
