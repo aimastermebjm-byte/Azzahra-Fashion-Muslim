@@ -42,28 +42,31 @@ async function getCacheSettings() {
     return settingsDoc.data;
   }
 
-  // Default settings (separated by cache type)
-  return {
-    // Shipping cache settings
-    shipping_cache_ttl_hours: 7 * 24, // 7 days (revenue critical)
-    shipping_max_cache_age_days: 14,
-    shipping_auto_cleanup_expired: true,
-    shipping_refresh_all_couriers: true,
-    shipping_notify_on_price_change: true,
+  // Default settings - Sistem Auto Check Sederhana
+  const now = new Date();
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-    // Address cache settings
-    address_provinces_ttl_hours: 24 * 30 * 6, // 6 months
-    address_cities_ttl_hours: 24 * 30, // 1 month
-    address_districts_ttl_hours: 24 * 30, // 1 month
-    address_subdistricts_ttl_hours: 24 * 30, // 1 month
-    address_auto_cleanup_expired: true,
+  return {
+    // Auto check setting - YANG PALING PENTING!
+    auto_check_months: 1, // Setiap 1 bulan otomatis cek harga
+    auto_check_enabled: true,
+    next_auto_check: nextMonth.toISOString().split('T')[0], // Tanggal 1 bulan depan
+    last_auto_check: now.toISOString().split('T')[0],
+
+    // Cache settings (berdasarkan auto check)
+    cache_ttl_hours: 30 * 24, // 30 hari (1 bulan)
+    max_cache_age_days: 35, // 35 hari safety margin
+    auto_cleanup_expired: true,
+
+    // Legacy settings untuk backward compatibility
+    shipping_cache_ttl_hours: 30 * 24, // 30 hari
+    shipping_max_cache_age_days: 35,
+    shipping_auto_cleanup_expired: true,
+    shipping_refresh_all_couriers: false, // Tidak refresh semua, tapi cek per kurir
+    shipping_notify_on_price_change: false,
 
     // Global settings
-    auto_cleanup_expired: true,
-    notify_on_price_change: false,
-
-    // Legacy settings for backward compatibility
-    cache_ttl_hours: 7 * 24 // 7 days (fallback)
+    notify_on_price_change: false
   };
 }
 
@@ -318,6 +321,33 @@ export default async function handler(req, res) {
             destination,
             weight: weight || 1000,
             courier
+          }
+        });
+      }
+
+      if (action === 'auto_check_monthly') {
+        const { auto_check_months, sample_route } = req.body;
+        const settings = await getCacheSettings();
+
+        // Calculate next auto check date
+        const now = new Date();
+        const nextCheckDate = new Date(now.getFullYear(), now.getMonth() + auto_check_months, 1);
+
+        // Update settings
+        const updatedSettings = {
+          ...settings,
+          auto_check_months: auto_check_months || settings.auto_check_months,
+          next_auto_check: nextCheckDate.toISOString().split('T')[0],
+          last_auto_check: now.toISOString().split('T')[0]
+        };
+
+        return res.status(200).json({
+          success: true,
+          message: 'Auto check schedule updated (TEMP MODE)',
+          data: {
+            settings: updatedSettings,
+            next_check_date: updatedSettings.next_auto_check,
+            check_interval_months: updatedSettings.auto_check_months
           }
         });
       }

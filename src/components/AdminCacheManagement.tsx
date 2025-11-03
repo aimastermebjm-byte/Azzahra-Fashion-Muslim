@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
 
 interface CacheSettings {
-  // Legacy property for backward compatibility
+  // Auto check setting - ini yang penting!
+  auto_check_months: number; // Berapa bulan sekali cek otomatis (1, 2, 3 dst)
+
+  // Legacy properties untuk backward compatibility
   cache_ttl_hours: number;
   max_cache_age_days: number;
   auto_cleanup_expired: boolean;
@@ -11,19 +14,10 @@ interface CacheSettings {
   updated_at?: string;
   updated_by?: string;
 
-  // Shipping cache specific settings
-  shipping_cache_ttl_hours?: number;
-  shipping_max_cache_age_days?: number;
-  shipping_auto_cleanup_expired?: boolean;
-  shipping_refresh_all_couriers?: boolean;
-  shipping_notify_on_price_change?: boolean;
-
-  // Address cache specific settings
-  address_provinces_ttl_hours?: number;
-  address_cities_ttl_hours?: number;
-  address_districts_ttl_hours?: number;
-  address_subdistricts_ttl_hours?: number;
-  address_auto_cleanup_expired?: boolean;
+  // Optional: untuk display saja
+  last_auto_check?: string;
+  next_auto_check?: string;
+  auto_check_enabled?: boolean;
 }
 
 interface CacheInfo {
@@ -60,26 +54,19 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
 
   // Settings state
   const [settings, setSettings] = useState<CacheSettings>({
-    // Legacy settings
-    cache_ttl_hours: 30 * 24, // 1 month default
+    // Auto check setting - yang paling penting!
+    auto_check_months: 1, // Setiap 1 bulan otomatis cek
+    auto_check_enabled: true,
+
+    // Calculate next auto check date (bulan depan)
+    next_auto_check: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0],
+
+    // Legacy settings untuk compatibility
+    cache_ttl_hours: 30 * 24, // 1 month
     max_cache_age_days: 60,
     auto_cleanup_expired: true,
     refresh_all_couriers: true,
-    notify_on_price_change: false,
-
-    // Shipping cache settings with defaults
-    shipping_cache_ttl_hours: 7 * 24, // 7 days (revenue critical)
-    shipping_max_cache_age_days: 14,
-    shipping_auto_cleanup_expired: true,
-    shipping_refresh_all_couriers: true,
-    shipping_notify_on_price_change: true,
-
-    // Address cache settings with defaults
-    address_provinces_ttl_hours: 24 * 30 * 6, // 6 months
-    address_cities_ttl_hours: 24 * 30, // 1 month
-    address_districts_ttl_hours: 24 * 30, // 1 month
-    address_subdistricts_ttl_hours: 24 * 30, // 1 month
-    address_auto_cleanup_expired: true
+    notify_on_price_change: false
   });
 
   // Cache list state
