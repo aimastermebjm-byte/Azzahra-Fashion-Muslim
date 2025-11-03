@@ -207,16 +207,32 @@ export default async function handler(req, res) {
 
           // If still no route info, try to parse from cache key or results
           if (!origin || !destination) {
+            // Try to parse from cache key (common pattern: origin_destination_weight_courier)
+            if (cacheKey && cacheKey.includes('_')) {
+              const parts = cacheKey.split('_');
+              if (parts.length >= 2) {
+                origin = origin || parts[0];
+                destination = destination || parts[1];
+                weight = weight || (parts[2] ? parseInt(parts[2]) : weight);
+                courier = courier || (parts[3] || courier);
+                console.log('🔍 Parsed from cache key:', { origin, destination, weight, courier, parts });
+              }
+            }
+
+            // Try to parse from results JSON
             try {
               const results = JSON.parse(fields.results?.stringValue || '[]');
-              if (results.length > 0 && results[0].origin && results[0].destination) {
-                origin = origin || results[0].origin;
-                destination = destination || results[0].destination;
-                weight = weight || results[0].weight;
-                courier = courier || results[0].courier;
+              console.log('🔍 Results JSON:', results);
+              if (results.length > 0) {
+                const firstResult = results[0];
+                origin = origin || firstResult.origin || firstResult.from || firstResult.originCity;
+                destination = destination || firstResult.destination || firstResult.to || firstResult.destinationCity;
+                weight = weight || firstResult.weight || firstResult.berat;
+                courier = courier || firstResult.courier || firstResult.kurir || firstResult.expedisi || firstResult.service;
+                console.log('🔍 Parsed from results:', { origin, destination, weight, courier });
               }
             } catch (e) {
-              console.log('Could not parse results for route info');
+              console.log('Could not parse results for route info:', e.message);
             }
           }
 
