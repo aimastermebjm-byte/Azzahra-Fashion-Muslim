@@ -60,7 +60,10 @@ async function getCacheSettings() {
 
     // Global settings
     auto_cleanup_expired: true,
-    notify_on_price_change: false
+    notify_on_price_change: false,
+
+    // Legacy settings for backward compatibility
+    cache_ttl_hours: 7 * 24 // 7 days (fallback)
   };
 }
 
@@ -256,7 +259,7 @@ export default async function handler(req, res) {
             results_count: JSON.parse(fields.results?.stringValue || '[]').length,
             is_expired: isExpired,
             age_days: ageDays,
-            cache_ttl_hours: cacheSettings.cache_ttl_hours
+            cache_ttl_hours: cacheSettings.cache_ttl_hours || cacheSettings.shipping_cache_ttl_hours || 168
           };
         });
 
