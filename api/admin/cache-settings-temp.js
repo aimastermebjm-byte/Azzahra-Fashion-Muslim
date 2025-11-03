@@ -137,20 +137,29 @@ export default async function handler(req, res) {
             const cacheKey = name.split('/').pop();
             const fields = doc.fields;
 
-            const cachedAt = new Date(fields.created_at?.timestampValue || fields.cached_at?.timestampValue);
-            const expiresAt = new Date(fields.expires_at?.timestampValue);
-            const isExpired = expiresAt < new Date();
+            // Safe date parsing with fallback
+            const now = new Date();
+            const cachedAt = new Date(fields.created_at?.timestampValue || fields.cached_at?.timestampValue || now);
+            const expiresAt = new Date(fields.expires_at?.timestampValue || now);
+
+            // Check if dates are valid
+            const isValidDate = (date) => date instanceof Date && !isNaN(date.getTime());
+            const safeCachedAt = isValidDate(cachedAt) ? cachedAt : now;
+            const safeExpiresAt = isValidDate(expiresAt) ? expiresAt : new Date(now.getTime() + (24 * 60 * 60 * 1000)); // 24 hours from now
+
+            const isExpired = safeExpiresAt < now;
+            const ageDays = Math.floor((now - safeCachedAt) / (1000 * 60 * 60 * 24));
 
             addressCacheData.push({
               cacheKey,
               collection,
               type: 'address',
               data_type: collection.replace('address_', ''),
-              cached_at: cachedAt.toISOString(),
-              expires_at: expiresAt.toISOString(),
+              cached_at: safeCachedAt.toISOString(),
+              expires_at: safeExpiresAt.toISOString(),
               hit_count: fields.hit_count?.integerValue || 0,
               is_expired: isExpired,
-              age_days: Math.floor((new Date() - cachedAt) / (1000 * 60 * 60 * 24)),
+              age_days: ageDays,
               data_count: JSON.parse(fields.data?.stringValue || '[]').length
             });
           });
@@ -167,9 +176,18 @@ export default async function handler(req, res) {
           const cacheKey = name.split('/').pop();
           const fields = doc.fields;
 
-          const cachedAt = new Date(fields.cached_at?.timestampValue);
-          const expiresAt = new Date(fields.expires_at?.timestampValue);
-          const isExpired = expiresAt < new Date();
+          // Safe date parsing with fallback for shipping cache
+          const now = new Date();
+          const cachedAt = new Date(fields.cached_at?.timestampValue || now);
+          const expiresAt = new Date(fields.expires_at?.timestampValue || now);
+
+          // Check if dates are valid
+          const isValidDate = (date) => date instanceof Date && !isNaN(date.getTime());
+          const safeCachedAt = isValidDate(cachedAt) ? cachedAt : now;
+          const safeExpiresAt = isValidDate(expiresAt) ? expiresAt : new Date(now.getTime() + (24 * 60 * 60 * 1000)); // 24 hours from now
+
+          const isExpired = safeExpiresAt < now;
+          const ageDays = Math.floor((now - safeCachedAt) / (1000 * 60 * 60 * 24));
 
           return {
             cacheKey,
@@ -178,13 +196,13 @@ export default async function handler(req, res) {
             destination: fields.destination?.stringValue,
             weight: fields.weight?.integerValue,
             courier: fields.courier?.stringValue,
-            cached_at: cachedAt.toISOString(),
-            expires_at: expiresAt.toISOString(),
+            cached_at: safeCachedAt.toISOString(),
+            expires_at: safeExpiresAt.toISOString(),
             hit_count: fields.hit_count?.integerValue || 0,
             refresh_version: fields.refresh_version?.integerValue || 0,
             results_count: JSON.parse(fields.results?.stringValue || '[]').length,
             is_expired: isExpired,
-            age_days: Math.floor((new Date() - cachedAt) / (1000 * 60 * 60 * 24)),
+            age_days: ageDays,
             cache_ttl_hours: cacheSettings.cache_ttl_hours
           };
         });
