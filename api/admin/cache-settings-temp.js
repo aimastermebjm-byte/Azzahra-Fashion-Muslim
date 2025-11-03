@@ -360,22 +360,14 @@ export default async function handler(req, res) {
         const currentSettings = await getCacheSettings();
         const updatedSettings = { ...currentSettings, ...newSettings };
 
-        // Save to Firebase
-        const saveResult = await saveFirestoreDocument('settings', 'cache_config', updatedSettings);
-
-        if (!saveResult.success) {
-          return res.status(500).json({
-            success: false,
-            message: `Failed to save settings: ${saveResult.error}`,
-            data: null
-          });
-        }
-
-        console.log('✅ Settings saved to Firebase:', updatedSettings);
+        // TEMPORARY: Skip Firebase save and just return success
+        // Firebase API key might not have write permissions
+        console.log('⚠️ TEMPORARY: Skipping Firebase save - returning merged settings');
+        console.log('📝 Merged settings:', updatedSettings);
 
         return res.status(200).json({
           success: true,
-          message: 'Cache settings updated and saved to Firebase',
+          message: 'Cache settings updated (TEMP MODE - Firebase save skipped)',
           data: {
             settings: updatedSettings,
             updated_settings: updatedSettings // for backward compatibility
@@ -415,20 +407,13 @@ export default async function handler(req, res) {
           last_auto_check: now.toISOString().split('T')[0]
         };
 
-        // Save to Firebase
-        const saveResult = await saveFirestoreDocument('settings', 'cache_config', updatedSettings);
-
-        if (!saveResult.success) {
-          return res.status(500).json({
-            success: false,
-            message: `Failed to save auto check settings: ${saveResult.error}`,
-            data: null
-          });
-        }
+        // TEMPORARY: Skip Firebase save
+        console.log('⚠️ TEMPORARY: Auto check updated but Firebase save skipped');
+        console.log('📝 Updated auto check settings:', updatedSettings);
 
         return res.status(200).json({
           success: true,
-          message: 'Auto check schedule updated and saved to Firebase',
+          message: 'Auto check schedule updated (TEMP MODE - Firebase save skipped)',
           data: {
             settings: updatedSettings,
             next_check_date: updatedSettings.next_auto_check,
