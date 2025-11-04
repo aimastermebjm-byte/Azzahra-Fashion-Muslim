@@ -261,11 +261,22 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
             {/* Order Items */}
             <div className="mb-6">
               <h3 className="font-semibold text-gray-800 mb-3">Produk Pesanan</h3>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {selectedOrder.items?.map((item, index) => (
-                  <div key={index} className="flex justify-between text-sm p-2 bg-gray-50 rounded">
-                    <div>
-                      <span className="font-medium">{item.productName}</span>
+                  <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {item.productImage ? (
+                        <img
+                          src={item.productImage}
+                          alt={item.productName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Package className="w-6 h-6 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{item.productName}</p>
                       {item.selectedVariant && (
                         <p className="text-xs text-gray-500">
                           {item.selectedVariant.size && `Ukuran: ${item.selectedVariant.size}`}
@@ -273,9 +284,9 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
                           {item.selectedVariant.color && `Warna: ${item.selectedVariant.color}`}
                         </p>
                       )}
-                      <p className="text-xs text-gray-500">x{item.quantity}</p>
+                      <p className="text-xs text-gray-500">x{item.quantity} • Rp {item.price.toLocaleString('id-ID')}</p>
                     </div>
-                    <span className="font-medium">Rp {item.total.toLocaleString('id-ID')}</span>
+                    <span className="font-medium text-sm">Rp {item.total.toLocaleString('id-ID')}</span>
                   </div>
                 ))}
               </div>

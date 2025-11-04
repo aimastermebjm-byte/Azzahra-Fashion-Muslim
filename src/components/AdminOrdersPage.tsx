@@ -12,12 +12,17 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
   const { orders, loading, error } = useFirebaseAdminOrders();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [userFilter, setUserFilter] = useState('all');
+  const [productFilter, setProductFilter] = useState('all');
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [paymentProof, setPaymentProof] = useState('');
   const [verificationNotes, setVerificationNotes] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [uploadingPaymentProof, setUploadingPaymentProof] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedOrderForUpload, setSelectedOrderForUpload] = useState<any>(null);
 
   // Firebase order management functions
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
@@ -71,6 +76,32 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
     cancelled: { label: 'Dibatalkan', icon: XCircle, color: 'text-red-600 bg-red-100' }
   };
 
+  // Get unique users for filter
+  const getUniqueUsers = () => {
+    const users = new Set();
+    orders.forEach(order => {
+      if (order.userName && order.userEmail) {
+        users.add(`${order.userName} (${order.userEmail})`);
+      }
+    });
+    return Array.from(users).sort();
+  };
+
+  // Get unique products for filter
+  const getUniqueProducts = () => {
+    const products = new Set();
+    orders.forEach(order => {
+      if (order.items) {
+        order.items.forEach((item: any) => {
+          if (item.productName) {
+            products.add(item.productName);
+          }
+        });
+      }
+    });
+    return Array.from(products).sort();
+  };
+
   // Filter and search orders
   const filteredOrders = orders.filter(order => {
     const matchesSearch = searchQuery === '' ||
@@ -80,7 +111,12 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
 
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
+    const matchesUser = userFilter === 'all' || `${order.userName} (${order.userEmail})` === userFilter;
+
+    const matchesProduct = productFilter === 'all' ||
+      (order.items && order.items.some((item: any) => item.productName === productFilter));
+
+    return matchesSearch && matchesStatus && matchesUser && matchesProduct;
   });
 
   const handleViewOrder = (order: any) => {
@@ -93,8 +129,30 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
     setShowVerificationModal(true);
   };
 
-  const handleUpdateStatus = (orderId: string, status: string) => {
-    updateOrderStatus(orderId, status as any);
+  const handleUpdateStatus = (orderId: string, status: string, orderName: string = '') => {
+    let confirmMessage = '';
+    let confirmTitle = '';
+
+    switch (status) {
+      case 'processing':
+        confirmTitle = 'Proses Pesanan';
+        confirmMessage = `Apakah barang sudah datang dan siap untuk diproses?\n\nPesanan #${orderName} akan diproses.`;
+        break;
+      case 'shipped':
+        confirmTitle = 'Kirim Pesanan';
+        confirmMessage = `Apakah barang sudah dikirim ke pelanggan?\n\nPesanan #${orderName} akan ditandai sebagai terkirim.`;
+        break;
+      case 'delivered':
+        confirmTitle = 'Selesaikan Pesanan';
+        confirmMessage = `Apakah barang sudah diterima pelanggan dan selesai?\n\nPesanan #${orderName} akan ditandai sebagai selesai.`;
+        break;
+      default:
+        confirmMessage = `Apakah Anda yakin ingin mengubah status pesanan #${orderName}?`;
+    }
+
+    if (window.confirm(`${confirmTitle}\n\n${confirmMessage}`)) {
+      updateOrderStatus(orderId, status as any);
+    }
   };
 
   const handleConfirmVerification = async (status: 'paid' | 'cancelled') => {
@@ -113,6 +171,63 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
         console.error('❌ Error confirming verification:', error);
         alert('Gagal memperbarui verifikasi pesanan');
       }
+    }
+  };
+
+  const handleUploadPaymentProof = (order: any) => {
+    setSelectedOrderForUpload(order);
+    setShowUploadModal(true);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedOrderForUpload) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Harap upload file gambar (JPG, PNG, dll)');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Ukuran file maksimal 5MB');
+      return;
+    }
+
+    setUploadingPaymentProof(true);
+
+    try {
+      // Convert file to base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64Data = e.target?.result as string;
+
+        try {
+          // Update order with base64 payment proof
+          await updateOrderPayment(selectedOrderForUpload.id, base64Data, selectedOrderForUpload.status);
+
+          alert('✅ Bukti pembayaran berhasil diupload!');
+          setShowUploadModal(false);
+          setSelectedOrderForUpload(null);
+
+          // Refresh the orders
+          setSearchQuery(prev => prev + ' ');
+          setTimeout(() => setSearchQuery(prev => prev.trim()), 100);
+
+        } catch (error) {
+          console.error('❌ Error uploading payment proof:', error);
+          alert('Gagal mengupload bukti pembayaran');
+        } finally {
+          setUploadingPaymentProof(false);
+        }
+      };
+
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('❌ Error reading file:', error);
+      alert('Gagal membaca file');
+      setUploadingPaymentProof(false);
     }
   };
 
@@ -165,36 +280,83 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
 
         {/* Search and Filter */}
         <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Cari pesanan..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+          <div className="space-y-3">
+            {/* First Row - Search */}
+            <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Cari pesanan..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
             </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">Semua Status</option>
-              {Object.entries(statusConfig).map(([status, config]) => (
-                <option key={status} value={status}>{config.label}</option>
-              ))}
-            </select>
-            <input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              <Download className="w-4 h-4" />
-            </button>
+
+            {/* Second Row - Filters */}
+            <div className="flex flex-wrap gap-2">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              >
+                <option value="all">Semua Status</option>
+                {Object.entries(statusConfig).map(([status, config]) => (
+                  <option key={status} value={status}>{config.label}</option>
+                ))}
+              </select>
+
+              <select
+                value={userFilter}
+                onChange={(e) => setUserFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-w-[200px]"
+              >
+                <option value="all">Semua Pelanggan</option>
+                {getUniqueUsers().map((user, index) => (
+                  <option key={index} value={user}>{user}</option>
+                ))}
+              </select>
+
+              <select
+                value={productFilter}
+                onChange={(e) => setProductFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-w-[150px]"
+              >
+                <option value="all">Semua Produk</option>
+                {getUniqueProducts().map((product, index) => (
+                  <option key={index} value={product}>{product}</option>
+                ))}
+              </select>
+
+              <input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              />
+
+              <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <Download className="w-4 h-4" />
+              </button>
+
+              {/* Reset Filters Button */}
+              {(statusFilter !== 'all' || userFilter !== 'all' || productFilter !== 'all' || searchQuery || dateFilter) && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setStatusFilter('all');
+                    setUserFilter('all');
+                    setProductFilter('all');
+                    setDateFilter('');
+                  }}
+                  className="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+                >
+                  Reset Filter
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -252,13 +414,20 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                       </button>
 
                       {order.status === 'pending' || order.status === 'awaiting_verification' ? (
-                        <button
-                          onClick={() => handleVerifyPayment(order)}
-                          className="flex items-center space-x-1 text-green-600 hover:text-green-700 text-sm font-medium"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          <span>Verifikasi</span>
-                        </button>
+                        user?.role === 'owner' ? (
+                          <button
+                            onClick={() => handleVerifyPayment(order)}
+                            className="flex items-center space-x-1 text-green-600 hover:text-green-700 text-sm font-medium"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Verifikasi</span>
+                          </button>
+                        ) : (
+                          <div className="flex items-center space-x-1 text-gray-400 text-sm font-medium">
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Verifikasi (Owner Only)</span>
+                          </div>
+                        )
                       ) : order.status === 'paid' && (order.paymentProof || order.paymentProofData) ? (
                         <div className="flex items-center space-x-1 text-blue-600 text-sm font-medium">
                           <CreditCard className="w-4 h-4" />
@@ -268,7 +437,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
 
                       {order.status === 'paid' && (
                         <button
-                          onClick={() => handleUpdateStatus(order.id, 'processing')}
+                          onClick={() => handleUpdateStatus(order.id, 'processing', order.id)}
                           className="flex items-center space-x-1 text-purple-600 hover:text-purple-700 text-sm font-medium"
                         >
                           <Package className="w-4 h-4" />
@@ -278,7 +447,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
 
                       {order.status === 'processing' && (
                         <button
-                          onClick={() => handleUpdateStatus(order.id, 'shipped')}
+                          onClick={() => handleUpdateStatus(order.id, 'shipped', order.id)}
                           className="flex items-center space-x-1 text-indigo-600 hover:text-indigo-700 text-sm font-medium"
                         >
                           <Truck className="w-4 h-4" />
@@ -288,7 +457,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
 
                       {order.status === 'shipped' && (
                         <button
-                          onClick={() => handleUpdateStatus(order.id, 'delivered')}
+                          onClick={() => handleUpdateStatus(order.id, 'delivered', order.id)}
                           className="flex items-center space-x-1 text-green-600 hover:text-green-700 text-sm font-medium"
                         >
                           <CheckCircle className="w-4 h-4" />
@@ -296,7 +465,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                         </button>
                       )}
 
-                      {(user?.role === 'owner' || user?.role === 'admin') && (
+                      {user?.role === 'owner' && (
                         <button
                           onClick={() => handleDeleteOrder(order.id)}
                           className="flex items-center space-x-1 text-red-600 hover:text-red-700 text-sm font-medium"
@@ -387,18 +556,29 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                 <div className="space-y-3">
                   {selectedOrder.items?.map((item: any, index: number) => (
                     <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                      <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <Package className="w-6 h-6 text-gray-400" />
+                      <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+                        {item.productImage ? (
+                          <img
+                            src={item.productImage}
+                            alt={item.productName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Package className="w-8 h-8 text-gray-400" />
+                        )}
                       </div>
                       <div className="flex-1">
                         <p className="font-medium">{item.productName}</p>
                         <p className="text-sm text-gray-600">
                           {item.selectedVariant?.size}, {item.selectedVariant?.color} • {item.quantity} pcs
                         </p>
+                        <p className="text-xs text-gray-500">
+                          Rp {item.price.toLocaleString('id-ID')} × {item.quantity}
+                        </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">Rp {item.price.toLocaleString('id-ID')}</p>
-                        <p className="text-sm text-gray-600">Total: Rp {item.total.toLocaleString('id-ID')}</p>
+                        <p className="font-medium text-lg">Rp {item.total.toLocaleString('id-ID')}</p>
+                        <p className="text-sm text-gray-600">Subtotal</p>
                       </div>
                     </div>
                   ))}
@@ -423,13 +603,25 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                 </div>
               </div>
 
-              {/* Payment Proof - Show for any order with payment proof */}
-              {(selectedOrder.paymentProof || selectedOrder.paymentProofData) && (
-                <div className={`${selectedOrder.status === 'paid' ? 'bg-blue-50' : 'bg-green-50'} rounded-lg p-4`}>
-                  <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
+              {/* Payment Proof Section */}
+              <div className={`${selectedOrder.paymentProof || selectedOrder.paymentProofData ? (selectedOrder.status === 'paid' ? 'bg-blue-50' : 'bg-green-50') : 'bg-gray-50'} rounded-lg p-4`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-800 flex items-center">
                     <CreditCard className="w-4 h-4 mr-2" />
                     Bukti Pembayaran {selectedOrder.status === 'paid' && '(Terverifikasi)'}
                   </h3>
+                  {!selectedOrder.paymentProof && !selectedOrder.paymentProofData && (
+                    <button
+                      onClick={() => handleUploadPaymentProof(selectedOrder)}
+                      className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
+                      <Upload className="w-4 h-4" />
+                      <span>Upload</span>
+                    </button>
+                  )}
+                </div>
+
+                {(selectedOrder.paymentProof || selectedOrder.paymentProofData) && (
                   {selectedOrder.paymentProofData || selectedOrder.paymentProofUrl ? (
                     <div>
                       {selectedOrder.paymentProofData ? (
@@ -486,8 +678,14 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                       </p>
                     </div>
                   )}
-                </div>
-              )}
+                ) : (
+                  <div className="text-sm text-gray-600 text-center py-4">
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    <p>Belum ada bukti pembayaran</p>
+                    <p className="text-xs">Klik tombol "Upload" untuk menambahkan bukti pembayaran</p>
+                  </div>
+                )}
+              </div>
 
               {/* Payment verification status */}
               {selectedOrder.status === 'paid' && (
@@ -524,7 +722,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                 >
                   Tutup
                 </button>
-                {(selectedOrder.status === 'pending' || selectedOrder.status === 'awaiting_verification') && (
+                {(selectedOrder.status === 'pending' || selectedOrder.status === 'awaiting_verification') && user?.role === 'owner' && (
                   <button
                     onClick={() => {
                       setShowDetailModal(false);
@@ -601,6 +799,88 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                 >
                   <Check className="w-4 h-4" />
                   <span>Konfirmasi</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Payment Proof Modal */}
+      {showUploadModal && selectedOrderForUpload && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-md w-full">
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-800">Upload Bukti Pembayaran</h2>
+                <button
+                  onClick={() => setShowUploadModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  disabled={uploadingPaymentProof}
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="text-center">
+                <Upload className="w-12 h-12 text-blue-600 mx-auto mb-3" />
+                <h3 className="font-medium text-gray-800 mb-2">Pesanan #{selectedOrderForUpload.id}</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Total: Rp {selectedOrderForUpload.finalTotal?.toLocaleString('id-ID')}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Pilih File Bukti Pembayaran
+                  </label>
+                  <input
+                    id="payment-proof-file"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    disabled={uploadingPaymentProof}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Format: JPG, PNG, maksimal 5MB
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Informasi:</strong> Upload bukti pembayaran dari pelanggan jika belum ada.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-4 border-t">
+                <button
+                  onClick={() => setShowUploadModal(false)}
+                  disabled={uploadingPaymentProof}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => document.getElementById('payment-proof-file')?.click()}
+                  disabled={uploadingPaymentProof}
+                  className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {uploadingPaymentProof ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      <span>Upload</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
