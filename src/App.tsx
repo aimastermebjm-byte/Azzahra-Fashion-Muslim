@@ -191,6 +191,7 @@ function AppContent() {
         items: cartItems.map(item => ({
           productId: item.productId,
           productName: item.name || 'Product',
+          productImage: item.image || '',
           selectedVariant: item.variant || { size: '', color: '' },
           quantity: item.quantity,
           price: item.price || 0,
@@ -218,6 +219,7 @@ function AppContent() {
         items: cartItems.map(item => ({
           productId: item.productId,
           productName: item.name || 'Product',
+          productImage: item.image || '',
           selectedVariant: item.variant || { size: '', color: '' },
           quantity: item.quantity,
           price: item.price || 0,

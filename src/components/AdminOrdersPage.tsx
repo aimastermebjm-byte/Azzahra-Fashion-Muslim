@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Package, Clock, CheckCircle, Truck, XCircle, Eye, Search, Filter, Calendar, Download, X, Upload, CreditCard, MapPin, Phone, Mail, Edit2, Check, User } from 'lucide-react';
+import { ArrowLeft, Package, Clock, CheckCircle, Truck, XCircle, Eye, Search, Filter, Calendar, Download, X, Upload, CreditCard, MapPin, Phone, Mail, Edit2, Check, User, AlertTriangle, Info } from 'lucide-react';
 import { useFirebaseAdminOrders } from '../hooks/useFirebaseAdminOrders';
 import { ordersService } from '../services/ordersService';
 
@@ -24,6 +24,17 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedOrderForUpload, setSelectedOrderForUpload] = useState<any>(null);
 
+  // Modern confirmation modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState({
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    confirmText: 'Ya, Lanjutkan',
+    cancelText: 'Batal',
+    type: 'warning' // 'warning', 'success', 'error', 'info'
+  });
+
   // Firebase order management functions
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     return await ordersService.updateOrderStatus(orderId, newStatus);
@@ -31,6 +42,35 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
 
   const updateOrderPayment = async (orderId: string, proof: string, status?: string) => {
     return await ordersService.updateOrderPayment(orderId, proof, status);
+  };
+
+  // Modern confirmation modal helper
+  const showModernConfirm = (title: string, message: string, onConfirm: () => void, options: any = {}) => {
+    setConfirmModalData({
+      title,
+      message,
+      onConfirm: () => {
+        onConfirm();
+        setShowConfirmModal(false);
+      },
+      confirmText: options.confirmText || 'Ya, Lanjutkan',
+      cancelText: options.cancelText || 'Batal',
+      type: options.type || 'warning'
+    });
+    setShowConfirmModal(true);
+  };
+
+  // Modern alert modal helper
+  const showModernAlert = (title: string, message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+    setConfirmModalData({
+      title,
+      message,
+      onConfirm: () => setShowConfirmModal(false),
+      confirmText: 'OK',
+      cancelText: '',
+      type
+    });
+    setShowConfirmModal(true);
   };
 
   const deleteOrder = async (orderId: string) => {
@@ -150,9 +190,9 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
         confirmMessage = `Apakah Anda yakin ingin mengubah status pesanan #${orderName}?`;
     }
 
-    if (window.confirm(`${confirmTitle}\n\n${confirmMessage}`)) {
+    showModernConfirm(confirmTitle, confirmMessage, () => {
       updateOrderStatus(orderId, status as any);
-    }
+    }, { type: 'warning' });
   };
 
   const handleConfirmVerification = async (status: 'paid' | 'cancelled') => {
@@ -169,7 +209,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
         setVerificationNotes('');
       } catch (error) {
         console.error('❌ Error confirming verification:', error);
-        alert('Gagal memperbarui verifikasi pesanan');
+        showModernAlert('Error', 'Gagal memperbarui verifikasi pesanan', 'error');
       }
     }
   };
@@ -185,13 +225,13 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Harap upload file gambar (JPG, PNG, dll)');
+      showModernAlert('Error', 'Harap upload file gambar (JPG, PNG, dll)', 'error');
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Ukuran file maksimal 5MB');
+      showModernAlert('Error', 'Ukuran file maksimal 5MB', 'error');
       return;
     }
 
@@ -201,13 +241,15 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
       // Convert file to base64
       const reader = new FileReader();
       reader.onload = async (e) => {
-        const base64Data = e.target?.result as string;
+        const result = e.target?.result as string;
+        // Remove data URL prefix to get clean base64 data
+        const base64Data = result.split(',')[1] || result;
 
         try {
           // Update order with base64 payment proof
           await updateOrderPayment(selectedOrderForUpload.id, base64Data, selectedOrderForUpload.status);
 
-          alert('✅ Bukti pembayaran berhasil diupload!');
+          showModernAlert('Berhasil', '✅ Bukti pembayaran berhasil diupload!', 'success');
           setShowUploadModal(false);
           setSelectedOrderForUpload(null);
 
@@ -217,7 +259,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
 
         } catch (error) {
           console.error('❌ Error uploading payment proof:', error);
-          alert('Gagal mengupload bukti pembayaran');
+          showModernAlert('Error', 'Gagal mengupload bukti pembayaran', 'error');
         } finally {
           setUploadingPaymentProof(false);
         }
@@ -226,15 +268,15 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
       reader.readAsDataURL(file);
     } catch (error) {
       console.error('❌ Error reading file:', error);
-      alert('Gagal membaca file');
+      showModernAlert('Error', 'Gagal membaca file', 'error');
       setUploadingPaymentProof(false);
     }
   };
 
   const handleDeleteOrder = (orderId: string) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus pesanan ini?')) {
+    showModernConfirm('Konfirmasi Hapus', 'Apakah Anda yakin ingin menghapus pesanan ini?', () => {
       deleteOrder(orderId);
-    }
+    }, { type: 'error', confirmText: 'Ya, Hapus', cancelText: 'Batal' });
   };
 
   return (
@@ -562,10 +604,17 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                             src={item.productImage}
                             alt={item.productName}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback if image fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              if (target.nextElementSibling) {
+                                (target.nextElementSibling as HTMLElement).style.display = 'flex';
+                              }
+                            }}
                           />
-                        ) : (
-                          <Package className="w-8 h-8 text-gray-400" />
-                        )}
+                        ) : null}
+                        <Package className="w-8 h-8 text-gray-400" style={{ display: item.productImage ? 'none' : 'flex' }} />
                       </div>
                       <div className="flex-1">
                         <p className="font-medium">{item.productName}</p>
@@ -623,52 +672,49 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
 
                 {(selectedOrder.paymentProof || selectedOrder.paymentProofData) ? (
                   <div>
-                    {selectedOrder.paymentProofData || selectedOrder.paymentProofUrl ? (
+                    {selectedOrder.paymentProofData ? (
+                      // Display from base64 data (both admin and user uploads)
                       <div>
-                        {selectedOrder.paymentProofData ? (
-                          // Display from base64 data (FREE storage)
-                          <div>
-                            <img
-                              src={`data:image/*;base64,${selectedOrder.paymentProofData}`}
-                              alt="Payment Proof"
-                              className="w-full max-w-md rounded-lg border-2 border-green-200"
-                              onClick={() => {
-                                const newWindow = window.open('', '_blank');
-                                if (newWindow) {
-                                  newWindow.document.write(`
-                                    <html>
-                                      <body style="margin:0;padding:20px;background:#f3f4f6;">
-                                        <img src="data:image/*;base64,${selectedOrder.paymentProofData}"
-                                             style="max-width:100%;height:auto;display:block;margin:0 auto;"
-                                             alt="Payment Proof" />
-                                      </body>
-                                    </html>
-                                  `);
-                                }
-                              }}
-                              style={{ cursor: 'pointer' }}
-                            />
-                            <p className="text-xs text-gray-600 mt-2 text-center">
-                              💡 Klik gambar untuk memperbesar (Base64 FREE Storage)
-                            </p>
-                          </div>
-                        ) : (
-                          // Display from Storage URL (if exists)
-                          <div>
-                            <img
-                              src={selectedOrder.paymentProofUrl}
-                              alt="Payment Proof"
-                              className="w-full max-w-md rounded-lg border-2 border-green-200"
-                              onClick={() => window.open(selectedOrder.paymentProofUrl, '_blank')}
-                              style={{ cursor: 'pointer' }}
-                            />
-                            <p className="text-xs text-gray-600 mt-2 text-center">
-                              💡 Klik gambar untuk memperbesar
-                            </p>
-                          </div>
-                        )}
+                        <img
+                          src={`data:image/*;base64,${selectedOrder.paymentProofData}`}
+                          alt="Payment Proof"
+                          className="w-full max-w-md rounded-lg border-2 border-green-200"
+                          onClick={() => {
+                            const newWindow = window.open('', '_blank');
+                            if (newWindow) {
+                              newWindow.document.write(`
+                                <html>
+                                  <body style="margin:0;padding:20px;background:#f3f4f6;">
+                                    <img src="data:image/*;base64,${selectedOrder.paymentProofData}"
+                                         style="max-width:100%;height:auto;display:block;margin:0 auto;"
+                                         alt="Payment Proof" />
+                                  </body>
+                                </html>
+                              `);
+                            }
+                          }}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <p className="text-xs text-gray-600 mt-2 text-center">
+                          💡 Klik gambar untuk memperbesar
+                        </p>
+                      </div>
+                    ) : selectedOrder.paymentProofUrl ? (
+                      // Display from Storage URL (fallback)
+                      <div>
+                        <img
+                          src={selectedOrder.paymentProofUrl}
+                          alt="Payment Proof"
+                          className="w-full max-w-md rounded-lg border-2 border-green-200"
+                          onClick={() => window.open(selectedOrder.paymentProofUrl, '_blank')}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <p className="text-xs text-gray-600 mt-2 text-center">
+                          💡 Klik gambar untuk memperbesar
+                        </p>
                       </div>
                     ) : (
+                      // Display from text/filename only
                       <div className="text-sm text-green-800">
                         <p className="font-medium">📎 File Bukti Pembayaran:</p>
                         <p className="bg-white p-2 rounded border border-green-200 mt-1">
@@ -885,6 +931,81 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modern Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 shadow-2xl transform transition-all">
+            {/* Header with icon */}
+            <div className={`px-6 py-5 rounded-t-2xl ${
+              confirmModalData.type === 'error' ? 'bg-red-50' :
+              confirmModalData.type === 'success' ? 'bg-green-50' :
+              confirmModalData.type === 'warning' ? 'bg-yellow-50' : 'bg-blue-50'
+            }`}>
+              <div className="flex items-center space-x-3">
+                {confirmModalData.type === 'error' && (
+                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <X className="w-6 h-6 text-red-600" />
+                  </div>
+                )}
+                {confirmModalData.type === 'success' && (
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  </div>
+                )}
+                {confirmModalData.type === 'warning' && (
+                  <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <AlertTriangle className="w-6 h-6 text-yellow-600" />
+                  </div>
+                )}
+                {confirmModalData.type === 'info' && (
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Info className="w-6 h-6 text-blue-600" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <h3 className={`text-xl font-bold ${
+                    confirmModalData.type === 'error' ? 'text-red-800' :
+                    confirmModalData.type === 'success' ? 'text-green-800' :
+                    confirmModalData.type === 'warning' ? 'text-yellow-800' : 'text-blue-800'
+                  }`}>
+                    {confirmModalData.title}
+                  </h3>
+                </div>
+              </div>
+            </div>
+
+            {/* Message */}
+            <div className="px-6 py-5">
+              <p className="text-gray-700 text-base leading-relaxed whitespace-pre-line">
+                {confirmModalData.message}
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="px-6 py-4 bg-gray-50 rounded-b-2xl flex items-center justify-end space-x-3">
+              {confirmModalData.cancelText && (
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-xl font-medium transition-all hover:shadow-md"
+                >
+                  {confirmModalData.cancelText}
+                </button>
+              )}
+              <button
+                onClick={confirmModalData.onConfirm}
+                className={`px-5 py-2.5 text-white rounded-xl font-medium transition-all hover:shadow-lg transform hover:scale-105 ${
+                  confirmModalData.type === 'error' ? 'bg-red-600 hover:bg-red-700' :
+                  confirmModalData.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
+                  confirmModalData.type === 'warning' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                {confirmModalData.confirmText}
+              </button>
             </div>
           </div>
         </div>

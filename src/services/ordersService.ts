@@ -145,7 +145,14 @@ class OrdersService {
           paymentProofData = '';
         }
       } else {
-        paymentProofName = proof;
+        // Handle string proof (could be base64 data or filename)
+        if (typeof proof === 'string' && proof.length > 100) {
+          // Likely base64 data (very long string)
+          paymentProofData = proof;
+          paymentProofName = 'payment_proof.jpg';
+        } else {
+          paymentProofName = proof;
+        }
       }
 
       // Save EVERYTHING to Firebase Firestore (100% FREE!)
