@@ -158,7 +158,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setLoadingShipping(true);
       setShippingError('');
 
-      console.log('🚚 Calculating shipping cost:', {
+      // IMMEDIATE feedback for ultra-fast UX
+      console.log('⚡ FAST Calculating shipping cost:', {
+        origin: '2425',
         courier: courierCode,
         destination: destinationCityId,
         actualWeight: weight,
@@ -181,11 +183,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           shippingETD: cheapestService.etd
         }));
 
-        console.log('✅ Shipping cost calculated successfully:', {
+        const isCached = results.length > 0;
+        console.log('⚡ FAST Shipping cost calculated:', {
           service: cheapestService.service,
           cost: cheapestService.cost,
           etd: cheapestService.etd,
-          cached: results.length > 0 // This will be true if from cache
+          cached: isCached
         });
       } else {
         setShippingError('Tidak dapat menghitung ongkir untuk kurir ini');
@@ -198,6 +201,13 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     } finally {
       setLoadingShipping(false);
     }
+
+    // Fast timeout to prevent loading state from stuck too long
+    const loadingTimeout = setTimeout(() => {
+      setLoadingShipping(false);
+    }, 100); // Ultra-fast timeout fallback
+
+    return () => clearTimeout(loadingTimeout);
   };
 
   const [formData, setFormData] = useState({
@@ -271,10 +281,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         addressName: defaultAddr.fullAddress
       });
 
-      // Add small delay to ensure all states are set
+      // ULTRA FAST delay - almost instant response
       const timeoutId = setTimeout(() => {
         calculateShippingCost(selectedCourier.code, destinationId, weight);
-      }, 200); // Increased delay to prevent race conditions
+      }, 25); // Further reduced delay for ultra-fast response
 
       return () => clearTimeout(timeoutId);
     }
@@ -358,10 +368,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           addressName: address.fullAddress
         });
 
-        // Add delay to ensure state is updated
+        // ULTRA FAST delay - almost instant response
         setTimeout(() => {
           calculateShippingCost(selectedCourier.code, destinationId, weight);
-        }, 200);
+        }, 25);
       }
     }
   };
@@ -746,10 +756,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                                   addressName: address.fullAddress
                                 });
 
-                                // Add delay to prevent race conditions
+                                // ULTRA FAST delay - almost instant response
                                 setTimeout(() => {
                                   calculateShippingCost(selectedCourier.code, destinationId, weight);
-                                }, 100);
+                                }, 25);
                               }
                             }
                           }}

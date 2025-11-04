@@ -9,6 +9,7 @@ export const useFirebaseAdminOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
@@ -48,6 +49,7 @@ export const useFirebaseAdminOrders = () => {
             console.log('✅ All orders loaded from Firebase for admin:', loadedOrders.length, 'orders');
             setOrders(loadedOrders);
             setLoading(false);
+            setInitialLoad(false);
             setError(null);
           },
           async (error) => {
@@ -57,6 +59,7 @@ export const useFirebaseAdminOrders = () => {
 
             // Fallback to ordersService
             console.log('🔄 Falling back to ordersService...');
+            setInitialLoad(false);
             try {
               const fallbackOrders = await ordersService.getAllOrders();
               setOrders(fallbackOrders);
@@ -70,6 +73,7 @@ export const useFirebaseAdminOrders = () => {
         console.error('❌ Error setting up admin orders listener:', error);
         setError(error instanceof Error ? error.message : 'Unknown error');
         setLoading(false);
+        setInitialLoad(false);
       }
     };
 
@@ -82,5 +86,5 @@ export const useFirebaseAdminOrders = () => {
     };
   }, []);
 
-  return { orders, loading, error };
+  return { orders, loading: loading && initialLoad, error, initialLoad };
 };

@@ -20,6 +20,8 @@ export interface Order {
   updatedAt: string;
   timestamp: number;
   paymentProof?: string;
+  paymentProofData?: string;
+  paymentProofUrl?: string;
 }
 
 class OrdersService {

@@ -9,7 +9,7 @@ interface AdminOrdersPageProps {
 }
 
 const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
-  const { orders, loading, error } = useFirebaseAdminOrders();
+  const { orders, loading, error, initialLoad } = useFirebaseAdminOrders();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [userFilter, setUserFilter] = useState('all');
@@ -247,9 +247,11 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
 
         try {
           // Update order with base64 payment proof
-          await updateOrderPayment(selectedOrderForUpload.id, base64Data, selectedOrderForUpload.status);
+          // Change status to 'awaiting_verification' when admin uploads proof
+          const newStatus = selectedOrderForUpload.status === 'pending' ? 'awaiting_verification' : selectedOrderForUpload.status;
+          await updateOrderPayment(selectedOrderForUpload.id, base64Data, newStatus);
 
-          showModernAlert('Berhasil', '✅ Bukti pembayaran berhasil diupload!', 'success');
+          showModernAlert('Berhasil', '✅ Bukti pembayaran berhasil diupload! Status diubah menjadi "Menunggu Verifikasi".', 'success');
           setShowUploadModal(false);
           setSelectedOrderForUpload(null);
 

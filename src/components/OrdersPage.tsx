@@ -348,10 +348,39 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
             </div>
 
             {/* Payment Proof */}
-            {selectedOrder.paymentProof && (
-              <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                <p className="text-sm text-green-800 font-medium">✅ Bukti pembayaran telah diupload</p>
-                <p className="text-xs text-green-600">{selectedOrder.paymentProof}</p>
+            {(selectedOrder.paymentProof || selectedOrder.paymentProofData) && (
+              <div className="mt-4 p-4 bg-green-50 rounded-lg">
+                <p className="text-sm text-green-800 font-medium mb-3">✅ Bukti pembayaran telah diupload</p>
+
+                {/* Display payment proof image if available */}
+                {selectedOrder.paymentProofData ? (
+                  <div className="mt-3">
+                    <img
+                      src={`data:image/*;base64,${selectedOrder.paymentProofData}`}
+                      alt="Payment Proof"
+                      className="w-full max-w-xs rounded-lg border-2 border-green-200 cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => {
+                        const newWindow = window.open('', '_blank');
+                        if (newWindow) {
+                          newWindow.document.write(`
+                            <html>
+                              <body style="margin:0;padding:20px;background:#f3f4f6;">
+                                <img src="data:image/*;base64,${selectedOrder.paymentProofData}"
+                                     style="max-width:100%;height:auto;display:block;margin:0 auto;"
+                                     alt="Payment Proof" />
+                              </body>
+                            </html>
+                          `);
+                        }
+                      }}
+                    />
+                    <p className="text-xs text-green-600 mt-2 text-center">
+                      💡 Klik gambar untuk memperbesar
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-green-600">{selectedOrder.paymentProof}</p>
+                )}
               </div>
             )}
 
