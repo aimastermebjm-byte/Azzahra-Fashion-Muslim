@@ -242,18 +242,24 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     const defaultAddr = getDefaultAddress();
     const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
 
-    if (selectedCourier?.code && defaultAddr?.cityId && formData.shippingCourier) {
+    if (selectedCourier?.code && defaultAddr && formData.shippingCourier) {
       const weight = calculateTotalWeight();
+
+      // Use consistent destination ID - prioritize subdistrictId for accuracy, fallback to cityId
+      const destinationId = defaultAddr.subdistrictId || defaultAddr.cityId || '607';
+
       console.log('🚚 Auto-calculating shipping:', {
         courier: selectedCourier.code,
-        destination: defaultAddr.cityId,
-        weight: weight
+        destination: destinationId,
+        destinationType: defaultAddr.subdistrictId ? 'subdistrictId' : 'cityId',
+        weight: weight,
+        addressName: defaultAddr.fullAddress
       });
 
       // Add small delay to ensure all states are set
       const timeoutId = setTimeout(() => {
-        calculateShippingCost(selectedCourier.code, defaultAddr.cityId, weight);
-      }, 100);
+        calculateShippingCost(selectedCourier.code, destinationId, weight);
+      }, 200); // Increased delay to prevent race conditions
 
       return () => clearTimeout(timeoutId);
     }
@@ -289,25 +295,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setOngkirResults([]);
       setSelectedService(null);
 
-      // Auto-calculate shipping for RajaOngkir couriers
-      if (selectedCourier?.code) {
-        const weight = calculateTotalWeight();
-        // Get customer's main address as destination
-        const mainAddress = getDefaultAddress();
-        if (mainAddress) {
-          const destinationId = mainAddress.subdistrictId || mainAddress.cityId || '607';
-          console.log('🚚 Courier changed - recalculating shipping:', {
-            courier: selectedCourier.code,
-            destination: destinationId,
-            weight: weight
-          });
+      // NO MANUAL CALCULATION HERE - Let useEffect handle it to avoid double calculation
+      console.log('🚚 Courier changed, useEffect will handle calculation:', {
+        courier: selectedCourier?.code,
+        newCourierId: newValue
+      });
 
-          // Add small delay to ensure state is updated
-          setTimeout(() => {
-            calculateShippingCost(selectedCourier.code, destinationId, weight);
-          }, 100);
-        }
-      }
       return; // Exit early to avoid double state update
     }
   };
@@ -335,6 +328,26 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         phone: formData.isDropship ? prev.phone : address.phone,
         address: formData.isDropship ? prev.address : address.fullAddress
       }));
+
+      // Auto-calculate shipping if courier is selected and supports automatic
+      const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
+      if (selectedCourier?.code) {
+        const weight = calculateTotalWeight();
+        const destinationId = address.subdistrictId || address.cityId || '607';
+
+        console.log('🚚 Address changed - recalculating shipping:', {
+          courier: selectedCourier.code,
+          destination: destinationId,
+          destinationType: address.subdistrictId ? 'subdistrictId' : 'cityId',
+          weight: weight,
+          addressName: address.fullAddress
+        });
+
+        // Add delay to ensure state is updated
+        setTimeout(() => {
+          calculateShippingCost(selectedCourier.code, destinationId, weight);
+        }, 200);
+      }
     }
   };
 
@@ -694,9 +707,21 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
                               if (selectedCourier?.code) {
                                 const weight = calculateTotalWeight();
-                                // Use address cityId or fallback to Banjarmasin
-                                const targetCityId = address.cityId || '607';
-                                calculateShippingCost(selectedCourier.code, targetCityId, weight);
+                                // Use consistent destination ID - prioritize subdistrictId for accuracy
+                                const destinationId = address.subdistrictId || address.cityId || '607';
+
+                                console.log('🚚 Address radio selected - recalculating shipping:', {
+                                  courier: selectedCourier.code,
+                                  destination: destinationId,
+                                  destinationType: address.subdistrictId ? 'subdistrictId' : 'cityId',
+                                  weight: weight,
+                                  addressName: address.fullAddress
+                                });
+
+                                // Add delay to prevent race conditions
+                                setTimeout(() => {
+                                  calculateShippingCost(selectedCourier.code, destinationId, weight);
+                                }, 100);
                               }
                             }
                           }}
