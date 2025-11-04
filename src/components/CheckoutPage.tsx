@@ -120,11 +120,26 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [shippingError, setShippingError] = useState<string>('');
   const [selectedService, setSelectedService] = useState<KomerceCostResult | null>(null);
 
-  // Calculate total weight of cart items
+  // Calculate total weight of cart items with smart rounding
   const calculateTotalWeight = () => {
-    return cartItems.reduce((total, item) => {
-      return total + (item.quantity * 1000); // Assuming 1kg per item (can be customized)
+    const totalGrams = cartItems.reduce((total, item) => {
+      // Get actual weight from product data or fallback to 1000g per item
+      const itemWeight = item.product?.weight || 1000; // weight in grams
+      return total + (item.quantity * itemWeight);
     }, 0);
+
+    // Apply smart rounding: 0-1250g = 1kg, 1251-2250g = 2kg, etc.
+    console.log('📦 Weight calculation:', {
+      totalGrams,
+      items: cartItems.map(item => ({
+        name: item.name || item.productName,
+        quantity: item.quantity,
+        itemWeight: item.product?.weight || 1000,
+        totalWeight: item.quantity * (item.product?.weight || 1000)
+      }))
+    });
+
+    return totalGrams;
   };
 
   
@@ -636,6 +651,19 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     </select>
                   </div>
                 )}
+
+                {/* Weight Information */}
+                <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-medium text-blue-800">Berat Produk:</span>
+                    <span className="text-blue-600 font-semibold">
+                      {(calculateTotalWeight() / 1000).toFixed(2)} kg
+                    </span>
+                  </div>
+                  <div className="text-xs text-blue-600 mt-1">
+                    💡 Smart rounding: 0-1.25kg = 1kg, 1.251-2.25kg = 2kg, dst.
+                  </div>
+                </div>
 
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-700">Biaya Ongkir:</span>

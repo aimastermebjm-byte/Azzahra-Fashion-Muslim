@@ -25,6 +25,8 @@ export interface Product {
   isFeatured?: boolean;
   featuredOrder?: number;
   image: string; // Main image (backward compatibility)
+  weight?: number; // Weight in grams (optional, defaults to 1000g = 1kg)
+  unit?: string; // Weight unit (e.g., 'gram', 'kg', 'pcs')
 }
 
 export interface FlashSale {
