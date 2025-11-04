@@ -128,7 +128,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   
-  // Calculate shipping cost using RajaOngkir
+  // Calculate shipping cost using RajaOngkir with smart caching
   const calculateShippingCost = async (courierCode: string, destinationCityId: string, weight: number) => {
     if (!courierCode || !destinationCityId || !weight) {
       return;
@@ -142,6 +142,13 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     try {
       setLoadingShipping(true);
       setShippingError('');
+
+      console.log('🚚 Calculating shipping cost:', {
+        courier: courierCode,
+        destination: destinationCityId,
+        actualWeight: weight,
+        timestamp: new Date().toISOString()
+      });
 
       const results = await komerceService.calculateShippingCost('2425', destinationCityId, weight, courierCode);
 
@@ -158,10 +165,19 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           shippingService: cheapestService.service,
           shippingETD: cheapestService.etd
         }));
+
+        console.log('✅ Shipping cost calculated successfully:', {
+          service: cheapestService.service,
+          cost: cheapestService.cost,
+          etd: cheapestService.etd,
+          cached: results.length > 0 // This will be true if from cache
+        });
       } else {
         setShippingError('Tidak dapat menghitung ongkir untuk kurir ini');
+        console.log('❌ No shipping results found');
       }
     } catch (error) {
+      console.error('❌ Error calculating shipping cost:', error);
       setShippingError('Gagal menghitung ongkir. Silakan coba lagi.');
       // NO FALLBACK - Show error to user
     } finally {
@@ -198,12 +214,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   // Auto-select default courier and address when component mounts
   useEffect(() => {
-    // Auto-select first courier that supports automatic
-    const autoCourier = shippingOptions.find(opt => opt.code);
-    if (autoCourier && !formData.shippingCourier) {
-      setFormData(prev => ({ ...prev, shippingCourier: autoCourier.id }));
-    }
-
     // Auto-select default address if available
     if (addresses.length > 0 && !selectedAddressId) {
       const defaultAddr = getDefaultAddress();
@@ -217,19 +227,37 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           provinceId: defaultAddr.provinceId || '607', // Default to Banjarmasin if no cityId
           cityId: defaultAddr.cityId || '607' // Default to Banjarmasin city
         }));
-
-        // Auto-calculate shipping for default address
-        if (autoCourier?.code && defaultAddr.cityId) {
-          const weight = calculateTotalWeight();
-          calculateShippingCost(autoCourier.code, defaultAddr.cityId, weight);
-        } else if (autoCourier?.code) {
-          // Use default Banjarmasin city if no cityId
-          const weight = calculateTotalWeight();
-          calculateShippingCost(autoCourier.code, '607', weight);
-        }
       }
     }
-  }, [addresses, selectedAddressId, formData.shippingCourier, formData.isDropship]);
+
+    // Auto-select first courier that supports automatic (separate effect)
+    const autoCourier = shippingOptions.find(opt => opt.code);
+    if (autoCourier && !formData.shippingCourier) {
+      setFormData(prev => ({ ...prev, shippingCourier: autoCourier.id }));
+    }
+  }, [addresses, selectedAddressId, formData.isDropship]);
+
+  // Calculate shipping when both courier and address are selected
+  useEffect(() => {
+    const defaultAddr = getDefaultAddress();
+    const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
+
+    if (selectedCourier?.code && defaultAddr?.cityId && formData.shippingCourier) {
+      const weight = calculateTotalWeight();
+      console.log('🚚 Auto-calculating shipping:', {
+        courier: selectedCourier.code,
+        destination: defaultAddr.cityId,
+        weight: weight
+      });
+
+      // Add small delay to ensure all states are set
+      const timeoutId = setTimeout(() => {
+        calculateShippingCost(selectedCourier.code, defaultAddr.cityId, weight);
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [formData.shippingCourier, selectedAddressId, addresses.length]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -248,25 +276,39 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     if (name === 'shippingCourier') {
       const selectedCourier = shippingOptions.find(opt => opt.id === value);
 
-      // Auto-calculate shipping for RajaOngkur couriers
+      // Reset shipping cost first
+      setFormData(prev => ({
+        ...prev,
+        shippingCourier: newValue as string,
+        shippingCost: 0,
+        shippingService: '',
+        shippingETD: ''
+      }));
+
+      // Clear previous results
+      setOngkirResults([]);
+      setSelectedService(null);
+
+      // Auto-calculate shipping for RajaOngkir couriers
       if (selectedCourier?.code) {
-        // Use Surgi Mufti, Banjarmasin Utara for automatic calculation
         const weight = calculateTotalWeight();
-        // Get customer's main address as destination (NOT origin!)
+        // Get customer's main address as destination
         const mainAddress = getDefaultAddress();
         if (mainAddress) {
-          const destinationId = mainAddress.subdistrictId || mainAddress.cityId;
-          calculateShippingCost(selectedCourier.code, destinationId, weight);
+          const destinationId = mainAddress.subdistrictId || mainAddress.cityId || '607';
+          console.log('🚚 Courier changed - recalculating shipping:', {
+            courier: selectedCourier.code,
+            destination: destinationId,
+            weight: weight
+          });
+
+          // Add small delay to ensure state is updated
+          setTimeout(() => {
+            calculateShippingCost(selectedCourier.code, destinationId, weight);
+          }, 100);
         }
-      } else {
-        // For manual couriers, require manual input
-        setFormData(prev => ({
-          ...prev,
-          shippingCost: 0, // No default - require manual input
-          shippingService: '',
-          shippingETD: ''
-        }));
       }
+      return; // Exit early to avoid double state update
     }
   };
 
@@ -329,7 +371,42 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       return;
     }
 
+    // Check if any items are out of stock
+    const outOfStockItems = cartItems.filter(item => {
+      const product = item.product || item;
+      return product.status === 'po' || product.stock <= 0;
+    });
+
+    if (outOfStockItems.length > 0) {
+      const outOfStockNames = outOfStockItems.map(item => {
+        const product = item.product || item;
+        return product.name || 'Produk tidak diketahui';
+      }).join(', ');
+
+      alert(`⚠️ TIDAK DAPAT CHECKOUT!\n\nProduk berikut HABIS:\n${outOfStockNames}\n\nHubungi admin WhatsApp:\n📱 6287815990944\n\nUntuk info ketersediaan produk.`);
+      return;
+    }
+
+    // Check if selected courier has valid shipping cost
+    if (supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {
+      alert('Mohon tunggu perhitungan ongkir selesai atau pilih kurir lain');
+      return;
+    }
+
+    if (!supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {
+      alert('Mohon masukkan biaya ongkos kirim untuk kurir lokal');
+      return;
+    }
+
     const orderData = {
+      items: cartItems.map(item => ({
+        ...item,
+        price: item.price || 0,
+        total: (item.price || 0) * (item.quantity || 1),
+        productName: item.name || item.productName || 'Produk',
+        productId: item.productId || item.id,
+        selectedVariant: item.variant
+      })),
       shippingInfo: {
         name: formData.name,
         phone: formData.phone,
@@ -343,7 +420,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         shippingETD: formData.shippingETD
       },
       paymentMethod: formData.paymentMethod,
-      notes: formData.notes
+      notes: formData.notes,
+      totalAmount: totalPrice,
+      shippingCost: shippingCost,
+      finalTotal: finalTotal
     };
 
     // Create order and get order ID

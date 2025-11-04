@@ -172,14 +172,25 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
                     </div>
                   ))}
                 </div>
-                
+
+                {/* Shipping Cost Display */}
+                {order.shippingCost && order.shippingCost > 0 && (
+                  <div className="flex justify-between text-sm py-2 border-t border-dashed border-gray-200">
+                    <span className="text-gray-600">Ongkos Kirim ({order.shippingInfo?.courier?.toUpperCase()})</span>
+                    <span className="font-medium text-blue-600">Rp {order.shippingCost.toLocaleString('id-ID')}</span>
+                  </div>
+                )}
+
                 <div className="border-t pt-3 flex items-center justify-between">
                   <span className="text-sm text-gray-600">Total Pesanan</span>
                   <span className="font-bold text-pink-600">Rp {order.finalTotal.toLocaleString('id-ID')}</span>
                 </div>
                 
                 <div className="mt-3 flex space-x-2">
-                  <button className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                  <button
+                    onClick={() => setSelectedOrder(order)}
+                    className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                  >
                     Detail
                   </button>
                   {order.status === 'pending' && order.paymentMethod === 'transfer' && !order.paymentProof && (
@@ -221,6 +232,136 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
           })
         )}
       </div>
+
+      {/* Order Detail Modal */}
+      {selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setSelectedOrder(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X size={24} />
+            </button>
+
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-2">Detail Pesanan</h2>
+              <p className="text-sm text-gray-600">#{selectedOrder.id}</p>
+              <p className="text-xs text-gray-500">
+                {new Date(selectedOrder.createdAt).toLocaleDateString('id-ID', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+            </div>
+
+            {/* Order Items */}
+            <div className="mb-6">
+              <h3 className="font-semibold text-gray-800 mb-3">Produk Pesanan</h3>
+              <div className="space-y-2">
+                {selectedOrder.items?.map((item, index) => (
+                  <div key={index} className="flex justify-between text-sm p-2 bg-gray-50 rounded">
+                    <div>
+                      <span className="font-medium">{item.productName}</span>
+                      {item.selectedVariant && (
+                        <p className="text-xs text-gray-500">
+                          {item.selectedVariant.size && `Ukuran: ${item.selectedVariant.size}`}
+                          {item.selectedVariant.size && item.selectedVariant.color && ' • '}
+                          {item.selectedVariant.color && `Warna: ${item.selectedVariant.color}`}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">x{item.quantity}</p>
+                    </div>
+                    <span className="font-medium">Rp {item.total.toLocaleString('id-ID')}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Shipping Info */}
+            {selectedOrder.shippingInfo && (
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-800 mb-3">Informasi Pengiriman</h3>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="text-gray-600">Penerima:</span>
+                    <span className="font-medium ml-2">{selectedOrder.shippingInfo.name}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Telepon:</span>
+                    <span className="font-medium ml-2">{selectedOrder.shippingInfo.phone}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Alamat:</span>
+                    <span className="font-medium ml-2">{selectedOrder.shippingInfo.address}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Kurir:</span>
+                    <span className="font-medium ml-2">
+                      {selectedOrder.shippingInfo.courier?.toUpperCase()}
+                      {selectedOrder.shippingInfo.shippingService && ` - ${selectedOrder.shippingInfo.shippingService}`}
+                    </span>
+                  </div>
+                  {selectedOrder.shippingInfo.shippingETD && (
+                    <div>
+                      <span className="text-gray-600">Estimasi:</span>
+                      <span className="font-medium ml-2">{selectedOrder.shippingInfo.shippingETD}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Payment Summary */}
+            <div className="border-t pt-4">
+              <h3 className="font-semibold text-gray-800 mb-3">Ringkasan Pembayaran</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Subtotal Produk</span>
+                  <span className="font-medium">Rp {(selectedOrder.totalAmount || 0).toLocaleString('id-ID')}</span>
+                </div>
+                {selectedOrder.shippingCost && selectedOrder.shippingCost > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Ongkos Kirim</span>
+                    <span className="font-medium text-blue-600">Rp {selectedOrder.shippingCost.toLocaleString('id-ID')}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                  <span>Total Pembayaran</span>
+                  <span className="text-pink-600">Rp {selectedOrder.finalTotal.toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Proof */}
+            {selectedOrder.paymentProof && (
+              <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                <p className="text-sm text-green-800 font-medium">✅ Bukti pembayaran telah diupload</p>
+                <p className="text-xs text-green-600">{selectedOrder.paymentProof}</p>
+              </div>
+            )}
+
+            {/* Notes */}
+            {selectedOrder.notes && (
+              <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
+                <p className="text-sm font-medium text-yellow-800 mb-1">Catatan Pesanan:</p>
+                <p className="text-sm text-yellow-700">{selectedOrder.notes}</p>
+              </div>
+            )}
+
+            {/* Close Button */}
+            <button
+              onClick={() => setSelectedOrder(null)}
+              className="w-full mt-6 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Payment Modal */}
       {showPaymentModal && selectedOrder && (

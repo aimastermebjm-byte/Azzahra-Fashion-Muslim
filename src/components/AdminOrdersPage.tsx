@@ -259,6 +259,11 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                           <CheckCircle className="w-4 h-4" />
                           <span>Verifikasi</span>
                         </button>
+                      ) : order.status === 'paid' && (order.paymentProof || order.paymentProofData) ? (
+                        <div className="flex items-center space-x-1 text-blue-600 text-sm font-medium">
+                          <CreditCard className="w-4 h-4" />
+                          <span>Sudah Diverifikasi</span>
+                        </div>
                       ) : null}
 
                       {order.status === 'paid' && (
@@ -418,12 +423,12 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                 </div>
               </div>
 
-              {/* Payment Proof */}
-              {selectedOrder.paymentProof && (
-                <div className="bg-green-50 rounded-lg p-4">
+              {/* Payment Proof - Show for any order with payment proof */}
+              {(selectedOrder.paymentProof || selectedOrder.paymentProofData) && (
+                <div className={`${selectedOrder.status === 'paid' ? 'bg-blue-50' : 'bg-green-50'} rounded-lg p-4`}>
                   <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
                     <CreditCard className="w-4 h-4 mr-2" />
-                    Bukti Pembayaran
+                    Bukti Pembayaran {selectedOrder.status === 'paid' && '(Terverifikasi)'}
                   </h3>
                   {selectedOrder.paymentProofData || selectedOrder.paymentProofUrl ? (
                     <div>
@@ -481,6 +486,25 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                       </p>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Payment verification status */}
+              {selectedOrder.status === 'paid' && (
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-800 mb-2 flex items-center">
+                    <CheckCircle className="w-4 h-4 mr-2 text-blue-600" />
+                    Status Pembayaran
+                  </h3>
+                  <p className="text-sm text-blue-800">
+                    ✅ Pembayaran telah diverifikasi pada {new Date(selectedOrder.updatedAt).toLocaleDateString('id-ID', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
                 </div>
               )}
 
