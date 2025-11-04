@@ -18,22 +18,32 @@ interface CacheSettings {
   last_auto_check?: string;
   next_auto_check?: string;
   auto_check_enabled?: boolean;
+
+  // Address cache TTL settings
+  address_provinces_ttl_hours?: number;
+  address_cities_ttl_hours?: number;
+  address_districts_ttl_hours?: number;
+  address_subdistricts_ttl_hours?: number;
+  address_auto_cleanup_expired?: boolean;
 }
 
 interface CacheInfo {
   cacheKey: string;
-  origin: string;
-  destination: string;
-  weight: number;
-  courier: string;
+  origin?: string;
+  destination?: string;
+  weight?: number;
+  courier?: string;
   cached_at: string;
   expires_at: string;
   hit_count: number;
-  refresh_version: number;
-  results_count: number;
+  refresh_version?: number;
+  results_count?: number;
   is_expired: boolean;
   age_days: number;
   cache_ttl_hours: number;
+  type?: 'shipping' | 'address';
+  data_type?: string;
+  data_count?: number;
 }
 
 interface CacheSummary {
@@ -42,6 +52,10 @@ interface CacheSummary {
   active: number;
   oldest_cache: number;
   newest_cache: number;
+  shipping_total?: number;
+  address_total?: number;
+  shipping_expired?: number;
+  address_expired?: number;
 }
 
 const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ user, onBack }) => {
@@ -106,8 +120,8 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
     setLoading(true);
     try {
       const token = await getAuthToken();
-      // TEMPORARY: Use bypass endpoint for testing
-      const response = await fetch('/api/admin/cache-settings-temp?action=settings', {
+      // MIGRATED: Use official endpoint now
+      const response = await fetch('/api/admin/cache-settings?action=settings', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -133,8 +147,8 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
     setLoading(true);
     try {
       const token = await getAuthToken();
-      // TEMPORARY: Use bypass endpoint for testing
-      const response = await fetch('/api/admin/cache-settings-temp?action=list', {
+      // MIGRATED: Use official endpoint now
+      const response = await fetch('/api/admin/cache-settings?action=list', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -161,7 +175,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
     setLoading(true);
     try {
       const token = await getAuthToken();
-      const response = await fetch('/api/admin/cache-settings-temp', {
+      const response = await fetch('/api/admin/cache-settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -200,7 +214,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
     setLoading(true);
     try {
       const token = await getAuthToken();
-      const response = await fetch('/api/admin/cache-settings-temp', {
+      const response = await fetch('/api/admin/cache-settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -218,7 +232,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
         setMessage({ type: 'success', text: 'Cache refresh initiated successfully' });
         setRefreshForm({ origin: '', destination: '', weight: 1000, courier: 'all' });
         // Reload cache list if on list tab
-        if (activeTab === 'list') {
+        if (activeTab === 'shipping-list' || activeTab === 'address-list') {
           loadCacheList();
         }
       } else {
@@ -337,7 +351,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
   }, [user]);
 
   useEffect(() => {
-    if (activeTab === 'list' && user?.role === 'owner') {
+    if ((activeTab === 'shipping-list' || activeTab === 'address-list') && user?.role === 'owner') {
       loadCacheList();
     }
   }, [activeTab, user]);
