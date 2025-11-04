@@ -65,22 +65,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     // Check if this specific product is in flash sale and flash sale is active
     const isThisProductInFlashSale = isProductInFlashSale(product.id) && product.isFlashSale && product.flashSalePrice > 0;
 
-    // Debug ProductCard pricing logic
-    console.log('🏷️ ProductCard Debug (Firebase):', {
-      productName: product.name,
-      productId: product.id,
-      isFlashSaleActive,
-      isProductInFlashSale: isProductInFlashSale(product.id),
-      productIsFlashSale: product.isFlashSale,
-      isThisProductInFlashSale,
-      isFlashSaleProp: isFlashSale,
-      retailPrice: product.retailPrice,
-      flashSalePrice: product.flashSalePrice,
-      originalRetailPrice: product.originalRetailPrice,
-      calculatedOriginalPrice: product.originalRetailPrice || product.retailPrice,
-      discountPercent: Math.round((1 - product.flashSalePrice / (product.originalRetailPrice || product.retailPrice)) * 100)
-    });
-
+  
     if (isThisProductInFlashSale) {
       return (
         <div className="space-y-1">

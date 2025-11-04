@@ -22,34 +22,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   const { products, loading, updateProduct, addProduct, deleteProduct } = useFirebaseProducts();
   const { flashSaleConfig, timeLeft, isFlashSaleActive, startFlashSale, stopFlashSale } = useFirebaseFlashSale();
 
-  // Debug logging untuk flash sale
-  useEffect(() => {
-    const flashSaleProducts = products.filter(p => p.isFlashSale);
-    console.log('🔍 DEBUG AdminProductsPage:');
-    console.log('📊 Total products:', products.length);
-    console.log('🔥 Flash sale products:', flashSaleProducts.length);
-    console.log('⚡ Flash sale config active:', isFlashSaleActive);
-    console.log('⏰ Time left:', timeLeft);
-    console.log('📋 Flash sale config:', flashSaleConfig);
-
-    if (flashSaleProducts.length > 0) {
-      console.log('🔥 Flash sale product details:', flashSaleProducts.map(p => ({
-        name: p.name,
-        id: p.id,
-        isFlashSale: p.isFlashSale,
-        flashSalePrice: p.flashSalePrice
-      })));
-    }
-
-    // Detect inconsistency
-    if (flashSaleProducts.length > 0 && !isFlashSaleActive) {
-      console.error('🚨 INCONSISTENCY DETECTED: Products marked as flash sale but flash sale is not active!');
-      flashSaleProducts.forEach(p => {
-        console.error(`🚨 Product "${p.name}" stuck in flash sale mode`);
-      });
-    }
-  }, [products, isFlashSaleActive, flashSaleConfig, timeLeft]);
-
+  
   // State management
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);

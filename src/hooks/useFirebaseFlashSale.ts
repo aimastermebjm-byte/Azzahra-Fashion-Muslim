@@ -78,7 +78,6 @@ export const useFirebaseFlashSale = () => {
         setFlashSaleConfig(config);
         console.log('✅ Firebase Flash Sale: Config loaded from Firebase');
         console.log('📅 Flash sale ends at:', config.endTime);
-        console.log('⏰ Current time:', new Date().toISOString());
         console.log('🔥 Firebase Flash Sale: Active status:', config.isActive);
       } else {
         console.log('📝 Firebase Flash Sale: No active flash sale found');
@@ -123,7 +122,6 @@ export const useFirebaseFlashSale = () => {
         );
       } else {
         // Flash sale ended
-        console.log('⏰ Firebase Flash Sale: Flash sale has ended!');
 
         // Update Firebase to mark as inactive AND clean up products
         if (flashSaleConfig.id) {

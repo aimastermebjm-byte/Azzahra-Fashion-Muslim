@@ -75,7 +75,6 @@ export const useFlashSale = () => {
         );
       } else {
         // Flash sale ended - ENHANCED CLEANUP
-        console.log('⏰ Flash sale has ended!');
 
         // 1. Update local state
         setFlashSaleConfig(prev => prev ? { ...prev, isActive: false } : null);

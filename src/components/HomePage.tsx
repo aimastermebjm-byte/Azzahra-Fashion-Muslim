@@ -72,7 +72,6 @@ const HomePage: React.FC<HomePageProps> = ({
     console.log('🔄 HomePage: Starting periodic refresh timer');
 
     const interval = setInterval(() => {
-      console.log('⏰ HomePage: Periodic refresh triggered');
       setRefreshTrigger(prev => prev + 1);
       setLastSyncTime(new Date().toLocaleTimeString('id-ID'));
       loadCartCount(); // Refresh cart count too

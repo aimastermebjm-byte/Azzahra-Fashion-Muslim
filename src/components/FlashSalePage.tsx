@@ -24,38 +24,7 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
   const { timeLeft, isFlashSaleActive, loading: flashSaleLoading } = useFirebaseFlashSale();
   const { cartItems } = useRealTimeCart();
 
-  // Debug flash sale hook values
-  console.log('⚡ FlashSalePage Debug:', {
-    isFlashSaleActive,
-    timeLeft,
-    flashSaleLoading
-  });
-
-  // Debug products data structure
-  if (products && products.length > 0) {
-    const flashSaleProducts = products.filter(p => p.isFlashSale);
-    console.log('🔍 FlashSale products found:', flashSaleProducts.length);
-
-    flashSaleProducts.forEach((product, index) => {
-      console.log(`📦 Product ${index + 1}:`, {
-        id: product.id,
-        name: product.name,
-        retailPrice: product.retailPrice,
-        flashSalePrice: product.flashSalePrice,
-        originalRetailPrice: product.originalRetailPrice,
-        isFlashSale: product.isFlashSale,
-        // Check all possible price fields
-        allPriceFields: {
-          retailPrice: product.retailPrice,
-          flashSalePrice: product.flashSalePrice,
-          originalRetailPrice: product.originalRetailPrice,
-          resellerPrice: product.resellerPrice,
-          price: product.price
-        }
-      });
-    });
-  }
-
+  
   // Flash sale events now handled by useFirebaseFlashSale hook - real-time updates from Firebase
 
   // Flash sale status now handled by useFirebaseFlashSale hook - no need for localStorage checking

@@ -211,7 +211,6 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
       if (addressCache.has(cacheKey)) {
         const cachedData = addressCache.get(cacheKey);
         setCities(cachedData);
-        console.log('⚡ Cities loaded instantly from IN-MEMORY cache:', cachedData.length, 'items for province', formData.provinceId);
         return;
       }
 
@@ -245,7 +244,6 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
       if (addressCache.has(cacheKey)) {
         const cachedData = addressCache.get(cacheKey);
         setDistricts(cachedData);
-        console.log('⚡ Districts loaded instantly from IN-MEMORY cache:', cachedData.length, 'items for city', formData.cityId);
         return;
       }
 
@@ -279,7 +277,6 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
       if (addressCache.has(cacheKey)) {
         const cachedData = addressCache.get(cacheKey);
         setSubdistricts(cachedData);
-        console.log('⚡ Subdistricts loaded instantly from IN-MEMORY cache:', cachedData.length, 'items for district', formData.districtId);
         return;
       }
 

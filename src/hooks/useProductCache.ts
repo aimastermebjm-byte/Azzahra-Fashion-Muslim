@@ -28,13 +28,11 @@ export const useProductCache = () => {
 
       const isExpired = Date.now() - parseInt(cacheExpiry) > CACHE_DURATION;
       if (isExpired) {
-        console.log('⏰ Cache expired, clearing...');
         clearCache();
         return null;
       }
 
-      console.log('⚡ Loading from cache...');
-      return JSON.parse(cachedData);
+            return JSON.parse(cachedData);
     } catch (error) {
       console.warn('❌ Failed to load from cache:', error);
       clearCache();

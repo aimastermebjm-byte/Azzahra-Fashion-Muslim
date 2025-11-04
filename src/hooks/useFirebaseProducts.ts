@@ -23,7 +23,6 @@ export const useFirebaseProducts = () => {
   const { saveToCache, getFromCache, isCacheValid } = useProductCache();
 
   useEffect(() => {
-    console.log('⚡ Loading products with smart cache...');
     const startTime = performance.now();
 
     // STEP 1: Check cache first for instant loading
@@ -81,7 +80,6 @@ export const useFirebaseProducts = () => {
         const processingTime = performance.now() - processingStartTime;
         const totalTime = performance.now() - startTime;
 
-        console.log(`⚡ Performance:`);
         console.log(`   - Processing time: ${processingTime.toFixed(2)}ms`);
         console.log(`   - Total time: ${totalTime.toFixed(2)}ms`);
         console.log(`📊 Initial load complete. Total products: ${productsData.length}`);
