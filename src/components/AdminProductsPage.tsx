@@ -72,6 +72,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     resellerPrice: 0,
     costPrice: 0,
     stock: 0,
+    weight: 1000, // weight in grams (default 1000g = 1kg)
     images: [] as string[],
     variants: [{ sizes: [], colors: [] }]
   });
@@ -170,6 +171,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         resellerPrice: 0,
         costPrice: 0,
         stock: 0,
+        weight: 1000, // reset to default 1000g
         images: [],
         variants: [{ sizes: [], colors: [] }]
       });
@@ -215,6 +217,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       resellerPrice: product.resellerPrice,
       costPrice: product.costPrice,
       stock: product.stock,
+      weight: product.weight || 1000, // use product weight or default 1000g
       images: product.images,
       variants: product.variants || [{ sizes: [], colors: [] }]
     });
@@ -869,6 +872,24 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 />
               </div>
 
+              {/* Weight */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Berat Produk (gram) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  step="1"
+                  value={formData.weight}
+                  onChange={(e) => setFormData({ ...formData, weight: parseInt(e.target.value) || 1000 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="1000"
+                />
+                <p className="text-xs text-gray-500 mt-1">Berat produk dalam gram (contoh: 1000 = 1kg)</p>
+              </div>
+
               {/* Form Actions */}
               <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
                 <button
@@ -1017,6 +1038,24 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+              </div>
+
+              {/* Weight */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Berat Produk (gram) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  step="1"
+                  value={formData.weight}
+                  onChange={(e) => setFormData({ ...formData, weight: parseInt(e.target.value) || 1000 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="1000"
+                />
+                <p className="text-xs text-gray-500 mt-1">Berat produk dalam gram (contoh: 1000 = 1kg)</p>
               </div>
 
               {/* Form Actions */}
