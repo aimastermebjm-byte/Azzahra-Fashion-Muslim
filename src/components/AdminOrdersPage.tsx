@@ -621,63 +621,65 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
                   )}
                 </div>
 
-                {(selectedOrder.paymentProof || selectedOrder.paymentProofData) && (
-                  {selectedOrder.paymentProofData || selectedOrder.paymentProofUrl ? (
-                    <div>
-                      {selectedOrder.paymentProofData ? (
-                        // Display from base64 data (FREE storage)
-                        <div>
-                          <img
-                            src={`data:image/*;base64,${selectedOrder.paymentProofData}`}
-                            alt="Payment Proof"
-                            className="w-full max-w-md rounded-lg border-2 border-green-200"
-                            onClick={() => {
-                              const newWindow = window.open('', '_blank');
-                              if (newWindow) {
-                                newWindow.document.write(`
-                                  <html>
-                                    <body style="margin:0;padding:20px;background:#f3f4f6;">
-                                      <img src="data:image/*;base64,${selectedOrder.paymentProofData}"
-                                           style="max-width:100%;height:auto;display:block;margin:0 auto;"
-                                           alt="Payment Proof" />
-                                    </body>
-                                  </html>
-                                `);
-                              }
-                            }}
-                            style={{ cursor: 'pointer' }}
-                          />
-                          <p className="text-xs text-gray-600 mt-2 text-center">
-                            💡 Klik gambar untuk memperbesar (Base64 FREE Storage)
-                          </p>
-                        </div>
-                      ) : (
-                        // Display from Storage URL (if exists)
-                        <div>
-                          <img
-                            src={selectedOrder.paymentProofUrl}
-                            alt="Payment Proof"
-                            className="w-full max-w-md rounded-lg border-2 border-green-200"
-                            onClick={() => window.open(selectedOrder.paymentProofUrl, '_blank')}
-                            style={{ cursor: 'pointer' }}
-                          />
-                          <p className="text-xs text-gray-600 mt-2 text-center">
-                            💡 Klik gambar untuk memperbesar
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-green-800">
-                      <p className="font-medium">📎 File Bukti Pembayaran:</p>
-                      <p className="bg-white p-2 rounded border border-green-200 mt-1">
-                        {selectedOrder.paymentProof}
-                      </p>
-                      <p className="text-xs mt-2 text-gray-600">
-                        (File tersimpan di Firebase Firestore - Gratis!)
-                      </p>
-                    </div>
-                  )}
+                {(selectedOrder.paymentProof || selectedOrder.paymentProofData) ? (
+                  <div>
+                    {selectedOrder.paymentProofData || selectedOrder.paymentProofUrl ? (
+                      <div>
+                        {selectedOrder.paymentProofData ? (
+                          // Display from base64 data (FREE storage)
+                          <div>
+                            <img
+                              src={`data:image/*;base64,${selectedOrder.paymentProofData}`}
+                              alt="Payment Proof"
+                              className="w-full max-w-md rounded-lg border-2 border-green-200"
+                              onClick={() => {
+                                const newWindow = window.open('', '_blank');
+                                if (newWindow) {
+                                  newWindow.document.write(`
+                                    <html>
+                                      <body style="margin:0;padding:20px;background:#f3f4f6;">
+                                        <img src="data:image/*;base64,${selectedOrder.paymentProofData}"
+                                             style="max-width:100%;height:auto;display:block;margin:0 auto;"
+                                             alt="Payment Proof" />
+                                      </body>
+                                    </html>
+                                  `);
+                                }
+                              }}
+                              style={{ cursor: 'pointer' }}
+                            />
+                            <p className="text-xs text-gray-600 mt-2 text-center">
+                              💡 Klik gambar untuk memperbesar (Base64 FREE Storage)
+                            </p>
+                          </div>
+                        ) : (
+                          // Display from Storage URL (if exists)
+                          <div>
+                            <img
+                              src={selectedOrder.paymentProofUrl}
+                              alt="Payment Proof"
+                              className="w-full max-w-md rounded-lg border-2 border-green-200"
+                              onClick={() => window.open(selectedOrder.paymentProofUrl, '_blank')}
+                              style={{ cursor: 'pointer' }}
+                            />
+                            <p className="text-xs text-gray-600 mt-2 text-center">
+                              💡 Klik gambar untuk memperbesar
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-green-800">
+                        <p className="font-medium">📎 File Bukti Pembayaran:</p>
+                        <p className="bg-white p-2 rounded border border-green-200 mt-1">
+                          {selectedOrder.paymentProof}
+                        </p>
+                        <p className="text-xs mt-2 text-gray-600">
+                          (File tersimpan di Firebase Firestore - Gratis!)
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="text-sm text-gray-600 text-center py-4">
                     <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
