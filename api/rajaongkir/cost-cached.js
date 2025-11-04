@@ -235,7 +235,45 @@ export default async function handler(req, res) {
           });
         } else {
           console.log(`❌ CACHE MISS for ${courierCode}:`, cacheKey);
-          // Fetch from API for this courier using BILLABLE weight
+
+          // SMART CACHE: Try to find 1kg cache and multiply
+          if (billableWeight > 1000) {
+            const oneKgCacheKey = generateCacheKey(origin, destination, 1000, courierCode);
+            console.log(`🧠 SMART CACHE: Looking for 1kg cache for ${courierCode}:`, oneKgCacheKey);
+
+            const oneKgCacheDoc = await getFirestoreDocument('shipping_cache', oneKgCacheKey);
+
+            if (oneKgCacheDoc.exists && isCacheValid(oneKgCacheDoc.data.expires_at)) {
+              const multiplier = billableWeight / 1000; // How many kg
+              console.log(`🧠 SMART CACHE HIT for ${courierCode}: Found 1kg cache, multiplying by ${multiplier}x`);
+
+              // Multiply all costs from 1kg cache
+              const multipliedResults = oneKgCacheDoc.data.results.map(service => ({
+                ...service,
+                cost: service.cost * multiplier,
+                description: `${service.description} (${multiplier}x from 1kg cache)`
+              }));
+
+              results = results.concat(multipliedResults);
+
+              // Save multiplied result to cache for future use
+              const expiresAt = new Date(Date.now() + (CACHE_TTL_HOURS * 60 * 60 * 1000));
+              await setFirestoreDocument('shipping_cache', cacheKey, {
+                origin,
+                destination,
+                weight: billableWeight,
+                courier: courierCode,
+                results: multipliedResults,
+                expires_at: expiresAt,
+                hit_count: 1
+              });
+              console.log(`💾 SMART CACHE SAVED for ${courierCode}:`, cacheKey, `(multiplied from 1kg cache)`);
+              continue; // Skip API call for this courier
+            }
+          }
+
+          // Fallback: Fetch from API for this courier using BILLABLE weight
+          console.log(`📡 FALLBACK: Fetching from API for ${courierCode}`);
           try {
             const apiResults = await fetchCourierFromAPI(courierCode, origin, destination, billableWeight, price);
             if (apiResults && apiResults.length > 0) {
@@ -260,14 +298,14 @@ export default async function handler(req, res) {
         }
       }
     } else {
-      // Single courier mode
+      // Single courier mode - SMART CACHE MULTIPLICATION LOGIC
       const cacheKey = generateCacheKey(origin, destination, billableWeight, courier);
       console.log('📦 Checking cache for single courier:', cacheKey);
 
       const cacheDoc = await getFirestoreDocument('shipping_cache', cacheKey);
 
       if (cacheDoc.exists && isCacheValid(cacheDoc.data.expires_at)) {
-        console.log('✅ CACHE HIT:', cacheKey);
+        console.log('✅ DIRECT CACHE HIT:', cacheKey);
         console.log('📊 Cache stats:', {
           cached_at: cacheDoc.data.cached_at,
           expires_at: cacheDoc.data.expires_at,
@@ -298,7 +336,58 @@ export default async function handler(req, res) {
         return res.status(200).json(cachedResponse);
       } else {
         console.log('❌ CACHE MISS:', cacheKey);
-        // Fetch from API using BILLABLE weight
+
+        // SMART CACHE: Try to find 1kg cache and multiply
+        if (billableWeight > 1000) {
+          const oneKgCacheKey = generateCacheKey(origin, destination, 1000, courier);
+          console.log('🧠 SMART CACHE: Looking for 1kg cache:', oneKgCacheKey);
+
+          const oneKgCacheDoc = await getFirestoreDocument('shipping_cache', oneKgCacheKey);
+
+          if (oneKgCacheDoc.exists && isCacheValid(oneKgCacheDoc.data.expires_at)) {
+            const multiplier = billableWeight / 1000; // How many kg
+            console.log(`🧠 SMART CACHE HIT: Found 1kg cache, multiplying by ${multiplier}x`);
+
+            // Multiply all costs from 1kg cache
+            const multipliedResults = oneKgCacheDoc.data.results.map(service => ({
+              ...service,
+              cost: service.cost * multiplier,
+              description: `${service.description} (${multiplier}x from 1kg cache)`
+            }));
+
+            // Save multiplied result to cache for future use
+            const expiresAt = new Date(Date.now() + (CACHE_TTL_HOURS * 60 * 60 * 1000));
+            await setFirestoreDocument('shipping_cache', cacheKey, {
+              origin,
+              destination,
+              weight: billableWeight,
+              courier,
+              results: multipliedResults,
+              expires_at: expiresAt,
+              hit_count: 1
+            });
+            console.log('💾 SMART CACHE SAVED:', cacheKey, `(multiplied from 1kg cache)`);
+
+            const smartCacheResponse = {
+              meta: {
+                message: 'Success Get Domestic Shipping costs (SMART CACHE)',
+                code: 200,
+                status: 'success',
+                cached: true,
+                smart_cache: true,
+                multiplier: multiplier,
+                cached_at: oneKgCacheDoc.data.cached_at,
+                weightInfo: weightInfo
+              },
+              data: multipliedResults
+            };
+
+            return res.status(200).json(smartCacheResponse);
+          }
+        }
+
+        // Fallback: Fetch from API using BILLABLE weight
+        console.log('📡 FALLBACK: Fetching from API');
         results = await fetchCourierFromAPI(courier, origin, destination, billableWeight, price);
 
         if (results && results.length > 0) {
