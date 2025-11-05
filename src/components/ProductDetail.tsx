@@ -459,7 +459,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             )}
             <div className="flex justify-between">
               <span className="text-gray-600">Berat:</span>
-              <span className="font-medium">{product.weight} {product.unit}</span>
+              <span className="font-medium">{product.weight} gram</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Kondisi:</span>
