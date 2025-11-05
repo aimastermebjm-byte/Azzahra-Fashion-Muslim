@@ -142,7 +142,7 @@ export const useFirebaseProducts = () => {
         isFlashSale: productData.isFlashSale || false,
         flashSalePrice: productData.flashSalePrice || productData.retailPrice,
         salesCount: 0,
-        unit: productData.unit || 'pcs',
+        unit: productData.unit || 'gram',
         createdAt: new Date()
       });
       console.log('✅ Product added with ID:', docRef.id);
