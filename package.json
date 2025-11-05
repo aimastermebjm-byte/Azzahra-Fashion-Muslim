@@ -11,10 +11,14 @@
     "deploy": "npm run build && vercel --prod",
     "deploy:dev": "vercel",
     "deploy-windows": "deploy.bat",
-    "postinstall": "chmod +x node_modules/.bin/*"
+    "postinstall": "chmod +x node_modules/.bin/*",
+    "migration:preview": "npx tsx scripts/runMigration.ts preview",
+    "migration:run": "npx tsx scripts/runMigration.ts run"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.75.1",
+    "@types/dotenv": "^6.1.1",
+    "dotenv": "^17.2.3",
     "firebase": "^12.4.0",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
