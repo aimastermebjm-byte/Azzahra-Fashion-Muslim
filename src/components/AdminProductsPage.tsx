@@ -47,6 +47,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     stock: 0,
     weight: 1000, // weight in grams (default 1000g = 1kg)
     images: [] as string[],
+    imageUrls: '', // Temporary field for URL input
     variants: { sizes: [] as string[], colors: [] as string[], stock: {} as Record<string, Record<string, number>> },
     status: 'ready' as 'ready' | 'po'
   });
@@ -246,6 +247,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         stock: 0,
         weight: 1000, // reset to default 1000g
         images: [],
+        imageUrls: '',
         variants: { sizes: [], colors: [], stock: {} },
         status: 'ready'
       });

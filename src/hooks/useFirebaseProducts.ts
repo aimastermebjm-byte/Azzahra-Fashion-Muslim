@@ -99,7 +99,11 @@ export const useFirebaseProducts = () => {
           stock: calculatedTotalStock,
           images: (data.images || []),
           image: data.images?.[0] || '/placeholder-product.jpg',
-          variants: data.variants || { sizes: data.sizes || [], colors: data.colors || [], stock: data.variants?.stock || {} },
+          variants: {
+            sizes: data.variants?.sizes || data.sizes || [],
+            colors: data.variants?.colors || data.colors || [],
+            stock: data.variants?.stock || {}
+          },
           isFeatured: Boolean(data.isFeatured || data.featured),
           isFlashSale: Boolean(data.isFlashSale),
           flashSalePrice: Number(data.flashSalePrice) || retailPrice,
@@ -110,7 +114,9 @@ export const useFirebaseProducts = () => {
           featuredOrder: Number(data.featuredOrder) || 0,
           weight: Number(data.weight) || 1000,
           unit: 'gram',
-          status: data.status || (calculatedTotalStock > 0 ? 'ready' : 'po'),
+          status: data.status ||
+                  (data.condition === 'baru' ? 'ready' : 'po') ||
+                  (calculatedTotalStock > 0 ? 'ready' : 'po'),
           estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
         };
       });
@@ -258,12 +264,18 @@ export const useFirebaseProducts = () => {
           category: data.category || 'uncategorized',
           images: (data.images || []),
           image: data.images?.[0] || '/placeholder-product.jpg',
-          variants: data.variants || { sizes: data.sizes || [], colors: data.colors || [], stock: data.variants?.stock || {} },
+          variants: {
+            sizes: data.variants?.sizes || data.sizes || [],
+            colors: data.variants?.colors || data.colors || [],
+            stock: data.variants?.stock || {}
+          },
           retailPrice: Number(data.retailPrice || data.price || 0),
           resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
           costPrice: Number(data.costPrice) || Number(data.retailPrice || data.price || 0) * 0.6,
           stock: calculatedTotalStock,
-          status: data.status || (calculatedTotalStock > 0 ? 'ready' : 'po'),
+          status: data.status ||
+                  (data.condition === 'baru' ? 'ready' : 'po') ||
+                  (calculatedTotalStock > 0 ? 'ready' : 'po'),
           isFlashSale: Boolean(data.isFlashSale),
           flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
           originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),

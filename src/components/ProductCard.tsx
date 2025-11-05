@@ -53,13 +53,19 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const getStatusBadge = () => {
     // Ready/PO badge with TOTAL stock count from all variants
     const totalStock = getTotalVariantStock();
-    const stockStatus = product.status === 'ready'
+
+    // Handle backward compatibility for status field
+    const displayStatus = product.status ||
+                        (product.condition === 'baru' ? 'ready' : 'po') ||
+                        (totalStock > 0 ? 'ready' : 'po');
+
+    const stockStatus = displayStatus === 'ready'
       ? `Ready (${totalStock})`
       : `PO (${totalStock})`;
 
     return (
       <div className={`absolute top-2 left-2 text-xs px-2 py-1 rounded font-medium ${
-        product.status === 'ready'
+        displayStatus === 'ready'
           ? 'bg-green-500 text-white'
           : 'bg-orange-500 text-white'
       }`}>
