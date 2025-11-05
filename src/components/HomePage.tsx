@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ShoppingCart, User, Filter, ChevronLeft, ChevronRight, Star, ArrowUpDown, Clock } from 'lucide-react';
+import { Search, ShoppingCart, User, Filter, Star, ArrowUpDown, Clock } from 'lucide-react';
 import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
@@ -33,10 +33,8 @@ const HomePage: React.FC<HomePageProps> = ({
   const [statusFilter, setStatusFilter] = useState<'all' | 'ready' | 'po'>('all');
   const [cartCount, setCartCount] = useState(0);
   const [sortBy, setSortBy] = useState<'terbaru' | 'terlaris' | 'termurah' | 'termahal' | 'terlama'>('terbaru');
-  const [currentPage, setCurrentPage] = useState(1);
   const [featuredUpdateTrigger, setFeaturedUpdateTrigger] = useState(0); // Force re-render
   const [flashSaleUpdateTrigger, setFlashSaleUpdateTrigger] = useState(0); // Force re-render
-  const productsPerPage = 8;
 
   // Flash sale hook for countdown timer
   const { timeLeft, isFlashSaleActive, flashSaleConfig } = useFirebaseFlashSale();
@@ -67,22 +65,22 @@ const HomePage: React.FC<HomePageProps> = ({
     }
   }, [user]);
 
-  // Periodic refresh timer to ensure data stays synchronized
+  // Periodic refresh timer to ensure data stays synchronized - OPTIMIZED for faster loading
   useEffect(() => {
-    console.log('🔄 HomePage: Starting periodic refresh timer');
+    console.log('⚡ FAST HomePage: Starting optimized refresh timer');
 
     const interval = setInterval(() => {
       setRefreshTrigger(prev => prev + 1);
       setLastSyncTime(new Date().toLocaleTimeString('id-ID'));
       loadCartCount(); // Refresh cart count too
-    }, 15000); // Refresh every 15 seconds
+    }, 10000); // Reduced to 10 seconds for faster updates
 
     // Initial sync time
     setLastSyncTime(new Date().toLocaleTimeString('id-ID'));
 
     return () => {
       clearInterval(interval);
-      console.log('🔄 HomePage: Periodic refresh timer stopped');
+      console.log('⚡ FAST HomePage: Optimized refresh timer stopped');
     };
   }, [user]);
 
@@ -169,7 +167,7 @@ const HomePage: React.FC<HomePageProps> = ({
     return featured;
   }, [safeProducts, featuredUpdateTrigger]); // Depend on safeProducts and trigger for re-render
 
-  // Regular products (ALL PRODUCTS - not excluding featured)
+  // Regular products (ALL PRODUCTS - show all at once for faster loading)
   const regularProducts = React.useMemo(() => {
     try {
       if (!Array.isArray(sortedProducts)) {
@@ -181,13 +179,12 @@ const HomePage: React.FC<HomePageProps> = ({
     }
   }, [sortedProducts, safeProducts]);
 
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = regularProducts.slice(indexOfFirstProduct, indexOfLastProduct);
-  const totalPages = Math.ceil(regularProducts.length / productsPerPage);
+  // Show ALL products at once - no pagination for better UX and faster loading
+  const currentProducts = regularProducts; // Show all products
 
+  // Reset search filters trigger for instant refresh
   useEffect(() => {
-    setCurrentPage(1);
+    console.log('⚡ FAST HomePage: Products filtered/updated - showing all products instantly');
   }, [searchQuery, selectedCategory, statusFilter, sortBy]);
 
   // Listen for featured products updates from admin
@@ -272,8 +269,9 @@ const HomePage: React.FC<HomePageProps> = ({
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading products...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-pink-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">⚡ Memuat produk secara real-time...</p>
+          <p className="text-gray-500 text-sm mt-1">Akan muncul semua produk dalam 1 halaman</p>
         </div>
       </div>
     );
@@ -628,79 +626,10 @@ const HomePage: React.FC<HomePageProps> = ({
               ))}
             </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex flex-col items-center mt-8 space-y-4">
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                    className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
-                      currentPage === 1
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-                    }`}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    <span>Sebelumnya</span>
-                  </button>
-
-                  {/* Page Numbers */}
-                  <div className="flex items-center space-x-1">
-                    {[...Array(totalPages)].map((_, index) => {
-                      const pageNumber = index + 1;
-                      const isActive = currentPage === pageNumber;
-
-                      if (
-                        pageNumber === 1 ||
-                        pageNumber === totalPages ||
-                        (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
-                      ) {
-                        return (
-                          <button
-                            key={pageNumber}
-                            onClick={() => setCurrentPage(pageNumber)}
-                            className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                              isActive
-                                ? 'bg-pink-500 text-white'
-                                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-                            }`}
-                          >
-                            {pageNumber}
-                          </button>
-                        );
-                      }
-
-                      if (
-                        (pageNumber === 2 && currentPage > 3) ||
-                        (pageNumber === totalPages - 1 && currentPage < totalPages - 2)
-                      ) {
-                        return <span key={pageNumber} className="px-2 text-gray-400">...</span>;
-                      }
-
-                      return null;
-                    })}
-                  </div>
-
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                    className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
-                      currentPage === totalPages
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-                    }`}
-                  >
-                    <span>Selanjutnya</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="text-sm text-gray-600">
-                  Menampilkan {indexOfFirstProduct + 1}-{Math.min(indexOfLastProduct, regularProducts.length)} dari {regularProducts.length} produk
-                </div>
-              </div>
-            )}
+            {/* Products Summary - No Pagination for Better UX */}
+            <div className="mt-6 text-center text-sm text-gray-600">
+              <p>🚀 Menampilkan {regularProducts.length} produk secara real-time</p>
+            </div>
           </>
         )}
       </div>

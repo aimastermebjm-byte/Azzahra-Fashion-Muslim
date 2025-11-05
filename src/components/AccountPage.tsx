@@ -81,27 +81,11 @@ const AccountPage: React.FC<AccountPageProps> = ({
 
   
   if (!user) {
-    console.log('⚠️ AccountPage: User is null, checking for stored sessions');
-    // Try to restore user from localStorage as a fallback
-    try {
-      // Check for temp_user_session (used by useSupabaseAuthSimple)
-      let savedUser = localStorage.getItem('temp_user_session');
-
-      // Also check for legacy azzahra_current_user key
-      if (!savedUser) {
-        savedUser = localStorage.getItem('azzahra_current_user');
-      }
-
-      if (savedUser) {
-        console.log('🔄 AccountPage: Found stored user session, reloading page to restore...');
-        console.log('💡 This should trigger the useSupabaseAuthSimple hook to restore the session properly');
-        // This will trigger a re-render with the restored user
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
-        return (
-          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-            <div className="text-center">
+    console.log('⚠️ AccountPage: User is null - Firebase-only mode');
+    // No localStorage fallback in Firebase-only mode
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Memulihkan sesi pengguna...</p>
             </div>

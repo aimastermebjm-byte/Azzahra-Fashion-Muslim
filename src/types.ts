@@ -1,6 +1,11 @@
 export interface ProductVariant {
   sizes: string[];
   colors: string[];
+  stock?: {
+    [size: string]: {
+      [color: string]: number;
+    };
+  };
 }
 
 export interface Product {

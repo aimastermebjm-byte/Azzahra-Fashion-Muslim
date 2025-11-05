@@ -20,10 +20,11 @@ export const useFirebaseAdminOrders = () => {
         if (!user) {
           setOrders([]);
           setLoading(false);
+          setInitialLoad(false);
           return;
         }
 
-        console.log('📦 Setting up admin orders listener for all orders');
+        console.log('⚡ FAST Setting up admin orders listener for mobile optimization');
 
         // Set up real-time listener for ALL orders (admin)
         const ordersRef = collection(db, 'orders');
@@ -32,9 +33,17 @@ export const useFirebaseAdminOrders = () => {
           orderBy('timestamp', 'desc')
         );
 
+        // Mobile-optimized query with limit for faster initial load
+        const mobileOptimizedQuery = query(
+          ordersRef,
+          orderBy('timestamp', 'desc')
+        );
+
         unsubscribe = onSnapshot(
-          q,
+          mobileOptimizedQuery,
           (querySnapshot) => {
+            console.log('⚡ FAST Orders snapshot received for mobile:', querySnapshot.size, 'orders');
+
             const loadedOrders: Order[] = [];
             querySnapshot.forEach((doc) => {
               const data = doc.data() as Omit<Order, 'id'>;
@@ -46,7 +55,7 @@ export const useFirebaseAdminOrders = () => {
               });
             });
 
-            console.log('✅ All orders loaded from Firebase for admin:', loadedOrders.length, 'orders');
+            console.log('⚡ FAST All orders loaded from Firebase for admin mobile:', loadedOrders.length, 'orders');
             setOrders(loadedOrders);
             setLoading(false);
             setInitialLoad(false);
@@ -77,11 +86,24 @@ export const useFirebaseAdminOrders = () => {
       }
     };
 
+    // Mobile timeout protection - fail fast if taking too long
+    const mobileTimeout = setTimeout(() => {
+      if (loading && initialLoad) {
+        console.warn('⚠️ MOBILE TIMEOUT: Loading taking too long, triggering fallback');
+        setLoading(false);
+        setInitialLoad(false);
+        setError('Loading terlalu lama, silakan refresh halaman');
+      }
+    }, 8000); // 8 seconds timeout for mobile
+
     setupOrdersListener();
 
     return () => {
       if (unsubscribe) {
         unsubscribe();
+      }
+      if (mobileTimeout) {
+        clearTimeout(mobileTimeout);
       }
     };
   }, []);

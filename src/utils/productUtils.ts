@@ -132,15 +132,9 @@ export function getFlashSaleProducts(products: SafeProduct[]): SafeProduct[] {
       return [];
     }
 
-    // Check localStorage for flash sale config
-    let flashSaleConfig;
-    try {
-      const savedConfig = localStorage.getItem('azzahra-flashsale');
-      flashSaleConfig = savedConfig ? JSON.parse(savedConfig) : null;
-    } catch (e) {
-      console.warn('⚠️ Error parsing flash sale config:', e);
-      flashSaleConfig = null;
-    }
+    // Firebase-only mode - No localStorage flash sale config
+    // Flash sale config comes from Firebase useFirebaseFlashSale hook
+    const flashSaleConfig = null;
 
     return products.filter(product => {
       // Check isFlashSale flag

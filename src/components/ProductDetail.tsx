@@ -37,8 +37,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       return;
     }
 
+    const availableStock = getSelectedVariantStock();
+    if (quantity > availableStock) {
+      alert(`Stok tidak mencukupi! Stok tersedia untuk ${selectedSize} - ${selectedColor} adalah ${availableStock} pcs`);
+      return;
+    }
+
     onAddToCart(product, { size: selectedSize, color: selectedColor }, quantity);
-    
+
     // Reset selections
     setSelectedSize('');
     setSelectedColor('');
@@ -53,6 +59,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
     if (!selectedSize || !selectedColor) {
       alert('Pilih ukuran dan warna terlebih dahulu');
+      return;
+    }
+
+    const availableStock = getSelectedVariantStock();
+    if (quantity > availableStock) {
+      alert(`Stok tidak mencukupi! Stok tersedia untuk ${selectedSize} - ${selectedColor} adalah ${availableStock} pcs`);
       return;
     }
 
@@ -79,6 +91,38 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     }
   };
 
+  // Get stock for specific variant
+  const getVariantStock = (size: string, color: string) => {
+    if (product.variants.stock && product.variants.stock[size] && product.variants.stock[size][color] !== undefined) {
+      return product.variants.stock[size][color];
+    }
+    // Fallback to total stock if variant stock not available
+    return product.stock || 0;
+  };
+
+  // Get available stock for selected variants
+  const getSelectedVariantStock = () => {
+    if (!selectedSize || !selectedColor) {
+      return product.stock || 0;
+    }
+    return getVariantStock(selectedSize, selectedColor);
+  };
+
+  // Calculate total stock across all variants
+  const getTotalStock = () => {
+    if (product.variants.stock) {
+      let total = 0;
+      Object.values(product.variants.stock).forEach(sizeStock => {
+        Object.values(sizeStock).forEach(colorStock => {
+          total += colorStock;
+        });
+      });
+      return total;
+    }
+    return product.stock || 0;
+  };
+
+  
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
@@ -215,12 +259,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center space-x-4">
               <div className="text-sm">
-                <span className="text-gray-600">Stok: </span>
+                <span className="text-gray-600">Total Stok: </span>
                 <span className={`font-semibold ${
-                  product.stock > 10 ? 'text-green-600' : 
-                  product.stock > 0 ? 'text-yellow-600' : 'text-red-600'
+                  getTotalStock() > 10 ? 'text-green-600' :
+                  getTotalStock() > 0 ? 'text-yellow-600' : 'text-red-600'
                 }`}>
-                  {product.stock}
+                  {getTotalStock()}
                 </span>
               </div>
               <div className="text-sm">
@@ -233,6 +277,21 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Variant Stock Display */}
+          {selectedSize && selectedColor && (
+            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="text-sm">
+                <span className="text-blue-600 font-medium">Stok {selectedSize} - {selectedColor}: </span>
+                <span className={`font-bold ${
+                  getSelectedVariantStock() > 5 ? 'text-green-600' :
+                  getSelectedVariantStock() > 0 ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {getSelectedVariantStock()} pcs
+                </span>
+              </div>
+            </div>
+          )}
           <div className="border-t pt-4">
             <p className="text-gray-600 leading-relaxed">{product.description}</p>
           </div>
@@ -244,19 +303,37 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           <div className="mb-6">
             <h3 className="font-semibold text-gray-800 mb-3">Pilih Ukuran</h3>
             <div className="flex flex-wrap gap-2">
-              {product.variants.sizes.map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={`px-4 py-2 border rounded-lg font-medium transition-colors ${
-                    selectedSize === size
-                      ? 'border-pink-500 bg-pink-50 text-pink-600'
-                      : 'border-gray-300 text-gray-600 hover:border-gray-400'
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
+              {product.variants.sizes.map((size) => {
+                // Calculate total stock for this size across all colors
+                const sizeTotalStock = product.variants.colors.reduce((total, color) => {
+                  return total + getVariantStock(size, color);
+                }, 0);
+
+                return (
+                  <button
+                    key={size}
+                    onClick={() => setSelectedSize(size)}
+                    disabled={sizeTotalStock === 0}
+                    className={`px-4 py-2 border rounded-lg font-medium transition-colors relative ${
+                      selectedSize === size
+                        ? 'border-pink-500 bg-pink-50 text-pink-600'
+                        : sizeTotalStock === 0
+                        ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50'
+                        : 'border-gray-300 text-gray-600 hover:border-gray-400'
+                    }`}
+                  >
+                    <span>{size}</span>
+                    {sizeTotalStock === 0 && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                    )}
+                    {product.variants.stock && (
+                      <span className="text-xs text-gray-500 block">
+                        {sizeTotalStock > 0 ? `${sizeTotalStock} pcs` : 'Habis'}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -264,20 +341,46 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           <div className="mb-6">
             <h3 className="font-semibold text-gray-800 mb-3">Pilih Warna</h3>
             <div className="flex flex-wrap gap-2">
-              {product.variants.colors.map((color) => (
-                <button
-                  key={color}
-                  onClick={() => setSelectedColor(color)}
-                  className={`px-4 py-2 border rounded-lg font-medium transition-colors ${
-                    selectedColor === color
-                      ? 'border-pink-500 bg-pink-50 text-pink-600'
-                      : 'border-gray-300 text-gray-600 hover:border-gray-400'
-                  }`}
-                >
-                  {color}
-                </button>
-              ))}
+              {product.variants.colors.map((color) => {
+                // Get stock for this color (based on selected size, or total across all sizes if no size selected)
+                const colorStock = selectedSize
+                  ? getVariantStock(selectedSize, color)
+                  : product.variants.sizes.reduce((total, size) => total + getVariantStock(size, color), 0);
+
+                const isColorDisabled = selectedSize ? colorStock === 0 : false;
+
+                return (
+                  <button
+                    key={color}
+                    onClick={() => setSelectedColor(color)}
+                    disabled={isColorDisabled}
+                    className={`px-4 py-2 border rounded-lg font-medium transition-colors relative ${
+                      selectedColor === color
+                        ? 'border-pink-500 bg-pink-50 text-pink-600'
+                        : isColorDisabled
+                        ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50'
+                        : 'border-gray-300 text-gray-600 hover:border-gray-400'
+                    }`}
+                  >
+                    <span>{color}</span>
+                    {isColorDisabled && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                    )}
+                    {product.variants.stock && (
+                      <span className="text-xs text-gray-500 block">
+                        {colorStock > 0 ? `${colorStock} pcs` : 'Habis'}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
+
+            {selectedSize && (
+              <p className="text-xs text-gray-500 mt-2">
+                💡 Stok warna ditampilkan untuk ukuran {selectedSize}
+              </p>
+            )}
           </div>
 
           {/* Quantity Selection */}
@@ -293,16 +396,50 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                 </button>
                 <span className="w-12 text-center font-semibold">{quantity}</span>
                 <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-10 h-10 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors"
+                  onClick={() => {
+                    const maxStock = getSelectedVariantStock();
+                    if (quantity < maxStock) {
+                      setQuantity(quantity + 1);
+                    }
+                  }}
+                  disabled={quantity >= getSelectedVariantStock()}
+                  className={`w-10 h-10 flex items-center justify-center rounded-md transition-colors ${
+                    quantity >= getSelectedVariantStock()
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'hover:bg-gray-200'
+                  }`}
                 >
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
               <div className="text-sm text-gray-600">
-                Stok tersedia: <span className="font-semibold">{product.stock}</span>
+                {selectedSize && selectedColor ? (
+                  <>
+                    Stok {selectedSize} - {selectedColor}:{' '}
+                    <span className={`font-semibold ${
+                      getSelectedVariantStock() > 5 ? 'text-green-600' :
+                      getSelectedVariantStock() > 0 ? 'text-yellow-600' : 'text-red-600'
+                    }`}>
+                      {getSelectedVariantStock()} pcs
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Stok tersedia:{' '}
+                    <span className="font-semibold">{getTotalStock()} pcs</span>
+                  </>
+                )}
               </div>
             </div>
+
+            {/* Stock Warning */}
+            {selectedSize && selectedColor && quantity >= getSelectedVariantStock() && (
+              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-xs text-yellow-700">
+                  ⚠️ Maksimal pembelian untuk {selectedSize} - {selectedColor} adalah {getSelectedVariantStock()} pcs
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

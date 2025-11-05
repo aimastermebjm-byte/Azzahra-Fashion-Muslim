@@ -120,11 +120,19 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [shippingError, setShippingError] = useState<string>('');
   const [selectedService, setSelectedService] = useState<KomerceCostResult | null>(null);
 
-  // Calculate total weight of cart items with smart rounding
+  // Calculate total weight of cart items with smart rounding - OPTIMIZED for Firestore data
   const calculateTotalWeight = () => {
     const totalGrams = cartItems.reduce((total, item) => {
-      // Get actual weight from product data or fallback to 1000g per item
-      const itemWeight = item.product?.weight || 1000; // weight in grams
+      // Get REAL weight from Firebase product data
+      // Priority: item.product.weight > item.weight > fallback 1000g
+      const itemWeight = item.product?.weight || item.weight || 1000; // weight in grams
+      console.log('📦 Checkout weight for item:', {
+        name: item.name || item.productName,
+        cartWeight: item.weight,
+        productWeight: item.product?.weight,
+        usedWeight: itemWeight,
+        quantity: item.quantity
+      });
       return total + (item.quantity * itemWeight);
     }, 0);
 
@@ -143,7 +151,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   
-  // Calculate shipping cost using RajaOngkir with smart caching
+  // Calculate shipping cost using RajaOngkir with smart caching - OPTIMIZED for J&T & multiple items
   const calculateShippingCost = async (courierCode: string, destinationCityId: string, weight: number) => {
     if (!courierCode || !destinationCityId || !weight) {
       return;
@@ -158,16 +166,25 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setLoadingShipping(true);
       setShippingError('');
 
-      // IMMEDIATE feedback for ultra-fast UX
+      // ULTRA-FAST feedback with enhanced logging for J&T debugging
       console.log('⚡ FAST Calculating shipping cost:', {
         origin: '2425',
         courier: courierCode,
         destination: destinationCityId,
         actualWeight: weight,
+        totalItems: cartItems.length,
+        cartDetails: cartItems.map(item => ({
+          name: item.product?.name,
+          qty: item.quantity,
+          weight: item.product?.weight || 1000
+        })),
         timestamp: new Date().toISOString()
       });
 
-      const results = await komerceService.calculateShippingCost('2425', destinationCityId, weight, courierCode);
+      // Special handling for J&T with multiple items
+      const optimizedWeight = courierCode === 'jnt' && cartItems.length > 1 ? Math.max(weight, 1000) : weight;
+
+      const results = await komerceService.calculateShippingCost('2425', destinationCityId, optimizedWeight, courierCode);
 
       if (results && results.length > 0) {
         // Komerce returns multiple services! Let user choose

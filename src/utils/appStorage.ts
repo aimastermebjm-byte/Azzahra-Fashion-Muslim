@@ -323,9 +323,80 @@ export class AppStorage {
   // ==================== UTILITY METHODS ====================
   private static saveData(key: string, data: any): void {
     try {
-      localStorage.setItem(key, JSON.stringify(data));
+      const jsonString = JSON.stringify(data);
+
+      // Check if data is too large for localStorage (5MB limit typically)
+      if (jsonString.length > 4_000_000) { // 4MB to be safe
+        console.warn(`⚠️ Data too large for localStorage (${key}): ${jsonString.length} bytes`);
+
+        // For orders, try to save only recent orders if quota exceeded
+        if (key === this.KEYS.ORDERS && Array.isArray(data)) {
+          const recentOrders = data.slice(-50); // Keep only last 50 orders
+          const reducedJson = JSON.stringify(recentOrders);
+
+          if (reducedJson.length < 4_000_000) {
+            localStorage.setItem(key, reducedJson);
+            console.log(`✅ Saved recent 50 orders to ${key} (${reducedJson.length} bytes)`);
+            return;
+          } else {
+            // Even with reduced orders, still too large - save minimal data
+            const minimalOrders = data.slice(-10);
+            localStorage.setItem(key, JSON.stringify(minimalOrders));
+            console.log(`✅ Saved last 10 orders to ${key} (${JSON.stringify(minimalOrders).length} bytes)`);
+            return;
+          }
+        }
+
+        // For other large data, try compression or alternative storage
+        console.error(`❌ Cannot save ${key} - data exceeds localStorage quota`);
+        return;
+      }
+
+      localStorage.setItem(key, jsonString);
+      console.log(`✅ Saved ${key} (${jsonString.length} bytes)`);
     } catch (error) {
-      console.error(`❌ Error saving data to ${key}:`, error);
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        console.error(`❌ localStorage quota exceeded for ${key}:`, error);
+
+        // Emergency cleanup for quota exceeded
+        this.emergencyCleanup();
+
+        // Try to save again with reduced data
+        try {
+          if (key === this.KEYS.ORDERS && Array.isArray(data)) {
+            const emergencyData = data.slice(-5); // Keep only last 5 orders
+            localStorage.setItem(key, JSON.stringify(emergencyData));
+            console.log(`🚨 Emergency: Saved last 5 orders to ${key}`);
+          }
+        } catch (retryError) {
+          console.error(`❌ Even emergency save failed for ${key}:`, retryError);
+        }
+      } else {
+        console.error(`❌ Error saving data to ${key}:`, error);
+      }
+    }
+  }
+
+  // Emergency cleanup when localStorage quota is exceeded
+  private static emergencyCleanup(): void {
+    console.log('🚨 Running emergency localStorage cleanup...');
+
+    try {
+      // Clear old orders first
+      const orders = this.loadData(this.KEYS.ORDERS);
+      if (orders && Array.isArray(orders) && orders.length > 10) {
+        const recentOrders = orders.slice(-10);
+        this.saveData(this.KEYS.ORDERS, recentOrders);
+        console.log('🧹 Cleaned up old orders, kept last 10');
+      }
+
+      // Clear other cache data
+      localStorage.removeItem('azzahra-flashsale');
+      localStorage.removeItem('temp_user_session');
+
+      console.log('✅ Emergency cleanup completed');
+    } catch (error) {
+      console.error('❌ Emergency cleanup failed:', error);
     }
   }
 

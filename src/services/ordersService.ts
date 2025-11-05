@@ -90,12 +90,22 @@ class OrdersService {
     }
   }
 
-  // Update order status (for admin dashboard)
+  // Update order status (for admin dashboard) - WITH STOCK RESTORATION
   async updateOrderStatus(orderId: string, newStatus: string): Promise<boolean> {
     try {
       console.log('🔄 Updating order status in Firebase:', orderId, '→', newStatus);
 
+      // Get order data first to check items for stock restoration
       const orderRef = doc(db, this.collection, orderId);
+      const orderDoc = await getDoc(orderRef);
+      const orderData = orderDoc.data() as Order;
+
+      // If order is being cancelled, restore stock
+      if (newStatus === 'cancelled' && orderData.status !== 'cancelled') {
+        console.log('📈 Restoring stock for cancelled order:', orderId);
+        await this.restoreStockForOrder(orderData);
+      }
+
       await updateDoc(orderRef, {
         status: newStatus,
         updatedAt: new Date().toISOString()
@@ -106,6 +116,49 @@ class OrdersService {
     } catch (error) {
       console.error('❌ Error updating order status:', error);
       return false;
+    }
+  }
+
+  // NEW: Restore stock for cancelled order
+  private async restoreStockForOrder(order: Order): Promise<void> {
+    try {
+      console.log('🔄 Restoring stock for order items:', order.items);
+
+      for (const item of order.items) {
+        if (item.productId && item.selectedVariant) {
+          const productRef = doc(db, 'products', item.productId);
+          const productDoc = await getDoc(productRef);
+
+          if (productDoc.exists()) {
+            const productData = productDoc.data();
+            const variants = productData.variants || { sizes: [], colors: [] };
+
+            // Find the specific variant to restore stock
+            const variantIndex = variants.sizes?.findIndex((size: any) =>
+              size.size === item.selectedVariant.size && size.color === item.selectedVariant.color
+            );
+
+            if (variantIndex !== undefined && variantIndex !== -1) {
+              // Update variant stock
+              variants.sizes[variantIndex].stock = (variants.sizes[variantIndex].stock || 0) + item.quantity;
+
+              // Update total product stock
+              const totalStock = variants.sizes?.reduce((sum: number, size: any) => sum + (size.stock || 0), 0) || 0;
+
+              await updateDoc(productRef, {
+                variants: variants,
+                stock: totalStock,
+                updatedAt: new Date().toISOString()
+              });
+
+              console.log(`✅ Restored ${item.quantity} units to product ${item.productId} (${item.selectedVariant.size}, ${item.selectedVariant.color})`);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error restoring stock:', error);
+      // Don't throw error to prevent order cancellation from failing
     }
   }
 

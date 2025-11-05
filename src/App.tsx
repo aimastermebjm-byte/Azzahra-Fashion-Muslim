@@ -21,7 +21,7 @@ import { OngkirTestPage } from './pages/OngkirTestPage';
 import { useFirebaseProducts } from './hooks/useFirebaseProducts';
 import { useFirebaseAuth } from './hooks/useFirebaseAuth';
 import { useAdmin } from './contexts/AdminContext';
-import { AppStorage } from './utils/appStorage';
+// import { AppStorage } from './utils/appStorage'; // REMOVED - Firebase only
 import { cartService } from './services/cartService';
 import { ordersService } from './services/ordersService';
 import { doc, setDoc } from 'firebase/firestore';
@@ -40,17 +40,14 @@ function AppContent() {
   const { products, loading, updateProductStock } = useFirebaseProducts();
   const { addOrder } = useAdmin();
 
-  // Initialize AppStorage on app start
+  // Initialize Firebase-only app on app start
   useEffect(() => {
-    console.log('🚀 App initializing... Checking localStorage');
-    AppStorage.initializeApp();
+    console.log('🚀 App initializing... Firebase-only mode (NO localStorage)');
 
-    // Validate and sync featured products on app startup
-    AppStorage.validateAndSyncFeaturedProducts();
-    console.log('🚀 App initialized with featured products validation');
+    // No more AppStorage localStorage initialization
+    // All data will be stored in Firebase Firestore only
 
-    // Cart management now handled by cartService in components
-    // No longer need localStorage cart restoration
+    console.log('🚀 App initialized with Firebase-only storage');
 
     // Handle URL routing for special pages
     const handleRouting = () => {
@@ -94,13 +91,12 @@ function AppContent() {
     logout();
     setCurrentPage('home');
 
-    // Clear cart from cartService and localStorage
+    // Clear cart from cartService only (Firebase-only)
     cartService.clearCart().catch(error => {
       console.error('❌ Error clearing cart on logout:', error);
     });
-    localStorage.removeItem('azzahra_cart');
     console.log('✅ Firebase logout successful');
-    console.log('📦 Cart cleared from cartService and localStorage');
+    console.log('📦 Cart cleared from Firebase cartService only (NO localStorage)');
   };
 
   const handleAddToCart = async (product: any, variant: any, quantity: number) => {
@@ -239,27 +235,14 @@ function AppContent() {
       };
 
       try {
-        // Save to Firebase using OrdersService
+        // Save to Firebase using OrdersService ONLY
         await ordersService.createOrder(orderRecord);
-        console.log('🔥 Order saved to Firebase via OrdersService:', orderId);
-
-        // Also save to AppStorage (localStorage) as backup
-        AppStorage.saveOrder({
-          ...orderRecord,
-          createdAt: new Date().toISOString(),
-          timestamp: Date.now()
-        });
-        console.log('💾 Order saved to AppStorage as backup:', orderId);
+        console.log('🔥 Order saved to Firebase Firestore:', orderId);
+        console.log('📦 Firebase-only order storage - NO localStorage backup needed');
       } catch (firebaseError) {
         console.error('❌ Error saving order via OrdersService:', firebaseError);
-        // Fallback to AppStorage only
-        AppStorage.saveOrder({
-          ...orderRecord,
-          createdAt: new Date().toISOString(),
-          timestamp: Date.now()
-        });
-        console.log('💾 Order saved to AppStorage (fallback):', orderId);
-      }
+        console.error('🚨 Order saving failed - Firebase is the only storage option');
+        throw firebaseError; // Don't fallback to localStorage
 
       console.log('✅ Order completed and cart cleared:', orderId);
       return orderId;
