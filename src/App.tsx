@@ -239,13 +239,14 @@ function AppContent() {
         await ordersService.createOrder(orderRecord);
         console.log('🔥 Order saved to Firebase Firestore:', orderId);
         console.log('📦 Firebase-only order storage - NO localStorage backup needed');
+
+        console.log('✅ Order completed and cart cleared:', orderId);
+        return orderId;
       } catch (firebaseError) {
         console.error('❌ Error saving order via OrdersService:', firebaseError);
         console.error('🚨 Order saving failed - Firebase is the only storage option');
         throw firebaseError; // Don't fallback to localStorage
-
-      console.log('✅ Order completed and cart cleared:', orderId);
-      return orderId;
+      }
     } catch (error) {
       console.error('❌ Error completing order:', error);
       return null;

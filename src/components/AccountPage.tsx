@@ -84,21 +84,6 @@ const AccountPage: React.FC<AccountPageProps> = ({
     console.log('⚠️ AccountPage: User is null - Firebase-only mode');
     // No localStorage fallback in Firebase-only mode
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Memulihkan sesi pengguna...</p>
-            </div>
-          </div>
-        );
-      } else {
-        console.log('ℹ️ AccountPage: No stored user session found');
-      }
-    } catch (error) {
-      console.error('❌ AccountPage: Failed to restore user session:', error);
-    }
-
-    return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <User className="w-16 h-16 text-purple-400 mx-auto mb-4" />
