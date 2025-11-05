@@ -32,18 +32,27 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       return;
     }
 
-    if (!selectedSize || !selectedColor) {
-      alert('Pilih ukuran dan warna terlebih dahulu');
-      return;
+    // Check if variants exist and require selection
+    if (product.variants?.sizes && product.variants.sizes.length > 0) {
+      if (!selectedSize || !selectedColor) {
+        alert('Pilih ukuran dan warna terlebih dahulu');
+        return;
+      }
     }
 
     const availableStock = getSelectedVariantStock();
     if (quantity > availableStock) {
-      alert(`Stok tidak mencukupi! Stok tersedia untuk ${selectedSize} - ${selectedColor} adalah ${availableStock} pcs`);
+      const stockMessage = (product.variants?.sizes && product.variants.sizes.length > 0)
+        ? `Stok tidak mencukupi! Stok tersedia untuk ${selectedSize} - ${selectedColor} adalah ${availableStock} pcs`
+        : `Stok tidak mencukupi! Stok tersedia adalah ${availableStock} pcs`;
+      alert(stockMessage);
       return;
     }
 
-    onAddToCart(product, { size: selectedSize, color: selectedColor }, quantity);
+    const variant = (product.variants?.sizes && product.variants.sizes.length > 0)
+      ? { size: selectedSize, color: selectedColor }
+      : null;
+    onAddToCart(product, variant, quantity);
 
     // Reset selections
     setSelectedSize('');
@@ -57,18 +66,27 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       return;
     }
 
-    if (!selectedSize || !selectedColor) {
-      alert('Pilih ukuran dan warna terlebih dahulu');
-      return;
+    // Check if variants exist and require selection
+    if (product.variants?.sizes && product.variants.sizes.length > 0) {
+      if (!selectedSize || !selectedColor) {
+        alert('Pilih ukuran dan warna terlebih dahulu');
+        return;
+      }
     }
 
     const availableStock = getSelectedVariantStock();
     if (quantity > availableStock) {
-      alert(`Stok tidak mencukupi! Stok tersedia untuk ${selectedSize} - ${selectedColor} adalah ${availableStock} pcs`);
+      const stockMessage = (product.variants?.sizes && product.variants.sizes.length > 0)
+        ? `Stok tidak mencukupi! Stok tersedia untuk ${selectedSize} - ${selectedColor} adalah ${availableStock} pcs`
+        : `Stok tidak mencukupi! Stok tersedia adalah ${availableStock} pcs`;
+      alert(stockMessage);
       return;
     }
 
-    onBuyNow(product, { size: selectedSize, color: selectedColor }, quantity);
+    const variant = (product.variants?.sizes && product.variants.sizes.length > 0)
+      ? { size: selectedSize, color: selectedColor }
+      : null;
+    onBuyNow(product, variant, quantity);
   };
 
   const getPrice = () => {
@@ -298,14 +316,15 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         </div>
 
         {/* Variants Selection */}
-        <div className="bg-white mt-2 p-4">
-          {/* Size Selection */}
-          <div className="mb-6">
-            <h3 className="font-semibold text-gray-800 mb-3">Pilih Ukuran</h3>
+        {product.variants?.sizes && product.variants.sizes.length > 0 && (
+          <div className="bg-white mt-2 p-4">
+            {/* Size Selection */}
+            <div className="mb-6">
+              <h3 className="font-semibold text-gray-800 mb-3">Pilih Ukuran</h3>
             <div className="flex flex-wrap gap-2">
-              {product.variants.sizes.map((size) => {
+              {(product.variants?.sizes || []).map((size) => {
                 // Calculate total stock for this size across all colors
-                const sizeTotalStock = product.variants.colors.reduce((total, color) => {
+                const sizeTotalStock = (product.variants?.colors || []).reduce((total, color) => {
                   return total + getVariantStock(size, color);
                 }, 0);
 
@@ -341,11 +360,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           <div className="mb-6">
             <h3 className="font-semibold text-gray-800 mb-3">Pilih Warna</h3>
             <div className="flex flex-wrap gap-2">
-              {product.variants.colors.map((color) => {
+              {(product.variants?.colors || []).map((color) => {
                 // Get stock for this color (based on selected size, or total across all sizes if no size selected)
                 const colorStock = selectedSize
                   ? getVariantStock(selectedSize, color)
-                  : product.variants.sizes.reduce((total, size) => total + getVariantStock(size, color), 0);
+                  : (product.variants?.sizes || []).reduce((total, size) => total + getVariantStock(size, color), 0);
 
                 const isColorDisabled = selectedSize ? colorStock === 0 : false;
 
@@ -382,8 +401,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               </p>
             )}
           </div>
+          )}
+        </div>
+        )}
 
-          {/* Quantity Selection */}
+        {/* Quantity Selection */}
+        <div className="bg-white mt-2 p-4">
           <div className="mb-6">
             <h3 className="font-semibold text-gray-800 mb-3">Jumlah</h3>
             <div className="flex items-center space-x-4">
