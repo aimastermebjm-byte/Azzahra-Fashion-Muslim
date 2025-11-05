@@ -84,7 +84,7 @@ export const useFirebaseProducts = () => {
           salesCount: Number(data.salesCount) || 0,
           featuredOrder: Number(data.featuredOrder) || 0,
           weight: Number(data.weight) || 1000,
-          unit: data.unit || 'pcs',
+          unit: data.unit || 'gram',
           status: data.status || (stock > 0 ? 'ready' : 'po'),
           estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
         };
@@ -229,7 +229,7 @@ export const useFirebaseProducts = () => {
           isFeatured: Boolean(data.isFeatured || data.featured),
           featuredOrder: Number(data.featuredOrder) || 0,
           weight: Number(data.weight) || 1000,
-          unit: data.unit || 'pcs',
+          unit: data.unit || 'gram',
           estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
         });
       });
