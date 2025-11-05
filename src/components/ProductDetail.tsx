@@ -401,7 +401,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               </p>
             )}
           </div>
-          )}
         </div>
         )}
 
@@ -500,7 +499,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         <div className="flex space-x-3">
           <button
             onClick={handleAddToCart}
-            disabled={!selectedSize || !selectedColor}
+            disabled={product.variants?.sizes && product.variants.sizes.length > 0 ? (!selectedSize || !selectedColor) : false}
             className="flex-1 bg-pink-100 text-pink-600 py-4 rounded-lg font-semibold hover:bg-pink-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             <ShoppingCart className="w-5 h-5" />
@@ -508,14 +507,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           </button>
           <button
             onClick={handleBuyNow}
-            disabled={!selectedSize || !selectedColor}
+            disabled={product.variants?.sizes && product.variants.sizes.length > 0 ? (!selectedSize || !selectedColor) : false}
             className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 text-white py-4 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Beli Sekarang
           </button>
         </div>
-        
-        {(!selectedSize || !selectedColor) && (
+
+        {product.variants?.sizes && product.variants.sizes.length > 0 && (!selectedSize || !selectedColor) && (
           <p className="text-center text-sm text-gray-500 mt-2">
             Pilih ukuran dan warna terlebih dahulu
           </p>
