@@ -136,7 +136,9 @@ export const useFirebaseProducts = () => {
         images: productData.images || [],
         sizes: productData.sizes || [],
         colors: productData.colors || [],
+        // Use both fields for consistency
         featured: productData.isFeatured || false,
+        isFeatured: productData.isFeatured || false,
         isFlashSale: productData.isFlashSale || false,
         flashSalePrice: productData.flashSalePrice || productData.retailPrice,
         salesCount: 0,
@@ -153,6 +155,13 @@ export const useFirebaseProducts = () => {
   const updateProduct = async (id: string, updates: any) => {
     try {
       const docRef = doc(db, 'products', id);
+
+      // Handle featured products: update both isFeatured and featured fields for consistency
+      if ('isFeatured' in updates) {
+        updates.isFeatured = updates.isFeatured;
+        updates.featured = updates.isFeatured; // Also update legacy field
+      }
+
       await updateDoc(docRef, updates);
       console.log('✅ Product updated');
     } catch (err) {

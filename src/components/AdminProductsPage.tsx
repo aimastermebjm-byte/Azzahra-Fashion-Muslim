@@ -217,6 +217,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         updates.stock = batchFormData.stock;
       }
       if (batchFormData.status) updates.status = batchFormData.status;
+      // Fix: Always include isFeatured if explicitly set (true or false)
       if (batchFormData.isFeatured !== undefined) updates.isFeatured = batchFormData.isFeatured;
 
       // Update all selected products
