@@ -66,10 +66,22 @@ export const useFirebaseProducts = () => {
         // Calculate total stock from variants if available
         const calculatedTotalStock = data.variants?.stock ?
           Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
-            return total + Object.values(sizeStock).reduce((sizeTotal: number, colorStock: number) => {
-              return sizeTotal + colorStock;
+            return total + Object.values(sizeStock as any).reduce((sizeTotal: number, colorStock: any) => {
+              return sizeTotal + Number(colorStock || 0);
             }, 0);
           }, 0) : stock;
+
+        
+        // Debug for specific products to understand data structure
+        if (data.name?.includes('Gamis') || data.name?.includes('Set')) {
+          console.log(`🔍 Product: ${data.name}`, {
+            originalStock: stock,
+            calculatedTotalStock,
+            hasVariants: !!data.variants,
+            hasVariantStock: !!data.variants?.stock,
+            variants: data.variants
+          });
+        }
 
         return {
           id: doc.id,
@@ -129,7 +141,7 @@ export const useFirebaseProducts = () => {
     });
 
     return () => unsubscribe();
-  }, [productsPerPage]); // Add productsPerPage dependency
+  }, [productsPerPage, saveToCache, getFromCache]); // Add dependencies
 
   const addProduct = async (productData: any) => {
     try {
@@ -229,8 +241,8 @@ export const useFirebaseProducts = () => {
         const stock = Number(data.stock || 0);
         const calculatedTotalStock = data.variants?.stock ?
           Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
-            return total + Object.values(sizeStock).reduce((sizeTotal: number, colorStock: number) => {
-              return sizeTotal + colorStock;
+            return total + Object.values(sizeStock as any).reduce((sizeTotal: number, colorStock: any) => {
+              return sizeTotal + Number(colorStock || 0);
             }, 0);
           }, 0) : stock;
 

@@ -45,17 +45,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const getTotalVariantStock = () => {
-    // Calculate total stock from all variants
-    if (product.variants?.stock) {
-      let totalStock = 0;
-      Object.values(product.variants.stock).forEach(sizeStock => {
-        Object.values(sizeStock).forEach(colorStock => {
-          totalStock += colorStock;
-        });
-      });
-      return totalStock;
-    }
-    // Fallback to main stock if variant stock not available
+    // The product.stock now contains the calculated total from variants (from useFirebaseProducts)
+    // Just use the calculated stock from useFirebaseProducts hook
     return product.stock || 0;
   };
 
