@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, ShoppingCart, User, Filter, Star, ArrowUpDown, Clock } from 'lucide-react';
 import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
@@ -16,6 +16,8 @@ interface HomePageProps {
   onCartClick: () => void;
   onAddToCart: (product: Product) => void;
   onNavigateToFlashSale?: () => void;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
 }
 
 const HomePage: React.FC<HomePageProps> = ({
@@ -26,13 +28,19 @@ const HomePage: React.FC<HomePageProps> = ({
   onLoginRequired,
   onCartClick,
   onAddToCart,
-  onNavigateToFlashSale
+  onNavigateToFlashSale,
+  onLoadMore,
+  hasMore = true
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'ready' | 'po'>('all');
   const [cartCount, setCartCount] = useState(0);
   const [sortBy, setSortBy] = useState<'terbaru' | 'terlaris' | 'termurah' | 'termahal' | 'terlama'>('terbaru');
+
+  // Infinite scroll with Intersection Observer
+  const observer = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   // Flash sale hook for countdown timer
   const { timeLeft, isFlashSaleActive } = useFirebaseFlashSale();
@@ -58,6 +66,38 @@ const HomePage: React.FC<HomePageProps> = ({
       setCartCount(0);
     }
   }, [user]);
+
+  // Infinite scroll with Intersection Observer
+  useEffect(() => {
+    if (!onLoadMore || !hasMore) return;
+
+    const currentObserver = observer.current;
+    if (currentObserver) {
+      currentObserver.disconnect();
+    }
+
+    const handleObserver = (entries: IntersectionObserverEntry[]) => {
+      const [target] = entries;
+      if (target.isIntersecting && hasMore && !loading) {
+        onLoadMore();
+      }
+    };
+
+    observer.current = new IntersectionObserver(handleObserver, {
+      threshold: 0.1,
+      rootMargin: '100px'
+    });
+
+    if (loadMoreRef.current) {
+      observer.current.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (currentObserver) {
+        currentObserver.disconnect();
+      }
+    };
+  }, [onLoadMore, hasMore, loading]);
 
   // Optimized refresh timer for cart count only - ULTRA FAST
   useEffect(() => {
@@ -600,9 +640,35 @@ const HomePage: React.FC<HomePageProps> = ({
               ))}
             </div>
 
-            {/* Products Summary - No Pagination for Better UX */}
+            {/* Infinite Scroll Trigger */}
+            {hasMore && (
+              <div className="mt-6 text-center">
+                <div
+                  ref={loadMoreRef}
+                  className="inline-flex items-center justify-center p-4"
+                >
+                  {loading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500"></div>
+                      <span className="text-gray-600 text-sm">Memuat lebih banyak produk...</span>
+                    </div>
+                  ) : (
+                    <div className="text-gray-500 text-sm">
+                      <span>📜 Scroll untuk melihat produk selanjutnya</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Products Summary */}
             <div className="mt-6 text-center text-sm text-gray-600">
               <p>🚀 Menampilkan {regularProducts.length} produk secara real-time</p>
+              {!hasMore && regularProducts.length > 0 && (
+                <p className="text-green-600 font-medium mt-1">
+                  ✅ Semua produk telah ditampilkan
+                </p>
+              )}
             </div>
           </>
         )}

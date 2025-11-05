@@ -37,7 +37,7 @@ function AppContent() {
 
   // Firebase Authentication
   const { user, login, logout } = useFirebaseAuth();
-  const { products, loading, updateProductStock } = useFirebaseProducts();
+  const { products, loading, updateProductStock, loadMoreProducts, hasMore } = useFirebaseProducts();
   const { addOrder } = useAdmin();
 
   // Initialize Firebase-only app on app start
@@ -410,6 +410,8 @@ function AppContent() {
             onCartClick={handleCartClick}
             onAddToCart={handleQuickAddToCart}
             onNavigateToFlashSale={handleNavigateToFlashSale}
+            onLoadMore={loadMoreProducts}
+            hasMore={hasMore}
           />
         );
     }

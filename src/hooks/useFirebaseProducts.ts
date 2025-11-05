@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Product } from '../types';
 import {
   collection,
@@ -10,7 +10,8 @@ import {
   query,
   orderBy,
   limit as limitCount,
-  onSnapshot
+  onSnapshot,
+  startAfter
 } from 'firebase/firestore';
 import { db, convertFirebaseUrl } from '../utils/firebaseClient';
 import { useProductCache } from './useProductCache';
@@ -23,11 +24,7 @@ export const useFirebaseProducts = () => {
   const [hasMore, setHasMore] = useState(true);
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [productsPerPage] = useState(() => {
-    // Responsive pagination: HP 8 produk, Laptop 16 produk
-    const isMobile = window.innerWidth < 768;
-    return isMobile ? 8 : 16;
-  });
+  const [productsPerPage] = useState(20); // Fixed 20 produk untuk infinite scroll seperti Shopee
   const { saveToCache, getFromCache, isCacheValid } = useProductCache();
 
   useEffect(() => {
@@ -105,11 +102,20 @@ export const useFirebaseProducts = () => {
       saveToCache(productsData);
 
       setProducts(productsData);
+
+      // Set pagination info for infinite scroll
+      if (snapshot.docs.length > 0) {
+        setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+        setHasMore(snapshot.docs.length === productsPerPage);
+      } else {
+        setHasMore(false);
+      }
+
       setLoading(false); // Set loading false after first load
     });
 
     return () => unsubscribe();
-  }, []); // Remove dependencies to prevent re-render loop
+  }, [productsPerPage]); // Add productsPerPage dependency
 
   const addProduct = async (productData: any) => {
     try {
@@ -176,6 +182,65 @@ export const useFirebaseProducts = () => {
     }
   };
 
+  // Load more products for infinite scroll
+  const loadMoreProducts = useCallback(async () => {
+    if (!hasMore || loading) return;
+
+    setLoading(true);
+    try {
+      const productsRef = collection(db, 'products');
+      const q = query(
+        productsRef,
+        orderBy('createdAt', 'desc'),
+        startAfter(lastVisible),
+        limitCount(productsPerPage)
+      );
+
+      const querySnapshot = await getDocs(q);
+      const newProducts: Product[] = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        newProducts.push({
+          id: doc.id,
+          name: data.name || '',
+          description: data.description || '',
+          category: data.category || '',
+          images: (data.images || []),
+          image: data.images?.[0] || '/placeholder-product.jpg',
+          variants: { sizes: data.sizes || [], colors: data.colors || [] },
+          retailPrice: Number(data.retailPrice || data.price || 0),
+          resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
+          costPrice: Number(data.costPrice) || Number(data.retailPrice || data.price || 0) * 0.6,
+          stock: Number(data.stock || 0),
+          status: Number(data.stock || 0) > 0 ? 'ready' : 'po',
+          isFlashSale: Boolean(data.isFlashSale),
+          flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
+          createdAt: data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt?.toDate()) : new Date(),
+          salesCount: Number(data.salesCount) || 0,
+          isFeatured: Boolean(data.isFeatured),
+        });
+      });
+
+      if (newProducts.length > 0) {
+        setProducts(prev => [...prev, ...newProducts]);
+        setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
+        setCurrentPage(prev => prev + 1);
+
+        // Check if there might be more products
+        if (newProducts.length < productsPerPage) {
+          setHasMore(false);
+        }
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('❌ Error loading more products:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [hasMore, loading, lastVisible, productsPerPage]);
+
   return {
     products,
     loading,
@@ -188,6 +253,7 @@ export const useFirebaseProducts = () => {
     hasMore,
     currentPage,
     productsPerPage,
-    setCurrentPage
+    setCurrentPage,
+    loadMoreProducts
   };
 };
