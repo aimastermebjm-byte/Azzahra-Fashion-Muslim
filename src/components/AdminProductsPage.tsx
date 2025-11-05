@@ -47,7 +47,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     stock: 0,
     weight: 1000, // weight in grams (default 1000g = 1kg)
     images: [] as string[],
-    variants: { sizes: [] as string[], colors: [] as string[], stock: {} as Record<string, Record<string, number>> }
+    variants: { sizes: [] as string[], colors: [] as string[], stock: {} as Record<string, Record<string, number>> },
+    status: 'ready' as 'ready' | 'po'
   });
 
   // Batch form data
@@ -56,7 +57,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     retailPrice: 0,
     discount: 0,
     stock: -1, // Default -1 means no stock change
-    status: 'ready',
+    status: '' as 'ready' | 'po' | '', // Empty means no change
     isFeatured: false as boolean | undefined
   });
 
@@ -245,7 +246,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         stock: 0,
         weight: 1000, // reset to default 1000g
         images: [],
-        variants: { sizes: [], colors: [], stock: {} }
+        variants: { sizes: [], colors: [], stock: {} },
+        status: 'ready'
       });
       setShowAddModal(false);
     } catch (error) {
@@ -291,7 +293,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       stock: product.stock,
       weight: product.weight || 1000, // use product weight or default 1000g
       images: product.images,
-      variants: product.variants || { sizes: [], colors: [], stock: {} }
+      variants: product.variants || { sizes: [], colors: [], stock: {} },
+      status: product.status || 'ready'
     });
     setShowEditModal(true);
   };
@@ -332,7 +335,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         retailPrice: 0,
         discount: 0,
         stock: -1, // Use -1 to indicate no stock change (prevent accidental stock reset)
-        status: 'ready',
+        status: '', // Empty means no change
         isFeatured: false as boolean | undefined
       });
     } catch (error) {
@@ -736,11 +739,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                         </td>
                         <td className="p-3">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            product.stock > 0
+                            product.status === 'ready'
                               ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                              : 'bg-orange-100 text-orange-800'
                           }`}>
-                            {product.stock > 0 ? 'Ready' : 'Habis'}
+                            {product.status === 'ready' ? '✅ Ready Stock' : '⏳ Pre-Order'}
                           </span>
                         </td>
                         <td className="p-3">
@@ -964,6 +967,24 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   placeholder="1000"
                 />
                 <p className="text-xs text-gray-500 mt-1">Berat produk dalam gram (contoh: 1000 = 1kg)</p>
+              </div>
+
+              {/* Product Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Kondisi Produk *
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'ready' | 'po' })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="ready">Ready Stock</option>
+                  <option value="po">Pre-Order (PO)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.status === 'ready' ? '✅ Produk siap dikirim' : '⏳ Produk butuh waktu pengerjaan'}
+                </p>
               </div>
 
               {/* Variant Management */}
@@ -1302,6 +1323,24 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 <p className="text-xs text-gray-500 mt-1">Berat produk dalam gram (contoh: 1000 = 1kg)</p>
               </div>
 
+              {/* Product Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Kondisi Produk *
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'ready' | 'po' })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="ready">Ready Stock</option>
+                  <option value="po">Pre-Order (PO)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.status === 'ready' ? '✅ Produk siap dikirim' : '⏳ Produk butuh waktu pengerjaan'}
+                </p>
+              </div>
+
               {/* Form Actions */}
               <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
                 <button
@@ -1420,6 +1459,21 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     placeholder="Kosongkan jika tidak ingin mengubah"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ubah Kondisi Produk
+                  </label>
+                  <select
+                    value={batchFormData.status || ''}
+                    onChange={(e) => setBatchFormData({ ...batchFormData, status: e.target.value as 'ready' | 'po' | '' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">-- Tidak Diubah --</option>
+                    <option value="ready">Ready Stock</option>
+                    <option value="po">Pre-Order (PO)</option>
+                  </select>
                 </div>
 
                 <div>
