@@ -44,11 +44,27 @@ const ProductCard: React.FC<ProductCardProps> = ({
     setShowResellerMenu(false);
   };
 
+  const getTotalVariantStock = () => {
+    // Calculate total stock from all variants
+    if (product.variants?.stock) {
+      let totalStock = 0;
+      Object.values(product.variants.stock).forEach(sizeStock => {
+        Object.values(sizeStock).forEach(colorStock => {
+          totalStock += colorStock;
+        });
+      });
+      return totalStock;
+    }
+    // Fallback to main stock if variant stock not available
+    return product.stock || 0;
+  };
+
   const getStatusBadge = () => {
-    // Ready/PO badge with stock count
+    // Ready/PO badge with TOTAL stock count from all variants
+    const totalStock = getTotalVariantStock();
     const stockStatus = product.status === 'ready'
-      ? `Ready (${product.stock})`
-      : `PO (${product.stock})`;
+      ? `Ready (${totalStock})`
+      : `PO (${totalStock})`;
 
     return (
       <div className={`absolute top-2 left-2 text-xs px-2 py-1 rounded font-medium ${

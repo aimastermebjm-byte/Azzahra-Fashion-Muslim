@@ -133,17 +133,20 @@ class OrdersService {
             const productData = productDoc.data();
             const variants = productData.variants || { sizes: [], colors: [] };
 
-            // Find the specific variant to restore stock
-            const variantIndex = variants.sizes?.findIndex((size: any) =>
-              size.size === item.selectedVariant.size && size.color === item.selectedVariant.color
-            );
+            // RESTORED: Handle new variant stock structure - FIXED for proper stock restoration
+            if (variants.stock && variants.stock[item.selectedVariant.size] && variants.stock[item.selectedVariant.size][item.selectedVariant.color] !== undefined) {
+              // Update specific variant stock using new structure
+              variants.stock[item.selectedVariant.size][item.selectedVariant.color] += item.quantity;
 
-            if (variantIndex !== undefined && variantIndex !== -1) {
-              // Update variant stock
-              variants.sizes[variantIndex].stock = (variants.sizes[variantIndex].stock || 0) + item.quantity;
-
-              // Update total product stock
-              const totalStock = variants.sizes?.reduce((sum: number, size: any) => sum + (size.stock || 0), 0) || 0;
+              // Calculate total stock from all variants
+              let totalStock = 0;
+              if (variants.stock) {
+                Object.values(variants.stock).forEach(sizeStock => {
+                  Object.values(sizeStock).forEach(colorStock => {
+                    totalStock += colorStock;
+                  });
+                });
+              }
 
               await updateDoc(productRef, {
                 variants: variants,
@@ -152,6 +155,19 @@ class OrdersService {
               });
 
               console.log(`✅ Restored ${item.quantity} units to product ${item.productId} (${item.selectedVariant.size}, ${item.selectedVariant.color})`);
+              console.log(`📊 New total stock: ${totalStock}`);
+            } else {
+              // Fallback: update main stock if variant structure not found
+              const currentStock = productData.stock || 0;
+              const newStock = currentStock + item.quantity;
+
+              await updateDoc(productRef, {
+                stock: newStock,
+                updatedAt: new Date().toISOString()
+              });
+
+              console.log(`⚠️ Fallback: Restored ${item.quantity} units to main product stock (no variant structure found)`);
+              console.log(`📊 New main stock: ${newStock}`);
             }
           }
         }

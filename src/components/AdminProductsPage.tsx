@@ -55,7 +55,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     category: '',
     retailPrice: 0,
     discount: 0,
-    stock: 0,
+    stock: -1, // Default -1 means no stock change
     status: 'ready',
     isFeatured: false
   });
@@ -212,7 +212,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         updates.retailPrice = batchFormData.retailPrice;
         updates.resellerPrice = Math.round(batchFormData.retailPrice * 0.8);
       }
-      if (batchFormData.stock >= 0) updates.stock = batchFormData.stock;
+      // FIXED: Don't update stock unless explicitly changed by user (prevent stock reset to 0)
+      if (batchFormData.stock >= 0) { // Only update if stock is explicitly set (not -1)
+        updates.stock = batchFormData.stock;
+      }
       if (batchFormData.status) updates.status = batchFormData.status;
       if (batchFormData.isFeatured !== undefined) updates.isFeatured = batchFormData.isFeatured;
 
@@ -228,7 +231,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         category: '',
         retailPrice: 0,
         discount: 0,
-        stock: 0,
+        stock: -1, // Use -1 to indicate no stock change (prevent accidental stock reset)
         status: 'ready',
         isFeatured: false
       });

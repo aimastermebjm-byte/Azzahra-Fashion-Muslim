@@ -33,15 +33,9 @@ const HomePage: React.FC<HomePageProps> = ({
   const [statusFilter, setStatusFilter] = useState<'all' | 'ready' | 'po'>('all');
   const [cartCount, setCartCount] = useState(0);
   const [sortBy, setSortBy] = useState<'terbaru' | 'terlaris' | 'termurah' | 'termahal' | 'terlama'>('terbaru');
-  const [featuredUpdateTrigger, setFeaturedUpdateTrigger] = useState(0); // Force re-render
-  const [flashSaleUpdateTrigger, setFlashSaleUpdateTrigger] = useState(0); // Force re-render
 
   // Flash sale hook for countdown timer
-  const { timeLeft, isFlashSaleActive, flashSaleConfig } = useFirebaseFlashSale();
-
-  // Force refresh timer to handle potential sync issues
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [lastSyncTime, setLastSyncTime] = useState<string>('');
+  const { timeLeft, isFlashSaleActive } = useFirebaseFlashSale();
 
   // Load cart count from backend
   const loadCartCount = async () => {
@@ -65,22 +59,14 @@ const HomePage: React.FC<HomePageProps> = ({
     }
   }, [user]);
 
-  // Periodic refresh timer to ensure data stays synchronized - OPTIMIZED for faster loading
+  // Optimized refresh timer for cart count only - ULTRA FAST
   useEffect(() => {
-    console.log('⚡ FAST HomePage: Starting optimized refresh timer');
-
     const interval = setInterval(() => {
-      setRefreshTrigger(prev => prev + 1);
-      setLastSyncTime(new Date().toLocaleTimeString('id-ID'));
-      loadCartCount(); // Refresh cart count too
-    }, 10000); // Reduced to 10 seconds for faster updates
-
-    // Initial sync time
-    setLastSyncTime(new Date().toLocaleTimeString('id-ID'));
+      loadCartCount(); // Refresh cart count only
+    }, 15000); // Optimized to 15 seconds
 
     return () => {
       clearInterval(interval);
-      console.log('⚡ FAST HomePage: Optimized refresh timer stopped');
     };
   }, [user]);
 
@@ -165,7 +151,7 @@ const HomePage: React.FC<HomePageProps> = ({
     const featured = safeProducts.filter(p => p.isFeatured);
     // Return only actual featured products (no fallback)
     return featured;
-  }, [safeProducts, featuredUpdateTrigger]); // Depend on safeProducts and trigger for re-render
+  }, [safeProducts]); // Depend on safeProducts only
 
   // Regular products (ALL PRODUCTS - show all at once for faster loading)
   const regularProducts = React.useMemo(() => {
@@ -191,25 +177,15 @@ const HomePage: React.FC<HomePageProps> = ({
   useEffect(() => {
     const handleFeaturedProductsUpdated = (event: any) => {
       // Force re-render to get updated featured products
-      setFeaturedUpdateTrigger(prev => prev + 1);
-      // Also trigger general refresh to ensure data consistency
-      setTimeout(() => {
-        setRefreshTrigger(prev => prev + 1);
-      }, 100);
+      // Featured products update - handled by Firebase real-time updates
     };
 
     const handleProductsUpdated = (event: any) => {
-      // Force a complete re-fetch of all products
-      setRefreshTrigger(prev => prev + 1);
+      // Products update - handled by Firebase real-time updates
     };
 
     const handleFlashSaleUpdated = (event: any) => {
-      // Force immediate re-render for flash sale products
-      setFlashSaleUpdateTrigger(prev => prev + 1);
-      // Also trigger general refresh to ensure data consistency
-      setTimeout(() => {
-        setRefreshTrigger(prev => prev + 1);
-      }, 100);
+      // Flash sale update - handled by Firebase real-time updates
     };
 
     // Listen for various product update events
@@ -237,8 +213,7 @@ const HomePage: React.FC<HomePageProps> = ({
     const handleFlashSaleEnded = (event: any) => {
       console.log('🔥 Flash sale ended detected in HomePage:', event.detail);
 
-      // Force immediate re-render to get updated products
-      setFeaturedUpdateTrigger(prev => prev + 1);
+      // Flash sale ended - handled by Firebase real-time updates
 
       // Force refresh featured products cache - DISABLED for Supabase only
       // AppStorage.refreshFeaturedProductsCache();
@@ -269,9 +244,8 @@ const HomePage: React.FC<HomePageProps> = ({
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-pink-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">⚡ Memuat produk secara real-time...</p>
-          <p className="text-gray-500 text-sm mt-1">Akan muncul semua produk dalam 1 halaman</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-pink-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Memuat produk...</p>
         </div>
       </div>
     );

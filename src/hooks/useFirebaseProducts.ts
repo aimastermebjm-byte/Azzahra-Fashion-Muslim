@@ -20,6 +20,14 @@ export const useFirebaseProducts = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage] = useState(() => {
+    // Responsive pagination: HP 8 produk, Laptop 16 produk
+    const isMobile = window.innerWidth < 768;
+    return isMobile ? 8 : 16;
+  });
   const { saveToCache, getFromCache, isCacheValid } = useProductCache();
 
   useEffect(() => {
@@ -34,9 +42,13 @@ export const useFirebaseProducts = () => {
       setIsInitialLoad(false);
     }
 
-    // STEP 2: Set up real-time listener for updates
+    // STEP 2: Set up real-time listener for updates - RESPONSIVE PAGINATION
     const productsRef = collection(db, 'products');
-    const q = query(productsRef, orderBy('createdAt', 'desc'), limitCount(50));
+    const q = query(
+      productsRef,
+      orderBy('createdAt', 'desc'),
+      limitCount(productsPerPage) // Dynamic limit based on device
+    );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const processingStartTime = performance.now();
@@ -172,6 +184,10 @@ export const useFirebaseProducts = () => {
     updateProduct,
     deleteProduct,
     updateProductStock,
-    setProducts
+    setProducts,
+    hasMore,
+    currentPage,
+    productsPerPage,
+    setCurrentPage
   };
 };
