@@ -63,6 +63,14 @@ export const useFirebaseProducts = () => {
         const retailPrice = Number(data.retailPrice || data.price || 0);
         const stock = Number(data.stock || 0);
 
+        // Calculate total stock from variants if available
+        const calculatedTotalStock = data.variants?.stock ?
+          Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
+            return total + Object.values(sizeStock).reduce((sizeTotal: number, colorStock: number) => {
+              return sizeTotal + colorStock;
+            }, 0);
+          }, 0) : stock;
+
         return {
           id: doc.id,
           name: data.name || '',
@@ -71,7 +79,7 @@ export const useFirebaseProducts = () => {
           retailPrice,
           resellerPrice: Number(data.resellerPrice) || retailPrice * 0.8,
           costPrice: Number(data.costPrice) || retailPrice * 0.6,
-          stock,
+          stock: calculatedTotalStock,
           images: (data.images || []),
           image: data.images?.[0] || '/placeholder-product.jpg',
           variants: data.variants || { sizes: data.sizes || [], colors: data.colors || [], stock: data.variants?.stock || {} },
@@ -84,8 +92,8 @@ export const useFirebaseProducts = () => {
           salesCount: Number(data.salesCount) || 0,
           featuredOrder: Number(data.featuredOrder) || 0,
           weight: Number(data.weight) || 1000,
-          unit: data.unit || 'gram',
-          status: data.status || (stock > 0 ? 'ready' : 'po'),
+          unit: 'gram',
+          status: data.status || (calculatedTotalStock > 0 ? 'ready' : 'po'),
           estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
         };
       });
@@ -216,6 +224,16 @@ export const useFirebaseProducts = () => {
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
+
+        // Calculate total stock from variants if available
+        const stock = Number(data.stock || 0);
+        const calculatedTotalStock = data.variants?.stock ?
+          Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
+            return total + Object.values(sizeStock).reduce((sizeTotal: number, colorStock: number) => {
+              return sizeTotal + colorStock;
+            }, 0);
+          }, 0) : stock;
+
         newProducts.push({
           id: doc.id,
           name: data.name || '',
@@ -227,8 +245,8 @@ export const useFirebaseProducts = () => {
           retailPrice: Number(data.retailPrice || data.price || 0),
           resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
           costPrice: Number(data.costPrice) || Number(data.retailPrice || data.price || 0) * 0.6,
-          stock: Number(data.stock || 0),
-          status: data.status || (Number(data.stock || 0) > 0 ? 'ready' : 'po'),
+          stock: calculatedTotalStock,
+          status: data.status || (calculatedTotalStock > 0 ? 'ready' : 'po'),
           isFlashSale: Boolean(data.isFlashSale),
           flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
           originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),

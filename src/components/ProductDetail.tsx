@@ -93,7 +93,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
   // Get stock for specific variant
   const getVariantStock = (size: string, color: string) => {
-    if (product.variants.stock && product.variants.stock[size] && product.variants.stock[size][color] !== undefined) {
+    if (product.variants?.stock?.[size]?.[color] !== undefined) {
       return product.variants.stock[size][color];
     }
     // Fallback to total stock if variant stock not available
@@ -110,7 +110,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
   // Calculate total stock across all variants
   const getTotalStock = () => {
-    if (product.variants.stock) {
+    if (product.variants?.stock) {
       let total = 0;
       Object.values(product.variants.stock).forEach(sizeStock => {
         Object.values(sizeStock).forEach(colorStock => {
