@@ -79,7 +79,12 @@ export const useFirebaseProducts = () => {
             calculatedTotalStock,
             hasVariants: !!data.variants,
             hasVariantStock: !!data.variants?.stock,
-            variants: data.variants
+            variantsSizes: data.variants?.sizes,
+            variantsColors: data.variants?.colors,
+            variantsStock: data.variants?.stock,
+            separateSizes: data.sizes,
+            separateColors: data.colors,
+            fullVariants: data.variants
           });
         }
 
