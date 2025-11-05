@@ -57,7 +57,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     discount: 0,
     stock: -1, // Default -1 means no stock change
     status: 'ready',
-    isFeatured: false
+    isFeatured: false as boolean | undefined
   });
 
   // Flash sale form data
@@ -233,7 +233,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         discount: 0,
         stock: -1, // Use -1 to indicate no stock change (prevent accidental stock reset)
         status: 'ready',
-        isFeatured: false
+        isFeatured: false as boolean | undefined
       });
     } catch (error) {
       console.error('Error updating products:', error);
@@ -426,7 +426,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 const featuredProducts = products.filter(p => p.isFeatured);
                 if (featuredProducts.length > 0) {
                   setSelectedProducts(featuredProducts.map(p => p.id));
-                  setBatchFormData({ ...batchFormData, isFeatured: true });
+                  setBatchFormData({ ...batchFormData, isFeatured: undefined }); // undefined untuk biarkan admin pilih
                   setShowBatchModal(true);
                 } else {
                   alert('Belum ada produk unggulan. Pilih produk terlebih dahulu dari daftar produk.');
@@ -1096,6 +1096,16 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 </div>
               </div>
 
+              {/* Info untuk admin */}
+              {selectedProducts.length > 0 && selectedProducts.every(id => products.find(p => p.id === id)?.isFeatured) && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-sm text-yellow-800">
+                    💡 <strong>Info:</strong> Saat ini semua produk yang dipilih adalah produk unggulan.
+                    Pilih "Hapus dari Unggulan" untuk menghapus status unggulan dari produk ini.
+                  </p>
+                </div>
+              )}
+
               {/* Batch Edit Form */}
               <div className="space-y-4">
                 <div>
@@ -1149,11 +1159,19 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     Status Produk Unggulan
                   </label>
                   <select
-                    value={batchFormData.isFeatured ? 'true' : 'false'}
-                    onChange={(e) => setBatchFormData({ ...batchFormData, isFeatured: e.target.value === 'true' })}
+                    value={batchFormData.isFeatured === undefined ? '' : batchFormData.isFeatured ? 'true' : 'false'}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        setBatchFormData({ ...batchFormData, isFeatured: undefined });
+                      } else {
+                        setBatchFormData({ ...batchFormData, isFeatured: value === 'true' });
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="false">Tidak Unggulan</option>
+                    <option value="">-- Pilih Aksi --</option>
+                    <option value="false">Hapus dari Unggulan</option>
                     <option value="true">Jadikan Unggulan</option>
                   </select>
                 </div>
