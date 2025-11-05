@@ -47,7 +47,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     stock: 0,
     weight: 1000, // weight in grams (default 1000g = 1kg)
     images: [] as string[],
-    variants: [{ sizes: [], colors: [] }]
+    variants: { sizes: [] as string[], colors: [] as string[], stock: {} as Record<string, Record<string, number>> }
   });
 
   // Batch form data
@@ -71,6 +71,103 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
   // Categories
   const categories = ['Hijab', 'Gamis', 'Khimar', 'Tunik', 'Jaket', 'Bawahan', 'Aksesoris', 'Lainnya'];
+
+  // Variant management helpers
+  const addSize = () => {
+    const newSize = `Ukuran ${formData.variants.sizes.length + 1}`;
+    setFormData({
+      ...formData,
+      variants: {
+        ...formData.variants,
+        sizes: [...formData.variants.sizes, newSize],
+        stock: {
+          ...formData.variants.stock,
+          [newSize]: formData.variants.colors.reduce((acc, color) => ({
+            ...acc,
+            [color]: 0
+          }), {} as Record<string, number>)
+        }
+      }
+    });
+  };
+
+  const removeSize = (sizeToRemove: string) => {
+    const newSizes = formData.variants.sizes.filter(size => size !== sizeToRemove);
+    const newStock = { ...formData.variants.stock };
+    delete newStock[sizeToRemove];
+
+    setFormData({
+      ...formData,
+      variants: {
+        ...formData.variants,
+        sizes: newSizes,
+        stock: newStock
+      }
+    });
+  };
+
+  const addColor = () => {
+    const newColor = `Warna ${formData.variants.colors.length + 1}`;
+    setFormData({
+      ...formData,
+      variants: {
+        ...formData.variants,
+        colors: [...formData.variants.colors, newColor],
+        stock: Object.keys(formData.variants.stock).reduce((acc, size) => ({
+          ...acc,
+          [size]: {
+            ...formData.variants.stock[size],
+            [newColor]: 0
+          }
+        }), {} as Record<string, Record<string, number>>)
+      }
+    });
+  };
+
+  const removeColor = (colorToRemove: string) => {
+    const newColors = formData.variants.colors.filter(color => color !== colorToRemove);
+    const newStock = Object.keys(formData.variants.stock).reduce((acc, size) => {
+      const sizeStock = { ...formData.variants.stock[size] };
+      delete sizeStock[colorToRemove];
+      acc[size] = sizeStock;
+      return acc;
+    }, {} as Record<string, Record<string, number>>);
+
+    setFormData({
+      ...formData,
+      variants: {
+        ...formData.variants,
+        colors: newColors,
+        stock: newStock
+      }
+    });
+  };
+
+  const updateVariantStock = (size: string, color: string, stock: number) => {
+    setFormData({
+      ...formData,
+      variants: {
+        ...formData.variants,
+        stock: {
+          ...formData.variants.stock,
+          [size]: {
+            ...formData.variants.stock[size],
+            [color]: Math.max(0, stock)
+          }
+        }
+      }
+    });
+  };
+
+  const calculateTotalStock = () => {
+    let total = 0;
+    Object.values(formData.variants.stock).forEach(sizeStock => {
+      Object.values(sizeStock).forEach(colorStock => {
+        total += colorStock || 0;
+      });
+    });
+    return total;
+  };
 
   // Filter and sort products
   const filteredAndSortedProducts = React.useMemo(() => {
@@ -124,8 +221,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const totalStock = calculateTotalStock();
       const newProduct = {
         ...formData,
+        stock: totalStock, // Use calculated total stock from variants
         createdAt: new Date(),
         salesCount: 0,
         isFeatured: false,
@@ -146,7 +245,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         stock: 0,
         weight: 1000, // reset to default 1000g
         images: [],
-        variants: [{ sizes: [], colors: [] }]
+        variants: { sizes: [], colors: [], stock: {} }
       });
       setShowAddModal(false);
     } catch (error) {
@@ -192,7 +291,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       stock: product.stock,
       weight: product.weight || 1000, // use product weight or default 1000g
       images: product.images,
-      variants: product.variants || [{ sizes: [], colors: [] }]
+      variants: product.variants || { sizes: [], colors: [], stock: {} }
     });
     setShowEditModal(true);
   };
@@ -865,6 +964,174 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   placeholder="1000"
                 />
                 <p className="text-xs text-gray-500 mt-1">Berat produk dalam gram (contoh: 1000 = 1kg)</p>
+              </div>
+
+              {/* Variant Management */}
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      📏 Ukuran Produk
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addSize}
+                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm"
+                    >
+                      + Tambah Ukuran
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.variants.sizes.map((size, index) => (
+                      <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
+                        <input
+                          type="text"
+                          value={size}
+                          onChange={(e) => {
+                            const newSizes = [...formData.variants.sizes];
+                            newSizes[index] = e.target.value;
+                            const oldSize = formData.variants.sizes[index];
+                            const newStock = { ...formData.variants.stock };
+                            if (oldSize !== e.target.value && newStock[oldSize]) {
+                              newStock[e.target.value] = newStock[oldSize];
+                              delete newStock[oldSize];
+                            }
+                            setFormData({
+                              ...formData,
+                              variants: {
+                                ...formData.variants,
+                                sizes: newSizes,
+                                stock: newStock
+                              }
+                            });
+                          }}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm"
+                          placeholder="contoh: S, M, L"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeSize(size)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {formData.variants.sizes.length === 0 && (
+                    <p className="text-sm text-gray-500">Tambahkan ukuran untuk mulai mengelola varian</p>
+                  )}
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      🎨 Warna Produk
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addColor}
+                      className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
+                    >
+                      + Tambah Warna
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.variants.colors.map((color, index) => (
+                      <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
+                        <input
+                          type="text"
+                          value={color}
+                          onChange={(e) => {
+                            const newColors = [...formData.variants.colors];
+                            const oldColor = formData.variants.colors[index];
+                            newColors[index] = e.target.value;
+
+                            const newStock = Object.keys(formData.variants.stock).reduce((acc, size) => {
+                              acc[size] = { ...formData.variants.stock[size] };
+                              if (oldColor !== e.target.value && acc[size][oldColor] !== undefined) {
+                                acc[size][e.target.value] = acc[size][oldColor];
+                                delete acc[size][oldColor];
+                              }
+                              return acc;
+                            }, {} as Record<string, Record<string, number>>);
+
+                            setFormData({
+                              ...formData,
+                              variants: {
+                                ...formData.variants,
+                                colors: newColors,
+                                stock: newStock
+                              }
+                            });
+                          }}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm"
+                          placeholder="contoh: Merah, Biru"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeColor(color)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {formData.variants.colors.length === 0 && (
+                    <p className="text-sm text-gray-500">Tambahkan warna untuk mulai mengelola varian</p>
+                  )}
+                </div>
+
+                {/* Stock Matrix */}
+                {formData.variants.sizes.length > 0 && formData.variants.colors.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      📦 Stok per Varian
+                    </label>
+                    <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left py-2 px-2 font-medium text-gray-700">Ukuran \ Warna</th>
+                            {formData.variants.colors.map((color, index) => (
+                              <th key={index} className="text-center py-2 px-2 font-medium text-gray-700">
+                                {color}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {formData.variants.sizes.map((size, sizeIndex) => (
+                            <tr key={sizeIndex} className="border-b border-gray-100">
+                              <td className="py-2 px-2 font-medium text-gray-600">{size}</td>
+                              {formData.variants.colors.map((color, colorIndex) => (
+                                <td key={colorIndex} className="py-2 px-2 text-center">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={formData.variants.stock[size]?.[color] || 0}
+                                    onChange={(e) => updateVariantStock(size, color, parseInt(e.target.value) || 0)}
+                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="0"
+                                  />
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <p className="text-sm text-gray-600">
+                        Total Stok: <span className="font-semibold text-blue-600">{calculateTotalStock()} pcs</span>
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        💡 Total stok akan dihitung otomatis dari semua varian
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Form Actions */}
