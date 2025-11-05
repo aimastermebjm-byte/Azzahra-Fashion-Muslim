@@ -72,15 +72,21 @@ export const useFirebaseProducts = () => {
           resellerPrice: Number(data.resellerPrice) || retailPrice * 0.8,
           costPrice: Number(data.costPrice) || retailPrice * 0.6,
           stock,
-          images: (data.images || []), // Remove convertFirebaseUrl for now
-          image: data.images?.[0] || '/placeholder-product.jpg', // Remove convertFirebaseUrl
-          variants: { sizes: data.sizes || [], colors: data.colors || [] },
-          isFeatured: Boolean(data.isFeatured),
+          images: (data.images || []),
+          image: data.images?.[0] || '/placeholder-product.jpg',
+          variants: data.variants || { sizes: data.sizes || [], colors: data.colors || [], stock: data.variants?.stock || {} },
+          isFeatured: Boolean(data.isFeatured || data.featured),
           isFlashSale: Boolean(data.isFlashSale),
           flashSalePrice: Number(data.flashSalePrice) || retailPrice,
+          originalRetailPrice: Number(data.originalRetailPrice) || retailPrice,
+          originalResellerPrice: Number(data.originalResellerPrice) || retailPrice * 0.8,
           createdAt,
           salesCount: Number(data.salesCount) || 0,
-          status: stock > 0 ? 'ready' : 'po'
+          featuredOrder: Number(data.featuredOrder) || 0,
+          weight: Number(data.weight) || 1000,
+          unit: data.unit || 'pcs',
+          status: data.status || (stock > 0 ? 'ready' : 'po'),
+          estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
         };
       });
 
@@ -205,20 +211,26 @@ export const useFirebaseProducts = () => {
           id: doc.id,
           name: data.name || '',
           description: data.description || '',
-          category: data.category || '',
+          category: data.category || 'uncategorized',
           images: (data.images || []),
           image: data.images?.[0] || '/placeholder-product.jpg',
-          variants: { sizes: data.sizes || [], colors: data.colors || [] },
+          variants: data.variants || { sizes: data.sizes || [], colors: data.colors || [], stock: data.variants?.stock || {} },
           retailPrice: Number(data.retailPrice || data.price || 0),
           resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
           costPrice: Number(data.costPrice) || Number(data.retailPrice || data.price || 0) * 0.6,
           stock: Number(data.stock || 0),
-          status: Number(data.stock || 0) > 0 ? 'ready' : 'po',
+          status: data.status || (Number(data.stock || 0) > 0 ? 'ready' : 'po'),
           isFlashSale: Boolean(data.isFlashSale),
           flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
+          originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),
+          originalResellerPrice: Number(data.originalResellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
           createdAt: data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt?.toDate()) : new Date(),
           salesCount: Number(data.salesCount) || 0,
-          isFeatured: Boolean(data.isFeatured),
+          isFeatured: Boolean(data.isFeatured || data.featured),
+          featuredOrder: Number(data.featuredOrder) || 0,
+          weight: Number(data.weight) || 1000,
+          unit: data.unit || 'pcs',
+          estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
         });
       });
 

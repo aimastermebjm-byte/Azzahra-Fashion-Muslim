@@ -653,23 +653,11 @@ const HomePage: React.FC<HomePageProps> = ({
                       <span className="text-gray-600 text-sm">Memuat lebih banyak produk...</span>
                     </div>
                   ) : (
-                    <div className="text-gray-500 text-sm">
-                      <span>📜 Scroll untuk melihat produk selanjutnya</span>
-                    </div>
+                    <div className="h-1"></div>
                   )}
                 </div>
               </div>
             )}
-
-            {/* Products Summary */}
-            <div className="mt-6 text-center text-sm text-gray-600">
-              <p>🚀 Menampilkan {regularProducts.length} produk secara real-time</p>
-              {!hasMore && regularProducts.length > 0 && (
-                <p className="text-green-600 font-medium mt-1">
-                  ✅ Semua produk telah ditampilkan
-                </p>
-              )}
-            </div>
           </>
         )}
       </div>
