@@ -111,11 +111,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const letterIndex = formData.variants.colors.length % 26;
     const newColor = alphabet[letterIndex];
-
-    console.log('Adding color:', newColor);
-    console.log('Current colors before add:', formData.variants.colors);
-
-    const newFormData = {
+    setFormData({
       ...formData,
       variants: {
         ...formData.variants,
@@ -131,10 +127,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           };
         }, {} as Record<string, Record<string, string>>)
       }
-    };
-
-    console.log('New colors after add:', newFormData.variants.colors);
-    setFormData(newFormData);
+    });
   };
 
   const removeColor = (colorToRemove: string) => {
@@ -272,38 +265,38 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     try {
       const totalStock = calculateTotalStock();
 
-      // Debug logging to check variants data before saving
-      console.log('Saving product with variants:', {
-        sizes: formData.variants.sizes,
-        colors: formData.variants.colors,
-        stock: formData.variants.stock,
-        totalStock
-      });
-
       const newProduct = {
         ...formData,
-        // Convert string fields to numbers
+        // Convert string fields to numbers, preserving original values
         retailPrice: parseInt(formData.retailPrice) || 0,
         resellerPrice: parseInt(formData.resellerPrice) || 0,
         costPrice: parseInt(formData.costPrice) || 0,
         weight: parseInt(formData.weight) || 0,
         stock: totalStock, // Use calculated total stock from variants
-        // Ensure variants data is properly stored
+        // IMPORTANT: Preserve all variants data exactly as entered
         variants: {
-          sizes: formData.variants.sizes || [],
-          colors: formData.variants.colors || [],
-          stock: formData.variants.stock || {}
+          sizes: formData.variants.sizes,
+          colors: formData.variants.colors,
+          stock: formData.variants.stock
         },
+        // Preserve status exactly as selected in form
+        status: formData.status,
         createdAt: new Date(),
         salesCount: 0,
         isFeatured: false,
         isFlashSale: false,
-        flashSalePrice: parseInt(formData.retailPrice) || 0,
-        // Ensure status is preserved from form
-        status: formData.status || 'ready'
+        flashSalePrice: parseInt(formData.retailPrice) || 0
       };
 
-      console.log('Final product data to save:', JSON.stringify(newProduct, null, 2));
+      // Important: Log to verify data being saved to Firestore
+      console.log('💾 Saving to Firestore:', {
+        name: newProduct.name,
+        sizes: newProduct.variants.sizes,
+        colors: newProduct.variants.colors,
+        status: newProduct.status,
+        weight: newProduct.weight
+      });
+
       await addProduct(newProduct);
 
       // Reset form
@@ -562,7 +555,6 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               <button
                 onClick={() => {
                   const stuckProducts = products.filter(p => p.isFlashSale);
-                  console.log('🚨 Stuck flash sale products:', stuckProducts);
                   alert(`Stuck products: ${stuckProducts.map(p => p.name).join(', ')}`);
                 }}
                 className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 transition-colors text-xs"

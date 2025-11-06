@@ -72,22 +72,7 @@ export const useFirebaseProducts = () => {
           }, 0) : stock;
 
         
-        // Debug for specific products to understand data structure
-        if (data.name?.includes('Gamis') || data.name?.includes('Set')) {
-          console.log(`🔍 Product: ${data.name}`, {
-            originalStock: stock,
-            calculatedTotalStock,
-            hasVariants: !!data.variants,
-            hasVariantStock: !!data.variants?.stock,
-            variantsSizes: data.variants?.sizes,
-            variantsColors: data.variants?.colors,
-            variantsStock: data.variants?.stock,
-            separateSizes: data.sizes,
-            separateColors: data.colors,
-            fullVariants: data.variants
-          });
-        }
-
+        
         return {
           id: doc.id,
           name: data.name || '',
@@ -132,7 +117,6 @@ export const useFirebaseProducts = () => {
         setIsInitialLoad(false);
       } else {
         // Silent real-time updates
-        console.log('🔄 Products updated in real-time');
       }
 
       // Save to cache for future instant loading
