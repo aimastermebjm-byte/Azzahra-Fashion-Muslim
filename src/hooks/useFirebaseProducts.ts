@@ -112,7 +112,7 @@ export const useFirebaseProducts = () => {
           createdAt,
           salesCount: Number(data.salesCount) || 0,
           featuredOrder: Number(data.featuredOrder) || 0,
-          weight: Number(data.weight) || 1000,
+          weight: Number(data.weight) || 0, // Remove default 1000, use 0 or actual weight
           unit: 'gram',
           status: data.status ||
                   (data.condition === 'baru' ? 'ready' : 'po') ||
@@ -284,7 +284,7 @@ export const useFirebaseProducts = () => {
           salesCount: Number(data.salesCount) || 0,
           isFeatured: Boolean(data.isFeatured || data.featured),
           featuredOrder: Number(data.featuredOrder) || 0,
-          weight: Number(data.weight) || 1000,
+          weight: Number(data.weight) || 0, // Remove default 1000, use 0 or actual weight
           unit: data.unit || 'gram',
           estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
         });

@@ -47,8 +47,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     stock: '', // Changed from 0 to empty string
     weight: '', // Changed from 1000 to empty string
     images: [] as string[],
-    imageUrls: '', // Temporary field for URL input
-    variants: { sizes: [] as string[], colors: [] as string[], stock: {} as Record<string, Record<string, number>> },
+    variants: { sizes: [] as string[], colors: [] as string[], stock: {} as any },
     status: 'ready' as 'ready' | 'po'
   });
 
@@ -87,7 +86,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           [newSize]: formData.variants.colors.reduce((acc, color) => ({
             ...acc,
             [color]: '' // Empty string instead of 0
-          }), {} as Record<string, number>)
+          }), {} as any)
         }
       }
     });
@@ -118,13 +117,16 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       variants: {
         ...formData.variants,
         colors: [...formData.variants.colors, newColor],
-        stock: Object.keys(formData.variants.stock).reduce((acc, size) => ({
-          ...acc,
-          [size]: {
-            ...formData.variants.stock[size],
-            [newColor]: '' // Empty string instead of 0
-          }
-        }), {} as Record<string, Record<string, number>>)
+        stock: Object.keys(formData.variants.stock).reduce((acc, size) => {
+          const existingStock = formData.variants.stock[size] || {};
+          return {
+            ...acc,
+            [size]: {
+              ...existingStock,
+              [newColor]: '' // Empty string instead of 0
+            }
+          };
+        }, {} as Record<string, Record<string, string>>)
       }
     });
   };
@@ -136,7 +138,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       delete sizeStock[colorToRemove];
       acc[size] = sizeStock;
       return acc;
-    }, {} as Record<string, Record<string, number>>);
+    }, {} as any);
 
     setFormData({
       ...formData,
@@ -168,12 +170,46 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
   const calculateTotalStock = () => {
     let total = 0;
-    Object.values(formData.variants.stock).forEach(sizeStock => {
-      Object.values(sizeStock).forEach(colorStock => {
-        total += colorStock || 0;
+    Object.values(formData.variants.stock).forEach((sizeStock: any) => {
+      Object.values(sizeStock).forEach((colorStock: any) => {
+        const stockValue = typeof colorStock === 'string' ? parseInt(colorStock) || 0 : colorStock || 0;
+        total += stockValue;
       });
     });
     return total;
+  };
+
+  // Handle image upload and convert to base64
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach((file) => {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`File ${file.name} terlalu besar. Maksimal ukuran file adalah 5MB.`);
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        alert(`File ${file.name} bukan gambar. Silakan pilih file gambar.`);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64String = event.target?.result as string;
+        setFormData(prev => ({
+          ...prev,
+          images: [...prev.images, base64String]
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Clear the input value to allow selecting the same file again
+    e.target.value = '';
   };
 
   // Filter and sort products
@@ -253,13 +289,12 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         name: '',
         description: '',
         category: 'Hijab',
-        retailPrice: 0,
-        resellerPrice: 0,
-        costPrice: 0,
-        stock: 0,
-        weight: 1000, // reset to default 1000g
+        retailPrice: '',
+        resellerPrice: '',
+        costPrice: '',
+        stock: '',
+        weight: '',
         images: [],
-        imageUrls: '',
         variants: { sizes: [], colors: [], stock: {} },
         status: 'ready'
       });
@@ -301,14 +336,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       name: product.name,
       description: product.description,
       category: product.category,
-      retailPrice: product.retailPrice,
-      resellerPrice: product.resellerPrice,
-      costPrice: product.costPrice,
-      stock: product.stock,
-      weight: product.weight || 1000, // use product weight or default 1000g
+      retailPrice: String(product.retailPrice || ''),
+      resellerPrice: String(product.resellerPrice || ''),
+      costPrice: String(product.costPrice || ''),
+      stock: String(product.stock || ''),
+      weight: String(product.weight || ''),
       images: product.images || [],
-      imageUrls: '', // Reset image URL input
-      variants: product.variants || { sizes: [], colors: [], stock: {} },
+      variants: product.variants || { sizes: [], colors: [], stock: {} as any },
       status: product.status || 'ready'
     });
     setShowEditModal(true);
@@ -908,35 +942,21 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   📷 Gambar Produk
                 </label>
                 <div className="space-y-4">
-                  {/* Image URL Input */}
+                  {/* File Upload Input */}
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">
-                      Tambah URL Gambar (opsional)
+                      Upload Gambar dari Device (opsional)
                     </label>
-                    <div className="flex space-x-2">
-                      <input
-                        type="url"
-                        value={formData.imageUrls || ''}
-                        onChange={(e) => setFormData({ ...formData, imageUrls: e.target.value })}
-                        placeholder="https://example.com/gambar.jpg"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (formData.imageUrls && formData.imageUrls.trim()) {
-                            setFormData({
-                              ...formData,
-                              images: [...formData.images, formData.imageUrls.trim()],
-                              imageUrls: ''
-                            });
-                          }
-                        }}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        Tambah
-                      </button>
-                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      💡 Bisa pilih multiple gambar (JPG, PNG, WebP). Maksimal 5MB per gambar.
+                    </p>
                   </div>
 
                   {/* Image Preview */}
@@ -986,12 +1006,12 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
                       <div className="text-gray-400 mb-2">
                         <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                       </div>
                       <p className="text-sm text-gray-600 mb-1">Belum ada gambar produk</p>
                       <p className="text-xs text-gray-500">
-                        Tambahkan URL gambar atau lanjutkan tanpa gambar (gambar placeholder akan digunakan)
+                        Upload gambar dari device atau lanjutkan tanpa gambar (gambar placeholder akan digunakan)
                       </p>
                     </div>
                   )}
@@ -1182,7 +1202,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                                 delete acc[size][oldColor];
                               }
                               return acc;
-                            }, {} as Record<string, Record<string, number>>);
+                            }, {} as any);
 
                             setFormData({
                               ...formData,
@@ -1354,35 +1374,21 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   📷 Gambar Produk
                 </label>
                 <div className="space-y-4">
-                  {/* Image URL Input */}
+                  {/* File Upload Input */}
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">
-                      Tambah URL Gambar (opsional)
+                      Upload Gambar dari Device (opsional)
                     </label>
-                    <div className="flex space-x-2">
-                      <input
-                        type="url"
-                        value={formData.imageUrls || ''}
-                        onChange={(e) => setFormData({ ...formData, imageUrls: e.target.value })}
-                        placeholder="https://example.com/gambar.jpg"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (formData.imageUrls && formData.imageUrls.trim()) {
-                            setFormData({
-                              ...formData,
-                              images: [...formData.images, formData.imageUrls.trim()],
-                              imageUrls: ''
-                            });
-                          }
-                        }}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        Tambah
-                      </button>
-                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      💡 Bisa pilih multiple gambar (JPG, PNG, WebP). Maksimal 5MB per gambar.
+                    </p>
                   </div>
 
                   {/* Image Preview */}
@@ -1432,12 +1438,12 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
                       <div className="text-gray-400 mb-2">
                         <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                       </div>
                       <p className="text-sm text-gray-600 mb-1">Belum ada gambar produk</p>
                       <p className="text-xs text-gray-500">
-                        Tambahkan URL gambar atau lanjutkan tanpa gambar (gambar placeholder akan digunakan)
+                        Upload gambar dari device atau lanjutkan tanpa gambar (gambar placeholder akan digunakan)
                       </p>
                     </div>
                   )}
