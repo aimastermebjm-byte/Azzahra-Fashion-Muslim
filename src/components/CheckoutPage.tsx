@@ -25,9 +25,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setLoading(true);
       const items = await cartService.getCart();
       setCartItems(items || []);
-      console.log('🛒 Checkout: Cart loaded from backend:', items?.length || 0, 'items');
-    } catch (error) {
-      console.error('❌ Failed to load cart for checkout:', error);
+      } catch (error) {
+      console.error('Failed to load cart for checkout:', error);
       setCartItems([]);
     } finally {
       setLoading(false);
@@ -61,9 +60,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setAddressesLoading(true);
       const userAddresses = await addressService.getUserAddresses();
       setAddresses(userAddresses);
-      console.log('🏠 Addresses loaded from Firebase:', userAddresses.length);
-    } catch (error) {
-      console.error('❌ Failed to load addresses:', error);
+      } catch (error) {
+      console.error('Failed to load addresses:', error);
       setAddresses([]);
     } finally {
       setAddressesLoading(false);
@@ -74,8 +72,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   useEffect(() => {
     const unsubscribe = addressService.onAddressesChange((userAddresses) => {
       setAddresses(userAddresses);
-      console.log('📦 Real-time addresses updated:', userAddresses.length);
-    });
+      });
 
     return () => unsubscribe();
   }, []);
@@ -83,9 +80,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const addAddress = async (addressData: any) => {
     try {
       const newAddress = await addressService.saveAddress(addressData);
-      console.log('✅ Address added to Firebase:', newAddress.id);
-    } catch (error) {
-      console.error('❌ Failed to add address:', error);
+      } catch (error) {
+      console.error('Failed to add address:', error);
       throw error;
     }
   };
@@ -93,9 +89,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const updateAddress = async (id: string, updateData: any) => {
     try {
       const updatedAddress = await addressService.updateAddress(id, updateData);
-      console.log('✅ Address updated in Firebase:', id);
-    } catch (error) {
-      console.error('❌ Failed to update address:', error);
+      } catch (error) {
+      console.error('Failed to update address:', error);
       throw error;
     }
   };
@@ -103,9 +98,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const deleteAddress = async (id: string) => {
     try {
       await addressService.deleteAddress(id);
-      console.log('✅ Address deleted from Firebase:', id);
-    } catch (error) {
-      console.error('❌ Failed to delete address:', error);
+      } catch (error) {
+      console.error('Failed to delete address:', error);
       throw error;
     }
   };
@@ -126,26 +120,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       // Get REAL weight from Firebase product data
       // Priority: item.product.weight > item.weight > fallback 1000g
       const itemWeight = item.product?.weight || item.weight || 1000; // weight in grams
-      console.log('📦 Checkout weight for item:', {
-        name: item.name || item.productName,
-        cartWeight: item.weight,
-        productWeight: item.product?.weight,
-        usedWeight: itemWeight,
-        quantity: item.quantity
-      });
       return total + (item.quantity * itemWeight);
     }, 0);
 
     // Apply smart rounding: 0-1250g = 1kg, 1251-2250g = 2kg, etc.
-    console.log('📦 Weight calculation:', {
-      totalGrams,
-      items: cartItems.map(item => ({
-        name: item.name || item.productName,
-        quantity: item.quantity,
-        itemWeight: item.product?.weight || 1000,
-        totalWeight: item.quantity * (item.product?.weight || 1000)
-      }))
-    });
 
     return totalGrams;
   };
@@ -166,21 +144,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setLoadingShipping(true);
       setShippingError('');
 
-      // ULTRA-FAST feedback with enhanced logging for J&T debugging
-      console.log('⚡ FAST Calculating shipping cost:', {
-        origin: '2425',
-        courier: courierCode,
-        destination: destinationCityId,
-        actualWeight: weight,
-        totalItems: cartItems.length,
-        cartDetails: cartItems.map(item => ({
-          name: item.product?.name,
-          qty: item.quantity,
-          weight: item.product?.weight || 1000
-        })),
-        timestamp: new Date().toISOString()
-      });
-
+  
       // Special handling for J&T with multiple items
       const optimizedWeight = courierCode === 'jnt' && cartItems.length > 1 ? Math.max(weight, 1000) : weight;
 
@@ -200,19 +164,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           shippingETD: cheapestService.etd
         }));
 
-        const isCached = results.length > 0;
-        console.log('⚡ FAST Shipping cost calculated:', {
-          service: cheapestService.service,
-          cost: cheapestService.cost,
-          etd: cheapestService.etd,
-          cached: isCached
-        });
-      } else {
+        } else {
         setShippingError('Tidak dapat menghitung ongkir untuk kurir ini');
-        console.log('❌ No shipping results found');
-      }
+        }
     } catch (error) {
-      console.error('❌ Error calculating shipping cost:', error);
+      console.error('Error calculating shipping cost:', error);
       setShippingError('Gagal menghitung ongkir. Silakan coba lagi.');
       // NO FALLBACK - Show error to user
     } finally {
@@ -290,14 +246,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       // Use consistent destination ID - prioritize subdistrictId for accuracy, fallback to cityId
       const destinationId = defaultAddr.subdistrictId || defaultAddr.cityId || '607';
 
-      console.log('🚚 Auto-calculating shipping:', {
-        courier: selectedCourier.code,
-        destination: destinationId,
-        destinationType: defaultAddr.subdistrictId ? 'subdistrictId' : 'cityId',
-        weight: weight,
-        addressName: defaultAddr.fullAddress
-      });
-
+  
       // ULTRA FAST delay - almost instant response
       const timeoutId = setTimeout(() => {
         calculateShippingCost(selectedCourier.code, destinationId, weight);
@@ -338,10 +287,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setSelectedService(null);
 
       // NO MANUAL CALCULATION HERE - Let useEffect handle it to avoid double calculation
-      console.log('🚚 Courier changed, useEffect will handle calculation:', {
-        courier: selectedCourier?.code,
-        newCourierId: newValue
-      });
 
       return; // Exit early to avoid double state update
     }
@@ -377,14 +322,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         const weight = calculateTotalWeight();
         const destinationId = address.subdistrictId || address.cityId || '607';
 
-        console.log('🚚 Address changed - recalculating shipping:', {
-          courier: selectedCourier.code,
-          destination: destinationId,
-          destinationType: address.subdistrictId ? 'subdistrictId' : 'cityId',
-          weight: weight,
-          addressName: address.fullAddress
-        });
-
+  
         // ULTRA FAST delay - almost instant response
         setTimeout(() => {
           calculateShippingCost(selectedCourier.code, destinationId, weight);
@@ -765,14 +703,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                                 // Use consistent destination ID - prioritize subdistrictId for accuracy
                                 const destinationId = address.subdistrictId || address.cityId || '607';
 
-                                console.log('🚚 Address radio selected - recalculating shipping:', {
-                                  courier: selectedCourier.code,
-                                  destination: destinationId,
-                                  destinationType: address.subdistrictId ? 'subdistrictId' : 'cityId',
-                                  weight: weight,
-                                  addressName: address.fullAddress
-                                });
-
+  
                                 // ULTRA FAST delay - almost instant response
                                 setTimeout(() => {
                                   calculateShippingCost(selectedCourier.code, destinationId, weight);

@@ -6,16 +6,15 @@ import { Product } from '../types';
 export const useProductCache = () => {
   // Firebase handles real-time data, no local caching needed
   const saveToCache = () => {
-    console.log('🚀 Firebase mode - No local product caching needed');
+    // No-op - Firebase handles caching
   };
 
   const getFromCache = () => {
-    console.log('🚀 Firebase mode - Products come from real-time Firebase');
-    return null;
+    return null; // Always get fresh data from Firebase
   };
 
   const clearCache = () => {
-    console.log('🚀 Firebase mode - No local cache to clear');
+    // No-op - Firebase handles cache invalidation
   };
 
   const isCacheValid = () => {
@@ -23,7 +22,7 @@ export const useProductCache = () => {
   };
 
   const refreshCache = () => {
-    console.log('🚀 Firebase mode - Products refresh automatically from Firebase');
+    // No-op - Firebase refreshes automatically
   };
 
   return {

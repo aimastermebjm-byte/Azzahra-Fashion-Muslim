@@ -53,7 +53,7 @@ const HomePage: React.FC<HomePageProps> = ({
       const cartItems = await cartService.getCart(user.uid);
       setCartCount(cartItems.length);
     } catch (error) {
-      console.error('❌ Failed to load cart count:', error);
+      console.error('Failed to load cart count:', error);
       setCartCount(0);
     }
   };
@@ -111,9 +111,7 @@ const HomePage: React.FC<HomePageProps> = ({
   }, [user]);
 
   const handleBannerClick = (banner: any) => {
-    console.log('Banner clicked:', banner);
     if (banner.type === 'flashsale') {
-      console.log('Flash sale banner clicked, navigating...');
       if (onNavigateToFlashSale) {
         onNavigateToFlashSale();
       }
@@ -208,11 +206,7 @@ const HomePage: React.FC<HomePageProps> = ({
   // Show ALL products at once - no pagination for better UX and faster loading
   const currentProducts = regularProducts; // Show all products
 
-  // Reset search filters trigger for instant refresh
-  useEffect(() => {
-    console.log('⚡ FAST HomePage: Products filtered/updated - showing all products instantly');
-  }, [searchQuery, selectedCategory, statusFilter, sortBy]);
-
+  
   // Listen for featured products updates from admin
   useEffect(() => {
     const handleFeaturedProductsUpdated = (event: any) => {
@@ -251,7 +245,6 @@ const HomePage: React.FC<HomePageProps> = ({
   // ENHANCED Listen for flash sale ended events with debouncing
   useEffect(() => {
     const handleFlashSaleEnded = (event: any) => {
-      console.log('🔥 Flash sale ended detected in HomePage:', event.detail);
 
       // Flash sale ended - handled by Firebase real-time updates
 
@@ -267,7 +260,6 @@ const HomePage: React.FC<HomePageProps> = ({
 
         // Set new debounced timer for HomePage
         window.flashSaleRefreshTimer = setTimeout(() => {
-          console.log('🔄 Auto-refreshing HomePage after flash sale time expired');
           window.location.reload();
         }, 4000);
       }

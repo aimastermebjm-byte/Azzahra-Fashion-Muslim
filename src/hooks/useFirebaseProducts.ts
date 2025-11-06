@@ -108,12 +108,6 @@ export const useFirebaseProducts = () => {
 
       // Only show performance logs on initial load to reduce console spam
       if (isInitialLoad) {
-        const processingTime = performance.now() - processingStartTime;
-        const totalTime = performance.now() - startTime;
-
-        console.log(`   - Processing time: ${processingTime.toFixed(2)}ms`);
-        console.log(`   - Total time: ${totalTime.toFixed(2)}ms`);
-        console.log(`📊 Initial load complete. Total products: ${productsData.length}`);
         setIsInitialLoad(false);
       } else {
         // Silent real-time updates
