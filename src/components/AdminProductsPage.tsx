@@ -111,7 +111,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const letterIndex = formData.variants.colors.length % 26;
     const newColor = alphabet[letterIndex];
-    setFormData({
+
+    console.log('Adding color:', newColor);
+    console.log('Current colors before add:', formData.variants.colors);
+
+    const newFormData = {
       ...formData,
       variants: {
         ...formData.variants,
@@ -127,7 +131,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           };
         }, {} as Record<string, Record<string, string>>)
       }
-    });
+    };
+
+    console.log('New colors after add:', newFormData.variants.colors);
+    setFormData(newFormData);
   };
 
   const removeColor = (colorToRemove: string) => {
@@ -264,6 +271,15 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     e.preventDefault();
     try {
       const totalStock = calculateTotalStock();
+
+      // Debug logging to check variants data before saving
+      console.log('Saving product with variants:', {
+        sizes: formData.variants.sizes,
+        colors: formData.variants.colors,
+        stock: formData.variants.stock,
+        totalStock
+      });
+
       const newProduct = {
         ...formData,
         // Convert string fields to numbers
@@ -287,6 +303,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         status: formData.status || 'ready'
       };
 
+      console.log('Final product data to save:', JSON.stringify(newProduct, null, 2));
       await addProduct(newProduct);
 
       // Reset form
