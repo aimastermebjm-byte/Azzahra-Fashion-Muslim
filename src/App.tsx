@@ -42,13 +42,11 @@ function AppContent() {
 
   // Initialize Firebase-only app on app start
   useEffect(() => {
-    console.log('🚀 App initializing... Firebase-only mode (NO localStorage)');
-
+    
     // No more AppStorage localStorage initialization
     // All data will be stored in Firebase Firestore only
 
-    console.log('🚀 App initialized with Firebase-only storage');
-
+    
     // Handle URL routing for special pages
     const handleRouting = () => {
       const path = window.location.pathname;
@@ -76,17 +74,14 @@ function AppContent() {
 
   const handleLoginWithUser = (user: any) => {
     setShowLogin(false);
-    console.log('✅ Firebase user logged in:', user.name, user.role);
-  };
+      };
 
   const handleRegistrationSuccess = (user: any) => {
     setShowRegistration(false);
-    console.log('✅ Firebase user registered:', user.name, user.role);
-  };
+      };
 
   const handleLogout = () => {
-    console.log('🔃 User logging out from Firebase');
-
+    
     // Firebase logout
     logout();
     setCurrentPage('home');
@@ -95,14 +90,11 @@ function AppContent() {
     cartService.clearCart().catch(error => {
       console.error('❌ Error clearing cart on logout:', error);
     });
-    console.log('✅ Firebase logout successful');
-    console.log('📦 Cart cleared from Firebase cartService only (NO localStorage)');
-  };
+      };
 
   const handleAddToCart = async (product: any, variant: any, quantity: number) => {
     if (!user?.uid) {
-      console.log('❌ Cannot add to cart: User not logged in');
-      handleLoginRequired();
+            handleLoginRequired();
       return;
     }
 
@@ -118,8 +110,7 @@ function AppContent() {
         variant: variant,
         quantity: quantity
       });
-      console.log('✅ Product added to cart:', product.name, 'Price:', price);
-      alert('Produk berhasil ditambahkan ke keranjang!');
+            alert('Produk berhasil ditambahkan ke keranjang!');
     } catch (error) {
       console.error('❌ Failed to add to cart:', error);
       alert('Gagal menambahkan produk ke keranjang');
@@ -237,11 +228,7 @@ function AppContent() {
       try {
         // Save to Firebase using OrdersService ONLY
         await ordersService.createOrder(orderRecord);
-        console.log('🔥 Order saved to Firebase Firestore:', orderId);
-        console.log('📦 Firebase-only order storage - NO localStorage backup needed');
-
-        console.log('✅ Order completed and cart cleared:', orderId);
-        return orderId;
+                return orderId;
       } catch (firebaseError) {
         console.error('❌ Error saving order via OrdersService:', firebaseError);
         console.error('🚨 Order saving failed - Firebase is the only storage option');
@@ -333,7 +320,6 @@ function AppContent() {
       case 'orders':
         return <OrdersPage user={user} />;
       case 'account':
-        console.log('App: Rendering AccountPage with user:', user);
         return (
           <AccountPage
             user={user}
@@ -347,7 +333,6 @@ function AppContent() {
           />
         );
       case 'address-management':
-        console.log('App: Rendering AddressManagementPage with user:', user);
         return (
           <AddressManagementPage
             user={user}
@@ -355,19 +340,14 @@ function AppContent() {
           />
         );
         case 'admin-products':
-        console.log('App: Rendering AdminProductsPage with user:', user);
         return <AdminProductsPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-orders':
-        console.log('App: Rendering AdminOrdersPage with user:', user);
         return <AdminOrdersPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-reports':
-        console.log('App: Rendering AdminReportsPage with user:', user);
         return <AdminReportsPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-users':
-        console.log('App: Rendering AdminUsersPage with user:', user);
         return <AdminUsersPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-cache':
-        console.log('App: Rendering AdminCacheManagement with user:', user);
         return <AdminCacheManagement onBack={() => setCurrentPage('account')} user={user} />;
         case 'ongkir-test':
         return <OngkirTestPage onBack={() => setCurrentPage('home')} />;

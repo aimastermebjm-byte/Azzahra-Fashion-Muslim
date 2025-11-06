@@ -45,8 +45,7 @@ export const useProducts = () => {
   // Listen for featured products updates from admin
   useEffect(() => {
     const handleFeaturedProductsUpdated = (event: any) => {
-      console.log('Featured products updated event received:', event.detail);
-
+      
       // Reload products from storage to get latest state
       const updatedProducts = AppStorage.getProducts();
       setProducts(updatedProducts);
@@ -62,8 +61,7 @@ export const useProducts = () => {
   // Listen for products updates from admin
   useEffect(() => {
     const handleProductsUpdated = (event: any) => {
-      console.log('Products updated event received:', event.detail);
-
+      
       // Reload products from storage to get latest state
       const updatedProducts = AppStorage.getProducts();
       setProducts(updatedProducts);
@@ -78,10 +76,7 @@ export const useProducts = () => {
 
   // Flash sale methods - IMPLEMENTED
   const applyFlashSaleToProducts = (flashSale: FlashSale, forceUpdate = false) => {
-    console.log('🔥 Applying flash sale to products:', flashSale.name);
-    console.log('📦 Product IDs affected:', flashSale.productIds);
-    console.log('💰 Discount:', flashSale.discountType, flashSale.discountValue);
-
+    
     setProducts(prev => {
       const updated = prev.map(product => {
         if (flashSale.productIds.includes(product.id)) {
@@ -96,8 +91,7 @@ export const useProducts = () => {
             flashSalePrice = product.retailPrice * (1 - flashSale.discountValue / 100);
           }
 
-          console.log(`💸 Product ${product.name}: Rp${product.retailPrice.toLocaleString('id-ID')} → Rp${flashSalePrice.toLocaleString('id-ID')}`);
-
+          
           return {
             ...product,
             isFlashSale: true,
@@ -110,20 +104,17 @@ export const useProducts = () => {
 
       // Save to AppStorage
       AppStorage.saveProducts(updated);
-      console.log('✅ Flash sale applied and products saved to AppStorage');
-
+      
       return updated;
     });
   };
 
   const removeFlashSaleFromProducts = (productIds: string[]) => {
-    console.log('🛑 Removing flash sale from products:', productIds);
-
+    
     setProducts(prev => {
       const updated = prev.map(product => {
         if (productIds.includes(product.id) && product.isFlashSale) {
-          console.log(`↩️ Restoring original price for ${product.name}: Rp${product.originalRetailPrice?.toLocaleString('id-ID') || product.retailPrice.toLocaleString('id-ID')}`);
-
+          
           return {
             ...product,
             isFlashSale: false,
@@ -137,8 +128,7 @@ export const useProducts = () => {
 
       // Save to AppStorage
       AppStorage.saveProducts(updated);
-      console.log('✅ Flash sale removed and products saved to AppStorage');
-
+      
       return updated;
     });
   };

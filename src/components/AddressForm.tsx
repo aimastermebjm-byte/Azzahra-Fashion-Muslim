@@ -106,8 +106,7 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         }
       } catch (error) {
         // Silently fail preload - not critical
-        console.log(`Background preload cities for province ${provinceId} skipped`);
-      }
+        }
     });
   }, []); // Only run once on mount
 
@@ -177,20 +176,17 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
       if (addressCache.has(cacheKey)) {
         const cachedData = addressCache.get(cacheKey);
         setProvinces(cachedData);
-        console.log('🎯 Provinces loaded from IN-MEMORY cache:', cachedData.length, 'items');
-        return;
+          return;
       }
 
-      console.log('🌐 Loading provinces from API (no cache)...');
-      const response = await fetch('/api/address-cached?type=provinces');
+        const response = await fetch('/api/address-cached?type=provinces');
       const data = await response.json();
 
       if (data.success && data.data) {
         setProvinces(data.data);
         // Save to in-memory cache
         setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
-        console.log('✅ Provinces loaded from API & cached in memory:', data.data.length, 'items');
-      } else {
+          } else {
         console.error('❌ Failed to load provinces from cache:', data.message);
       }
     } catch (error) {
@@ -214,16 +210,14 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         return;
       }
 
-      console.log('🌐 Loading cities from API for province:', formData.provinceId);
-      const response = await fetch(`/api/address-cached?type=cities&provinceId=${formData.provinceId}`);
+        const response = await fetch(`/api/address-cached?type=cities&provinceId=${formData.provinceId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
         setCities(data.data);
         // Save to in-memory cache
         setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
-        console.log('✅ Cities loaded from API & cached:', data.data.length, 'items for province', formData.provinceId);
-      } else {
+            } else {
         console.error('❌ Failed to load cities:', data.message);
       }
     } catch (error) {
@@ -247,16 +241,14 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         return;
       }
 
-      console.log('🌐 Loading districts from API for city:', formData.cityId);
-      const response = await fetch(`/api/address-cached?type=districts&cityId=${formData.cityId}`);
+          const response = await fetch(`/api/address-cached?type=districts&cityId=${formData.cityId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
         setDistricts(data.data);
         // Save to in-memory cache
         setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
-        console.log('✅ Districts loaded from API & cached:', data.data.length, 'items for city', formData.cityId);
-      } else {
+              } else {
         console.error('❌ Failed to load districts:', data.message);
       }
     } catch (error) {
@@ -280,16 +272,14 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         return;
       }
 
-      console.log('🌐 Loading subdistricts from API for district:', formData.districtId);
-      const response = await fetch(`/api/address-cached?type=subdistricts&districtId=${formData.districtId}`);
+          const response = await fetch(`/api/address-cached?type=subdistricts&districtId=${formData.districtId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
         setSubdistricts(data.data);
         // Save to in-memory cache
         setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
-        console.log('✅ Subdistricts loaded from API & cached:', data.data.length, 'items for district', formData.districtId);
-      } else {
+            } else {
         console.error('❌ Failed to load subdistricts:', data.message);
       }
     } catch (error) {

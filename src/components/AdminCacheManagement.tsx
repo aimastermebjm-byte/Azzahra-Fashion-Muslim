@@ -103,8 +103,7 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
 
       if (user) {
         const token = await user.getIdToken();
-        console.log('🔐 Firebase auth token obtained for cache management');
-        return token;
+          return token;
       } else {
         console.error('❌ No Firebase user found');
         return '';

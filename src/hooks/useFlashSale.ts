@@ -29,10 +29,7 @@ export const useFlashSale = () => {
           // Validate config structure
           if (config && typeof config === 'object' && 'isActive' in config && 'endTime' in config) {
             setFlashSaleConfig(config);
-            console.log('✅ Flash sale config loaded successfully from localStorage');
-            console.log('📅 Flash sale ends at:', config.endTime);
-            console.log('⏰ Current time:', new Date().toISOString());
-          } else {
+            } else {
             console.warn('⚠️ Invalid flash sale config structure, using default');
             throw new Error('Invalid config structure');
           }
@@ -41,9 +38,7 @@ export const useFlashSale = () => {
           throw e;
         }
       } else {
-        console.log('📝 No flash sale config found in localStorage');
-        console.log('ℹ️ Please create flash sale from admin dashboard first');
-        // Don't create default config - wait for admin to create one
+          // Don't create default config - wait for admin to create one
       }
     } catch (e) {
       console.error('🚨 Error initializing flash sale:', e);
@@ -96,8 +91,7 @@ export const useFlashSale = () => {
               retailPrice: product.originalRetailPrice || product.retailPrice
             }));
             localStorage.setItem('azzahra_products', JSON.stringify(cleanedProducts));
-            console.log('🧹 Cleaned flash sale from products:', cleanedProducts.length, 'products');
-          } catch (e) {
+                  } catch (e) {
             console.error('Error cleaning products after flash sale:', e);
           }
         }
@@ -114,8 +108,7 @@ export const useFlashSale = () => {
         // Use debounced refresh to prevent multiple triggers
         if (!window.flashSaleRefreshTimer) {
           window.flashSaleRefreshTimer = setTimeout(() => {
-            console.log('🔄 Auto-refreshing page after flash sale cleanup');
-            window.location.reload();
+                      window.location.reload();
           }, 2000);
         }
 

@@ -52,8 +52,7 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
         return product.isFlashSale && isFlashSaleActive;
       });
 
-      console.log(`🔍 FlashSalePage: Found ${filtered.length} flash sale products (same logic as HomePage)`);
-
+      
       return filtered;
     } catch (error) {
       console.error('🚨 Error in flashSaleProducts calculation:', error);

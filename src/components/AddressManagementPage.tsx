@@ -43,8 +43,7 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
 
     try {
       await addressService.deleteAddress(id);
-      console.log('✅ Address deleted');
-    } catch (error) {
+      } catch (error) {
       console.error('❌ Error deleting address:', error);
       alert('Gagal menghapus alamat. Silakan coba lagi.');
     }
@@ -53,8 +52,7 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
   const handleSetDefault = async (id: string) => {
     try {
       await addressService.setAsDefault(id);
-      console.log('✅ Default address updated');
-    } catch (error) {
+      } catch (error) {
       console.error('❌ Error setting default address:', error);
       alert('Gagal mengatur alamat utama. Silakan coba lagi.');
     }
@@ -80,8 +78,7 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
           isDefault: addressData.isDefault,
           updatedAt: new Date().toISOString()
         });
-        console.log('✅ Address updated');
-      } else {
+        } else {
         // Add new address
         await addressService.saveAddress({
           name: addressData.name,
@@ -98,8 +95,7 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
           postalCode: addressData.postalCode,
           isDefault: addressData.isDefault
         });
-        console.log('✅ Address saved');
-      }
+        }
 
       setShowAddForm(false);
       setEditingAddress(null);

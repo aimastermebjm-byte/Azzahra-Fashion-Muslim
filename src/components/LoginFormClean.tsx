@@ -31,14 +31,12 @@ const LoginFormClean: React.FC<LoginFormProps> = ({ onSuccess, onClose }) => {
     }
 
     try {
-      console.log('🔄 Attempting real Supabase login:', email);
-
+      
       // Login via Supabase Auth
       const result = await login(email, password);
 
       if (result.success) {
-        console.log('✅ Login successful via Supabase:', email);
-        // Create user object for success callback
+                // Create user object for success callback
         const userData = {
           id: result.data?.user?.id || '',
           name: result.data?.user?.user_metadata?.name || email.split('@')[0],

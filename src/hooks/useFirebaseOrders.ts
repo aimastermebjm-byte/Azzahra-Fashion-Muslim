@@ -40,8 +40,7 @@ export const useFirebaseOrders = () => {
           return;
         }
 
-        console.log('📦 Setting up orders listener for user:', user.uid);
-
+        
         // Set up real-time listener for orders (tanpa orderBy sementara)
         const ordersRef = collection(db, 'orders');
         const q = query(
@@ -63,8 +62,7 @@ export const useFirebaseOrders = () => {
               });
             });
 
-            console.log('✅ Orders loaded from Firebase:', loadedOrders.length, 'orders');
-            setOrders(loadedOrders);
+                        setOrders(loadedOrders);
             setLoading(false);
             setError(null);
           },
@@ -74,8 +72,7 @@ export const useFirebaseOrders = () => {
             setLoading(false);
 
             // Fallback to ordersService
-            console.log('🔄 Falling back to ordersService...');
-            try {
+              try {
               const fallbackOrders = await ordersService.getUserOrders();
               setOrders(fallbackOrders);
               setError(null);

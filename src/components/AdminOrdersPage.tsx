@@ -96,8 +96,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
   // Listen for order updates
   useEffect(() => {
     const handleOrderUpdate = (event: any) => {
-      console.log('AdminOrdersPage: Order update received', event.detail);
-      // Force re-render by updating state
+            // Force re-render by updating state
       setSearchQuery(prev => prev + ' ');
       setTimeout(() => setSearchQuery(prev => prev.trim()), 100);
     };

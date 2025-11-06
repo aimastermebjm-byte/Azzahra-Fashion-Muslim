@@ -36,8 +36,7 @@ export const useFirebaseFlashSale = () => {
   // Helper function to clean flash sale from products
   const clearFlashSaleFromProducts = async () => {
     try {
-      console.log('🧹 Firebase Flash Sale: Cleaning up flash sale products...');
-
+      
       // Find all products with isFlashSale = true
       const productsQuery = query(
         collection(db, 'products'),
@@ -45,8 +44,7 @@ export const useFirebaseFlashSale = () => {
       );
 
       const querySnapshot = await getDocs(productsQuery);
-      console.log(`🧹 Firebase Flash Sale: Found ${querySnapshot.docs.length} flash sale products to clean`);
-
+    
       // Update all flash sale products to remove flash sale status
       const updatePromises = querySnapshot.docs.map(async (docSnapshot) => {
         const productRef = doc(db, 'products', docSnapshot.id);
@@ -54,12 +52,10 @@ export const useFirebaseFlashSale = () => {
           isFlashSale: false,
           flashSalePrice: null
         });
-        console.log(`🧹 Firebase Flash Sale: Cleared flash sale from product ${docSnapshot.id}`);
-      });
+            });
 
       await Promise.all(updatePromises);
-      console.log('✅ Firebase Flash Sale: All flash sale products cleaned successfully');
-    } catch (error) {
+        } catch (error) {
       console.error('❌ Firebase Flash Sale: Error cleaning flash sale products:', error);
       throw error;
     }
@@ -68,20 +64,15 @@ export const useFirebaseFlashSale = () => {
   // Listen to flash sale config changes in real-time
   useEffect(() => {
     setLoading(true);
-    console.log('🔥 Firebase Flash Sale: Initializing real-time listener');
-
+    
     const flashSaleRef = doc(db, 'flashSales', FLASH_SALE_DOC_ID);
 
     const unsubscribe = onSnapshot(flashSaleRef, (docSnapshot) => {
       if (docSnapshot.exists()) {
         const config = { id: docSnapshot.id, ...docSnapshot.data() } as FlashSaleConfig;
         setFlashSaleConfig(config);
-        console.log('✅ Firebase Flash Sale: Config loaded from Firebase');
-        console.log('📅 Flash sale ends at:', config.endTime);
-        console.log('🔥 Firebase Flash Sale: Active status:', config.isActive);
-      } else {
-        console.log('📝 Firebase Flash Sale: No active flash sale found');
-        setFlashSaleConfig(null);
+              } else {
+                setFlashSaleConfig(null);
       }
       setLoading(false);
     }, (error) => {
@@ -91,8 +82,7 @@ export const useFirebaseFlashSale = () => {
 
     return () => {
       unsubscribe();
-      console.log('🔥 Firebase Flash Sale: Listener disconnected');
-    };
+          };
   }, []);
 
   // Countdown timer effect
@@ -156,8 +146,7 @@ export const useFirebaseFlashSale = () => {
       };
 
       await setDoc(flashSaleRef, newConfig);
-      console.log('✅ Firebase Flash Sale: Flash sale created successfully');
-      return newConfig;
+          return newConfig;
     } catch (error) {
       console.error('❌ Firebase Flash Sale: Error creating flash sale:', error);
       throw error;
@@ -174,8 +163,7 @@ export const useFirebaseFlashSale = () => {
         updatedAt: new Date().toISOString()
       });
 
-      console.log('✅ Firebase Flash Sale: Flash sale updated successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('❌ Firebase Flash Sale: Error updating flash sale:', error);
       throw error;
     }
@@ -189,8 +177,7 @@ export const useFirebaseFlashSale = () => {
       };
 
       await createFlashSale(newConfig);
-      console.log('✅ Firebase Flash Sale: Flash sale started successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('❌ Firebase Flash Sale: Error starting flash sale:', error);
       throw error;
     }
@@ -202,8 +189,7 @@ export const useFirebaseFlashSale = () => {
 
       await updateFlashSale({ isActive: false });
       await clearFlashSaleFromProducts(); // Also clean up products
-      console.log('✅ Firebase Flash Sale: Flash sale stopped successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('❌ Firebase Flash Sale: Error stopping flash sale:', error);
       throw error;
     }

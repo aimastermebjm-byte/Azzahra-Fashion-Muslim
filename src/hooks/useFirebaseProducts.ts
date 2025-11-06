@@ -33,8 +33,7 @@ export const useFirebaseProducts = () => {
     // STEP 1: Check cache first for instant loading
     const cachedProducts = getFromCache();
     if (cachedProducts) {
-      console.log('🚀 Instant load from cache -', cachedProducts.length, 'products');
-      setProducts(cachedProducts);
+            setProducts(cachedProducts);
       setLoading(false); // Instant loading!
       setIsInitialLoad(false);
     }
@@ -154,8 +153,7 @@ export const useFirebaseProducts = () => {
         unit: productData.unit || 'gram',
         createdAt: new Date()
       });
-      console.log('✅ Product added with ID:', docRef.id);
-    } catch (err) {
+          } catch (err) {
       console.error('❌ Error adding product:', err);
       throw err;
     }
@@ -172,8 +170,7 @@ export const useFirebaseProducts = () => {
       }
 
       await updateDoc(docRef, updates);
-      console.log('✅ Product updated');
-    } catch (err) {
+          } catch (err) {
       console.error('❌ Error updating product:', err);
       throw err;
     }
@@ -183,8 +180,7 @@ export const useFirebaseProducts = () => {
     try {
       const docRef = doc(db, 'products', id);
       await deleteDoc(docRef);
-      console.log('✅ Product deleted');
-    } catch (err) {
+          } catch (err) {
       console.error('❌ Error deleting product:', err);
       throw err;
     }
