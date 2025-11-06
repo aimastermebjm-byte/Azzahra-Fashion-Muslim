@@ -129,7 +129,7 @@ export const useFirebaseProducts = () => {
     });
 
     return () => unsubscribe();
-  }, [productsPerPage, saveToCache, getFromCache]); // Add dependencies
+  }, [productsPerPage]); // Remove cache functions to prevent infinite loop
 
   const addProduct = async (productData: any) => {
     try {
