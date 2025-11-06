@@ -28,260 +28,42 @@ export const useFirebaseProducts = () => {
   const { saveToCache, getFromCache, isCacheValid } = useProductCache();
 
   useEffect(() => {
-    const startTime = performance.now();
+    // 🚨 EMERGENCY: DISABLE ALL FIRESTORE QUERIES TO STOP READ BLEEDING
+    console.log('🚨 EMERGENCY: Firestore queries DISABLED to prevent quota exhaustion');
+    setLoading(false);
+    setIsInitialLoad(false);
+    setProducts([]); // Empty products to prevent errors
 
-    // STEP 1: Check cache first for instant loading
-    const cachedProducts = getFromCache();
-    if (cachedProducts) {
-            setProducts(cachedProducts);
-      setLoading(false); // Instant loading!
-      setIsInitialLoad(false);
-    }
+    // Don't set up any listeners - return empty function
+    return () => {};
+  }, []); // Empty dependency array - prevent ALL re-runs
 
-    // STEP 2: Set up real-time listener for updates - RESPONSIVE PAGINATION
-    const productsRef = collection(db, 'products');
-    const q = query(
-      productsRef,
-      orderBy('createdAt', 'desc'),
-      limitCount(productsPerPage) // Dynamic limit based on device
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const processingStartTime = performance.now();
-
-      // Optimized data processing with reduced calculations
-      const productsData: Product[] = snapshot.docs.map((doc) => {
-        const data = doc.data();
-
-        // Optimized date processing
-        const createdAt = data.createdAt ?
-          (typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt?.toDate()) :
-          new Date();
-
-        // Optimized price calculations with single Number() conversion
-        const retailPrice = Number(data.retailPrice || data.price || 0);
-        const stock = Number(data.stock || 0);
-
-        // Calculate total stock from variants if available
-        const calculatedTotalStock = data.variants?.stock ?
-          Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
-            return total + Object.values(sizeStock as any).reduce((sizeTotal: number, colorStock: any) => {
-              return sizeTotal + Number(colorStock || 0);
-            }, 0);
-          }, 0) : stock;
-
-        
-        
-        return {
-          id: doc.id,
-          name: data.name || '',
-          description: data.description || '',
-          category: data.category || 'uncategorized',
-          retailPrice,
-          resellerPrice: Number(data.resellerPrice) || retailPrice * 0.8,
-          costPrice: Number(data.costPrice) || retailPrice * 0.6,
-          stock: calculatedTotalStock,
-          images: (data.images || []),
-          image: data.images?.[0] || '/placeholder-product.jpg',
-          variants: {
-            sizes: data.variants?.sizes || data.sizes || [],
-            colors: data.variants?.colors || data.colors || [],
-            stock: data.variants?.stock || {}
-          },
-          isFeatured: Boolean(data.isFeatured || data.featured),
-          isFlashSale: Boolean(data.isFlashSale),
-          flashSalePrice: Number(data.flashSalePrice) || retailPrice,
-          originalRetailPrice: Number(data.originalRetailPrice) || retailPrice,
-          originalResellerPrice: Number(data.originalResellerPrice) || retailPrice * 0.8,
-          createdAt,
-          salesCount: Number(data.salesCount) || 0,
-          featuredOrder: Number(data.featuredOrder) || 0,
-          weight: Number(data.weight) || 0, // Remove default 1000, use 0 or actual weight
-          unit: 'gram',
-          status: data.status ||
-                  (data.condition === 'baru' ? 'ready' : 'po') ||
-                  'ready', // Default to 'ready' instead of based on stock calculation
-          estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
-        };
-      });
-
-      // Only show performance logs on initial load to reduce console spam
-      if (isInitialLoad) {
-        setIsInitialLoad(false);
-      } else {
-        // Silent real-time updates
-      }
-
-      // Save to cache for future instant loading
-      saveToCache(productsData);
-
-      setProducts(productsData);
-
-      // Set pagination info for infinite scroll
-      if (snapshot.docs.length > 0) {
-        setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
-        setHasMore(snapshot.docs.length === productsPerPage);
-      } else {
-        setHasMore(false);
-      }
-
-      setLoading(false); // Set loading false after first load
-    });
-
-    return () => unsubscribe();
-  }, [productsPerPage]); // Remove cache functions to prevent infinite loop
-
+  // EMERGENCY: Disable all Firestore operations
   const addProduct = async (productData: any) => {
-    try {
-      const docRef = await addDoc(collection(db, 'products'), {
-        name: productData.name,
-        description: productData.description || '',
-        category: productData.category || 'uncategorized',
-        price: productData.retailPrice,
-        resellerPrice: productData.resellerPrice,
-        costPrice: productData.costPrice,
-        stock: productData.stock || 0,
-        images: productData.images || [],
-        sizes: productData.sizes || [],
-        colors: productData.colors || [],
-        // Use both fields for consistency
-        featured: productData.isFeatured || false,
-        isFeatured: productData.isFeatured || false,
-        isFlashSale: productData.isFlashSale || false,
-        flashSalePrice: productData.flashSalePrice || productData.retailPrice,
-        salesCount: 0,
-        unit: productData.unit || 'gram',
-        createdAt: new Date()
-      });
-          } catch (err) {
-      console.error('❌ Error adding product:', err);
-      throw err;
-    }
+    console.error('🚨 EMERGENCY: Firestore DISABLED - addProduct blocked');
+    throw new Error('Firestore disabled due to quota exhaustion. Please try again later.');
   };
 
   const updateProduct = async (id: string, updates: any) => {
-    try {
-      const docRef = doc(db, 'products', id);
-
-      // Handle featured products: update both isFeatured and featured fields for consistency
-      if ('isFeatured' in updates) {
-        updates.isFeatured = updates.isFeatured;
-        updates.featured = updates.isFeatured; // Also update legacy field
-      }
-
-      await updateDoc(docRef, updates);
-          } catch (err) {
-      console.error('❌ Error updating product:', err);
-      throw err;
-    }
+    console.error('🚨 EMERGENCY: Firestore DISABLED - updateProduct blocked');
+    throw new Error('Firestore disabled due to quota exhaustion. Please try again later.');
   };
 
   const deleteProduct = async (id: string) => {
-    try {
-      const docRef = doc(db, 'products', id);
-      await deleteDoc(docRef);
-          } catch (err) {
-      console.error('❌ Error deleting product:', err);
-      throw err;
-    }
+    console.error('🚨 EMERGENCY: Firestore DISABLED - deleteProduct blocked');
+    throw new Error('Firestore disabled due to quota exhaustion. Please try again later.');
   };
 
   const updateProductStock = async (id: string, quantity: number) => {
-    try {
-      const docRef = doc(db, 'products', id);
-      const product = products.find(p => p.id === id);
-      if (product) {
-        const newStock = Math.max(0, product.stock - quantity);
-        await updateDoc(docRef, { stock: newStock });
-        return newStock;
-      }
-      return 0;
-    } catch (err) {
-      console.error('❌ Error updating stock:', err);
-      throw err;
-    }
+    console.error('🚨 EMERGENCY: Firestore DISABLED - updateProductStock blocked');
+    throw new Error('Firestore disabled due to quota exhaustion. Please try again later.');
   };
 
   // Load more products for infinite scroll
   const loadMoreProducts = useCallback(async () => {
-    if (!hasMore || loading) return;
-
-    setLoading(true);
-    try {
-      const productsRef = collection(db, 'products');
-      const q = query(
-        productsRef,
-        orderBy('createdAt', 'desc'),
-        startAfter(lastVisible),
-        limitCount(productsPerPage)
-      );
-
-      const querySnapshot = await getDocs(q);
-      const newProducts: Product[] = [];
-
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-
-        // Calculate total stock from variants if available
-        const stock = Number(data.stock || 0);
-        const calculatedTotalStock = data.variants?.stock ?
-          Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
-            return total + Object.values(sizeStock as any).reduce((sizeTotal: number, colorStock: any) => {
-              return sizeTotal + Number(colorStock || 0);
-            }, 0);
-          }, 0) : stock;
-
-        newProducts.push({
-          id: doc.id,
-          name: data.name || '',
-          description: data.description || '',
-          category: data.category || 'uncategorized',
-          images: (data.images || []),
-          image: data.images?.[0] || '/placeholder-product.jpg',
-          variants: {
-            sizes: data.variants?.sizes || data.sizes || [],
-            colors: data.variants?.colors || data.colors || [],
-            stock: data.variants?.stock || {}
-          },
-          retailPrice: Number(data.retailPrice || data.price || 0),
-          resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
-          costPrice: Number(data.costPrice) || Number(data.retailPrice || data.price || 0) * 0.6,
-          stock: calculatedTotalStock,
-          status: data.status ||
-                  (data.condition === 'baru' ? 'ready' : 'po') ||
-                  'ready', // Default to 'ready' instead of based on stock calculation
-          isFlashSale: Boolean(data.isFlashSale),
-          flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
-          originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),
-          originalResellerPrice: Number(data.originalResellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
-          createdAt: data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt?.toDate()) : new Date(),
-          salesCount: Number(data.salesCount) || 0,
-          isFeatured: Boolean(data.isFeatured || data.featured),
-          featuredOrder: Number(data.featuredOrder) || 0,
-          weight: Number(data.weight) || 0, // Remove default 1000, use 0 or actual weight
-          unit: data.unit || 'gram',
-          estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
-        });
-      });
-
-      if (newProducts.length > 0) {
-        setProducts(prev => [...prev, ...newProducts]);
-        setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
-        setCurrentPage(prev => prev + 1);
-
-        // Check if there might be more products
-        if (newProducts.length < productsPerPage) {
-          setHasMore(false);
-        }
-      } else {
-        setHasMore(false);
-      }
-    } catch (error) {
-      console.error('❌ Error loading more products:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [hasMore, loading, lastVisible, productsPerPage]);
+    console.error('🚨 EMERGENCY: Firestore DISABLED - loadMoreProducts blocked');
+    return;
+  }, []);
 
   return {
     products,
