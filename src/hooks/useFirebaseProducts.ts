@@ -116,7 +116,7 @@ export const useFirebaseProducts = () => {
           unit: 'gram',
           status: data.status ||
                   (data.condition === 'baru' ? 'ready' : 'po') ||
-                  (calculatedTotalStock > 0 ? 'ready' : 'po'),
+                  'ready', // Default to 'ready' instead of based on stock calculation
           estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
         };
       });
@@ -275,7 +275,7 @@ export const useFirebaseProducts = () => {
           stock: calculatedTotalStock,
           status: data.status ||
                   (data.condition === 'baru' ? 'ready' : 'po') ||
-                  (calculatedTotalStock > 0 ? 'ready' : 'po'),
+                  'ready', // Default to 'ready' instead of based on stock calculation
           isFlashSale: Boolean(data.isFlashSale),
           flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
           originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),

@@ -41,11 +41,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     name: '',
     description: '',
     category: 'Hijab',
-    retailPrice: 0,
-    resellerPrice: 0,
-    costPrice: 0,
-    stock: 0,
-    weight: 1000, // weight in grams (default 1000g = 1kg)
+    retailPrice: '', // Changed from 0 to empty string
+    resellerPrice: '', // Changed from 0 to empty string
+    costPrice: '', // Changed from 0 to empty string
+    stock: '', // Changed from 0 to empty string
+    weight: '', // Changed from 1000 to empty string
     images: [] as string[],
     imageUrls: '', // Temporary field for URL input
     variants: { sizes: [] as string[], colors: [] as string[], stock: {} as Record<string, Record<string, number>> },
@@ -86,7 +86,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           ...formData.variants.stock,
           [newSize]: formData.variants.colors.reduce((acc, color) => ({
             ...acc,
-            [color]: 0
+            [color]: '' // Empty string instead of 0
           }), {} as Record<string, number>)
         }
       }
@@ -109,7 +109,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   };
 
   const addColor = () => {
-    const newColor = `Warna ${formData.variants.colors.length + 1}`;
+    // Generate alphabet letters A, B, C, ... for colors
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const letterIndex = formData.variants.colors.length % 26;
+    const newColor = alphabet[letterIndex];
     setFormData({
       ...formData,
       variants: {
@@ -119,7 +122,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           ...acc,
           [size]: {
             ...formData.variants.stock[size],
-            [newColor]: 0
+            [newColor]: '' // Empty string instead of 0
           }
         }), {} as Record<string, Record<string, number>>)
       }
@@ -145,7 +148,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     });
   };
 
-  const updateVariantStock = (size: string, color: string, stock: number) => {
+  const updateVariantStock = (size: string, color: string, stock: string | number) => {
+    // Convert to number, default to 0 if empty
+    const stockValue = typeof stock === 'string' ? (parseInt(stock) || 0) : stock;
     setFormData({
       ...formData,
       variants: {
@@ -154,7 +159,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           ...formData.variants.stock,
           [size]: {
             ...formData.variants.stock[size],
-            [color]: Math.max(0, stock)
+            [color]: stockValue
           }
         }
       }
@@ -226,12 +231,19 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       const totalStock = calculateTotalStock();
       const newProduct = {
         ...formData,
+        // Convert string fields to numbers
+        retailPrice: parseInt(formData.retailPrice) || 0,
+        resellerPrice: parseInt(formData.resellerPrice) || 0,
+        costPrice: parseInt(formData.costPrice) || 0,
+        weight: parseInt(formData.weight) || 1000,
         stock: totalStock, // Use calculated total stock from variants
         createdAt: new Date(),
         salesCount: 0,
         isFeatured: false,
         isFlashSale: false,
-        flashSalePrice: formData.retailPrice
+        flashSalePrice: parseInt(formData.retailPrice) || 0,
+        // Ensure status is preserved from form
+        status: formData.status || 'ready'
       };
 
       await addProduct(newProduct);
@@ -899,16 +911,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     type="number"
                     required
                     min="0"
+                    placeholder="0"
                     value={formData.retailPrice}
-                    onChange={(e) => {
-                      const price = parseInt(e.target.value) || 0;
-                      setFormData({
-                        ...formData,
-                        retailPrice: price,
-                        resellerPrice: Math.round(price * 0.8),
-                        costPrice: Math.round(price * 0.6)
-                      });
-                    }}
+                    onChange={(e) => setFormData({ ...formData, retailPrice: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
@@ -918,10 +923,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    placeholder="0"
                     value={formData.resellerPrice}
-                    onChange={(e) => setFormData({ ...formData, resellerPrice: parseInt(e.target.value) || 0 })}
+                    onChange={(e) => setFormData({ ...formData, resellerPrice: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    readOnly
                   />
                 </div>
                 <div>
@@ -930,10 +936,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    placeholder="0"
                     value={formData.costPrice}
-                    onChange={(e) => setFormData({ ...formData, costPrice: parseInt(e.target.value) || 0 })}
+                    onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    readOnly
                   />
                 </div>
               </div>
@@ -947,8 +954,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   type="number"
                   required
                   min="0"
+                  placeholder="0"
                   value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -963,10 +971,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   required
                   min="1"
                   step="1"
-                  value={formData.weight}
-                  onChange={(e) => setFormData({ ...formData, weight: parseInt(e.target.value) || 1000 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="1000"
+                  value={formData.weight}
+                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-500 mt-1">Berat produk dalam gram (contoh: 1000 = 1kg)</p>
               </div>
@@ -1133,10 +1141,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                                   <input
                                     type="number"
                                     min="0"
-                                    value={formData.variants.stock[size]?.[color] || 0}
-                                    onChange={(e) => updateVariantStock(size, color, parseInt(e.target.value) || 0)}
-                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     placeholder="0"
+                                    value={formData.variants.stock[size]?.[color] || ''}
+                                    onChange={(e) => updateVariantStock(size, color, e.target.value)}
+                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                   />
                                 </td>
                               ))}
@@ -1253,16 +1261,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     type="number"
                     required
                     min="0"
+                    placeholder="0"
                     value={formData.retailPrice}
-                    onChange={(e) => {
-                      const price = parseInt(e.target.value) || 0;
-                      setFormData({
-                        ...formData,
-                        retailPrice: price,
-                        resellerPrice: Math.round(price * 0.8),
-                        costPrice: Math.round(price * 0.6)
-                      });
-                    }}
+                    onChange={(e) => setFormData({ ...formData, retailPrice: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
@@ -1272,10 +1273,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    placeholder="0"
                     value={formData.resellerPrice}
-                    onChange={(e) => setFormData({ ...formData, resellerPrice: parseInt(e.target.value) || 0 })}
+                    onChange={(e) => setFormData({ ...formData, resellerPrice: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    readOnly
                   />
                 </div>
                 <div>
@@ -1284,10 +1286,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    placeholder="0"
                     value={formData.costPrice}
-                    onChange={(e) => setFormData({ ...formData, costPrice: parseInt(e.target.value) || 0 })}
+                    onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    readOnly
                   />
                 </div>
               </div>
@@ -1301,8 +1304,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   type="number"
                   required
                   min="0"
+                  placeholder="0"
                   value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -1317,10 +1321,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   required
                   min="1"
                   step="1"
-                  value={formData.weight}
-                  onChange={(e) => setFormData({ ...formData, weight: parseInt(e.target.value) || 1000 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="1000"
+                  value={formData.weight}
+                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-500 mt-1">Berat produk dalam gram (contoh: 1000 = 1kg)</p>
               </div>
