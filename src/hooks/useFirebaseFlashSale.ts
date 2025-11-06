@@ -63,11 +63,11 @@ export const useFirebaseFlashSale = () => {
 
   // Listen to flash sale config changes in real-time
   useEffect(() => {
-    setLoading(true);
-    
-    const flashSaleRef = doc(db, 'flashSales', FLASH_SALE_DOC_ID);
-
-    const unsubscribe = onSnapshot(flashSaleRef, (docSnapshot) => {
+    // 🚨 EMERGENCY: DISABLED to prevent Firestore quota exhaustion
+    console.error('🚨 EMERGENCY: Flash Sale listener DISABLED');
+    setLoading(false);
+    setFlashSaleConfig(null);
+    return () => {};
       if (docSnapshot.exists()) {
         const config = { id: docSnapshot.id, ...docSnapshot.data() } as FlashSaleConfig;
         setFlashSaleConfig(config);

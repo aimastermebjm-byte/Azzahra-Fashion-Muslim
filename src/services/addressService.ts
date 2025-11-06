@@ -28,72 +28,16 @@ export interface Address {
 class AddressService {
   private readonly collection = 'user_addresses';
 
-  // Get all addresses for current user from Firebase only
+  // Get all addresses for current user from Firebase only - DISABLED
   async getUserAddresses(): Promise<Address[]> {
-    try {
-      const user = auth.currentUser;
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      console.log('🏠 Loading addresses from Firebase for user:', user.uid);
-
-      // Load from Firebase Firestore only
-      const addressesRef = collection(db, this.collection);
-      const q = query(addressesRef, where('userId', '==', user.uid));
-      const querySnapshot = await getDocs(q);
-
-      const addresses: Address[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data() as Omit<Address, 'id'>;
-        addresses.push({
-          ...data,
-          id: doc.id,
-          createdAt: data.createdAt || new Date().toISOString(),
-          updatedAt: data.updatedAt || data.createdAt || new Date().toISOString()
-        });
-      });
-
-      console.log('✅ Addresses loaded from Firebase:', addresses.length, 'addresses');
-      return addresses;
-    } catch (error) {
-      console.error('❌ Error getting user addresses:', error);
-      return [];
-    }
+    console.error('🚨 EMERGENCY: Firebase getUserAddresses DISABLED - quota exhausted');
+    throw new Error('Firebase operations disabled due to quota exhaustion. Please try again later.');
   }
 
-  // Set up real-time address listener
+  // Set up real-time address listener - DISABLED
   onAddressesChange(callback: (addresses: Address[]) => void): () => void {
-    const user = auth.currentUser;
-    if (!user) {
-      console.log('❌ No user for real-time address listener');
-      return () => {};
-    }
-
-    console.log('🔄 Setting up real-time address listener for user:', user.uid);
-
-    const addressesRef = collection(db, this.collection);
-    const q = query(addressesRef, where('userId', '==', user.uid));
-
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const addresses: Address[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data() as Omit<Address, 'id'>;
-        addresses.push({
-          ...data,
-          id: doc.id,
-          createdAt: data.createdAt || new Date().toISOString(),
-          updatedAt: data.updatedAt || data.createdAt || new Date().toISOString()
-        });
-      });
-
-      console.log('📦 Real-time addresses update:', addresses.length, 'addresses');
-      callback(addresses);
-    }, (error) => {
-      console.error('❌ Real-time address listener error:', error);
-    });
-
-    return unsubscribe;
+    console.error('🚨 EMERGENCY: Real-time address listener DISABLED');
+    return () => {}; // Return empty unsubscribe function
   }
 
   // Save new address to Firebase only
