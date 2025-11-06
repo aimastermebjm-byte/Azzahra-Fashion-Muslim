@@ -44,7 +44,6 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     retailPrice: '', // Changed from 0 to empty string
     resellerPrice: '', // Changed from 0 to empty string
     costPrice: '', // Changed from 0 to empty string
-    stock: '', // Changed from 0 to empty string
     weight: '', // Changed from 1000 to empty string
     images: [] as string[],
     variants: { sizes: [] as string[], colors: [] as string[], stock: {} as any },
@@ -271,8 +270,14 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         retailPrice: parseInt(formData.retailPrice) || 0,
         resellerPrice: parseInt(formData.resellerPrice) || 0,
         costPrice: parseInt(formData.costPrice) || 0,
-        weight: parseInt(formData.weight) || 1000,
+        weight: parseInt(formData.weight) || 0,
         stock: totalStock, // Use calculated total stock from variants
+        // Ensure variants data is properly stored
+        variants: {
+          sizes: formData.variants.sizes || [],
+          colors: formData.variants.colors || [],
+          stock: formData.variants.stock || {}
+        },
         createdAt: new Date(),
         salesCount: 0,
         isFeatured: false,
@@ -292,7 +297,6 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         retailPrice: '',
         resellerPrice: '',
         costPrice: '',
-        stock: '',
         weight: '',
         images: [],
         variants: { sizes: [], colors: [], stock: {} },
@@ -339,7 +343,6 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       retailPrice: String(product.retailPrice || ''),
       resellerPrice: String(product.resellerPrice || ''),
       costPrice: String(product.costPrice || ''),
-      stock: String(product.stock || ''),
       weight: String(product.weight || ''),
       images: product.images || [],
       variants: product.variants || { sizes: [], colors: [], stock: {} as any },
@@ -1062,22 +1065,6 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 </div>
               </div>
 
-              {/* Stock */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Stok *
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  placeholder="0"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
               {/* Weight */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1492,22 +1479,6 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-              </div>
-
-              {/* Stock */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Stok *
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  placeholder="0"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
               </div>
 
               {/* Weight */}

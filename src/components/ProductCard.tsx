@@ -57,7 +57,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     // Handle backward compatibility for status field
     const displayStatus = product.status ||
                         (product.condition === 'baru' ? 'ready' : 'po') ||
-                        (totalStock > 0 ? 'ready' : 'po');
+                        'ready'; // Default to 'ready' instead of based on stock
 
     const stockStatus = displayStatus === 'ready'
       ? `Ready (${totalStock})`
