@@ -133,26 +133,38 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       productStock: product.stock
     });
 
+    // Primary: Check if variant stock exists in Firestore structure
     if (product.variants?.stock?.[size]?.[color] !== undefined) {
-      const stock = product.variants.stock[size][color];
-      console.log('✅ Found variant stock:', stock);
+      const stock = Number(product.variants.stock[size][color] || 0);
+      console.log('✅ Found variant stock from Firestore:', stock);
       return stock;
     }
 
-    // TEMPORARY FIX: Calculate stock per variant from total stock
-    // Since total stock = 20 and we have 2 sizes × 2 colors = 4 variants
-    // Each variant should have 20 / 4 = 5 pcs
-    const totalVariants = (product.variants?.sizes?.length || 0) * (product.variants?.colors?.length || 0);
-    const stockPerVariant = totalVariants > 0 ? Math.floor(product.stock / totalVariants) : product.stock || 0;
+    // Secondary: Check if this is a non-variant product
+    if (!product.variants?.sizes || product.variants.sizes.length === 0) {
+      console.log('ℹ️ Non-variant product - using total stock:', product.stock);
+      return product.stock || 0;
+    }
 
-    console.log('⚠️ Using calculated stock per variant:', {
-      totalStock: product.stock,
-      totalVariants,
-      stockPerVariant,
-      calculation: `${product.stock} ÷ ${totalVariants} = ${stockPerVariant}`
-    });
+    // Tertiary: For variant products with missing stock data, calculate from total
+    // This happens for products created before variant stock system was implemented
+    if (product.variants?.sizes && product.variants?.colors) {
+      const totalVariants = product.variants.sizes.length * product.variants.colors.length;
+      if (totalVariants > 0 && product.stock > 0) {
+        const calculatedStock = Math.floor(product.stock / totalVariants);
+        console.log('⚠️ Legacy product detected - calculated stock:', {
+          totalStock: product.stock,
+          totalVariants,
+          calculatedStock,
+          note: 'Please update this product in admin to set individual variant stocks'
+        });
+        return calculatedStock;
+      }
+    }
 
-    return stockPerVariant;
+    // No stock data available
+    console.warn('❌ No stock data found for variant:', { size, color });
+    return 0;
   };
 
   // Get available stock for selected variants
