@@ -29,6 +29,7 @@ export const useFirebaseProducts = () => {
   const { saveToCache, getFromCache, isCacheValid } = useProductCache();
   const isUpdatingStockRef = useRef(false);
 
+  // TEMPORARY FIX: Replace real-time listener with one-time fetch to force fresh data
   useEffect(() => {
     const startTime = performance.now();
 
@@ -40,105 +41,107 @@ export const useFirebaseProducts = () => {
       setIsInitialLoad(false);
     }
 
-    // STEP 2: Set up real-time listener with PROPER DEPENDENCIES
-    const productsRef = collection(db, 'products');
-    const q = query(
-      productsRef,
-      orderBy('createdAt', 'desc'),
-      limitCount(productsPerPage)
-    );
+    // STEP 2: One-time fetch instead of real-time listener (TEMPORARY FIX)
+    const fetchProducts = async () => {
+      try {
+        console.log('🔄 TEMPORARY FIX: Using one-time fetch to force fresh data from Firestore');
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('📊 Firestore products updated:', snapshot.docs.length, 'products');
+        const productsRef = collection(db, 'products');
+        const q = query(
+          productsRef,
+          orderBy('createdAt', 'desc'),
+          limitCount(productsPerPage)
+        );
 
-      // CRITICAL: Skip real-time updates if stock reduction is in progress
-      // This prevents race conditions and duplicate updates
-      if (isUpdatingStockRef.current) {
-        console.log('⏸️ Skipping real-time update - stock reduction in progress');
-        return;
-      }
+        const querySnapshot = await getDocs(q);
+        console.log('📊 Firestore products fetched:', querySnapshot.docs.length, 'products');
 
-      const productsData: Product[] = snapshot.docs.map((doc) => {
-        const data = doc.data();
+        const productsData: Product[] = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
 
-        // Calculate total stock from variants if available
-        const stock = Number(data.stock || 0);
-        const calculatedTotalStock = data.variants?.stock ?
-          Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
-            return total + Object.values(sizeStock as any).reduce((sizeTotal: number, colorStock: any) => {
-              return sizeTotal + Number(colorStock || 0);
-            }, 0);
-          }, 0) : stock;
+          // Calculate total stock from variants if available
+          const stock = Number(data.stock || 0);
+          const calculatedTotalStock = data.variants?.stock ?
+            Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
+              return total + Object.values(sizeStock as any).reduce((sizeTotal: number, colorStock: any) => {
+                return sizeTotal + Number(colorStock || 0);
+              }, 0);
+            }, 0) : stock;
 
-        const variantsData = {
-            sizes: data.variants?.sizes || data.sizes || [],
-            colors: data.variants?.colors || data.colors || [],
-            stock: data.variants?.stock || {}
+          const variantsData = {
+              sizes: data.variants?.sizes || data.sizes || [],
+              colors: data.variants?.colors || data.colors || [],
+              stock: data.variants?.stock || {}
+            };
+
+          // Debug logging to check variants data transformation
+          console.log('🔍 Firebase Transform Debug:', {
+            productId: doc.id,
+            productName: data.name,
+            originalVariants: data.variants,
+            originalVariantsStock: data.variants?.stock,
+            transformedVariants: variantsData,
+            hasSizes: !!(variantsData.sizes?.length),
+            hasColors: !!(variantsData.colors?.length),
+            hasStock: !!variantsData.stock && Object.keys(variantsData.stock).length > 0,
+            variantStockDetail: variantsData.stock,
+            calculatedTotalStock,
+            originalStock: stock
+          });
+
+          return {
+            id: doc.id,
+            name: data.name || '',
+            description: data.description || '',
+            category: data.category || 'uncategorized',
+            retailPrice: Number(data.retailPrice || data.price || 0),
+            resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
+            costPrice: Number(data.costPrice) || Number(data.retailPrice || data.price || 0) * 0.6,
+            stock: calculatedTotalStock,
+            images: (data.images || []),
+            image: data.images?.[0] || '/placeholder-product.jpg',
+            variants: variantsData,
+            isFeatured: Boolean(data.isFeatured || data.featured),
+            isFlashSale: Boolean(data.isFlashSale),
+            flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
+            originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),
+            originalResellerPrice: Number(data.originalResellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
+            createdAt: data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt?.toDate()) : new Date(),
+            salesCount: Number(data.salesCount) || 0,
+            featuredOrder: Number(data.featuredOrder) || 0,
+            weight: Number(data.weight) || 0,
+            unit: 'gram',
+            status: data.status || (data.condition === 'baru' ? 'ready' : 'po') || 'ready',
+            estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
           };
-
-        // Debug logging to check variants data transformation
-        console.log('🔍 Firebase Transform Debug:', {
-          productId: doc.id,
-          productName: data.name,
-          originalVariants: data.variants,
-          originalVariantsStock: data.variants?.stock,
-          transformedVariants: variantsData,
-          hasSizes: !!(variantsData.sizes?.length),
-          hasColors: !!(variantsData.colors?.length),
-          hasStock: !!variantsData.stock && Object.keys(variantsData.stock).length > 0,
-          variantStockDetail: variantsData.stock,
-          calculatedTotalStock,
-          originalStock: stock
         });
 
-        return {
-          id: doc.id,
-          name: data.name || '',
-          description: data.description || '',
-          category: data.category || 'uncategorized',
-          retailPrice: Number(data.retailPrice || data.price || 0),
-          resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
-          costPrice: Number(data.costPrice) || Number(data.retailPrice || data.price || 0) * 0.6,
-          stock: calculatedTotalStock,
-          images: (data.images || []),
-          image: data.images?.[0] || '/placeholder-product.jpg',
-          variants: variantsData,
-          isFeatured: Boolean(data.isFeatured || data.featured),
-          isFlashSale: Boolean(data.isFlashSale),
-          flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
-          originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),
-          originalResellerPrice: Number(data.originalResellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
-          createdAt: data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt?.toDate()) : new Date(),
-          salesCount: Number(data.salesCount) || 0,
-          featuredOrder: Number(data.featuredOrder) || 0,
-          weight: Number(data.weight) || 0,
-          unit: 'gram',
-          status: data.status || (data.condition === 'baru' ? 'ready' : 'po') || 'ready',
-          estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
-        };
-      });
+        setProducts(productsData);
+        setLoading(false);
+        setIsInitialLoad(false);
 
-      setProducts(productsData);
-      setLoading(false);
-      setIsInitialLoad(false);
+        // Save to cache (no-op since Firebase handles data)
+        saveToCache();
 
-      // Save to cache
-      saveToCache(productsData);
+        // Set pagination info
+        if (querySnapshot.docs.length > 0) {
+          setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
+          setHasMore(querySnapshot.docs.length === productsPerPage);
+        } else {
+          setHasMore(false);
+        }
 
-      // Set pagination info
-      if (snapshot.docs.length > 0) {
-        setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
-        setHasMore(snapshot.docs.length === productsPerPage);
-      } else {
-        setHasMore(false);
+        console.log('✅ One-time fetch completed - fresh data loaded from Firestore');
+
+      } catch (error) {
+        console.error('❌ Error fetching products:', error);
+        setError(error instanceof Error ? error.message : 'Unknown error fetching products');
+        setLoading(false);
       }
-    }, (error) => {
-      console.error('❌ Error fetching products:', error);
-      setError(error.message);
-      setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
+    fetchProducts();
+
   }, [productsPerPage]); // FIXED: Only primitive dependency to prevent infinite loop
 
   // Firebase operations - RE-ENABLED with safety
