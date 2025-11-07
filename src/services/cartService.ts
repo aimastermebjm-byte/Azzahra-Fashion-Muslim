@@ -28,10 +28,30 @@ export interface UserCart {
 class CartService {
   private readonly FIREBASE_COLLECTION = 'user_carts';
 
-  // Get current user's cart from Firebase only - DISABLED
+  // Get current user's cart from Firebase only
   async getCart(): Promise<CartItem[]> {
-    console.error('🚨 EMERGENCY: Firebase getCart DISABLED - quota exhausted');
-    throw new Error('Firebase operations disabled due to quota exhaustion. Please try again later.');
+    try {
+      const user = auth.currentUser;
+
+      if (!user) {
+        console.log('❌ No user logged in - cart requires authentication');
+        return [];
+      }
+
+      console.log('🔥 Loading cart from Firebase for user:', user.uid);
+      const firebaseCart = await this.getCartFromFirebase(user.uid);
+
+      if (firebaseCart && firebaseCart.length > 0) {
+        console.log('✅ Cart loaded from Firebase:', firebaseCart.length, 'items');
+        return firebaseCart;
+      } else {
+        console.log('ℹ️ No cart found in Firebase - returning empty cart');
+        return [];
+      }
+    } catch (error) {
+      console.error('❌ Error getting cart from Firebase:', error);
+      return [];
+    }
   }
 
   // Set up real-time cart listener
@@ -42,9 +62,10 @@ class CartService {
       return () => {};
     }
 
-    // 🚨 EMERGENCY: DISABLED to prevent Firestore quota exhaustion
-    console.error('🚨 EMERGENCY: Cart real-time listener DISABLED');
-    return () => {};
+    console.log('🔄 Setting up real-time cart listener for user:', user.uid);
+
+    const cartRef = doc(db, this.FIREBASE_COLLECTION, user.uid);
+    const unsubscribe = onSnapshot(cartRef, (docSnapshot) => {
       if (docSnapshot.exists()) {
         const data = docSnapshot.data();
         const items = data?.items || [];
@@ -61,11 +82,10 @@ class CartService {
     return unsubscribe;
   }
 
-  // Add item to cart - DISABLED
+  // Add item to cart
   async addToCart(item: Omit<CartItem, 'id' | 'addedAt'>): Promise<CartItem[]> {
-    console.error('🚨 EMERGENCY: Cart addToCart DISABLED - Firestore quota exhausted');
-    throw new Error('Cart operations disabled due to Firestore quota exhaustion. Please try again later.');
-  }
+    try {
+      const user = auth.currentUser;
       if (!user) {
         throw new Error('User not authenticated - cannot add to cart');
       }
@@ -82,25 +102,109 @@ class CartService {
         JSON.stringify(existingItem.variant) === JSON.stringify(item.variant)
       );
 
-      // All Firebase cart operations disabled
+      let updatedCart: CartItem[];
+
+      if (existingItemIndex !== -1) {
+        // Update quantity if item exists
+        updatedCart = currentCart.map((item, index) =>
+          index === existingItemIndex
+            ? { ...item, quantity: item.quantity + cartItem.quantity }
+            : item
+        );
+      } else {
+        // Add new item
+        updatedCart = [...currentCart, cartItem];
+      }
+
+      // Save to Firebase only
+      await this.saveCartToFirebase(user.uid, updatedCart);
+      console.log('✅ Cart updated in Firebase:', updatedCart.length, 'items');
+
+      return updatedCart;
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      throw error;
+    }
   }
 
-  // Update item quantity - DISABLED
+  // Update item quantity
   async updateQuantity(itemId: string, quantity: number): Promise<CartItem[]> {
-    console.error('🚨 EMERGENCY: Firebase updateQuantity DISABLED - quota exhausted');
-    throw new Error('Firebase operations disabled due to quota exhaustion. Please try again later.');
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated - cannot update cart');
+      }
+
+      if (quantity === 0) {
+        return this.removeFromCart(itemId);
+      }
+
+      const currentCart = await this.getCart();
+      const updatedCart = currentCart.map(item =>
+        item.id === itemId ? { ...item, quantity } : item
+      );
+
+      // Save to Firebase only
+      await this.saveCartToFirebase(user.uid, updatedCart);
+      console.log('✅ Cart quantity updated in Firebase');
+
+      return updatedCart;
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+      throw error;
+    }
   }
 
-  // Remove item from cart - DISABLED
+  // Remove item from cart
   async removeFromCart(itemId: string): Promise<CartItem[]> {
-    console.error('🚨 EMERGENCY: Firebase removeFromCart DISABLED - quota exhausted');
-    throw new Error('Firebase operations disabled due to quota exhaustion. Please try again later.');
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated - cannot remove from cart');
+      }
+
+      const currentCart = await this.getCart();
+      const updatedCart = currentCart.filter(item => item.id !== itemId);
+
+      // Save to Firebase only
+      await this.saveCartToFirebase(user.uid, updatedCart);
+      console.log('✅ Item removed from Firebase cart:', itemId);
+
+      return updatedCart;
+    } catch (error) {
+      console.error('Error removing from cart:', error);
+      throw error;
+    }
   }
 
-  // Clear entire cart - DISABLED
+  // Clear entire cart
   async clearCart(): Promise<void> {
-    console.error('🚨 EMERGENCY: Firebase clearCart DISABLED - quota exhausted');
-    throw new Error('Firebase operations disabled due to quota exhaustion. Please try again later.');
+    try {
+      console.log('🗑️ Clearing cart from Firebase...');
+
+      const user = auth.currentUser;
+      if (!user) {
+        console.log('❌ No user logged in - cannot clear cart');
+        return;
+      }
+
+      // Clear from Firebase only
+      await this.saveCartToFirebase(user.uid, []);
+      console.log('🔥 Firebase cart cleared for user:', user.uid);
+
+      // Verification step
+      await new Promise(resolve => setTimeout(resolve, 300)); // Brief wait
+      const verifyEmpty = await this.getCartFromFirebase(user.uid);
+      if (verifyEmpty && verifyEmpty.length > 0) {
+        console.warn('⚠️ Firebase still has items, forcing clear again...');
+        await this.saveCartToFirebase(user.uid, []);
+      }
+
+      console.log('✅ Cart PERMANENTLY cleared from Firebase - all devices');
+    } catch (error) {
+      console.error('❌ Error clearing cart:', error);
+      throw error;
+    }
   }
 
   // Handle user logout - clear cart from Firebase
