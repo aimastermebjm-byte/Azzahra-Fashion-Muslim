@@ -76,7 +76,10 @@ export const useFirebaseProducts = () => {
           transformedVariants: variantsData,
           hasSizes: !!(variantsData.sizes?.length),
           hasColors: !!(variantsData.colors?.length),
-          hasStock: !!variantsData.stock && Object.keys(variantsData.stock).length > 0
+          hasStock: !!variantsData.stock && Object.keys(variantsData.stock).length > 0,
+          variantStockDetail: variantsData.stock,
+          calculatedTotalStock,
+          originalStock: stock
         });
 
         return {
@@ -218,6 +221,7 @@ export const useFirebaseProducts = () => {
       }
 
       const currentData = currentDoc.data();
+      console.log('📊 Before update - Current variant stock structure:', currentData.variants?.stock);
       const currentStock = Number(currentData.stock || 0);
       const newStock = Math.max(0, currentStock - quantity);
 
@@ -251,6 +255,7 @@ export const useFirebaseProducts = () => {
       }
 
       // Perform the update
+      console.log('📤 Updating Firestore with data:', updateData);
       await updateDoc(docRef, updateData);
 
       console.log('✅ Stock updated successfully - New total stock:', newStock);

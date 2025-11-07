@@ -130,13 +130,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       variantsStock: product.variants?.stock,
       sizeStock: product.variants?.stock?.[size],
       colorStock: product.variants?.stock?.[size]?.[color],
-      productStock: product.stock
+      productStock: product.stock,
+      allVariantStocks: product.variants?.stock
     });
 
     // Primary: Check if variant stock exists in Firestore structure
     if (product.variants?.stock?.[size]?.[color] !== undefined) {
       const stock = Number(product.variants.stock[size][color] || 0);
-      console.log('✅ Found variant stock from Firestore:', stock);
+      console.log('✅ Found variant stock from Firestore:', {
+        size,
+        color,
+        stock,
+        allOtherVariants: Object.entries(product.variants.stock).map(([s, colors]) => ({
+          size: s,
+          stocks: colors
+        }))
+      });
       return stock;
     }
 
