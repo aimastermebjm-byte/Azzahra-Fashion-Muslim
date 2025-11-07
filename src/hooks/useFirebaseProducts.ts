@@ -3,6 +3,7 @@ import { Product } from '../types';
 import {
   collection,
   getDocs,
+  getDoc,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -198,16 +199,74 @@ export const useFirebaseProducts = () => {
     }
   };
 
-  const updateProductStock = async (id: string, quantity: number) => {
+  const updateProductStock = async (id: string, quantity: number, variantInfo?: { size: string; color: string }) => {
     try {
       const docRef = doc(db, 'products', id);
       const product = products.find(p => p.id === id);
-      if (product) {
-        const newStock = Math.max(0, product.stock - quantity);
-        await updateDoc(docRef, { stock: newStock });
-        return newStock;
+      if (!product) {
+        console.error('❌ Product not found:', id);
+        return 0;
       }
-      return 0;
+
+      console.log('🔄 Reducing stock for product:', id, 'Quantity:', quantity, 'Variant:', variantInfo);
+
+      // Get current document to ensure we have the latest data
+      const currentDoc = await getDoc(docRef);
+      if (!currentDoc.exists()) {
+        console.error('❌ Product document not found in Firestore:', id);
+        return 0;
+      }
+
+      const currentData = currentDoc.data();
+      const currentStock = Number(currentData.stock || 0);
+      const newStock = Math.max(0, currentStock - quantity);
+
+      const updateData: any = { stock: newStock };
+
+      // Handle variant stock reduction if variant info is provided
+      if (variantInfo && product.variants?.sizes && product.variants?.colors) {
+        const { size, color } = variantInfo;
+
+        // Get current variant stock structure
+        const currentVariantStock = currentData.variants?.stock || {};
+
+        // Create deep copy of variant stock structure
+        const updatedVariantStock = JSON.parse(JSON.stringify(currentVariantStock));
+
+        // Reduce stock for specific variant
+        if (updatedVariantStock[size] && updatedVariantStock[size][color] !== undefined) {
+          const currentVariantStockValue = Number(updatedVariantStock[size][color] || 0);
+          const newVariantStock = Math.max(0, currentVariantStockValue - quantity);
+          updatedVariantStock[size][color] = newVariantStock;
+
+          console.log(`📦 Variant stock reduced: ${size}-${color} from ${currentVariantStockValue} to ${newVariantStock}`);
+
+          updateData.variants = {
+            ...currentData.variants,
+            stock: updatedVariantStock
+          };
+        } else {
+          console.warn('⚠️ Variant stock not found for:', size, color);
+        }
+      }
+
+      // Perform the update
+      await updateDoc(docRef, updateData);
+
+      console.log('✅ Stock updated successfully - New total stock:', newStock);
+
+      // Update local state
+      setProducts(prev => prev.map(p =>
+        p.id === id
+          ? {
+              ...p,
+              stock: newStock,
+              variants: updateData.variants || p.variants
+            }
+          : p
+      ));
+
+      return newStock;
     } catch (error) {
       console.error('❌ Error updating stock:', error);
       throw error;
