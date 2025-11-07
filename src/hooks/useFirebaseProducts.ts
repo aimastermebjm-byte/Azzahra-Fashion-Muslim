@@ -68,10 +68,20 @@ export const useFirebaseProducts = () => {
               }, 0);
             }, 0) : stock;
 
-          const variantsData = {
+          // Debug variants stock extraction
+            console.log('🔍 VARIANTS STOCK DEBUG:', {
+              'data.variants': data.variants,
+              'data.variants?.stock': data.variants?.stock,
+              'typeof data.variants?.stock': typeof data.variants?.stock,
+              'data.variants?.stock keys': data.variants?.stock ? Object.keys(data.variants?.stock) : 'N/A',
+              'JSON.stringify data.variants?.stock': JSON.stringify(data.variants?.stock)
+            });
+
+            const variantsData = {
               sizes: data.variants?.sizes || data.sizes || [],
               colors: data.variants?.colors || data.colors || [],
-              stock: data.variants?.stock || {}
+              // Fix: Ensure we don't lose variant stock data
+              stock: data.variants?.stock && typeof data.variants?.stock === 'object' ? data.variants.stock : {}
             };
 
           // Debug logging to check variants data transformation
