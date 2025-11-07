@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Product } from '../types';
 import {
   collection,
@@ -27,6 +27,7 @@ export const useFirebaseProducts = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(20); // Fixed 20 produk untuk infinite scroll seperti Shopee
   const { saveToCache, getFromCache, isCacheValid } = useProductCache();
+  const isUpdatingStockRef = useRef(false);
 
   useEffect(() => {
     const startTime = performance.now();
@@ -49,6 +50,13 @@ export const useFirebaseProducts = () => {
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       console.log('📊 Firestore products updated:', snapshot.docs.length, 'products');
+
+      // CRITICAL: Skip real-time updates if stock reduction is in progress
+      // This prevents race conditions and duplicate updates
+      if (isUpdatingStockRef.current) {
+        console.log('⏸️ Skipping real-time update - stock reduction in progress');
+        return;
+      }
 
       const productsData: Product[] = snapshot.docs.map((doc) => {
         const data = doc.data();
@@ -213,6 +221,9 @@ export const useFirebaseProducts = () => {
 
       console.log('🔄 Reducing stock for product:', id, 'Quantity:', quantity, 'Variant:', variantInfo);
 
+      // CRITICAL: Set flag to prevent real-time listener race conditions
+      isUpdatingStockRef.current = true;
+
       // Get current document to ensure we have the latest data
       const currentDoc = await getDoc(docRef);
       if (!currentDoc.exists()) {
@@ -260,7 +271,8 @@ export const useFirebaseProducts = () => {
 
       console.log('✅ Stock updated successfully - New total stock:', newStock);
 
-      // Update local state
+      // CRITICAL FIX: Update local state optimistically to prevent race conditions
+      // Real-time listener will handle sync, but we need immediate UI update
       setProducts(prev => prev.map(p =>
         p.id === id
           ? {
@@ -271,9 +283,16 @@ export const useFirebaseProducts = () => {
           : p
       ));
 
+      console.log('🎯 Optimistic update applied - preventing race conditions');
+
+      // CRITICAL: Reset flag after successful update
+      isUpdatingStockRef.current = false;
+
       return newStock;
     } catch (error) {
       console.error('❌ Error updating stock:', error);
+      // IMPORTANT: Reset flag on error
+      isUpdatingStockRef.current = false;
       throw error;
     }
   };
