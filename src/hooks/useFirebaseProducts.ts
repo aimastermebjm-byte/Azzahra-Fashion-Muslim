@@ -81,6 +81,7 @@ export const useFirebaseProducts = () => {
           productId: doc.id,
           productName: data.name,
           originalVariants: data.variants,
+          originalVariantsStock: data.variants?.stock,
           transformedVariants: variantsData,
           hasSizes: !!(variantsData.sizes?.length),
           hasColors: !!(variantsData.colors?.length),
