@@ -138,9 +138,21 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       console.log('✅ Found variant stock:', stock);
       return stock;
     }
-    // Fallback to total stock if variant stock not available
-    console.log('⚠️ Using fallback stock:', product.stock || 0);
-    return product.stock || 0;
+
+    // TEMPORARY FIX: Calculate stock per variant from total stock
+    // Since total stock = 20 and we have 2 sizes × 2 colors = 4 variants
+    // Each variant should have 20 / 4 = 5 pcs
+    const totalVariants = (product.variants?.sizes?.length || 0) * (product.variants?.colors?.length || 0);
+    const stockPerVariant = totalVariants > 0 ? Math.floor(product.stock / totalVariants) : product.stock || 0;
+
+    console.log('⚠️ Using calculated stock per variant:', {
+      totalStock: product.stock,
+      totalVariants,
+      stockPerVariant,
+      calculation: `${product.stock} ÷ ${totalVariants} = ${stockPerVariant}`
+    });
+
+    return stockPerVariant;
   };
 
   // Get available stock for selected variants
