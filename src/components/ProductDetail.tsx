@@ -111,10 +111,25 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
   // Get stock for specific variant
   const getVariantStock = (size: string, color: string) => {
+    // Debug logging to check data structure
+    console.log('🔍 Variant Debug:', {
+      size,
+      color,
+      hasVariants: !!product.variants,
+      hasStock: !!product.variants?.stock,
+      variantsStock: product.variants?.stock,
+      sizeStock: product.variants?.stock?.[size],
+      colorStock: product.variants?.stock?.[size]?.[color],
+      productStock: product.stock
+    });
+
     if (product.variants?.stock?.[size]?.[color] !== undefined) {
-      return product.variants.stock[size][color];
+      const stock = product.variants.stock[size][color];
+      console.log('✅ Found variant stock:', stock);
+      return stock;
     }
     // Fallback to total stock if variant stock not available
+    console.log('⚠️ Using fallback stock:', product.stock || 0);
     return product.stock || 0;
   };
 
