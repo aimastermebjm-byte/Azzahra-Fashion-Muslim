@@ -61,6 +61,23 @@ export const useFirebaseProducts = () => {
             }, 0);
           }, 0) : stock;
 
+        const variantsData = {
+            sizes: data.variants?.sizes || data.sizes || [],
+            colors: data.variants?.colors || data.colors || [],
+            stock: data.variants?.stock || {}
+          };
+
+        // Debug logging to check variants data transformation
+        console.log('🔍 Firebase Transform Debug:', {
+          productId: doc.id,
+          productName: data.name,
+          originalVariants: data.variants,
+          transformedVariants: variantsData,
+          hasSizes: !!(variantsData.sizes?.length),
+          hasColors: !!(variantsData.colors?.length),
+          hasStock: !!variantsData.stock && Object.keys(variantsData.stock).length > 0
+        });
+
         return {
           id: doc.id,
           name: data.name || '',
@@ -72,11 +89,7 @@ export const useFirebaseProducts = () => {
           stock: calculatedTotalStock,
           images: (data.images || []),
           image: data.images?.[0] || '/placeholder-product.jpg',
-          variants: {
-            sizes: data.variants?.sizes || data.sizes || [],
-            colors: data.variants?.colors || data.colors || [],
-            stock: data.variants?.stock || {}
-          },
+          variants: variantsData,
           isFeatured: Boolean(data.isFeatured || data.featured),
           isFlashSale: Boolean(data.isFlashSale),
           flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
