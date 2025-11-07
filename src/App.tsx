@@ -193,9 +193,17 @@ function AppContent() {
         notes: orderData.notes
       });
 
-      // Update stock for each item
+      // Update stock for each item with variant info
       cartItems.forEach(item => {
-        updateProductStock(item.productId, item.quantity);
+        console.log('🔄 Stock reduction on checkout:', {
+          productId: item.productId,
+          productName: item.name,
+          quantity: item.quantity,
+          variant: item.variant
+        });
+
+        // Pass variant info to updateProductStock
+        updateProductStock(item.productId, item.quantity, item.variant);
       });
 
       // Clear cart from backend

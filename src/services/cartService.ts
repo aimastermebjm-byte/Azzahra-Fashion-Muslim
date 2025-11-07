@@ -90,10 +90,11 @@ class CartService {
         throw new Error('User not authenticated - cannot add to cart');
       }
 
-      // Check and reduce stock before adding to cart
-      const stockReductionSuccess = await this.reduceProductStock(item.productId, item.quantity, item.variant);
-      if (!stockReductionSuccess) {
-        throw new Error('Failed to reduce product stock - item may be out of stock');
+      // NOTE: Stock reduction moved to checkout to prevent holding stock for abandoned carts
+      // Only check if product exists and has sufficient stock
+      const stockCheckSuccess = await this.checkProductStock(item.productId, item.quantity, item.variant);
+      if (!stockCheckSuccess) {
+        throw new Error('Insufficient stock available');
       }
 
       const cartItem: CartItem = {
@@ -154,19 +155,18 @@ class CartService {
 
       const quantityDifference = quantity - itemToUpdate.quantity;
 
-      // If increasing quantity, reduce stock
+      // NOTE: Stock reduction moved to checkout - only check if sufficient stock is available
       if (quantityDifference > 0) {
-        const stockReductionSuccess = await this.reduceProductStock(
+        const stockCheckSuccess = await this.checkProductStock(
           itemToUpdate.productId,
           quantityDifference,
           itemToUpdate.variant
         );
-        if (!stockReductionSuccess) {
-          throw new Error('Failed to reduce product stock - insufficient stock available');
+        if (!stockCheckSuccess) {
+          throw new Error('Insufficient stock available for quantity increase');
         }
       }
-      // If decreasing quantity, restore stock (this is more complex and would need additional implementation)
-      // For now, we'll just handle the quantity increase
+      // Stock reduction will happen at checkout
 
       const updatedCart = currentCart.map(item =>
         item.id === itemId ? { ...item, quantity } : item
@@ -205,10 +205,10 @@ class CartService {
     }
   }
 
-  // Reduce product stock (both total and variant)
-  private async reduceProductStock(productId: string, quantity: number, variant?: CartItem['variant']): Promise<boolean> {
+  // Check if product has sufficient stock (no reduction)
+  private async checkProductStock(productId: string, quantity: number, variant?: CartItem['variant']): Promise<boolean> {
     try {
-      console.log('🔄 Reducing stock for product:', productId, 'Quantity:', quantity, 'Variant:', variant);
+      console.log('🔍 Checking stock for product:', productId, 'Quantity:', quantity, 'Variant:', variant);
 
       const productRef = doc(db, 'products', productId);
       const productDoc = await getDoc(productRef);
@@ -221,23 +221,17 @@ class CartService {
       const currentData = productDoc.data();
       const currentStock = Number(currentData.stock || 0);
 
-      // Check if there's enough stock
+      // Check if there's enough total stock
       if (currentStock < quantity) {
         console.error('❌ Insufficient stock. Available:', currentStock, 'Requested:', quantity);
         return false;
       }
 
-      const newStock = currentStock - quantity;
-      const updateData: any = { stock: newStock };
-
-      // Handle variant stock reduction if variant info is provided
+      // Check variant stock if variant info is provided
       if (variant?.size && variant?.color && currentData.variants?.stock) {
         const { size, color } = variant;
-
-        // Get current variant stock structure
         const currentVariantStock = currentData.variants.stock;
 
-        // Check if variant exists and has enough stock
         if (currentVariantStock[size] && currentVariantStock[size][color] !== undefined) {
           const currentVariantStockValue = Number(currentVariantStock[size][color] || 0);
 
@@ -246,33 +240,22 @@ class CartService {
             return false;
           }
 
-          // Create deep copy of variant stock structure
-          const updatedVariantStock = JSON.parse(JSON.stringify(currentVariantStock));
-          const newVariantStock = currentVariantStockValue - quantity;
-          updatedVariantStock[size][color] = newVariantStock;
-
-          console.log(`📦 Variant stock reduced: ${size}-${color} from ${currentVariantStockValue} to ${newVariantStock}`);
-
-          updateData.variants = {
-            ...currentData.variants,
-            stock: updatedVariantStock
-          };
+          console.log(`✅ Sufficient variant stock: ${size}-${color} has ${currentVariantStockValue} available`);
         } else {
-          console.warn('⚠️ Variant stock not found for:', size, color, '- reducing total stock only');
+          console.warn('⚠️ Variant stock not found for:', size, color, '- checking total stock only');
         }
       }
 
-      // Perform the update
-      await updateDoc(productRef, updateData);
-
-      console.log('✅ Stock reduced successfully - New total stock:', newStock);
-
+      console.log('✅ Stock check passed - sufficient stock available');
       return true;
     } catch (error) {
-      console.error('❌ Error reducing product stock:', error);
+      console.error('❌ Error checking product stock:', error);
       return false;
     }
   }
+
+  // NOTE: Stock reduction moved to useFirebaseProducts.updateProductStock
+  // This prevents holding stock for abandoned carts
 
   // Clear entire cart
   async clearCart(): Promise<void> {
