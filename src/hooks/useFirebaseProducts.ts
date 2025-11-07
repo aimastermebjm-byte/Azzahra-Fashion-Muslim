@@ -243,7 +243,25 @@ export const useFirebaseProducts = () => {
         const { size, color } = variantInfo;
 
         // Get current variant stock structure
-        const currentVariantStock = currentData.variants?.stock || {};
+        let currentVariantStock = currentData.variants?.stock || {};
+
+        // MIGRATION: If no variant stock structure exists, create it from total stock
+        if (!currentVariantStock || Object.keys(currentVariantStock).length === 0) {
+          console.log('🔄 MIGRATING: Creating variant stock structure for legacy product');
+
+          const totalVariants = product.variants.sizes.length * product.variants.colors.length;
+          const stockPerVariant = Math.floor(currentStock / totalVariants);
+
+          currentVariantStock = {};
+          product.variants.sizes.forEach((s: string) => {
+            currentVariantStock[s] = {};
+            product.variants.colors.forEach((c: string) => {
+              currentVariantStock[s][c] = stockPerVariant;
+            });
+          });
+
+          console.log('✅ Created variant stock structure:', currentVariantStock);
+        }
 
         // Create deep copy of variant stock structure
         const updatedVariantStock = JSON.parse(JSON.stringify(currentVariantStock));
