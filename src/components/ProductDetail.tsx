@@ -21,6 +21,16 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   onBuyNow,
   onNavigateToCart
 }) => {
+  // Debug logging untuk melihat data product yang diterima
+  console.log('🔥 ProductDetail Debug - Received product:', {
+    id: product.id,
+    name: product.name,
+    hasVariants: !!product.variants,
+    variantsData: product.variants,
+    variantsStock: product.variants?.stock,
+    productStock: product.stock
+  });
+
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
