@@ -59,6 +59,14 @@ function AppContent() {
   }, []);
 
   const handleProductClick = (product: any) => {
+    console.log('🔗 App.tsx handleProductClick:', {
+      id: product.id,
+      name: product.name,
+      hasVariants: !!product.variants,
+      variantsStock: product.variants?.stock,
+      hasStock: !!(product.variants?.stock && Object.keys(product.variants?.stock).length > 0),
+      variantsData: product.variants
+    });
     setSelectedProduct(product);
     setCurrentPage('product-detail');
   };

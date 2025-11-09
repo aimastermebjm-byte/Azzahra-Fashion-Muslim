@@ -18,6 +18,10 @@ import { db, convertFirebaseUrl } from '../utils/firebaseClient';
 import { useProductCache } from './useProductCache';
 
 export const useFirebaseProducts = () => {
+  // 🔴 FORCE DEBUG - This should show up in console if new code is loaded
+  console.log('🔴🔴🔴 NEW useFirebaseProducts CODE LOADED! 🔴🔴🔴');
+  console.log('🔴 If you see this, the new code is being executed!');
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,13 +37,14 @@ export const useFirebaseProducts = () => {
   useEffect(() => {
     const startTime = performance.now();
 
-    // STEP 1: Check cache first for instant loading
-    const cachedProducts = getFromCache();
-    if (cachedProducts) {
-      setProducts(cachedProducts);
-      setLoading(false);
-      setIsInitialLoad(false);
-    }
+    // STEP 1: DISABLED CACHE - Force fresh data from Firestore to debug variant stock issue
+    // const cachedProducts = getFromCache();
+    // if (cachedProducts) {
+    //   setProducts(cachedProducts);
+    //   setLoading(false);
+    //   setIsInitialLoad(false);
+    // }
+    console.log('🚫 CACHE DISABLED - Forcing fresh data from Firestore to debug variant stock');
 
     // STEP 2: One-time fetch instead of real-time listener (TEMPORARY FIX)
     const fetchProducts = async () => {
@@ -246,7 +251,13 @@ export const useFirebaseProducts = () => {
       }
 
       const currentData = currentDoc.data();
-      console.log('📊 Before update - Current variant stock structure:', currentData.variants?.stock);
+      console.log('📊 BEFORE UPDATE DEBUG:', {
+        'currentData.variants': currentData.variants,
+        'currentData.variants?.stock': currentData.variants?.stock,
+        'currentData.variants?.stock keys': currentData.variants?.stock ? Object.keys(currentData.variants?.stock) : 'N/A',
+        'variantInfo': variantInfo,
+        'product.variants': product.variants
+      });
       const currentStock = Number(currentData.stock || 0);
       const newStock = Math.max(0, currentStock - quantity);
 

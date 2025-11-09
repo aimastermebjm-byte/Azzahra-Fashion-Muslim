@@ -20,6 +20,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
   isFeatured = false,
   user
 }) => {
+  // Debug logging untuk tracking product data
+  console.log('📦 ProductCard received product:', {
+    id: product.id,
+    name: product.name,
+    hasVariants: !!product.variants,
+    variantsStock: product.variants?.stock,
+    hasStock: !!(product.variants?.stock && Object.keys(product.variants?.stock).length > 0)
+  });
+
   const [showResellerMenu, setShowResellerMenu] = useState(false);
   const { isFlashSaleActive, isProductInFlashSale } = useFirebaseFlashSale();
 
@@ -139,7 +148,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <div
-      onClick={() => onProductClick(product)}
+      onClick={() => {
+        console.log('🖱️ ProductCard onClick - sending product:', {
+          id: product.id,
+          name: product.name,
+          hasVariants: !!product.variants,
+          variantsStock: product.variants?.stock,
+          hasStock: !!(product.variants?.stock && Object.keys(product.variants?.stock).length > 0)
+        });
+        onProductClick(product);
+      }}
       className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group overflow-hidden ${
         isFeatured ? 'ring-2 ring-yellow-400 shadow-lg' : ''
       }`}
