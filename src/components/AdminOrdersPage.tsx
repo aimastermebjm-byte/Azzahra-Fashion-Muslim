@@ -275,8 +275,21 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
   };
 
   const handleDeleteOrder = (orderId: string) => {
-    showModernConfirm('Konfirmasi Hapus', 'Apakah Anda yakin ingin menghapus pesanan ini?', () => {
-      deleteOrder(orderId);
+    showModernConfirm('Konfirmasi Hapus', 'Apakah Anda yakin ingin menghapus pesanan ini? Stock akan dikembalikan.', () => {
+      // Get order data first to restore stock before deleting
+      const order = orders.find(o => o.id === orderId);
+      if (order) {
+        console.log('🔄 RESTORING STOCK BEFORE DELETING ORDER:', orderId);
+        ordersService.restoreStockForOrderManually(order).then(() => {
+          deleteOrder(orderId);
+        }).catch(error => {
+          console.error('❌ Error restoring stock before deletion:', error);
+          // Still delete order even if stock restoration fails
+          deleteOrder(orderId);
+        });
+      } else {
+        deleteOrder(orderId);
+      }
     }, { type: 'error', confirmText: 'Ya, Hapus', cancelText: 'Batal' });
   };
 

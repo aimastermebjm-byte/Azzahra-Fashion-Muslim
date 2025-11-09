@@ -285,6 +285,11 @@ class OrdersService {
     }
   }
 
+  // Public method for manual stock restoration (used by admin dashboard)
+  async restoreStockForOrderManually(order: Order): Promise<void> {
+    await this.restoreStockForOrder(order);
+  }
+
   // Delete order (for admin dashboard)
   async deleteOrder(orderId: string): Promise<boolean> {
     try {
