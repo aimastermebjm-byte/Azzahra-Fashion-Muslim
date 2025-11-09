@@ -37,7 +37,7 @@ function AppContent() {
 
   // Firebase Authentication
   const { user, login, logout } = useFirebaseAuth();
-  const { products, loading, updateProductStock, loadMoreProducts, hasMore } = useFirebaseProducts();
+  const { products, loading, updateProductStock, loadMoreProducts, hasMore, refreshProducts } = useFirebaseProducts();
   const { addOrder } = useAdmin();
 
   // Initialize Firebase-only app on app start
@@ -358,7 +358,14 @@ function AppContent() {
         case 'admin-products':
         return <AdminProductsPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-orders':
-        return <AdminOrdersPage onBack={() => setCurrentPage('account')} user={user} />;
+        return (
+          <AdminOrdersPage
+            onBack={() => setCurrentPage('account')}
+            user={user}
+            onRefreshProducts={refreshProducts}
+            onNavigateToHome={() => setCurrentPage('home')}
+          />
+        );
       case 'admin-reports':
         return <AdminReportsPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-users':

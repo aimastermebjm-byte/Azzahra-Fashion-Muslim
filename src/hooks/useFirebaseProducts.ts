@@ -414,6 +414,78 @@ export const useFirebaseProducts = () => {
     }
   }, [hasMore, loading, lastVisible, productsPerPage]);
 
+  // Manual refresh function for stock restoration
+  const refreshProducts = useCallback(async () => {
+    try {
+      console.log('🔄 Manual refresh triggered - fetching fresh products');
+      setLoading(true);
+
+      const productsRef = collection(db, 'products');
+      const q = query(
+        productsRef,
+        orderBy('createdAt', 'desc'),
+        limitCount(productsPerPage)
+      );
+
+      const querySnapshot = await getDocs(q);
+      console.log('📊 Refresh: Firestore products fetched:', querySnapshot.docs.length, 'products');
+
+      const productsData: Product[] = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+
+        // Calculate total stock from variants if available
+        const stock = Number(data.stock || 0);
+        const calculatedTotalStock = data.variants?.stock ?
+          Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
+            return total + Object.values(sizeStock as any).reduce((sizeTotal: number, colorStock: any) => {
+              return sizeTotal + Number(colorStock || 0);
+            }, 0);
+          }, 0) : stock;
+
+        const variantsData = {
+          sizes: data.variants?.sizes || data.sizes || [],
+          colors: data.variants?.colors || data.colors || [],
+          stock: data.variants?.stock && typeof data.variants?.stock === 'object' ? data.variants.stock : {}
+        };
+
+        return {
+          id: doc.id,
+          name: data.name || '',
+          description: data.description || '',
+          category: data.category || 'uncategorized',
+          retailPrice: Number(data.retailPrice || data.price || 0),
+          resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
+          costPrice: Number(data.costPrice) || Number(data.retailPrice || data.price || 0) * 0.6,
+          stock: calculatedTotalStock,
+          images: (data.images || []),
+          image: data.images?.[0] || '/placeholder-product.jpg',
+          variants: variantsData,
+          isFeatured: Boolean(data.isFeatured || data.featured),
+          isFlashSale: Boolean(data.isFlashSale),
+          flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
+          originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),
+          originalResellerPrice: Number(data.originalResellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
+          createdAt: data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt?.toDate()) : new Date(),
+          salesCount: Number(data.salesCount) || 0,
+          featuredOrder: Number(data.featuredOrder) || 0,
+          weight: Number(data.weight) || 0,
+          unit: 'gram',
+          status: data.status || (data.condition === 'baru' ? 'ready' : 'po') || 'ready',
+          estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
+        };
+      });
+
+      setProducts(productsData);
+      setLoading(false);
+      console.log('✅ Manual refresh completed - stock updated');
+
+    } catch (error) {
+      console.error('❌ Error refreshing products:', error);
+      setError(error instanceof Error ? error.message : 'Unknown error refreshing products');
+      setLoading(false);
+    }
+  }, [productsPerPage]);
+
   return {
     products,
     loading,
@@ -427,6 +499,7 @@ export const useFirebaseProducts = () => {
     currentPage,
     productsPerPage,
     setCurrentPage,
-    loadMoreProducts
+    loadMoreProducts,
+    refreshProducts
   };
 };
