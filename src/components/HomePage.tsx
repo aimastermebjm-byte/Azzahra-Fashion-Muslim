@@ -140,7 +140,12 @@ const HomePage: React.FC<HomePageProps> = ({
       description: p.description || '',
       category: p.category || 'other',
       images: p.images || [],
-      variants: p.variants || { sizes: [], colors: [] },
+      // FIXED: Preserve the complete variants object including stock data
+      variants: {
+        sizes: p.variants?.sizes || [],
+        colors: p.variants?.colors || [],
+        stock: p.variants?.stock || {}
+      },
       retailPrice: p.retailPrice || 0,
       resellerPrice: p.resellerPrice || 0,
       costPrice: p.costPrice || 0,

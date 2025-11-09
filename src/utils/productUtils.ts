@@ -12,6 +12,7 @@ export interface SafeProduct {
   variants?: {
     sizes?: string[];
     colors?: string[];
+    stock?: any;
   };
   retailPrice?: number;
   resellerPrice?: number;
@@ -47,8 +48,10 @@ export function validateProduct(product: any): SafeProduct | null {
     images: Array.isArray(product.images) ? product.images : [],
     variants: product.variants && typeof product.variants === 'object' ? {
       sizes: Array.isArray(product.variants.sizes) ? product.variants.sizes : [],
-      colors: Array.isArray(product.variants.colors) ? product.variants.colors : []
-    } : { sizes: [], colors: [] },
+      colors: Array.isArray(product.variants.colors) ? product.variants.colors : [],
+      // FIXED: Preserve stock data from variants
+      stock: product.variants.stock && typeof product.variants.stock === 'object' ? product.variants.stock : {}
+    } : { sizes: [], colors: [], stock: {} },
     retailPrice: typeof product.retailPrice === 'number' ? product.retailPrice : 0,
     resellerPrice: typeof product.resellerPrice === 'number' ? product.resellerPrice : 0,
     costPrice: typeof product.costPrice === 'number' ? product.costPrice : 0,
