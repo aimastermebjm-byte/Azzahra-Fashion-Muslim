@@ -18,9 +18,6 @@ import { db, convertFirebaseUrl } from '../utils/firebaseClient';
 import { useProductCache } from './useProductCache';
 
 export const useFirebaseProducts = () => {
-  // 🔴 FORCE DEBUG - This should show up in console if new code is loaded
-  console.log('🔴🔴🔴 NEW useFirebaseProducts CODE LOADED! 🔴🔴🔴');
-  console.log('🔴 If you see this, the new code is being executed!');
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,19 +34,8 @@ export const useFirebaseProducts = () => {
   useEffect(() => {
     const startTime = performance.now();
 
-    // STEP 1: DISABLED CACHE - Force fresh data from Firestore to debug variant stock issue
-    // const cachedProducts = getFromCache();
-    // if (cachedProducts) {
-    //   setProducts(cachedProducts);
-    //   setLoading(false);
-    //   setIsInitialLoad(false);
-    // }
-    console.log('🚫 CACHE DISABLED - Forcing fresh data from Firestore to debug variant stock');
-
-    // STEP 2: One-time fetch instead of real-time listener (TEMPORARY FIX)
     const fetchProducts = async () => {
       try {
-        console.log('🔄 TEMPORARY FIX: Using one-time fetch to force fresh data from Firestore');
 
         const productsRef = collection(db, 'products');
         const q = query(
@@ -59,7 +45,6 @@ export const useFirebaseProducts = () => {
         );
 
         const querySnapshot = await getDocs(q);
-        console.log('📊 Firestore products fetched:', querySnapshot.docs.length, 'products');
 
         const productsData: Product[] = querySnapshot.docs.map((doc) => {
           const data = doc.data();
@@ -73,36 +58,12 @@ export const useFirebaseProducts = () => {
               }, 0);
             }, 0) : stock;
 
-          // Debug variants stock extraction
-            console.log('🔍 VARIANTS STOCK DEBUG:', {
-              'data.variants': data.variants,
-              'data.variants?.stock': data.variants?.stock,
-              'typeof data.variants?.stock': typeof data.variants?.stock,
-              'data.variants?.stock keys': data.variants?.stock ? Object.keys(data.variants?.stock) : 'N/A',
-              'JSON.stringify data.variants?.stock': JSON.stringify(data.variants?.stock)
-            });
-
-            const variantsData = {
-              sizes: data.variants?.sizes || data.sizes || [],
-              colors: data.variants?.colors || data.colors || [],
-              // Fix: Ensure we don't lose variant stock data
-              stock: data.variants?.stock && typeof data.variants?.stock === 'object' ? data.variants.stock : {}
-            };
-
-          // Debug logging to check variants data transformation
-          console.log('🔍 Firebase Transform Debug:', {
-            productId: doc.id,
-            productName: data.name,
-            originalVariants: data.variants,
-            originalVariantsStock: data.variants?.stock,
-            transformedVariants: variantsData,
-            hasSizes: !!(variantsData.sizes?.length),
-            hasColors: !!(variantsData.colors?.length),
-            hasStock: !!variantsData.stock && Object.keys(variantsData.stock).length > 0,
-            variantStockDetail: variantsData.stock,
-            calculatedTotalStock,
-            originalStock: stock
-          });
+          const variantsData = {
+            sizes: data.variants?.sizes || data.sizes || [],
+            colors: data.variants?.colors || data.colors || [],
+            // Fix: Ensure we don't lose variant stock data
+            stock: data.variants?.stock && typeof data.variants?.stock === 'object' ? data.variants.stock : {}
+          };
 
           return {
             id: doc.id,
@@ -146,8 +107,7 @@ export const useFirebaseProducts = () => {
           setHasMore(false);
         }
 
-        console.log('✅ One-time fetch completed - fresh data loaded from Firestore');
-
+        
       } catch (error) {
         console.error('❌ Error fetching products:', error);
         setError(error instanceof Error ? error.message : 'Unknown error fetching products');

@@ -21,16 +21,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   onBuyNow,
   onNavigateToCart
 }) => {
-  // Debug logging untuk melihat data product yang diterima
-  console.log('🔥 ProductDetail Debug - Received product:', {
-    id: product.id,
-    name: product.name,
-    hasVariants: !!product.variants,
-    variantsData: product.variants,
-    variantsStock: product.variants?.stock,
-    productStock: product.stock
-  });
-
+  
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -121,37 +112,15 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
   // Get stock for specific variant
   const getVariantStock = (size: string, color: string) => {
-    // Debug logging to check data structure
-    console.log('🔍 Variant Debug:', {
-      size,
-      color,
-      hasVariants: !!product.variants,
-      hasStock: !!product.variants?.stock,
-      variantsStock: product.variants?.stock,
-      sizeStock: product.variants?.stock?.[size],
-      colorStock: product.variants?.stock?.[size]?.[color],
-      productStock: product.stock,
-      allVariantStocks: product.variants?.stock
-    });
-
+    
     // Primary: Check if variant stock exists in Firestore structure
     if (product.variants?.stock?.[size]?.[color] !== undefined) {
       const stock = Number(product.variants.stock[size][color] || 0);
-      console.log('✅ Found variant stock from Firestore:', {
-        size,
-        color,
-        stock,
-        allOtherVariants: Object.entries(product.variants.stock).map(([s, colors]) => ({
-          size: s,
-          stocks: colors
-        }))
-      });
-      return stock;
+            return stock;
     }
 
     // Secondary: Check if this is a non-variant product
     if (!product.variants?.sizes || product.variants.sizes.length === 0) {
-      console.log('ℹ️ Non-variant product - using total stock:', product.stock);
       return product.stock || 0;
     }
 
@@ -161,13 +130,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       const totalVariants = product.variants.sizes.length * product.variants.colors.length;
       if (totalVariants > 0 && product.stock > 0) {
         const calculatedStock = Math.floor(product.stock / totalVariants);
-        console.log('⚠️ Legacy product detected - calculated stock:', {
-          totalStock: product.stock,
-          totalVariants,
-          calculatedStock,
-          note: 'Please update this product in admin to set individual variant stocks'
-        });
-        return calculatedStock;
+                return calculatedStock;
       }
     }
 
