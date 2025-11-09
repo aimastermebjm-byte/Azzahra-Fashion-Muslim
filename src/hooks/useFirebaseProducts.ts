@@ -14,7 +14,7 @@ import {
   onSnapshot,
   startAfter
 } from 'firebase/firestore';
-import { db, convertFirebaseUrl } from '../utils/firebaseClient';
+import { db } from '../utils/firebaseClient';
 import { useProductCache } from './useProductCache';
 
 export const useFirebaseProducts = () => {
@@ -27,97 +27,139 @@ export const useFirebaseProducts = () => {
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(20); // Fixed 20 produk untuk infinite scroll seperti Shopee
-  const { saveToCache, getFromCache, isCacheValid } = useProductCache();
+  const { saveToCache } = useProductCache();
   const isUpdatingStockRef = useRef(false);
 
-  // TEMPORARY FIX: Replace real-time listener with one-time fetch to force fresh data
+  // Manual refresh function untuk cross-device sync dan stock restoration - dipindahkan ke atas
+  const refreshProducts = useCallback(async () => {
+    try {
+      console.log('🔄 Manual refresh dimulai - ambil data terbaru');
+      setLoading(true);
+
+      const productsRef = collection(db, 'products');
+      const q = query(
+        productsRef,
+        orderBy('createdAt', 'desc'),
+        limitCount(productsPerPage)
+      );
+
+      const querySnapshot = await getDocs(q);
+      console.log('📊 Refresh: Produk diambil dari Firestore:', querySnapshot.docs.length, 'produk');
+
+      const productsData: Product[] = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+
+        // Calculate total stock from variants if available
+        const stock = Number(data.stock || 0);
+        const calculatedTotalStock = data.variants?.stock ?
+          Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
+            return total + Object.values(sizeStock as any).reduce((sizeTotal: number, colorStock: any) => {
+              return sizeTotal + Number(colorStock || 0);
+            }, 0);
+          }, 0) : stock;
+
+        const variantsData = {
+          sizes: data.variants?.sizes || data.sizes || [],
+          colors: data.variants?.colors || data.colors || [],
+          stock: data.variants?.stock && typeof data.variants?.stock === 'object' ? data.variants.stock : {}
+        };
+
+        return {
+          id: doc.id,
+          name: data.name || '',
+          description: data.description || '',
+          category: data.category || 'uncategorized',
+          retailPrice: Number(data.retailPrice || data.price || 0),
+          resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
+          costPrice: Number(data.costPrice) || Number(data.retailPrice || data.price || 0) * 0.6,
+          stock: calculatedTotalStock,
+          images: (data.images || []),
+          image: data.images?.[0] || '/placeholder-product.jpg',
+          variants: variantsData,
+          isFeatured: Boolean(data.isFeatured || data.featured),
+          isFlashSale: Boolean(data.isFlashSale),
+          flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
+          originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),
+          originalResellerPrice: Number(data.originalResellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
+          createdAt: data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt?.toDate()) : new Date(),
+          salesCount: Number(data.salesCount) || 0,
+          featuredOrder: Number(data.featuredOrder) || 0,
+          weight: Number(data.weight) || 0,
+          unit: 'gram',
+          status: data.status || (data.condition === 'baru' ? 'ready' : 'po') || 'ready',
+          estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
+        };
+      });
+
+      // Force update untuk cross-device synchronization
+      setProducts(productsData);
+      setLoading(false);
+      console.log('✅ Manual refresh selesai - semua data diperbarui');
+
+      // Log info untuk debugging cross-device sync
+      const featuredCount = productsData.filter(p => p.isFeatured).length;
+      const flashSaleCount = productsData.filter(p => p.isFlashSale).length;
+      console.log(`📊 Refresh stats: ${featuredCount} produk unggulan, ${flashSaleCount} flash sale`);
+
+    } catch (error) {
+      console.error('❌ Error refreshing products:', error);
+      setError(error instanceof Error ? error.message : 'Unknown error refreshing products');
+      setLoading(false);
+    }
+  }, [productsPerPage]);
+
+  // INITIAL LOAD: Load data pertama kali saat component mount
   useEffect(() => {
-    const startTime = performance.now();
+    console.log('🔄 Loading initial products...');
+    refreshProducts();
+  }, []); // Empty dependency untuk initial load only
 
-    const fetchProducts = async () => {
-      try {
+  // SISTEM EVENT-BASED: Otomatis refresh tanpa real-time listener yang boros
+  useEffect(() => {
+    console.log('🔄 Setting up event-based product refresh...');
 
-        const productsRef = collection(db, 'products');
-        const q = query(
-          productsRef,
-          orderBy('createdAt', 'desc'),
-          limitCount(productsPerPage)
-        );
-
-        const querySnapshot = await getDocs(q);
-
-        const productsData: Product[] = querySnapshot.docs.map((doc) => {
-          const data = doc.data();
-
-          // Calculate total stock from variants if available
-          const stock = Number(data.stock || 0);
-          const calculatedTotalStock = data.variants?.stock ?
-            Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
-              return total + Object.values(sizeStock as any).reduce((sizeTotal: number, colorStock: any) => {
-                return sizeTotal + Number(colorStock || 0);
-              }, 0);
-            }, 0) : stock;
-
-          const variantsData = {
-            sizes: data.variants?.sizes || data.sizes || [],
-            colors: data.variants?.colors || data.colors || [],
-            // Fix: Ensure we don't lose variant stock data
-            stock: data.variants?.stock && typeof data.variants?.stock === 'object' ? data.variants.stock : {}
-          };
-
-          return {
-            id: doc.id,
-            name: data.name || '',
-            description: data.description || '',
-            category: data.category || 'uncategorized',
-            retailPrice: Number(data.retailPrice || data.price || 0),
-            resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
-            costPrice: Number(data.costPrice) || Number(data.retailPrice || data.price || 0) * 0.6,
-            stock: calculatedTotalStock,
-            images: (data.images || []),
-            image: data.images?.[0] || '/placeholder-product.jpg',
-            variants: variantsData,
-            isFeatured: Boolean(data.isFeatured || data.featured),
-            isFlashSale: Boolean(data.isFlashSale),
-            flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
-            originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),
-            originalResellerPrice: Number(data.originalResellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
-            createdAt: data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt?.toDate()) : new Date(),
-            salesCount: Number(data.salesCount) || 0,
-            featuredOrder: Number(data.featuredOrder) || 0,
-            weight: Number(data.weight) || 0,
-            unit: 'gram',
-            status: data.status || (data.condition === 'baru' ? 'ready' : 'po') || 'ready',
-            estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
-          };
-        });
-
-        setProducts(productsData);
-        setLoading(false);
-        setIsInitialLoad(false);
-
-        // Save to cache (no-op since Firebase handles data)
-        saveToCache();
-
-        // Set pagination info
-        if (querySnapshot.docs.length > 0) {
-          setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
-          setHasMore(querySnapshot.docs.length === productsPerPage);
-        } else {
-          setHasMore(false);
-        }
-
-        
-      } catch (error) {
-        console.error('❌ Error fetching products:', error);
-        setError(error instanceof Error ? error.message : 'Unknown error fetching products');
-        setLoading(false);
-      }
+    // Listen untuk berbagai jenis perubahan produk
+    const handleProductsChanged = () => {
+      console.log('📦 Products changed event received - refreshing...');
+      refreshProducts();
     };
 
-    fetchProducts();
+    const handleFeaturedProductsChanged = () => {
+      console.log('⭐ Featured products changed event received - refreshing...');
+      refreshProducts();
+    };
 
-  }, [productsPerPage]); // FIXED: Only primitive dependency to prevent infinite loop
+    const handleFlashSaleChanged = () => {
+      console.log('🔥 Flash sale changed event received - refreshing...');
+      refreshProducts();
+    };
+
+    const handleStockChanged = () => {
+      console.log('📊 Stock changed event received - refreshing...');
+      refreshProducts();
+    };
+
+    const handleOrderCancelled = () => {
+      console.log('❌ Order cancelled event received - refreshing...');
+      refreshProducts();
+    };
+
+    // Register event listeners
+    window.addEventListener('productsChanged', handleProductsChanged);
+    window.addEventListener('featuredProductsChanged', handleFeaturedProductsChanged);
+    window.addEventListener('flashSaleChanged', handleFlashSaleChanged);
+    window.addEventListener('stockChanged', handleStockChanged);
+    window.addEventListener('orderCancelled', handleOrderCancelled);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('productsChanged', handleProductsChanged);
+      window.removeEventListener('featuredProductsChanged', handleFeaturedProductsChanged);
+      window.removeEventListener('flashSaleChanged', handleFlashSaleChanged);
+      window.removeEventListener('stockChanged', handleStockChanged);
+      window.removeEventListener('orderCancelled', handleOrderCancelled);
+    };
+  }, []); // Empty dependency, refreshProducts will be called with latest reference
 
   // Firebase operations - RE-ENABLED with safety
   const addProduct = async (productData: any) => {
@@ -153,6 +195,12 @@ export const useFirebaseProducts = () => {
       });
 
       console.log('✅ Product added successfully:', docRef.id);
+
+      // Trigger event untuk refresh otomatis di semua device
+      window.dispatchEvent(new CustomEvent('productsChanged', {
+        detail: { action: 'added', productId: docRef.id }
+      }));
+
       return docRef;
     } catch (error) {
       console.error('❌ Error adding product:', error);
@@ -172,6 +220,19 @@ export const useFirebaseProducts = () => {
       console.log('📝 Updating product:', id, updates);
       await updateDoc(docRef, updates);
       console.log('✅ Product updated successfully');
+
+      // Trigger event untuk refresh otomatis
+      let eventType = 'productsChanged';
+      if ('isFeatured' in updates) {
+        eventType = 'featuredProductsChanged';
+      } else if ('isFlashSale' in updates) {
+        eventType = 'flashSaleChanged';
+      }
+
+      window.dispatchEvent(new CustomEvent(eventType, {
+        detail: { action: 'updated', productId: id, changes: updates }
+      }));
+
     } catch (error) {
       console.error('❌ Error updating product:', error);
       throw error;
@@ -183,6 +244,12 @@ export const useFirebaseProducts = () => {
       console.log('🗑️ Deleting product:', id);
       await deleteDoc(doc(db, 'products', id));
       console.log('✅ Product deleted successfully');
+
+      // Trigger event untuk refresh otomatis
+      window.dispatchEvent(new CustomEvent('productsChanged', {
+        detail: { action: 'deleted', productId: id }
+      }));
+
     } catch (error) {
       console.error('❌ Error deleting product:', error);
       throw error;
@@ -198,7 +265,8 @@ export const useFirebaseProducts = () => {
         return 0;
       }
 
-      console.log('🔄 Reducing stock for product:', id, 'Quantity:', quantity, 'Variant:', variantInfo);
+      // OPTIMIZED: Kurangi debug logging untuk performa checkout
+      console.log('🔄 Reducing stock:', id, 'Qty:', quantity);
 
       // CRITICAL: Set flag to prevent real-time listener race conditions
       isUpdatingStockRef.current = true;
@@ -206,18 +274,11 @@ export const useFirebaseProducts = () => {
       // Get current document to ensure we have the latest data
       const currentDoc = await getDoc(docRef);
       if (!currentDoc.exists()) {
-        console.error('❌ Product document not found in Firestore:', id);
+        console.error('❌ Product document not found:', id);
         return 0;
       }
 
       const currentData = currentDoc.data();
-      console.log('📊 BEFORE UPDATE DEBUG:', {
-        'currentData.variants': currentData.variants,
-        'currentData.variants?.stock': currentData.variants?.stock,
-        'currentData.variants?.stock keys': currentData.variants?.stock ? Object.keys(currentData.variants?.stock) : 'N/A',
-        'variantInfo': variantInfo,
-        'product.variants': product.variants
-      });
       const currentStock = Number(currentData.stock || 0);
       const newStock = Math.max(0, currentStock - quantity);
 
@@ -232,8 +293,6 @@ export const useFirebaseProducts = () => {
 
         // MIGRATION: If no variant stock structure exists, create it from total stock
         if (!currentVariantStock || Object.keys(currentVariantStock).length === 0) {
-          console.log('🔄 MIGRATING: Creating variant stock structure for legacy product');
-
           const totalVariants = product.variants.sizes.length * product.variants.colors.length;
           const stockPerVariant = Math.floor(currentStock / totalVariants);
 
@@ -244,8 +303,6 @@ export const useFirebaseProducts = () => {
               currentVariantStock[s][c] = stockPerVariant;
             });
           });
-
-          console.log('✅ Created variant stock structure:', currentVariantStock);
         }
 
         // Create deep copy of variant stock structure
@@ -257,25 +314,19 @@ export const useFirebaseProducts = () => {
           const newVariantStock = Math.max(0, currentVariantStockValue - quantity);
           updatedVariantStock[size][color] = newVariantStock;
 
-          console.log(`📦 Variant stock reduced: ${size}-${color} from ${currentVariantStockValue} to ${newVariantStock}`);
+          console.log(`📦 Variant ${size}-${color}: ${currentVariantStockValue} → ${newVariantStock}`);
 
           updateData.variants = {
             ...currentData.variants,
             stock: updatedVariantStock
           };
-        } else {
-          console.warn('⚠️ Variant stock not found for:', size, color);
         }
       }
 
-      // Perform the update
-      console.log('📤 Updating Firestore with data:', updateData);
+      // Perform the update - OPTIMIZED: tanpa debug logging yang berlebihan
       await updateDoc(docRef, updateData);
 
-      console.log('✅ Stock updated successfully - New total stock:', newStock);
-
-      // CRITICAL FIX: Update local state optimistically to prevent race conditions
-      // Real-time listener will handle sync, but we need immediate UI update
+      // OPTIMISTIC UPDATE: Cepat untuk UI response
       setProducts(prev => prev.map(p =>
         p.id === id
           ? {
@@ -286,10 +337,13 @@ export const useFirebaseProducts = () => {
           : p
       ));
 
-      console.log('🎯 Optimistic update applied - preventing race conditions');
-
-      // CRITICAL: Reset flag after successful update
+      // CRITICAL: Reset flag setelah update berhasil
       isUpdatingStockRef.current = false;
+
+      // Trigger event untuk refresh otomatis stock
+      window.dispatchEvent(new CustomEvent('stockChanged', {
+        detail: { action: 'stock_updated', productId: id, newStock, variantInfo }
+      }));
 
       return newStock;
     } catch (error) {
@@ -374,78 +428,7 @@ export const useFirebaseProducts = () => {
     }
   }, [hasMore, loading, lastVisible, productsPerPage]);
 
-  // Manual refresh function for stock restoration
-  const refreshProducts = useCallback(async () => {
-    try {
-      console.log('🔄 Manual refresh triggered - fetching fresh products');
-      setLoading(true);
-
-      const productsRef = collection(db, 'products');
-      const q = query(
-        productsRef,
-        orderBy('createdAt', 'desc'),
-        limitCount(productsPerPage)
-      );
-
-      const querySnapshot = await getDocs(q);
-      console.log('📊 Refresh: Firestore products fetched:', querySnapshot.docs.length, 'products');
-
-      const productsData: Product[] = querySnapshot.docs.map((doc) => {
-        const data = doc.data();
-
-        // Calculate total stock from variants if available
-        const stock = Number(data.stock || 0);
-        const calculatedTotalStock = data.variants?.stock ?
-          Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
-            return total + Object.values(sizeStock as any).reduce((sizeTotal: number, colorStock: any) => {
-              return sizeTotal + Number(colorStock || 0);
-            }, 0);
-          }, 0) : stock;
-
-        const variantsData = {
-          sizes: data.variants?.sizes || data.sizes || [],
-          colors: data.variants?.colors || data.colors || [],
-          stock: data.variants?.stock && typeof data.variants?.stock === 'object' ? data.variants.stock : {}
-        };
-
-        return {
-          id: doc.id,
-          name: data.name || '',
-          description: data.description || '',
-          category: data.category || 'uncategorized',
-          retailPrice: Number(data.retailPrice || data.price || 0),
-          resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
-          costPrice: Number(data.costPrice) || Number(data.retailPrice || data.price || 0) * 0.6,
-          stock: calculatedTotalStock,
-          images: (data.images || []),
-          image: data.images?.[0] || '/placeholder-product.jpg',
-          variants: variantsData,
-          isFeatured: Boolean(data.isFeatured || data.featured),
-          isFlashSale: Boolean(data.isFlashSale),
-          flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
-          originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),
-          originalResellerPrice: Number(data.originalResellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
-          createdAt: data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt?.toDate()) : new Date(),
-          salesCount: Number(data.salesCount) || 0,
-          featuredOrder: Number(data.featuredOrder) || 0,
-          weight: Number(data.weight) || 0,
-          unit: 'gram',
-          status: data.status || (data.condition === 'baru' ? 'ready' : 'po') || 'ready',
-          estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
-        };
-      });
-
-      setProducts(productsData);
-      setLoading(false);
-      console.log('✅ Manual refresh completed - stock updated');
-
-    } catch (error) {
-      console.error('❌ Error refreshing products:', error);
-      setError(error instanceof Error ? error.message : 'Unknown error refreshing products');
-      setLoading(false);
-    }
-  }, [productsPerPage]);
-
+  
   return {
     products,
     loading,

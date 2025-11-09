@@ -300,6 +300,11 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           console.log('✅ Stock restored, deleting order:', orderId);
           deleteOrder(orderId);
 
+          // Trigger event untuk refresh otomatis di semua device
+          window.dispatchEvent(new CustomEvent('orderCancelled', {
+            detail: { action: 'cancelled', orderId, restoredStock: true }
+          }));
+
           // Refresh products and navigate to home
           if (onRefreshProducts) {
             console.log('🔄 Refreshing products after stock restoration...');

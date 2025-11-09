@@ -318,7 +318,7 @@ function AppContent() {
             onCartClick={handleCartClick}
             onAddToCart={handleQuickAddToCart}
             onNavigateToFlashSale={handleNavigateToFlashSale}
-            onNavigateToOngkirTest={handleNavigateToOngkirTest}
+            onRefreshProducts={refreshProducts}
           />
         );
       case 'flash-sale':
