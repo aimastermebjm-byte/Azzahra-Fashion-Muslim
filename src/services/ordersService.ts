@@ -122,28 +122,46 @@ class OrdersService {
   // NEW: Restore stock for cancelled order
   private async restoreStockForOrder(order: Order): Promise<void> {
     try {
-      console.log('🔄 Restoring stock for order items:', order.items);
+      console.log('🔄 RESTORING STOCK FOR CANCELLED ORDER:', order.id);
+      console.log('📦 Order items to restore:', order.items);
 
       for (const item of order.items) {
+        console.log('🔄 Processing item for stock restoration:', {
+          productId: item.productId,
+          productName: item.productName,
+          selectedVariant: item.selectedVariant,
+          quantity: item.quantity
+        });
+
         if (item.productId && item.selectedVariant) {
           const productRef = doc(db, 'products', item.productId);
           const productDoc = await getDoc(productRef);
 
           if (productDoc.exists()) {
             const productData = productDoc.data();
-            const variants = productData.variants || { sizes: [], colors: [] };
+            console.log('📊 Current product data before restoration:', {
+              productId: item.productId,
+              currentStock: productData.stock,
+              currentVariants: productData.variants
+            });
+
+            const variants = productData.variants || { sizes: [], colors: [], stock: {} };
 
             // RESTORED: Handle new variant stock structure - FIXED for proper stock restoration
             if (variants.stock && variants.stock[item.selectedVariant.size] && variants.stock[item.selectedVariant.size][item.selectedVariant.color] !== undefined) {
+              // Get current variant stock value
+              const currentVariantStock = Number(variants.stock[item.selectedVariant.size][item.selectedVariant.color] || 0);
+              const newVariantStock = currentVariantStock + item.quantity;
+
               // Update specific variant stock using new structure
-              variants.stock[item.selectedVariant.size][item.selectedVariant.color] += item.quantity;
+              variants.stock[item.selectedVariant.size][item.selectedVariant.color] = newVariantStock;
 
               // Calculate total stock from all variants
               let totalStock = 0;
               if (variants.stock) {
                 Object.values(variants.stock).forEach(sizeStock => {
                   Object.values(sizeStock).forEach(colorStock => {
-                    totalStock += colorStock;
+                    totalStock += Number(colorStock || 0);
                   });
                 });
               }
@@ -154,11 +172,21 @@ class OrdersService {
                 updatedAt: new Date().toISOString()
               });
 
-              console.log(`✅ Restored ${item.quantity} units to product ${item.productId} (${item.selectedVariant.size}, ${item.selectedVariant.color})`);
+              console.log(`✅ RESTORED ${item.quantity} units to product ${item.productId} (${item.selectedVariant.size}, ${item.selectedVariant.color})`);
+              console.log(`📊 Variant stock: ${currentVariantStock} → ${newVariantStock}`);
               console.log(`📊 New total stock: ${totalStock}`);
             } else {
+              console.warn('⚠️ VARIANT STRUCTURE NOT FOUND:', {
+                'variants.stock exists': !!variants.stock,
+                'selectedVariant.size': item.selectedVariant.size,
+                'selectedVariant.color': item.selectedVariant.color,
+                'variants.stock keys': variants.stock ? Object.keys(variants.stock) : 'N/A',
+                'sizeStock exists': variants.stock && variants.stock[item.selectedVariant.size] ? 'YES' : 'NO',
+                'colorStock exists': variants.stock && variants.stock[item.selectedVariant.size] && variants.stock[item.selectedVariant.size][item.selectedVariant.color] !== undefined ? 'YES' : 'NO'
+              });
+
               // Fallback: update main stock if variant structure not found
-              const currentStock = productData.stock || 0;
+              const currentStock = Number(productData.stock || 0);
               const newStock = currentStock + item.quantity;
 
               await updateDoc(productRef, {
@@ -166,14 +194,21 @@ class OrdersService {
                 updatedAt: new Date().toISOString()
               });
 
-              console.log(`⚠️ Fallback: Restored ${item.quantity} units to main product stock (no variant structure found)`);
-              console.log(`📊 New main stock: ${newStock}`);
+              console.log(`⚠️ FALLBACK: Restored ${item.quantity} units to main product stock (no variant structure found)`);
+              console.log(`📊 Main stock: ${currentStock} → ${newStock}`);
             }
+          } else {
+            console.error('❌ PRODUCT NOT FOUND for stock restoration:', item.productId);
           }
+        } else {
+          console.warn('⚠️ SKIPPING item - missing productId or selectedVariant:', {
+            productId: item.productId,
+            selectedVariant: item.selectedVariant
+          });
         }
       }
     } catch (error) {
-      console.error('❌ Error restoring stock:', error);
+      console.error('❌ ERROR restoring stock for order:', order.id, error);
       // Don't throw error to prevent order cancellation from failing
     }
   }
