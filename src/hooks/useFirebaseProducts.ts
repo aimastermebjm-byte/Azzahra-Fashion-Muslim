@@ -11,23 +11,19 @@ import {
   query,
   orderBy,
   limit as limitCount,
-  onSnapshot,
   startAfter
 } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
-import { useProductCache } from './useProductCache';
 
 export const useFirebaseProducts = () => {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(20); // Fixed 20 produk untuk infinite scroll seperti Shopee
-  const { saveToCache } = useProductCache();
   const isUpdatingStockRef = useRef(false);
 
   // Manual refresh function untuk cross-device sync dan stock restoration - dipindahkan ke atas
@@ -114,11 +110,28 @@ export const useFirebaseProducts = () => {
     refreshProducts();
   }, []); // Empty dependency untuk initial load only
 
-  // SISTEM EVENT-BASED: Otomatis refresh tanpa real-time listener yang boros
+  // CROSS-DEVICE EVENT SYSTEM: Refresh menggunakan localStorage events
   useEffect(() => {
-    console.log('🔄 Setting up event-based product refresh...');
+    console.log('🔄 Setting up cross-device event-based refresh...');
 
-    // Listen untuk berbagai jenis perubahan produk
+    // Listen untuk localStorage changes (bekerja cross-device di browser yang sama)
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'product_change_trigger') {
+        console.log('📦 Cross-device product change detected - refreshing...');
+        refreshProducts();
+      } else if (event.key === 'featured_products_change_trigger') {
+        console.log('⭐ Cross-device featured products change detected - refreshing...');
+        refreshProducts();
+      } else if (event.key === 'flash_sale_change_trigger') {
+        console.log('🔥 Cross-device flash sale change detected - refreshing...');
+        refreshProducts();
+      } else if (event.key === 'stock_change_trigger') {
+        console.log('📊 Cross-device stock change detected - refreshing...');
+        refreshProducts();
+      }
+    };
+
+    // Listen untuk window events (untuk same tab refresh)
     const handleProductsChanged = () => {
       console.log('📦 Products changed event received - refreshing...');
       refreshProducts();
@@ -144,7 +157,10 @@ export const useFirebaseProducts = () => {
       refreshProducts();
     };
 
-    // Register event listeners
+    // Register localStorage event listener (cross-device)
+    window.addEventListener('storage', handleStorageChange);
+
+    // Register window event listeners (same tab)
     window.addEventListener('productsChanged', handleProductsChanged);
     window.addEventListener('featuredProductsChanged', handleFeaturedProductsChanged);
     window.addEventListener('flashSaleChanged', handleFlashSaleChanged);
@@ -153,13 +169,15 @@ export const useFirebaseProducts = () => {
 
     // Cleanup
     return () => {
+      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('productsChanged', handleProductsChanged);
       window.removeEventListener('featuredProductsChanged', handleFeaturedProductsChanged);
       window.removeEventListener('flashSaleChanged', handleFlashSaleChanged);
       window.removeEventListener('stockChanged', handleStockChanged);
       window.removeEventListener('orderCancelled', handleOrderCancelled);
+      console.log('🔄 Stopped cross-device event-based refresh');
     };
-  }, []); // Empty dependency, refreshProducts will be called with latest reference
+  }, []); // Empty dependency, refreshProducts akan dipanggil dengan reference terbaru
 
   // Firebase operations - RE-ENABLED with safety
   const addProduct = async (productData: any) => {
@@ -196,7 +214,10 @@ export const useFirebaseProducts = () => {
 
       console.log('✅ Product added successfully:', docRef.id);
 
-      // Trigger event untuk refresh otomatis di semua device
+      // Trigger cross-device refresh menggunakan localStorage
+      localStorage.setItem('product_change_trigger', Date.now().toString());
+
+      // Trigger same-tab refresh
       window.dispatchEvent(new CustomEvent('productsChanged', {
         detail: { action: 'added', productId: docRef.id }
       }));
@@ -221,7 +242,16 @@ export const useFirebaseProducts = () => {
       await updateDoc(docRef, updates);
       console.log('✅ Product updated successfully');
 
-      // Trigger event untuk refresh otomatis
+      // Trigger cross-device refresh menggunakan localStorage
+      if ('isFeatured' in updates) {
+        localStorage.setItem('featured_products_change_trigger', Date.now().toString());
+      } else if ('isFlashSale' in updates) {
+        localStorage.setItem('flash_sale_change_trigger', Date.now().toString());
+      } else {
+        localStorage.setItem('product_change_trigger', Date.now().toString());
+      }
+
+      // Trigger same-tab refresh
       let eventType = 'productsChanged';
       if ('isFeatured' in updates) {
         eventType = 'featuredProductsChanged';
@@ -245,7 +275,10 @@ export const useFirebaseProducts = () => {
       await deleteDoc(doc(db, 'products', id));
       console.log('✅ Product deleted successfully');
 
-      // Trigger event untuk refresh otomatis
+      // Trigger cross-device refresh menggunakan localStorage
+      localStorage.setItem('product_change_trigger', Date.now().toString());
+
+      // Trigger same-tab refresh
       window.dispatchEvent(new CustomEvent('productsChanged', {
         detail: { action: 'deleted', productId: id }
       }));
@@ -340,7 +373,10 @@ export const useFirebaseProducts = () => {
       // CRITICAL: Reset flag setelah update berhasil
       isUpdatingStockRef.current = false;
 
-      // Trigger event untuk refresh otomatis stock
+      // Trigger cross-device refresh menggunakan localStorage
+      localStorage.setItem('stock_change_trigger', Date.now().toString());
+
+      // Trigger same-tab refresh
       window.dispatchEvent(new CustomEvent('stockChanged', {
         detail: { action: 'stock_updated', productId: id, newStock, variantInfo }
       }));
