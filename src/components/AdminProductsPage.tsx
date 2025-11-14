@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../types';
+import { useFirebaseProductsAdmin } from '../hooks/useFirebaseProductsAdmin';
 import { useFirebaseProducts } from '../hooks/useFirebaseProducts';
 import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
 import { ProductTableSkeleton, FlashSaleStatusSkeleton, MenuSkeleton } from './LoadingSkeleton';
@@ -19,7 +20,10 @@ interface FlashSaleConfig {
 }
 
 const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) => {
-  const { products, loading, updateProduct, addProduct, deleteProduct } = useFirebaseProducts();
+  const { products, loading } = useFirebaseProductsAdmin();
+
+  // Tetap gunakan fungsi dari original hook untuk update/add/delete
+  const { updateProduct, addProduct, deleteProduct } = useFirebaseProducts();
   const { flashSaleConfig, timeLeft, isFlashSaleActive, startFlashSale, stopFlashSale } = useFirebaseFlashSale();
 
   

@@ -126,7 +126,16 @@ export const useFirebaseProducts = () => {
         console.log('🔥 Cross-device flash sale change detected - refreshing...');
         refreshProducts();
       } else if (event.key === 'stock_change_trigger') {
-        console.log('📊 Cross-device stock change detected - refreshing...');
+        console.log('📊 Cross-device stock change detected - IMMEDIATE refresh...');
+        refreshProducts();
+      } else if (event.key === 'stock_depleted_trigger') {
+        console.log('🚨 Cross-device stock DEPLETED detected - URGENT refresh...');
+        refreshProducts();
+      } else if (event.key === 'stock_low_trigger') {
+        console.log('⚠️ Cross-device stock LOW detected - priority refresh...');
+        refreshProducts();
+      } else if (event.key === 'stock_sync_fallback') {
+        console.log('🔄 Cross-device stock sync fallback detected - refresh...');
         refreshProducts();
       }
     };
@@ -373,14 +382,48 @@ export const useFirebaseProducts = () => {
       // CRITICAL: Reset flag setelah update berhasil
       isUpdatingStockRef.current = false;
 
-      // Trigger cross-device refresh menggunakan localStorage
-      localStorage.setItem('stock_change_trigger', Date.now().toString());
+      // ENHANCED CROSS-DEVICE SYNC: Multiple triggers untuk reliability
+      const timestamp = Date.now().toString();
 
-      // Trigger same-tab refresh
+      // 1. Primary stock change trigger
+      localStorage.setItem('stock_change_trigger', timestamp);
+
+      // 2. Additional specific triggers untuk different scenarios
+      if (newStock === 0) {
+        localStorage.setItem('stock_depleted_trigger', timestamp);
+        console.log('🚨 Stock depleted trigger sent for product:', id);
+      } else if (newStock <= 5) {
+        localStorage.setItem('stock_low_trigger', timestamp);
+        console.log('⚠️ Stock low trigger sent for product:', id, 'Stock:', newStock);
+      }
+
+      // 3. Fallback trigger dengan delay untuk reliability
+      setTimeout(() => {
+        localStorage.setItem('stock_sync_fallback', timestamp);
+      }, 100);
+
+      // 4. Same-tab refresh dengan enhanced detail
       window.dispatchEvent(new CustomEvent('stockChanged', {
-        detail: { action: 'stock_updated', productId: id, newStock, variantInfo }
+        detail: {
+          action: 'stock_updated',
+          productId: id,
+          newStock,
+          oldStock: oldStock,
+          variantInfo,
+          timestamp,
+          isDepleted: newStock === 0,
+          isLow: newStock <= 5
+        }
       }));
 
+      // 5. Additional event untuk immediate sync
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('immediateStockSync', {
+          detail: { productId: id, newStock, timestamp }
+        }));
+      }, 50);
+
+      console.log('🔄 Enhanced stock sync triggers sent for product:', id, 'New stock:', newStock);
       return newStock;
     } catch (error) {
       console.error('❌ Error updating stock:', error);
