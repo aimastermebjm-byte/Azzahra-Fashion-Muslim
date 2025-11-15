@@ -18,6 +18,7 @@ import AdminUsersPage from './components/AdminUsersPage';
 import AdminCacheManagement from './components/AdminCacheManagement';
 import BottomNavigation from './components/BottomNavigation';
 import { OngkirTestPage } from './pages/OngkirTestPage';
+import { useFirebaseProductsRealTime } from './hooks/useFirebaseProductsRealTime';
 import { useFirebaseProducts } from './hooks/useFirebaseProducts';
 import { useFirebaseAuth } from './hooks/useFirebaseAuth';
 import { useAdmin } from './contexts/AdminContext';
@@ -37,7 +38,11 @@ function AppContent() {
 
   // Firebase Authentication
   const { user, login, logout } = useFirebaseAuth();
-  const { products, loading, updateProductStock, loadMoreProducts, hasMore, refreshProducts } = useFirebaseProducts();
+  // Gunakan real-time hook untuk HomePage products
+  const { products, loading, loadMoreProducts, hasMore } = useFirebaseProductsRealTime();
+
+  // Tetap gunakan original hook untuk fungsi update stock dan manual refresh
+  const { updateProductStock, refreshProducts } = useFirebaseProducts();
   const { addOrder } = useAdmin();
 
   // Initialize Firebase-only app on app start
