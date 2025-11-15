@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, orderBy, limit as limitCount, startAfter, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, limit as limitCount, startAfter } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
 
@@ -94,87 +94,39 @@ export const useFirebaseProductsRealTime = () => {
       }
     };
 
-    // SMART HYBRID: Manual load + LIMITED real-time listener for stock only
-    const setupSmartRealTime = () => {
-      try {
-        console.log('🔄 Setting up SMART real-time stock listener (SAFE)...');
+    // EVENT-BASED SYNC ONLY (COST-EFFECTIVE!)
+    const setupEventBasedSync = () => {
+      console.log('🔄 Setting up SAFE event-based sync (ZERO Firebase reads)...');
 
-        const productsRef = collection(db, 'products');
+      // Event listeners for cross-device sync (FREE)
+      const handleStockChange = () => {
+        console.log('📊 Stock change event received (HOME) - refreshing...');
+        loadInitialProducts();
+      };
 
-        // VERY LIMITED: Only listen to first 50 products most likely to have stock changes
-        const q = query(
-          productsRef,
-          orderBy('stock', 'asc'), // Products with low stock first
-          limitCount(50) // ONLY 50 products MAX!
-        );
-
-        // SMART REAL-TIME: Limited scope + automatic disconnect
-        const unsubscribe = onSnapshot(
-          q,
-          (snapshot: any) => {
-            console.log('📊 Smart stock update received:', snapshot.docChanges().length, 'changes');
-
-            // Only refresh if there are actual stock changes
-            let hasStockChange = false;
-            snapshot.docChanges().forEach((change: any) => {
-              const data = change.doc.data();
-              if (data.stock !== undefined) {
-                hasStockChange = true;
-              }
-            });
-
-            if (hasStockChange) {
-              console.log('📈 Stock change detected - refreshing products...');
-              loadInitialProducts();
-            }
-          },
-          (error: any) => {
-            console.error('❌ Smart listener failed, falling back to events only:', error);
-          }
-        );
-
-        // AUTO-DISCONNECT after 5 minutes to prevent runaway reads
-        const autoDisconnect = setTimeout(() => {
-          console.log('⏰ Auto-disconnecting real-time listener (safety measure)');
-          unsubscribe();
-        }, 5 * 60 * 1000); // 5 minutes
-
-        // Event listeners for cross-device sync (FREE)
-        const handleStockChange = () => {
-          console.log('📊 Stock event received (HOME) - refreshing...');
+      const handleStorageChange = (event: StorageEvent) => {
+        if (event.key === 'stock_change_trigger' ||
+            event.key === 'stock_depleted_trigger' ||
+            event.key === 'stock_low_trigger') {
+          console.log('📊 Cross-device stock sync detected (HOME)');
           loadInitialProducts();
-        };
+        }
+      };
 
-        const handleStorageChange = (event: StorageEvent) => {
-          if (event.key === 'stock_change_trigger' ||
-              event.key === 'stock_depleted_trigger' ||
-              event.key === 'stock_low_trigger') {
-            console.log('📊 Cross-device stock sync detected (HOME)');
-            loadInitialProducts();
-          }
-        };
+      window.addEventListener('stockChanged', handleStockChange);
+      window.addEventListener('storage', handleStorageChange);
 
-        window.addEventListener('stockChanged', handleStockChange);
-        window.addEventListener('storage', handleStorageChange);
+      console.log('✅ Event-based sync ready (COST: 0 reads per day!)');
 
-        // Cleanup function with auto-disconnect
-        return () => {
-          unsubscribe();
-          clearTimeout(autoDisconnect);
-          window.removeEventListener('stockChanged', handleStockChange);
-          window.removeEventListener('storage', handleStorageChange);
-          console.log('🔄 Smart real-time system cleaned up');
-        };
-
-      } catch (error) {
-        console.error('❌ Failed smart setup, using events only:', error);
-        return null;
-      }
+      // Cleanup function
+      return () => {
+        window.removeEventListener('stockChanged', handleStockChange);
+        window.removeEventListener('storage', handleStorageChange);
+        console.log('🔄 Event-based sync cleaned up');
+      };
     };
 
-    const cleanup = setupSmartRealTime();
-
-    console.log('✅ Smart hybrid system ready (HOME)');
+    const cleanup = setupEventBasedSync();
 
     // Load initial products
     loadInitialProducts();
