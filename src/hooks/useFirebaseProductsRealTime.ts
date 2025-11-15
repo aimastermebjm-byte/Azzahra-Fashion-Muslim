@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, orderBy, limit as limitCount, startAfter } from 'firebase/firestore';
+import { collection, query, orderBy, limit as limitCount, startAfter, onSnapshot } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
 
@@ -94,29 +94,87 @@ export const useFirebaseProductsRealTime = () => {
       }
     };
 
-    // Event listeners untuk REAL-TIME stock sync (NO FIREBASE READS!)
-    const handleStockChange = () => {
-      console.log('📊 Stock change event received (HOME) - refreshing...');
-      loadInitialProducts(); // Refresh products sekali saja
-    };
+    // SMART HYBRID: Manual load + LIMITED real-time listener for stock only
+    const setupSmartRealTime = () => {
+      try {
+        console.log('🔄 Setting up SMART real-time stock listener (SAFE)...');
 
-    // Cross-device sync dengan localStorage events (FREE!)
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'stock_change_trigger' ||
-          event.key === 'stock_depleted_trigger' ||
-          event.key === 'stock_low_trigger' ||
-          event.key === 'stock_sync_fallback') {
-        console.log('📊 Cross-device stock change detected (HOME) - refreshing...');
-        loadInitialProducts();
+        const productsRef = collection(db, 'products');
+
+        // VERY LIMITED: Only listen to first 50 products most likely to have stock changes
+        const q = query(
+          productsRef,
+          orderBy('stock', 'asc'), // Products with low stock first
+          limitCount(50) // ONLY 50 products MAX!
+        );
+
+        // SMART REAL-TIME: Limited scope + automatic disconnect
+        const unsubscribe = onSnapshot(
+          q,
+          (snapshot: any) => {
+            console.log('📊 Smart stock update received:', snapshot.docChanges().length, 'changes');
+
+            // Only refresh if there are actual stock changes
+            let hasStockChange = false;
+            snapshot.docChanges().forEach((change: any) => {
+              const data = change.doc.data();
+              if (data.stock !== undefined) {
+                hasStockChange = true;
+              }
+            });
+
+            if (hasStockChange) {
+              console.log('📈 Stock change detected - refreshing products...');
+              loadInitialProducts();
+            }
+          },
+          (error: any) => {
+            console.error('❌ Smart listener failed, falling back to events only:', error);
+          }
+        );
+
+        // AUTO-DISCONNECT after 5 minutes to prevent runaway reads
+        const autoDisconnect = setTimeout(() => {
+          console.log('⏰ Auto-disconnecting real-time listener (safety measure)');
+          unsubscribe();
+        }, 5 * 60 * 1000); // 5 minutes
+
+        // Event listeners for cross-device sync (FREE)
+        const handleStockChange = () => {
+          console.log('📊 Stock event received (HOME) - refreshing...');
+          loadInitialProducts();
+        };
+
+        const handleStorageChange = (event: StorageEvent) => {
+          if (event.key === 'stock_change_trigger' ||
+              event.key === 'stock_depleted_trigger' ||
+              event.key === 'stock_low_trigger') {
+            console.log('📊 Cross-device stock sync detected (HOME)');
+            loadInitialProducts();
+          }
+        };
+
+        window.addEventListener('stockChanged', handleStockChange);
+        window.addEventListener('storage', handleStorageChange);
+
+        // Cleanup function with auto-disconnect
+        return () => {
+          unsubscribe();
+          clearTimeout(autoDisconnect);
+          window.removeEventListener('stockChanged', handleStockChange);
+          window.removeEventListener('storage', handleStorageChange);
+          console.log('🔄 Smart real-time system cleaned up');
+        };
+
+      } catch (error) {
+        console.error('❌ Failed smart setup, using events only:', error);
+        return null;
       }
     };
 
-    // Setup event listeners (SAFE - no Firebase reads!)
-    window.addEventListener('stockChanged', handleStockChange);
-    window.addEventListener('immediateStockSync', handleStockChange);
-    window.addEventListener('storage', handleStorageChange);
+    const cleanup = setupSmartRealTime();
 
-    console.log('✅ SAFE event listeners setup complete (HOME)');
+    console.log('✅ Smart hybrid system ready (HOME)');
 
     // Load initial products
     loadInitialProducts();
@@ -132,15 +190,15 @@ export const useFirebaseProductsRealTime = () => {
     }, 8000);
 
     return () => {
-      // Cleanup event listeners
-      window.removeEventListener('stockChanged', handleStockChange);
-      window.removeEventListener('immediateStockSync', handleStockChange);
-      window.removeEventListener('storage', handleStorageChange);
+      // Cleanup smart real-time system
+      if (cleanup && typeof cleanup === 'function') {
+        cleanup();
+      }
 
       if (mobileTimeout) {
         clearTimeout(mobileTimeout);
       }
-      console.log('🔄 Safe products system cleaned up (HOME)');
+      console.log('🔄 Smart hybrid products system cleaned up (HOME)');
     };
   }, [productsPerPage]);
 
