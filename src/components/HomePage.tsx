@@ -6,6 +6,7 @@ import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
 import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
 import { cartService } from '../services/cartService';
+import { SearchCacheKey } from '../types/cache';
 
 interface HomePageProps {
   user: any;
@@ -19,6 +20,11 @@ interface HomePageProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   onRefreshProducts?: () => void;
+  featuredProducts?: Product[];
+  featuredLoading?: boolean;
+  flashSaleProducts?: Product[];
+  flashSaleLoading?: boolean;
+  searchProducts?: (params: SearchCacheKey) => Promise<any>;
 }
 
 const HomePage: React.FC<HomePageProps> = ({
@@ -32,13 +38,23 @@ const HomePage: React.FC<HomePageProps> = ({
   onNavigateToFlashSale,
   onLoadMore,
   hasMore = true,
-  onRefreshProducts
+  featuredProducts = [],
+  featuredLoading = false,
+  flashSaleProducts = [],
+  flashSaleLoading = false,
+  onRefreshProducts,
+  searchProducts
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'ready' | 'po'>('all');
   const [cartCount, setCartCount] = useState(0);
-  const [sortBy, setSortBy] = useState<'terbaru' | 'terlaris' | 'termurah' | 'termahal' | 'terlama'>('terbaru');
+  const [sortBy, setSortBy] = useState<'terbaru' | 'termurah'>('terbaru');
+
+  // Search states for cache functionality
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   // Infinite scroll with Intersection Observer
   const observer = useRef<IntersectionObserver | null>(null);
@@ -52,7 +68,7 @@ const HomePage: React.FC<HomePageProps> = ({
     if (!user?.uid) return;
 
     try {
-      const cartItems = await cartService.getCart(user.uid);
+      const cartItems = await cartService.getCart();
       setCartCount(cartItems.length);
     } catch (error) {
       console.error('Failed to load cart count:', error);
@@ -111,6 +127,44 @@ const HomePage: React.FC<HomePageProps> = ({
       clearInterval(interval);
     };
   }, [user]);
+
+  // Debounced search with cache support
+  useEffect(() => {
+    if (!searchQuery || !searchProducts) {
+      setShowSearchResults(false);
+      setSearchResults([]);
+      return;
+    }
+
+    const searchTimeout = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        console.log('🔍 Searching with cache support:', searchQuery);
+
+        const searchParams: SearchCacheKey = {
+          query: searchQuery,
+          category: selectedCategory !== 'all' ? selectedCategory : undefined,
+          status: statusFilter !== 'all' ? statusFilter : undefined,
+          sortBy: sortBy,
+          userRole: user?.role || 'customer',
+          page: 1
+        };
+
+        const results = await searchProducts(searchParams);
+        setSearchResults(results.products || []);
+        setShowSearchResults(true);
+        console.log('✅ Search completed:', results.products?.length, 'results');
+      } catch (error) {
+        console.error('❌ Search error:', error);
+        setSearchResults([]);
+        setShowSearchResults(true);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(searchTimeout);
+  }, [searchQuery, selectedCategory, statusFilter, sortBy, user?.role, searchProducts]);
 
   const handleBannerClick = (banner: any) => {
     if (banner.type === 'flashsale') {
@@ -173,30 +227,14 @@ const HomePage: React.FC<HomePageProps> = ({
     switch (sortBy) {
       case 'terbaru':
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      case 'terlama':
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      case 'terlaris':
-        return (b.salesCount || 0) - (a.salesCount || 0);
       case 'termurah':
         const priceA = user?.role === 'reseller' ? a.resellerPrice : a.retailPrice;
         const priceB = user?.role === 'reseller' ? b.resellerPrice : b.retailPrice;
         return priceA - priceB;
-      case 'termahal':
-        const priceA2 = user?.role === 'reseller' ? a.resellerPrice : a.retailPrice;
-        const priceB2 = user?.role === 'reseller' ? b.resellerPrice : b.retailPrice;
-        return priceB2 - priceA2;
       default:
         return 0;
     }
   });
-
-  // Get featured products from current products
-  const featuredProducts = React.useMemo(() => {
-    // Use products from props instead of AppStorage
-    const featured = safeProducts.filter(p => p.isFeatured);
-    // Return only actual featured products (no fallback)
-    return featured;
-  }, [safeProducts]); // Depend on safeProducts only
 
   // Regular products (ALL PRODUCTS - show all at once for faster loading)
   const regularProducts = React.useMemo(() => {
@@ -210,8 +248,8 @@ const HomePage: React.FC<HomePageProps> = ({
     }
   }, [sortedProducts, safeProducts]);
 
-  // Show ALL products at once - no pagination for better UX and faster loading
-  const currentProducts = regularProducts; // Show all products
+  // Show search results when searching, otherwise show regular products
+  const currentProducts = showSearchResults ? searchResults : regularProducts;
 
   
   // Listen for featured products updates from admin
@@ -396,7 +434,7 @@ const HomePage: React.FC<HomePageProps> = ({
           </div>
 
           {/* Flash Sale Products */}
-          {loading ? (
+          {flashSaleLoading ? (
             <div className="grid grid-cols-2 gap-3">
               {[...Array(2)].map((_, index) => (
                 <div key={`flash-skeleton-${index}`} className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
@@ -408,8 +446,7 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              {safeProducts
-                .filter(product => product.isFlashSale && isFlashSaleActive)
+              {flashSaleProducts
                 .slice(0, 2)
                 .map((product) => (
                   <div
@@ -441,7 +478,7 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
           )}
 
-          {safeProducts.filter(product => product.isFlashSale && isFlashSaleActive).length === 0 && !loading && (
+          {flashSaleProducts.length === 0 && !flashSaleLoading && isFlashSaleActive && (
             <div className="text-center py-4 text-red-100">
               <span className="text-3xl">🚫</span>
               <p className="text-sm mt-1">Tidak ada Flash Sale saat ini</p>
@@ -460,7 +497,7 @@ const HomePage: React.FC<HomePageProps> = ({
         </div>
 
         {/* Loading skeleton for featured products */}
-        {loading ? (
+        {featuredLoading ? (
           <div className="grid grid-cols-2 gap-4">
             {[...Array(2)].map((_, index) => (
               <div key={`skeleton-${index}`} className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -582,17 +619,7 @@ const HomePage: React.FC<HomePageProps> = ({
             >
               Terbaru
             </button>
-            <button
-              onClick={() => setSortBy('terlaris')}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                sortBy === 'terlaris'
-                  ? 'bg-pink-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              Terlaris
-            </button>
-            <button
+                        <button
               onClick={() => setSortBy('termurah')}
               className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 sortBy === 'termurah'
@@ -602,36 +629,29 @@ const HomePage: React.FC<HomePageProps> = ({
             >
               Termurah
             </button>
-            <button
-              onClick={() => setSortBy('termahal')}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                sortBy === 'termahal'
-                  ? 'bg-pink-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              Termahal
-            </button>
-            <button
-              onClick={() => setSortBy('terlama')}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                sortBy === 'terlama'
-                  ? 'bg-pink-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              Terlama
-            </button>
-          </div>
+                      </div>
         </div>
 
-        {filteredProducts.length === 0 ? (
+        {isSearching ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+            <h3 className="text-lg font-semibold text-gray-600 mb-2">Mencari produk...</h3>
+            <p className="text-gray-500">Mohon tunggu sebentar</p>
+          </div>
+        ) : currentProducts.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <Search className="w-12 h-12 mx-auto" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-600 mb-2">Produk tidak ditemukan</h3>
-            <p className="text-gray-500">Coba kata kunci lain atau pilih kategori berbeda</p>
+            <h3 className="text-lg font-semibold text-gray-600 mb-2">
+              {showSearchResults ? 'Tidak ada hasil pencarian' : 'Produk tidak ditemukan'}
+            </h3>
+            <p className="text-gray-500">
+              {showSearchResults
+                ? 'Coba kata kunci pencarian lain atau filter berbeda'
+                : 'Coba kata kunci lain atau pilih kategori berbeda'
+              }
+            </p>
           </div>
         ) : (
           <>

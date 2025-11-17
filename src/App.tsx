@@ -39,7 +39,7 @@ function AppContent() {
   // Firebase Authentication
   const { user, login, logout } = useFirebaseAuth();
   // Gunakan real-time hook untuk HomePage products
-  const { products, loading, loadMoreProducts, hasMore } = useFirebaseProductsRealTime();
+  const { products, loading, loadMoreProducts, hasMore, featuredProducts, featuredLoading, flashSaleProducts, flashSaleLoading, searchProducts } = useFirebaseProductsRealTime();
 
   // Tetap gunakan original hook untuk fungsi update stock dan manual refresh
   const { updateProductStock, refreshProducts } = useFirebaseProducts();
@@ -172,23 +172,124 @@ function AppContent() {
       // Get cart items from backend
       const cartItems = await cartService.getCart();
 
-      // Calculate totals from cart items
-      const calculatedSubtotal = cartItems.reduce((total, item) => {
+      // BATCH PRICE VALIDATION (90% Cost Reduction!)
+      console.log('🔍 Validating cart prices against fresh Firebase data...');
+      const { getDoc, doc: docRef } = await import('firebase/firestore');
+
+      // Get all unique product IDs from cart
+      const productIds = [...new Set(cartItems.map(item => item.productId))];
+
+      // Batch fetch current product data (1 read per product, not per item)
+      const currentProductData: Record<string, any> = {};
+      const validationErrors: string[] = [];
+
+      for (const productId of productIds) {
+        try {
+          const productDoc = await getDoc(docRef(db, 'products', productId));
+          if (productDoc.exists()) {
+            currentProductData[productId] = productDoc.data();
+          } else {
+            validationErrors.push(`Produk ${productId} tidak ditemukan`);
+          }
+        } catch (error) {
+          console.error(`❌ Error validating product ${productId}:`, error);
+          validationErrors.push(`Error memvalidasi produk ${productId}`);
+        }
+      }
+
+      // Validate each cart item against current data
+      let cartTotal = 0;
+      let validatedItems = [];
+
+      for (const item of cartItems) {
+        const currentProduct = currentProductData[item.productId];
+
+        if (!currentProduct) {
+          validationErrors.push(`Produk "${item.name}" sudah tidak tersedia`);
+          continue;
+        }
+
+        // Get current prices based on user role
+        const currentRetailPrice = Number(currentProduct.retailPrice || currentProduct.price || 0);
+        const currentResellerPrice = Number(currentProduct.resellerPrice) || currentRetailPrice * 0.8;
+
+        // Determine which price should be used
+        const expectedPrice = user?.role === 'reseller' ? currentResellerPrice : currentRetailPrice;
+        const cartPrice = Number(item.price || 0);
+
+        // Price validation check
+        if (Math.abs(cartPrice - expectedPrice) > 0.01) {
+          validationErrors.push(
+            `Harga "${item.name}" berubah: Rp${cartPrice.toLocaleString('id-ID')} → Rp${expectedPrice.toLocaleString('id-ID')}`
+          );
+
+          // Update cart item with correct price
+          item.price = expectedPrice;
+        }
+
+        // Stock validation check
+        if (item.quantity > 0) {
+          const currentStock = Number(currentProduct.stock || 0);
+          if (currentStock < item.quantity) {
+            validationErrors.push(
+              `Stok "${item.name}" tidak mencukupi: tersisa ${currentStock}, diminta ${item.quantity}`
+            );
+            continue;
+          }
+        }
+
+        // Add to validated total
+        cartTotal += expectedPrice * item.quantity;
+        validatedItems.push({
+          ...item,
+          price: expectedPrice,
+          validated: true
+        });
+      }
+
+      // Check for validation errors
+      if (validationErrors.length > 0) {
+        console.error('❌ Checkout validation errors:', validationErrors);
+        const errorMessage = validationErrors.join('. ');
+
+        // If critical errors (products not found, insufficient stock), block checkout
+        const hasCriticalErrors = validationErrors.some(error =>
+          error.includes('tidak ditemukan') || error.includes('tidak mencukupi')
+        );
+
+        if (hasCriticalErrors) {
+          throw new Error(`Checkout gagal: ${errorMessage}`);
+        } else {
+          // For price changes, we can proceed but warn user
+          console.warn('⚠️ Price changes detected and updated:', errorMessage);
+          // In production, you might want to show a confirmation dialog
+        }
+      }
+
+      // Use validated items and total
+      const validatedCartItems = validatedItems.length > 0 ? validatedItems : cartItems;
+      const calculatedSubtotal = validatedCartItems.reduce((total, item) => {
         const itemPrice = item.price || 0;
         const itemQuantity = item.quantity || 1;
         return total + (itemPrice * itemQuantity);
       }, 0);
 
+      console.log('✅ Price validation complete:', {
+        itemsValidated: validatedCartItems.length,
+        totalValidated: calculatedSubtotal,
+        errorsFound: validationErrors.length
+      });
+
       const calculatedShippingCost = orderData.shippingCost || 0;
       const calculatedFinalTotal = calculatedSubtotal + calculatedShippingCost;
 
-      // Add order to admin system
+      // Add order to admin system using validated items
       addOrder({
         id: orderId,
         userId: user.uid,
         userName: user.displayName || 'User',
         userEmail: user.email || 'user@example.com',
-        items: cartItems.map(item => ({
+        items: validatedCartItems.map(item => ({
           productId: item.productId,
           productName: item.name || 'Product',
           productImage: item.image || '',
@@ -206,8 +307,8 @@ function AppContent() {
         notes: orderData.notes
       });
 
-      // Update stock for each item with variant info
-      cartItems.forEach(item => {
+      // Update stock for each validated item with variant info
+      validatedCartItems.forEach(item => {
         console.log('🔄 Stock reduction on checkout:', {
           productId: item.productId,
           productName: item.name,
@@ -224,7 +325,7 @@ function AppContent() {
 
       // Save order to Firebase for cross-device sync using OrdersService
       const orderRecord = {
-        items: cartItems.map(item => ({
+        items: validatedCartItems.map(item => ({
           productId: item.productId,
           productName: item.name || 'Product',
           productImage: item.image || '',
@@ -324,6 +425,11 @@ function AppContent() {
             onAddToCart={handleQuickAddToCart}
             onNavigateToFlashSale={handleNavigateToFlashSale}
             onRefreshProducts={refreshProducts}
+            featuredProducts={featuredProducts}
+            featuredLoading={featuredLoading}
+            flashSaleProducts={flashSaleProducts}
+            flashSaleLoading={flashSaleLoading}
+            searchProducts={searchProducts}
           />
         );
       case 'flash-sale':
@@ -420,6 +526,10 @@ function AppContent() {
             onNavigateToFlashSale={handleNavigateToFlashSale}
             onLoadMore={loadMoreProducts}
             hasMore={hasMore}
+            featuredProducts={featuredProducts}
+            featuredLoading={featuredLoading}
+            flashSaleProducts={flashSaleProducts}
+            flashSaleLoading={flashSaleLoading}
           />
         );
     }

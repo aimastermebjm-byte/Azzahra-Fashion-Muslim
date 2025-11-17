@@ -14,6 +14,7 @@ import {
   startAfter
 } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
+import { invalidateProductCache } from '../utils/productCache';
 
 export const useFirebaseProducts = () => {
 
@@ -223,6 +224,14 @@ export const useFirebaseProducts = () => {
 
       console.log('✅ Product added successfully:', docRef.id);
 
+      // CACHE INVALIDATION: Invalidate all cache when new product is added
+      invalidateProductCache({
+        type: 'product_update',
+        productIds: [docRef.id],
+        timestamp: Date.now(),
+        triggerBy: 'admin'
+      });
+
       // Trigger cross-device refresh menggunakan localStorage
       localStorage.setItem('product_change_trigger', Date.now().toString());
 
@@ -250,6 +259,21 @@ export const useFirebaseProducts = () => {
       console.log('📝 Updating product:', id, updates);
       await updateDoc(docRef, updates);
       console.log('✅ Product updated successfully');
+
+      // CACHE INVALIDATION: Invalidate appropriate cache based on update type
+      let invalidationType: 'product_update' | 'featured_update' | 'flashsale_update' = 'product_update';
+      if ('isFeatured' in updates) {
+        invalidationType = 'featured_update';
+      } else if ('isFlashSale' in updates) {
+        invalidationType = 'flashsale_update';
+      }
+
+      invalidateProductCache({
+        type: invalidationType,
+        productIds: [id],
+        timestamp: Date.now(),
+        triggerBy: 'admin'
+      });
 
       // Trigger cross-device refresh menggunakan localStorage
       if ('isFeatured' in updates) {
@@ -283,6 +307,14 @@ export const useFirebaseProducts = () => {
       console.log('🗑️ Deleting product:', id);
       await deleteDoc(doc(db, 'products', id));
       console.log('✅ Product deleted successfully');
+
+      // CACHE INVALIDATION: Invalidate all cache when product is deleted
+      invalidateProductCache({
+        type: 'product_update',
+        productIds: [id],
+        timestamp: Date.now(),
+        triggerBy: 'admin'
+      });
 
       // Trigger cross-device refresh menggunakan localStorage
       localStorage.setItem('product_change_trigger', Date.now().toString());
@@ -367,6 +399,14 @@ export const useFirebaseProducts = () => {
 
       // Perform the update - OPTIMIZED: tanpa debug logging yang berlebihan
       await updateDoc(docRef, updateData);
+
+      // CACHE INVALIDATION: Invalidate cache when stock changes
+      invalidateProductCache({
+        type: 'stock_change',
+        productIds: [id],
+        timestamp: Date.now(),
+        triggerBy: 'system'
+      });
 
       // OPTIMISTIC UPDATE: Cepat untuk UI response
       setProducts(prev => prev.map(p =>
