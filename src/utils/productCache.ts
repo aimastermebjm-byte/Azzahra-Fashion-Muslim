@@ -7,7 +7,6 @@ import {
   CacheEntry,
   CacheConfig,
   SearchCacheKey,
-  ProductCacheKey,
   CacheStats,
   SearchResult,
   ProductListCache,
@@ -27,12 +26,16 @@ class ProductCache {
   constructor() {
     this.config = {
       ttl: CACHE_CONFIG.TTL.HOME,
-      maxSize: CACHE_CONFIG.MAX_SIZE,
+      maxSize: Math.min(CACHE_CONFIG.MAX_SIZE, 2.5 * 1024 * 1024), // Max 2.5MB to prevent quota issues
       version: CACHE_CONFIG.VERSION
     };
 
+    // Clear cache if version changed
+    this.clearIfVersionChanged();
+
     this.stats = this.loadStats();
     this.cleanupExpiredEntries();
+    this.enforceSizeLimit(); // Ensure we don't exceed quota on init
   }
 
   /**
@@ -77,6 +80,24 @@ class ProductCache {
       page,
       role: userRole
     });
+  }
+
+  /**
+   * Clear cache if version changed
+   */
+  private clearIfVersionChanged(): void {
+    try {
+      const versionKey = this.storageKey + '_version';
+      const currentVersion = localStorage.getItem(versionKey);
+
+      if (currentVersion !== this.config.version) {
+        console.log(`🆕 Cache version changed from ${currentVersion} to ${this.config.version}, clearing cache`);
+        this.clear();
+        localStorage.setItem(versionKey, this.config.version);
+      }
+    } catch (error) {
+      console.error('❌ Error checking cache version:', error);
+    }
   }
 
   /**
@@ -126,16 +147,19 @@ class ProductCache {
   }
 
   /**
-   * Save cache entry to localStorage
+   * Save cache entry to localStorage with quota management
    */
   private saveToStorage(key: string, data: any, ttl: number = this.config.ttl): void {
     try {
+      // Optimize data size before saving
+      const optimizedData = this.optimizeDataSize(data);
+
       const cacheData = localStorage.getItem(this.storageKey);
       const cache: Record<string, CacheEntry> = cacheData ? JSON.parse(cacheData) : {};
 
       const now = Date.now();
       const entry: CacheEntry = {
-        data,
+        data: optimizedData,
         metadata: {
           timestamp: now,
           expiresAt: now + ttl,
@@ -151,10 +175,56 @@ class ProductCache {
         this.cleanupOldEntries(cache);
       }
 
-      localStorage.setItem(this.storageKey, JSON.stringify(cache));
-      this.triggerSyncEvent(key, 'save');
-    } catch (error) {
-      console.error('❌ Error saving to cache:', error);
+      // Double-check size after cleanup and enforce limit
+      this.enforceSizeLimit(cache);
+
+      const jsonString = JSON.stringify(cache);
+
+      // Check if we're still within quota before setting
+      if (this.isWithinQuota(jsonString)) {
+        localStorage.setItem(this.storageKey, jsonString);
+        this.triggerSyncEvent(key, 'save');
+      } else {
+        // Emergency cleanup if still too large
+        this.emergencyCleanup(cache);
+        const cleanedJson = JSON.stringify(cache);
+        if (this.isWithinQuota(cleanedJson)) {
+          localStorage.setItem(this.storageKey, cleanedJson);
+          this.triggerSyncEvent(key, 'save');
+        } else {
+          console.warn('⚠️ Cache data too large for localStorage, skipping cache save');
+          this.stats.misses++;
+          this.saveStats();
+        }
+      }
+    } catch (error: any) {
+      if (error.name === 'QuotaExceededError') {
+        console.warn('⚠️ localStorage quota exceeded, clearing cache and retrying');
+        this.clear();
+        // Retry once with empty cache
+        try {
+          const retryData = this.optimizeDataSize(data);
+          const retryEntry: CacheEntry = {
+            data: retryData,
+            metadata: {
+              timestamp: Date.now(),
+              expiresAt: Date.now() + ttl,
+              version: this.config.version,
+              source: 'localStorage'
+            }
+          };
+          const retryCache = { [key]: retryEntry };
+          const retryJson = JSON.stringify(retryCache);
+          if (this.isWithinQuota(retryJson)) {
+            localStorage.setItem(this.storageKey, retryJson);
+            this.triggerSyncEvent(key, 'save');
+          }
+        } catch (retryError) {
+          console.error('❌ Even retry failed, disabling cache temporarily:', retryError);
+        }
+      } else {
+        console.error('❌ Error saving to cache:', error);
+      }
     }
   }
 
@@ -457,6 +527,164 @@ class ProductCache {
     } catch (error) {
       console.error('❌ Error triggering sync event:', error);
     }
+  }
+
+  /**
+   * Optimize data size by removing unnecessary fields and compressing
+   */
+  private optimizeDataSize(data: any): any {
+    if (Array.isArray(data)) {
+      // For product arrays, keep only essential fields
+      return data.map(product => ({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        retailPrice: product.retailPrice,
+        resellerPrice: product.resellerPrice,
+        stock: product.stock,
+        images: product.images?.slice(0, 2), // Keep only first 2 images
+        category: product.category,
+        status: product.status,
+        variants: product.variants ? {
+          sizes: product.variants.sizes?.slice(0, 3), // Keep max 3 sizes
+          colors: product.variants.colors?.slice(0, 3), // Keep max 3 colors
+          stock: product.variants.stock
+        } : undefined
+      }));
+    } else if (data && typeof data === 'object') {
+      // For objects with products array
+      if (data.products && Array.isArray(data.products)) {
+        return {
+          ...data,
+          products: data.products.slice(0, 20).map((product: any) => ({ // Max 20 products
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            retailPrice: product.retailPrice,
+            resellerPrice: product.resellerPrice,
+            stock: product.stock,
+            images: product.images?.slice(0, 2),
+            category: product.category,
+            status: product.status,
+            variants: product.variants ? {
+              sizes: product.variants.sizes?.slice(0, 3),
+              colors: product.variants.colors?.slice(0, 3),
+              stock: product.variants.stock
+            } : undefined
+          }))
+        };
+      }
+      // For other objects, remove unnecessary fields
+      const optimized: any = {};
+      Object.keys(data).forEach(key => {
+        if (key !== 'lastVisible' && key !== 'fullSnapshot') {
+          optimized[key] = data[key];
+        }
+      });
+      return optimized;
+    }
+    return data;
+  }
+
+  /**
+   * Check if data is within localStorage quota
+   */
+  private isWithinQuota(jsonString: string): boolean {
+    try {
+      const testData = 'quota_test_' + Date.now();
+      localStorage.setItem(testData, jsonString);
+      localStorage.removeItem(testData);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Enforce strict size limit on cache
+   */
+  private enforceSizeLimit(cache?: Record<string, CacheEntry>): void {
+    const cacheToCheck = cache || (() => {
+      try {
+        const cacheData = localStorage.getItem(this.storageKey);
+        return cacheData ? JSON.parse(cacheData) : {};
+      } catch {
+        return {};
+      }
+    })();
+
+    let currentSize = this.getCacheSize(cacheToCheck);
+    const targetSize = this.config.maxSize * 0.7; // Target 70% of max size
+
+    if (currentSize > targetSize) {
+      const entries = Object.entries(cacheToCheck);
+
+      // Sort by priority: keep search and featured items longer
+      entries.sort(([keyA, entryA], [keyB, entryB]) => {
+        const priorityA = this.getCachePriority(keyA);
+        const priorityB = this.getCachePriority(keyB);
+
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB; // Lower priority number = higher priority to keep
+        }
+
+        // If same priority, keep newer entries
+        return (entryA as CacheEntry).metadata.timestamp - (entryB as CacheEntry).metadata.timestamp;
+      });
+
+      // Remove entries until we're under target size
+      let removedCount = 0;
+      for (const [key] of entries) {
+        if (currentSize <= targetSize) break;
+        delete cacheToCheck[key];
+        currentSize = this.getCacheSize(cacheToCheck);
+        removedCount++;
+      }
+
+      if (removedCount > 0 && !cache) {
+        // Only save back if we're working with localStorage data
+        try {
+          localStorage.setItem(this.storageKey, JSON.stringify(cacheToCheck));
+          console.log(`🗑️ Enforced size limit: removed ${removedCount} cache entries`);
+        } catch (error) {
+          console.error('❌ Error saving after size enforcement:', error);
+        }
+      }
+    }
+  }
+
+  /**
+   * Get cache priority for retention (lower number = higher priority)
+   */
+  private getCachePriority(key: string): number {
+    if (key.includes(CACHE_KEYS.FEATURED)) return 1; // Keep featured products longest
+    if (key.includes(CACHE_KEYS.SEARCH)) return 2; // Keep search results
+    if (key.includes(CACHE_KEYS.HOME)) return 3; // Keep home products
+    if (key.includes(CACHE_KEYS.FLASHSALE)) return 4; // Keep flash sale
+    return 5; // Everything else has lowest priority
+  }
+
+  /**
+   * Emergency cleanup when quota is exceeded
+   */
+  private emergencyCleanup(cache: Record<string, CacheEntry>): void {
+    console.warn('🚨 Emergency cache cleanup triggered');
+
+    // Remove all but the highest priority entries
+    const entries = Object.entries(cache);
+    entries.sort(([keyA], [keyB]) =>
+      this.getCachePriority(keyA) - this.getCachePriority(keyB)
+    );
+
+    // Keep only top 3 entries by priority
+    const keysToKeep = entries.slice(0, 3).map(([key]) => key);
+    const keysToRemove = entries.slice(3).map(([key]) => key);
+
+    keysToRemove.forEach(key => {
+      delete cache[key];
+    });
+
+    console.log(`🚨 Emergency cleanup: removed ${keysToRemove.length} entries, kept ${keysToKeep.length}`);
   }
 
   /**
