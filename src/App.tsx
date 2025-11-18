@@ -22,7 +22,7 @@ import AdminUsersPage from './components/AdminUsersPage';
 import AdminCacheManagement from './components/AdminCacheManagement';
 import BottomNavigation from './components/BottomNavigation';
 import { OngkirTestPage } from './pages/OngkirTestPage';
-import { useFirebaseProductsRealTime } from './hooks/useFirebaseProductsRealTime';
+import { useFirebaseProductsRealTimeSimple } from './hooks/useFirebaseProductsRealTimeSimple';
 import { useFirebaseProducts } from './hooks/useFirebaseProducts';
 import { useFirebaseAuth } from './hooks/useFirebaseAuth';
 import { useAdmin } from './contexts/AdminContext';
@@ -42,8 +42,8 @@ function AppContent() {
 
   // Firebase Authentication
   const { user, login, logout } = useFirebaseAuth();
-  // Gunakan real-time hook untuk HomePage products
-  const { products, loading, loadMoreProducts, hasMore, featuredProducts, featuredLoading, flashSaleProducts, flashSaleLoading, searchProducts } = useFirebaseProductsRealTime();
+  // Gunakan simple hook untuk HomePage products (NO CACHE)
+  const { products, loading, loadMore, hasMore, searchProducts, refresh } = useFirebaseProductsRealTimeSimple();
 
   // Tetap gunakan original hook untuk fungsi update stock dan manual refresh
   const { updateProductStock, refreshProducts } = useFirebaseProducts();
@@ -428,11 +428,9 @@ function AppContent() {
             onCartClick={handleCartClick}
             onAddToCart={handleQuickAddToCart}
             onNavigateToFlashSale={handleNavigateToFlashSale}
-            onRefreshProducts={refreshProducts}
-            featuredProducts={featuredProducts}
-            featuredLoading={featuredLoading}
-            flashSaleProducts={flashSaleProducts}
-            flashSaleLoading={flashSaleLoading}
+            onLoadMore={loadMore}
+            hasMore={hasMore}
+            onRefreshProducts={refresh}
             searchProducts={searchProducts}
           />
         );

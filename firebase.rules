@@ -7,6 +7,12 @@ service firebase.storage {
       allow read, write: if request.auth != null && request.auth.uid != null;
     }
 
+    // Allow read/write access for product images (for migration and app usage)
+    match /products/{productId}/{allPaths=**} {
+      allow read: if true; // Public read access for product images
+      allow write: if true; // Temporary open access for migration
+    }
+
     // Allow general read access for public files (if needed in future)
     match /public/{allPaths=**} {
       allow read: if true;

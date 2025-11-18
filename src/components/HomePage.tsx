@@ -4,10 +4,8 @@ import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
-import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
-import { FlashSaleProduct } from '../utils/flashSaleCache';
+import { useFirebaseFlashSaleSimple } from '../hooks/useFirebaseFlashSaleSimple';
 import { cartService } from '../services/cartService';
-import { SearchCacheKey } from '../types/cache';
 
 interface HomePageProps {
   user: any;
@@ -21,9 +19,7 @@ interface HomePageProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   onRefreshProducts?: () => void;
-  featuredProducts?: Product[];
-  featuredLoading?: boolean;
-  searchProducts?: (params: SearchCacheKey) => Promise<any>;
+  searchProducts?: (params: any) => Promise<any>;
 }
 
 const HomePage: React.FC<HomePageProps> = ({
@@ -37,8 +33,6 @@ const HomePage: React.FC<HomePageProps> = ({
   onNavigateToFlashSale,
   onLoadMore,
   hasMore = true,
-  featuredProducts = [],
-  featuredLoading = false,
   onRefreshProducts,
   searchProducts
 }) => {
@@ -57,13 +51,13 @@ const HomePage: React.FC<HomePageProps> = ({
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // Flash sale hook for countdown timer AND products
+  // Flash sale hook for countdown timer AND products (NO CACHE)
   const {
     timeLeft,
     isFlashSaleActive,
     flashSaleProducts: hookFlashSaleProducts,
     loading: flashSaleLoading
-  } = useFirebaseFlashSale();
+  } = useFirebaseFlashSaleSimple();
 
   // Load cart count from backend
   const loadCartCount = async () => {
@@ -531,7 +525,7 @@ const HomePage: React.FC<HomePageProps> = ({
         </div>
 
         {/* Loading skeleton for featured products */}
-        {featuredLoading ? (
+        {loading ? (
           <div className="grid grid-cols-2 gap-4">
             {[...Array(2)].map((_, index) => (
               <div key={`skeleton-${index}`} className="bg-white rounded-lg shadow-md overflow-hidden">
