@@ -42,6 +42,9 @@ const HomePage: React.FC<HomePageProps> = ({
   const [cartCount, setCartCount] = useState(0);
   const [sortBy, setSortBy] = useState<'terbaru' | 'termurah'>('terbaru');
 
+  // Filter featured products from the products array
+  const featuredProducts = products.filter(product => product.isFeatured);
+
   // Search states for cache functionality
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
