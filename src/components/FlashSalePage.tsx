@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { ShoppingCart, Zap, Flame, Percent } from 'lucide-react';
 import ProductCard from './ProductCard';
 import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
@@ -6,8 +6,6 @@ import { useRealTimeCart } from '../hooks/useRealTimeCart';
 
 interface FlashSalePageProps {
   user: any;
-  products: any[];
-  loading: boolean;
   onProductClick: (product: any) => void;
   onCartClick: () => void;
   onAddToCart: (product: any) => void;
@@ -15,53 +13,25 @@ interface FlashSalePageProps {
 
 const FlashSalePage: React.FC<FlashSalePageProps> = ({
   user,
-  products,
-  loading,
   onProductClick,
   onCartClick,
   onAddToCart
 }) => {
-  const { timeLeft, isFlashSaleActive, loading: flashSaleLoading } = useFirebaseFlashSale();
+  // Use the same hook as HomePage for consistency
+  const {
+    timeLeft,
+    isFlashSaleActive,
+    flashSaleProducts,
+    loading: flashSaleLoading
+  } = useFirebaseFlashSale();
   const { cartItems } = useRealTimeCart();
-
-  
-  // Flash sale events now handled by useFirebaseFlashSale hook - real-time updates from Firebase
-
-  // Flash sale status now handled by useFirebaseFlashSale hook - no need for localStorage checking
-
-  // Product updates now handled by parent component re-render when products prop changes
 
   const handleAddToCart = (product: any) => {
     onAddToCart(product);
   };
 
-  // Flash sale products - SAME LOGIC AS HOME PAGE for consistency
-  const flashSaleProducts = useMemo(() => {
-    try {
-      // Safety check: ensure products is an array (same as HomePage)
-      if (!Array.isArray(products) || products.length === 0) {
-        console.warn('⚠️ FlashSale: Products array is empty or invalid');
-        return [];
-      }
 
-      // Simple validation like HomePage
-      const validProducts = products.filter(p => p && p.id && p.name);
-
-      // SAME FILTERING LOGIC AS HOME PAGE: product.isFlashSale && isFlashSaleActive
-      const filtered = validProducts.filter(product => {
-        return product.isFlashSale && isFlashSaleActive;
-      });
-
-      
-      return filtered;
-    } catch (error) {
-      console.error('🚨 Error in flashSaleProducts calculation:', error);
-      return [];
-    }
-  }, [products, isFlashSaleActive]);
-
-  
-  if (loading) {
+  if (flashSaleLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
         <div className="text-white text-xl">Loading flash sale products...</div>
@@ -193,16 +163,38 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
 
         {/* Products Grid */}
         <div className="grid grid-cols-2 gap-4">
-          {flashSaleProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onProductClick={onProductClick}
-              onAddToCart={handleAddToCart}
-              isFlashSale={true}
-              user={user}
-            />
-          ))}
+          {flashSaleProducts.map((flashProduct) => {
+            // Convert FlashSaleProduct to Product type
+            const product = {
+              id: flashProduct.id,
+              name: flashProduct.name,
+              price: flashProduct.price,
+              retailPrice: flashProduct.retailPrice || flashProduct.price,
+              resellerPrice: flashProduct.resellerPrice || flashProduct.price * 0.8,
+              costPrice: flashProduct.price * 0.6, // Estimate cost price
+              description: flashProduct.name, // Use name as description
+              stock: flashProduct.stock,
+              images: flashProduct.images,
+              image: flashProduct.image,
+              category: flashProduct.category,
+              status: flashProduct.status as "ready" | "po",
+              createdAt: flashProduct.createdAt,
+              featuredOrder: flashProduct.featuredOrder,
+              variants: flashProduct.variants,
+              isFlashSale: flashProduct.isFlashSale,
+              flashSalePrice: flashProduct.flashSalePrice || flashProduct.price * 0.8
+            };
+            return (
+              <ProductCard
+                key={`flash-${product.id}`}
+                product={product}
+                onProductClick={onProductClick}
+                onAddToCart={handleAddToCart}
+                isFlashSale={true}
+                user={user}
+              />
+            );
+          })}
         </div>
       </div>
     </div>

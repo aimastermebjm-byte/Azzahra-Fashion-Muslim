@@ -440,10 +440,7 @@ function AppContent() {
         return (
           <FlashSalePage
             user={user}
-            products={products}
-            loading={loading}
             onProductClick={handleProductClick}
-            onLoginRequired={handleLoginRequired}
             onCartClick={handleCartClick}
             onAddToCart={handleQuickAddToCart}
           />
