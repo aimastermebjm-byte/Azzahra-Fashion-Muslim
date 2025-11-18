@@ -39,7 +39,7 @@ export const useFirebaseFlashSale = () => {
   const timeLeft = '';
   const isFlashSaleActive = true; // Always active untuk cache-based approach
 
-  // Load flash sale products saat component mount dengan infinite loop protection
+  // Load flash sale products saat component mount dengan real-time sync
   useEffect(() => {
     // Prevent multiple initialization
     if (initialized) {
@@ -69,6 +69,16 @@ export const useFirebaseFlashSale = () => {
     };
 
     loadFlashSaleProducts();
+
+    // Setup real-time sync listener
+    const unsubscribeRealTime = flashSaleCache.onRealTimeSync(() => {
+      console.log('🔄 Flash sale real-time update detected, refreshing...');
+      loadFlashSaleProducts();
+    });
+
+    return () => {
+      unsubscribeRealTime();
+    };
   }, [initialized]);
 
   // Load more products function
@@ -172,6 +182,9 @@ export const useFirebaseFlashSale = () => {
         isActive: true
       });
       console.log('✅ Firebase Flash Sale: Flash sale started successfully');
+
+      // Trigger real-time sync untuk update instant
+      flashSaleCache.triggerRealTimeSync();
     } catch (error) {
       console.error('❌ Firebase Flash Sale: Error starting flash sale:', error);
       throw error;
@@ -183,6 +196,9 @@ export const useFirebaseFlashSale = () => {
       await updateFlashSale({ isActive: false });
       await clearFlashSaleFromProducts();
       console.log('✅ Firebase Flash Sale: Flash sale stopped successfully');
+
+      // Trigger real-time sync untuk update instant
+      flashSaleCache.triggerRealTimeSync();
     } catch (error) {
       console.error('❌ Firebase Flash Sale: Error stopping flash sale:', error);
       throw error;

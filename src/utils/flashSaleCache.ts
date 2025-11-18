@@ -38,6 +38,8 @@ class FlashSaleCache {
   private readonly ttl = 5 * 60 * 1000; // 5 minutes TTL
   private isLoading = false; // Global loading flag
   private loadingPromise: Promise<any> | null = null; // Promise queue
+  private lastCallTime = 0; // Debounce untuk mencegah spam calls
+  private readonly debounceMs = 1000; // 1 second debounce
 
   /**
    * Get cached flash sale products
@@ -162,13 +164,36 @@ class FlashSaleCache {
   }
 
   /**
-   * Get products for display dengan infinite loop protection
+   * Get products for display dengan ANTI-SPAM protection
    */
   async getProducts(limit: number = 10): Promise<{
     products: FlashSaleProduct[];
     hasMore: boolean;
     lastVisible?: any;
   }> {
+    const now = Date.now();
+
+    // DEBOUNCE: Jangan call terlalu sering
+    if (now - this.lastCallTime < this.debounceMs) {
+      console.log('🚫 Flash sale call debounced, please wait...');
+
+      // Return existing promise atau cache
+      if (this.loadingPromise) {
+        return this.loadingPromise;
+      }
+
+      const cached = this.getFlashSaleProducts();
+      if (cached) {
+        return {
+          products: cached.products.slice(0, limit),
+          hasMore: cached.products.length > limit || cached.hasMore,
+          lastVisible: cached.lastVisible
+        };
+      }
+    }
+
+    this.lastCallTime = now;
+
     // Prevent multiple concurrent requests
     if (this.isLoading && this.loadingPromise) {
       console.log('⏸️ Flash sale already loading, returning existing promise...');
@@ -186,7 +211,7 @@ class FlashSaleCache {
         console.log('🔄 Flash sale cache getting old, will refresh in background');
         setTimeout(() => {
           if (!this.isLoading) this.refreshFromFirebase();
-        }, 2000);
+        }, 5000); // Delay 5 detik untuk background refresh
       }
 
       return {
@@ -415,6 +440,37 @@ class FlashSaleCache {
       this.isLoading = false;
       this.loadingPromise = null;
     }
+  }
+
+  /**
+   * Trigger real-time sync untuk flash sale changes
+   */
+  triggerRealTimeSync(): void {
+    console.log('🔄 Flash sale: Triggering real-time sync...');
+
+    // Clear cache force refresh
+    this.clearCache();
+
+    // Trigger cross-device sync
+    localStorage.setItem('flashsale_sync_trigger', Date.now().toString());
+    setTimeout(() => {
+      localStorage.removeItem('flashsale_sync_trigger');
+    }, 100);
+  }
+
+  /**
+   * Listen untuk real-time sync
+   */
+  onRealTimeSync(callback: () => void): () => void {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'flashsale_sync_trigger') {
+        console.log('🔄 Flash sale: Real-time sync detected from other device');
+        callback();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }
 }
 
