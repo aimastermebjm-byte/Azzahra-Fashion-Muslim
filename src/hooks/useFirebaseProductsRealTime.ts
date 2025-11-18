@@ -259,35 +259,50 @@ export const useFirebaseProductsRealTime = () => {
       try {
         console.log('🔍 Trying cache first for flash sale products...');
 
-        // Coba dapatkan dari cache dulu
+        // Coba dapatkan dari cache dulu (selalu gunakan cache untuk mencegah Firebase reads)
         const cachedFlashSale = productCache.getFlashSaleProducts();
-        if (cachedFlashSale && !initialLoad) {
+        if (cachedFlashSale) {
           console.log('✅ Using cached flash sale products:', cachedFlashSale.products.length, 'products');
           setFlashSaleProducts(cachedFlashSale.products);
           setFlashSaleLoading(false);
+
+          // Background refresh jika cache sudah lama
+          const cacheAge = Date.now() - cachedFlashSale.lastUpdated;
+          if (cacheAge > CACHE_CONFIG.TTL.FLASHSALE) {
+            console.log('🔄 Cache expired, background refreshing flash sale...');
+            setTimeout(() => loadFreshFlashSaleProducts(), 1000);
+          }
           return;
         }
 
+        // Load fresh data dari Firebase
+        await loadFreshFlashSaleProducts();
+      } catch (error) {
+        console.error('❌ Failed to load flash sale products:', error);
+        setFlashSaleProducts([]);
+        setFlashSaleLoading(false);
+      }
+    };
+
+    // Separate function untuk fresh loading (untuk background refresh)
+    const loadFreshFlashSaleProducts = async () => {
+      // Protection: jangan load jika sedang loading
+      if (flashSaleLoading) {
+        console.log('⏸️ Flash sale already loading, skipping...');
+        return;
+      }
+
+      try {
         console.log('🔥 Loading fresh flash sale products from Firebase...');
         const { getDocs, where } = await import('firebase/firestore');
         const productsRef = collection(db, 'products');
-        let q;
 
-        // Gunakan fallback query dulu karena index belum dibuat
-        console.warn('⚠️ Menggunakan query fallback sambil menunggu index dibuat');
-        q = query(
+        // Optimasi: gunakan limit kecil untuk loading cepat
+        const q = query(
           productsRef,
           where('isFlashSale', '==', true),
-          limitCount(50) // Ambil lebih banyak untuk client sorting
+          limitCount(10) // Dikurangi lagi untuk mencegah high reads
         );
-
-        // TODO: Aktifkan query ini setelah index dibuat di Firebase Console
-        // q = query(
-        //   productsRef,
-        //   where('isFlashSale', '==', true),
-        //   orderBy('createdAt', 'desc'),
-        //   limitCount(20)
-        // );
 
         const querySnapshot = await getDocs(q);
         console.log('🔥 Fresh flash sale products loaded:', querySnapshot.docs.length, 'products');
@@ -407,7 +422,10 @@ export const useFirebaseProductsRealTime = () => {
           timestamp: Date.now(),
           triggerBy: 'admin'
         });
-        loadFlashSaleProducts();
+        // Hanya refresh jika tidak dalam proses loading
+        if (!flashSaleLoading) {
+          loadFlashSaleProducts();
+        }
       };
 
       // Cache sync event listeners
@@ -427,6 +445,9 @@ export const useFirebaseProductsRealTime = () => {
       };
 
       const handleStorageChange = (event: StorageEvent) => {
+        // Hanya proses event dari device lain (bukan current tab)
+        if (!event.newValue || event.newValue === 'ignore') return;
+
         if (event.key === 'stock_change_trigger' ||
             event.key === 'stock_depleted_trigger' ||
             event.key === 'stock_low_trigger') {
@@ -439,7 +460,7 @@ export const useFirebaseProductsRealTime = () => {
           console.log('⭐ Featured products update detected (HOME)');
           handleFeaturedProductsUpdate();
         } else if (event.key === 'flash_sale_updated') {
-          console.log('🔥 Flash sale update detected (HOME)');
+          console.log('�� Flash sale update detected (HOME)');
           handleFlashSaleUpdate();
         }
       };
