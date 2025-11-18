@@ -43,6 +43,37 @@ export const useFirebaseFlashSale = () => {
   const [timeLeft, setTimeLeft] = useState('');
   const [isFlashSaleActive, setIsFlashSaleActive] = useState(false);
 
+  // Define load function outside useEffect untuk bisa dipanggil dari mana saja
+  const loadFlashSaleProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setInitialized(true); // Mark as initialized immediately
+      console.log('🔍 Loading flash sale products (SINGLETON)...');
+
+      const result = await flashSaleCache.getProducts(10);
+
+      // Save to global instance
+      globalFlashSaleInstance = {
+        products: result.products,
+        hasMore: result.hasMore,
+        loading: false,
+        error: null
+      };
+
+      setFlashSaleProducts(result.products);
+      setHasMore(result.hasMore);
+
+      console.log('✅ Flash sale products loaded (SINGLETON):', result.products.length, 'items');
+    } catch (err) {
+      console.error('❌ Error loading flash sale products:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load flash sale products');
+    } finally {
+      setLoading(false);
+      isHookInitializing = false;
+    }
+  }, []);
+
   // Load flash sale products dengan SINGLETON protection
   useEffect(() => {
     // GLOBAL SINGLETON: Ceg multiple component instances
@@ -61,57 +92,24 @@ export const useFirebaseFlashSale = () => {
     }
 
     isHookInitializing = true;
-
-    const loadFlashSaleProducts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        setInitialized(true); // Mark as initialized immediately
-        console.log('🔍 Loading flash sale products (SINGLETON)...');
-
-        const result = await flashSaleCache.getProducts(10);
-
-        // Save to global instance
-        globalFlashSaleInstance = {
-          products: result.products,
-          hasMore: result.hasMore,
-          loading: false,
-          error: null
-        };
-
-        setFlashSaleProducts(result.products);
-        setHasMore(result.hasMore);
-
-        // Update global instance di real-time sync
-        const updateGlobalInstance = () => {
-          if (globalFlashSaleInstance) {
-            setFlashSaleProducts(globalFlashSaleInstance.products);
-            setHasMore(globalFlashSaleInstance.hasMore);
-          }
-        };
-
-        console.log('✅ Flash sale products loaded (SINGLETON):', result.products.length, 'items');
-      } catch (err) {
-        console.error('❌ Error loading flash sale products:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load flash sale products');
-      } finally {
-        setLoading(false);
-        isHookInitializing = false;
-      }
-    };
-
     loadFlashSaleProducts();
 
     // Setup real-time sync listener (hanya satu instance)
     const unsubscribeRealTime = flashSaleCache.onRealTimeSync(() => {
       console.log('🔄 Flash sale real-time update detected, refreshing...');
+
+      // Force reset singleton to allow refresh
+      globalFlashSaleInstance = null;
+      isHookInitializing = false;
+
+      // Reload data
       loadFlashSaleProducts();
     });
 
     return () => {
       unsubscribeRealTime();
     };
-  }, [initialized]);
+  }, [loadFlashSaleProducts, initialized]);
 
   // Listen untuk flash sale config (countdown timer)
   useEffect(() => {
@@ -120,10 +118,22 @@ export const useFirebaseFlashSale = () => {
 
       const unsubscribe = onSnapshot(flashSaleRef, (docSnapshot) => {
         if (docSnapshot.exists()) {
-          const config = { id: docSnapshot.id, ...docSnapshot.data() };
+          const config = { id: docSnapshot.id, ...docSnapshot.data() } as FlashSaleConfig;
           setFlashSaleConfig(config);
           setIsFlashSaleActive(config.isActive);
           console.log('🕐 Flash sale config loaded:', config.isActive);
+
+          // Trigger refresh when flash sale becomes active
+          if (config.isActive && globalFlashSaleInstance) {
+            console.log('🔄 Flash sale activated, refreshing products...');
+            globalFlashSaleInstance = null;
+            isHookInitializing = false;
+
+            // Force refresh after short delay to ensure admin updates are saved
+            setTimeout(() => {
+              loadFlashSaleProducts();
+            }, 1000);
+          }
         } else {
           setFlashSaleConfig(null);
           setIsFlashSaleActive(false);
