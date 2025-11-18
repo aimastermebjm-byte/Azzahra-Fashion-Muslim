@@ -77,7 +77,19 @@ export const useFirebaseFlashSale = () => {
 
   // Define stopFlashSale early untuk bisa digunakan di useEffect
   const stopFlashSale = useCallback(async () => {
+    // Prevent multiple simultaneous stops
+    if (globalFlashSaleInstance?.isStopping) {
+      console.log('⏸️ Flash sale already stopping, skipping...');
+      return;
+    }
+
+    // Mark as stopping
+    if (globalFlashSaleInstance) {
+      globalFlashSaleInstance.isStopping = true;
+    }
+
     try {
+      console.log('🛑 Starting flash sale cleanup...');
       await updateFlashSale({ isActive: false });
       await clearFlashSaleFromProducts();
       console.log('✅ Firebase Flash Sale: Flash sale stopped successfully');
@@ -87,6 +99,11 @@ export const useFirebaseFlashSale = () => {
     } catch (error) {
       console.error('❌ Firebase Flash Sale: Error stopping flash sale:', error);
       throw error;
+    } finally {
+      // Clear stopping flag
+      if (globalFlashSaleInstance) {
+        globalFlashSaleInstance.isStopping = false;
+      }
     }
   }, []);
 
@@ -186,6 +203,8 @@ export const useFirebaseFlashSale = () => {
       return;
     }
 
+    let hasTriggeredStop = false; // Prevent multiple stops
+
     const timer = setInterval(() => {
       const now = new Date().getTime();
       const endTime = new Date(flashSaleConfig.endTime).getTime();
@@ -201,15 +220,19 @@ export const useFirebaseFlashSale = () => {
         setTimeLeft('Flash sale ended');
         setIsFlashSaleActive(false);
 
-        // Auto-stop flash sale when time ends
-        if (flashSaleConfig.isActive) {
+        // Auto-stop flash sale when time ends (prevent multiple calls)
+        if (flashSaleConfig.isActive && !hasTriggeredStop) {
+          hasTriggeredStop = true;
           console.log('🕐 Flash sale timer ended, stopping flash sale automatically...');
           stopFlashSale(); // This will clean up products and trigger refresh
         }
       }
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      hasTriggeredStop = false; // Reset on cleanup
+    };
   }, [flashSaleConfig, stopFlashSale]);
 
   // Load more products function
