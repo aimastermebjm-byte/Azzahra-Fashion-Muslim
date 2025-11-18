@@ -5,6 +5,7 @@ import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
 import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
+import { FlashSaleProduct } from '../utils/flashSaleCache';
 import { cartService } from '../services/cartService';
 import { SearchCacheKey } from '../types/cache';
 
@@ -22,8 +23,6 @@ interface HomePageProps {
   onRefreshProducts?: () => void;
   featuredProducts?: Product[];
   featuredLoading?: boolean;
-  flashSaleProducts?: Product[];
-  flashSaleLoading?: boolean;
   searchProducts?: (params: SearchCacheKey) => Promise<any>;
 }
 
@@ -40,8 +39,6 @@ const HomePage: React.FC<HomePageProps> = ({
   hasMore = true,
   featuredProducts = [],
   featuredLoading = false,
-  flashSaleProducts = [],
-  flashSaleLoading = false,
   onRefreshProducts,
   searchProducts
 }) => {
@@ -60,8 +57,13 @@ const HomePage: React.FC<HomePageProps> = ({
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // Flash sale hook for countdown timer
-  const { timeLeft, isFlashSaleActive } = useFirebaseFlashSale();
+  // Flash sale hook for countdown timer AND products
+  const {
+    timeLeft,
+    isFlashSaleActive,
+    flashSaleProducts: hookFlashSaleProducts,
+    loading: flashSaleLoading
+  } = useFirebaseFlashSale();
 
   // Load cart count from backend
   const loadCartCount = async () => {
@@ -446,39 +448,71 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              {flashSaleProducts
+              {hookFlashSaleProducts
                 .slice(0, 2)
-                .map((product) => (
-                  <div
-                    key={`flash-${product.id}`}
-                    onClick={() => onProductClick(product)}
-                    className="bg-white/10 rounded-lg p-3 backdrop-blur-sm hover:bg-white/20 transition-colors cursor-pointer"
-                  >
-                    <div className="relative">
-                      <img
-                        src={product.images?.[0] || '/placeholder-product.jpg'}
-                        alt={product.name}
-                        className="w-full h-24 object-cover rounded mb-2"
-                      />
-                      <div className="absolute top-1 right-1 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
-                        -{Math.round(((product.retailPrice - product.flashSalePrice) / product.retailPrice) * 100)}%
+                .map((flashProduct) => {
+                  // Convert FlashSaleProduct to Product type
+                  const product: Product = {
+                    id: flashProduct.id,
+                    name: flashProduct.name,
+                    description: '',
+                    category: flashProduct.category,
+                    price: flashProduct.price,
+                    retailPrice: flashProduct.retailPrice || flashProduct.price,
+                    resellerPrice: flashProduct.resellerPrice,
+                    costPrice: flashProduct.costPrice,
+                    stock: flashProduct.stock,
+                    images: flashProduct.images,
+                    image: flashProduct.image,
+                    variants: flashProduct.variants,
+                    status: flashProduct.status,
+                    isFlashSale: flashProduct.isFlashSale,
+                    flashSalePrice: flashProduct.flashSalePrice,
+                    originalRetailPrice: flashProduct.originalRetailPrice,
+                    originalResellerPrice: flashProduct.originalResellerPrice,
+                    createdAt: flashProduct.createdAt,
+                    salesCount: 0,
+                    isFeatured: flashProduct.isFeatured || false,
+                    featuredOrder: flashProduct.featuredOrder || 0,
+                    weight: 0,
+                    unit: 'gram',
+                    estimatedReady: undefined
+                  };
+
+                  const discountPercentage = Math.round(((flashProduct.originalRetailPrice || flashProduct.retailPrice) - flashProduct.flashSalePrice) / (flashProduct.originalRetailPrice || flashProduct.retailPrice) * 100);
+
+                  return (
+                    <div
+                      key={`flash-${product.id}`}
+                      onClick={() => onProductClick(product)}
+                      className="bg-white/10 rounded-lg p-3 backdrop-blur-sm hover:bg-white/20 transition-colors cursor-pointer"
+                    >
+                      <div className="relative">
+                        <img
+                          src={product.images?.[0] || '/placeholder-product.jpg'}
+                          alt={product.name}
+                          className="w-full h-24 object-cover rounded mb-2"
+                        />
+                        <div className="absolute top-1 right-1 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
+                          -{discountPercentage}%
+                        </div>
+                      </div>
+                      <h3 className="text-white font-medium text-sm mb-1 truncate">{product.name}</h3>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-white font-bold text-sm">
+                          Rp {product.flashSalePrice.toLocaleString('id-ID')}
+                        </span>
+                        <span className="text-red-200 line-through text-xs">
+                          Rp {(product.originalRetailPrice || product.retailPrice).toLocaleString('id-ID')}
+                        </span>
                       </div>
                     </div>
-                    <h3 className="text-white font-medium text-sm mb-1 truncate">{product.name}</h3>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-white font-bold text-sm">
-                        Rp {product.flashSalePrice.toLocaleString('id-ID')}
-                      </span>
-                      <span className="text-red-200 line-through text-xs">
-                        Rp {product.retailPrice.toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           )}
 
-          {flashSaleProducts.length === 0 && !flashSaleLoading && isFlashSaleActive && (
+          {hookFlashSaleProducts.length === 0 && !flashSaleLoading && isFlashSaleActive && (
             <div className="text-center py-4 text-red-100">
               <span className="text-3xl">🚫</span>
               <p className="text-sm mt-1">Tidak ada Flash Sale saat ini</p>
