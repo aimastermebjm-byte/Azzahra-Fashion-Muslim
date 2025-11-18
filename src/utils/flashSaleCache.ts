@@ -1,0 +1,320 @@
+/**
+ * Flash Sale Cache Utility - Cache-first dengan pagination
+ * Mirip seperti featured products tapi untuk flash sale
+ */
+
+export interface FlashSaleProduct {
+  id: string;
+  name: string;
+  price: number;
+  retailPrice?: number;
+  resellerPrice?: number;
+  flashSalePrice?: number;
+  originalRetailPrice?: number;
+  originalResellerPrice?: number;
+  stock: number;
+  images: string[];
+  image?: string;
+  category: string;
+  status: string;
+  isFlashSale: boolean;
+  createdAt: Date | string;
+  featuredOrder?: number;
+  variants?: any;
+}
+
+export interface FlashSaleCacheData {
+  products: FlashSaleProduct[];
+  hasMore: boolean;
+  lastVisible?: any;
+  totalCount?: number;
+  lastUpdated: number;
+  version: string;
+}
+
+class FlashSaleCache {
+  private readonly storageKey = 'azzahra_flashsale_cache';
+  private readonly version = '1.0.0';
+  private readonly ttl = 5 * 60 * 1000; // 5 minutes TTL
+
+  /**
+   * Get cached flash sale products
+   */
+  getFlashSaleProducts(): FlashSaleCacheData | null {
+    try {
+      const cacheData = localStorage.getItem(this.storageKey);
+      if (!cacheData) {
+        console.log('📦 No flash sale cache found');
+        return null;
+      }
+
+      const parsed: FlashSaleCacheData = JSON.parse(cacheData);
+      const now = Date.now();
+
+      // Validasi cache
+      if (parsed.version !== this.version) {
+        console.log('📦 Flash sale cache version mismatch - ignoring cache');
+        return null;
+      }
+
+      if (now - parsed.lastUpdated > this.ttl) {
+        console.log('📦 Flash sale cache expired - ignoring cache');
+        return null;
+      }
+
+      console.log('✅ Using cached flash sale products:', parsed.products.length, 'products');
+      return parsed;
+    } catch (error) {
+      console.error('❌ Error reading flash sale cache:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Save flash sale products ke cache
+   */
+  setFlashSaleProducts(data: {
+    products: FlashSaleProduct[];
+    hasMore?: boolean;
+    lastVisible?: any;
+    totalCount?: number;
+  }): void {
+    try {
+      const cacheData: FlashSaleCacheData = {
+        products: data.products.slice(0, 10), // Max 10 products di cache
+        hasMore: data.hasMore || false,
+        lastVisible: data.lastVisible,
+        totalCount: data.totalCount,
+        lastUpdated: Date.now(),
+        version: this.version
+      };
+
+      localStorage.setItem(this.storageKey, JSON.stringify(cacheData));
+      console.log('💾 Flash sale products cached:', cacheData.products.length, 'products');
+    } catch (error) {
+      console.error('❌ Error saving flash sale cache:', error);
+    }
+  }
+
+  /**
+   * Append more products ke existing cache (untuk load more)
+   */
+  appendFlashSaleProducts(newProducts: FlashSaleProduct[]): void {
+    try {
+      const cached = this.getFlashSaleProducts();
+      if (!cached) {
+        this.setFlashSaleProducts({ products: newProducts });
+        return;
+      }
+
+      // Combine existing and new products, remove duplicates
+      const existingIds = new Set(cached.products.map(p => p.id));
+      const uniqueNewProducts = newProducts.filter(p => !existingIds.has(p.id));
+      const allProducts = [...cached.products, ...uniqueNewProducts].slice(0, 50); // Max 50 total
+
+      this.setFlashSaleProducts({
+        products: allProducts,
+        hasMore: uniqueNewProducts.length > 0,
+        lastVisible: cached.lastVisible,
+        totalCount: cached.totalCount
+      });
+
+      console.log('🔄 Flash sale cache updated:', allProducts.length, 'total products');
+    } catch (error) {
+      console.error('❌ Error updating flash sale cache:', error);
+    }
+  }
+
+  /**
+   * Check if cache valid
+   */
+  isCacheValid(): boolean {
+    return this.getFlashSaleProducts() !== null;
+  }
+
+  /**
+   * Get cache age
+   */
+  getCacheAge(): number {
+    try {
+      const cacheData = localStorage.getItem(this.storageKey);
+      if (!cacheData) return Infinity;
+
+      const parsed: FlashSaleCacheData = JSON.parse(cacheData);
+      return Date.now() - parsed.lastUpdated;
+    } catch {
+      return Infinity;
+    }
+  }
+
+  /**
+   * Clear cache
+   */
+  clearCache(): void {
+    try {
+      localStorage.removeItem(this.storageKey);
+      console.log('🗑️ Flash sale cache cleared');
+    } catch (error) {
+      console.error('❌ Error clearing flash sale cache:', error);
+    }
+  }
+
+  /**
+   * Get products for display (cached + Firebase fallback)
+   */
+  async getProducts(limit: number = 10): Promise<{
+    products: FlashSaleProduct[];
+    hasMore: boolean;
+    lastVisible?: any;
+  }> {
+    // Try cache first
+    const cached = this.getFlashSaleProducts();
+    if (cached) {
+      console.log('✅ Using cached flash sale products for display');
+
+      // Background refresh jika cache sudah lama
+      const cacheAge = this.getCacheAge();
+      if (cacheAge > 3 * 60 * 1000) { // 3 minutes
+        console.log('🔄 Flash sale cache getting old, will refresh in background');
+        setTimeout(() => this.refreshFromFirebase(), 2000);
+      }
+
+      return {
+        products: cached.products.slice(0, limit),
+        hasMore: cached.products.length > limit || cached.hasMore,
+        lastVisible: cached.lastVisible
+      };
+    }
+
+    // Load from Firebase jika tidak ada cache
+    console.log('🔥 Loading flash sale products from Firebase...');
+    return this.refreshFromFirebase();
+  }
+
+  /**
+   * Load more products (pagination)
+   */
+  async loadMoreProducts(currentCount: number, limit: number = 10): Promise<{
+    products: FlashSaleProduct[];
+    hasMore: boolean;
+    lastVisible?: any;
+  }> {
+    try {
+      // Import dinamis untuk menghindari bundle size issues
+      const { collection, query, where, orderBy, limit: limitFn, getDocs } = await import('firebase/firestore');
+      const { db } = await import('../utils/firebaseClient');
+
+      const q = query(
+        collection(db, 'products'),
+        where('isFlashSale', '==', true),
+        orderBy('createdAt', 'desc'),
+        limitFn(limit)
+      );
+
+      const querySnapshot = await getDocs(q);
+      const newProducts: FlashSaleProduct[] = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        newProducts.push({
+          id: doc.id,
+          name: data.name || '',
+          price: Number(data.price || 0),
+          retailPrice: Number(data.retailPrice || data.price || 0),
+          resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
+          flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0) * 0.8,
+          originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),
+          originalResellerPrice: Number(data.originalResellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
+          stock: Number(data.stock || 0),
+          images: (data.images || []).slice(0, 2),
+          image: data.images?.[0] || '/placeholder-product.jpg',
+          category: data.category || 'uncategorized',
+          status: data.status || 'ready',
+          isFlashSale: Boolean(data.isFlashSale),
+          createdAt: data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt?.toDate()) : new Date(),
+          featuredOrder: Number(data.featuredOrder) || 0,
+          variants: data.variants
+        });
+      });
+
+      // Update cache dengan new products
+      this.appendFlashSaleProducts(newProducts);
+
+      return {
+        products: newProducts,
+        hasMore: newProducts.length === limit,
+        lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1]
+      };
+    } catch (error) {
+      console.error('❌ Error loading more flash sale products:', error);
+      return { products: [], hasMore: false };
+    }
+  }
+
+  /**
+   * Refresh from Firebase
+   */
+  private async refreshFromFirebase(): Promise<{
+    products: FlashSaleProduct[];
+    hasMore: boolean;
+    lastVisible?: any;
+  }> {
+    try {
+      const { collection, query, where, orderBy, limit: limitFn, getDocs } = await import('firebase/firestore');
+      const { db } = await import('../utils/firebaseClient');
+
+      const q = query(
+        collection(db, 'products'),
+        where('isFlashSale', '==', true),
+        orderBy('createdAt', 'desc'),
+        limitFn(10)
+      );
+
+      const querySnapshot = await getDocs(q);
+      const products: FlashSaleProduct[] = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        products.push({
+          id: doc.id,
+          name: data.name || '',
+          price: Number(data.price || 0),
+          retailPrice: Number(data.retailPrice || data.price || 0),
+          resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
+          flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0) * 0.8,
+          originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),
+          originalResellerPrice: Number(data.originalResellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
+          stock: Number(data.stock || 0),
+          images: (data.images || []).slice(0, 2),
+          image: data.images?.[0] || '/placeholder-product.jpg',
+          category: data.category || 'uncategorized',
+          status: data.status || 'ready',
+          isFlashSale: Boolean(data.isFlashSale),
+          createdAt: data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt?.toDate()) : new Date(),
+          featuredOrder: Number(data.featuredOrder) || 0,
+          variants: data.variants
+        });
+      });
+
+      // Save to cache
+      this.setFlashSaleProducts({
+        products,
+        hasMore: products.length === 10,
+        lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1],
+        totalCount: products.length
+      });
+
+      console.log('✅ Fresh flash sale products loaded:', products.length, 'products');
+      return {
+        products,
+        hasMore: products.length === 10,
+        lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1]
+      };
+    } catch (error) {
+      console.error('❌ Error refreshing flash sale products:', error);
+      return { products: [], hasMore: false };
+    }
+  }
+}
+
+export const flashSaleCache = new FlashSaleCache();

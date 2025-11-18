@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   collection,
   doc,
@@ -9,7 +9,8 @@ import {
   query
 } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
-import { useFlashSaleContext } from '../contexts/FlashSaleContext';
+import { flashSaleCache } from '../utils/flashSaleCache';
+import type { FlashSaleProduct } from '../utils/flashSaleCache';
 
 interface FlashSaleConfig {
   id: string;
@@ -26,14 +27,60 @@ interface FlashSaleConfig {
 const FLASH_SALE_DOC_ID = 'current-flash-sale';
 
 export const useFirebaseFlashSale = () => {
-  // EMERGENCY: Disable flash sale completely untuk hentikan infinite loop
-  console.log('🚨 FLASH SALE DISABLED - Emergency fix untuk infinite loop');
+  // State untuk flash sale products dengan pagination
+  const [flashSaleProducts, setFlashSaleProducts] = useState<FlashSaleProduct[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Static values untuk mencegah semua Firebase calls
+  // Flash sale config (legacy support)
   const flashSaleConfig = null;
   const timeLeft = '';
-  const isFlashSaleActive = false;
-  const loading = false;
+  const isFlashSaleActive = true; // Always active untuk cache-based approach
+
+  // Load flash sale products saat component mount
+  useEffect(() => {
+    const loadFlashSaleProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        console.log('🔍 Loading flash sale products (cache-first)...');
+
+        const result = await flashSaleCache.getProducts(10);
+        setFlashSaleProducts(result.products);
+        setHasMore(result.hasMore);
+
+        console.log('✅ Flash sale products loaded:', result.products.length, 'items');
+      } catch (err) {
+        console.error('❌ Error loading flash sale products:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load flash sale products');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFlashSaleProducts();
+  }, []);
+
+  // Load more products function
+  const loadMoreProducts = useCallback(async () => {
+    if (loading || !hasMore) return;
+
+    try {
+      setLoading(true);
+      console.log('🔄 Loading more flash sale products...');
+
+      const result = await flashSaleCache.loadMoreProducts(flashSaleProducts.length, 10);
+      setFlashSaleProducts(prev => [...prev, ...result.products]);
+      setHasMore(result.hasMore);
+
+      console.log('✅ More flash sale products loaded:', result.products.length, 'new items');
+    } catch (err) {
+      console.error('❌ Error loading more flash sale products:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, hasMore, flashSaleProducts.length]);
 
   // Helper function to clean flash sale from products
   const clearFlashSaleFromProducts = async () => {
@@ -135,17 +182,31 @@ export const useFirebaseFlashSale = () => {
 
   // Check if a specific product is in the flash sale
   const isProductInFlashSale = useCallback((productId: string) => {
-    // EMERGENCY: Always return false untuk mencegah flash sale
-    return false;
-  }, []);
+    // Check dari cache products
+    return flashSaleProducts.some(product => product.id === productId && product.isFlashSale);
+  }, [flashSaleProducts]);
 
   // Get flash sale discount for a specific product
   const getProductFlashSaleDiscount = useCallback((productId: string) => {
-    // EMERGENCY: Always return 0 untuk mencegah flash sale
-    return 0;
-  }, []);
+    const product = flashSaleProducts.find(p => p.id === productId);
+    if (!product || !product.isFlashSale) return 0;
+
+    // Calculate discount percentage
+    const originalPrice = product.originalRetailPrice || product.retailPrice || 0;
+    const flashSalePrice = product.flashSalePrice || 0;
+    if (originalPrice === 0) return 0;
+
+    return Math.round(((originalPrice - flashSalePrice) / originalPrice) * 100);
+  }, [flashSaleProducts]);
 
   return {
+    // New cache-based values
+    flashSaleProducts,
+    hasMore,
+    error,
+    loadMoreProducts,
+
+    // Legacy values
     flashSaleConfig,
     timeLeft,
     isFlashSaleActive,
