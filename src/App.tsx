@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AdminProvider } from './contexts/AdminContext';
+import { FlashSaleProvider } from './contexts/FlashSaleContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import HomePage from './components/HomePage';
 import ProductDetail from './components/ProductDetail';
@@ -570,7 +571,9 @@ function AppContent() {
 function App() {
   return (
     <AdminProvider>
-      <AppContent />
+      <FlashSaleProvider>
+        <AppContent />
+      </FlashSaleProvider>
     </AdminProvider>
   );
 }

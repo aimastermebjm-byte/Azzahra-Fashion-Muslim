@@ -1,18 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import {
   collection,
   doc,
-  getDoc,
   setDoc,
   updateDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  limit,
   getDocs,
-  where
+  where,
+  query
 } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
+import { useFlashSaleContext } from '../contexts/FlashSaleContext';
 
 interface FlashSaleConfig {
   id: string;
@@ -29,9 +26,8 @@ interface FlashSaleConfig {
 const FLASH_SALE_DOC_ID = 'current-flash-sale';
 
 export const useFirebaseFlashSale = () => {
-  const [flashSaleConfig, setFlashSaleConfig] = useState<FlashSaleConfig | null>(null);
-  const [timeLeft, setTimeLeft] = useState<string>('');
-  const [loading, setLoading] = useState(true);
+  // Gunakan singleton context untuk mencegah multiple listeners
+  const { flashSaleConfig, timeLeft, isFlashSaleActive, loading } = useFlashSaleContext();
 
   // Helper function to clean flash sale from products
   const clearFlashSaleFromProducts = async () => {
@@ -48,102 +44,26 @@ export const useFirebaseFlashSale = () => {
       console.log(`🧹 Firebase Flash Sale: Found ${querySnapshot.docs.length} flash sale products to clean`);
 
       // Update all flash sale products to remove flash sale status
-      const updatePromises = querySnapshot.docs.map(async (docSnapshot) => {
-        const productRef = doc(db, 'products', docSnapshot.id);
-        await updateDoc(productRef, {
-          isFlashSale: false,
-          flashSalePrice: null
-        });
-        console.log(`🧹 Firebase Flash Sale: Cleared flash sale from product ${docSnapshot.id}`);
+      const batch: Promise<any>[] = [];
+      querySnapshot.forEach((docSnapshot) => {
+        batch.push(
+          updateDoc(doc(db, 'products', docSnapshot.id), {
+            isFlashSale: false,
+            flashSalePrice: null,
+            originalRetailPrice: null,
+            originalResellerPrice: null,
+            updatedAt: new Date().toISOString()
+          })
+        );
       });
 
-      await Promise.all(updatePromises);
+      await Promise.all(batch);
       console.log('✅ Firebase Flash Sale: All flash sale products cleaned successfully');
     } catch (error) {
       console.error('❌ Firebase Flash Sale: Error cleaning flash sale products:', error);
       throw error;
     }
   };
-
-  // Listen to flash sale config changes in real-time
-  useEffect(() => {
-    setLoading(true);
-    console.log('🔥 Firebase Flash Sale: Initializing real-time listener');
-
-    const flashSaleRef = doc(db, 'flashSales', FLASH_SALE_DOC_ID);
-
-    const unsubscribe = onSnapshot(flashSaleRef, (docSnapshot) => {
-      if (docSnapshot.exists()) {
-        const config = { id: docSnapshot.id, ...docSnapshot.data() } as FlashSaleConfig;
-        setFlashSaleConfig(config);
-        console.log('✅ Firebase Flash Sale: Config loaded from Firebase');
-        console.log('📅 Flash sale ends at:', config.endTime);
-        console.log('🔥 Firebase Flash Sale: Active status:', config.isActive);
-      } else {
-        console.log('📝 Firebase Flash Sale: No active flash sale found');
-        setFlashSaleConfig(null);
-      }
-      setLoading(false);
-    }, (error) => {
-      console.error('❌ Firebase Flash Sale: Error listening to config:', error);
-      setLoading(false);
-    });
-
-    return () => {
-      unsubscribe();
-      console.log('🔥 Firebase Flash Sale: Listener disconnected');
-    };
-  }, []);
-
-  // Countdown timer effect
-  useEffect(() => {
-    if (!flashSaleConfig || !flashSaleConfig.isActive) {
-      setTimeLeft('');
-      return;
-    }
-
-    const timer = setInterval(() => {
-      const now = new Date().getTime();
-      const endTime = new Date(flashSaleConfig.endTime).getTime();
-      const difference = endTime - now;
-
-      if (difference > 0) {
-        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-        setTimeLeft(
-          days > 0
-            ? `${days} hari ${hours} jam ${minutes} menit`
-            : hours > 0
-              ? `${hours} jam ${minutes} menit ${seconds} detik`
-              : `${minutes} menit ${seconds} detik`
-        );
-      } else {
-        // Flash sale ended
-
-        // Update Firebase to mark as inactive AND clean up products
-        if (flashSaleConfig.id) {
-          updateFlashSale({ isActive: false });
-          clearFlashSaleFromProducts(); // Clean up products automatically
-        }
-
-        // Trigger end event
-        window.dispatchEvent(new CustomEvent('flashSaleEnded', {
-          detail: {
-            timestamp: new Date().toISOString(),
-            reason: 'time_expired',
-            configId: flashSaleConfig.id
-          }
-        }));
-
-        setTimeLeft('Flash Sale Berakhir');
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [flashSaleConfig, clearFlashSaleFromProducts]);
 
   const createFlashSale = async (config: Omit<FlashSaleConfig, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
@@ -166,14 +86,11 @@ export const useFirebaseFlashSale = () => {
 
   const updateFlashSale = async (updates: Partial<FlashSaleConfig>) => {
     try {
-      if (!flashSaleConfig?.id) return;
-
-      const flashSaleRef = doc(db, 'flashSales', flashSaleConfig.id);
+      const flashSaleRef = doc(db, 'flashSales', FLASH_SALE_DOC_ID);
       await updateDoc(flashSaleRef, {
         ...updates,
         updatedAt: new Date().toISOString()
       });
-
       console.log('✅ Firebase Flash Sale: Flash sale updated successfully');
     } catch (error) {
       console.error('❌ Firebase Flash Sale: Error updating flash sale:', error);
@@ -181,14 +98,17 @@ export const useFirebaseFlashSale = () => {
     }
   };
 
-  const startFlashSale = async (config: Omit<FlashSaleConfig, 'id' | 'isActive' | 'createdAt' | 'updatedAt'>) => {
+  const startFlashSale = async (config: {
+    startTime: string;
+    endTime: string;
+    products: string[];
+    flashSaleDiscount?: number;
+  }) => {
     try {
-      const newConfig: Omit<FlashSaleConfig, 'id' | 'createdAt' | 'updatedAt'> = {
+      await createFlashSale({
         ...config,
         isActive: true
-      };
-
-      await createFlashSale(newConfig);
+      });
       console.log('✅ Firebase Flash Sale: Flash sale started successfully');
     } catch (error) {
       console.error('❌ Firebase Flash Sale: Error starting flash sale:', error);
@@ -198,10 +118,8 @@ export const useFirebaseFlashSale = () => {
 
   const stopFlashSale = async () => {
     try {
-      if (!flashSaleConfig?.id) return;
-
       await updateFlashSale({ isActive: false });
-      await clearFlashSaleFromProducts(); // Also clean up products
+      await clearFlashSaleFromProducts();
       console.log('✅ Firebase Flash Sale: Flash sale stopped successfully');
     } catch (error) {
       console.error('❌ Firebase Flash Sale: Error stopping flash sale:', error);
@@ -209,29 +127,34 @@ export const useFirebaseFlashSale = () => {
     }
   };
 
-  const isProductInFlashSale = (productId: string) => {
-    if (!flashSaleConfig?.isActive || !productId) return false;
+  // Check if a specific product is in the flash sale
+  const isProductInFlashSale = useCallback((productId: string) => {
+    if (!flashSaleConfig || !flashSaleConfig.isActive) {
+      return false;
+    }
+    return flashSaleConfig.products.includes(productId) ||
+           flashSaleConfig.productIds?.includes(productId);
+  }, [flashSaleConfig]);
 
-    // Check both products and productIds arrays for backward compatibility
-    // Add safety checks for undefined arrays
-    const products = flashSaleConfig.products || [];
-    const productIds = flashSaleConfig.productIds || [];
-
-    const inProducts = products.includes(productId);
-    const inProductIds = productIds.includes(productId);
-
-    return inProducts || inProductIds;
-  };
+  // Get flash sale discount for a specific product
+  const getProductFlashSaleDiscount = useCallback((productId: string) => {
+    if (!isProductInFlashSale(productId)) {
+      return 0;
+    }
+    return flashSaleConfig?.flashSaleDiscount || 0;
+  }, [flashSaleConfig, isProductInFlashSale]);
 
   return {
     flashSaleConfig,
     timeLeft,
+    isFlashSaleActive,
     loading,
-    isFlashSaleActive: flashSaleConfig?.isActive || false,
     createFlashSale,
     updateFlashSale,
     startFlashSale,
     stopFlashSale,
-    isProductInFlashSale
+    clearFlashSaleFromProducts,
+    isProductInFlashSale,
+    getProductFlashSaleDiscount
   };
 };
