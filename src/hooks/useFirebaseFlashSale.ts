@@ -43,6 +43,7 @@ export const useFirebaseFlashSale = () => {
   const [timeLeft, setTimeLeft] = useState('');
   const [isFlashSaleActive, setIsFlashSaleActive] = useState(false);
 
+  
   // Define load function outside useEffect untuk bisa dipanggil dari mana saja
   const loadFlashSaleProducts = useCallback(async () => {
     try {
@@ -147,7 +148,7 @@ export const useFirebaseFlashSale = () => {
             console.log('🕐 Flash sale expired, stopping automatically...');
             // Auto-stop expired flash sale
             stopFlashSale();
-          } else if (config.isActive && globalFlashSaleInstance) {
+          } else if (config.isActive && globalFlashSaleInstance && !globalFlashSaleInstance.products.length) {
             console.log('🔄 Flash sale activated, refreshing products...');
             globalFlashSaleInstance = null;
             isHookInitializing = false;
@@ -156,8 +157,8 @@ export const useFirebaseFlashSale = () => {
             setTimeout(() => {
               loadFlashSaleProducts();
             }, 1000);
-          } else if (!config.isActive) {
-            // Clear flash sale products when not active
+          } else if (!config.isActive && flashSaleProducts.length > 0) {
+            // Clear flash sale products when not active (HANYA jika ada produk)
             console.log('🕐 Flash sale not active, clearing products...');
             globalFlashSaleInstance = null;
             setFlashSaleProducts([]);
@@ -166,9 +167,11 @@ export const useFirebaseFlashSale = () => {
           setFlashSaleConfig(null);
           setIsFlashSaleActive(false);
           setTimeLeft('');
-          // Clear products when no config exists
-          globalFlashSaleInstance = null;
-          setFlashSaleProducts([]);
+          // Clear products when no config exists (HANYA jika ada produk)
+          if (flashSaleProducts.length > 0) {
+            globalFlashSaleInstance = null;
+            setFlashSaleProducts([]);
+          }
         }
       });
 
