@@ -152,14 +152,42 @@ class FlashSaleCache {
   }
 
   /**
-   * Clear cache
+   * Clear cache dengan validasi penuh
    */
   clearCache(): void {
     try {
+      const deviceInfo = navigator.userAgent.includes('Mobile') ? 'MOBILE' : 'DESKTOP';
+      console.log(`🗑️ ${deviceInfo}: Clearing flash sale cache...`);
+
+      // Log cache sebelum dihapus
+      const beforeCache = this.getFlashSaleProducts();
+      if (beforeCache) {
+        console.log(`🗑️ ${deviceInfo}: Cache contains ${beforeCache.products.length} products before clearing`);
+        console.log(`🗑️ ${deviceInfo}: Cache age: ${Date.now() - beforeCache.lastUpdated}ms, version: ${beforeCache.version}`);
+      } else {
+        console.log(`🗑️ ${deviceInfo}: No cache to clear`);
+      }
+
       localStorage.removeItem(this.storageKey);
-      console.log('🗑️ Flash sale cache cleared');
+
+      // Validasi bahwa cache sudah benar-benar dihapus
+      const afterCache = this.getFlashSaleProducts();
+      if (afterCache === null) {
+        console.log(`✅ ${deviceInfo}: Flash sale cache successfully cleared and validated`);
+      } else {
+        console.error(`❌ ${deviceInfo}: Flash sale cache still exists after clear operation!`);
+        // Force clear dengan brute force method
+        try {
+          localStorage.setItem(this.storageKey, '');
+          localStorage.removeItem(this.storageKey);
+          console.log(`🔥 ${deviceInfo}: Applied brute force cache clearing`);
+        } catch (bruteError) {
+          console.error(`❌ ${deviceInfo}: Brute force clearing failed:`, bruteError);
+        }
+      }
     } catch (error) {
-      console.error('❌ Error clearing flash sale cache:', error);
+      const deviceInfo = navigator.userAgent.includes('Mobile') ? 'MOBILE' : 'DESKTOP';
+      console.error(`❌ ${deviceInfo}: Error clearing flash sale cache:`, error);
     }
   }
 
@@ -453,7 +481,8 @@ class FlashSaleCache {
    * Trigger real-time sync untuk flash sale changes
    */
   triggerRealTimeSync(): void {
-    console.log('🔄 Flash sale: Triggering real-time sync...');
+    const deviceInfo = navigator.userAgent.includes('Mobile') ? 'MOBILE' : 'DESKTOP';
+    console.log(`🔄 ${deviceInfo}: Flash sale: Triggering real-time sync...`);
 
     // Clear cache force refresh
     this.clearCache();
@@ -463,6 +492,54 @@ class FlashSaleCache {
     setTimeout(() => {
       localStorage.removeItem('flashsale_sync_trigger');
     }, 100);
+  }
+
+  /**
+   * Debug function untuk verifikasi cleanup - cek apakah ada produk flash sale tersisa
+   */
+  async debugVerifyCleanup(): Promise<boolean> {
+    try {
+      const deviceInfo = navigator.userAgent.includes('Mobile') ? 'MOBILE' : 'DESKTOP';
+      console.log(`🔍 ${deviceInfo}: Verifying flash sale cleanup...`);
+
+      const { collection, query, where, getDocs } = await import('firebase/firestore');
+      const { db } = await import('../utils/firebaseClient');
+
+      // Cek apakah masih ada produk dengan isFlashSale = true
+      const productsQuery = query(
+        collection(db, 'products'),
+        where('isFlashSale', '==', true)
+      );
+
+      const querySnapshot = await getDocs(productsQuery);
+      const hasRemainingFlashSale = querySnapshot.docs.length > 0;
+
+      if (hasRemainingFlashSale) {
+        console.warn(`⚠️ ${deviceInfo}: Found ${querySnapshot.docs.length} remaining flash sale products in Firebase:`);
+        querySnapshot.forEach((doc: any) => {
+          const data = doc.data();
+          console.warn(`⚠️ ${deviceInfo}: - ${doc.id}: ${data.name} (flashSale: ${data.isFlashSale}, flashSalePrice: ${data.flashSalePrice})`);
+        });
+      } else {
+        console.log(`✅ ${deviceInfo}: No flash sale products found in Firebase - cleanup successful`);
+      }
+
+      // Cek cache lokal
+      const cache = this.getFlashSaleProducts();
+      const hasCacheData = cache && cache.products.length > 0;
+
+      if (hasCacheData) {
+        console.warn(`⚠️ ${deviceInfo}: Cache still contains ${cache.products.length} flash sale products`);
+      } else {
+        console.log(`✅ ${deviceInfo}: Local cache is clean`);
+      }
+
+      return !hasRemainingFlashSale && !hasCacheData;
+    } catch (error) {
+      const deviceInfo = navigator.userAgent.includes('Mobile') ? 'MOBILE' : 'DESKTOP';
+      console.error(`❌ ${deviceInfo}: Error verifying cleanup:`, error);
+      return false;
+    }
   }
 
   /**
