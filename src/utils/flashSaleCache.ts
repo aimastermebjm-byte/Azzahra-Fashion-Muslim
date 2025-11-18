@@ -164,7 +164,7 @@ class FlashSaleCache {
   }
 
   /**
-   * Get products for display dengan ANTI-SPAM protection
+   * Get products for display dengan SUPER ANTI-SPAM protection
    */
   async getProducts(limit: number = 10): Promise<{
     products: FlashSaleProduct[];
@@ -173,15 +173,11 @@ class FlashSaleCache {
   }> {
     const now = Date.now();
 
-    // DEBOUNCE: Jangan call terlalu sering
+    // SUPER AGGRESSIVE DEBOUNCE: Jangan call terlalu sering
     if (now - this.lastCallTime < this.debounceMs) {
-      console.log('🚫 Flash sale call debounced, please wait...');
+      console.log('🚫 Flash sale call debounced, returning cache immediately...');
 
-      // Return existing promise atau cache
-      if (this.loadingPromise) {
-        return this.loadingPromise;
-      }
-
+      // Always return cache jika ada
       const cached = this.getFlashSaleProducts();
       if (cached) {
         return {
@@ -190,6 +186,17 @@ class FlashSaleCache {
           lastVisible: cached.lastVisible
         };
       }
+
+      // Return existing promise jika sedang loading
+      if (this.loadingPromise) {
+        return this.loadingPromise;
+      }
+
+      // Return empty result jika tidak ada cache dan tidak loading
+      return {
+        products: [],
+        hasMore: false
+      };
     }
 
     this.lastCallTime = now;

@@ -26,6 +26,10 @@ interface FlashSaleConfig {
 
 const FLASH_SALE_DOC_ID = 'current-flash-sale';
 
+// Singleton pattern untuk mencegah multiple initializations
+let globalFlashSaleInstance: any = null;
+let isHookInitializing = false;
+
 export const useFirebaseFlashSale = () => {
   // State untuk flash sale products dengan pagination
   const [flashSaleProducts, setFlashSaleProducts] = useState<FlashSaleProduct[]>([]);
@@ -34,43 +38,71 @@ export const useFirebaseFlashSale = () => {
   const [error, setError] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
 
-  // Flash sale config (legacy support)
-  const flashSaleConfig = null;
-  const timeLeft = '';
-  const isFlashSaleActive = true; // Always active untuk cache-based approach
+  // Flash sale config (legacy support) - restore countdown timer
+  const [flashSaleConfig, setFlashSaleConfig] = useState<any>(null);
+  const [timeLeft, setTimeLeft] = useState('');
+  const [isFlashSaleActive, setIsFlashSaleActive] = useState(false);
 
-  // Load flash sale products saat component mount dengan real-time sync
+  // Load flash sale products dengan SINGLETON protection
   useEffect(() => {
-    // Prevent multiple initialization
-    if (initialized) {
-      console.log('🚫 Flash sale already initialized, skipping...');
+    // GLOBAL SINGLETON: Ceg multiple component instances
+    if (globalFlashSaleInstance) {
+      console.log('🚫 Flash sale singleton exists, reusing data...');
+      setFlashSaleProducts(globalFlashSaleInstance.products);
+      setHasMore(globalFlashSaleInstance.hasMore);
+      setLoading(globalFlashSaleInstance.loading);
       return;
     }
+
+    // Prevent concurrent initialization
+    if (isHookInitializing) {
+      console.log('⏳ Flash sale initializing, please wait...');
+      return;
+    }
+
+    isHookInitializing = true;
 
     const loadFlashSaleProducts = async () => {
       try {
         setLoading(true);
         setError(null);
         setInitialized(true); // Mark as initialized immediately
-        console.log('🔍 Loading flash sale products (cache-first)...');
+        console.log('🔍 Loading flash sale products (SINGLETON)...');
 
         const result = await flashSaleCache.getProducts(10);
+
+        // Save to global instance
+        globalFlashSaleInstance = {
+          products: result.products,
+          hasMore: result.hasMore,
+          loading: false,
+          error: null
+        };
+
         setFlashSaleProducts(result.products);
         setHasMore(result.hasMore);
 
-        console.log('✅ Flash sale products loaded:', result.products.length, 'items');
+        // Update global instance di real-time sync
+        const updateGlobalInstance = () => {
+          if (globalFlashSaleInstance) {
+            setFlashSaleProducts(globalFlashSaleInstance.products);
+            setHasMore(globalFlashSaleInstance.hasMore);
+          }
+        };
+
+        console.log('✅ Flash sale products loaded (SINGLETON):', result.products.length, 'items');
       } catch (err) {
         console.error('❌ Error loading flash sale products:', err);
         setError(err instanceof Error ? err.message : 'Failed to load flash sale products');
-        // Jangan setInitialized ke false agar tidak retry otomatis
       } finally {
         setLoading(false);
+        isHookInitializing = false;
       }
     };
 
     loadFlashSaleProducts();
 
-    // Setup real-time sync listener
+    // Setup real-time sync listener (hanya satu instance)
     const unsubscribeRealTime = flashSaleCache.onRealTimeSync(() => {
       console.log('🔄 Flash sale real-time update detected, refreshing...');
       loadFlashSaleProducts();
@@ -80,6 +112,55 @@ export const useFirebaseFlashSale = () => {
       unsubscribeRealTime();
     };
   }, [initialized]);
+
+  // Listen untuk flash sale config (countdown timer)
+  useEffect(() => {
+    import('firebase/firestore').then(({ doc, onSnapshot }) => {
+      const flashSaleRef = doc(db, 'flashSales', FLASH_SALE_DOC_ID);
+
+      const unsubscribe = onSnapshot(flashSaleRef, (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const config = { id: docSnapshot.id, ...docSnapshot.data() };
+          setFlashSaleConfig(config);
+          setIsFlashSaleActive(config.isActive);
+          console.log('🕐 Flash sale config loaded:', config.isActive);
+        } else {
+          setFlashSaleConfig(null);
+          setIsFlashSaleActive(false);
+          setTimeLeft('');
+        }
+      });
+
+      return () => unsubscribe();
+    });
+  }, []);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!flashSaleConfig?.isActive) {
+      setTimeLeft('');
+      return;
+    }
+
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const endTime = new Date(flashSaleConfig.endTime).getTime();
+      const difference = endTime - now;
+
+      if (difference > 0) {
+        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+        setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+      } else {
+        setTimeLeft('Flash sale ended');
+        setIsFlashSaleActive(false);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [flashSaleConfig]);
 
   // Load more products function
   const loadMoreProducts = useCallback(async () => {
@@ -231,7 +312,7 @@ export const useFirebaseFlashSale = () => {
     error,
     loadMoreProducts,
 
-    // Legacy values
+    // Flash sale config values
     flashSaleConfig,
     timeLeft,
     isFlashSaleActive,
