@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { collection, query, orderBy, limit as limitCount, startAfter, where } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
@@ -40,7 +40,11 @@ export const useFirebaseProductsRealTime = () => {
   const [cheapestLoading, setCheapestLoading] = useState(false);
   const [cheapestLastVisible, setCheapestLastVisible] = useState<any>(null);
   const [hasMoreCheapest, setHasMoreCheapest] = useState(true);
-  
+
+  // Cache sync debounce protection
+  const lastSyncTimeRef = useRef<number>(0);
+  const SYNC_DEBOUNCE_MS = 2000; // 2 seconds debounce
+
   useEffect(() => {
     console.log('🔄 Setting up SAFE event-based products system (HOME)...');
 
@@ -319,13 +323,26 @@ export const useFirebaseProductsRealTime = () => {
         }
       };
 
-      // Cache sync event listeners
+      // Cache sync event listeners with debounce protection
       const handleCacheSync = (event: StorageEvent) => {
         if (event.key === 'cache_sync_trigger') {
+          const now = Date.now();
+
+          // Debounce protection - hanya proses sync jika sudah 2 detik sejak sync terakhir
+          if (now - lastSyncTimeRef.current < SYNC_DEBOUNCE_MS) {
+            console.log('🚫 Cache sync debounced, skipping to prevent infinite loop');
+            return;
+          }
+
           console.log('🔄 Cross-device cache sync detected (HOME)');
-          loadInitialProducts();
-          loadFeaturedProducts();
-          loadFlashSaleProducts();
+          lastSyncTimeRef.current = now;
+
+          // Delay sedikit untuk memastikan tidak ada sync lain yang pending
+          setTimeout(() => {
+            loadInitialProducts();
+            loadFeaturedProducts();
+            loadFlashSaleProducts();
+          }, 100);
         }
       };
 

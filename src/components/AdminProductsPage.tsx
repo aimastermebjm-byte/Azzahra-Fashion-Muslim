@@ -5,6 +5,7 @@ import { useFirebaseProductsAdmin } from '../hooks/useFirebaseProductsAdmin';
 import { useFirebaseProducts } from '../hooks/useFirebaseProducts';
 import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
 import { ProductTableSkeleton, FlashSaleStatusSkeleton, MenuSkeleton } from './LoadingSkeleton';
+import { uploadMultipleImages, validateImageFile, generateImageName } from '../utils/imageUpload';
 
 interface AdminProductsPageProps {
   onBack: () => void;
@@ -50,7 +51,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     resellerPrice: '', // Changed from 0 to empty string
     costPrice: '', // Changed from 0 to empty string
     weight: '', // Changed from 1000 to empty string
-    images: [] as string[],
+    images: [] as (string | { file: File; preview: string; isUploading: boolean })[],
     variants: { sizes: [] as string[], colors: [] as string[], stock: {} as any },
     status: 'ready' as 'ready' | 'po'
   });
@@ -190,34 +191,52 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     return total;
   };
 
-  // Handle image upload and convert to base64
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle image upload and upload to Firebase Storage
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
+    const validFiles: File[] = [];
+
+    // Validate files
     Array.from(files).forEach((file) => {
-      // Check file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert(`File ${file.name} terlalu besar. Maksimal ukuran file adalah 5MB.`);
+      const validation = validateImageFile(file);
+      if (!validation.isValid) {
+        alert(validation.error);
         return;
       }
-
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        alert(`File ${file.name} bukan gambar. Silakan pilih file gambar.`);
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64String = event.target?.result as string;
-        setFormData(prev => ({
-          ...prev,
-          images: [...prev.images, base64String]
-        }));
-      };
-      reader.readAsDataURL(file);
+      validFiles.push(file);
     });
+
+    if (validFiles.length === 0) {
+      // Clear the input value to allow selecting the same file again
+      e.target.value = '';
+      return;
+    }
+
+    try {
+      // Show loading state
+      console.log(`🔄 Uploading ${validFiles.length} images to Firebase Storage...`);
+
+      // For adding new product, we'll use a temporary ID or upload immediately after getting the product ID
+      // For now, we'll store the files and upload after product is created
+      const previewUrls = validFiles.map(file => URL.createObjectURL(file));
+
+      setFormData(prev => ({
+        ...prev,
+        // Store both file objects and preview URLs
+        images: [...prev.images, ...validFiles.map((file, index) => ({
+          file,
+          preview: previewUrls[index],
+          isUploading: false
+        }))]
+      }));
+
+      console.log(`✅ ${validFiles.length} files ready for upload to Firebase Storage`);
+    } catch (error) {
+      console.error('❌ Error preparing images for upload:', error);
+      alert('Gagal mempersiapkan gambar untuk diupload. Silakan coba lagi.');
+    }
 
     // Clear the input value to allow selecting the same file again
     e.target.value = '';
@@ -277,8 +296,36 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     try {
       const totalStock = calculateTotalStock();
 
+      // Upload images to Firebase Storage first if there are any
+      let imageUrls: string[] = [];
+      const filesToUpload = formData.images.filter(img => typeof img === 'object' && img.file) as { file: File; preview: string; isUploading: boolean }[];
+
+      if (filesToUpload.length > 0) {
+        console.log(`🔄 Uploading ${filesToUpload.length} images to Firebase Storage...`);
+
+        // Create a temporary product ID for storage path
+        const tempProductId = `temp_${Date.now()}`;
+
+        try {
+          imageUrls = await uploadMultipleImages(
+            filesToUpload.map(img => img.file),
+            tempProductId
+          );
+          console.log(`✅ Successfully uploaded ${imageUrls.length} images to Firebase Storage`);
+        } catch (uploadError) {
+          console.error('❌ Failed to upload images:', uploadError);
+          alert('Gagal mengupload gambar ke Firebase Storage. Silakan coba lagi.');
+          return;
+        }
+      }
+
+      // Also keep existing URLs (for edited products)
+      const existingImageUrls = formData.images.filter(img => typeof img === 'string') as string[];
+      const allImageUrls = [...existingImageUrls, ...imageUrls];
+
       const newProduct = {
         ...formData,
+        images: allImageUrls,
         // Convert string fields to numbers, preserving original values
         retailPrice: parseInt(formData.retailPrice) || 0,
         resellerPrice: parseInt(formData.resellerPrice) || 0,
@@ -306,7 +353,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         sizes: newProduct.variants.sizes,
         colors: newProduct.variants.colors,
         status: newProduct.status,
-        weight: newProduct.weight
+        weight: newProduct.weight,
+        images: allImageUrls.length
       });
 
       await addProduct(newProduct);
@@ -336,7 +384,53 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     if (!editingProduct) return;
 
     try {
-      await updateProduct(editingProduct.id, formData);
+      // Upload new images to Firebase Storage first if there are any
+      let imageUrls: string[] = [];
+      const filesToUpload = formData.images.filter(img => typeof img === 'object' && img.file) as { file: File; preview: string; isUploading: boolean }[];
+
+      if (filesToUpload.length > 0) {
+        console.log(`🔄 Uploading ${filesToUpload.length} new images to Firebase Storage...`);
+
+        try {
+          imageUrls = await uploadMultipleImages(
+            filesToUpload.map(img => img.file),
+            editingProduct.id
+          );
+          console.log(`✅ Successfully uploaded ${imageUrls.length} new images to Firebase Storage`);
+        } catch (uploadError) {
+          console.error('❌ Failed to upload images:', uploadError);
+          alert('Gagal mengupload gambar ke Firebase Storage. Silakan coba lagi.');
+          return;
+        }
+      }
+
+      // Also keep existing URLs
+      const existingImageUrls = formData.images.filter(img => typeof img === 'string') as string[];
+      const allImageUrls = [...existingImageUrls, ...imageUrls];
+
+      // Prepare update data
+      const updateData = {
+        ...formData,
+        images: allImageUrls,
+        // Convert string fields to numbers
+        retailPrice: parseInt(formData.retailPrice) || 0,
+        resellerPrice: parseInt(formData.resellerPrice) || 0,
+        costPrice: parseInt(formData.costPrice) || 0,
+        weight: parseInt(formData.weight) || 0,
+        // Only update variants if they exist
+        variants: formData.variants.sizes.length > 0 ? formData.variants : undefined,
+        stock: formData.variants.sizes.length > 0 ? calculateTotalStock() : undefined,
+        status: formData.status
+      };
+
+      console.log('💾 Updating product in Firestore:', {
+        id: editingProduct.id,
+        name: updateData.name,
+        newImages: imageUrls.length,
+        totalImages: allImageUrls.length
+      });
+
+      await updateProduct(editingProduct.id, updateData);
       setShowEditModal(false);
       setEditingProduct(null);
     } catch (error) {
@@ -1086,34 +1180,44 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                         Gambar yang Ditambahkan ({formData.images.length})
                       </label>
                       <div className="grid grid-cols-4 gap-2">
-                        {formData.images.map((image, index) => (
-                          <div key={index} className="relative group">
-                            <img
-                              src={image}
-                              alt={`Preview ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg border border-gray-200"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = '/placeholder-product.jpg';
-                              }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setFormData({
-                                  ...formData,
-                                  images: formData.images.filter((_, i) => i !== index)
-                                });
-                              }}
-                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                            <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-                              {index + 1}
+                        {formData.images.map((image, index) => {
+                          const isFileObject = typeof image === 'object';
+                          const imageSrc = isFileObject ? (image as any).preview : (image as string);
+
+                          return (
+                            <div key={index} className="relative group">
+                              <img
+                                src={imageSrc}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = '/placeholder-product.jpg';
+                                }}
+                              />
+                              {isFileObject && (image as any).isUploading && (
+                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                                  <div className="text-white text-xs">⏳ Uploading...</div>
+                                </div>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    images: formData.images.filter((_, i) => i !== index)
+                                  });
+                                }}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                              <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                                {index + 1}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
                         💡 Gambar pertama akan menjadi gambar utama produk
@@ -1502,34 +1606,44 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                         Gambar yang Ditambahkan ({formData.images.length})
                       </label>
                       <div className="grid grid-cols-4 gap-2">
-                        {formData.images.map((image, index) => (
-                          <div key={index} className="relative group">
-                            <img
-                              src={image}
-                              alt={`Preview ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg border border-gray-200"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = '/placeholder-product.jpg';
-                              }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setFormData({
-                                  ...formData,
-                                  images: formData.images.filter((_, i) => i !== index)
-                                });
-                              }}
-                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                            <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-                              {index + 1}
+                        {formData.images.map((image, index) => {
+                          const isFileObject = typeof image === 'object';
+                          const imageSrc = isFileObject ? (image as any).preview : (image as string);
+
+                          return (
+                            <div key={index} className="relative group">
+                              <img
+                                src={imageSrc}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = '/placeholder-product.jpg';
+                                }}
+                              />
+                              {isFileObject && (image as any).isUploading && (
+                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                                  <div className="text-white text-xs">⏳ Uploading...</div>
+                                </div>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    images: formData.images.filter((_, i) => i !== index)
+                                  });
+                                }}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                              <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                                {index + 1}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
                         💡 Gambar pertama akan menjadi gambar utama produk
