@@ -94,6 +94,16 @@ export const useFirebaseFlashSale = () => {
       await clearFlashSaleFromProducts();
       console.log('✅ Firebase Flash Sale: Flash sale stopped successfully');
 
+      // Clear cache immediately to prevent products from reappearing
+      console.log('🗑️ Clearing flash sale cache after cleanup...');
+      flashSaleCache.clearCache();
+
+      // Reset global instance completely
+      globalFlashSaleInstance = null;
+
+      // Update local state
+      setFlashSaleProducts([]);
+
       // Trigger real-time sync untuk update instant
       flashSaleCache.triggerRealTimeSync();
     } catch (error) {
@@ -177,6 +187,9 @@ export const useFirebaseFlashSale = () => {
           } else if (!config.isActive && flashSaleProducts.length > 0) {
             // Clear flash sale products when not active (HANYA jika ada produk)
             console.log('🕐 Flash sale not active, clearing products...');
+
+            // Clear cache and reset state
+            flashSaleCache.clearCache();
             globalFlashSaleInstance = null;
             setFlashSaleProducts([]);
           }
@@ -186,6 +199,8 @@ export const useFirebaseFlashSale = () => {
           setTimeLeft('');
           // Clear products when no config exists (HANYA jika ada produk)
           if (flashSaleProducts.length > 0) {
+            console.log('🕐 No flash sale config, clearing cached products...');
+            flashSaleCache.clearCache();
             globalFlashSaleInstance = null;
             setFlashSaleProducts([]);
           }
