@@ -74,6 +74,21 @@ export const useFirebaseFlashSale = () => {
     }
   }, []);
 
+  // Define stopFlashSale early untuk bisa digunakan di useEffect
+  const stopFlashSale = useCallback(async () => {
+    try {
+      await updateFlashSale({ isActive: false });
+      await clearFlashSaleFromProducts();
+      console.log('✅ Firebase Flash Sale: Flash sale stopped successfully');
+
+      // Trigger real-time sync untuk update instant
+      flashSaleCache.triggerRealTimeSync();
+    } catch (error) {
+      console.error('❌ Firebase Flash Sale: Error stopping flash sale:', error);
+      throw error;
+    }
+  }, []);
+
   // Load flash sale products dengan SINGLETON protection
   useEffect(() => {
     // GLOBAL SINGLETON: Ceg multiple component instances
@@ -123,8 +138,16 @@ export const useFirebaseFlashSale = () => {
           setIsFlashSaleActive(config.isActive);
           console.log('🕐 Flash sale config loaded:', config.isActive);
 
-          // Trigger refresh when flash sale becomes active
-          if (config.isActive && globalFlashSaleInstance) {
+          // Check if flash sale has ended
+          const now = new Date().getTime();
+          const endTime = new Date(config.endTime).getTime();
+          const hasEnded = now > endTime;
+
+          if (hasEnded && config.isActive) {
+            console.log('🕐 Flash sale expired, stopping automatically...');
+            // Auto-stop expired flash sale
+            stopFlashSale();
+          } else if (config.isActive && globalFlashSaleInstance) {
             console.log('🔄 Flash sale activated, refreshing products...');
             globalFlashSaleInstance = null;
             isHookInitializing = false;
@@ -133,11 +156,19 @@ export const useFirebaseFlashSale = () => {
             setTimeout(() => {
               loadFlashSaleProducts();
             }, 1000);
+          } else if (!config.isActive) {
+            // Clear flash sale products when not active
+            console.log('🕐 Flash sale not active, clearing products...');
+            globalFlashSaleInstance = null;
+            setFlashSaleProducts([]);
           }
         } else {
           setFlashSaleConfig(null);
           setIsFlashSaleActive(false);
           setTimeLeft('');
+          // Clear products when no config exists
+          globalFlashSaleInstance = null;
+          setFlashSaleProducts([]);
         }
       });
 
@@ -166,11 +197,17 @@ export const useFirebaseFlashSale = () => {
       } else {
         setTimeLeft('Flash sale ended');
         setIsFlashSaleActive(false);
+
+        // Auto-stop flash sale when time ends
+        if (flashSaleConfig.isActive) {
+          console.log('🕐 Flash sale timer ended, stopping flash sale automatically...');
+          stopFlashSale(); // This will clean up products and trigger refresh
+        }
       }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [flashSaleConfig]);
+  }, [flashSaleConfig, stopFlashSale]);
 
   // Load more products function
   const loadMoreProducts = useCallback(async () => {
@@ -278,20 +315,6 @@ export const useFirebaseFlashSale = () => {
       flashSaleCache.triggerRealTimeSync();
     } catch (error) {
       console.error('❌ Firebase Flash Sale: Error starting flash sale:', error);
-      throw error;
-    }
-  };
-
-  const stopFlashSale = async () => {
-    try {
-      await updateFlashSale({ isActive: false });
-      await clearFlashSaleFromProducts();
-      console.log('✅ Firebase Flash Sale: Flash sale stopped successfully');
-
-      // Trigger real-time sync untuk update instant
-      flashSaleCache.triggerRealTimeSync();
-    } catch (error) {
-      console.error('❌ Firebase Flash Sale: Error stopping flash sale:', error);
       throw error;
     }
   };
