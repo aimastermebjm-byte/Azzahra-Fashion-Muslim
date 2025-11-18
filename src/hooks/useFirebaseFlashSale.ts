@@ -26,8 +26,14 @@ interface FlashSaleConfig {
 const FLASH_SALE_DOC_ID = 'current-flash-sale';
 
 export const useFirebaseFlashSale = () => {
-  // Gunakan singleton context untuk mencegah multiple listeners
-  const { flashSaleConfig, timeLeft, isFlashSaleActive, loading } = useFlashSaleContext();
+  // EMERGENCY: Disable flash sale completely untuk hentikan infinite loop
+  console.log('🚨 FLASH SALE DISABLED - Emergency fix untuk infinite loop');
+
+  // Static values untuk mencegah semua Firebase calls
+  const flashSaleConfig = null;
+  const timeLeft = '';
+  const isFlashSaleActive = false;
+  const loading = false;
 
   // Helper function to clean flash sale from products
   const clearFlashSaleFromProducts = async () => {
@@ -129,20 +135,15 @@ export const useFirebaseFlashSale = () => {
 
   // Check if a specific product is in the flash sale
   const isProductInFlashSale = useCallback((productId: string) => {
-    if (!flashSaleConfig || !flashSaleConfig.isActive) {
-      return false;
-    }
-    return flashSaleConfig.products.includes(productId) ||
-           flashSaleConfig.productIds?.includes(productId);
-  }, [flashSaleConfig]);
+    // EMERGENCY: Always return false untuk mencegah flash sale
+    return false;
+  }, []);
 
   // Get flash sale discount for a specific product
   const getProductFlashSaleDiscount = useCallback((productId: string) => {
-    if (!isProductInFlashSale(productId)) {
-      return 0;
-    }
-    return flashSaleConfig?.flashSaleDiscount || 0;
-  }, [flashSaleConfig, isProductInFlashSale]);
+    // EMERGENCY: Always return 0 untuk mencegah flash sale
+    return 0;
+  }, []);
 
   return {
     flashSaleConfig,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AdminProvider } from './contexts/AdminContext';
-import { FlashSaleProvider } from './contexts/FlashSaleContext';
+// import { FlashSaleProvider } from './contexts/FlashSaleContext'; // DISABLED - Emergency fix
 import ErrorBoundary from './components/ErrorBoundary';
 import HomePage from './components/HomePage';
 import ProductDetail from './components/ProductDetail';
@@ -571,9 +571,9 @@ function AppContent() {
 function App() {
   return (
     <AdminProvider>
-      <FlashSaleProvider>
-        <AppContent />
-      </FlashSaleProvider>
+      {/* <FlashSaleProvider> - DISABLED Emergency fix untuk infinite loop */}
+      <AppContent />
+      {/* </FlashSaleProvider> */}
     </AdminProvider>
   );
 }
