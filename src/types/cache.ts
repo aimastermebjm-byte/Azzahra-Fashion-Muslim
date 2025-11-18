@@ -86,14 +86,14 @@ export interface CacheInvalidationEvent {
 // Cache configuration constants
 export const CACHE_CONFIG = {
   TTL: {
-    HOME: 2 * 60 * 1000, // 2 minutes (reduced from 5)
-    SEARCH: 1 * 60 * 1000, // 1 minute (reduced from 3)
-    FEATURED: 5 * 60 * 1000, // 5 minutes (reduced from 10)
-    FLASHSALE: 30 * 1000, // 30 seconds (reduced from 1 minute)
-    PRODUCT_DETAIL: 2 * 60 * 1000, // 2 minutes (reduced from 5)
+    HOME: 10 * 60 * 1000, // 10 minutes (increased for better UX)
+    SEARCH: 3 * 60 * 1000, // 3 minutes (increased from 1)
+    FEATURED: 15 * 60 * 1000, // 15 minutes (increased from 5)
+    FLASHSALE: 5 * 60 * 1000, // 5 minutes (increased from 30s)
+    PRODUCT_DETAIL: 10 * 60 * 1000, // 10 minutes (increased from 2)
   },
   MAX_SIZE: 2 * 1024 * 1024, // 2MB (reduced from 10MB)
-  VERSION: '1.1.0',
+  VERSION: '1.2.0',
   CLEANUP_INTERVAL: 5 * 60 * 1000, // 5 minutes (reduced from 15)
   SEARCH_DEBOUNCE: 300, // 300ms
 } as const;
