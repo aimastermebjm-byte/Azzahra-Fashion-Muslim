@@ -512,56 +512,94 @@ export const useFirebaseProductsRealTime = () => {
       const { getDocs, collection, query, orderBy, limit, where, startAfter } = await import('firebase/firestore');
       const productsRef = collection(db, 'products');
 
-      // Build query based on search parameters
-      let q = query(
-        productsRef,
-        limit(20) // Limit to 20 products for search results
-      );
+      let querySnapshot;
 
-      // Add text search by name (case insensitive)
-      if (params.query && params.query.trim()) {
-        // Note: Firestore doesn't support case-insensitive search natively
-        // For production, consider using Algolia or building search indexes
-        // For now, we'll use a simple approach
-        const searchTerms = params.query.toLowerCase().split(' ');
+      try {
+        // Try dengan composite index (jika sudah ada)
+        // Build query based on search parameters
+        let q = query(
+          productsRef,
+          limit(50) // Ambil lebih banyak untuk client-side filtering
+        );
 
-        // Create multiple where clauses for name search
-        // This is a simplified approach - in production, use proper search service
-        if (searchTerms.length > 0) {
-          q = query(q, orderBy('name'));
+        // Add category filter
+        if (params.category && params.category !== 'all') {
+          q = query(q, where('category', '==', params.category));
+        }
+
+        // Add status filter
+        if (params.status && params.status !== 'all') {
+          q = query(q, where('status', '==', params.status));
+        }
+
+        // Add sorting
+        switch (params.sortBy) {
+          case 'termurah':
+            q = query(q, orderBy('retailPrice', 'asc'));
+            break;
+          case 'terbaru':
+          default:
+            q = query(q, orderBy('createdAt', 'desc'));
+            break;
+        }
+
+        querySnapshot = await getDocs(q);
+        console.log('✅ Search: Menggunakan indexed query');
+      } catch (indexError: any) {
+        if (indexError.message.includes('requires an index')) {
+          console.log('⚠️ Search: Index tidak ditemukan, menggunakan fallback query');
+
+          // Fallback query tanpa orderBy, lalu client-side sorting
+          let fallbackQuery = query(
+            productsRef,
+            limit(100) // Ambil lebih banyak untuk client-side processing
+          );
+
+          // Add filters tanpa orderBy
+          if (params.category && params.category !== 'all') {
+            fallbackQuery = query(fallbackQuery, where('category', '==', params.category));
+          }
+          if (params.status && params.status !== 'all') {
+            fallbackQuery = query(fallbackQuery, where('status', '==', params.status));
+          }
+
+          const fallbackSnapshot = await getDocs(fallbackQuery);
+
+          // Client-side sorting
+          let sortedDocs = fallbackSnapshot.docs;
+          switch (params.sortBy) {
+            case 'termurah':
+              sortedDocs = sortedDocs.sort((a, b) => {
+                const priceA = Number(a.data().retailPrice || 0);
+                const priceB = Number(b.data().retailPrice || 0);
+                return priceA - priceB;
+              });
+              break;
+            case 'terbaru':
+            default:
+              sortedDocs = sortedDocs.sort((a, b) => {
+                const dateA = a.data().createdAt?.toMillis ? a.data().createdAt.toMillis() :
+                             (typeof a.data().createdAt === 'string' ? new Date(a.data().createdAt).getTime() : 0);
+                const dateB = b.data().createdAt?.toMillis ? b.data().createdAt.toMillis() :
+                             (typeof b.data().createdAt === 'string' ? new Date(b.data().createdAt).getTime() : 0);
+                return dateB - dateA;
+              });
+              break;
+          }
+
+          querySnapshot = {
+            docs: sortedDocs,
+            size: sortedDocs.length,
+            empty: sortedDocs.length === 0,
+            forEach: (callback: (doc: any) => void) => sortedDocs.forEach(callback)
+          } as any;
+
+          console.log('✅ Search: Menggunakan fallback query dengan client-side sorting');
+        } else {
+          throw indexError;
         }
       }
 
-      // Add category filter
-      if (params.category && params.category !== 'all') {
-        q = query(q, where('category', '==', params.category));
-      }
-
-      // Add status filter
-      if (params.status && params.status !== 'all') {
-        q = query(q, where('status', '==', params.status));
-      }
-
-      // Add sorting
-      switch (params.sortBy) {
-        case 'termurah':
-          q = query(q, orderBy('retailPrice', 'asc'));
-          break;
-        case 'terbaru':
-        default:
-          q = query(q, orderBy('createdAt', 'desc'));
-          break;
-      }
-
-      // Pagination
-      if (params.page && params.page > 1) {
-        const cachedPage = productCache.getProductList(`search_${JSON.stringify(params)}`, params.page - 1);
-        if (cachedPage?.lastVisible) {
-          q = query(q, startAfter(cachedPage.lastVisible));
-        }
-      }
-
-      const querySnapshot = await getDocs(q);
       console.log('🔍 Firebase search results:', querySnapshot.docs.length, 'products');
 
       const searchResults: any[] = [];
