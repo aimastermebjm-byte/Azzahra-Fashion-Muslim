@@ -192,7 +192,7 @@ class FlashSaleCache {
   }
 
   /**
-   * Load more products (pagination)
+   * Load more products (pagination) dengan fallback
    */
   async loadMoreProducts(currentCount: number, limit: number = 10): Promise<{
     products: FlashSaleProduct[];
@@ -204,14 +204,54 @@ class FlashSaleCache {
       const { collection, query, where, orderBy, limit: limitFn, getDocs } = await import('firebase/firestore');
       const { db } = await import('../utils/firebaseClient');
 
-      const q = query(
-        collection(db, 'products'),
-        where('isFlashSale', '==', true),
-        orderBy('createdAt', 'desc'),
-        limitFn(limit)
-      );
+      let querySnapshot;
 
-      const querySnapshot = await getDocs(q);
+      try {
+        // Coba dengan composite index
+        const q = query(
+          collection(db, 'products'),
+          where('isFlashSale', '==', true),
+          orderBy('createdAt', 'desc'),
+          limitFn(limit)
+        );
+        querySnapshot = await getDocs(q);
+        console.log('✅ Flash sale loadMore: Menggunakan indexed query');
+      } catch (indexError: any) {
+        if (indexError.message.includes('requires an index')) {
+          console.log('⚠️ Flash sale loadMore: Index tidak ditemukan, menggunakan fallback');
+
+          // Fallback query tanpa orderBy
+          const fallbackQuery = query(
+            collection(db, 'products'),
+            where('isFlashSale', '==', true),
+            limitFn(limit + 20) // Ambil extra untuk sorting
+          );
+          const fallbackSnapshot = await getDocs(fallbackQuery);
+
+          // Client-side sorting
+          const sortedDocs = fallbackSnapshot.docs.sort((a, b) => {
+            const dateA = a.data().createdAt?.toMillis ? a.data().createdAt.toMillis() :
+                         (typeof a.data().createdAt === 'string' ? new Date(a.data().createdAt).getTime() : 0);
+            const dateB = b.data().createdAt?.toMillis ? b.data().createdAt.toMillis() :
+                         (typeof b.data().createdAt === 'string' ? new Date(b.data().createdAt).getTime() : 0);
+            return dateB - dateA;
+          });
+
+          // Skip products yang sudah dimuat (pagination manual)
+          const paginatedDocs = sortedDocs.slice(currentCount, currentCount + limit);
+
+          querySnapshot = {
+            docs: paginatedDocs,
+            size: paginatedDocs.length,
+            empty: paginatedDocs.length === 0,
+            forEach: (callback: (doc: any) => void) => paginatedDocs.forEach(callback)
+          } as any;
+
+          console.log('✅ Flash sale loadMore: Menggunakan fallback dengan client-side sorting');
+        } else {
+          throw indexError;
+        }
+      }
       const newProducts: FlashSaleProduct[] = [];
 
       querySnapshot.forEach((doc) => {
@@ -252,7 +292,7 @@ class FlashSaleCache {
   }
 
   /**
-   * Refresh from Firebase
+   * Refresh dari Firebase dengan fallback query
    */
   private async refreshFromFirebase(): Promise<{
     products: FlashSaleProduct[];
@@ -263,14 +303,52 @@ class FlashSaleCache {
       const { collection, query, where, orderBy, limit: limitFn, getDocs } = await import('firebase/firestore');
       const { db } = await import('../utils/firebaseClient');
 
-      const q = query(
-        collection(db, 'products'),
-        where('isFlashSale', '==', true),
-        orderBy('createdAt', 'desc'),
-        limitFn(10)
-      );
+      let querySnapshot;
 
-      const querySnapshot = await getDocs(q);
+      try {
+        // Coba dengan composite index (jika sudah ada)
+        const q = query(
+          collection(db, 'products'),
+          where('isFlashSale', '==', true),
+          orderBy('createdAt', 'desc'),
+          limitFn(10)
+        );
+        querySnapshot = await getDocs(q);
+        console.log('✅ Flash sale: Menggunakan indexed query');
+      } catch (indexError: any) {
+        if (indexError.message.includes('requires an index')) {
+          console.log('⚠️ Flash sale: Index tidak ditemukan, menggunakan fallback query');
+
+          // Fallback query tanpa orderBy, lalu client-side sorting
+          const fallbackQuery = query(
+            collection(db, 'products'),
+            where('isFlashSale', '==', true),
+            limitFn(50) // Ambil lebih banyak untuk client-side sorting
+          );
+          const fallbackSnapshot = await getDocs(fallbackQuery);
+
+          // Client-side sorting
+          const sortedDocs = fallbackSnapshot.docs.sort((a, b) => {
+            const dateA = a.data().createdAt?.toMillis ? a.data().createdAt.toMillis() :
+                         (typeof a.data().createdAt === 'string' ? new Date(a.data().createdAt).getTime() : 0);
+            const dateB = b.data().createdAt?.toMillis ? b.data().createdAt.toMillis() :
+                         (typeof b.data().createdAt === 'string' ? new Date(b.data().createdAt).getTime() : 0);
+            return dateB - dateA; // Urutan descending
+          });
+
+          // Batasi hasil setelah sorting
+          querySnapshot = {
+            docs: sortedDocs.slice(0, 10),
+            size: sortedDocs.length,
+            empty: sortedDocs.length === 0,
+            forEach: (callback: (doc: any) => void) => sortedDocs.slice(0, 10).forEach(callback)
+          } as any;
+
+          console.log('✅ Flash sale: Menggunakan fallback query dengan client-side sorting');
+        } else {
+          throw indexError;
+        }
+      }
       const products: FlashSaleProduct[] = [];
 
       querySnapshot.forEach((doc) => {

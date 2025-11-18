@@ -32,18 +32,26 @@ export const useFirebaseFlashSale = () => {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
   // Flash sale config (legacy support)
   const flashSaleConfig = null;
   const timeLeft = '';
   const isFlashSaleActive = true; // Always active untuk cache-based approach
 
-  // Load flash sale products saat component mount
+  // Load flash sale products saat component mount dengan infinite loop protection
   useEffect(() => {
+    // Prevent multiple initialization
+    if (initialized) {
+      console.log('🚫 Flash sale already initialized, skipping...');
+      return;
+    }
+
     const loadFlashSaleProducts = async () => {
       try {
         setLoading(true);
         setError(null);
+        setInitialized(true); // Mark as initialized immediately
         console.log('🔍 Loading flash sale products (cache-first)...');
 
         const result = await flashSaleCache.getProducts(10);
@@ -54,13 +62,14 @@ export const useFirebaseFlashSale = () => {
       } catch (err) {
         console.error('❌ Error loading flash sale products:', err);
         setError(err instanceof Error ? err.message : 'Failed to load flash sale products');
+        // Jangan setInitialized ke false agar tidak retry otomatis
       } finally {
         setLoading(false);
       }
     };
 
     loadFlashSaleProducts();
-  }, []);
+  }, [initialized]);
 
   // Load more products function
   const loadMoreProducts = useCallback(async () => {
