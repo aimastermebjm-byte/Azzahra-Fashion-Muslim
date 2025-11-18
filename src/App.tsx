@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { AdminProvider } from './contexts/AdminContext';
 // import { FlashSaleProvider } from './contexts/FlashSaleContext'; // DISABLED - Emergency fix
 import ErrorBoundary from './components/ErrorBoundary';
+
+// Cache busting version - force browser refresh
+const APP_VERSION = '2.1.0';
 import HomePage from './components/HomePage';
 import ProductDetail from './components/ProductDetail';
 import CartPage from './components/CartPage';
