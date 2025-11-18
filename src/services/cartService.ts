@@ -1,9 +1,10 @@
-// Cart Service - Pure Firebase Real-time Cart System
-// Single source of truth: Firebase Firestore only
+// Cart Service - Cache-First Cart System with Firebase Sync
+// Cache-first approach with Firebase as single source of truth
 
 import { auth } from '../utils/firebaseClient';
 import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
+import { cartCache } from '../utils/cartCache';
 
 export interface CartItem {
   id: string;
@@ -28,7 +29,7 @@ export interface UserCart {
 class CartService {
   private readonly FIREBASE_COLLECTION = 'user_carts';
 
-  // Get current user's cart from Firebase only
+  // Get current user's cart with cache-first approach
   async getCart(): Promise<CartItem[]> {
     try {
       const user = auth.currentUser;
@@ -38,14 +39,34 @@ class CartService {
         return [];
       }
 
+      // Cache-first: coba dari localStorage dulu
+      console.log('🔍 Trying cache first for cart...');
+      const cachedCart = cartCache.getCart(user.uid);
+
+      if (cachedCart) {
+        console.log('✅ Using cached cart:', cachedCart.length, 'items');
+
+        // Background sync jika cache sudah tua
+        const cacheAge = cartCache.getCacheAge(user.uid);
+        if (cacheAge > 5 * 60 * 1000) { // 5 minutes
+          console.log('🔄 Cart cache expired, background syncing...');
+          setTimeout(() => this.syncFromFirebase(user.uid), 1000);
+        }
+
+        return cachedCart;
+      }
+
+      // Load dari Firebase jika tidak ada cache
       console.log('🔥 Loading cart from Firebase for user:', user.uid);
       const firebaseCart = await this.getCartFromFirebase(user.uid);
 
       if (firebaseCart && firebaseCart.length > 0) {
         console.log('✅ Cart loaded from Firebase:', firebaseCart.length, 'items');
+        cartCache.setCart(user.uid, firebaseCart);
         return firebaseCart;
       } else {
         console.log('ℹ️ No cart found in Firebase - returning empty cart');
+        cartCache.setCart(user.uid, []);
         return [];
       }
     } catch (error) {
@@ -355,10 +376,32 @@ class CartService {
         lastUpdated: new Date().toISOString()
       });
 
+      // Update cache juga
+      cartCache.setCart(userId, cart);
+      cartCache.triggerSync(); // Trigger cross-device sync
+
       console.log('✅ Cart saved to Firebase successfully');
     } catch (error) {
       console.error('❌ Error saving cart to Firebase:', error);
       throw error;
+    }
+  }
+
+  // Sync cart dari Firebase (untuk background refresh)
+  private async syncFromFirebase(userId: string): Promise<void> {
+    try {
+      console.log('🔄 Syncing cart from Firebase for user:', userId);
+      const firebaseCart = await this.getCartFromFirebase(userId);
+
+      if (firebaseCart) {
+        cartCache.setCart(userId, firebaseCart);
+        console.log('✅ Cart synced from Firebase:', firebaseCart.length, 'items');
+      } else {
+        cartCache.setCart(userId, []);
+        console.log('✅ Cart synced from Firebase: empty');
+      }
+    } catch (error) {
+      console.error('❌ Error syncing cart from Firebase:', error);
     }
   }
 
