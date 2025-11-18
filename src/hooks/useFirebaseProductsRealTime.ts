@@ -254,128 +254,19 @@ export const useFirebaseProductsRealTime = () => {
       }
     };
 
-    // Load flash sale products dengan cache-first approach
+    // DISABLED: Flash sale sekarang menggunakan useFirebaseFlashSale hook sendiri
+    // Ini untuk mencegah infinite loop dan multiple Firebase reads
     const loadFlashSaleProducts = async () => {
-      try {
-        console.log('🔍 Trying cache first for flash sale products...');
-
-        // Coba dapatkan dari cache dulu (selalu gunakan cache untuk mencegah Firebase reads)
-        const cachedFlashSale = productCache.getFlashSaleProducts();
-        if (cachedFlashSale) {
-          console.log('✅ Using cached flash sale products:', cachedFlashSale.products.length, 'products');
-          setFlashSaleProducts(cachedFlashSale.products);
-          setFlashSaleLoading(false);
-
-          // Background refresh jika cache sudah lama
-          const cacheAge = Date.now() - cachedFlashSale.lastUpdated;
-          if (cacheAge > CACHE_CONFIG.TTL.FLASHSALE) {
-            console.log('🔄 Cache expired, background refreshing flash sale...');
-            setTimeout(() => loadFreshFlashSaleProducts(), 1000);
-          }
-          return;
-        }
-
-        // Load fresh data dari Firebase
-        await loadFreshFlashSaleProducts();
-      } catch (error) {
-        console.error('❌ Failed to load flash sale products:', error);
-        setFlashSaleProducts([]);
-        setFlashSaleLoading(false);
-      }
+      console.log('🚫 Flash sale loading disabled - using useFirebaseFlashSale hook instead');
+      setFlashSaleProducts([]);
+      setFlashSaleLoading(false);
     };
 
-    // Separate function untuk fresh loading (untuk background refresh)
+    // DISABLED: Flash sale fresh loading - using useFirebaseFlashSale hook instead
     const loadFreshFlashSaleProducts = async () => {
-      // Protection: jangan load jika sedang loading
-      if (flashSaleLoading) {
-        console.log('⏸️ Flash sale already loading, skipping...');
-        return;
-      }
-
-      try {
-        console.log('🔥 Loading fresh flash sale products from Firebase...');
-        const { getDocs, where } = await import('firebase/firestore');
-        const productsRef = collection(db, 'products');
-
-        // Optimasi: gunakan limit kecil untuk loading cepat
-        const q = query(
-          productsRef,
-          where('isFlashSale', '==', true),
-          limitCount(10) // Dikurangi lagi untuk mencegah high reads
-        );
-
-        const querySnapshot = await getDocs(q);
-        console.log('🔥 Fresh flash sale products loaded:', querySnapshot.docs.length, 'products');
-
-        const loadedFlashSale: Product[] = [];
-
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-
-          // Calculate total stock from variants if available
-          const stock = Number(data.stock || 0);
-          const calculatedTotalStock = data.variants?.stock ?
-            Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
-              return total + Object.values(sizeStock as any).reduce((sizeTotal: number, colorStock: any) => {
-                return sizeTotal + Number(colorStock || 0);
-              }, 0);
-            }, 0) : stock;
-
-          const variantsData = {
-            sizes: data.variants?.sizes || data.sizes || [],
-            colors: data.variants?.colors || data.colors || [],
-            stock: data.variants?.stock && typeof data.variants?.stock === 'object' ? data.variants.stock : {}
-          };
-
-          loadedFlashSale.push({
-            id: doc.id,
-            name: data.name || '',
-            description: data.description || '',
-            category: data.category || 'uncategorized',
-            retailPrice: Number(data.retailPrice || data.price || 0),
-            resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
-            costPrice: Number(data.costPrice) || Number(data.retailPrice || data.price || 0) * 0.6,
-            stock: calculatedTotalStock,
-            images: (data.images || []),
-            image: data.images?.[0] || '/placeholder-product.jpg',
-            variants: variantsData,
-            isFeatured: Boolean(data.isFeatured || data.featured),
-            isFlashSale: Boolean(data.isFlashSale),
-            flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
-            originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),
-            originalResellerPrice: Number(data.originalResellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
-            createdAt: data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt?.toDate()) : new Date(),
-            salesCount: Number(data.salesCount) || 0,
-            featuredOrder: Number(data.featuredOrder) || 0,
-            weight: Number(data.weight) || 0,
-            unit: 'gram',
-            status: data.status || (data.condition === 'baru' ? 'ready' : 'po') || 'ready',
-            estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
-          });
-        });
-
-        // Client-side sorting jika menggunakan fallback query (createdAt descending)
-        const sortedFlashSale = loadedFlashSale.sort((a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-
-        // Simpan ke cache
-        productCache.setFlashSaleProducts({
-          products: sortedFlashSale,
-          activeFlashSale: null, // TODO: Get active flash sale data
-          lastUpdated: Date.now()
-        });
-
-        console.log('💾 Flash sale products cached for faster loading');
-
-        setFlashSaleProducts(sortedFlashSale);
-        setFlashSaleLoading(false);
-
-      } catch (error) {
-        console.error('❌ Failed to load flash sale products:', error);
-        setFlashSaleProducts([]);
-        setFlashSaleLoading(false);
-      }
+      console.log('🚫 Fresh flash sale loading disabled - using useFirebaseFlashSale hook');
+      setFlashSaleLoading(false);
+      return;
     };
 
     // EVENT-BASED SYNC ONLY (COST-EFFECTIVE!)

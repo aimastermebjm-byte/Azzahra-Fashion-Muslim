@@ -36,6 +36,8 @@ class FlashSaleCache {
   private readonly storageKey = 'azzahra_flashsale_cache';
   private readonly version = '1.0.0';
   private readonly ttl = 5 * 60 * 1000; // 5 minutes TTL
+  private isLoading = false; // Global loading flag
+  private loadingPromise: Promise<any> | null = null; // Promise queue
 
   /**
    * Get cached flash sale products
@@ -160,23 +162,31 @@ class FlashSaleCache {
   }
 
   /**
-   * Get products for display (cached + Firebase fallback)
+   * Get products for display dengan infinite loop protection
    */
   async getProducts(limit: number = 10): Promise<{
     products: FlashSaleProduct[];
     hasMore: boolean;
     lastVisible?: any;
   }> {
+    // Prevent multiple concurrent requests
+    if (this.isLoading && this.loadingPromise) {
+      console.log('⏸️ Flash sale already loading, returning existing promise...');
+      return this.loadingPromise;
+    }
+
     // Try cache first
     const cached = this.getFlashSaleProducts();
     if (cached) {
       console.log('✅ Using cached flash sale products for display');
 
-      // Background refresh jika cache sudah lama
+      // Background refresh hanya jika cache sudah lama dan tidak sedang loading
       const cacheAge = this.getCacheAge();
-      if (cacheAge > 3 * 60 * 1000) { // 3 minutes
+      if (cacheAge > 3 * 60 * 1000 && !this.isLoading) { // 3 minutes
         console.log('🔄 Flash sale cache getting old, will refresh in background');
-        setTimeout(() => this.refreshFromFirebase(), 2000);
+        setTimeout(() => {
+          if (!this.isLoading) this.refreshFromFirebase();
+        }, 2000);
       }
 
       return {
@@ -187,8 +197,14 @@ class FlashSaleCache {
     }
 
     // Load from Firebase jika tidak ada cache
+    if (this.isLoading) {
+      console.log('⏸️ Flash sale already loading from Firebase, waiting...');
+      return this.loadingPromise!;
+    }
+
     console.log('🔥 Loading flash sale products from Firebase...');
-    return this.refreshFromFirebase();
+    this.loadingPromise = this.refreshFromFirebase();
+    return this.loadingPromise;
   }
 
   /**
@@ -292,13 +308,16 @@ class FlashSaleCache {
   }
 
   /**
-   * Refresh dari Firebase dengan fallback query
+   * Refresh dari Firebase dengan fallback query dan loading protection
    */
   private async refreshFromFirebase(): Promise<{
     products: FlashSaleProduct[];
     hasMore: boolean;
     lastVisible?: any;
   }> {
+    // Set loading flag
+    this.isLoading = true;
+
     try {
       const { collection, query, where, orderBy, limit: limitFn, getDocs } = await import('firebase/firestore');
       const { db } = await import('../utils/firebaseClient');
@@ -391,6 +410,10 @@ class FlashSaleCache {
     } catch (error) {
       console.error('❌ Error refreshing flash sale products:', error);
       return { products: [], hasMore: false };
+    } finally {
+      // Always reset loading flag
+      this.isLoading = false;
+      this.loadingPromise = null;
     }
   }
 }
