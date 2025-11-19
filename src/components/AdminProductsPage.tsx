@@ -21,10 +21,10 @@ interface FlashSaleConfig {
 }
 
 const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) => {
-  const { products, loading } = useFirebaseProductsAdmin();
+  const { products, loading, updateProduct } = useFirebaseProductsAdmin();
 
-  // Tetap gunakan fungsi dari original hook untuk update/add/delete
-  const { updateProduct, addProduct, deleteProduct } = useFirebaseProducts();
+  // Tetap gunakan fungsi dari original hook untuk add/delete
+  const { addProduct, deleteProduct } = useFirebaseProducts();
   // const { flashSaleConfig, timeLeft, isFlashSaleActive, startFlashSale, stopFlashSale } = useFirebaseFlashSale(); // DISABLED - Prevent infinite loop
 
   // Mock flash sale data to prevent errors
