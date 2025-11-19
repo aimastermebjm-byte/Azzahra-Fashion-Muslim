@@ -25,11 +25,12 @@ export const useFirebaseProductsRealTimeSimple = () => {
 
       // 🔥 STEP 1: Try Batch System First
       try {
-        const batchRef = doc(db, 'productBatches', 'batch_1');
-        const batchSnap = await getDoc(batchRef);
+        const batchRef = collection(db, 'productBatches');
+        const q = query(batchRef, where('__name__', '==', 'batch_1'));
+        const batchSnapshot = await getDocs(q);
 
-        if (batchSnap.exists()) {
-          const batchData = batchSnap.data();
+        if (!batchSnapshot.empty && batchSnapshot.docs[0].exists()) {
+          const batchData = batchSnapshot.docs[0].data();
           const allProducts = batchData.products || [];
 
           if (allProducts.length > 0) {
