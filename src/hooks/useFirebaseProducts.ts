@@ -19,9 +19,9 @@ import { invalidateProductCache } from '../utils/productCache';
 export const useFirebaseProducts = () => {
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // 🔥 DISABLE AUTO LOADING
   const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(20); // Fixed 20 produk untuk infinite scroll seperti Shopee
@@ -105,11 +105,11 @@ export const useFirebaseProducts = () => {
     }
   }, [productsPerPage]);
 
-  // INITIAL LOAD: Load data pertama kali saat component mount
-  useEffect(() => {
-    console.log('🔄 Loading initial products...');
-    refreshProducts();
-  }, []); // Empty dependency untuk initial load only
+  // 🔥 DISABLED: INITIAL LOAD - Using batch system instead
+  // useEffect(() => {
+  //   console.log('🔄 Loading initial products...');
+  //   refreshProducts();
+  // }, []); // Empty dependency untuk initial load only
 
   // CROSS-DEVICE EVENT SYSTEM: Refresh menggunakan localStorage events
   useEffect(() => {
