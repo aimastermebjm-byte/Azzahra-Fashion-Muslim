@@ -154,5 +154,84 @@ export const useFirebaseProductsAdmin = () => {
     }
   };
 
-  return { products, loading: loading && initialLoad, error, initialLoad, updateProduct };
+  // 🔥 BATCH SYSTEM: Update product stock in batch (not individual collection)
+  const updateProductStock = async (id: string, quantity: number, variantInfo?: { size: string; color: string }) => {
+    try {
+      console.log('🔄 Reducing stock from BATCH SYSTEM:', { id, quantity, variantInfo });
+
+      // Get current batch
+      const batchRef = collection(db, 'productBatches');
+      const batchQuery = query(batchRef, where('__name__', '==', 'batch_1'));
+      const batchSnapshot = await getDocs(batchQuery);
+
+      if (!batchSnapshot.empty && batchSnapshot.docs[0].exists()) {
+        const batchDoc = batchSnapshot.docs[0];
+        const batchData = batchDoc.data();
+        let products = batchData.products || [];
+
+        // Find and update stock for the product
+        products = products.map((product: any) => {
+          if (product.id === id) {
+            console.log('✅ Found product to update stock:', product.name);
+
+            let updatedProduct = { ...product };
+
+            if (variantInfo?.size && variantInfo?.color && product.variants?.stock) {
+              // Update variant stock
+              const { size, color } = variantInfo;
+              const currentVariantStock = Number(product.variants.stock[size]?.[color] || 0);
+              const newVariantStock = Math.max(0, currentVariantStock - quantity);
+
+              updatedProduct.variants = {
+                ...product.variants,
+                stock: {
+                  ...product.variants.stock,
+                  [size]: {
+                    ...(product.variants.stock[size] || {}),
+                    [color]: newVariantStock
+                  }
+                }
+              };
+
+              // Also update total stock
+              const totalStock = Number(product.stock || 0);
+              updatedProduct.stock = Math.max(0, totalStock - quantity);
+
+              console.log(`📦 Variant stock updated: ${size}-${color}: ${currentVariantStock} → ${newVariantStock}`);
+            } else {
+              // Update total stock only
+              const currentStock = Number(product.stock || 0);
+              const newStock = Math.max(0, currentStock - quantity);
+              updatedProduct.stock = newStock;
+
+              console.log(`📦 Total stock updated: ${currentStock} → ${newStock}`);
+            }
+
+            return updatedProduct;
+          }
+          return product;
+        });
+
+        // Update the batch
+        await setDoc(doc(db, 'productBatches', 'batch_1'), {
+          ...batchData,
+          products: products,
+          totalProducts: products.length,
+          updatedAt: new Date().toISOString()
+        });
+
+        console.log('✅ Product stock updated successfully in batch system');
+        return quantity;
+
+      } else {
+        console.error('❌ Batch system not found for stock update');
+        return 0;
+      }
+    } catch (error) {
+      console.error('❌ Error updating product stock in batch:', error);
+      return 0;
+    }
+  };
+
+  return { products, loading: loading && initialLoad, error, initialLoad, updateProduct, updateProductStock };
 };

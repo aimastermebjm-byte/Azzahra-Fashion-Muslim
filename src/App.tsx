@@ -24,6 +24,7 @@ import BottomNavigation from './components/BottomNavigation';
 import { OngkirTestPage } from './pages/OngkirTestPage';
 import { useFirebaseProductsRealTimeSimple } from './hooks/useFirebaseProductsRealTimeSimple';
 import { useFirebaseProducts } from './hooks/useFirebaseProducts';
+import { useFirebaseProductsAdmin } from './hooks/useFirebaseProductsAdmin';
 import { useFirebaseAuth } from './hooks/useFirebaseAuth';
 import { useAdmin } from './contexts/AdminContext';
 // import { AppStorage } from './utils/appStorage'; // REMOVED - Firebase only
@@ -45,8 +46,9 @@ function AppContent() {
   // Gunakan simple hook untuk HomePage products (NO CACHE)
   const { products, loading, loadMore, hasMore, searchProducts, refresh } = useFirebaseProductsRealTimeSimple();
 
-  // Tetap gunakan original hook untuk fungsi update stock dan manual refresh
-  const { updateProductStock, refreshProducts } = useFirebaseProducts();
+  // 🔥 BATCH SYSTEM: Gunakan admin hook untuk update stock (batch-compatible)
+  const { updateProductStock } = useFirebaseProductsAdmin();
+  const { refreshProducts } = useFirebaseProducts();
   const { addOrder } = useAdmin();
 
   // Initialize Firebase-only app on app start
@@ -118,8 +120,18 @@ function AppContent() {
     }
 
     try {
-      // Get the correct price based on user role
-      const price = user?.role === 'reseller' ? product.resellerPrice : product.retailPrice;
+      // Get the correct price based on flash sale status and user role
+      let price;
+      if (product.isFlashSale && product.flashSalePrice) {
+        // Flash sale price takes priority
+        price = product.flashSalePrice;
+      } else if (user?.role === 'reseller') {
+        // Reseller price
+        price = product.resellerPrice;
+      } else {
+        // Retail price
+        price = product.retailPrice;
+      }
 
       await cartService.addToCart({
         productId: product.id,
