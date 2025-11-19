@@ -45,16 +45,7 @@ export const useFirebaseProductsRealTimeSimple = () => {
       querySnapshot.forEach((doc) => {
         const data = doc.data();
 
-        // DEBUG: Log raw Firestore data for first 3 products
-        if (newProducts.length < 3) {
-          console.log(`🔥 Firebase Raw Data - Product ${newProducts.length + 1} (${doc.id}):`);
-          console.log('  - Raw data.image:', data.image);
-          console.log('  - Raw data.images:', data.images);
-          console.log('  - Raw data.images type:', typeof data.images, 'isArray:', Array.isArray(data.images));
-          console.log('  - Raw data.images length:', data.images?.length);
-          console.log('  - All raw fields:', Object.keys(data));
-        }
-
+  
         const processedProduct = {
           id: doc.id,
           name: data.name || '',
@@ -65,7 +56,7 @@ export const useFirebaseProductsRealTimeSimple = () => {
           costPrice: Number(data.costPrice || 0),
           stock: Number(data.stock || 0),
           images: Array.isArray(data.images) ? data.images : [],
-          image: data.image || data.images?.[0] || '/placeholder-product.jpg',
+          image: data.images?.[0] || data.image || '/placeholder-product.jpg',
           variants: data.variants || [],
           status: data.status || 'ready',
           isFlashSale: data.isFlashSale || false,
@@ -175,7 +166,7 @@ export const useFirebaseProductsRealTimeSimple = () => {
           costPrice: Number(data.costPrice || 0),
           stock: Number(data.stock || 0),
           images: Array.isArray(data.images) ? data.images : [],
-          image: data.image || data.images?.[0] || '/placeholder-product.jpg',
+          image: data.images?.[0] || data.image || '/placeholder-product.jpg',
           variants: data.variants || [],
           status: data.status || 'ready',
           isFlashSale: data.isFlashSale || false,
