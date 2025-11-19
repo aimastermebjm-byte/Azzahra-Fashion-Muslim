@@ -23,6 +23,7 @@ export const useFirebaseFlashSaleSimpleOptimized = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isFlashSaleActive, setIsFlashSaleActive] = useState(false);
+  const [cachedEndTime, setCachedEndTime] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState({
     hours: 0,
     minutes: 0,
@@ -44,6 +45,9 @@ export const useFirebaseFlashSaleSimpleOptimized = () => {
           const now = new Date().getTime();
           const endTime = new Date(config.endTime).getTime();
           const hasEnded = now > endTime;
+
+          // Cache the endTime for timer use (no more Firebase reads!)
+          setCachedEndTime(endTime);
 
           // Set initial state based on config and time
           const isActive = !hasEnded && config.isActive;
@@ -68,35 +72,32 @@ export const useFirebaseFlashSaleSimpleOptimized = () => {
   // ⏰ Client-side countdown timer (0 reads - all client calculation!)
   useEffect(() => {
     const calculateTimeLeft = () => {
-      const flashSaleRef = doc(db, 'flashSale', 'config');
-      getDoc(flashSaleRef).then((docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const config = docSnapshot.data() as FlashSaleConfig;
-          const now = new Date().getTime();
-          const endTime = new Date(config.endTime).getTime();
-          const difference = endTime - now;
+      // NO FIREBASE CALLS - Use cached endTime from initial config load
+      // This prevents infinite loop and extra reads
+      if (!isFlashSaleActive || !cachedEndTime) {
+        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
 
-          if (difference > 0 && config.isActive) {
-            const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+      const now = new Date().getTime();
+      const difference = cachedEndTime - now;
 
-            setTimeLeft({ hours, minutes, seconds });
-            setIsFlashSaleActive(true);
-          } else {
-            setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
-            setIsFlashSaleActive(false);
-          }
-        }
-      }).catch(() => {
-        // Silent fail
-      });
+      if (difference > 0) {
+        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+        setTimeLeft({ hours, minutes, seconds });
+      } else {
+        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+        setIsFlashSaleActive(false);
+      }
     };
 
-    // Update timer setiap detik (client-side only, 0 reads)
+    // Update timer setiap detik (100% client-side, 0 reads)
     const timer = setInterval(calculateTimeLeft, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [isFlashSaleActive, cachedEndTime]);
 
   // Load flash sale products from batch (only when active)
   const loadFlashSaleProducts = useCallback(async () => {

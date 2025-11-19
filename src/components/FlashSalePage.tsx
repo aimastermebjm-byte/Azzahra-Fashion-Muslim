@@ -1,7 +1,7 @@
 import React from 'react';
 import { ShoppingCart, Zap, Flame, Percent } from 'lucide-react';
 import ProductCard from './ProductCard';
-import { useFirebaseFlashSaleSimple } from '../hooks/useFirebaseFlashSaleSimple';
+import { useFirebaseFlashSaleSimpleOptimized } from '../hooks/useFirebaseFlashSaleSimpleOptimized';
 import { useRealTimeCart } from '../hooks/useRealTimeCart';
 
 interface FlashSalePageProps {
@@ -17,13 +17,13 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
   onCartClick,
   onAddToCart
 }) => {
-  // Use the same hook as HomePage for consistency (NO CACHE)
+  // Use the optimized hook for 1 read total
   const {
     timeLeft,
     isFlashSaleActive,
     flashSaleProducts,
     loading: flashSaleLoading
-  } = useFirebaseFlashSaleSimple();
+  } = useFirebaseFlashSaleSimpleOptimized();
   const { cartItems } = useRealTimeCart();
 
   const handleAddToCart = (product: any) => {

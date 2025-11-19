@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ShoppingCart, ChevronUp, MessageCircle, Star } from 'lucide-react';
 import { Product } from '../types';
-import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
 
 interface ProductCardProps {
   product: Product;
@@ -22,7 +21,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
 
   const [showResellerMenu, setShowResellerMenu] = useState(false);
-  const { isFlashSaleActive, isProductInFlashSale } = useFirebaseFlashSale();
 
   
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -77,10 +75,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const getPrice = () => {
-    // Check if this specific product is in flash sale and flash sale is active
-    const isThisProductInFlashSale = isProductInFlashSale(product.id) && product.isFlashSale && product.flashSalePrice > 0;
+    // Use the isFlashSale prop passed from parent (HomePage already knows which products are flash sale)
+    const isThisProductInFlashSale = isFlashSale && product.flashSalePrice && product.flashSalePrice > 0;
 
-  
+
     if (isThisProductInFlashSale) {
       return (
         <div className="space-y-1">

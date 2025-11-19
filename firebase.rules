@@ -76,6 +76,11 @@ service cloud.firestore {
       allow read, write: if true; // Temporary fix
     }
 
+    // Allow read/write access to flash sale config (singular collection name)
+    match /flashSale/{documentId} {
+      allow read, write: if true; // Public access for flash sale system
+    }
+
     // Allow read/write access to shipping cache for cost optimization
     match /shipping_cache/{cacheId} {
       allow read, write: if true; // Allow public access for caching system
