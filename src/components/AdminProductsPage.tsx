@@ -3,7 +3,7 @@ import { ArrowLeft, Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame
 import { Product } from '../types';
 import { useFirebaseProductsAdmin } from '../hooks/useFirebaseProductsAdmin';
 import { useFirebaseProducts } from '../hooks/useFirebaseProducts';
-import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
+// import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale'; // DISABLED - Prevent infinite loop
 import { ProductTableSkeleton, FlashSaleStatusSkeleton, MenuSkeleton } from './LoadingSkeleton';
 import { uploadMultipleImages, validateImageFile, generateImageName } from '../utils/imageUpload';
 
@@ -25,7 +25,14 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
   // Tetap gunakan fungsi dari original hook untuk update/add/delete
   const { updateProduct, addProduct, deleteProduct } = useFirebaseProducts();
-  const { flashSaleConfig, timeLeft, isFlashSaleActive, startFlashSale, stopFlashSale } = useFirebaseFlashSale();
+  // const { flashSaleConfig, timeLeft, isFlashSaleActive, startFlashSale, stopFlashSale } = useFirebaseFlashSale(); // DISABLED - Prevent infinite loop
+
+  // Mock flash sale data to prevent errors
+  const flashSaleConfig = { isActive: false, startTime: '', endTime: '', flashSaleDiscount: 0, productIds: [] };
+  const timeLeft = { hours: 0, minutes: 0, seconds: 0 };
+  const isFlashSaleActive = false;
+  const startFlashSale = () => {};
+  const stopFlashSale = () => {};
 
   
   // State management

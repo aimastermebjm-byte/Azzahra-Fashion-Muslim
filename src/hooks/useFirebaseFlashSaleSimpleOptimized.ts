@@ -138,10 +138,13 @@ export const useFirebaseFlashSaleSimpleOptimized = () => {
     }
   }, [loading, initialized]);
 
-  // Load flash sale products when hook initializes
+  // Load flash sale products when hook initializes - REMOVE DEPENDENCY TO PREVENT LOOP
   useEffect(() => {
-    loadFlashSaleProducts();
-  }, [loadFlashSaleProducts]);
+    if (!initialized) {
+      setInitialized(true);
+      loadFlashSaleProducts();
+    }
+  }, [initialized]);
 
   return {
     flashSaleProducts,
