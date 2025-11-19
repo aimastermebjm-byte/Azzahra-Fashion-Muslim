@@ -373,25 +373,27 @@ export const useFirebaseProductsRealTime = () => {
         }
       };
 
-      window.addEventListener('stockChanged', handleStockChange);
-      window.addEventListener('adminProductUpdated', handleAdminProductUpdate);
-      window.addEventListener('featuredProductsChanged', handleFeaturedProductsUpdate); // Fixed event name
-      window.addEventListener('flashSaleChanged', handleFlashSaleUpdate); // Fixed event name
-      window.addEventListener('storage', handleStorageChange);
+      // 🔥 DISABLED: Event listeners causing infinite loop
+      // window.addEventListener('stockChanged', handleStockChange);
+      // window.addEventListener('adminProductUpdated', handleAdminProductUpdate);
+      // window.addEventListener('featuredProductsChanged', handleFeaturedProductsUpdate); // Fixed event name
+      // window.addEventListener('flashSaleChanged', handleFlashSaleUpdate); // Fixed event name
+      // window.addEventListener('storage', handleStorageChange);
 
       // Add cache sync event listeners
-      window.addEventListener('storage', handleCacheSync);
-      window.addEventListener('cacheUpdated', handleCacheUpdated as EventListener);
+      // window.addEventListener('storage', handleCacheSync);
+      // window.addEventListener('cacheUpdated', handleCacheUpdated as EventListener);
 
-      console.log('✅ Enhanced event-based sync with cache ready (COST: 0 reads per day!)');
+      console.log('🚫 Event-based sync DISABLED to prevent infinite loop');
 
       // Cleanup function
       return () => {
-        window.removeEventListener('stockChanged', handleStockChange);
-        window.removeEventListener('adminProductUpdated', handleAdminProductUpdate);
-        window.removeEventListener('featuredProductsChanged', handleFeaturedProductsUpdate); // Fixed event name
-        window.removeEventListener('flashSaleChanged', handleFlashSaleUpdate); // Fixed event name
-        window.removeEventListener('storage', handleStorageChange);
+        // 🔥 DISABLED: Event listeners causing infinite loop
+        // window.removeEventListener('stockChanged', handleStockChange);
+        // window.removeEventListener('adminProductUpdated', handleAdminProductUpdate);
+        // window.removeEventListener('featuredProductsChanged', handleFeaturedProductsUpdate); // Fixed event name
+        // window.removeEventListener('flashSaleChanged', handleFlashSaleUpdate); // Fixed event name
+        // window.removeEventListener('storage', handleStorageChange);
         window.removeEventListener('storage', handleCacheSync);
         window.removeEventListener('cacheUpdated', handleCacheUpdated as EventListener);
         console.log('🔄 Enhanced event-based sync with cache cleaned up');

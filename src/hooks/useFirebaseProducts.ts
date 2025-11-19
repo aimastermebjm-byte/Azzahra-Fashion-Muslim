@@ -167,25 +167,28 @@ export const useFirebaseProducts = () => {
       refreshProducts();
     };
 
+    // 🔥 DISABLED: Event listeners causing infinite loop
+    // User will control flash sale manually through admin dashboard
     // Register localStorage event listener (cross-device)
-    window.addEventListener('storage', handleStorageChange);
+    // window.addEventListener('storage', handleStorageChange);
 
     // Register window event listeners (same tab)
-    window.addEventListener('productsChanged', handleProductsChanged);
-    window.addEventListener('featuredProductsChanged', handleFeaturedProductsChanged);
-    window.addEventListener('flashSaleChanged', handleFlashSaleChanged);
-    window.addEventListener('stockChanged', handleStockChanged);
-    window.addEventListener('orderCancelled', handleOrderCancelled);
+    // window.addEventListener('productsChanged', handleProductsChanged);
+    // window.addEventListener('featuredProductsChanged', handleFeaturedProductsChanged);
+    // window.addEventListener('flashSaleChanged', handleFlashSaleChanged);
+    // window.addEventListener('stockChanged', handleStockChanged);
+    // window.addEventListener('orderCancelled', handleOrderCancelled);
 
     // Cleanup
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('productsChanged', handleProductsChanged);
-      window.removeEventListener('featuredProductsChanged', handleFeaturedProductsChanged);
-      window.removeEventListener('flashSaleChanged', handleFlashSaleChanged);
-      window.removeEventListener('stockChanged', handleStockChanged);
-      window.removeEventListener('orderCancelled', handleOrderCancelled);
-      console.log('🔄 Stopped cross-device event-based refresh');
+      // 🔥 DISABLED: Event listeners causing infinite loop
+      // window.removeEventListener('storage', handleStorageChange);
+      // window.removeEventListener('productsChanged', handleProductsChanged);
+      // window.removeEventListener('featuredProductsChanged', handleFeaturedProductsChanged);
+      // window.removeEventListener('flashSaleChanged', handleFlashSaleChanged);
+      // window.removeEventListener('stockChanged', handleStockChanged);
+      // window.removeEventListener('orderCancelled', handleOrderCancelled);
+      console.log('🔄 Cross-device event-based refresh DISABLED to prevent infinite loop');
     };
   }, []); // Empty dependency, refreshProducts akan dipanggil dengan reference terbaru
 
@@ -284,17 +287,19 @@ export const useFirebaseProducts = () => {
         localStorage.setItem('product_change_trigger', Date.now().toString());
       }
 
+      // 🔥 DISABLED: Event dispatching causing infinite loop
+      // Admin dashboard will handle refresh manually
       // Trigger same-tab refresh
-      let eventType = 'productsChanged';
-      if ('isFeatured' in updates) {
-        eventType = 'featuredProductsChanged';
-      } else if ('isFlashSale' in updates) {
-        eventType = 'flashSaleChanged';
-      }
+      // let eventType = 'productsChanged';
+      // if ('isFeatured' in updates) {
+      //   eventType = 'featuredProductsChanged';
+      // } else if ('isFlashSale' in updates) {
+      //   eventType = 'flashSaleChanged';
+      // }
 
-      window.dispatchEvent(new CustomEvent(eventType, {
-        detail: { action: 'updated', productId: id, changes: updates }
-      }));
+      // window.dispatchEvent(new CustomEvent(eventType, {
+      //   detail: { action: 'updated', productId: id, changes: updates }
+      // }));
 
     } catch (error) {
       console.error('❌ Error updating product:', error);
