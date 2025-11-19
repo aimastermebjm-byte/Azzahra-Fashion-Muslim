@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, orderBy, limit, startAfter, where, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, limit, startAfter, where, getDocs, doc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
 
@@ -10,7 +10,7 @@ export const useFirebaseProductsRealTimeSimple = () => {
   const [hasMore, setHasMore] = useState(true);
   const [lastVisible, setLastVisible] = useState<any>(null);
 
-  // Simple direct Firestore read - NO CACHE
+  // 🔥 OPTIMIZED: Try batch system first, fallback to legacy
   const loadProducts = useCallback(async (loadMore = false) => {
     try {
       // Set loading state differently for loadMore
@@ -21,6 +21,58 @@ export const useFirebaseProductsRealTimeSimple = () => {
         setLastVisible(null);
       }
 
+      console.log('🔄 Loading products from Firestore (BATCH SYSTEM)...');
+
+      // 🔥 STEP 1: Try Batch System First
+      try {
+        const batchRef = doc(db, 'productBatches', 'batch_1');
+        const batchSnap = await getDoc(batchRef);
+
+        if (batchSnap.exists()) {
+          const batchData = batchSnap.data();
+          const allProducts = batchData.products || [];
+
+          if (allProducts.length > 0) {
+            console.log(`✅ BATCH SUCCESS: Loaded ${allProducts.length} products from batch (1 read vs ${allProducts.length} reads)`);
+            console.log(`💰 Cost savings: ${allProducts.length - 1} reads saved (${Math.round((allProducts.length - 1) / allProducts.length * 100)}%)`);
+
+            // Sort by createdAt (terbaru dulu)
+            allProducts.sort((a: any, b: any) => {
+              const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+              const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+              return dateB.getTime() - dateA.getTime();
+            });
+
+            // Pagination logic
+            const pageSize = 20;
+            const startIndex = loadMore ? products.length : 0;
+            const endIndex = startIndex + pageSize;
+            const pageProducts = allProducts.slice(startIndex, endIndex);
+
+            if (loadMore) {
+              setProducts(prev => [...prev, ...pageProducts]);
+            } else {
+              setProducts(pageProducts);
+            }
+
+            setHasMore(endIndex < allProducts.length);
+            setLoading(false);
+
+            // Set last visible for pagination
+            if (pageProducts.length > 0) {
+              const lastProduct = pageProducts[pageProducts.length - 1];
+              setLastVisible(lastProduct);
+            }
+
+            return; // ✅ Success - exit function
+          }
+        }
+      } catch (batchError) {
+        console.log('⚠️ Batch system failed, falling back to legacy system:', batchError);
+      }
+
+      // 🔄 STEP 2: Fallback to Legacy System
+      console.log('🔄 Using legacy product system...');
       const productsRef = collection(db, 'products');
 
       // Query with proper pagination

@@ -525,12 +525,10 @@ function AppContent() {
             onCartClick={handleCartClick}
             onAddToCart={handleQuickAddToCart}
             onNavigateToFlashSale={handleNavigateToFlashSale}
-            onLoadMore={loadMoreProducts}
+            onLoadMore={loadMore}
             hasMore={hasMore}
-            featuredProducts={featuredProducts}
-            featuredLoading={featuredLoading}
-            flashSaleProducts={flashSaleProducts}
-            flashSaleLoading={flashSaleLoading}
+            onRefreshProducts={refresh}
+            searchProducts={searchProducts}
           />
         );
     }
