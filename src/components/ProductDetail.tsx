@@ -27,31 +27,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  // DEBUG: Log image data when ProductDetail component renders
-  React.useEffect(() => {
-    console.log(`📄 ProductDetail DEBUG - ${product.name}:`);
-    console.log('  - product.image:', product.image);
-    console.log('  - product.images:', product.images);
-    console.log('  - product.images[0]:', product.images?.[0]);
-    console.log('  - Final image src for main image:', product.images?.[selectedImageIndex] || product.image || '/placeholder-product.jpg');
-
-    if (product.images && product.images.length > 0) {
-      console.log('  - All available images:', product.images);
-      product.images.forEach((img, idx) => {
-        console.log(`    - Image ${idx}: ${img}`);
-      });
-    }
-
-    const isShowingPlaceholder = (product.images?.[selectedImageIndex] || product.image || '/placeholder-product.jpg') === '/placeholder-product.jpg';
-    if (isShowingPlaceholder) {
-      console.warn(`🚨 ProductDetail PLACEHOLDER: Product "${product.name}" is showing placeholder!`);
-      console.warn(`  - Raw image value:`, product.image);
-      console.warn(`  - Raw images array:`, product.images);
-      console.warn(`  - Selected image index:`, selectedImageIndex);
-      console.warn(`  - Image at selected index:`, product.images?.[selectedImageIndex]);
-    }
-  }, [product, selectedImageIndex]);
-
+  
   const handleAddToCart = () => {
     if (!user) {
       onLoginRequired();

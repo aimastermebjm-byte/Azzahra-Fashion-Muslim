@@ -24,32 +24,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const [showResellerMenu, setShowResellerMenu] = useState(false);
   const { isFlashSaleActive, isProductInFlashSale } = useFirebaseFlashSale();
 
-  // DEBUG: Log image data when component renders
-  React.useEffect(() => {
-    const finalImageSrc = product.image || product.images?.[0] || '/placeholder-product.jpg';
-    const isShowingPlaceholder = finalImageSrc === '/placeholder-product.jpg';
-
-    console.log(`🎴 ProductCard DEBUG - ${product.name}:`);
-    console.log(`  - product.image:`, product.image);
-    console.log(`  - product.images:`, product.images);
-    console.log(`  - product.images[0]:`, product.images?.[0]);
-    console.log(`  - Final image src:`, finalImageSrc);
-    console.log(`  - Is showing placeholder:`, isShowingPlaceholder);
-    console.log(`  - Image field types:`, {
-      imageType: typeof product.image,
-      imagesType: typeof product.images,
-      isArray: Array.isArray(product.images),
-      imagesLength: product.images?.length
-    });
-
-    if (isShowingPlaceholder) {
-      console.warn(`🚨 PLACEHOLDER IMAGE: Product "${product.name}" is showing placeholder!`);
-      console.warn(`  - Raw image value:`, product.image);
-      console.warn(`  - Raw images array:`, product.images);
-      console.warn(`  - First image in array:`, product.images?.[0]);
-    }
-  }, [product]);
-
+  
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     onAddToCart(product);

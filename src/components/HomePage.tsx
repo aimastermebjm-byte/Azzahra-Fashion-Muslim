@@ -214,44 +214,7 @@ const HomePage: React.FC<HomePageProps> = ({
     })) as Product[];
   }, [products]);
 
-  // DEBUG: Log product data structure to diagnose image issues
-  React.useEffect(() => {
-    console.log('🔍 DEBUG: Product data structure analysis for HomePage:');
-    console.log('📊 Total products received:', products.length);
-
-    // Analyze first 5 products for image data
-    products.slice(0, 5).forEach((product, index) => {
-      console.log(`🖼️ Product ${index + 1} - ${product.name}:`);
-      console.log(`  - product.image:`, product.image);
-      console.log(`  - product.images:`, product.images);
-      console.log(`  - product.images[0]:`, product.images?.[0]);
-      console.log(`  - Final image src:`, product.image || product.images?.[0] || '/placeholder-product.jpg');
-      console.log(`  - Image field types:`, {
-        imageType: typeof product.image,
-        imagesType: typeof product.images,
-        isArray: Array.isArray(product.images),
-        imagesLength: product.images?.length
-      });
-    });
-
-    // Count products with missing images
-    const productsWithMissingImages = products.filter(product =>
-      !product.image && (!product.images || product.images.length === 0 || !product.images[0])
-    );
-
-    console.log(`❌ Products with missing images: ${productsWithMissingImages.length}/${products.length}`);
-
-    if (productsWithMissingImages.length > 0) {
-      console.log('🚨 Products showing placeholders:', productsWithMissingImages.map(p => ({
-        id: p.id,
-        name: p.name,
-        image: p.image,
-        images: p.images,
-        finalSrc: p.image || p.images?.[0] || '/placeholder-product.jpg'
-      })));
-    }
-  }, [products]);
-
+  
   const filteredProducts = safeProducts.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          product.description.toLowerCase().includes(searchQuery.toLowerCase());

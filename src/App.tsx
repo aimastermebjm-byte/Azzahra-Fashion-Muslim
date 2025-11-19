@@ -77,16 +77,7 @@ function AppContent() {
       variantsData: product.variants
     });
 
-    // DEBUG: Log image data being passed to ProductDetail
-    console.log(`🔗 handleProductClick DEBUG - ${product.name} (${product.id}):`);
-    console.log('  - product.image:', product.image);
-    console.log('  - product.images:', product.images);
-    console.log('  - product.images[0]:', product.images?.[0]);
-    console.log('  - Final image src:', product.image || product.images?.[0] || '/placeholder-product.jpg');
-    console.log('  - Will show placeholder:',
-      (product.image || product.images?.[0] || '/placeholder-product.jpg') === '/placeholder-product.jpg'
-    );
-
+    
     setSelectedProduct(product);
     setCurrentPage('product-detail');
   };
