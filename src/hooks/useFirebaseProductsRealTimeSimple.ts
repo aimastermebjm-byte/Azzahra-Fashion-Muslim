@@ -13,27 +13,52 @@ export const useFirebaseProductsRealTimeSimple = () => {
   // Simple direct Firestore read - NO CACHE
   const loadProducts = useCallback(async (loadMore = false) => {
     try {
-      setLoading(true);
-      setError(null);
+      // Set loading state differently for loadMore
+      if (!loadMore) {
+        setLoading(true);
+        setError(null);
+        setProducts([]); // Reset products for fresh load
+        setLastVisible(null);
+      }
 
       const productsRef = collection(db, 'products');
 
-      // Simple query dengan fallback
+      // Query with proper pagination
       let q;
       try {
-        q = query(
-          productsRef,
-          orderBy('createdAt', 'desc'),
-          limit(20)
-        );
-        console.log('✅ Products: Menggunakan indexed query');
+        if (loadMore && lastVisible) {
+          // Load next page
+          q = query(
+            productsRef,
+            orderBy('createdAt', 'desc'),
+            startAfter(lastVisible),
+            limit(20)
+          );
+          console.log('✅ Products: Loading next page');
+        } else {
+          // Load first page
+          q = query(
+            productsRef,
+            orderBy('createdAt', 'desc'),
+            limit(20)
+          );
+          console.log('✅ Products: Loading first page');
+        }
       } catch (indexError: any) {
         if (indexError.message.includes('requires an index')) {
           console.log('⚠️ Products: Index tidak ditemukan, menggunakan fallback query');
-          q = query(
-            productsRef,
-            limit(20)
-          );
+          if (loadMore && lastVisible) {
+            q = query(
+              productsRef,
+              startAfter(lastVisible),
+              limit(20)
+            );
+          } else {
+            q = query(
+              productsRef,
+              limit(20)
+            );
+          }
         } else {
           throw indexError;
         }
@@ -45,7 +70,6 @@ export const useFirebaseProductsRealTimeSimple = () => {
       querySnapshot.forEach((doc) => {
         const data = doc.data();
 
-  
         const processedProduct = {
           id: doc.id,
           name: data.name || '',
@@ -72,37 +96,33 @@ export const useFirebaseProductsRealTimeSimple = () => {
           estimatedReady: data.estimatedReady?.toDate ? data.estimatedReady.toDate() : undefined
         };
 
-        // DEBUG: Log processed image data
-        if (newProducts.length < 3) {
-          console.log(`📦 Processed Product ${newProducts.length + 1}:`);
-          console.log('  - Processed image:', processedProduct.image);
-          console.log('  - Processed images:', processedProduct.images);
-          console.log('  - Final image src:', processedProduct.image || processedProduct.images?.[0] || '/placeholder-product.jpg');
-          console.log('  - Will show placeholder:',
-            (processedProduct.image || processedProduct.images?.[0] || '/placeholder-product.jpg') === '/placeholder-product.jpg'
-          );
-        }
-
         newProducts.push(processedProduct);
       });
 
+      // Update state
       if (loadMore) {
-        setProducts(prev => [...prev, ...newProducts]);
+        setProducts(prev => {
+          const combined = [...prev, ...newProducts];
+          console.log(`📄 Added ${newProducts.length} products. Total: ${combined.length}`);
+          return combined;
+        });
       } else {
         setProducts(newProducts);
+        console.log(`📄 Loaded ${newProducts.length} products (first page)`);
       }
 
+      // Update pagination state
+      const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+      setLastVisible(lastDoc || null);
       setHasMore(newProducts.length === 20);
-      setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
 
-      console.log(`✅ Loaded ${newProducts.length} products (loadMore: ${loadMore})`);
     } catch (error) {
       console.error('❌ Error loading products:', error);
       setError(error instanceof Error ? error.message : 'Failed to load products');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [lastVisible]);
 
   // Initial load
   useEffect(() => {
