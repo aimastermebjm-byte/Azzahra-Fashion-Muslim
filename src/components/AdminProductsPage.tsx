@@ -717,7 +717,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 {timeLeft && (
                   <div className="flex items-center space-x-1 bg-red-600 text-white px-3 py-1 rounded-full text-sm">
                     <Clock className="w-4 h-4" />
-                    <span className="font-medium">{timeLeft}</span>
+                    <span className="font-medium">
+                      {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
+                    </span>
                   </div>
                 )}
                 <button
