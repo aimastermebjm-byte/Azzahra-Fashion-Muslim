@@ -24,6 +24,7 @@ export const useFirebaseFlashSaleSimpleOptimized = () => {
   const [error, setError] = useState<string | null>(null);
   const [isFlashSaleActive, setIsFlashSaleActive] = useState(false);
   const [cachedEndTime, setCachedEndTime] = useState<number | null>(null);
+  const [initialized, setInitialized] = useState(false);
   const [timeLeft, setTimeLeft] = useState({
     hours: 0,
     minutes: 0,
@@ -99,12 +100,13 @@ export const useFirebaseFlashSaleSimpleOptimized = () => {
     return () => clearInterval(timer);
   }, [isFlashSaleActive, cachedEndTime]);
 
-  // Load flash sale products from batch (only when active)
+  // Load flash sale products from batch (only once)
   const loadFlashSaleProducts = useCallback(async () => {
-    if (loading || flashSaleProducts.length > 0) return;
+    if (loading || initialized) return;
 
     setLoading(true);
     setError(null);
+    setInitialized(true);
     console.log('🔥 Loading flash sale products from BATCH SYSTEM...');
 
     try {
@@ -134,7 +136,7 @@ export const useFirebaseFlashSaleSimpleOptimized = () => {
       setLoading(false);
       return [];
     }
-  }, [loading, flashSaleProducts.length]);
+  }, [loading, initialized]);
 
   // Load flash sale products when hook initializes
   useEffect(() => {
