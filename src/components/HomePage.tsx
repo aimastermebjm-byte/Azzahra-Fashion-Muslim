@@ -59,7 +59,9 @@ const HomePage: React.FC<HomePageProps> = ({
     timeLeft,
     isFlashSaleActive,
     flashSaleProducts: hookFlashSaleProducts,
-    loading: flashSaleLoading
+    loading: flashSaleLoading,
+    hasMore: flashSaleHasMore,
+    loadMoreFlashSaleProducts
   } = useFirebaseFlashSaleSimple();
 
   // Load cart count from backend

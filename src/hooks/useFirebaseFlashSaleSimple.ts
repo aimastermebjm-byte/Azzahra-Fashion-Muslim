@@ -7,7 +7,10 @@ import {
   getDocs,
   where,
   query,
-  onSnapshot
+  onSnapshot,
+  orderBy,
+  limit,
+  startAfter
 } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 
@@ -32,33 +35,61 @@ export const useFirebaseFlashSaleSimple = () => {
   const [flashSaleConfig, setFlashSaleConfig] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState('');
   const [isFlashSaleActive, setIsFlashSaleActive] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [lastVisible, setLastVisible] = useState<any>(null);
 
-  // Load flash sale products - simple direct query
-  const loadFlashSaleProducts = useCallback(async () => {
+  // Load flash sale products with pagination
+  const loadFlashSaleProducts = useCallback(async (loadMore = false) => {
     try {
-      setLoading(true);
-      setError(null);
+      if (!loadMore) {
+        setLoading(true);
+        setError(null);
+        setFlashSaleProducts([]);
+        setLastVisible(null);
+      }
 
       const productsRef = collection(db, 'products');
 
-      // Simple query dengan fallback
+      // Query with pagination
       let q;
       try {
-        q = query(
-          productsRef,
-          where('isFlashSale', '==', true),
-          orderBy('createdAt', 'desc'),
-          limit(20)
-        );
-        console.log('✅ Flash Sale: Menggunakan indexed query');
-      } catch (indexError: any) {
-        if (indexError.message.includes('requires an index')) {
-          console.log('⚠️ Flash Sale: Index tidak ditemukan, menggunakan fallback query');
+        if (loadMore && lastVisible) {
+          // Load next page
           q = query(
             productsRef,
             where('isFlashSale', '==', true),
+            orderBy('createdAt', 'desc'),
+            startAfter(lastVisible),
             limit(20)
           );
+          console.log('✅ Flash Sale: Loading next page');
+        } else {
+          // Load first page
+          q = query(
+            productsRef,
+            where('isFlashSale', '==', true),
+            orderBy('createdAt', 'desc'),
+            limit(20)
+          );
+          console.log('✅ Flash Sale: Loading first page');
+        }
+      } catch (indexError: any) {
+        if (indexError.message.includes('requires an index')) {
+          console.log('⚠️ Flash Sale: Index tidak ditemukan, menggunakan fallback query');
+          if (loadMore && lastVisible) {
+            q = query(
+              productsRef,
+              where('isFlashSale', '==', true),
+              startAfter(lastVisible),
+              limit(20)
+            );
+          } else {
+            q = query(
+              productsRef,
+              where('isFlashSale', '==', true),
+              limit(20)
+            );
+          }
         } else {
           throw indexError;
         }
@@ -78,7 +109,7 @@ export const useFirebaseFlashSaleSimple = () => {
           costPrice: Number(data.costPrice || data.price * 0.6),
           stock: Number(data.stock || 0),
           images: Array.isArray(data.images) ? data.images : [],
-          image: data.image || data.images?.[0] || '/placeholder-product.jpg',
+          image: data.images?.[0] || data.image || '/placeholder-product.jpg',
           category: data.category || '',
           status: data.status || 'ready',
           isFlashSale: data.isFlashSale || false,
@@ -91,12 +122,27 @@ export const useFirebaseFlashSaleSimple = () => {
         });
       });
 
-      // Client-side sorting untuk fallback query
-      if (querySnapshot.metadata.fromCache) {
-        products.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      // Update state with pagination
+      if (loadMore) {
+        setFlashSaleProducts(prev => {
+          const combined = [...prev, ...products];
+          console.log(`📄 Flash Sale: Added ${products.length} products. Total: ${combined.length}`);
+          return combined;
+        });
+      } else {
+        setFlashSaleProducts(products);
+        console.log(`📄 Flash Sale: Loaded ${products.length} products (first page)`);
       }
 
-      setFlashSaleProducts(products);
+      // Update pagination state
+      const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+      setLastVisible(lastDoc || null);
+      setHasMore(products.length === 20);
+
+      // Client-side sorting untuk fallback query
+      if (querySnapshot.metadata.fromCache && !loadMore) {
+        setFlashSaleProducts(prev => [...prev].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
+      }
       console.log(`✅ Loaded ${products.length} flash sale products`);
     } catch (error) {
       console.error('❌ Error loading flash sale products:', error);
@@ -104,7 +150,14 @@ export const useFirebaseFlashSaleSimple = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [lastVisible]);
+
+  // Load more function for flash sale
+  const loadMoreFlashSaleProducts = useCallback(() => {
+    if (loading || !hasMore) return;
+    console.log('🔄 Loading more flash sale products...');
+    loadFlashSaleProducts(true);
+  }, [loading, hasMore, loadFlashSaleProducts]);
 
   // Listen untuk flash sale config
   useEffect(() => {
@@ -300,6 +353,8 @@ export const useFirebaseFlashSaleSimple = () => {
     flashSaleConfig,
     timeLeft,
     isFlashSaleActive,
+    hasMore,
+    loadMoreFlashSaleProducts,
     createFlashSale,
     updateFlashSale,
     startFlashSale,
