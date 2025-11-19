@@ -4,7 +4,7 @@ import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
-import { useFirebaseFlashSaleSimple } from '../hooks/useFirebaseFlashSaleSimple';
+import { useFirebaseFlashSaleSimpleOptimized } from '../hooks/useFirebaseFlashSaleSimpleOptimized';
 import { cartService } from '../services/cartService';
 
 interface HomePageProps {
@@ -54,15 +54,13 @@ const HomePage: React.FC<HomePageProps> = ({
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // Flash sale hook for countdown timer AND products (NO CACHE)
+  // 🚀 OPTIMIZED Flash sale hook (1 read total)
   const {
     timeLeft,
     isFlashSaleActive,
     flashSaleProducts: hookFlashSaleProducts,
-    loading: flashSaleLoading,
-    hasMore: flashSaleHasMore,
-    loadMoreFlashSaleProducts
-  } = useFirebaseFlashSaleSimple();
+    loading: flashSaleLoading
+  } = useFirebaseFlashSaleSimpleOptimized();
 
   // Load cart count from backend
   const loadCartCount = async () => {
