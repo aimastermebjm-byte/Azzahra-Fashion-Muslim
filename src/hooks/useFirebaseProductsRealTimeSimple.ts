@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { collection, query, orderBy, limit, startAfter, where, getDocs, doc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
+import { BATCH_CONFIG, BATCH_LIMITS } from '../constants/batchConfig';
 
 export const useFirebaseProductsRealTimeSimple = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -44,8 +45,12 @@ export const useFirebaseProductsRealTimeSimple = () => {
               return dateB.getTime() - dateA.getTime();
             });
 
-            // Pagination logic
-            const pageSize = 20;
+            // 🔥 BATCH 250 PRODUCTS: Optimized pagination for 250 products per batch
+            console.log(`📦 Batch Analysis: ${allProducts.length} products in single batch`);
+            console.log(`💾 Estimated batch size: ${Math.round(allProducts.length * 1238 / 1024)} KB`);
+            console.log(`🚀 Performance: 1 read vs ${allProducts.length} individual reads`);
+
+            const pageSize = BATCH_CONFIG.LOAD_MORE_SIZE;
             const startIndex = loadMore ? products.length : 0;
             const endIndex = startIndex + pageSize;
             const pageProducts = allProducts.slice(startIndex, endIndex);
@@ -293,6 +298,8 @@ export const useFirebaseProductsRealTimeSimple = () => {
     console.log('🔄 Refreshing products...');
     loadProducts(false);
   }, [loadProducts]);
+
+  const loadMore = () => loadProducts(true);
 
   return {
     products,
