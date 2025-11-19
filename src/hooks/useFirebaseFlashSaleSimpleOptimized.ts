@@ -90,7 +90,13 @@ export const useFirebaseFlashSaleSimpleOptimized = () => {
         setTimeLeft({ hours, minutes, seconds });
       } else {
         setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
-        setIsFlashSaleActive(false);
+
+        // 🔥 AUTO CLEANUP: Trigger cleanup when flash sale expires
+        if (isFlashSaleActive) {
+          console.log('🕒 Flash sale time ended - triggering automatic cleanup...');
+          setIsFlashSaleActive(false);
+          triggerFlashSaleCleanup();
+        }
       }
     };
 
@@ -98,6 +104,63 @@ export const useFirebaseFlashSaleSimpleOptimized = () => {
     const timer = setInterval(calculateTimeLeft, 1000);
     return () => clearInterval(timer);
   }, [isFlashSaleActive, cachedEndTime]);
+
+  // 🔥 AUTO CLEANUP: Function to trigger flash sale cleanup
+  const triggerFlashSaleCleanup = async () => {
+    try {
+      console.log('🧹 Starting automatic flash sale cleanup...');
+
+      // Get batch system
+      const batchRef = collection(db, 'productBatches');
+      const batchQuery = query(batchRef, where('__name__', '==', 'batch_1'));
+      const batchSnapshot = await getDocs(batchQuery);
+
+      if (!batchSnapshot.empty && batchSnapshot.docs[0].exists()) {
+        const batchDoc = batchSnapshot.docs[0];
+        const batchData = batchDoc.data();
+        let products = batchData.products || [];
+
+        let cleanedCount = 0;
+        products = products.map(product => {
+          if (product.isFlashSale || product.flashSalePrice || product.flashSaleDiscount) {
+            cleanedCount++;
+            console.log(`🔧 Auto-cleaning flash sale from: ${product.name}`);
+
+            // Remove flash sale properties, keep everything else
+            const { isFlashSale, flashSalePrice, flashSaleDiscount, originalRetailPrice, originalResellerPrice, ...cleanProduct } = product;
+            return cleanProduct;
+          }
+          return product;
+        });
+
+        // Update batch
+        await setDoc(doc(db, 'productBatches', 'batch_1'), {
+          ...batchData,
+          products: products,
+          totalProducts: products.length,
+          updatedAt: new Date().toISOString()
+        });
+
+        // Deactivate flash sale config
+        await setDoc(doc(db, 'flashSale', 'config'), {
+          isActive: false,
+          endTime: new Date().toISOString(), // Set to now to mark as expired
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        console.log(`✅ Auto-cleaned ${cleanedCount} products from flash sale`);
+        console.log('🎉 Flash sale automatically deactivated!');
+
+        // Trigger page refresh to show updated products
+        window.dispatchEvent(new CustomEvent('flashSaleExpired'));
+
+      } else {
+        console.log('❌ Batch system not found for auto-cleanup');
+      }
+    } catch (error) {
+      console.error('❌ Error during automatic flash sale cleanup:', error);
+    }
+  };
 
   // Load flash sale products from batch (only once)
   const loadFlashSaleProducts = useCallback(async () => {
