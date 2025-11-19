@@ -128,7 +128,7 @@ export const useFirebaseProductsRealTimeSimple = () => {
   useEffect(() => {
     console.log('🔄 Loading products from Firestore (NO CACHE)...');
     loadProducts(false);
-  }, [loadProducts]);
+  }, []); // ✅ Empty dependency - only run once
 
   // Load more function
   const loadMore = useCallback(() => {

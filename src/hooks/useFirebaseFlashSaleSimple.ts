@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   collection,
   doc,
@@ -159,6 +159,14 @@ export const useFirebaseFlashSaleSimple = () => {
     loadFlashSaleProducts(true);
   }, [loading, hasMore, loadFlashSaleProducts]);
 
+  // Stable ref for loadFlashSaleProducts to avoid infinite loops
+  const loadFlashSaleProductsRef = useRef(loadFlashSaleProducts);
+
+  // Update ref whenever function changes
+  useEffect(() => {
+    loadFlashSaleProductsRef.current = loadFlashSaleProducts;
+  }, [loadFlashSaleProducts]);
+
   // Listen untuk flash sale config
   useEffect(() => {
     const flashSaleRef = doc(db, 'flashSales', FLASH_SALE_DOC_ID);
@@ -179,7 +187,7 @@ export const useFirebaseFlashSaleSimple = () => {
           stopFlashSale();
         } else if (config.isActive) {
           // Load products if flash sale is active
-          loadFlashSaleProducts();
+          loadFlashSaleProductsRef.current();
         } else {
           // Clear products if not active
           setFlashSaleProducts([]);
@@ -193,7 +201,7 @@ export const useFirebaseFlashSaleSimple = () => {
     });
 
     return () => unsubscribe();
-  }, [loadFlashSaleProducts]);
+  }, []); // ✅ Empty dependency - only run once
 
   // Countdown timer
   useEffect(() => {
