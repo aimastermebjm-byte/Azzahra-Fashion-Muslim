@@ -419,7 +419,9 @@ const HomePage: React.FC<HomePageProps> = ({
                   {isFlashSaleActive && timeLeft && (
                     <div className="flex items-center space-x-2 mt-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
                       <Clock className="w-4 h-4 text-yellow-200" />
-                      <span className="text-sm font-bold text-yellow-200">{timeLeft}</span>
+                      <span className="text-sm font-bold text-yellow-200">
+                        {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
+                      </span>
                     </div>
                   )}
                 </div>

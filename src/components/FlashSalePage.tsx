@@ -139,7 +139,7 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
               <div className="bg-black/30 backdrop-blur-sm rounded-xl p-4 mb-4">
                 <p className="text-yellow-300 text-sm mb-2">⏰ Flash Sale Berakhir Dalam</p>
                 <div className="text-3xl font-bold text-white tracking-wider">
-                  {timeLeft}
+                  {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
                 </div>
               </div>
             )}
