@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { auth } from '../utils/firebaseClient';
-import { collection, query, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, where, doc, setDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
 
@@ -21,21 +21,27 @@ export const useFirebaseProductsAdmin = () => {
           return;
         }
 
-        console.log('🔄 Loading products for admin (ONE-TIME READ)...');
+        console.log('🔄 Loading products for admin from BATCH SYSTEM...');
 
-        // One-time query for ALL products (admin)
-        const productsRef = collection(db, 'products');
-        const q = query(
-          productsRef,
-          orderBy('createdAt', 'desc')
-        );
+        // 🔥 BATCH SYSTEM: Read from productBatches like website
+        const batchRef = collection(db, 'productBatches');
+        const batchQuery = query(batchRef, where('__name__', '==', 'batch_1'));
+        const batchSnapshot = await getDocs(batchQuery);
 
-        const querySnapshot = await getDocs(q);
-        console.log('📦 Products loaded:', querySnapshot.docs.length, 'products');
+        if (batchSnapshot.empty || !batchSnapshot.docs[0].exists()) {
+          console.log('❌ Batch system not found');
+          setProducts([]);
+          setLoading(false);
+          setInitialLoad(false);
+          return;
+        }
+
+        const batchData = batchSnapshot.docs[0].data();
+        const allProducts = batchData.products || [];
+        console.log('📦 Products loaded from batch:', allProducts.length, 'products');
 
         const loadedProducts: Product[] = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
+        allProducts.forEach((data) => {
 
           // Calculate total stock from variants if available
           const stock = Number(data.stock || 0);
@@ -53,7 +59,7 @@ export const useFirebaseProductsAdmin = () => {
           };
 
           loadedProducts.push({
-            id: doc.id,
+            id: data.id,
             name: data.name || '',
             description: data.description || '',
             category: data.category || 'uncategorized',
@@ -100,5 +106,53 @@ export const useFirebaseProductsAdmin = () => {
     loadProducts();
   }, []);
 
-  return { products, loading: loading && initialLoad, error, initialLoad };
+  // 🔥 BATCH SYSTEM: Update product in batch (not individual collection)
+  const updateProduct = async (id: string, updates: any) => {
+    try {
+      console.log('📝 Updating product in BATCH SYSTEM:', { id, updates });
+
+      // Get current batch
+      const batchRef = collection(db, 'productBatches');
+      const batchQuery = query(batchRef, where('__name__', '==', 'batch_1'));
+      const batchSnapshot = await getDocs(batchQuery);
+
+      if (!batchSnapshot.empty && batchSnapshot.docs[0].exists()) {
+        const batchDoc = batchSnapshot.docs[0];
+        const batchData = batchDoc.data();
+        let products = batchData.products || [];
+
+        // Find and update the product
+        products = products.map((product: any) => {
+          if (product.id === id) {
+            console.log('✅ Found product to update:', product.name);
+            return { ...product, ...updates };
+          }
+          return product;
+        });
+
+        // Update the batch
+        await setDoc(doc(db, 'productBatches', 'batch_1'), {
+          ...batchData,
+          products: products,
+          totalProducts: products.length,
+          updatedAt: new Date().toISOString()
+        });
+
+        console.log('✅ Product updated successfully in batch system');
+
+        // Update local state
+        setProducts(prev => prev.map(product =>
+          product.id === id ? { ...product, ...updates } : product
+        ));
+
+      } else {
+        console.error('❌ Batch system not found');
+      }
+    } catch (error) {
+      console.error('❌ Error updating product in batch:', error);
+      throw error;
+    }
+  };
+
+  return { products, loading: loading && initialLoad, error, initialLoad, updateProduct };
 };
