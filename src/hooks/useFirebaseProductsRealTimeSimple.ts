@@ -44,7 +44,18 @@ export const useFirebaseProductsRealTimeSimple = () => {
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        newProducts.push({
+
+        // DEBUG: Log raw Firestore data for first 3 products
+        if (newProducts.length < 3) {
+          console.log(`🔥 Firebase Raw Data - Product ${newProducts.length + 1} (${doc.id}):`);
+          console.log('  - Raw data.image:', data.image);
+          console.log('  - Raw data.images:', data.images);
+          console.log('  - Raw data.images type:', typeof data.images, 'isArray:', Array.isArray(data.images));
+          console.log('  - Raw data.images length:', data.images?.length);
+          console.log('  - All raw fields:', Object.keys(data));
+        }
+
+        const processedProduct = {
           id: doc.id,
           name: data.name || '',
           description: data.description || '',
@@ -68,7 +79,20 @@ export const useFirebaseProductsRealTimeSimple = () => {
           weight: Number(data.weight || 0),
           unit: data.unit || 'gram',
           estimatedReady: data.estimatedReady?.toDate ? data.estimatedReady.toDate() : undefined
-        });
+        };
+
+        // DEBUG: Log processed image data
+        if (newProducts.length < 3) {
+          console.log(`📦 Processed Product ${newProducts.length + 1}:`);
+          console.log('  - Processed image:', processedProduct.image);
+          console.log('  - Processed images:', processedProduct.images);
+          console.log('  - Final image src:', processedProduct.image || processedProduct.images?.[0] || '/placeholder-product.jpg');
+          console.log('  - Will show placeholder:',
+            (processedProduct.image || processedProduct.images?.[0] || '/placeholder-product.jpg') === '/placeholder-product.jpg'
+          );
+        }
+
+        newProducts.push(processedProduct);
       });
 
       if (loadMore) {
