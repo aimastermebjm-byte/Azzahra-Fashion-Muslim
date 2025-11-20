@@ -21,7 +21,7 @@ console.log('✅ Firebase initialized');
 // Initialize Firestore
 export const db = getFirestore(firebaseApp);
 
-// Enable Firestore Persistence with error handling
+// Enable Firestore Persistence with multi-tab support
 if (typeof window !== 'undefined') {
   enableIndexedDbPersistence(db)
     .then(() => {
@@ -29,7 +29,7 @@ if (typeof window !== 'undefined') {
     })
     .catch((err) => {
       if (err.code === 'failed-precondition') {
-        console.log('⚠️ Multiple tabs open, persistence disabled');
+        console.log('⚠️ Multiple tabs open, persistence disabled - will use memory cache');
       } else if (err.code === 'unimplemented') {
         console.log('⚠️ Browser doesn\'t support persistence');
       } else {

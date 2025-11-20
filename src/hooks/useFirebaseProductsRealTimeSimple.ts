@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
@@ -7,11 +7,22 @@ import CacheUtils from '../utils/cacheUtils';
 import CacheInvalidationManager from '../utils/cacheInvalidation';
 
 export const useFirebaseProductsRealTimeSimple = () => {
+  // Generate unique component ID to track multiple instances
+  const componentId = useMemo(() => `products_${Math.random().toString(36).substring(2, 11)}`, []);
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [allCachedProducts, setAllCachedProducts] = useState<Product[]>([]);
+
+  // Log component mount
+  React.useEffect(() => {
+    console.log(`🏗️ ${componentId}: Component mounted`);
+    return () => {
+      console.log(`🏗️ ${componentId}: Component unmounted`);
+    };
+  }, [componentId]);
 
   // 🔥 OPTIMIZED: Try cache first, then Firestore with persistence
   const loadProducts = useCallback(async (loadMore = false) => {
@@ -27,7 +38,11 @@ export const useFirebaseProductsRealTimeSimple = () => {
       console.log('🔄 Loading products (CACHE + FIRESTORE PERSISTENCE)...');
 
       // 🔥 STEP 1: Try Local Cache First (Instant)
-      if (!loadMore && CacheUtils.isCacheValid('products')) {
+      console.log('🔍 Checking cache validity...');
+      const cacheValid = CacheUtils.isCacheValid('products');
+      console.log(`🔍 Cache check result: ${cacheValid ? 'VALID' : 'INVALID/MISSING'}`);
+
+      if (!loadMore && cacheValid) {
         const cachedData = CacheUtils.loadCache('products');
 
         if (cachedData && cachedData.length > 0) {

@@ -99,8 +99,9 @@ export const CacheUtils = {
 
       // Cache valid for 24 hours
       const isValid = (now - lastUpdate) < (24 * 60 * 60 * 1000);
+      const ageHours = Math.round((now - lastUpdate) / (60 * 60 * 1000));
 
-      console.log(`🔍 Cache validity: ${isValid ? '✅ Valid' : '❌ Expired'} (${Math.round((now - lastUpdate) / (60 * 60 * 1000))}h old)`);
+      console.log(`🔍 Cache validity: ${isValid ? '✅ Valid' : '❌ Expired'} (${ageHours}h old, lastUpdate: ${new Date(lastUpdate).toLocaleTimeString()})`);
 
       return isValid;
     } catch (error) {
