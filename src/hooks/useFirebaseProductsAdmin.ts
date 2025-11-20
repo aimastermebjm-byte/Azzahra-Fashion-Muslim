@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { auth } from '../utils/firebaseClient';
 import { collection, query, getDocs, where, doc, setDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
@@ -12,8 +12,8 @@ export const useFirebaseProductsAdmin = () => {
   const [error, setError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
 
-  // 🔥 CACHE-AWARE admin products loading
-  const loadProducts = useCallback(async () => {
+  useEffect(() => {
+    const loadProducts = async () => {
       try {
         const user = auth.currentUser;
         if (!user) {
@@ -106,22 +106,12 @@ export const useFirebaseProductsAdmin = () => {
 
     // Load products once on component mount
     loadProducts();
+  }, []);
 
-    // Setup cache invalidation listener for admin
-    const unsubscribe = CacheInvalidationManager.setupProductUpdatesListener();
-
-    // Cleanup
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, [loadProducts]);
-
-  // 🔥 BATCH SYSTEM: Update product in batch with cache invalidation
+  // 🔥 BATCH SYSTEM: Update product in batch (not individual collection)
   const updateProduct = async (id: string, updates: any) => {
     try {
-      console.log('📝 Updating product in BATCH SYSTEM with cache invalidation:', { id, updates });
+      console.log('📝 Updating product in BATCH SYSTEM:', { id, updates });
 
       // Get current batch
       const batchRef = collection(db, 'productBatches');
@@ -152,8 +142,7 @@ export const useFirebaseProductsAdmin = () => {
 
         console.log('✅ Product updated successfully in batch system');
 
-        // 🚨 CACHE INVALIDATION: Clear all caches and notify all tabs
-        console.log('🔄 Invalidating all caches due to admin update...');
+        // Cache invalidation after update
         CacheUtils.clearCache('products');
         CacheInvalidationManager.invalidateCache('products', `admin update: ${id}`);
 
@@ -239,10 +228,9 @@ export const useFirebaseProductsAdmin = () => {
 
         console.log('✅ Product stock updated successfully in batch system');
 
-        // 🚨 CACHE INVALIDATION: Clear all caches due to stock change
-        console.log('🔄 Invalidating all caches due to stock update...');
+        // Cache invalidation after stock update
         CacheUtils.clearCache('products');
-        CacheInvalidationManager.invalidateCache('products', `stock update: ${id}`);
+        CacheInvalidationManager.invalidateCache('products', `admin stock update: ${id}`);
 
         return quantity;
 
