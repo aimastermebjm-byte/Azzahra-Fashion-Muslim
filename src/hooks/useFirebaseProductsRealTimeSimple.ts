@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
@@ -17,7 +17,7 @@ export const useFirebaseProductsRealTimeSimple = () => {
   const [allCachedProducts, setAllCachedProducts] = useState<Product[]>([]);
 
   // Log component mount
-  React.useEffect(() => {
+  useEffect(() => {
     console.log(`🏗️ ${componentId}: Component mounted`);
     return () => {
       console.log(`🏗️ ${componentId}: Component unmounted`);
