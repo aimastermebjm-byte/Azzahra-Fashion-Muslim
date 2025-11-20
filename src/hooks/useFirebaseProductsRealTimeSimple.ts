@@ -1,305 +1,255 @@
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, orderBy, limit, startAfter, where, getDocs, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
-import { BATCH_CONFIG, BATCH_LIMITS } from '../constants/batchConfig';
+import { BATCH_CONFIG } from '../constants/batchConfig';
+import CacheUtils from '../utils/cacheUtils';
 
 export const useFirebaseProductsRealTimeSimple = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
-  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [allCachedProducts, setAllCachedProducts] = useState<Product[]>([]);
 
-  // 🔥 OPTIMIZED: Try batch system first, fallback to legacy
+  // 🔥 OPTIMIZED: Try cache first, then Firestore with persistence
   const loadProducts = useCallback(async (loadMore = false) => {
     try {
       // Set loading state differently for loadMore
       if (!loadMore) {
         setLoading(true);
         setError(null);
-        setProducts([]); // Reset products for fresh load
-        setLastVisible(null);
+        setProducts([]);
+        setAllCachedProducts([]);
       }
 
-      console.log('🔄 Loading products from Firestore (BATCH SYSTEM)...');
+      console.log('🔄 Loading products (CACHE + FIRESTORE PERSISTENCE)...');
 
-      // 🔥 STEP 1: Try Batch System First
-      try {
-        const batchRef = collection(db, 'productBatches');
-        const q = query(batchRef, where('__name__', '==', 'batch_1'));
-        const batchSnapshot = await getDocs(q);
+      // 🔥 STEP 1: Try Local Cache First (Instant)
+      if (!loadMore && CacheUtils.isCacheValid('products')) {
+        const cachedData = CacheUtils.loadCache('products');
 
-        if (!batchSnapshot.empty && batchSnapshot.docs[0].exists()) {
-          const batchData = batchSnapshot.docs[0].data();
-          const allProducts = batchData.products || [];
+        if (cachedData && cachedData.length > 0) {
+          console.log(`✅ CACHE HIT: ${cachedData.length} products from cache (0 Firebase reads)`);
+          console.log(`💾 Cache size: ${CacheUtils.getCacheSize()}`);
+          console.log(`📶 Network: ${CacheUtils.isOnline() ? 'Online' : 'Offline'}`);
 
-          if (allProducts.length > 0) {
-            console.log(`✅ BATCH SUCCESS: Loaded ${allProducts.length} products from batch (1 read vs ${allProducts.length} reads)`);
-            console.log(`💰 Cost savings: ${allProducts.length - 1} reads saved (${Math.round((allProducts.length - 1) / allProducts.length * 100)}%)`);
+          // Sort by createdAt (terbaru dulu)
+          const allProducts = cachedData.sort((a: any, b: any) => {
+            const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+            const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+            return dateB.getTime() - dateA.getTime();
+          });
 
-            // Sort by createdAt (terbaru dulu)
-            allProducts.sort((a: any, b: any) => {
-              const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
-              const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
-              return dateB.getTime() - dateA.getTime();
-            });
+          setAllCachedProducts(allProducts);
 
-            // 🔥 BATCH 250 PRODUCTS: Optimized pagination for 250 products per batch
-            console.log(`📦 Batch Analysis: ${allProducts.length} products in single batch`);
-            console.log(`💾 Estimated batch size: ${Math.round(allProducts.length * 1238 / 1024)} KB`);
-            console.log(`🚀 Performance: 1 read vs ${allProducts.length} individual reads`);
+          // Pagination
+          const pageSize = BATCH_CONFIG.LOAD_MORE_SIZE;
+          const startIndex = loadMore ? products.length : 0;
+          const endIndex = startIndex + pageSize;
+          const pageProducts = allProducts.slice(startIndex, endIndex);
 
-            const pageSize = BATCH_CONFIG.LOAD_MORE_SIZE;
-            const startIndex = loadMore ? products.length : 0;
-            const endIndex = startIndex + pageSize;
-            const pageProducts = allProducts.slice(startIndex, endIndex);
+          setProducts(prev => loadMore ? [...prev, ...pageProducts] : pageProducts);
+          setHasMore(endIndex < allProducts.length);
+          setLoading(false);
 
-            if (loadMore) {
-              setProducts(prev => [...prev, ...pageProducts]);
-            } else {
-              setProducts(pageProducts);
-            }
-
-            setHasMore(endIndex < allProducts.length);
-            setLoading(false);
-
-            // Set last visible for pagination
-            if (pageProducts.length > 0) {
-              const lastProduct = pageProducts[pageProducts.length - 1];
-              setLastVisible(lastProduct);
-            }
-
-            return; // ✅ Success - exit function
+          // Background sync if online
+          if (CacheUtils.isOnline()) {
+            CacheUtils.syncCache('products').catch(console.error);
           }
+
+          return; // ✅ Cache success - exit
         }
-      } catch (batchError) {
-        console.log('⚠️ Batch system failed, falling back to legacy system:', batchError);
       }
 
-      // 🔄 STEP 2: Fallback to Legacy System
-      console.log('🔄 Using legacy product system...');
-      const productsRef = collection(db, 'products');
+      // 🔥 STEP 2: Load from Firestore (with persistence)
+      console.log('📡 Cache miss/expired - loading from Firestore with persistence...');
 
-      // Query with proper pagination
-      let q;
-      try {
-        if (loadMore && lastVisible) {
-          // Load next page
-          q = query(
-            productsRef,
-            orderBy('createdAt', 'desc'),
-            startAfter(lastVisible),
-            limit(20)
-          );
-          console.log('✅ Products: Loading next page');
-        } else {
-          // Load first page
-          q = query(
-            productsRef,
-            orderBy('createdAt', 'desc'),
-            limit(20)
-          );
-          console.log('✅ Products: Loading first page');
-        }
-      } catch (indexError: any) {
-        if (indexError.message.includes('requires an index')) {
-          console.log('⚠️ Products: Index tidak ditemukan, menggunakan fallback query');
-          if (loadMore && lastVisible) {
-            q = query(
-              productsRef,
-              startAfter(lastVisible),
-              limit(20)
-            );
-          } else {
-            q = query(
-              productsRef,
-              limit(20)
-            );
+      const batchRef = collection(db, 'productBatches');
+      const q = query(batchRef, where('__name__', '==', 'batch_1'));
+      const batchSnapshot = await getDocs(q);
+
+      if (!batchSnapshot.empty && batchSnapshot.docs[0].exists()) {
+        const batchData = batchSnapshot.docs[0].data();
+        const allProducts = batchData.products || [];
+
+        if (allProducts.length > 0) {
+          console.log(`✅ FIRESTORE LOAD: ${allProducts.length} products from batch (1 read vs ${allProducts.length} reads)`);
+          console.log(`💰 Cost savings: ${allProducts.length - 1} reads saved (${Math.round((allProducts.length - 1) / allProducts.length * 100)}%)`);
+          console.log(`🔥 Persistence: Data cached for offline use`);
+
+          // Sort by createdAt (terbaru dulu)
+          allProducts.sort((a: any, b: any) => {
+            const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+            const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+            return dateB.getTime() - dateA.getTime();
+          });
+
+          // Cache the data for future use
+          if (!loadMore) {
+            CacheUtils.saveCache(allProducts, 'products');
+            setAllCachedProducts(allProducts);
           }
-        } else {
-          throw indexError;
+
+          // Pagination
+          const pageSize = BATCH_CONFIG.LOAD_MORE_SIZE;
+          const startIndex = loadMore ? products.length : 0;
+          const endIndex = startIndex + pageSize;
+          const pageProducts = allProducts.slice(startIndex, endIndex);
+
+          setProducts(prev => loadMore ? [...prev, ...pageProducts] : pageProducts);
+          setHasMore(endIndex < allProducts.length);
+          setLoading(false);
+
+          console.log(`📦 Performance: 1 read + ${CacheUtils.getCacheSize()} cached`);
+          return; // ✅ Firestore success - exit
         }
       }
 
-      const querySnapshot = await getDocs(q);
-      const newProducts: Product[] = [];
-
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-
-        const processedProduct = {
-          id: doc.id,
-          name: data.name || '',
-          description: data.description || '',
-          category: data.category || '',
-          retailPrice: Number(data.retailPrice || 0),
-          resellerPrice: Number(data.resellerPrice || 0),
-          costPrice: Number(data.costPrice || 0),
-          stock: Number(data.stock || 0),
-          images: Array.isArray(data.images) ? data.images : [],
-          image: data.images?.[0] || data.image || '/placeholder-product.jpg',
-          variants: data.variants || [],
-          status: data.status || 'ready',
-          isFlashSale: data.isFlashSale || false,
-          flashSalePrice: data.flashSalePrice || null,
-          originalRetailPrice: data.originalRetailPrice || null,
-          originalResellerPrice: data.originalResellerPrice || null,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-          salesCount: Number(data.salesCount || 0),
-          isFeatured: data.isFeatured || false,
-          featuredOrder: Number(data.featuredOrder || 0),
-          weight: Number(data.weight || 0),
-          unit: data.unit || 'gram',
-          estimatedReady: data.estimatedReady?.toDate ? data.estimatedReady.toDate() : undefined
-        };
-
-        newProducts.push(processedProduct);
-      });
-
-      // Update state
-      if (loadMore) {
-        setProducts(prev => {
-          const combined = [...prev, ...newProducts];
-          console.log(`📄 Added ${newProducts.length} products. Total: ${combined.length}`);
-          return combined;
-        });
-      } else {
-        setProducts(newProducts);
-        console.log(`📄 Loaded ${newProducts.length} products (first page)`);
-      }
-
-      // Update pagination state
-      const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
-      setLastVisible(lastDoc || null);
-      setHasMore(newProducts.length === 20);
+      throw new Error('No products found in Firestore');
 
     } catch (error) {
       console.error('❌ Error loading products:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load products');
-    } finally {
+
+      // 🔥 STEP 3: Fallback to cached data if available
+      if (!loadMore) {
+        const fallbackData = CacheUtils.loadCache('products');
+        if (fallbackData && fallbackData.length > 0) {
+          console.log('🔄 FALLBACK: Using expired cache due to network error');
+
+          const allProducts = fallbackData.sort((a: any, b: any) => {
+            const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+            const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+            return dateB.getTime() - dateA.getTime();
+          });
+
+          setAllCachedProducts(allProducts);
+          setProducts(allProducts.slice(0, BATCH_CONFIG.LOAD_MORE_SIZE));
+          setHasMore(allProducts.length > BATCH_CONFIG.LOAD_MORE_SIZE);
+          setLoading(false);
+          CacheUtils.setOfflineMode(true);
+          return;
+        }
+      }
+
+      setError('Failed to load products. Please check your connection.');
       setLoading(false);
     }
-  }, [lastVisible]);
-
-  // Initial load
-  useEffect(() => {
-    console.log('🔄 Loading products from Firestore (NO CACHE)...');
-    loadProducts(false);
-  }, []); // ✅ Empty dependency - only run once
+  }, [products]);
 
   // Load more function
   const loadMore = useCallback(() => {
     if (loading || !hasMore) return;
-    console.log('🔄 Loading more products...');
-    loadProducts(true);
-  }, [loading, hasMore, loadProducts]);
 
-  // Search products - simple direct query
-  const searchProducts = useCallback(async (searchParams: any): Promise<any> => {
+    // Load more from cached data
+    if (allCachedProducts.length > products.length) {
+      const nextPageStart = products.length;
+      const nextPageEnd = nextPageStart + BATCH_CONFIG.LOAD_MORE_SIZE;
+      const nextPageProducts = allCachedProducts.slice(nextPageStart, nextPageEnd);
+
+      setProducts(prev => [...prev, ...nextPageProducts]);
+      setHasMore(nextPageEnd < allCachedProducts.length);
+      console.log(`✅ LOAD MORE: ${nextPageProducts.length} products from cache (0 reads)`);
+    } else {
+      console.log('📭 No more products to load');
+      setHasMore(false);
+    }
+  }, [loading, hasMore, products.length, allCachedProducts]);
+
+  // Search products (cache-first)
+  const searchProducts = useCallback(async (searchParams: any): Promise<Product[]> => {
     try {
-      console.log('🔍 Searching products (NO CACHE)...', searchParams);
+      console.log('🔍 Searching products (CACHE-FIRST)...', searchParams);
 
+      // Try cache first
+      const cachedData = CacheUtils.loadCache('products');
+      if (cachedData && cachedData.length > 0) {
+        console.log('🔍 Searching in cached data...');
+
+        let results = cachedData;
+
+        // Apply filters
+        if (searchParams.category && searchParams.category !== 'all') {
+          results = results.filter(product => product.category === searchParams.category);
+        }
+
+        if (searchParams.minPrice) {
+          results = results.filter(product => product.retailPrice >= parseInt(searchParams.minPrice));
+        }
+
+        if (searchParams.maxPrice) {
+          results = results.filter(product => product.retailPrice <= parseInt(searchParams.maxPrice));
+        }
+
+        if (searchParams.search) {
+          const searchTerm = searchParams.search.toLowerCase();
+          results = results.filter(product =>
+            product.name?.toLowerCase().includes(searchTerm) ||
+            product.description?.toLowerCase().includes(searchTerm)
+          );
+        }
+
+        console.log(`✅ Search results from cache: ${results.length} products`);
+        return results;
+      }
+
+      // Fallback to Firestore if no cache
+      console.log('⚠️ No cache available, searching Firestore...');
       const productsRef = collection(db, 'products');
       let q = query(productsRef, limit(50));
 
-      // Add filters
       if (searchParams.category && searchParams.category !== 'all') {
         q = query(q, where('category', '==', searchParams.category));
       }
 
-      if (searchParams.status && searchParams.status !== 'all') {
-        q = query(q, where('status', '==', searchParams.status));
-      }
+      const snapshot = await getDocs(q);
+      const firestoreResults = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Product));
 
-      // Try to add sorting with fallback
-      try {
-        if (searchParams.sortBy === 'termurah') {
-          q = query(q, orderBy('retailPrice', 'asc'));
-        } else {
-          q = query(q, orderBy('createdAt', 'desc'));
-        }
-        console.log('✅ Search: Menggunakan indexed query');
-      } catch (indexError: any) {
-        if (indexError.message.includes('requires an index')) {
-          console.log('⚠️ Search: Index tidak ditemukan, menggunakan fallback');
-          // Client-side sorting akan dilakukan di frontend
-        } else {
-          throw indexError;
-        }
-      }
+      console.log(`✅ Search results from Firestore: ${firestoreResults.length} products`);
+      return firestoreResults;
 
-      const querySnapshot = await getDocs(q);
-      const searchResults: Product[] = [];
-
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        searchResults.push({
-          id: doc.id,
-          name: data.name || '',
-          description: data.description || '',
-          category: data.category || '',
-          retailPrice: Number(data.retailPrice || 0),
-          resellerPrice: Number(data.resellerPrice || 0),
-          costPrice: Number(data.costPrice || 0),
-          stock: Number(data.stock || 0),
-          images: Array.isArray(data.images) ? data.images : [],
-          image: data.images?.[0] || data.image || '/placeholder-product.jpg',
-          variants: data.variants || [],
-          status: data.status || 'ready',
-          isFlashSale: data.isFlashSale || false,
-          flashSalePrice: data.flashSalePrice || null,
-          originalRetailPrice: data.originalRetailPrice || null,
-          originalResellerPrice: data.originalResellerPrice || null,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-          salesCount: Number(data.salesCount || 0),
-          isFeatured: data.isFeatured || false,
-          featuredOrder: Number(data.featuredOrder || 0),
-          weight: Number(data.weight || 0),
-          unit: data.unit || 'gram',
-          estimatedReady: data.estimatedReady?.toDate ? data.estimatedReady.toDate() : undefined
-        });
-      });
-
-      // Client-side filtering by search query
-      let filteredResults = searchResults;
-      if (searchParams.searchQuery) {
-        const query = searchParams.searchQuery.toLowerCase();
-        filteredResults = searchResults.filter(product =>
-          product.name.toLowerCase().includes(query) ||
-          product.description.toLowerCase().includes(query) ||
-          product.category.toLowerCase().includes(query)
-        );
-      }
-
-      // Client-side sorting if needed
-      if (searchParams.sortBy === 'termurah') {
-        filteredResults.sort((a, b) => a.retailPrice - b.retailPrice);
-      } else if (searchParams.sortBy === 'terbaru') {
-        filteredResults.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-      }
-
-      console.log(`✅ Search found ${filteredResults.length} products`);
-      return {
-        products: filteredResults,
-        hasMore: false
-      };
     } catch (error) {
-      console.error('❌ Error searching products:', error);
-      return {
-        products: [],
-        hasMore: false
-      };
+      console.error('❌ Search failed:', error);
+      return [];
     }
   }, []);
 
   // Refresh function
   const refresh = useCallback(() => {
     console.log('🔄 Refreshing products...');
+    CacheUtils.clearCache('products');
     loadProducts(false);
   }, [loadProducts]);
 
-  const loadMore = () => loadProducts(true);
+  // Initialize load
+  useEffect(() => {
+    loadProducts(false);
+  }, []);
+
+  // Monitor network status
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('📶 Network: Online - syncing cache...');
+      CacheUtils.setOfflineMode(false);
+      CacheUtils.syncCache('products').catch(console.error);
+    };
+
+    const handleOffline = () => {
+      console.log('📶 Network: Offline - using cache only');
+      CacheUtils.setOfflineMode(true);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   return {
     products,
@@ -308,6 +258,8 @@ export const useFirebaseProductsRealTimeSimple = () => {
     hasMore,
     loadMore,
     searchProducts,
-    refresh
+    refresh,
+    isOffline: CacheUtils.isOfflineMode(),
+    cacheSize: CacheUtils.getCacheSize()
   };
 };

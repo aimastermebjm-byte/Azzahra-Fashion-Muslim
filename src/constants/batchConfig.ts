@@ -5,8 +5,8 @@ export const BATCH_CONFIG = {
   MAX_BATCH_SIZE: 300,
 
   // Pagination settings
-  INITIAL_LOAD_SIZE: 12,  // Products shown initially
-  LOAD_MORE_SIZE: 12,      // Products loaded per scroll
+  INITIAL_LOAD_SIZE: 25,  // Products shown initially
+  LOAD_MORE_SIZE: 25,      // Products loaded per scroll
 
   // Performance settings
   CACHE_DURATION: 5 * 60 * 1000, // 5 minutes cache

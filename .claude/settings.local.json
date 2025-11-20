@@ -44,7 +44,8 @@
       "Bash(start:*)",
       "Bash(npx tsx:*)",
       "Bash(node:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(nul)"
     ],
     "deny": [],
     "ask": []

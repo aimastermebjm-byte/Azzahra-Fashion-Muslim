@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage, ref, getDownloadURL } from 'firebase/storage';
+import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
 
 // Firebase configuration
@@ -18,8 +18,27 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 console.log('✅ Firebase initialized');
 
-// Initialize Firebase services
+// Initialize Firestore
 export const db = getFirestore(firebaseApp);
+
+// Enable Firestore Persistence with error handling
+if (typeof window !== 'undefined') {
+  enableIndexedDbPersistence(db)
+    .then(() => {
+      console.log('✅ Firestore persistence enabled - data available offline');
+    })
+    .catch((err) => {
+      if (err.code === 'failed-precondition') {
+        console.log('⚠️ Multiple tabs open, persistence disabled');
+      } else if (err.code === 'unimplemented') {
+        console.log('⚠️ Browser doesn\'t support persistence');
+      } else {
+        console.log('⚠️ Persistence error:', err.message);
+      }
+    });
+}
+
+// Initialize other Firebase services
 export const storage = getStorage(firebaseApp);
 export const auth = getAuth(firebaseApp);
 export const app = firebaseApp;
