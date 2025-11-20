@@ -145,6 +145,24 @@ export const CacheUtils = {
     }
   },
 
+  // Get last update time for cache invalidation
+  getLastUpdateTime: (cacheType: string = 'products'): number | null => {
+    try {
+      const cacheKey = `${CACHE_KEYS.PRODUCTS_CACHE}_${cacheType}`;
+      const cachedData = localStorage.getItem(cacheKey);
+
+      if (cachedData) {
+        const cacheData: ProductCache = JSON.parse(cachedData);
+        return cacheData.metadata.lastFullRefresh || null;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('❌ Error getting last update time:', error);
+      return null;
+    }
+  },
+
   // Check if online
   isOnline: (): boolean => {
     return navigator.onLine;

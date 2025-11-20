@@ -4,6 +4,7 @@ import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
 import { BATCH_CONFIG } from '../constants/batchConfig';
 import CacheUtils from '../utils/cacheUtils';
+import CacheInvalidationManager from '../utils/cacheInvalidation';
 
 export const useFirebaseProductsRealTimeSimple = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -224,9 +225,19 @@ export const useFirebaseProductsRealTimeSimple = () => {
     loadProducts(false);
   }, [loadProducts]);
 
-  // Initialize load
+  // Initialize load and setup cache invalidation
   useEffect(() => {
     loadProducts(false);
+
+    // Setup cache invalidation listener
+    const unsubscribe = CacheInvalidationManager.setupProductUpdatesListener();
+
+    // Cleanup
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   // Monitor network status
