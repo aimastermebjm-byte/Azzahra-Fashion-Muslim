@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { auth } from '../utils/firebaseClient';
-import { collection, query, getDocs, where, doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { collection, query, getDocs, where, doc, setDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
-import CacheUtils from '../utils/cacheUtils';
-import CacheInvalidationManager from '../utils/cacheInvalidation';
 
 export const useFirebaseProductsAdmin = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -107,48 +105,24 @@ export const useFirebaseProductsAdmin = () => {
     // Load products once on component mount
     loadProducts();
 
-    // Setup cache invalidation listener for admin
-    const setupAdminCacheInvalidation = () => {
-      console.log('🔔 Setting up admin cache invalidation listener...');
-
-      // Listen to storage events from other tabs
-      const handleStorageChange = (event: StorageEvent) => {
-        if (event.key === 'azzahra_cache_invalidation') {
-          const data = JSON.parse(event.newValue || '{}');
-          if (data.type === 'products') {
-            console.log('🔄 Admin: Cache invalidation detected - reloading products...');
-            loadProducts();
-          }
+    // Setup simple cross-tab cache invalidation listener for admin
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'azzahra_cache_invalidation') {
+        const data = JSON.parse(event.newValue || '{}');
+        if (data.type === 'products') {
+          console.log('🔄 Admin: Cross-tab cache invalidation detected - reloading products...');
+          // Debounce reload to prevent infinite loops
+          setTimeout(() => loadProducts(), 100);
         }
-      };
-
-      window.addEventListener('storage', handleStorageChange);
-
-      // Listen to batch changes directly
-      const unsubscribers: (() => void)[] = [];
-      try {
-        const batchRef = doc(db, 'productBatches', 'batch_1');
-        const batchUnsubscribe = onSnapshot(batchRef, (snapshot) => {
-          if (snapshot.exists()) {
-            console.log('🔄 Admin: Batch updated - reloading products...');
-            loadProducts();
-          }
-        });
-        unsubscribers.push(batchUnsubscribe);
-      } catch (error) {
-        console.log('⚠️ Cannot listen to batch changes in admin:', error);
       }
-
-      return () => {
-        window.removeEventListener('storage', handleStorageChange);
-        unsubscribers.forEach(unsubscribe => unsubscribe());
-      };
     };
 
-    const cleanup = setupAdminCacheInvalidation();
+    window.addEventListener('storage', handleStorageChange);
 
     // Cleanup on unmount
-    return cleanup;
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   // 🔥 BATCH SYSTEM: Update product in batch (not individual collection)
@@ -185,11 +159,7 @@ export const useFirebaseProductsAdmin = () => {
 
         console.log('✅ Product updated successfully in batch system');
 
-        // Cache invalidation after update
-        CacheUtils.clearCache('products');
-        CacheInvalidationManager.invalidateCache('products', `admin update: ${id}`);
-
-        // Update local state
+        // Update local state immediately (cache invalidation will be handled by onSnapshot listeners)
         setProducts(prev => prev.map(product =>
           product.id === id ? { ...product, ...updates } : product
         ));
@@ -271,10 +241,7 @@ export const useFirebaseProductsAdmin = () => {
 
         console.log('✅ Product stock updated successfully in batch system');
 
-        // Cache invalidation after stock update
-        CacheUtils.clearCache('products');
-        CacheInvalidationManager.invalidateCache('products', `admin stock update: ${id}`);
-
+        // Cache invalidation will be handled by onSnapshot listeners in cacheInvalidation.ts
         return quantity;
 
       } else {
