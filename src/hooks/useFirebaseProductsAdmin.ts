@@ -11,7 +11,7 @@ export const useFirebaseProductsAdmin = () => {
   const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
-    const loadProducts = async () => {
+    const loadProducts = async (forceRefresh = false) => {
       try {
         const user = auth.currentUser;
         if (!user) {
@@ -21,9 +21,9 @@ export const useFirebaseProductsAdmin = () => {
           return;
         }
 
-        console.log('🔄 Loading products for admin from BATCH SYSTEM...');
+        console.log('🔄 Loading products for admin from BATCH SYSTEM...', forceRefresh ? '(FORCE REFRESH)' : '');
 
-        // 🔥 BATCH SYSTEM: Read from productBatches like website
+        // 🔥 BATCH SYSTEM: Always read fresh from Firestore for admin (no cache)
         const batchRef = collection(db, 'productBatches');
         const batchQuery = query(batchRef, where('__name__', '==', 'batch_1'));
         const batchSnapshot = await getDocs(batchQuery);
@@ -110,20 +110,31 @@ export const useFirebaseProductsAdmin = () => {
       if (event.key === 'azzahra_cache_invalidation') {
         const data = JSON.parse(event.newValue || '{}');
         if (data.type === 'products') {
-          console.log('🔄 Admin: Cross-tab cache invalidation detected - reloading products...');
-          // Debounce reload to prevent infinite loops
-          setTimeout(() => loadProducts(), 100);
+          console.log('🔄 Admin: Cross-tab cache invalidation detected - force reloading products...');
+          // Force refresh with fresh data from Firestore
+          setTimeout(() => loadProducts(true), 100);
         }
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
 
+    // Also reload when page becomes visible again (user switches tabs)
+    const handleVisibilityChange = () => {
+      if (!document.hidden && products.length > 0) {
+        console.log('🔄 Admin: Page became visible - refreshing products to ensure latest data...');
+        loadProducts(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     // Cleanup on unmount
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [products.length]);
 
   // 🔥 BATCH SYSTEM: Update product in batch (not individual collection)
   const updateProduct = async (id: string, updates: any) => {
