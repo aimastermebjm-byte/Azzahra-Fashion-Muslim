@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { auth } from '../utils/firebaseClient';
-import { collection, query, getDocs, where, doc, setDoc } from 'firebase/firestore';
+import { collection, query, getDocs, where, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
 import CacheUtils from '../utils/cacheUtils';
@@ -43,7 +43,7 @@ export const useFirebaseProductsAdmin = () => {
         console.log('📦 Products loaded from batch:', allProducts.length, 'products');
 
         const loadedProducts: Product[] = [];
-        allProducts.forEach((data) => {
+        allProducts.forEach((data: any) => {
 
           // Calculate total stock from variants if available
           const stock = Number(data.stock || 0);
@@ -106,6 +106,49 @@ export const useFirebaseProductsAdmin = () => {
 
     // Load products once on component mount
     loadProducts();
+
+    // Setup cache invalidation listener for admin
+    const setupAdminCacheInvalidation = () => {
+      console.log('🔔 Setting up admin cache invalidation listener...');
+
+      // Listen to storage events from other tabs
+      const handleStorageChange = (event: StorageEvent) => {
+        if (event.key === 'azzahra_cache_invalidation') {
+          const data = JSON.parse(event.newValue || '{}');
+          if (data.type === 'products') {
+            console.log('🔄 Admin: Cache invalidation detected - reloading products...');
+            loadProducts();
+          }
+        }
+      };
+
+      window.addEventListener('storage', handleStorageChange);
+
+      // Listen to batch changes directly
+      const unsubscribers: (() => void)[] = [];
+      try {
+        const batchRef = doc(db, 'productBatches', 'batch_1');
+        const batchUnsubscribe = onSnapshot(batchRef, (snapshot) => {
+          if (snapshot.exists()) {
+            console.log('🔄 Admin: Batch updated - reloading products...');
+            loadProducts();
+          }
+        });
+        unsubscribers.push(batchUnsubscribe);
+      } catch (error) {
+        console.log('⚠️ Cannot listen to batch changes in admin:', error);
+      }
+
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+        unsubscribers.forEach(unsubscribe => unsubscribe());
+      };
+    };
+
+    const cleanup = setupAdminCacheInvalidation();
+
+    // Cleanup on unmount
+    return cleanup;
   }, []);
 
   // 🔥 BATCH SYSTEM: Update product in batch (not individual collection)
