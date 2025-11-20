@@ -54,9 +54,17 @@ export const useFirebaseProductsRealTimeSimple = () => {
           setHasMore(endIndex < allProducts.length);
           setLoading(false);
 
-          // Background sync if online
-          if (CacheUtils.isOnline()) {
+          // Background sync only if cache is old (more than 1 minute)
+          const lastUpdate = CacheUtils.getLastUpdateTime('products');
+          const now = Date.now();
+          const cacheAge = lastUpdate ? now - lastUpdate : Infinity;
+          const oneMinute = 60 * 1000;
+
+          if (CacheUtils.isOnline() && cacheAge > oneMinute) {
+            console.log('🔄 Cache is old, background syncing...');
             CacheUtils.syncCache('products').catch(console.error);
+          } else {
+            console.log('✅ Cache is fresh, no background sync needed');
           }
 
           return; // ✅ Cache success - exit
@@ -243,9 +251,17 @@ export const useFirebaseProductsRealTimeSimple = () => {
   // Monitor network status
   useEffect(() => {
     const handleOnline = () => {
-      console.log('📶 Network: Online - syncing cache...');
+      console.log('📶 Network: Online - checking cache sync needs...');
       CacheUtils.setOfflineMode(false);
-      CacheUtils.syncCache('products').catch(console.error);
+
+      // Only sync if cache is old or invalid
+      const isCacheValid = CacheUtils.isCacheValid('products');
+      if (!isCacheValid) {
+        console.log('🔄 Cache invalid, syncing...');
+        CacheUtils.syncCache('products').catch(console.error);
+      } else {
+        console.log('✅ Cache is valid, no sync needed');
+      }
     };
 
     const handleOffline = () => {
