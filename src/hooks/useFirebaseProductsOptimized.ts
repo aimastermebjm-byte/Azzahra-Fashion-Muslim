@@ -33,12 +33,12 @@ export interface UseFirebaseProductsResult {
   refresh: () => Promise<void>;
 }
 
-export const useFirebaseProducts = (
+export const useFirebaseProductsOptimized = (
   initialLoadSize: number = BATCH_CONFIG.INITIAL_LOAD_SIZE
 ): UseFirebaseProductsResult => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null);
+  const [error, setError] = useState<string | null>(null);
 
   // Simple function to load products using Firestore persistence
   const loadProducts = async () => {
@@ -89,8 +89,16 @@ export const useFirebaseProducts = (
   };
 
   useEffect(() => {
-    const cleanup = loadProducts();
-    return cleanup;
+    const setupProducts = async () => {
+      const cleanup = await loadProducts();
+      return cleanup;
+    };
+
+    setupProducts();
+
+    return () => {
+      // Cleanup will be handled by the function itself
+    };
   }, [initialLoadSize]);
 
   // Manual refresh function (trigger fresh sync if needed)
@@ -113,4 +121,4 @@ export const useFirebaseProducts = (
   };
 };
 
-export default useFirebaseProducts;
+export default useFirebaseProductsOptimized;

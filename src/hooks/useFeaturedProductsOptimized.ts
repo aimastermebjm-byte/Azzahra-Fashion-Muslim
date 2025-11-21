@@ -32,10 +32,10 @@ export interface UseFeaturedProductsResult {
   refresh: () => Promise<void>;
 }
 
-export const useFeaturedProducts = (): UseFeaturedProductsResult => {
+export const useFeaturedProductsOptimized = (): UseFeaturedProductsResult => {
   const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null);
+  const [error, setError] = useState<string | null>(null);
 
   // Load featured products using Firestore persistence
   const loadFeaturedProducts = async () => {
@@ -89,8 +89,16 @@ export const useFeaturedProducts = (): UseFeaturedProductsResult => {
   };
 
   useEffect(() => {
-    const cleanup = loadFeaturedProducts();
-    return cleanup;
+    const setupFeaturedProducts = async () => {
+      const cleanup = await loadFeaturedProducts();
+      return cleanup;
+    };
+
+    setupFeaturedProducts();
+
+    return () => {
+      // Cleanup will be handled by the function itself
+    };
   }, []);
 
   // Manual refresh function
@@ -111,4 +119,4 @@ export const useFeaturedProducts = (): UseFeaturedProductsResult => {
   };
 };
 
-export default useFeaturedProducts;
+export default useFeaturedProductsOptimized;

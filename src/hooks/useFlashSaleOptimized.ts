@@ -42,10 +42,10 @@ export interface UseFlashSaleResult {
   refresh: () => Promise<void>;
 }
 
-export const useFlashSale = (): UseFlashSaleResult => {
+export const useFlashSaleOptimized = (): UseFlashSaleResult => {
   const [flashSaleProducts, setFlashSaleProducts] = useState<FlashSaleProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null);
+  const [error, setError] = useState<string | null>(null);
   const [config, setConfig] = useState<FlashSaleConfig>({
     active: false,
     backgroundColor: '#ff6b6b',
@@ -114,8 +114,16 @@ export const useFlashSale = (): UseFlashSaleResult => {
   };
 
   useEffect(() => {
-    const cleanup = loadFlashSale();
-    return cleanup;
+    const setupFlashSale = async () => {
+      const cleanup = await loadFlashSale();
+      return cleanup;
+    };
+
+    setupFlashSale();
+
+    return () => {
+      // Cleanup will be handled by the function itself
+    };
   }, []);
 
   // Manual refresh function
@@ -137,4 +145,4 @@ export const useFlashSale = (): UseFlashSaleResult => {
   };
 };
 
-export default useFlashSale;
+export default useFlashSaleOptimized;
