@@ -24,7 +24,6 @@ import BottomNavigation from './components/BottomNavigation';
 import { OngkirTestPage } from './pages/OngkirTestPage';
 import { useFirebaseProductsOptimized } from './hooks/useFirebaseProductsOptimized';
 import { useFeaturedProductsOptimized } from './hooks/useFeaturedProductsOptimized';
-import { useFlashSaleOptimized } from './hooks/useFlashSaleOptimized';
 import { useFirebaseProductsAdmin } from './hooks/useFirebaseProductsAdmin';
 import { useFirebaseAuth } from './hooks/useFirebaseAuth';
 import { useAdmin } from './contexts/AdminContext';
@@ -46,7 +45,6 @@ function AppContent() {
   // Optimized hooks with Firestore persistence only
   const { products, loading, refresh } = useFirebaseProductsOptimized();
   const { featuredProducts } = useFeaturedProductsOptimized();
-  const { flashSaleProducts } = useFlashSaleOptimized();
 
   // 🔥 BATCH SYSTEM: Gunakan admin hook untuk update stock (batch-compatible)
   const { updateProductStock } = useFirebaseProductsAdmin();
@@ -421,7 +419,6 @@ function AppContent() {
         return (
           <FlashSalePage
             user={user}
-            flashSaleProducts={flashSaleProducts}
             onProductClick={handleProductClick}
             onCartClick={handleCartClick}
             onAddToCart={handleQuickAddToCart}
