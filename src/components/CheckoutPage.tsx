@@ -364,21 +364,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       return;
     }
 
-    // Check if any items are out of stock
-    const outOfStockItems = cartItems.filter(item => {
-      const product = item.product || item;
-      return product.status === 'po' || product.stock <= 0;
-    });
-
-    if (outOfStockItems.length > 0) {
-      const outOfStockNames = outOfStockItems.map(item => {
-        const product = item.product || item;
-        return product.name || 'Produk tidak diketahui';
-      }).join(', ');
-
-      alert(`⚠️ TIDAK DAPAT CHECKOUT!\n\nProduk berikut HABIS:\n${outOfStockNames}\n\nHubungi admin WhatsApp:\n📱 6287815990944\n\nUntuk info ketersediaan produk.`);
-      return;
-    }
+    // Stock validation now handled by atomic transaction in App.tsx
+    // No need to check here - transaction will handle it atomically
 
     // Check if selected courier has valid shipping cost
     if (supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {

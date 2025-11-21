@@ -1,5 +1,5 @@
-// Cart Service - Cache-First Cart System with Firebase Sync
-// Cache-first approach with Firebase as single source of truth
+// Cart Service - Firebase-only Cart System
+// Direct Firebase operations with persistence support
 
 import { auth } from '../utils/firebaseClient';
 import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
