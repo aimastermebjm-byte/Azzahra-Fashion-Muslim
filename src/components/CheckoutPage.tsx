@@ -235,6 +235,51 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   }, [addresses, selectedAddressId, formData.isDropship]);
 
+  // 🔥 CRITICAL FIX: Trigger shipping calculation AFTER courier auto-selection
+  useEffect(() => {
+    const defaultAddr = getDefaultAddress();
+    const autoCourier = shippingOptions.find(opt => opt.code);
+
+    // If we have auto-selected courier and default address, trigger calculation
+    if (autoCourier && defaultAddr && formData.shippingCourier === autoCourier.id) {
+      console.log('🚀 AUTO-CALCULATION: Triggering shipping cost for auto-selected courier:', {
+        courier: autoCourier.code,
+        courierId: formData.shippingCourier,
+        hasDefaultAddr: !!defaultAddr,
+        weight: calculateTotalWeight()
+      });
+
+      // Get destination ID
+      let destinationId = defaultAddr.subdistrictId;
+      if (!destinationId && defaultAddr.district) {
+        try {
+          const cacheKey = 'ongkir_subdistricts';
+          const cacheData = localStorage.getItem(cacheKey);
+          if (cacheData) {
+            const subdistricts = JSON.parse(cacheData);
+            const subdistrict = subdistricts.find((sub: any) =>
+              sub.subdistrict_name?.toLowerCase() === defaultAddr.district?.toLowerCase()
+            );
+            if (subdistrict) {
+              destinationId = subdistrict.subdistrict_id.toString();
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error getting subdistrict from cache:', error);
+        }
+      }
+
+      destinationId = destinationId || defaultAddr.cityId || '607';
+
+      // Trigger calculation immediately
+      setTimeout(() => {
+        if (autoCourier.code && destinationId) {
+          calculateShippingCost(autoCourier.code, destinationId, calculateTotalWeight());
+        }
+      }, 100); // Small delay to ensure state is set
+    }
+  }, [formData.shippingCourier, addresses.length]); // Trigger when courier is set or addresses load
+
   // Optimized shipping calculation - SINGLE useEffect for both courier and address changes
   useEffect(() => {
     const defaultAddr = getDefaultAddress();
