@@ -151,7 +151,20 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     // BATCH SYSTEM: Check variantsStock structure (size-color key)
     if ((currentProduct as any).variantsStock) {
       const variantKey = `${size}-${color}`;
-      const stock = Number((currentProduct as any).variantsStock[variantKey] || 0);
+      const variantsStock = (currentProduct as any).variantsStock;
+
+      // DEBUG: Log structure untuk troubleshooting
+      console.log('🔍 DEBUG variantsStock structure:', {
+        productId: currentProduct.id,
+        productName: currentProduct.name,
+        variantKey,
+        availableKeys: Object.keys(variantsStock),
+        fullStructure: variantsStock,
+        lookingFor: variantKey,
+        found: variantKey in variantsStock
+      });
+
+      const stock = Number(variantsStock[variantKey] || 0);
       console.log(`🔍 BATCH VARIANT STOCK: ${variantKey} = ${stock}`);
       return stock;
     }
