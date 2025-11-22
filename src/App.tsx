@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { AdminProvider } from './contexts/AdminContext';
+// import { FlashSaleProvider } from './contexts/FlashSaleContext'; // DISABLED - Emergency fix
 import ErrorBoundary from './components/ErrorBoundary';
+
+// Cache busting version - force browser refresh
+const APP_VERSION = '2.1.0';
 import HomePage from './components/HomePage';
 import ProductDetail from './components/ProductDetail';
 import CartPage from './components/CartPage';
@@ -18,11 +22,10 @@ import AdminUsersPage from './components/AdminUsersPage';
 import AdminCacheManagement from './components/AdminCacheManagement';
 import BottomNavigation from './components/BottomNavigation';
 import { OngkirTestPage } from './pages/OngkirTestPage';
-import { useFirebaseProducts } from './hooks/useFirebaseProducts';
+import { useUnifiedProducts } from './hooks/useUnifiedProducts';
 import { useFirebaseAuth } from './hooks/useFirebaseAuth';
 import { useAdmin } from './contexts/AdminContext';
-// import { AppStorage } from './utils/appStorage'; // REMOVED - Firebase only
-import { cartService } from './services/cartService';
+import { cartServiceOptimized } from './services/cartServiceOptimized';
 import { ordersService } from './services/ordersService';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from './utils/firebaseClient';
@@ -37,18 +40,17 @@ function AppContent() {
 
   // Firebase Authentication
   const { user, login, logout } = useFirebaseAuth();
-  const { products, loading, updateProductStock, loadMoreProducts, hasMore } = useFirebaseProducts();
+  // Optimized hooks with Firestore persistence only
+  const { allProducts: products, featuredProducts, flashSaleProducts, loading, refresh, updateProductStock } = useUnifiedProducts();
   const { addOrder } = useAdmin();
 
   // Initialize Firebase-only app on app start
   useEffect(() => {
-    console.log('🚀 App initializing... Firebase-only mode (NO localStorage)');
-
+    
     // No more AppStorage localStorage initialization
     // All data will be stored in Firebase Firestore only
 
-    console.log('🚀 App initialized with Firebase-only storage');
-
+    
     // Handle URL routing for special pages
     const handleRouting = () => {
       const path = window.location.pathname;
@@ -61,6 +63,16 @@ function AppContent() {
   }, []);
 
   const handleProductClick = (product: any) => {
+    console.log('🔗 App.tsx handleProductClick:', {
+      id: product.id,
+      name: product.name,
+      hasVariants: !!product.variants,
+      variantsStock: product.variants?.stock,
+      hasStock: !!(product.variants?.stock && Object.keys(product.variants?.stock).length > 0),
+      variantsData: product.variants
+    });
+
+    
     setSelectedProduct(product);
     setCurrentPage('product-detail');
   };
@@ -76,41 +88,45 @@ function AppContent() {
 
   const handleLoginWithUser = (user: any) => {
     setShowLogin(false);
-    console.log('✅ Firebase user logged in:', user.name, user.role);
-  };
+      };
 
   const handleRegistrationSuccess = (user: any) => {
     setShowRegistration(false);
-    console.log('✅ Firebase user registered:', user.name, user.role);
-  };
+      };
 
   const handleLogout = () => {
-    console.log('🔃 User logging out from Firebase');
-
+    
     // Firebase logout
     logout();
     setCurrentPage('home');
 
     // Clear cart from cartService only (Firebase-only)
-    cartService.clearCart().catch(error => {
+    cartServiceOptimized.clearCart().catch(error => {
       console.error('❌ Error clearing cart on logout:', error);
     });
-    console.log('✅ Firebase logout successful');
-    console.log('📦 Cart cleared from Firebase cartService only (NO localStorage)');
-  };
+      };
 
   const handleAddToCart = async (product: any, variant: any, quantity: number) => {
     if (!user?.uid) {
-      console.log('❌ Cannot add to cart: User not logged in');
-      handleLoginRequired();
+            handleLoginRequired();
       return;
     }
 
     try {
-      // Get the correct price based on user role
-      const price = user?.role === 'reseller' ? product.resellerPrice : product.retailPrice;
+      // Get the correct price based on flash sale status and user role
+      let price;
+      if (product.isFlashSale && product.flashSalePrice) {
+        // Flash sale price takes priority
+        price = product.flashSalePrice;
+      } else if (user?.role === 'reseller') {
+        // Reseller price
+        price = product.resellerPrice;
+      } else {
+        // Retail price
+        price = product.retailPrice;
+      }
 
-      await cartService.addToCart({
+      await cartServiceOptimized.addToCart({
         productId: product.id,
         name: product.name,
         price: price,
@@ -118,8 +134,7 @@ function AppContent() {
         variant: variant,
         quantity: quantity
       });
-      console.log('✅ Product added to cart:', product.name, 'Price:', price);
-      alert('Produk berhasil ditambahkan ke keranjang!');
+            alert('Produk berhasil ditambahkan ke keranjang!');
     } catch (error) {
       console.error('❌ Failed to add to cart:', error);
       alert('Gagal menambahkan produk ke keranjang');
@@ -166,60 +181,163 @@ function AppContent() {
 
     try {
       // Get cart items from backend
-      const cartItems = await cartService.getCart();
+      const cartItems = await cartServiceOptimized.getCart();
 
-      // Calculate totals from cart items
-      const calculatedSubtotal = cartItems.reduce((total, item) => {
-        const itemPrice = item.price || 0;
-        const itemQuantity = item.quantity || 1;
-        return total + (itemPrice * itemQuantity);
-      }, 0);
+      if (cartItems.length === 0) {
+        alert('Keranjang belanja kosong!');
+        return null;
+      }
 
+      console.log('🚀 Starting ATOMIC transaction for checkout...', cartItems.length, 'items');
+
+      // Import transaction functions
+      const { runTransaction, getDoc, doc: docRef } = await import('firebase/firestore');
+
+      // Execute ATOMIC transaction for stock validation and reduction - BATCH SYSTEM
+      const transactionResult = await runTransaction(db, async (transaction) => {
+        console.log('📦 ATOMIC TRANSACTION: Reading and validating stock from BATCH SYSTEM...');
+
+        // Read batch document once (single read for all products)
+        const batchRef = docRef(db, 'productBatches', 'batch_1');
+        const batchDoc = await transaction.get(batchRef);
+
+        if (!batchDoc.exists()) {
+          throw new Error('Batch products tidak ditemukan');
+        }
+
+        const batchProducts = batchDoc.data().products || [];
+        console.log(`📦 Loaded ${batchProducts.length} products from batch`);
+
+        const validatedItems = [];
+        let cartTotal = 0;
+        const updatedBatchProducts = [...batchProducts];
+
+        // Validate each item against batch data
+        for (const item of cartItems) {
+          // Find product in batch
+          const batchProduct = batchProducts.find(p => p.id === item.productId);
+
+          if (!batchProduct) {
+            throw new Error(`Produk "${item.name}" tidak ditemukan di batch system`);
+          }
+
+          // Handle variant stock if exists - CORRECT STRUCTURE
+          let currentStock = Number(batchProduct.stock || 0);
+          if (item.variant && batchProduct.variants?.stock && item.variant.size && item.variant.color) {
+            const oldVariantStock = Number(batchProduct.variants.stock[item.variant.size]?.[item.variant.color] || 0);
+            currentStock = oldVariantStock;
+          }
+
+          if (currentStock < item.quantity) {
+            throw new Error(`Stok "${item.name}" ${item.variant ? `(${item.variant.size}, ${item.variant.color})` : ''} tidak mencukupi. Tersedia: ${currentStock}, Diminta: ${item.quantity}`);
+          }
+
+          // Get current prices based on user role (atomic price check)
+          const currentRetailPrice = Number(batchProduct.retailPrice || batchProduct.price || 0);
+          const currentResellerPrice = Number(batchProduct.resellerPrice || 0) || currentRetailPrice * 0.8;
+          const expectedPrice = user?.role === 'reseller' ? currentResellerPrice : currentRetailPrice;
+
+          const itemTotal = expectedPrice * item.quantity;
+          cartTotal += itemTotal;
+
+          // Update stock in batch products array
+          const productIndex = updatedBatchProducts.findIndex(p => p.id === item.productId);
+          if (productIndex !== -1) {
+            if (item.variant && updatedBatchProducts[productIndex].variants?.stock) {
+              // Update variant stock (CORRECT STRUCTURE)
+              const oldVariantStock = Number(updatedBatchProducts[productIndex].variants.stock[item.variant.size]?.[item.variant.color] || 0);
+              const newVariantStock = oldVariantStock - item.quantity;
+              updatedBatchProducts[productIndex].variants.stock[item.variant.size][item.variant.color] = newVariantStock;
+
+              // Recalculate total stock from variants
+              let totalStock = 0;
+              if (updatedBatchProducts[productIndex].variants?.stock) {
+                Object.values(updatedBatchProducts[productIndex].variants.stock).forEach((sizeStock: any) => {
+                  Object.values(sizeStock).forEach((colorStock: any) => {
+                    totalStock += Number(colorStock || 0);
+                  });
+                });
+              }
+              updatedBatchProducts[productIndex].stock = totalStock;
+
+              console.log(`✅ Validated: ${item.name} (${item.variant.size}, ${item.variant.color}) - Variant Stock: ${oldVariantStock} → ${newVariantStock}, Total Stock: ${totalStock}`);
+            } else {
+              // Update main stock only
+              const oldStock = Number(updatedBatchProducts[productIndex].stock || 0);
+              const newStock = oldStock - item.quantity;
+              updatedBatchProducts[productIndex].stock = newStock;
+
+              console.log(`✅ Validated: ${item.name} - Stock: ${oldStock} → ${newStock}, Price: Rp${expectedPrice.toLocaleString('id-ID')}`);
+            }
+
+            // Update last modified
+            updatedBatchProducts[productIndex].lastModified = Date.now();
+          }
+
+          // Add to validated items
+          validatedItems.push({
+            ...item,
+            price: expectedPrice,
+            total: itemTotal,
+            currentStock: currentStock,
+            newStock: currentStock - item.quantity,
+            validated: true
+          });
+        }
+
+        // Update batch system with all stock changes in single atomic operation
+        transaction.update(batchRef, {
+          products: updatedBatchProducts,
+          lastModified: Date.now()
+        });
+
+        console.log('✅ ATOMIC TRANSACTION: Batch system updated successfully!');
+        console.log(`📦 Updated ${validatedItems.length} items in batch`);
+        console.log('🔍 DEBUG: Updated batch products sample:', updatedBatchProducts.slice(0, 3).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          stock: p.stock,
+          variantsStock: p.variants?.stock
+        })));
+
+        return {
+          validatedItems,
+          cartTotal
+        };
+      });
+
+      // Transaction completed successfully
+      const { validatedItems, cartTotal } = transactionResult;
+
+      console.log('🎉 ATOMIC TRANSACTION SUCCESS:', {
+        itemsProcessed: validatedItems.length,
+        totalAmount: cartTotal
+      });
+
+      // Calculate final totals
+      const calculatedSubtotal = cartTotal;
       const calculatedShippingCost = orderData.shippingCost || 0;
       const calculatedFinalTotal = calculatedSubtotal + calculatedShippingCost;
 
-      // Add order to admin system
-      addOrder({
+      // Clear cart from backend (after successful stock reduction)
+      await cartServiceOptimized.clearCart();
+
+      // Create single order record for both admin system and Firebase sync
+      const orderRecord = {
         id: orderId,
         userId: user.uid,
         userName: user.displayName || 'User',
         userEmail: user.email || 'user@example.com',
-        items: cartItems.map(item => ({
+        items: validatedItems.map(item => ({
           productId: item.productId,
           productName: item.name || 'Product',
-          productImage: item.image || '',
-          selectedVariant: item.variant || { size: '', color: '' },
+          selectedVariant: {
+            size: item.variant?.size || '',
+            color: item.variant?.color || ''
+          },
           quantity: item.quantity,
           price: item.price || 0,
-          total: (item.price || 0) * item.quantity
-        })),
-        shippingInfo: orderData.shippingInfo,
-        paymentMethod: orderData.paymentMethod,
-        status: 'pending',
-        totalAmount: calculatedSubtotal,
-        shippingCost: calculatedShippingCost,
-        finalTotal: calculatedFinalTotal,
-        notes: orderData.notes
-      });
-
-      // Update stock for each item
-      cartItems.forEach(item => {
-        updateProductStock(item.productId, item.quantity);
-      });
-
-      // Clear cart from backend
-      await cartService.clearCart();
-
-      // Save order to Firebase for cross-device sync using OrdersService
-      const orderRecord = {
-        items: cartItems.map(item => ({
-          productId: item.productId,
-          productName: item.name || 'Product',
-          productImage: item.image || '',
-          selectedVariant: item.variant || { size: '', color: '' },
-          quantity: item.quantity,
-          price: item.price || 0,
-          total: (item.price || 0) * item.quantity
+          total: item.total || 0
         })),
         shippingInfo: orderData.shippingInfo,
         paymentMethod: orderData.paymentMethod,
@@ -228,27 +346,30 @@ function AppContent() {
         shippingCost: calculatedShippingCost,
         finalTotal: calculatedFinalTotal,
         notes: orderData.notes || '',
-        userName: user.displayName || 'User',
-        userEmail: user.email || 'user@example.com',
-        userId: user.uid,
         timestamp: Date.now()
       };
 
-      try {
-        // Save to Firebase using OrdersService ONLY
-        await ordersService.createOrder(orderRecord);
-        console.log('🔥 Order saved to Firebase Firestore:', orderId);
-        console.log('📦 Firebase-only order storage - NO localStorage backup needed');
+      // Add to admin system (local state)
+      addOrder(orderRecord);
 
-        console.log('✅ Order completed and cart cleared:', orderId);
-        return orderId;
-      } catch (firebaseError) {
-        console.error('❌ Error saving order via OrdersService:', firebaseError);
-        console.error('🚨 Order saving failed - Firebase is the only storage option');
-        throw firebaseError; // Don't fallback to localStorage
-      }
+      // Save to Firebase for cross-device sync (single source of truth)
+      await ordersService.createOrder(orderRecord);
+
+      console.log('✅ Order completed successfully with ATOMIC transaction');
+      return orderId;
+
     } catch (error) {
-      console.error('❌ Error completing order:', error);
+      console.error('❌ ATOMIC TRANSACTION FAILED:', error);
+
+      // Show user-friendly error message
+      if (error.message.includes('tidak mencukupi')) {
+        alert(`⚠️ CHECKOUT GAGAL:\n\n${error.message}\n\nMohon periksa kembali keranjang Anda atau kurangi jumlah pesanan.`);
+      } else if (error.message.includes('tidak ditemukan')) {
+        alert(`⚠️ CHECKOUT GAGAL:\n\n${error.message}\n\nMohon refresh halaman dan coba lagi.`);
+      } else {
+        alert(`⚠️ CHECKOUT GAGAL:\n\nTerjadi kesalahan saat memproses pesanan. Silakan coba lagi.\n\nError: ${error.message}`);
+      }
+
       return null;
     }
   };
@@ -315,25 +436,23 @@ function AppContent() {
             onCartClick={handleCartClick}
             onAddToCart={handleQuickAddToCart}
             onNavigateToFlashSale={handleNavigateToFlashSale}
-            onNavigateToOngkirTest={handleNavigateToOngkirTest}
+            onRefreshProducts={refresh}
+            featuredProducts={featuredProducts}
           />
         );
       case 'flash-sale':
         return (
           <FlashSalePage
             user={user}
-            products={products}
-            loading={loading}
             onProductClick={handleProductClick}
-            onLoginRequired={handleLoginRequired}
             onCartClick={handleCartClick}
             onAddToCart={handleQuickAddToCart}
+            flashSaleProducts={flashSaleProducts}
           />
         );
       case 'orders':
         return <OrdersPage user={user} />;
       case 'account':
-        console.log('App: Rendering AccountPage with user:', user);
         return (
           <AccountPage
             user={user}
@@ -347,7 +466,6 @@ function AppContent() {
           />
         );
       case 'address-management':
-        console.log('App: Rendering AddressManagementPage with user:', user);
         return (
           <AddressManagementPage
             user={user}
@@ -355,26 +473,28 @@ function AppContent() {
           />
         );
         case 'admin-products':
-        console.log('App: Rendering AdminProductsPage with user:', user);
         return <AdminProductsPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-orders':
-        console.log('App: Rendering AdminOrdersPage with user:', user);
-        return <AdminOrdersPage onBack={() => setCurrentPage('account')} user={user} />;
+        return (
+          <AdminOrdersPage
+            onBack={() => setCurrentPage('account')}
+            user={user}
+            onRefreshProducts={refresh}
+            onNavigateToHome={() => setCurrentPage('home')}
+          />
+        );
       case 'admin-reports':
-        console.log('App: Rendering AdminReportsPage with user:', user);
         return <AdminReportsPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-users':
-        console.log('App: Rendering AdminUsersPage with user:', user);
         return <AdminUsersPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-cache':
-        console.log('App: Rendering AdminCacheManagement with user:', user);
         return <AdminCacheManagement onBack={() => setCurrentPage('account')} user={user} />;
         case 'ongkir-test':
         return <OngkirTestPage onBack={() => setCurrentPage('home')} />;
         case 'product-detail':
         return (
           <ProductDetail
-            product={selectedProduct!}
+            currentProduct={selectedProduct!}
             user={user}
             onBack={() => setCurrentPage('home')}
             onLoginRequired={handleLoginRequired}
@@ -410,8 +530,10 @@ function AppContent() {
             onCartClick={handleCartClick}
             onAddToCart={handleQuickAddToCart}
             onNavigateToFlashSale={handleNavigateToFlashSale}
-            onLoadMore={loadMoreProducts}
+            onLoadMore={loadMore}
             hasMore={hasMore}
+            onRefreshProducts={refresh}
+            searchProducts={searchProducts}
           />
         );
     }
@@ -452,7 +574,9 @@ function AppContent() {
 function App() {
   return (
     <AdminProvider>
+      {/* <FlashSaleProvider> - DISABLED Emergency fix untuk infinite loop */}
       <AppContent />
+      {/* </FlashSaleProvider> */}
     </AdminProvider>
   );
 }

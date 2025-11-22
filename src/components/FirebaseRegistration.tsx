@@ -43,8 +43,7 @@ const FirebaseRegistration: React.FC<FirebaseRegistrationProps> = ({ onClose, on
     setLoading(true);
 
     try {
-      console.log('🔄 Firebase registration attempt:', { email, displayName, role: selectedRole });
-
+      
       const userData = await register(email, password, displayName, selectedRole);
 
       if (userData) {
@@ -55,8 +54,7 @@ const FirebaseRegistration: React.FC<FirebaseRegistrationProps> = ({ onClose, on
           role: userData.role
         };
 
-        console.log('✅ Firebase registration successful:', appUser);
-        onSuccess(appUser);
+                onSuccess(appUser);
         onClose();
       }
     } catch (err: any) {

@@ -7,6 +7,12 @@ service firebase.storage {
       allow read, write: if request.auth != null && request.auth.uid != null;
     }
 
+    // Allow read/write access for product images (for migration and app usage)
+    match /products/{productId}/{allPaths=**} {
+      allow read: if true; // Public read access for product images
+      allow write: if true; // Temporary open access for migration
+    }
+
     // Allow general read access for public files (if needed in future)
     match /public/{allPaths=**} {
       allow read: if true;
@@ -19,6 +25,12 @@ service cloud.firestore {
     // TEMPORARY: Allow open access to products for development
     match /products/{productId} {
       allow read, write: if true; // Temporary fix
+    }
+
+    // 🔥 NEW: Allow access to productBatches for batch system
+    match /productBatches/{batchId} {
+      allow read: if true; // Public read access for all users
+      allow write: if true; // Temporary open access for batch setup
     }
 
     // Allow read/write access to orders for authenticated users and admins
@@ -62,6 +74,11 @@ service cloud.firestore {
     // Allow read/write access to flash sales for authenticated users
     match /flashSales/{flashSaleId} {
       allow read, write: if true; // Temporary fix
+    }
+
+    // Allow read/write access to flash sale config (singular collection name)
+    match /flashSale/{documentId} {
+      allow read, write: if true; // Public access for flash sale system
     }
 
     // Allow read/write access to shipping cache for cost optimization

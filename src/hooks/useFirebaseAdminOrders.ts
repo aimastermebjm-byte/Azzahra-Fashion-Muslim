@@ -24,8 +24,7 @@ export const useFirebaseAdminOrders = () => {
           return;
         }
 
-        console.log('⚡ FAST Setting up admin orders listener for mobile optimization');
-
+  
         // Set up real-time listener for ALL orders (admin)
         const ordersRef = collection(db, 'orders');
         const q = query(
@@ -42,8 +41,7 @@ export const useFirebaseAdminOrders = () => {
         unsubscribe = onSnapshot(
           mobileOptimizedQuery,
           (querySnapshot) => {
-            console.log('⚡ FAST Orders snapshot received for mobile:', querySnapshot.size, 'orders');
-
+  
             const loadedOrders: Order[] = [];
             querySnapshot.forEach((doc) => {
               const data = doc.data() as Omit<Order, 'id'>;
@@ -55,31 +53,29 @@ export const useFirebaseAdminOrders = () => {
               });
             });
 
-            console.log('⚡ FAST All orders loaded from Firebase for admin mobile:', loadedOrders.length, 'orders');
-            setOrders(loadedOrders);
+              setOrders(loadedOrders);
             setLoading(false);
             setInitialLoad(false);
             setError(null);
           },
           async (error) => {
-            console.error('❌ Error listening to admin orders:', error);
+            console.error('Error listening to admin orders:', error);
             setError(error.message);
             setLoading(false);
 
             // Fallback to ordersService
-            console.log('🔄 Falling back to ordersService...');
             setInitialLoad(false);
             try {
               const fallbackOrders = await ordersService.getAllOrders();
               setOrders(fallbackOrders);
               setError(null);
             } catch (fallbackError) {
-              console.error('❌ Fallback also failed:', fallbackError);
+              console.error('Fallback also failed:', fallbackError);
             }
           }
         );
       } catch (error) {
-        console.error('❌ Error setting up admin orders listener:', error);
+        console.error('Error setting up admin orders listener:', error);
         setError(error instanceof Error ? error.message : 'Unknown error');
         setLoading(false);
         setInitialLoad(false);
@@ -89,7 +85,7 @@ export const useFirebaseAdminOrders = () => {
     // Mobile timeout protection - fail fast if taking too long
     const mobileTimeout = setTimeout(() => {
       if (loading && initialLoad) {
-        console.warn('⚠️ MOBILE TIMEOUT: Loading taking too long, triggering fallback');
+        console.warn('Loading taking too long, triggering fallback');
         setLoading(false);
         setInitialLoad(false);
         setError('Loading terlalu lama, silakan refresh halaman');

@@ -41,12 +41,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
   // Use prop user if available, otherwise use hook user
   const user = propUser;
 
-  // Debug log
-  console.log('🔥 AccountPage rendered - user role:', user?.role);
-  console.log('🔥 AccountPage rendered - final user role:', user?.role);
-  console.log('🔥 User object:', user);
-  console.log('🔥 AccountPage loaded with complete settings menu!');
-
+  
   const handleLogout = () => {
     onLogout();
   };
@@ -81,8 +76,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
 
   
   if (!user) {
-    console.log('⚠️ AccountPage: User is null - Firebase-only mode');
-    // No localStorage fallback in Firebase-only mode
+      // No localStorage fallback in Firebase-only mode
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">

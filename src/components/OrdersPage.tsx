@@ -40,8 +40,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
     if (!selectedOrder || !paymentProof) return;
 
     try {
-      console.log('💳 Uploading payment proof to Firebase:', selectedOrder.id, paymentProof.name);
-
+      
       // Update order with payment proof and change status to awaiting_verification
       const success = await ordersService.updateOrderPayment(
         selectedOrder.id,
@@ -55,8 +54,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
           ? 'Bukti pembayaran berhasil diupload ulang! Menunggu verifikasi admin.'
           : 'Bukti pembayaran berhasil dikirim! Menunggu verifikasi admin.';
         alert(message);
-        console.log('✅ Payment proof uploaded successfully, status changed to awaiting_verification');
-      } else {
+              } else {
         alert('❌ Gagal mengupload bukti pembayaran. Silakan coba lagi.');
       }
     } catch (error) {

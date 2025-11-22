@@ -22,16 +22,14 @@ export const useRealTimeCart = () => {
           return;
         }
 
-        console.log('🔄 Setting up real-time cart listener for user:', user.uid);
-
+        
         // Initial load
         const initialCart = await cartService.getCart();
         setCartItems(initialCart);
 
         // Set up real-time listener
         unsubscribe = cartService.onCartChange((items) => {
-          console.log('📦 Real-time cart update received:', items.length, 'items');
-          setCartItems(items);
+                    setCartItems(items);
           setLoading(false);
           setError(null);
         });
@@ -48,8 +46,7 @@ export const useRealTimeCart = () => {
     return () => {
       if (unsubscribe) {
         unsubscribe();
-        console.log('🔄 Cart listener cleaned up');
-      }
+              }
     };
   }, []);
 

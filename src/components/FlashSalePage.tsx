@@ -1,68 +1,62 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Zap, Flame, Percent } from 'lucide-react';
 import ProductCard from './ProductCard';
-import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
-import { useRealTimeCart } from '../hooks/useRealTimeCart';
+import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
 
 interface FlashSalePageProps {
   user: any;
-  products: any[];
-  loading: boolean;
   onProductClick: (product: any) => void;
   onCartClick: () => void;
   onAddToCart: (product: any) => void;
+  flashSaleProducts: any[]; // Data dari unified hook, 0 reads
 }
 
 const FlashSalePage: React.FC<FlashSalePageProps> = ({
   user,
-  products,
-  loading,
   onProductClick,
   onCartClick,
-  onAddToCart
+  onAddToCart,
+  flashSaleProducts // Data dari unified hook, 0 reads
 }) => {
-  const { timeLeft, isFlashSaleActive, loading: flashSaleLoading } = useFirebaseFlashSale();
-  const { cartItems } = useRealTimeCart();
+  const { cartItems } = useRealTimeCartOptimized();
 
-  
-  // Flash sale events now handled by useFirebaseFlashSale hook - real-time updates from Firebase
+  // 🔥 FLASH SALE TIMER: Simple countdown tanpa read tambahan
+  const [timeLeft, setTimeLeft] = useState({
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
+  const [isFlashSaleActive, setIsFlashSaleActive] = useState(flashSaleProducts.length > 0);
 
-  // Flash sale status now handled by useFirebaseFlashSale hook - no need for localStorage checking
+  // Simple countdown timer (bisa diset manual dari admin)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+      const diff = endOfDay.getTime() - now.getTime();
 
-  // Product updates now handled by parent component re-render when products prop changes
+      if (diff > 0) {
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        setTimeLeft({ hours, minutes, seconds });
+        setIsFlashSaleActive(true);
+      } else {
+        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+        setIsFlashSaleActive(false);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [flashSaleProducts.length]);
 
   const handleAddToCart = (product: any) => {
     onAddToCart(product);
   };
 
-  // Flash sale products - SAME LOGIC AS HOME PAGE for consistency
-  const flashSaleProducts = useMemo(() => {
-    try {
-      // Safety check: ensure products is an array (same as HomePage)
-      if (!Array.isArray(products) || products.length === 0) {
-        console.warn('⚠️ FlashSale: Products array is empty or invalid');
-        return [];
-      }
 
-      // Simple validation like HomePage
-      const validProducts = products.filter(p => p && p.id && p.name);
-
-      // SAME FILTERING LOGIC AS HOME PAGE: product.isFlashSale && isFlashSaleActive
-      const filtered = validProducts.filter(product => {
-        return product.isFlashSale && isFlashSaleActive;
-      });
-
-      console.log(`🔍 FlashSalePage: Found ${filtered.length} flash sale products (same logic as HomePage)`);
-
-      return filtered;
-    } catch (error) {
-      console.error('🚨 Error in flashSaleProducts calculation:', error);
-      return [];
-    }
-  }, [products, isFlashSaleActive]);
-
-  
-  if (loading) {
+  if (!flashSaleProducts) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
         <div className="text-white text-xl">Loading flash sale products...</div>
@@ -170,7 +164,7 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
               <div className="bg-black/30 backdrop-blur-sm rounded-xl p-4 mb-4">
                 <p className="text-yellow-300 text-sm mb-2">⏰ Flash Sale Berakhir Dalam</p>
                 <div className="text-3xl font-bold text-white tracking-wider">
-                  {timeLeft}
+                  {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
                 </div>
               </div>
             )}
@@ -194,16 +188,38 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
 
         {/* Products Grid */}
         <div className="grid grid-cols-2 gap-4">
-          {flashSaleProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onProductClick={onProductClick}
-              onAddToCart={handleAddToCart}
-              isFlashSale={true}
-              user={user}
-            />
-          ))}
+          {flashSaleProducts.map((flashProduct) => {
+            // Convert FlashSaleProduct to Product type
+            const product = {
+              id: flashProduct.id,
+              name: flashProduct.name,
+              price: flashProduct.price,
+              retailPrice: flashProduct.retailPrice || flashProduct.price,
+              resellerPrice: flashProduct.resellerPrice || flashProduct.price * 0.8,
+              costPrice: flashProduct.price * 0.6, // Estimate cost price
+              description: flashProduct.name, // Use name as description
+              stock: flashProduct.stock,
+              images: flashProduct.images,
+              image: flashProduct.image,
+              category: flashProduct.category,
+              status: flashProduct.status as "ready" | "po",
+              createdAt: flashProduct.createdAt,
+              featuredOrder: flashProduct.featuredOrder,
+              variants: flashProduct.variants,
+              isFlashSale: flashProduct.isFlashSale,
+              flashSalePrice: flashProduct.flashSalePrice || flashProduct.price * 0.8
+            };
+            return (
+              <ProductCard
+                key={`flash-${product.id}`}
+                product={product}
+                onProductClick={onProductClick}
+                onAddToCart={handleAddToCart}
+                isFlashSale={true}
+                user={user}
+              />
+            );
+          })}
         </div>
       </div>
     </div>

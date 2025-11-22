@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../types';
 import { useFirebaseProducts } from '../hooks/useFirebaseProducts';
-import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
+// import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale'; // DISABLED - Prevent infinite loop
 
 interface AdminProductsPageProps {
   onBack: () => void;
@@ -19,7 +19,14 @@ interface FlashSaleConfig {
 
 const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) => {
   const { products, loading, updateProduct, addProduct, deleteProduct } = useFirebaseProducts();
-  const { flashSaleConfig, timeLeft, isFlashSaleActive, startFlashSale, stopFlashSale } = useFirebaseFlashSale();
+  // const { flashSaleConfig, timeLeft, isFlashSaleActive, startFlashSale, stopFlashSale } = useFirebaseFlashSale(); // DISABLED - Prevent infinite loop
+
+  // Mock flash sale data to prevent errors
+  const flashSaleConfig = { isActive: false, startTime: '', endTime: '', flashSaleDiscount: 0, productIds: [] };
+  const timeLeft = { hours: 0, minutes: 0, seconds: 0 };
+  const isFlashSaleActive = false;
+  const startFlashSale = () => {};
+  const stopFlashSale = () => {};
 
   // State management
   const [showAddModal, setShowAddModal] = useState(false);

@@ -36,11 +36,9 @@ export const useFirebaseAuth = () => {
           role: determineUserRole(firebaseUser.email || '')
         };
         setUser(appUser);
-        console.log('✅ Firebase user authenticated:', appUser);
-      } else {
+              } else {
         setUser(null);
-        console.log('ℹ️ No Firebase user authenticated');
-      }
+              }
     });
 
     return unsubscribe;
@@ -60,8 +58,7 @@ export const useFirebaseAuth = () => {
       };
 
       await setDoc(userRef, userData, { merge: true });
-      console.log('✅ User profile saved to Firestore:', userData);
-    } catch (error) {
+          } catch (error) {
       console.error('❌ Error saving user profile:', error);
     }
   };
@@ -99,8 +96,7 @@ export const useFirebaseAuth = () => {
         await saveUserProfile(firebaseUser, role);
 
         setUser(appUser);
-        console.log('✅ Firebase login successful:', appUser);
-        return appUser;
+                return appUser;
       }
     } catch (err: any) {
       console.error('❌ Firebase login error:', err);
@@ -138,8 +134,7 @@ export const useFirebaseAuth = () => {
         await saveUserProfile(firebaseUser, userRole);
 
         setUser(appUser);
-        console.log('✅ Firebase registration successful:', appUser);
-        return appUser;
+                return appUser;
       }
     } catch (err: any) {
       console.error('❌ Firebase registration error:', err);
@@ -155,8 +150,7 @@ export const useFirebaseAuth = () => {
     try {
       await signOut(auth);
       setUser(null);
-      console.log('✅ Firebase logout successful');
-    } catch (err: any) {
+          } catch (err: any) {
       console.error('❌ Firebase logout error:', err);
       setError(getAuthErrorMessage(err.code));
     }

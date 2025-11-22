@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, ShoppingCart, User, Filter, Star, ArrowUpDown, Clock } from 'lucide-react';
+import { Search, ShoppingCart, User, Filter, Star, ArrowUpDown, Clock, RefreshCw } from 'lucide-react';
 import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
-import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
-import { cartService } from '../services/cartService';
+import { useFirebaseFlashSaleSimpleOptimized } from '../hooks/useFirebaseFlashSaleSimpleOptimized';
+import { cartServiceOptimized } from '../services/cartServiceOptimized';
 
 interface HomePageProps {
   user: any;
@@ -18,6 +18,8 @@ interface HomePageProps {
   onNavigateToFlashSale?: () => void;
   onLoadMore?: () => void;
   hasMore?: boolean;
+  onRefreshProducts?: () => void;
+  searchProducts?: (params: any) => Promise<any>;
 }
 
 const HomePage: React.FC<HomePageProps> = ({
@@ -30,30 +32,45 @@ const HomePage: React.FC<HomePageProps> = ({
   onAddToCart,
   onNavigateToFlashSale,
   onLoadMore,
-  hasMore = true
+  hasMore = true,
+  onRefreshProducts,
+  searchProducts
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'ready' | 'po'>('all');
   const [cartCount, setCartCount] = useState(0);
-  const [sortBy, setSortBy] = useState<'terbaru' | 'terlaris' | 'termurah' | 'termahal' | 'terlama'>('terbaru');
+  const [sortBy, setSortBy] = useState<'terbaru' | 'termurah'>('terbaru');
+
+  // Filter featured products from the products array
+  const featuredProducts = products.filter(product => product.isFeatured);
+
+  // Search states for cache functionality
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   // Infinite scroll with Intersection Observer
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // Flash sale hook for countdown timer
-  const { timeLeft, isFlashSaleActive } = useFirebaseFlashSale();
+  // 🚀 OPTIMIZED Flash sale hook (1 read total)
+  const {
+    timeLeft,
+    isFlashSaleActive,
+    flashSaleProducts: hookFlashSaleProducts,
+    loading: flashSaleLoading
+  } = useFirebaseFlashSaleSimpleOptimized();
 
   // Load cart count from backend
   const loadCartCount = async () => {
     if (!user?.uid) return;
 
     try {
-      const cartItems = await cartService.getCart(user.uid);
+      const cartItems = await cartServiceOptimized.getCart();
       setCartCount(cartItems.length);
     } catch (error) {
-      console.error('❌ Failed to load cart count:', error);
+      console.error('Failed to load cart count:', error);
       setCartCount(0);
     }
   };
@@ -110,10 +127,46 @@ const HomePage: React.FC<HomePageProps> = ({
     };
   }, [user]);
 
+  // Debounced search with cache support
+  useEffect(() => {
+    if (!searchQuery || !searchProducts) {
+      setShowSearchResults(false);
+      setSearchResults([]);
+      return;
+    }
+
+    const searchTimeout = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        console.log('🔍 Searching with cache support:', searchQuery);
+
+        const searchParams: SearchCacheKey = {
+          query: searchQuery,
+          category: selectedCategory !== 'all' ? selectedCategory : undefined,
+          status: statusFilter !== 'all' ? statusFilter : undefined,
+          sortBy: sortBy,
+          userRole: user?.role || 'customer',
+          page: 1
+        };
+
+        const results = await searchProducts(searchParams);
+        setSearchResults(results.products || []);
+        setShowSearchResults(true);
+        console.log('✅ Search completed:', results.products?.length, 'results');
+      } catch (error) {
+        console.error('❌ Search error:', error);
+        setSearchResults([]);
+        setShowSearchResults(true);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(searchTimeout);
+  }, [searchQuery, selectedCategory, statusFilter, sortBy, user?.role, searchProducts]);
+
   const handleBannerClick = (banner: any) => {
-    console.log('Banner clicked:', banner);
     if (banner.type === 'flashsale') {
-      console.log('Flash sale banner clicked, navigating...');
       if (onNavigateToFlashSale) {
         onNavigateToFlashSale();
       }
@@ -142,7 +195,12 @@ const HomePage: React.FC<HomePageProps> = ({
       description: p.description || '',
       category: p.category || 'other',
       images: p.images || [],
-      variants: p.variants || { sizes: [], colors: [] },
+      // FIXED: Preserve the complete variants object including stock data
+      variants: {
+        sizes: p.variants?.sizes || [],
+        colors: p.variants?.colors || [],
+        stock: p.variants?.stock || {}
+      },
       retailPrice: p.retailPrice || 0,
       resellerPrice: p.resellerPrice || 0,
       costPrice: p.costPrice || 0,
@@ -156,6 +214,7 @@ const HomePage: React.FC<HomePageProps> = ({
     })) as Product[];
   }, [products]);
 
+  
   const filteredProducts = safeProducts.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -168,30 +227,14 @@ const HomePage: React.FC<HomePageProps> = ({
     switch (sortBy) {
       case 'terbaru':
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      case 'terlama':
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      case 'terlaris':
-        return (b.salesCount || 0) - (a.salesCount || 0);
       case 'termurah':
         const priceA = user?.role === 'reseller' ? a.resellerPrice : a.retailPrice;
         const priceB = user?.role === 'reseller' ? b.resellerPrice : b.retailPrice;
         return priceA - priceB;
-      case 'termahal':
-        const priceA2 = user?.role === 'reseller' ? a.resellerPrice : a.retailPrice;
-        const priceB2 = user?.role === 'reseller' ? b.resellerPrice : b.retailPrice;
-        return priceB2 - priceA2;
       default:
         return 0;
     }
   });
-
-  // Get featured products from current products
-  const featuredProducts = React.useMemo(() => {
-    // Use products from props instead of AppStorage
-    const featured = safeProducts.filter(p => p.isFeatured);
-    // Return only actual featured products (no fallback)
-    return featured;
-  }, [safeProducts]); // Depend on safeProducts only
 
   // Regular products (ALL PRODUCTS - show all at once for faster loading)
   const regularProducts = React.useMemo(() => {
@@ -205,14 +248,10 @@ const HomePage: React.FC<HomePageProps> = ({
     }
   }, [sortedProducts, safeProducts]);
 
-  // Show ALL products at once - no pagination for better UX and faster loading
-  const currentProducts = regularProducts; // Show all products
+  // Show search results when searching, otherwise show regular products
+  const currentProducts = showSearchResults ? searchResults : regularProducts;
 
-  // Reset search filters trigger for instant refresh
-  useEffect(() => {
-    console.log('⚡ FAST HomePage: Products filtered/updated - showing all products instantly');
-  }, [searchQuery, selectedCategory, statusFilter, sortBy]);
-
+  
   // Listen for featured products updates from admin
   useEffect(() => {
     const handleFeaturedProductsUpdated = (event: any) => {
@@ -251,7 +290,6 @@ const HomePage: React.FC<HomePageProps> = ({
   // ENHANCED Listen for flash sale ended events with debouncing
   useEffect(() => {
     const handleFlashSaleEnded = (event: any) => {
-      console.log('🔥 Flash sale ended detected in HomePage:', event.detail);
 
       // Flash sale ended - handled by Firebase real-time updates
 
@@ -267,7 +305,6 @@ const HomePage: React.FC<HomePageProps> = ({
 
         // Set new debounced timer for HomePage
         window.flashSaleRefreshTimer = setTimeout(() => {
-          console.log('🔄 Auto-refreshing HomePage after flash sale time expired');
           window.location.reload();
         }, 4000);
       }
@@ -330,6 +367,14 @@ const HomePage: React.FC<HomePageProps> = ({
               className="w-full pl-10 pr-4 py-3 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50"
             />
           </div>
+          {/* Tombol Refresh untuk force update cross-device sync */}
+          <button
+            onClick={onRefreshProducts}
+            className="p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-shadow"
+            title="Refresh produk"
+          >
+            <RefreshCw className="w-5 h-5 text-gray-600" />
+          </button>
           <button
             onClick={onCartClick}
             className="relative p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-shadow"
@@ -374,7 +419,9 @@ const HomePage: React.FC<HomePageProps> = ({
                   {isFlashSaleActive && timeLeft && (
                     <div className="flex items-center space-x-2 mt-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
                       <Clock className="w-4 h-4 text-yellow-200" />
-                      <span className="text-sm font-bold text-yellow-200">{timeLeft}</span>
+                      <span className="text-sm font-bold text-yellow-200">
+                        {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -389,7 +436,7 @@ const HomePage: React.FC<HomePageProps> = ({
           </div>
 
           {/* Flash Sale Products */}
-          {loading ? (
+          {flashSaleLoading ? (
             <div className="grid grid-cols-2 gap-3">
               {[...Array(2)].map((_, index) => (
                 <div key={`flash-skeleton-${index}`} className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
@@ -401,40 +448,71 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              {safeProducts
-                .filter(product => product.isFlashSale && isFlashSaleActive)
+              {hookFlashSaleProducts
                 .slice(0, 2)
-                .map((product) => (
-                  <div
-                    key={`flash-${product.id}`}
-                    onClick={() => onProductClick(product)}
-                    className="bg-white/10 rounded-lg p-3 backdrop-blur-sm hover:bg-white/20 transition-colors cursor-pointer"
-                  >
-                    <div className="relative">
-                      <img
-                        src={product.images?.[0] || '/placeholder-product.jpg'}
-                        alt={product.name}
-                        className="w-full h-24 object-cover rounded mb-2"
-                      />
-                      <div className="absolute top-1 right-1 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
-                        -{Math.round(((product.retailPrice - product.flashSalePrice) / product.retailPrice) * 100)}%
+                .map((flashProduct) => {
+                  // Convert FlashSaleProduct to Product type
+                  const product: Product = {
+                    id: flashProduct.id,
+                    name: flashProduct.name,
+                    description: '',
+                    category: flashProduct.category,
+                    price: flashProduct.price,
+                    retailPrice: flashProduct.retailPrice || flashProduct.price,
+                    resellerPrice: flashProduct.resellerPrice,
+                    costPrice: flashProduct.costPrice,
+                    stock: flashProduct.stock,
+                    images: flashProduct.images,
+                    image: flashProduct.image,
+                    variants: flashProduct.variants,
+                    status: flashProduct.status,
+                    isFlashSale: flashProduct.isFlashSale,
+                    flashSalePrice: flashProduct.flashSalePrice,
+                    originalRetailPrice: flashProduct.originalRetailPrice,
+                    originalResellerPrice: flashProduct.originalResellerPrice,
+                    createdAt: flashProduct.createdAt,
+                    salesCount: 0,
+                    isFeatured: flashProduct.isFeatured || false,
+                    featuredOrder: flashProduct.featuredOrder || 0,
+                    weight: 0,
+                    unit: 'gram',
+                    estimatedReady: undefined
+                  };
+
+                  const discountPercentage = Math.round(((flashProduct.originalRetailPrice || flashProduct.retailPrice) - flashProduct.flashSalePrice) / (flashProduct.originalRetailPrice || flashProduct.retailPrice) * 100);
+
+                  return (
+                    <div
+                      key={`flash-${product.id}`}
+                      onClick={() => onProductClick(product)}
+                      className="bg-white/10 rounded-lg p-3 backdrop-blur-sm hover:bg-white/20 transition-colors cursor-pointer"
+                    >
+                      <div className="relative">
+                        <img
+                          src={product.image || product.images?.[0] || '/placeholder-product.jpg'}
+                          alt={product.name}
+                          className="w-full h-24 object-cover rounded mb-2"
+                        />
+                        <div className="absolute top-1 right-1 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
+                          -{discountPercentage}%
+                        </div>
+                      </div>
+                      <h3 className="text-white font-medium text-sm mb-1 truncate">{product.name}</h3>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-white font-bold text-sm">
+                          Rp {product.flashSalePrice.toLocaleString('id-ID')}
+                        </span>
+                        <span className="text-red-200 line-through text-xs">
+                          Rp {(product.originalRetailPrice || product.retailPrice).toLocaleString('id-ID')}
+                        </span>
                       </div>
                     </div>
-                    <h3 className="text-white font-medium text-sm mb-1 truncate">{product.name}</h3>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-white font-bold text-sm">
-                        Rp {product.flashSalePrice.toLocaleString('id-ID')}
-                      </span>
-                      <span className="text-red-200 line-through text-xs">
-                        Rp {product.retailPrice.toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           )}
 
-          {safeProducts.filter(product => product.isFlashSale && isFlashSaleActive).length === 0 && !loading && (
+          {hookFlashSaleProducts.length === 0 && !flashSaleLoading && isFlashSaleActive && (
             <div className="text-center py-4 text-red-100">
               <span className="text-3xl">🚫</span>
               <p className="text-sm mt-1">Tidak ada Flash Sale saat ini</p>
@@ -575,17 +653,7 @@ const HomePage: React.FC<HomePageProps> = ({
             >
               Terbaru
             </button>
-            <button
-              onClick={() => setSortBy('terlaris')}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                sortBy === 'terlaris'
-                  ? 'bg-pink-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              Terlaris
-            </button>
-            <button
+                        <button
               onClick={() => setSortBy('termurah')}
               className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 sortBy === 'termurah'
@@ -595,36 +663,29 @@ const HomePage: React.FC<HomePageProps> = ({
             >
               Termurah
             </button>
-            <button
-              onClick={() => setSortBy('termahal')}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                sortBy === 'termahal'
-                  ? 'bg-pink-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              Termahal
-            </button>
-            <button
-              onClick={() => setSortBy('terlama')}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                sortBy === 'terlama'
-                  ? 'bg-pink-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              Terlama
-            </button>
-          </div>
+                      </div>
         </div>
 
-        {filteredProducts.length === 0 ? (
+        {isSearching ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+            <h3 className="text-lg font-semibold text-gray-600 mb-2">Mencari produk...</h3>
+            <p className="text-gray-500">Mohon tunggu sebentar</p>
+          </div>
+        ) : currentProducts.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <Search className="w-12 h-12 mx-auto" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-600 mb-2">Produk tidak ditemukan</h3>
-            <p className="text-gray-500">Coba kata kunci lain atau pilih kategori berbeda</p>
+            <h3 className="text-lg font-semibold text-gray-600 mb-2">
+              {showSearchResults ? 'Tidak ada hasil pencarian' : 'Produk tidak ditemukan'}
+            </h3>
+            <p className="text-gray-500">
+              {showSearchResults
+                ? 'Coba kata kunci pencarian lain atau filter berbeda'
+                : 'Coba kata kunci lain atau pilih kategori berbeda'
+              }
+            </p>
           </div>
         ) : (
           <>

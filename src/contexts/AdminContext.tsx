@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, FlashSale } from '../types';
-import { AppStorage } from '../utils/appStorage';
+import React, { createContext, useContext, useState } from 'react';
+import { ordersService } from '../services/ordersService';
 
 interface Order {
   id: string;
@@ -27,134 +26,102 @@ interface Order {
     dropshipPhone?: string;
   };
   paymentMethod: 'transfer' | 'cash';
-  paymentProof?: string;
-  paymentProofUrl?: string;
-  status: 'pending' | 'awaiting_verification' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'awaiting_verification' | 'paid';
   totalAmount: number;
   shippingCost: number;
   finalTotal: number;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
+  timestamp: number;
+  paymentProof?: string;
+  paymentProofData?: string;
+  paymentProofUrl?: string;
+}
+
+interface FlashSale {
+  id: string;
+  name: string;
+  discount: number;
+  startDate: Date;
+  endDate: Date;
+  active: boolean;
+  products?: string[];
 }
 
 interface AdminContextType {
   orders: Order[];
   flashSales: FlashSale[];
-  addOrder: (order: Omit<Order, 'createdAt' | 'updatedAt'>) => void;
-  updateOrderStatus: (orderId: string, status: Order['status']) => void;
-  updateOrderPayment: (orderId: string, paymentProof: string) => void;
-  deleteOrder: (orderId: string) => void;
+  addOrder: (orderData: Omit<Order, 'createdAt' | 'updatedAt' | 'id' | 'timestamp'>) => Promise<void>;
+  updateOrderStatus: (orderId: string, status: Order['status']) => Promise<void>;
+  updateOrderPayment: (orderId: string, paymentProof: string, status?: Order['status']) => Promise<void>;
+  deleteOrder: (orderId: string) => Promise<void>;
   getOrdersByStatus: (status: Order['status']) => Order[];
   getTotalRevenue: () => number;
   getTodayOrders: () => Order[];
-  createFlashSale: (flashSale: Omit<FlashSale, 'id' | 'createdAt'>) => void;
-  updateFlashSale: (id: string, updates: Partial<FlashSale>) => void;
+  createFlashSale: (flashSale: Omit<FlashSale, 'id'>) => void;
+  updateFlashSale: (id: string, flashSale: Partial<FlashSale>) => void;
   deleteFlashSale: (id: string) => void;
   getActiveFlashSales: () => FlashSale[];
+  updateProductStock: (productId: string, quantity: number, variant?: any) => Promise<void>;
 }
 
-const AdminContext = createContext<AdminContextType | undefined>(undefined);
+const AdminContext = createContext<AdminContextType | null>(null);
+
+export const useAdmin = () => {
+  const context = useContext(AdminContext);
+  if (!context) {
+    throw new Error('useAdmin must be used within AdminProvider');
+  }
+  return context;
+};
 
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [flashSales, setFlashSales] = useState<FlashSale[]>([]);
 
-  // Load orders from AppStorage on mount
-  useEffect(() => {
-    const savedOrders = AppStorage.getOrders();
-    setOrders(savedOrders);
-    console.log('📋 Orders loaded from AppStorage:', savedOrders.length);
-  }, []);
+  const addOrder = async (orderData: Omit<Order, 'createdAt' | 'updatedAt' | 'id' | 'timestamp'>) => {
+    try {
+      const newOrder = {
+        ...orderData,
+        id: `AZF${Date.now().toString().slice(-8)}`,
+        timestamp: Date.now(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
 
-  // Listen for order updates
-  useEffect(() => {
-    const handleOrderUpdate = () => {
-      const updatedOrders = AppStorage.getOrders();
-      setOrders(updatedOrders);
-      console.log('📋 Orders updated:', updatedOrders.length);
-    };
-
-    window.addEventListener('orderUpdated', handleOrderUpdate);
-    return () => window.removeEventListener('orderUpdated', handleOrderUpdate);
-  }, []);
-
-  const addOrder = (orderData: Omit<Order, 'createdAt' | 'updatedAt'>) => {
-    const newOrder: Order = {
-      ...orderData,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    // Save to AppStorage (permanent storage)
-    AppStorage.saveOrder(newOrder);
-
-    // Update local state
-    setOrders(prev => [newOrder, ...prev]);
-
-    console.log('💾 Order saved permanently:', newOrder.id);
-
-    // Trigger event to notify other components
-    window.dispatchEvent(new CustomEvent('orderUpdated', { detail: newOrder }));
+      await ordersService.createOrder(newOrder);
+      console.log('✅ Order saved to Firebase:', newOrder.id);
+    } catch (error) {
+      console.error('❌ Error saving order:', error);
+    }
   };
 
-  const updateOrderStatus = (orderId: string, status: Order['status']) => {
-    // Update in AppStorage
-    AppStorage.updateOrderStatus(orderId, status);
-
-    // Update local state
-    setOrders(prev =>
-      prev.map(order =>
-        order.id === orderId
-          ? { ...order, status, updatedAt: new Date() }
-          : order
-      )
-    );
-
-    console.log('📋 Order status updated:', orderId, '→', status);
-
-    // Trigger event to notify other components
-    window.dispatchEvent(new CustomEvent('orderUpdated', { detail: { orderId, status } }));
+  const updateOrderStatus = async (orderId: string, status: Order['status']) => {
+    try {
+      await ordersService.updateOrderStatus(orderId, status);
+      console.log('📋 Order status updated:', orderId, '→', status);
+    } catch (error) {
+      console.error('❌ Error updating order status:', error);
+    }
   };
 
-  const updateOrderPayment = (orderId: string, paymentProof: string, status: Order['status'] = 'pending') => {
-    // Update in AppStorage
-    const updatedOrders = orders.map(order =>
-      order.id === orderId
-        ? {
-            ...order,
-            paymentProof,
-            paymentProofUrl: 'https://images.pexels.com/photos/4386321/pexels-photo-4386321.jpeg?auto=compress&cs=tinysrgb&w=400',
-            status,
-            updatedAt: new Date()
-          }
-        : order
-    );
-
-    // Save updated orders to AppStorage
-    localStorage.setItem('azzahra_orders', JSON.stringify(updatedOrders));
-
-    // Update local state
-    setOrders(updatedOrders);
-
-    console.log('💳 Order payment updated:', orderId);
-
-    // Trigger event to notify other components
-    window.dispatchEvent(new CustomEvent('orderUpdated', { detail: { orderId, paymentProof, status } }));
+  const updateOrderPayment = async (orderId: string, paymentProof: string, status: Order['status'] = 'pending') => {
+    try {
+      await ordersService.updateOrderPayment(orderId, paymentProof, status);
+      console.log('💳 Order payment updated:', orderId);
+    } catch (error) {
+      console.error('❌ Error updating payment:', error);
+    }
   };
 
-  const deleteOrder = (orderId: string) => {
-    // Remove from AppStorage
-    const updatedOrders = orders.filter(order => order.id !== orderId);
-    localStorage.setItem('azzahra_orders', JSON.stringify(updatedOrders));
-
-    // Update local state
-    setOrders(updatedOrders);
-
-    console.log('🗑️ Order deleted permanently:', orderId);
-
-    // Trigger event to notify other components
-    window.dispatchEvent(new CustomEvent('orderUpdated', { detail: { orderId, deleted: true } }));
+  const deleteOrder = async (orderId: string) => {
+    try {
+      await ordersService.deleteOrder(orderId);
+      console.log('🗑️ Order deleted:', orderId);
+    } catch (error) {
+      console.error('❌ Error deleting order:', error);
+    }
   };
 
   const getOrdersByStatus = (status: Order['status']) => {
@@ -170,100 +137,67 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const getTodayOrders = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return orders.filter(order => order.createdAt >= today);
-  };
 
-  const createFlashSale = (flashSaleData: Omit<FlashSale, 'id' | 'createdAt'>) => {
-    const newFlashSale: FlashSale = {
-      ...flashSaleData,
-      id: 'FS' + Date.now().toString(),
-      createdAt: new Date()
-    };
-    
-    console.log('Creating flash sale:', newFlashSale);
-    console.log('Flash sale products:', flashSaleData.productIds);
-    console.log('Discount:', flashSaleData.discountType, flashSaleData.discountValue);
-    
-    // Update state first
-    setFlashSales(prev => {
-      const updated = [newFlashSale, ...prev];
-      console.log('Updated flash sales:', updated);
-      return updated;
+    return orders.filter(order => {
+      const orderDate = new Date(order.timestamp);
+      return orderDate >= today;
     });
-    
-    // Dispatch event after state update
-    setTimeout(() => {
-      console.log('Dispatching flashSaleCreated event');
-      const event = new CustomEvent('flashSaleCreated', { 
-        detail: newFlashSale,
-        bubbles: true
-      });
-      window.dispatchEvent(event);
-      console.log('Event dispatched');
-    }, 100);
   };
 
-  const updateFlashSale = (id: string, updates: Partial<FlashSale>) => {
-    setFlashSales(prev => 
-      prev.map(fs => fs.id === id ? { ...fs, ...updates } : fs)
+  const createFlashSale = (flashSale: Omit<FlashSale, 'id'>) => {
+    const newFlashSale: FlashSale = {
+      ...flashSale,
+      id: `fs_${Date.now()}`
+    };
+    setFlashSales(prev => [...prev, newFlashSale]);
+  };
+
+  const updateFlashSale = (id: string, flashSale: Partial<FlashSale>) => {
+    setFlashSales(prev =>
+      prev.map(fs => fs.id === id ? { ...fs, ...flashSale } : fs)
     );
-    
-    console.log('Updating flash sale:', id, updates);
-    
-    // Dispatch event to update products
-    const updatedFlashSale = flashSales.find(fs => fs.id === id);
-    if (updatedFlashSale) {
-      window.dispatchEvent(new CustomEvent('flashSaleUpdated', { 
-        detail: { ...updatedFlashSale, ...updates }
-      }));
-    }
   };
 
   const deleteFlashSale = (id: string) => {
-    const flashSaleToDelete = flashSales.find(fs => fs.id === id);
-    if (flashSaleToDelete) {
-      console.log('Deleting flash sale:', flashSaleToDelete);
-      window.dispatchEvent(new CustomEvent('flashSaleDeleted', { 
-        detail: flashSaleToDelete 
-      }));
-    }
     setFlashSales(prev => prev.filter(fs => fs.id !== id));
   };
 
   const getActiveFlashSales = () => {
     const now = new Date();
-    return flashSales.filter(fs => 
-      fs.isActive && 
-      fs.startDate <= now && 
-      fs.endDate >= now
+    return flashSales.filter(fs =>
+      fs.active &&
+      new Date(fs.startDate) <= now &&
+      new Date(fs.endDate) >= now
     );
   };
 
+  const updateProductStock = async (productId: string, quantity: number, variant?: any) => {
+    // This would be implemented with the admin products hook
+    console.log('🔄 Stock update requested:', productId, quantity, variant);
+  };
+
+  const value: AdminContextType = {
+    orders,
+    flashSales,
+    addOrder,
+    updateOrderStatus,
+    updateOrderPayment,
+    deleteOrder,
+    getOrdersByStatus,
+    getTotalRevenue,
+    getTodayOrders,
+    createFlashSale,
+    updateFlashSale,
+    deleteFlashSale,
+    getActiveFlashSales,
+    updateProductStock
+  };
+
   return (
-    <AdminContext.Provider value={{
-      orders,
-      flashSales,
-      addOrder,
-      updateOrderStatus,
-      updateOrderPayment,
-      deleteOrder,
-      getOrdersByStatus,
-      getTotalRevenue,
-      getTodayOrders,
-      createFlashSale,
-      updateFlashSale,
-      deleteFlashSale,
-      getActiveFlashSales
-    }}>
+    <AdminContext.Provider value={value}>
       {children}
     </AdminContext.Provider>
   );
 };
 
-export const useAdmin = () => {
-  const context = useContext(AdminContext);
-  if (context === undefined) {
-    throw new Error('useAdmin must be used within an AdminProvider');
-  }
-  return context;
-};
+export default AdminProvider;

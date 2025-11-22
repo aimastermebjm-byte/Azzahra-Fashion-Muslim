@@ -6,9 +6,11 @@ import { ordersService } from '../services/ordersService';
 interface AdminOrdersPageProps {
   onBack: () => void;
   user: any;
+  onRefreshProducts?: () => void;
+  onNavigateToHome?: () => void;
 }
 
-const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
+const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefreshProducts, onNavigateToHome }) => {
   const { orders, loading, error, initialLoad } = useFirebaseAdminOrders();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -96,8 +98,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
   // Listen for order updates
   useEffect(() => {
     const handleOrderUpdate = (event: any) => {
-      console.log('AdminOrdersPage: Order update received', event.detail);
-      // Force re-render by updating state
+            // Force re-render by updating state
       setSearchQuery(prev => prev + ' ');
       setTimeout(() => setSearchQuery(prev => prev.trim()), 100);
     };
@@ -201,7 +202,21 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
         if (status === 'paid') {
           await updateOrderPayment(selectedOrder.id, paymentProof || 'payment_verified', 'paid');
         } else {
+          console.log('🔄 CANCELLING ORDER - Status will be set to:', status);
           await updateOrderStatus(selectedOrder.id, status);
+
+          // After cancelling, refresh products and navigate to home
+          console.log('✅ Order cancelled, refreshing products...');
+          if (onRefreshProducts) {
+            onRefreshProducts();
+          }
+
+          if (onNavigateToHome) {
+            console.log('🏠 Navigating to home after order cancellation...');
+            setTimeout(() => {
+              onNavigateToHome();
+            }, 1000); // Small delay to ensure products are refreshed
+          }
         }
         setShowVerificationModal(false);
         setSelectedOrder(null);
@@ -276,8 +291,45 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user }) => {
   };
 
   const handleDeleteOrder = (orderId: string) => {
-    showModernConfirm('Konfirmasi Hapus', 'Apakah Anda yakin ingin menghapus pesanan ini?', () => {
-      deleteOrder(orderId);
+    showModernConfirm('Konfirmasi Hapus', 'Apakah Anda yakin ingin menghapus pesanan ini? Stock akan dikembalikan.', () => {
+      // Get order data first to restore stock before deleting
+      const order = orders.find(o => o.id === orderId);
+      if (order) {
+        console.log('🔄 RESTORING STOCK BEFORE DELETING ORDER:', orderId);
+        ordersService.restoreStockForOrderManually(order).then(() => {
+          console.log('✅ Stock restored, deleting order:', orderId);
+          deleteOrder(orderId);
+
+          // Trigger event untuk refresh otomatis di semua device
+          window.dispatchEvent(new CustomEvent('orderCancelled', {
+            detail: { action: 'cancelled', orderId, restoredStock: true }
+          }));
+
+          // Refresh products and navigate to home
+          if (onRefreshProducts) {
+            console.log('🔄 Refreshing products after stock restoration...');
+            onRefreshProducts();
+          }
+
+          if (onNavigateToHome) {
+            console.log('🏠 Navigating to home page...');
+            setTimeout(() => {
+              onNavigateToHome();
+            }, 1000); // Small delay to ensure products are refreshed
+          }
+        }).catch(error => {
+          console.error('❌ Error restoring stock before deletion:', error);
+          // Still delete order even if stock restoration fails
+          deleteOrder(orderId);
+
+          // Still refresh products even if stock restoration failed
+          if (onRefreshProducts) {
+            onRefreshProducts();
+          }
+        });
+      } else {
+        deleteOrder(orderId);
+      }
     }, { type: 'error', confirmText: 'Ya, Hapus', cancelText: 'Batal' });
   };
 

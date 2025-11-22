@@ -119,61 +119,91 @@ class OrdersService {
     }
   }
 
-  // NEW: Restore stock for cancelled order
+  // NEW: Restore stock for cancelled order - BATCH SYSTEM
   private async restoreStockForOrder(order: Order): Promise<void> {
     try {
-      console.log('🔄 Restoring stock for order items:', order.items);
+      console.log('🔄 RESTORING STOCK FOR CANCELLED ORDER - BATCH SYSTEM:', order.id);
+      console.log('📦 Order items to restore:', order.items);
 
+      // Read batch document once
+      const batchRef = doc(db, 'productBatches', 'batch_1');
+      const batchDoc = await getDoc(batchRef);
+
+      if (!batchDoc.exists()) {
+        console.error('❌ Batch document not found for stock restoration');
+        return;
+      }
+
+      const batchProducts = batchDoc.data().products || [];
+      const updatedBatchProducts = [...batchProducts];
+
+      // Process each item for stock restoration
       for (const item of order.items) {
-        if (item.productId && item.selectedVariant) {
-          const productRef = doc(db, 'products', item.productId);
-          const productDoc = await getDoc(productRef);
+        console.log('🔄 Processing item for stock restoration:', {
+          productId: item.productId,
+          productName: item.productName,
+          selectedVariant: item.selectedVariant,
+          quantity: item.quantity
+        });
 
-          if (productDoc.exists()) {
-            const productData = productDoc.data();
-            const variants = productData.variants || { sizes: [], colors: [] };
+        if (item.productId) {
+          // Find product in batch
+          const productIndex = updatedBatchProducts.findIndex(p => p.id === item.productId);
 
-            // RESTORED: Handle new variant stock structure - FIXED for proper stock restoration
-            if (variants.stock && variants.stock[item.selectedVariant.size] && variants.stock[item.selectedVariant.size][item.selectedVariant.color] !== undefined) {
-              // Update specific variant stock using new structure
-              variants.stock[item.selectedVariant.size][item.selectedVariant.color] += item.quantity;
-
-              // Calculate total stock from all variants
-              let totalStock = 0;
-              if (variants.stock) {
-                Object.values(variants.stock).forEach(sizeStock => {
-                  Object.values(sizeStock).forEach(colorStock => {
-                    totalStock += colorStock;
-                  });
-                });
-              }
-
-              await updateDoc(productRef, {
-                variants: variants,
-                stock: totalStock,
-                updatedAt: new Date().toISOString()
-              });
-
-              console.log(`✅ Restored ${item.quantity} units to product ${item.productId} (${item.selectedVariant.size}, ${item.selectedVariant.color})`);
-              console.log(`📊 New total stock: ${totalStock}`);
-            } else {
-              // Fallback: update main stock if variant structure not found
-              const currentStock = productData.stock || 0;
-              const newStock = currentStock + item.quantity;
-
-              await updateDoc(productRef, {
-                stock: newStock,
-                updatedAt: new Date().toISOString()
-              });
-
-              console.log(`⚠️ Fallback: Restored ${item.quantity} units to main product stock (no variant structure found)`);
-              console.log(`📊 New main stock: ${newStock}`);
-            }
+          if (productIndex === -1) {
+            console.error('❌ PRODUCT NOT FOUND in batch:', item.productId);
+            continue;
           }
+
+          if (item.selectedVariant && updatedBatchProducts[productIndex].variantsStock) {
+            // Handle variant stock restoration
+            const variantKey = `${item.selectedVariant.size}-${item.selectedVariant.color}`;
+            const currentVariantStock = Number(updatedBatchProducts[productIndex].variantsStock[variantKey] || 0);
+            const newVariantStock = currentVariantStock + item.quantity;
+            updatedBatchProducts[productIndex].variantsStock[variantKey] = newVariantStock;
+
+            // Recalculate total stock from all variants
+            let totalStock = 0;
+            if (updatedBatchProducts[productIndex].variantsStock) {
+              Object.values(updatedBatchProducts[productIndex].variantsStock).forEach((stockValue: any) => {
+                totalStock += Number(stockValue || 0);
+              });
+            }
+            updatedBatchProducts[productIndex].stock = totalStock;
+
+            console.log(`✅ RESTORED ${item.quantity} units to product ${item.productId} (${item.selectedVariant.size}, ${item.selectedVariant.color})`);
+            console.log(`📊 Variant stock: ${currentVariantStock} → ${newVariantStock}, Total stock: ${totalStock}`);
+          } else {
+            // Handle main stock restoration only
+            const currentStock = Number(updatedBatchProducts[productIndex].stock || 0);
+            const newStock = currentStock + item.quantity;
+            updatedBatchProducts[productIndex].stock = newStock;
+
+            console.log(`✅ RESTORED ${item.quantity} units to product ${item.productId} (main stock)`);
+            console.log(`📊 Main stock: ${currentStock} → ${newStock}`);
+          }
+
+          // Update last modified
+          updatedBatchProducts[productIndex].lastModified = Date.now();
+        } else {
+          console.warn('⚠️ SKIPPING item - missing productId:', {
+            productId: item.productId,
+            selectedVariant: item.selectedVariant
+          });
         }
       }
+
+      // Update batch system with all restored stock in single operation
+      await updateDoc(batchRef, {
+        products: updatedBatchProducts,
+        lastModified: Date.now()
+      });
+
+      console.log('✅ BATCH SYSTEM: All stock restored successfully for order:', order.id);
+      console.log(`📦 Restored stock for ${order.items.length} items in batch`);
+
     } catch (error) {
-      console.error('❌ Error restoring stock:', error);
+      console.error('❌ ERROR restoring stock for order:', order.id, error);
       // Don't throw error to prevent order cancellation from failing
     }
   }
@@ -248,6 +278,11 @@ class OrdersService {
       console.error('❌ Error updating order payment in Firebase Firestore:', error);
       return false;
     }
+  }
+
+  // Public method for manual stock restoration (used by admin dashboard)
+  async restoreStockForOrderManually(order: Order): Promise<void> {
+    await this.restoreStockForOrder(order);
   }
 
   // Delete order (for admin dashboard)

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ShoppingCart, ChevronUp, MessageCircle, Star } from 'lucide-react';
 import { Product } from '../types';
-import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
 
 interface ProductCardProps {
   product: Product;
@@ -20,9 +19,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
   isFeatured = false,
   user
 }) => {
-  const [showResellerMenu, setShowResellerMenu] = useState(false);
-  const { isFlashSaleActive, isProductInFlashSale } = useFirebaseFlashSale();
 
+  const [showResellerMenu, setShowResellerMenu] = useState(false);
+
+  
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     onAddToCart(product);
@@ -45,30 +45,37 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const getTotalVariantStock = () => {
-    // Calculate total stock from all variants
+    // Calculate total stock from variants structure (same as ProductDetail)
     if (product.variants?.stock) {
       let totalStock = 0;
-      Object.values(product.variants.stock).forEach(sizeStock => {
-        Object.values(sizeStock).forEach(colorStock => {
-          totalStock += colorStock;
+      Object.values(product.variants.stock).forEach((sizeStock: any) => {
+        Object.values(sizeStock).forEach((colorStock: any) => {
+          totalStock += Number(colorStock || 0);
         });
       });
-      return totalStock;
+            return totalStock;
     }
-    // Fallback to main stock if variant stock not available
-    return product.stock || 0;
+
+    // Fallback for non-variant products or missing variant data
+        return product.stock || 0;
   };
 
   const getStatusBadge = () => {
     // Ready/PO badge with TOTAL stock count from all variants
     const totalStock = getTotalVariantStock();
-    const stockStatus = product.status === 'ready'
+
+    // Handle backward compatibility for status field
+    const displayStatus = product.status ||
+                        (product.condition === 'baru' ? 'ready' : 'po') ||
+                        'ready'; // Default to 'ready' instead of based on stock
+
+    const stockStatus = displayStatus === 'ready'
       ? `Ready (${totalStock})`
       : `PO (${totalStock})`;
 
     return (
       <div className={`absolute top-2 left-2 text-xs px-2 py-1 rounded font-medium ${
-        product.status === 'ready'
+        displayStatus === 'ready'
           ? 'bg-green-500 text-white'
           : 'bg-orange-500 text-white'
       }`}>
@@ -78,10 +85,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const getPrice = () => {
-    // Check if this specific product is in flash sale and flash sale is active
-    const isThisProductInFlashSale = isProductInFlashSale(product.id) && product.isFlashSale && product.flashSalePrice > 0;
+    // Use the isFlashSale prop passed from parent (HomePage already knows which products are flash sale)
+    const isThisProductInFlashSale = isFlashSale && product.flashSalePrice && product.flashSalePrice > 0;
 
-  
+
     if (isThisProductInFlashSale) {
       return (
         <div className="space-y-1">

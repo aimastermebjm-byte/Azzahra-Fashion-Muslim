@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../types';
-import { useFirebaseProducts } from '../hooks/useFirebaseProducts';
-import { useFirebaseFlashSale } from '../hooks/useFirebaseFlashSale';
+import { useFirebaseProductsAdmin } from '../hooks/useFirebaseProductsAdmin';
+import { useFirebaseFlashSaleSimpleOptimized } from '../hooks/useFirebaseFlashSaleSimpleOptimized';
 import { ProductTableSkeleton, FlashSaleStatusSkeleton, MenuSkeleton } from './LoadingSkeleton';
+import { uploadMultipleImages, validateImageFile, generateImageName } from '../utils/imageUpload';
 
 interface AdminProductsPageProps {
   onBack: () => void;
@@ -19,14 +20,42 @@ interface FlashSaleConfig {
 }
 
 const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) => {
-  const { products, loading, updateProduct, addProduct, deleteProduct } = useFirebaseProducts();
-  const { flashSaleConfig, timeLeft, isFlashSaleActive, startFlashSale, stopFlashSale } = useFirebaseFlashSale();
+  const { products, loading, updateProduct } = useFirebaseProductsAdmin();
+
+  // TODO: Implement add/delete functions for batch system
+  const addProduct = () => {
+    alert('Add product feature temporarily disabled for batch system migration');
+  };
+  const deleteProduct = () => {
+    alert('Delete product feature temporarily disabled for batch system migration');
+  };
+
+  const { flashSaleProducts, isFlashSaleActive, timeLeft } = useFirebaseFlashSaleSimpleOptimized();
+
+  // Flash sale config dari hooks
+  const flashSaleConfig = {
+    isActive: isFlashSaleActive,
+    startTime: '',
+    endTime: '',
+    flashSaleDiscount: 20,
+    productIds: flashSaleProducts.map((p: any) => p.id)
+  };
+
+  // Placeholder functions untuk tombol flash sale
+  const startFlashSale = () => {
+    console.log('Start flash sale - akan diimplementasi');
+  };
+
+  const stopFlashSale = () => {
+    console.log('Stop flash sale - akan diimplementasi');
+  };
 
   
   // State management
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showBatchModal, setShowBatchModal] = useState(false);
+  const [showVariantBatchModal, setShowVariantBatchModal] = useState(false);
   const [showFlashSaleModal, setShowFlashSaleModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -41,13 +70,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     name: '',
     description: '',
     category: 'Hijab',
-    retailPrice: 0,
-    resellerPrice: 0,
-    costPrice: 0,
-    stock: 0,
-    weight: 1000, // weight in grams (default 1000g = 1kg)
-    images: [] as string[],
-    variants: [{ sizes: [], colors: [] }]
+    retailPrice: '', // Changed from 0 to empty string
+    resellerPrice: '', // Changed from 0 to empty string
+    costPrice: '', // Changed from 0 to empty string
+    weight: '', // Changed from 1000 to empty string
+    images: [] as (string | { file: File; preview: string; isUploading: boolean })[],
+    variants: { sizes: [] as string[], colors: [] as string[], stock: {} as any },
+    status: 'ready' as 'ready' | 'po'
   });
 
   // Batch form data
@@ -56,8 +85,15 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     retailPrice: 0,
     discount: 0,
     stock: -1, // Default -1 means no stock change
-    status: 'ready',
+    status: '' as 'ready' | 'po' | '', // Empty means no change
     isFeatured: false as boolean | undefined
+  });
+
+  // Variant batch form data
+  const [variantBatchFormData, setVariantBatchFormData] = useState({
+    sizes: ['Ukuran 1', 'Ukuran 2'],
+    colors: ['A', 'B', 'C', 'D'],
+    stockPerVariant: 5
   });
 
   // Flash sale form data
@@ -71,6 +107,163 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
   // Categories
   const categories = ['Hijab', 'Gamis', 'Khimar', 'Tunik', 'Jaket', 'Bawahan', 'Aksesoris', 'Lainnya'];
+
+  // Variant management helpers
+  const addSize = () => {
+    const newSize = `Ukuran ${formData.variants.sizes.length + 1}`;
+    setFormData({
+      ...formData,
+      variants: {
+        ...formData.variants,
+        sizes: [...formData.variants.sizes, newSize],
+        stock: {
+          ...formData.variants.stock,
+          [newSize]: formData.variants.colors.reduce((acc, color) => ({
+            ...acc,
+            [color]: '' // Empty string instead of 0
+          }), {} as any)
+        }
+      }
+    });
+  };
+
+  const removeSize = (sizeToRemove: string) => {
+    const newSizes = formData.variants.sizes.filter(size => size !== sizeToRemove);
+    const newStock = { ...formData.variants.stock };
+    delete newStock[sizeToRemove];
+
+    setFormData({
+      ...formData,
+      variants: {
+        ...formData.variants,
+        sizes: newSizes,
+        stock: newStock
+      }
+    });
+  };
+
+  const addColor = () => {
+    // Generate alphabet letters A, B, C, ... for colors
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const letterIndex = formData.variants.colors.length % 26;
+    const newColor = alphabet[letterIndex];
+    setFormData({
+      ...formData,
+      variants: {
+        ...formData.variants,
+        colors: [...formData.variants.colors, newColor],
+        stock: Object.keys(formData.variants.stock).reduce((acc, size) => {
+          const existingStock = formData.variants.stock[size] || {};
+          return {
+            ...acc,
+            [size]: {
+              ...existingStock,
+              [newColor]: '' // Empty string instead of 0
+            }
+          };
+        }, {} as Record<string, Record<string, string>>)
+      }
+    });
+  };
+
+  const removeColor = (colorToRemove: string) => {
+    const newColors = formData.variants.colors.filter(color => color !== colorToRemove);
+    const newStock = Object.keys(formData.variants.stock).reduce((acc, size) => {
+      const sizeStock = { ...formData.variants.stock[size] };
+      delete sizeStock[colorToRemove];
+      acc[size] = sizeStock;
+      return acc;
+    }, {} as any);
+
+    setFormData({
+      ...formData,
+      variants: {
+        ...formData.variants,
+        colors: newColors,
+        stock: newStock
+      }
+    });
+  };
+
+  const updateVariantStock = (size: string, color: string, stock: string | number) => {
+    // Convert to number, default to 0 if empty
+    const stockValue = typeof stock === 'string' ? (parseInt(stock) || 0) : stock;
+    setFormData({
+      ...formData,
+      variants: {
+        ...formData.variants,
+        stock: {
+          ...formData.variants.stock,
+          [size]: {
+            ...formData.variants.stock[size],
+            [color]: stockValue
+          }
+        }
+      }
+    });
+  };
+
+  const calculateTotalStock = () => {
+    let total = 0;
+    Object.values(formData.variants.stock).forEach((sizeStock: any) => {
+      Object.values(sizeStock).forEach((colorStock: any) => {
+        const stockValue = typeof colorStock === 'string' ? parseInt(colorStock) || 0 : colorStock || 0;
+        total += stockValue;
+      });
+    });
+    return total;
+  };
+
+  // Handle image upload and upload to Firebase Storage
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const validFiles: File[] = [];
+
+    // Validate files
+    Array.from(files).forEach((file) => {
+      const validation = validateImageFile(file);
+      if (!validation.isValid) {
+        alert(validation.error);
+        return;
+      }
+      validFiles.push(file);
+    });
+
+    if (validFiles.length === 0) {
+      // Clear the input value to allow selecting the same file again
+      e.target.value = '';
+      return;
+    }
+
+    try {
+      // Show loading state
+      console.log(`🔄 Uploading ${validFiles.length} images to Firebase Storage...`);
+
+      // For adding new product, we'll use a temporary ID or upload immediately after getting the product ID
+      // For now, we'll store the files and upload after product is created
+      const previewUrls = validFiles.map(file => URL.createObjectURL(file));
+
+      setFormData(prev => ({
+        ...prev,
+        // Store both file objects and preview URLs
+        images: [...prev.images, ...validFiles.map((file, index) => ({
+          file,
+          preview: previewUrls[index],
+          isUploading: false
+        }))]
+      }));
+
+      console.log(`✅ ${validFiles.length} files ready for upload to Firebase Storage`);
+    } catch (error) {
+      console.error('❌ Error preparing images for upload:', error);
+      alert('Gagal mempersiapkan gambar untuk diupload. Silakan coba lagi.');
+    }
+
+    // Clear the input value to allow selecting the same file again
+    e.target.value = '';
+  };
 
   // Filter and sort products
   const filteredAndSortedProducts = React.useMemo(() => {
@@ -124,14 +317,68 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const totalStock = calculateTotalStock();
+
+      // Upload images to Firebase Storage first if there are any
+      let imageUrls: string[] = [];
+      const filesToUpload = formData.images.filter(img => typeof img === 'object' && img.file) as { file: File; preview: string; isUploading: boolean }[];
+
+      if (filesToUpload.length > 0) {
+        console.log(`🔄 Uploading ${filesToUpload.length} images to Firebase Storage...`);
+
+        // Create a temporary product ID for storage path
+        const tempProductId = `temp_${Date.now()}`;
+
+        try {
+          imageUrls = await uploadMultipleImages(
+            filesToUpload.map(img => img.file),
+            tempProductId
+          );
+          console.log(`✅ Successfully uploaded ${imageUrls.length} images to Firebase Storage`);
+        } catch (uploadError) {
+          console.error('❌ Failed to upload images:', uploadError);
+          alert('Gagal mengupload gambar ke Firebase Storage. Silakan coba lagi.');
+          return;
+        }
+      }
+
+      // Also keep existing URLs (for edited products)
+      const existingImageUrls = formData.images.filter(img => typeof img === 'string') as string[];
+      const allImageUrls = [...existingImageUrls, ...imageUrls];
+
       const newProduct = {
         ...formData,
+        images: allImageUrls,
+        // Convert string fields to numbers, preserving original values
+        retailPrice: parseInt(formData.retailPrice) || 0,
+        resellerPrice: parseInt(formData.resellerPrice) || 0,
+        costPrice: parseInt(formData.costPrice) || 0,
+        weight: parseInt(formData.weight) || 0,
+        stock: totalStock, // Use calculated total stock from variants
+        // IMPORTANT: Preserve all variants data exactly as entered
+        variants: {
+          sizes: formData.variants.sizes,
+          colors: formData.variants.colors,
+          stock: formData.variants.stock
+        },
+        // Preserve status exactly as selected in form
+        status: formData.status,
         createdAt: new Date(),
         salesCount: 0,
         isFeatured: false,
         isFlashSale: false,
-        flashSalePrice: formData.retailPrice
+        flashSalePrice: parseInt(formData.retailPrice) || 0
       };
+
+      // Important: Log to verify data being saved to Firestore
+      console.log('💾 Saving to Firestore:', {
+        name: newProduct.name,
+        sizes: newProduct.variants.sizes,
+        colors: newProduct.variants.colors,
+        status: newProduct.status,
+        weight: newProduct.weight,
+        images: allImageUrls.length
+      });
 
       await addProduct(newProduct);
 
@@ -140,13 +387,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         name: '',
         description: '',
         category: 'Hijab',
-        retailPrice: 0,
-        resellerPrice: 0,
-        costPrice: 0,
-        stock: 0,
-        weight: 1000, // reset to default 1000g
+        retailPrice: '',
+        resellerPrice: '',
+        costPrice: '',
+        weight: '',
         images: [],
-        variants: [{ sizes: [], colors: [] }]
+        variants: { sizes: [], colors: [], stock: {} },
+        status: 'ready'
       });
       setShowAddModal(false);
     } catch (error) {
@@ -160,7 +407,53 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     if (!editingProduct) return;
 
     try {
-      await updateProduct(editingProduct.id, formData);
+      // Upload new images to Firebase Storage first if there are any
+      let imageUrls: string[] = [];
+      const filesToUpload = formData.images.filter(img => typeof img === 'object' && img.file) as { file: File; preview: string; isUploading: boolean }[];
+
+      if (filesToUpload.length > 0) {
+        console.log(`🔄 Uploading ${filesToUpload.length} new images to Firebase Storage...`);
+
+        try {
+          imageUrls = await uploadMultipleImages(
+            filesToUpload.map(img => img.file),
+            editingProduct.id
+          );
+          console.log(`✅ Successfully uploaded ${imageUrls.length} new images to Firebase Storage`);
+        } catch (uploadError) {
+          console.error('❌ Failed to upload images:', uploadError);
+          alert('Gagal mengupload gambar ke Firebase Storage. Silakan coba lagi.');
+          return;
+        }
+      }
+
+      // Also keep existing URLs
+      const existingImageUrls = formData.images.filter(img => typeof img === 'string') as string[];
+      const allImageUrls = [...existingImageUrls, ...imageUrls];
+
+      // Prepare update data
+      const updateData = {
+        ...formData,
+        images: allImageUrls,
+        // Convert string fields to numbers
+        retailPrice: parseInt(formData.retailPrice) || 0,
+        resellerPrice: parseInt(formData.resellerPrice) || 0,
+        costPrice: parseInt(formData.costPrice) || 0,
+        weight: parseInt(formData.weight) || 0,
+        // Only update variants if they exist
+        variants: formData.variants.sizes.length > 0 ? formData.variants : undefined,
+        stock: formData.variants.sizes.length > 0 ? calculateTotalStock() : undefined,
+        status: formData.status
+      };
+
+      console.log('💾 Updating product in Firestore:', {
+        id: editingProduct.id,
+        name: updateData.name,
+        newImages: imageUrls.length,
+        totalImages: allImageUrls.length
+      });
+
+      await updateProduct(editingProduct.id, updateData);
       setShowEditModal(false);
       setEditingProduct(null);
     } catch (error) {
@@ -186,13 +479,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       name: product.name,
       description: product.description,
       category: product.category,
-      retailPrice: product.retailPrice,
-      resellerPrice: product.resellerPrice,
-      costPrice: product.costPrice,
-      stock: product.stock,
-      weight: product.weight || 1000, // use product weight or default 1000g
-      images: product.images,
-      variants: product.variants || [{ sizes: [], colors: [] }]
+      retailPrice: String(product.retailPrice || ''),
+      resellerPrice: String(product.resellerPrice || ''),
+      costPrice: String(product.costPrice || ''),
+      weight: String(product.weight || ''),
+      images: product.images || [],
+      variants: product.variants || { sizes: [], colors: [], stock: {} as any },
+      status: product.status || 'ready'
     });
     setShowEditModal(true);
   };
@@ -233,7 +526,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         retailPrice: 0,
         discount: 0,
         stock: -1, // Use -1 to indicate no stock change (prevent accidental stock reset)
-        status: 'ready',
+        status: '', // Empty means no change
         isFeatured: false as boolean | undefined
       });
     } catch (error) {
@@ -298,6 +591,84 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     }
   };
 
+  // Bulk delete function
+  const handleBulkDelete = async () => {
+    if (selectedProducts.length === 0) {
+      alert('Pilih setidaknya satu produk');
+      return;
+    }
+
+    const productNames = selectedProducts.map(id => {
+      const product = products.find(p => p.id === id);
+      return product ? product.name : 'Unknown Product';
+    });
+
+    const confirmMessage = `Apakah Anda yakin ingin menghapus ${selectedProducts.length} produk berikut?\n\n${productNames.join('\n')}\n\n⚠️ Tindakan ini tidak dapat dibatalkan!`;
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      console.log(`🗑️ Menghapus ${selectedProducts.length} produk...`);
+
+      for (const productId of selectedProducts) {
+        await deleteProduct(productId);
+      }
+
+      setSelectedProducts([]);
+      alert(`✅ Berhasil menghapus ${selectedProducts.length} produk`);
+    } catch (error) {
+      console.error('Error bulk deleting products:', error);
+      alert('Gagal menghapus beberapa produk. Silakan coba lagi.');
+    }
+  };
+
+  // Bulk variant update function
+  const handleVariantBatchUpdate = async () => {
+    if (selectedProducts.length === 0) {
+      alert('Pilih setidaknya satu produk');
+      return;
+    }
+
+    try {
+      console.log(`🔄 Mengupdate varian untuk ${selectedProducts.length} produk...`);
+
+      // Create variant stock structure
+      const variantStock: any = {};
+      variantBatchFormData.sizes.forEach((size: string) => {
+        variantStock[size] = {};
+        variantBatchFormData.colors.forEach((color: string) => {
+          variantStock[size][color] = variantBatchFormData.stockPerVariant;
+        });
+      });
+
+      // Calculate total stock
+      const totalStock = variantBatchFormData.sizes.length *
+                       variantBatchFormData.colors.length *
+                       variantBatchFormData.stockPerVariant;
+
+      // Update each product
+      for (const productId of selectedProducts) {
+        await updateProduct(productId, {
+          variants: {
+            sizes: variantBatchFormData.sizes,
+            colors: variantBatchFormData.colors,
+            stock: variantStock
+          },
+          stock: totalStock
+        });
+      }
+
+      setShowVariantBatchModal(false);
+      setSelectedProducts([]);
+      alert(`✅ Berhasil mengupdate varian untuk ${selectedProducts.length} produk`);
+    } catch (error) {
+      console.error('Error bulk updating variants:', error);
+      alert('Gagal mengupdate varian beberapa produk. Silakan coba lagi.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
@@ -351,7 +722,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 {timeLeft && (
                   <div className="flex items-center space-x-1 bg-red-600 text-white px-3 py-1 rounded-full text-sm">
                     <Clock className="w-4 h-4" />
-                    <span className="font-medium">{timeLeft}</span>
+                    <span className="font-medium">
+                      {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
+                    </span>
                   </div>
                 )}
                 <button
@@ -391,7 +764,6 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               <button
                 onClick={() => {
                   const stuckProducts = products.filter(p => p.isFlashSale);
-                  console.log('🚨 Stuck flash sale products:', stuckProducts);
                   alert(`Stuck products: ${stuckProducts.map(p => p.name).join(', ')}`);
                 }}
                 className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 transition-colors text-xs"
@@ -503,15 +875,33 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 <option value="date-oldest">Terlama</option>
               </select>
 
-              {/* Batch Edit Button */}
+              {/* Batch Actions */}
               {selectedProducts.length > 0 && (
-                <button
-                  onClick={() => setShowBatchModal(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                >
-                  <Edit className="w-4 h-4" />
-                  <span>Edit {selectedProducts.length} Produk</span>
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setShowBatchModal(true)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Edit {selectedProducts.length} Produk</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowVariantBatchModal(true)}
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                  >
+                    <Package className="w-4 h-4" />
+                    <span>Varian {selectedProducts.length} Produk</span>
+                  </button>
+
+                  <button
+                    onClick={handleBulkDelete}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Hapus {selectedProducts.length} Produk</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -637,11 +1027,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                         </td>
                         <td className="p-3">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            product.stock > 0
+                            product.status === 'ready'
                               ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                              : 'bg-orange-100 text-orange-800'
                           }`}>
-                            {product.stock > 0 ? 'Ready' : 'Habis'}
+                            {product.status === 'ready' ? '✅ Ready Stock' : '⏳ Pre-Order'}
                           </span>
                         </td>
                         <td className="p-3">
@@ -785,6 +1175,98 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 />
               </div>
 
+              {/* Product Images */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  📷 Gambar Produk
+                </label>
+                <div className="space-y-4">
+                  {/* File Upload Input */}
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">
+                      Upload Gambar dari Device (opsional)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      💡 Bisa pilih multiple gambar (JPG, PNG, WebP). Maksimal 5MB per gambar.
+                    </p>
+                  </div>
+
+                  {/* Image Preview */}
+                  {formData.images.length > 0 && (
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-2">
+                        Gambar yang Ditambahkan ({formData.images.length})
+                      </label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {formData.images.map((image, index) => {
+                          const isFileObject = typeof image === 'object';
+                          const imageSrc = isFileObject ? (image as any).preview : (image as string);
+
+                          return (
+                            <div key={index} className="relative group">
+                              <img
+                                src={imageSrc}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = '/placeholder-product.jpg';
+                                }}
+                              />
+                              {isFileObject && (image as any).isUploading && (
+                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                                  <div className="text-white text-xs">⏳ Uploading...</div>
+                                </div>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    images: formData.images.filter((_, i) => i !== index)
+                                  });
+                                }}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                              <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                                {index + 1}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        💡 Gambar pertama akan menjadi gambar utama produk
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Placeholder Info */}
+                  {formData.images.length === 0 && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                      <div className="text-gray-400 mb-2">
+                        <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-1">Belum ada gambar produk</p>
+                      <p className="text-xs text-gray-500">
+                        Upload gambar dari device atau lanjutkan tanpa gambar (gambar placeholder akan digunakan)
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Pricing */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -795,16 +1277,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     type="number"
                     required
                     min="0"
+                    placeholder="0"
                     value={formData.retailPrice}
-                    onChange={(e) => {
-                      const price = parseInt(e.target.value) || 0;
-                      setFormData({
-                        ...formData,
-                        retailPrice: price,
-                        resellerPrice: Math.round(price * 0.8),
-                        costPrice: Math.round(price * 0.6)
-                      });
-                    }}
+                    onChange={(e) => setFormData({ ...formData, retailPrice: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
@@ -814,10 +1289,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    placeholder="0"
                     value={formData.resellerPrice}
-                    onChange={(e) => setFormData({ ...formData, resellerPrice: parseInt(e.target.value) || 0 })}
+                    onChange={(e) => setFormData({ ...formData, resellerPrice: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    readOnly
                   />
                 </div>
                 <div>
@@ -826,27 +1302,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    placeholder="0"
                     value={formData.costPrice}
-                    onChange={(e) => setFormData({ ...formData, costPrice: parseInt(e.target.value) || 0 })}
+                    onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    readOnly
                   />
                 </div>
-              </div>
-
-              {/* Stock */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Stok *
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
               </div>
 
               {/* Weight */}
@@ -859,12 +1321,198 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   required
                   min="1"
                   step="1"
-                  value={formData.weight}
-                  onChange={(e) => setFormData({ ...formData, weight: parseInt(e.target.value) || 1000 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="1000"
+                  value={formData.weight}
+                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-500 mt-1">Berat produk dalam gram (contoh: 1000 = 1kg)</p>
+              </div>
+
+              {/* Product Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Kondisi Produk *
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'ready' | 'po' })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="ready">Ready Stock</option>
+                  <option value="po">Pre-Order (PO)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.status === 'ready' ? '✅ Produk siap dikirim' : '⏳ Produk butuh waktu pengerjaan'}
+                </p>
+              </div>
+
+              {/* Variant Management */}
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      📏 Ukuran Produk
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addSize}
+                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm"
+                    >
+                      + Tambah Ukuran
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.variants.sizes.map((size, index) => (
+                      <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
+                        <input
+                          type="text"
+                          value={size}
+                          onChange={(e) => {
+                            const newSizes = [...formData.variants.sizes];
+                            newSizes[index] = e.target.value;
+                            const oldSize = formData.variants.sizes[index];
+                            const newStock = { ...formData.variants.stock };
+                            if (oldSize !== e.target.value && newStock[oldSize]) {
+                              newStock[e.target.value] = newStock[oldSize];
+                              delete newStock[oldSize];
+                            }
+                            setFormData({
+                              ...formData,
+                              variants: {
+                                ...formData.variants,
+                                sizes: newSizes,
+                                stock: newStock
+                              }
+                            });
+                          }}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm"
+                          placeholder="contoh: S, M, L"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeSize(size)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {formData.variants.sizes.length === 0 && (
+                    <p className="text-sm text-gray-500">Tambahkan ukuran untuk mulai mengelola varian</p>
+                  )}
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      🎨 Warna Produk
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addColor}
+                      className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
+                    >
+                      + Tambah Warna
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.variants.colors.map((color, index) => (
+                      <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
+                        <input
+                          type="text"
+                          value={color}
+                          onChange={(e) => {
+                            const newColors = [...formData.variants.colors];
+                            const oldColor = formData.variants.colors[index];
+                            newColors[index] = e.target.value;
+
+                            const newStock = Object.keys(formData.variants.stock).reduce((acc, size) => {
+                              acc[size] = { ...formData.variants.stock[size] };
+                              if (oldColor !== e.target.value && acc[size][oldColor] !== undefined) {
+                                acc[size][e.target.value] = acc[size][oldColor];
+                                delete acc[size][oldColor];
+                              }
+                              return acc;
+                            }, {} as any);
+
+                            setFormData({
+                              ...formData,
+                              variants: {
+                                ...formData.variants,
+                                colors: newColors,
+                                stock: newStock
+                              }
+                            });
+                          }}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm"
+                          placeholder="contoh: Merah, Biru"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeColor(color)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {formData.variants.colors.length === 0 && (
+                    <p className="text-sm text-gray-500">Tambahkan warna untuk mulai mengelola varian</p>
+                  )}
+                </div>
+
+                {/* Stock Matrix */}
+                {formData.variants.sizes.length > 0 && formData.variants.colors.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      📦 Stok per Varian
+                    </label>
+                    <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left py-2 px-2 font-medium text-gray-700">Ukuran \ Warna</th>
+                            {formData.variants.colors.map((color, index) => (
+                              <th key={index} className="text-center py-2 px-2 font-medium text-gray-700">
+                                {color}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {formData.variants.sizes.map((size, sizeIndex) => (
+                            <tr key={sizeIndex} className="border-b border-gray-100">
+                              <td className="py-2 px-2 font-medium text-gray-600">{size}</td>
+                              {formData.variants.colors.map((color, colorIndex) => (
+                                <td key={colorIndex} className="py-2 px-2 text-center">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="0"
+                                    value={formData.variants.stock[size]?.[color] || ''}
+                                    onChange={(e) => updateVariantStock(size, color, e.target.value)}
+                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  />
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <p className="text-sm text-gray-600">
+                        Total Stok: <span className="font-semibold text-blue-600">{calculateTotalStock()} pcs</span>
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        💡 Total stok akan dihitung otomatis dari semua varian
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Form Actions */}
@@ -953,6 +1601,98 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 />
               </div>
 
+              {/* Product Images */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  📷 Gambar Produk
+                </label>
+                <div className="space-y-4">
+                  {/* File Upload Input */}
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">
+                      Upload Gambar dari Device (opsional)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      💡 Bisa pilih multiple gambar (JPG, PNG, WebP). Maksimal 5MB per gambar.
+                    </p>
+                  </div>
+
+                  {/* Image Preview */}
+                  {formData.images.length > 0 && (
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-2">
+                        Gambar yang Ditambahkan ({formData.images.length})
+                      </label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {formData.images.map((image, index) => {
+                          const isFileObject = typeof image === 'object';
+                          const imageSrc = isFileObject ? (image as any).preview : (image as string);
+
+                          return (
+                            <div key={index} className="relative group">
+                              <img
+                                src={imageSrc}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = '/placeholder-product.jpg';
+                                }}
+                              />
+                              {isFileObject && (image as any).isUploading && (
+                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                                  <div className="text-white text-xs">⏳ Uploading...</div>
+                                </div>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    images: formData.images.filter((_, i) => i !== index)
+                                  });
+                                }}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                              <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                                {index + 1}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        💡 Gambar pertama akan menjadi gambar utama produk
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Placeholder Info */}
+                  {formData.images.length === 0 && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                      <div className="text-gray-400 mb-2">
+                        <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-1">Belum ada gambar produk</p>
+                      <p className="text-xs text-gray-500">
+                        Upload gambar dari device atau lanjutkan tanpa gambar (gambar placeholder akan digunakan)
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Pricing */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -963,16 +1703,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     type="number"
                     required
                     min="0"
+                    placeholder="0"
                     value={formData.retailPrice}
-                    onChange={(e) => {
-                      const price = parseInt(e.target.value) || 0;
-                      setFormData({
-                        ...formData,
-                        retailPrice: price,
-                        resellerPrice: Math.round(price * 0.8),
-                        costPrice: Math.round(price * 0.6)
-                      });
-                    }}
+                    onChange={(e) => setFormData({ ...formData, retailPrice: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
@@ -982,10 +1715,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    placeholder="0"
                     value={formData.resellerPrice}
-                    onChange={(e) => setFormData({ ...formData, resellerPrice: parseInt(e.target.value) || 0 })}
+                    onChange={(e) => setFormData({ ...formData, resellerPrice: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    readOnly
                   />
                 </div>
                 <div>
@@ -994,27 +1728,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    placeholder="0"
                     value={formData.costPrice}
-                    onChange={(e) => setFormData({ ...formData, costPrice: parseInt(e.target.value) || 0 })}
+                    onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    readOnly
                   />
                 </div>
-              </div>
-
-              {/* Stock */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Stok *
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
               </div>
 
               {/* Weight */}
@@ -1027,12 +1747,30 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   required
                   min="1"
                   step="1"
-                  value={formData.weight}
-                  onChange={(e) => setFormData({ ...formData, weight: parseInt(e.target.value) || 1000 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="1000"
+                  value={formData.weight}
+                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-500 mt-1">Berat produk dalam gram (contoh: 1000 = 1kg)</p>
+              </div>
+
+              {/* Product Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Kondisi Produk *
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'ready' | 'po' })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="ready">Ready Stock</option>
+                  <option value="po">Pre-Order (PO)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.status === 'ready' ? '✅ Produk siap dikirim' : '⏳ Produk butuh waktu pengerjaan'}
+                </p>
               </div>
 
               {/* Form Actions */}
@@ -1157,6 +1895,21 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ubah Kondisi Produk
+                  </label>
+                  <select
+                    value={batchFormData.status || ''}
+                    onChange={(e) => setBatchFormData({ ...batchFormData, status: e.target.value as 'ready' | 'po' | '' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">-- Tidak Diubah --</option>
+                    <option value="ready">Ready Stock</option>
+                    <option value="po">Pre-Order (PO)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Status Produk Unggulan
                   </label>
                   <select
@@ -1194,6 +1947,236 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Simpan Perubahan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Variant Batch Modal */}
+      {showVariantBatchModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center space-x-2">
+                  <Package className="w-5 h-5 text-purple-600" />
+                  <span>Edit Varian Massal ({selectedProducts.length} Produk)</span>
+                </h2>
+                <button
+                  onClick={() => setShowVariantBatchModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Selected Products List */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-medium text-gray-800 mb-3">Produk yang akan diedit:</h4>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {selectedProducts.map(productId => {
+                    const product = products.find(p => p.id === productId);
+                    return product ? (
+                      <div key={product.id} className="flex items-center justify-between text-sm">
+                        <span className="font-medium">{product.name}</span>
+                        <span className="text-gray-500">{product.category}</span>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+
+              {/* Sizes Configuration */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  📏 Ukuran Produk
+                </label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {variantBatchFormData.sizes.map((size, index) => (
+                    <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
+                      <input
+                        type="text"
+                        value={size}
+                        onChange={(e) => {
+                          const newSizes = [...variantBatchFormData.sizes];
+                          newSizes[index] = e.target.value;
+                          setVariantBatchFormData({
+                            ...variantBatchFormData,
+                            sizes: newSizes
+                          });
+                        }}
+                        className="px-2 py-1 border border-gray-300 rounded text-sm"
+                        placeholder="contoh: S, M, L"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newSizes = variantBatchFormData.sizes.filter((_, i) => i !== index);
+                          setVariantBatchFormData({
+                            ...variantBatchFormData,
+                            sizes: newSizes
+                          });
+                        }}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newSize = `Ukuran ${variantBatchFormData.sizes.length + 1}`;
+                    setVariantBatchFormData({
+                      ...variantBatchFormData,
+                      sizes: [...variantBatchFormData.sizes, newSize]
+                    });
+                  }}
+                  className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
+                >
+                  + Tambah Ukuran
+                </button>
+              </div>
+
+              {/* Colors Configuration */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  🎨 Warna Produk
+                </label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {variantBatchFormData.colors.map((color, index) => (
+                    <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
+                      <input
+                        type="text"
+                        value={color}
+                        onChange={(e) => {
+                          const newColors = [...variantBatchFormData.colors];
+                          newColors[index] = e.target.value;
+                          setVariantBatchFormData({
+                            ...variantBatchFormData,
+                            colors: newColors
+                          });
+                        }}
+                        className="px-2 py-1 border border-gray-300 rounded text-sm"
+                        placeholder="contoh: Merah, Biru"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newColors = variantBatchFormData.colors.filter((_, i) => i !== index);
+                          setVariantBatchFormData({
+                            ...variantBatchFormData,
+                            colors: newColors
+                          });
+                        }}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                    const letterIndex = variantBatchFormData.colors.length % 26;
+                    const newColor = alphabet[letterIndex];
+                    setVariantBatchFormData({
+                      ...variantBatchFormData,
+                      colors: [...variantBatchFormData.colors, newColor]
+                    });
+                  }}
+                  className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
+                >
+                  + Tambah Warna
+                </button>
+              </div>
+
+              {/* Stock per Variant */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  📦 Stok per Varian
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={variantBatchFormData.stockPerVariant}
+                  onChange={(e) => setVariantBatchFormData({
+                    ...variantBatchFormData,
+                    stockPerVariant: parseInt(e.target.value) || 0
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Masukkan stok per varian"
+                />
+                <p className="text-sm text-gray-600 mt-1">
+                  Total stok per produk: {variantBatchFormData.sizes.length} × {variantBatchFormData.colors.length} × {variantBatchFormData.stockPerVariant} = {variantBatchFormData.sizes.length * variantBatchFormData.colors.length * variantBatchFormData.stockPerVariant} pcs
+                </p>
+              </div>
+
+              {/* Preview Matrix */}
+              {(variantBatchFormData.sizes.length > 0 && variantBatchFormData.colors.length > 0) && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    👀 Preview Stok Matrix
+                  </label>
+                  <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-2 px-2 font-medium text-gray-700">Ukuran \ Warna</th>
+                          {variantBatchFormData.colors.map((color, index) => (
+                            <th key={index} className="text-center py-2 px-2 font-medium text-gray-700">
+                              {color}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {variantBatchFormData.sizes.map((size, sizeIndex) => (
+                          <tr key={sizeIndex} className="border-b border-gray-100">
+                            <td className="py-2 px-2 font-medium text-gray-600">{size}</td>
+                            {variantBatchFormData.colors.map((color, colorIndex) => (
+                              <td key={colorIndex} className="py-2 px-2 text-center">
+                                <span className="inline-block bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-medium">
+                                  {variantBatchFormData.stockPerVariant}
+                                </span>
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Warning */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ <strong>Perhatian:</strong> Ini akan mengganti semua varian yang ada untuk produk yang dipilih. Semua ukuran, warna, dan stok akan disesuaikan dengan konfigurasi di atas.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setShowVariantBatchModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleVariantBatchUpdate}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                >
+                  <Package className="w-4 h-4" />
+                  <span>Update Varian</span>
                 </button>
               </div>
             </div>

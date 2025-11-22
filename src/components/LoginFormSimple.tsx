@@ -22,8 +22,7 @@ const LoginFormSimple: React.FC<LoginFormProps> = ({ onSuccess, onClose, onShowR
     }
 
     try {
-      console.log('🔄 Firebase login attempt:', email);
-
+      
       // Use Firebase Authentication
       const userData = await login(email, password);
 
@@ -36,8 +35,7 @@ const LoginFormSimple: React.FC<LoginFormProps> = ({ onSuccess, onClose, onShowR
           role: userData.role
         };
 
-        console.log('✅ Firebase login successful:', appUser);
-        onSuccess(appUser);
+                onSuccess(appUser);
       }
     } catch (err) {
       console.error('❌ Firebase login error:', err);
