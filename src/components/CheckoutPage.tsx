@@ -240,6 +240,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     const defaultAddr = getDefaultAddress();
     const autoCourier = shippingOptions.find(opt => opt.code);
 
+    console.log('🔍 AUTO-CALC DEBUG:', {
+      autoCourier: autoCourier?.code,
+      hasDefaultAddr: !!defaultAddr,
+      shippingCourier: formData.shippingCourier,
+      shouldTrigger: !!(autoCourier && defaultAddr && formData.shippingCourier === autoCourier.id),
+      addressesLength: addresses.length
+    });
+
     // If we have auto-selected courier and default address, trigger calculation
     if (autoCourier && defaultAddr && formData.shippingCourier === autoCourier.id) {
       console.log('🚀 AUTO-CALCULATION: Triggering shipping cost for auto-selected courier:', {
@@ -278,7 +286,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         }
       }, 100); // Small delay to ensure state is set
     }
-  }, [formData.shippingCourier, addresses.length]); // Trigger when courier is set or addresses load
+  }, [formData.shippingCourier, addresses, selectedAddressId]); // Trigger when courier, addresses, or selected address changes
 
   // Optimized shipping calculation - SINGLE useEffect for both courier and address changes
   useEffect(() => {
