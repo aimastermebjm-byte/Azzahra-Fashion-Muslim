@@ -80,7 +80,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
     const variant = (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0)
       ? { size: selectedSize, color: selectedColor }
-      : null;
+      : undefined;
     onAddToCart(currentProduct, variant, quantity);
 
     // Reset selections

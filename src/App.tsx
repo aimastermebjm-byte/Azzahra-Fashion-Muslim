@@ -370,23 +370,8 @@ function AppContent() {
         timestamp: Date.now()
       };
 
-      // Save to Firebase first to get consistent orderId
+      // Save to Firebase only - single source of truth
       const savedOrder = await ordersService.createOrder(orderRecord);
-
-      // Add to admin system with same Firebase orderId (without id field)
-      addOrder({
-        userId: savedOrder.userId,
-        userName: savedOrder.userName,
-        userEmail: savedOrder.userEmail,
-        items: savedOrder.items,
-        shippingInfo: savedOrder.shippingInfo,
-        paymentMethod: savedOrder.paymentMethod as 'transfer' | 'cash',
-        status: savedOrder.status,
-        totalAmount: savedOrder.totalAmount,
-        shippingCost: savedOrder.shippingCost,
-        finalTotal: savedOrder.finalTotal,
-        notes: savedOrder.notes
-      });
 
       console.log('✅ Order completed successfully with ATOMIC transaction');
       return orderId;
