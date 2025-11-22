@@ -221,11 +221,11 @@ function AppContent() {
             throw new Error(`Produk "${item.name}" tidak ditemukan di batch system`);
           }
 
-          // Handle variant stock if exists
+          // Handle variant stock if exists - CORRECT STRUCTURE
           let currentStock = Number(batchProduct.stock || 0);
-          if (item.variant && batchProduct.variantsStock) {
-            const variantKey = `${item.variant.size}-${item.variant.color}`;
-            currentStock = Number(batchProduct.variantsStock[variantKey] || 0);
+          if (item.variant && batchProduct.variants?.stock && item.variant.size && item.variant.color) {
+            const oldVariantStock = Number(batchProduct.variants.stock[item.variant.size]?.[item.variant.color] || 0);
+            currentStock = oldVariantStock;
           }
 
           if (currentStock < item.quantity) {
@@ -313,8 +313,11 @@ function AppContent() {
       const calculatedShippingCost = orderData.shippingCost || 0;
       const calculatedFinalTotal = calculatedSubtotal + calculatedShippingCost;
 
-      // Add order to admin system
-      addOrder({
+      // Clear cart from backend (after successful stock reduction)
+      await cartServiceOptimized.clearCart();
+
+      // Create single order record for both admin system and Firebase sync
+      const orderRecord = {
         id: orderId,
         userId: user.uid,
         userName: user.displayName || 'User',
@@ -322,31 +325,10 @@ function AppContent() {
         items: validatedItems.map(item => ({
           productId: item.productId,
           productName: item.name || 'Product',
-          productImage: item.image || '',
-          selectedVariant: item.variant || { size: '', color: '' },
-          quantity: item.quantity,
-          price: item.price || 0,
-          total: item.total || 0
-        })),
-        shippingInfo: orderData.shippingInfo,
-        paymentMethod: orderData.paymentMethod,
-        status: 'pending',
-        totalAmount: calculatedSubtotal,
-        shippingCost: calculatedShippingCost,
-        finalTotal: calculatedFinalTotal,
-        notes: orderData.notes
-      });
-
-      // Clear cart from backend (after successful stock reduction)
-      await cartServiceOptimized.clearCart();
-
-      // Save order to Firebase for cross-device sync
-      const orderRecord = {
-        items: validatedItems.map(item => ({
-          productId: item.productId,
-          productName: item.name || 'Product',
-          productImage: item.image || '',
-          selectedVariant: item.variant || { size: '', color: '' },
+          selectedVariant: {
+            size: item.variant?.size || '',
+            color: item.variant?.color || ''
+          },
           quantity: item.quantity,
           price: item.price || 0,
           total: item.total || 0
@@ -358,13 +340,13 @@ function AppContent() {
         shippingCost: calculatedShippingCost,
         finalTotal: calculatedFinalTotal,
         notes: orderData.notes || '',
-        userName: user.displayName || 'User',
-        userEmail: user.email || 'user@example.com',
-        userId: user.uid,
         timestamp: Date.now()
       };
 
-      // Save to Firebase using OrdersService
+      // Add to admin system (local state)
+      addOrder(orderRecord);
+
+      // Save to Firebase for cross-device sync (single source of truth)
       await ordersService.createOrder(orderRecord);
 
       console.log('✅ Order completed successfully with ATOMIC transaction');

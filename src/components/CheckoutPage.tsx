@@ -235,12 +235,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   }, [addresses, selectedAddressId, formData.isDropship]);
 
-  // Calculate shipping when both courier and address are selected
+  // Calculate shipping when both courier and address are selected - COMBINED LOGIC
   useEffect(() => {
     const defaultAddr = getDefaultAddress();
     const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
 
-  
     if (selectedCourier?.code && defaultAddr && formData.shippingCourier) {
       const weight = calculateTotalWeight();
 
@@ -271,16 +270,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       // Final fallback
       destinationId = destinationId || defaultAddr.cityId || '607';
 
-  
-  
-      // ULTRA FAST delay - almost instant response
-      const timeoutId = setTimeout(() => {
-        calculateShippingCost(selectedCourier.code, destinationId, weight);
-      }, 25); // Further reduced delay for ultra-fast response
-
-      return () => clearTimeout(timeoutId);
+      // IMMEDIATE calculation - no delay needed
+      calculateShippingCost(selectedCourier.code, destinationId, weight);
     }
-  }, [formData.shippingCourier, selectedAddressId, addresses.length]);
+  }, [formData.shippingCourier, selectedAddressId]); // Remove addresses.length to prevent unnecessary recalculations
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -341,19 +334,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         phone: formData.isDropship ? prev.phone : address.phone,
         address: formData.isDropship ? prev.address : address.fullAddress
       }));
-
-      // Auto-calculate shipping if courier is selected and supports automatic
-      const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
-      if (selectedCourier?.code) {
-        const weight = calculateTotalWeight();
-        const destinationId = address.subdistrictId || address.cityId || '607';
-
-  
-        // ULTRA FAST delay - almost instant response
-        setTimeout(() => {
-          calculateShippingCost(selectedCourier.code, destinationId, weight);
-        }, 25);
-      }
+      // NOTE: Shipping calculation is handled by useEffect - no manual calculation needed
     }
   };
 
@@ -707,22 +688,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                               cityId: address.cityId || ''
                             }));
 
-                            // Auto-calculate shipping if courier is selected and supports automatic
-                            if (supportsAutomatic && formData.shippingCourier) {
-                              const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
-
-                              if (selectedCourier?.code) {
-                                const weight = calculateTotalWeight();
-                                // Use consistent destination ID - prioritize subdistrictId for accuracy
-                                const destinationId = address.subdistrictId || address.cityId || '607';
-
-  
-                                // ULTRA FAST delay - almost instant response
-                                setTimeout(() => {
-                                  calculateShippingCost(selectedCourier.code, destinationId, weight);
-                                }, 25);
-                              }
-                            }
+                            // NOTE: Shipping calculation is handled by useEffect - no manual calculation needed
                           }}
                           className="w-4 h-4 text-pink-600 mr-2"
                         />
