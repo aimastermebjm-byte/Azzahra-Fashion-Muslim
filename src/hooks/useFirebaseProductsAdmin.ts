@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { auth } from '../utils/firebaseClient';
-import { collection, query, getDocs, where, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
+import { onSnapshot } from 'firebase/firestore';
 
 export const useFirebaseProductsAdmin = () => {
   const [products, setProducts] = useState<Product[]>([]);

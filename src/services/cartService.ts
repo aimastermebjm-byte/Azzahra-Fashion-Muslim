@@ -2,7 +2,7 @@
 // Direct Firebase operations with persistence support
 
 import { auth } from '../utils/firebaseClient';
-import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { cartCache } from '../utils/cartCache';
 
@@ -231,15 +231,23 @@ class CartService {
     try {
       console.log('🔍 Checking stock for product:', productId, 'Quantity:', quantity, 'Variant:', variant);
 
-      const productRef = doc(db, 'products', productId);
-      const productDoc = await getDoc(productRef);
+      // BATCH SYSTEM: Read from productBatches instead of individual products
+      const batchRef = doc(db, 'productBatches', 'batch_1');
+      const batchDoc = await getDoc(batchRef);
 
-      if (!productDoc.exists()) {
-        console.error('❌ Product not found:', productId);
+      if (!batchDoc.exists()) {
+        console.error('❌ Batch document not found');
         return false;
       }
 
-      const currentData = productDoc.data();
+      const batchProducts = batchDoc.data().products || [];
+      const currentData = batchProducts.find((p: any) => p.id === productId);
+
+      if (!currentData) {
+        console.error('❌ Product not found in batch:', productId);
+        return false;
+      }
+
       const currentStock = Number(currentData.stock || 0);
 
       // Check if there's enough total stock
@@ -248,26 +256,22 @@ class CartService {
         return false;
       }
 
-      // Check variant stock if variant info is provided
-      if (variant?.size && variant?.color && currentData.variants?.stock) {
-        const { size, color } = variant;
-        const currentVariantStock = currentData.variants.stock;
+      // Check variant stock if variant info is provided (BATCH SYSTEM uses variantsStock)
+      if (variant?.size && variant?.color && currentData.variantsStock) {
+        const variantKey = `${variant.size}-${variant.color}`;
+        const currentVariantStock = Number(currentData.variantsStock[variantKey] || 0);
 
-        if (currentVariantStock[size] && currentVariantStock[size][color] !== undefined) {
-          const currentVariantStockValue = Number(currentVariantStock[size][color] || 0);
-
-          if (currentVariantStockValue < quantity) {
-            console.error('❌ Insufficient variant stock. Available:', currentVariantStockValue, 'Requested:', quantity);
-            return false;
-          }
-
-          console.log(`✅ Sufficient variant stock: ${size}-${color} has ${currentVariantStockValue} available`);
-        } else {
-          console.warn('⚠️ Variant stock not found for:', size, color, '- checking total stock only');
+        if (currentVariantStock < quantity) {
+          console.error('❌ Insufficient variant stock. Available:', currentVariantStock, 'Requested:', quantity);
+          return false;
         }
+
+        console.log(`✅ Sufficient variant stock: ${variantKey} has ${currentVariantStock} available`);
+      } else if (variant?.size && variant?.color) {
+        console.warn('⚠️ Variant stock not found for:', `${variant.size}-${variant.color}`, '- checking total stock only');
       }
 
-      console.log('✅ Stock check passed - sufficient stock available');
+      console.log('✅ BATCH SYSTEM Stock check passed - sufficient stock available');
       return true;
     } catch (error) {
       console.error('❌ Error checking product stock:', error);
