@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Minus, ShoppingCart, Heart, Share2, Star } from 'lucide-react';
 import { Product } from '../types';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../utils/firebaseClient';
 
 interface ProductDetailProps {
-  product: Product;
+  currentProduct: Product;
   user: any;
   onBack: () => void;
   onLoginRequired: () => void;
@@ -13,7 +15,7 @@ interface ProductDetailProps {
 }
 
 const ProductDetail: React.FC<ProductDetailProps> = ({
-  product,
+  currentProduct: initialProduct,
   user,
   onBack,
   onLoginRequired,
@@ -26,6 +28,38 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [currentProduct, setCurrentProduct] = useState<Product>(initialProduct);
+
+  // Real-time update currentProduct stock from batch system
+  useEffect(() => {
+    console.log('🔄 Setting up real-time stock update for product:', initialProduct.id);
+
+    // Listen to batch system updates
+    const batchRef = doc(db, 'productBatches', 'batch_1');
+    const unsubscribe = onSnapshot(batchRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const batchData = snapshot.data();
+        const updatedProducts = batchData.products || [];
+        const updatedProduct = updatedProducts.find((p: any) => p.id === initialProduct.id);
+
+        if (updatedProduct) {
+          console.log('✅ Product stock updated in real-time:', {
+            productId: initialProduct.id,
+            oldStock: currentProduct.stock,
+            newStock: updatedProduct.stock
+          });
+          setCurrentProduct(updatedProduct);
+        }
+      }
+    }, (error) => {
+      console.error('❌ Error listening to batch updates:', error);
+    });
+
+    return () => {
+      console.log('🔚 Cleaning up real-time stock listener for product:', initialProduct.id);
+      unsubscribe();
+    };
+  }, [initialProduct.id]);
 
   
   const handleAddToCart = () => {
@@ -35,7 +69,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     }
 
     // Check if variants exist and require selection
-    if (product.variants?.sizes && product.variants.sizes.length > 0) {
+    if (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0) {
       if (!selectedSize || !selectedColor) {
         alert('Pilih ukuran dan warna terlebih dahulu');
         return;
@@ -44,17 +78,17 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
     const availableStock = getSelectedVariantStock();
     if (quantity > availableStock) {
-      const stockMessage = (product.variants?.sizes && product.variants.sizes.length > 0)
+      const stockMessage = (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0)
         ? `Stok tidak mencukupi! Stok tersedia untuk ${selectedSize} - ${selectedColor} adalah ${availableStock} pcs`
         : `Stok tidak mencukupi! Stok tersedia adalah ${availableStock} pcs`;
       alert(stockMessage);
       return;
     }
 
-    const variant = (product.variants?.sizes && product.variants.sizes.length > 0)
+    const variant = (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0)
       ? { size: selectedSize, color: selectedColor }
       : null;
-    onAddToCart(product, variant, quantity);
+    onAddToCart(currentProduct, variant, quantity);
 
     // Reset selections
     setSelectedSize('');
@@ -69,7 +103,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     }
 
     // Check if variants exist and require selection
-    if (product.variants?.sizes && product.variants.sizes.length > 0) {
+    if (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0) {
       if (!selectedSize || !selectedColor) {
         alert('Pilih ukuran dan warna terlebih dahulu');
         return;
@@ -78,34 +112,34 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
     const availableStock = getSelectedVariantStock();
     if (quantity > availableStock) {
-      const stockMessage = (product.variants?.sizes && product.variants.sizes.length > 0)
+      const stockMessage = (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0)
         ? `Stok tidak mencukupi! Stok tersedia untuk ${selectedSize} - ${selectedColor} adalah ${availableStock} pcs`
         : `Stok tidak mencukupi! Stok tersedia adalah ${availableStock} pcs`;
       alert(stockMessage);
       return;
     }
 
-    const variant = (product.variants?.sizes && product.variants.sizes.length > 0)
+    const variant = (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0)
       ? { size: selectedSize, color: selectedColor }
       : null;
-    onBuyNow(product, variant, quantity);
+    onBuyNow(currentProduct, variant, quantity);
   };
 
   const getPrice = () => {
-    if (product.isFlashSale && product.flashSalePrice > 0) {
-      return product.flashSalePrice;
+    if (currentProduct.isFlashSale && currentProduct.flashSalePrice > 0) {
+      return currentProduct.flashSalePrice;
     }
-    return user?.role === 'reseller' ? product.resellerPrice : product.retailPrice;
+    return user?.role === 'reseller' ? currentProduct.resellerPrice : currentProduct.retailPrice;
   };
 
   const getOriginalPrice = () => {
-    return user?.role === 'reseller' ? product.resellerPrice : product.retailPrice;
+    return user?.role === 'reseller' ? currentProduct.resellerPrice : currentProduct.retailPrice;
   };
 
   const handleResellerPriceClick = () => {
     if (user?.role !== 'reseller') {
       const message = encodeURIComponent(
-        `Halo Admin, saya tertarik dengan produk ${product.name} dan ingin menanyakan tentang harga reseller. Mohon info lebih lanjut. Terima kasih.`
+        `Halo Admin, saya tertarik dengan produk ${currentProduct.name} dan ingin menanyakan tentang harga reseller. Mohon info lebih lanjut. Terima kasih.`
       );
       window.open(`https://wa.me/6287815990944?text=${message}`, '_blank');
     }
@@ -115,22 +149,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const getVariantStock = (size: string, color: string) => {
     
     // Primary: Check if variant stock exists in Firestore structure
-    if (product.variants?.stock?.[size]?.[color] !== undefined) {
-      const stock = Number(product.variants.stock[size][color] || 0);
+    if (currentProduct.variants?.stock?.[size]?.[color] !== undefined) {
+      const stock = Number(currentProduct.variants.stock[size][color] || 0);
             return stock;
     }
 
-    // Secondary: Check if this is a non-variant product
-    if (!product.variants?.sizes || product.variants.sizes.length === 0) {
-      return product.stock || 0;
+    // Secondary: Check if this is a non-variant currentProduct
+    if (!currentProduct.variants?.sizes || currentProduct.variants.sizes.length === 0) {
+      return currentProduct.stock || 0;
     }
 
-    // Tertiary: For variant products with missing stock data, calculate from total
-    // This happens for products created before variant stock system was implemented
-    if (product.variants?.sizes && product.variants?.colors) {
-      const totalVariants = product.variants.sizes.length * product.variants.colors.length;
-      if (totalVariants > 0 && product.stock > 0) {
-        const calculatedStock = Math.floor(product.stock / totalVariants);
+    // Tertiary: For variant currentProducts with missing stock data, calculate from total
+    // This happens for currentProducts created before variant stock system was implemented
+    if (currentProduct.variants?.sizes && currentProduct.variants?.colors) {
+      const totalVariants = currentProduct.variants.sizes.length * currentProduct.variants.colors.length;
+      if (totalVariants > 0 && currentProduct.stock > 0) {
+        const calculatedStock = Math.floor(currentProduct.stock / totalVariants);
                 return calculatedStock;
       }
     }
@@ -143,23 +177,23 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   // Get available stock for selected variants
   const getSelectedVariantStock = () => {
     if (!selectedSize || !selectedColor) {
-      return product.stock || 0;
+      return currentProduct.stock || 0;
     }
     return getVariantStock(selectedSize, selectedColor);
   };
 
   // Calculate total stock across all variants
   const getTotalStock = () => {
-    if (product.variants?.stock) {
+    if (currentProduct.variants?.stock) {
       let total = 0;
-      Object.values(product.variants.stock).forEach(sizeStock => {
+      Object.values(currentProduct.variants.stock).forEach(sizeStock => {
         Object.values(sizeStock).forEach(colorStock => {
           total += colorStock;
         });
       });
       return total;
     }
-    return product.stock || 0;
+    return currentProduct.stock || 0;
   };
 
   
@@ -195,31 +229,31 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         <div className="bg-white">
           <div className="relative">
             <img
-              src={product.images?.[selectedImageIndex] || product.image || '/placeholder-product.jpg'}
-              alt={product.name}
+              src={currentProduct.images?.[selectedImageIndex] || currentProduct.image || '/placeholder-currentProduct.jpg'}
+              alt={currentProduct.name}
               className="w-full h-96 object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                target.src = '/placeholder-product.jpg';
+                target.src = '/placeholder-currentProduct.jpg';
               }}
             />
             
-            {product.isFlashSale && (
+            {currentProduct.isFlashSale && (
               <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
                 FLASH SALE
               </div>
             )}
             
-            {product.status === 'po' && (
+            {currentProduct.status === 'po' && (
               <div className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
                 PRE ORDER
               </div>
             )}
           </div>
           
-          {product.images && product.images.length > 1 && (
+          {currentProduct.images && currentProduct.images.length > 1 && (
             <div className="flex space-x-2 p-4 overflow-x-auto">
-              {product.images.map((image, index) => (
+              {currentProduct.images.map((image, index) => (
                 <button
                   key={index}
                   onClick={() => setSelectedImageIndex(index)}
@@ -229,11 +263,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                 >
                   <img
                     src={image}
-                    alt={`${product.name} ${index + 1}`}
+                    alt={`${currentProduct.name} ${index + 1}`}
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = '/placeholder-product.jpg';
+                      target.src = '/placeholder-currentProduct.jpg';
                     }}
                   />
                 </button>
@@ -246,7 +280,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         <div className="bg-white mt-2 p-4">
           <div className="flex items-start justify-between mb-3">
             <div className="flex-1">
-              <h1 className="text-xl font-bold text-gray-800 mb-2">{product.name}</h1>
+              <h1 className="text-xl font-bold text-gray-800 mb-2">{currentProduct.name}</h1>
               <div className="flex items-center space-x-2 mb-2">
                 <div className="flex items-center">
                   {[...Array(5)].map((_, i) => (
@@ -260,18 +294,18 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           </div>
 
           <div className="mb-4">
-            {product.isFlashSale && product.flashSalePrice > 0 ? (
+            {currentProduct.isFlashSale && currentProduct.flashSalePrice > 0 ? (
               <div className="space-y-1">
                 <div className="flex items-center space-x-2">
                   <span className="text-2xl font-bold text-red-600">
-                    Rp {product.flashSalePrice.toLocaleString('id-ID')}
+                    Rp {currentProduct.flashSalePrice.toLocaleString('id-ID')}
                   </span>
                   <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded">
-                    -{Math.round((1 - product.flashSalePrice / (product.originalRetailPrice || product.retailPrice)) * 100)}%
+                    -{Math.round((1 - currentProduct.flashSalePrice / (currentProduct.originalRetailPrice || currentProduct.retailPrice)) * 100)}%
                   </span>
                 </div>
                 <div className="text-lg text-gray-500 line-through">
-                  Rp {(product.originalRetailPrice || product.retailPrice).toLocaleString('id-ID')}
+                  Rp {(currentProduct.originalRetailPrice || currentProduct.retailPrice).toLocaleString('id-ID')}
                 </div>
               </div>
             ) : (
@@ -281,7 +315,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                 </div>
                 {user?.role === 'reseller' ? (
                   <div className="text-sm text-blue-600 font-medium">
-                    Harga Reseller (Retail: Rp {product.retailPrice.toLocaleString('id-ID')})
+                    Harga Reseller (Retail: Rp {currentProduct.retailPrice.toLocaleString('id-ID')})
                   </div>
                 ) : (
                   <button
@@ -310,9 +344,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               <div className="text-sm">
                 <span className="text-gray-600">Status: </span>
                 <span className={`font-semibold ${
-                  product.status === 'ready' ? 'text-green-600' : 'text-orange-600'
+                  currentProduct.status === 'ready' ? 'text-green-600' : 'text-orange-600'
                 }`}>
-                  {product.status === 'ready' ? 'Ready Stock' : 'Pre Order'}
+                  {currentProduct.status === 'ready' ? 'Ready Stock' : 'Pre Order'}
                 </span>
               </div>
             </div>
@@ -333,20 +367,20 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             </div>
           )}
           <div className="border-t pt-4">
-            <p className="text-gray-600 leading-relaxed">{product.description}</p>
+            <p className="text-gray-600 leading-relaxed">{currentProduct.description}</p>
           </div>
         </div>
 
         {/* Variants Selection */}
-        {product.variants?.sizes && product.variants.sizes.length > 0 && (
+        {currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0 && (
           <div className="bg-white mt-2 p-4">
             {/* Size Selection */}
             <div className="mb-6">
               <h3 className="font-semibold text-gray-800 mb-3">Pilih Ukuran</h3>
             <div className="flex flex-wrap gap-2">
-              {(product.variants?.sizes || []).map((size) => {
+              {(currentProduct.variants?.sizes || []).map((size) => {
                 // Calculate total stock for this size across all colors
-                const sizeTotalStock = (product.variants?.colors || []).reduce((total, color) => {
+                const sizeTotalStock = (currentProduct.variants?.colors || []).reduce((total, color) => {
                   return total + getVariantStock(size, color);
                 }, 0);
 
@@ -367,7 +401,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                     {sizeTotalStock === 0 && (
                       <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                     )}
-                    {product.variants.stock && (
+                    {currentProduct.variants.stock && (
                       <span className="text-xs text-gray-500 block">
                         {sizeTotalStock > 0 ? `${sizeTotalStock} pcs` : 'Habis'}
                       </span>
@@ -382,11 +416,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           <div className="mb-6">
             <h3 className="font-semibold text-gray-800 mb-3">Pilih Warna</h3>
             <div className="flex flex-wrap gap-2">
-              {(product.variants?.colors || []).map((color) => {
+              {(currentProduct.variants?.colors || []).map((color) => {
                 // Get stock for this color (based on selected size, or total across all sizes if no size selected)
                 const colorStock = selectedSize
                   ? getVariantStock(selectedSize, color)
-                  : (product.variants?.sizes || []).reduce((total, size) => total + getVariantStock(size, color), 0);
+                  : (currentProduct.variants?.sizes || []).reduce((total, size) => total + getVariantStock(size, color), 0);
 
                 const isColorDisabled = selectedSize ? colorStock === 0 : false;
 
@@ -407,7 +441,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                     {isColorDisabled && (
                       <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                     )}
-                    {product.variants.stock && (
+                    {currentProduct.variants.stock && (
                       <span className="text-xs text-gray-500 block">
                         {colorStock > 0 ? `${colorStock} pcs` : 'Habis'}
                       </span>
@@ -493,17 +527,17 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Kategori:</span>
-              <span className="font-medium capitalize">{product.category}</span>
+              <span className="font-medium capitalize">{currentProduct.category}</span>
             </div>
-            {product.status === 'po' && product.estimatedReady && (
+            {currentProduct.status === 'po' && currentProduct.estimatedReady && (
               <div className="flex justify-between">
                 <span className="text-gray-600">Estimasi Ready:</span>
-                <span className="font-medium">{product.estimatedReady.toLocaleDateString('id-ID')}</span>
+                <span className="font-medium">{currentProduct.estimatedReady.toLocaleDateString('id-ID')}</span>
               </div>
             )}
             <div className="flex justify-between">
               <span className="text-gray-600">Berat:</span>
-              <span className="font-medium">{product.weight} gram</span>
+              <span className="font-medium">{currentProduct.weight} gram</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Kondisi:</span>
@@ -521,7 +555,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         <div className="flex space-x-3">
           <button
             onClick={handleAddToCart}
-            disabled={product.variants?.sizes && product.variants.sizes.length > 0 ? (!selectedSize || !selectedColor) : false}
+            disabled={currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0 ? (!selectedSize || !selectedColor) : false}
             className="flex-1 bg-pink-100 text-pink-600 py-4 rounded-lg font-semibold hover:bg-pink-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             <ShoppingCart className="w-5 h-5" />
@@ -529,14 +563,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           </button>
           <button
             onClick={handleBuyNow}
-            disabled={product.variants?.sizes && product.variants.sizes.length > 0 ? (!selectedSize || !selectedColor) : false}
+            disabled={currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0 ? (!selectedSize || !selectedColor) : false}
             className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 text-white py-4 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Beli Sekarang
           </button>
         </div>
 
-        {product.variants?.sizes && product.variants.sizes.length > 0 && (!selectedSize || !selectedColor) && (
+        {currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0 && (!selectedSize || !selectedColor) && (
           <p className="text-center text-sm text-gray-500 mt-2">
             Pilih ukuran dan warna terlebih dahulu
           </p>
