@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Zap, Flame, Percent } from 'lucide-react';
 import ProductCard from './ProductCard';
-import { useFirebaseFlashSaleSimpleOptimized } from '../hooks/useFirebaseFlashSaleSimpleOptimized';
 import { useRealTimeCart } from '../hooks/useRealTimeCart';
 
 interface FlashSalePageProps {
@@ -9,29 +8,55 @@ interface FlashSalePageProps {
   onProductClick: (product: any) => void;
   onCartClick: () => void;
   onAddToCart: (product: any) => void;
+  flashSaleProducts: any[]; // Data dari unified hook, 0 reads
 }
 
 const FlashSalePage: React.FC<FlashSalePageProps> = ({
   user,
   onProductClick,
   onCartClick,
-  onAddToCart
+  onAddToCart,
+  flashSaleProducts // Data dari unified hook, 0 reads
 }) => {
-  // Use the optimized hook for 1 read total
-  const {
-    timeLeft,
-    isFlashSaleActive,
-    flashSaleProducts,
-    loading: flashSaleLoading
-  } = useFirebaseFlashSaleSimpleOptimized();
   const { cartItems } = useRealTimeCart();
+
+  // 🔥 FLASH SALE TIMER: Simple countdown tanpa read tambahan
+  const [timeLeft, setTimeLeft] = useState({
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
+  const [isFlashSaleActive, setIsFlashSaleActive] = useState(flashSaleProducts.length > 0);
+
+  // Simple countdown timer (bisa diset manual dari admin)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+      const diff = endOfDay.getTime() - now.getTime();
+
+      if (diff > 0) {
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        setTimeLeft({ hours, minutes, seconds });
+        setIsFlashSaleActive(true);
+      } else {
+        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+        setIsFlashSaleActive(false);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [flashSaleProducts.length]);
 
   const handleAddToCart = (product: any) => {
     onAddToCart(product);
   };
 
 
-  if (flashSaleLoading) {
+  if (!flashSaleProducts) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
         <div className="text-white text-xl">Loading flash sale products...</div>

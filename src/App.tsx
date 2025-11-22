@@ -22,9 +22,7 @@ import AdminUsersPage from './components/AdminUsersPage';
 import AdminCacheManagement from './components/AdminCacheManagement';
 import BottomNavigation from './components/BottomNavigation';
 import { OngkirTestPage } from './pages/OngkirTestPage';
-import { useFirebaseProductsOptimized } from './hooks/useFirebaseProductsOptimized';
-import { useFeaturedProductsOptimized } from './hooks/useFeaturedProductsOptimized';
-import { useFirebaseProductsAdmin } from './hooks/useFirebaseProductsAdmin';
+import { useUnifiedProducts } from './hooks/useUnifiedProducts';
 import { useFirebaseAuth } from './hooks/useFirebaseAuth';
 import { useAdmin } from './contexts/AdminContext';
 import { cartService } from './services/cartService';
@@ -43,11 +41,7 @@ function AppContent() {
   // Firebase Authentication
   const { user, login, logout } = useFirebaseAuth();
   // Optimized hooks with Firestore persistence only
-  const { products, loading, refresh } = useFirebaseProductsOptimized();
-  const { featuredProducts } = useFeaturedProductsOptimized();
-
-  // 🔥 BATCH SYSTEM: Gunakan admin hook untuk update stock (batch-compatible)
-  const { updateProductStock } = useFirebaseProductsAdmin();
+  const { allProducts: products, featuredProducts, flashSaleProducts, loading, refresh, updateProductStock } = useUnifiedProducts();
   const { addOrder } = useAdmin();
 
   // Initialize Firebase-only app on app start
@@ -465,6 +459,7 @@ function AppContent() {
             onProductClick={handleProductClick}
             onCartClick={handleCartClick}
             onAddToCart={handleQuickAddToCart}
+            flashSaleProducts={flashSaleProducts}
           />
         );
       case 'orders':
