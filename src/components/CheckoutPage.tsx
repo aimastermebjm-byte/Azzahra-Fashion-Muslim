@@ -105,7 +105,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   const getDefaultAddress = () => {
-    return addresses.find(addr => addr.isDefault) || addresses[0];
+    const defaultAddr = addresses.find(addr => addr.isDefault) || addresses[0];
+    console.log('🔍 DEBUG: Default address found:', defaultAddr);
+    console.log('🔍 DEBUG: All addresses:', addresses);
+    return defaultAddr;
   };
 
   // Komerce states
@@ -239,6 +242,13 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   useEffect(() => {
     const defaultAddr = getDefaultAddress();
     const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
+
+    console.log('🔍 DEBUG: Shipping calculation trigger:', {
+      selectedCourier,
+      defaultAddr,
+      shippingCourier: formData.shippingCourier,
+      hasAddresses: addresses.length > 0
+    });
 
     if (selectedCourier?.code && defaultAddr && formData.shippingCourier) {
       const weight = calculateTotalWeight();
