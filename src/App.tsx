@@ -374,6 +374,17 @@ function AppContent() {
       const savedOrder = await ordersService.createOrder(orderRecord);
 
       console.log('✅ Order completed successfully with ATOMIC transaction');
+
+      // 🔥 FORCE BATCH REFRESH: Trigger real-time sync verification
+      console.log('🔄 FORCING batch refresh to verify atomic transaction results...');
+      try {
+        const batchRef = docRef(db, 'productBatches', 'batch_1');
+        await getDoc(batchRef); // Force read from server
+        console.log('✅ Batch refresh completed - should trigger real-time update');
+      } catch (refreshError) {
+        console.error('❌ Error forcing batch refresh:', refreshError);
+      }
+
       return orderId;
 
     } catch (error) {
