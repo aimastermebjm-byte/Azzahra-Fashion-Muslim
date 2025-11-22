@@ -193,6 +193,9 @@ function AppContent() {
         productId: item.productId,
         name: item.name,
         variant: item.variant,
+        hasVariant: !!item.variant,
+        variantSize: item.variant?.size,
+        variantColor: item.variant?.color,
         quantity: item.quantity,
         price: item.price
       })));
@@ -221,6 +224,14 @@ function AppContent() {
 
         // Validate each item against batch data
         for (const item of cartItems) {
+          console.log('🔍 DEBUG: Processing cart item:', {
+            productId: item.productId,
+            name: item.name,
+            variant: item.variant,
+            hasVariant: !!item.variant,
+            variantSize: item.variant?.size,
+            variantColor: item.variant?.color
+          });
           // Find product in batch
           const batchProduct = batchProducts.find(p => p.id === item.productId);
 
