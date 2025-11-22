@@ -48,16 +48,22 @@ class CartServiceOptimized {
         const data = cartDoc.data();
         let items = data?.items || [];
 
-        // Validate and sanitize items
+        console.log('🔍 DEBUG: Raw items from Firestore:', items.length, items);
+
+        // Validate and sanitize items (less strict)
+        const originalLength = items.length;
         items = items.filter(item =>
           item &&
           item.id &&
           item.productId &&
-          item.name &&
-          typeof item.price === 'number' &&
-          typeof item.quantity === 'number'
-        );
+          item.name
+        ).map(item => ({
+          ...item,
+          price: Number(item.price) || 0,
+          quantity: Number(item.quantity) || 1
+        }));
 
+        console.log('🔍 DEBUG: Filtered items:', items.length, `(filtered out ${originalLength - items.length} items)`);
         console.log('✅ Cart loaded from Firestore persistence:', items.length, 'items');
         return items;
       } else {
