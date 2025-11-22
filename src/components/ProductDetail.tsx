@@ -148,32 +148,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     }
   };
 
-  // Get stock for specific variant - BATCH SYSTEM
+  // Get stock for specific variant - BATCH SYSTEM (CORRECT STRUCTURE)
   const getVariantStock = (size: string, color: string) => {
 
-    const variantKey = `${size}-${color}`;
-    const variantsStock = (currentProduct as any).variantsStock;
-
-    // DEBUG: Log structure untuk troubleshooting (selalu jalan)
-    console.log('🔍 DEBUG variantsStock structure:', {
-      productId: currentProduct.id,
-      productName: currentProduct.name,
-      variantKey,
-      availableKeys: variantsStock ? Object.keys(variantsStock) : 'NO variantsStock',
-      fullStructure: variantsStock || 'NO variantsStock',
-      lookingFor: variantKey,
-      found: variantsStock ? variantKey in variantsStock : 'NO variantsStock',
-      hasVariantsStock: !!variantsStock,
-      productDataKeys: Object.keys(currentProduct),
-      hasVariants: !!currentProduct.variants,
-      variantsData: currentProduct.variants,
-      variantsDataKeys: currentProduct.variants ? Object.keys(currentProduct.variants) : 'NO variants'
-    });
-
-    // BATCH SYSTEM: Check variantsStock structure (size-color key)
-    if (variantsStock) {
-      const stock = Number(variantsStock[variantKey] || 0);
-      console.log(`🔍 BATCH VARIANT STOCK: ${variantKey} = ${stock}`);
+    // BATCH SYSTEM: Check correct structure from Firestore
+    if (currentProduct.variants?.stock) {
+      const variantStock = currentProduct.variants.stock[size]?.[color];
+      const stock = Number(variantStock || 0);
+      console.log(`🔍 BATCH VARIANT STOCK: ${size}-${color} = ${stock}`);
+      console.log('🔍 Structure check:', {
+        size,
+        color,
+        sizeExists: !!currentProduct.variants.stock[size],
+        colorExists: !!currentProduct.variants.stock[size]?.[color],
+        availableSizes: Object.keys(currentProduct.variants.stock),
+        sizeData: currentProduct.variants.stock[size]
+      });
       return stock;
     }
 
@@ -185,6 +175,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
     // No stock data available
     console.warn('❌ No stock data found for variant:', { size, color });
+    console.log('🔍 Available product data:', {
+      hasVariants: !!currentProduct.variants,
+      variantsKeys: currentProduct.variants ? Object.keys(currentProduct.variants) : 'NO variants',
+      productDataKeys: Object.keys(currentProduct)
+    });
     return 0;
   };
 

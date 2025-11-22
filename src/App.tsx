@@ -249,18 +249,19 @@ function AppContent() {
           // Update stock in batch products array
           const productIndex = updatedBatchProducts.findIndex(p => p.id === item.productId);
           if (productIndex !== -1) {
-            if (item.variant && updatedBatchProducts[productIndex].variantsStock) {
-              // Update variant stock
-              const variantKey = `${item.variant.size}-${item.variant.color}`;
-              const oldVariantStock = Number(updatedBatchProducts[productIndex].variantsStock[variantKey] || 0);
+            if (item.variant && updatedBatchProducts[productIndex].variants?.stock) {
+              // Update variant stock (CORRECT STRUCTURE)
+              const oldVariantStock = Number(updatedBatchProducts[productIndex].variants.stock[item.variant.size]?.[item.variant.color] || 0);
               const newVariantStock = oldVariantStock - item.quantity;
-              updatedBatchProducts[productIndex].variantsStock[variantKey] = newVariantStock;
+              updatedBatchProducts[productIndex].variants.stock[item.variant.size][item.variant.color] = newVariantStock;
 
               // Recalculate total stock from variants
               let totalStock = 0;
-              if (updatedBatchProducts[productIndex].variantsStock) {
-                Object.values(updatedBatchProducts[productIndex].variantsStock).forEach((stockValue: any) => {
-                  totalStock += Number(stockValue || 0);
+              if (updatedBatchProducts[productIndex].variants?.stock) {
+                Object.values(updatedBatchProducts[productIndex].variants.stock).forEach((sizeStock: any) => {
+                  Object.values(sizeStock).forEach((colorStock: any) => {
+                    totalStock += Number(colorStock || 0);
+                  });
                 });
               }
               updatedBatchProducts[productIndex].stock = totalStock;
