@@ -53,13 +53,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
           totalStock += Number(colorStock || 0);
         });
       });
-      console.log(`🔥 ProductCard (${product.name}): Calculated total from variants = ${totalStock}`);
-      return totalStock;
+            return totalStock;
     }
 
     // Fallback for non-variant products or missing variant data
-    console.log(`🔥 ProductCard (${product.name}): Using fallback stock = ${product.stock}`);
-    return product.stock || 0;
+        return product.stock || 0;
   };
 
   const getStatusBadge = () => {

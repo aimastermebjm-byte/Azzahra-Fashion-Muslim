@@ -32,8 +32,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
   // Real-time update currentProduct stock from batch system
   useEffect(() => {
-    console.log('🔄 Setting up real-time stock update for product:', initialProduct.id);
-
+    
     // Listen to batch system updates
     const batchRef = doc(db, 'productBatches', 'batch_1');
     const unsubscribe = onSnapshot(batchRef, (snapshot) => {
@@ -43,14 +42,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         const updatedProduct = updatedProducts.find((p: any) => p.id === initialProduct.id);
 
         if (updatedProduct) {
-          console.log('✅ Product stock updated in real-time:', {
-            productId: initialProduct.id,
-            oldStock: currentProduct.stock,
-            newStock: updatedProduct.stock,
-            updatedProductKeys: Object.keys(updatedProduct),
-            hasVariantsStock: !!updatedProduct.variantsStock,
-            variantsStockData: updatedProduct.variantsStock
-          });
           setCurrentProduct(updatedProduct);
         }
       }
@@ -59,8 +50,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     });
 
     return () => {
-      console.log('🔚 Cleaning up real-time stock listener for product:', initialProduct.id);
-      unsubscribe();
+            unsubscribe();
     };
   }, [initialProduct.id]);
 
@@ -155,31 +145,16 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     if (currentProduct.variants?.stock) {
       const variantStock = currentProduct.variants.stock[size]?.[color];
       const stock = Number(variantStock || 0);
-      console.log(`🔍 BATCH VARIANT STOCK: ${size}-${color} = ${stock}`);
-      console.log('🔍 Structure check:', {
-        size,
-        color,
-        sizeExists: !!currentProduct.variants.stock[size],
-        colorExists: !!currentProduct.variants.stock[size]?.[color],
-        availableSizes: Object.keys(currentProduct.variants.stock),
-        sizeData: currentProduct.variants.stock[size]
-      });
-      return stock;
+            return stock;
     }
 
     // Fallback: Check if this is a non-variant product
     if (!currentProduct.variants?.sizes || currentProduct.variants.sizes.length === 0) {
-      console.log(`🔍 NON-VARIANT STOCK: ${currentProduct.stock}`);
-      return currentProduct.stock || 0;
+            return currentProduct.stock || 0;
     }
 
     // No stock data available
     console.warn('❌ No stock data found for variant:', { size, color });
-    console.log('🔍 Available product data:', {
-      hasVariants: !!currentProduct.variants,
-      variantsKeys: currentProduct.variants ? Object.keys(currentProduct.variants) : 'NO variants',
-      productDataKeys: Object.keys(currentProduct)
-    });
     return 0;
   };
 
