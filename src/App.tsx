@@ -356,11 +356,23 @@ function AppContent() {
         timestamp: Date.now()
       };
 
-      // Add to admin system (local state)
-      addOrder(orderRecord);
+      // Save to Firebase first to get consistent orderId
+      const savedOrder = await ordersService.createOrder(orderRecord);
 
-      // Save to Firebase for cross-device sync (single source of truth)
-      await ordersService.createOrder(orderRecord);
+      // Add to admin system with same Firebase orderId (without id field)
+      addOrder({
+        userId: savedOrder.userId,
+        userName: savedOrder.userName,
+        userEmail: savedOrder.userEmail,
+        items: savedOrder.items,
+        shippingInfo: savedOrder.shippingInfo,
+        paymentMethod: savedOrder.paymentMethod as 'transfer' | 'cash',
+        status: savedOrder.status,
+        totalAmount: savedOrder.totalAmount,
+        shippingCost: savedOrder.shippingCost,
+        finalTotal: savedOrder.finalTotal,
+        notes: savedOrder.notes
+      });
 
       console.log('✅ Order completed successfully with ATOMIC transaction');
       return orderId;

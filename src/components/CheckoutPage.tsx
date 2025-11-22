@@ -240,6 +240,20 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     const defaultAddr = getDefaultAddress();
     const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
 
+    console.log('🔍 SHIPPING DEBUG:', {
+      selectedCourier,
+      hasDefaultAddr: !!defaultAddr,
+      shippingCourier: formData.shippingCourier,
+      courierCode: selectedCourier?.code,
+      defaultAddrData: defaultAddr ? {
+        id: defaultAddr.id,
+        fullAddress: defaultAddr.fullAddress,
+        subdistrictId: defaultAddr.subdistrictId,
+        district: defaultAddr.district,
+        cityId: defaultAddr.cityId
+      } : null
+    });
+
     // Only calculate if we have both courier and address
     if (selectedCourier?.code && defaultAddr && formData.shippingCourier) {
       const weight = calculateTotalWeight();
