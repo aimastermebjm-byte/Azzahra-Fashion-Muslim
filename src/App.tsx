@@ -113,28 +113,21 @@ function AppContent() {
     }
 
     try {
-      // Get the correct price based on flash sale status and user role
-      let price;
-      if (product.isFlashSale && product.flashSalePrice) {
-        // Flash sale price takes priority
-        price = product.flashSalePrice;
-      } else if (user?.role === 'reseller') {
-        // Reseller price
-        price = product.resellerPrice;
-      } else {
-        // Retail price
-        price = product.retailPrice;
-      }
-
-      await cartServiceOptimized.addToCart({
-        productId: product.id,
-        name: product.name,
-        price: price,
-        image: product.images?.[0] || '',
+      console.log('🔍 DEBUG: App.tsx handleAddToCart called with:', {
+        product: product,
         variant: variant,
         quantity: quantity
       });
-            alert('Produk berhasil ditambahkan ke keranjang!');
+
+      // 🔥 CRITICAL FIX: Call cartService.addToCart with correct parameters
+      // cartService expects: (product, quantity, variant)
+      const success = await cartServiceOptimized.addToCart(product, quantity, variant);
+
+      if (success) {
+        alert('Produk berhasil ditambahkan ke keranjang!');
+      } else {
+        alert('Gagal menambahkan produk ke keranjang');
+      }
     } catch (error) {
       console.error('❌ Failed to add to cart:', error);
       alert('Gagal menambahkan produk ke keranjang');
@@ -189,6 +182,16 @@ function AppContent() {
       }
 
       console.log('🚀 Starting ATOMIC transaction for checkout...', cartItems.length, 'items');
+      console.log('🔍 DEBUG: Cart items structure:', cartItems.map(item => ({
+        productId: item.productId,
+        name: item.name,
+        variant: item.variant,
+        hasVariant: !!item.variant,
+        variantSize: item.variant?.size,
+        variantColor: item.variant?.color,
+        quantity: item.quantity,
+        price: item.price
+      })));
 
       // Import transaction functions
       const { runTransaction, getDoc, doc: docRef } = await import('firebase/firestore');
@@ -214,6 +217,14 @@ function AppContent() {
 
         // Validate each item against batch data
         for (const item of cartItems) {
+          console.log('🔍 DEBUG: Processing cart item:', {
+            productId: item.productId,
+            name: item.name,
+            variant: item.variant,
+            hasVariant: !!item.variant,
+            variantSize: item.variant?.size,
+            variantColor: item.variant?.color
+          });
           // Find product in batch
           const batchProduct = batchProducts.find(p => p.id === item.productId);
 
@@ -243,13 +254,15 @@ function AppContent() {
           // Update stock in batch products array
           const productIndex = updatedBatchProducts.findIndex(p => p.id === item.productId);
           if (productIndex !== -1) {
-            if (item.variant && updatedBatchProducts[productIndex].variants?.stock) {
+            if (item.variant && updatedBatchProducts[productIndex].variants?.stock && item.variant.size && item.variant.color) {
               // Update variant stock (CORRECT STRUCTURE)
               const oldVariantStock = Number(updatedBatchProducts[productIndex].variants.stock[item.variant.size]?.[item.variant.color] || 0);
-              const newVariantStock = oldVariantStock - item.quantity;
+              const newVariantStock = Math.max(0, oldVariantStock - item.quantity);
               updatedBatchProducts[productIndex].variants.stock[item.variant.size][item.variant.color] = newVariantStock;
 
-              // Recalculate total stock from variants
+              console.log(`🔍 VARIANT UPDATE: ${item.name} (${item.variant.size}-${item.variant.color}) ${oldVariantStock} → ${newVariantStock}`);
+
+              // 🚨 CRITICAL: Recalculate total stock from ALL variants to ensure accuracy
               let totalStock = 0;
               if (updatedBatchProducts[productIndex].variants?.stock) {
                 Object.values(updatedBatchProducts[productIndex].variants.stock).forEach((sizeStock: any) => {
@@ -258,16 +271,17 @@ function AppContent() {
                   });
                 });
               }
+              // 🔥 IMPORTANT: Update main stock field to match calculated variant total
               updatedBatchProducts[productIndex].stock = totalStock;
 
-              console.log(`✅ Validated: ${item.name} (${item.variant.size}, ${item.variant.color}) - Variant Stock: ${oldVariantStock} → ${newVariantStock}, Total Stock: ${totalStock}`);
+              console.log(`🔍 TOTAL STOCK RECALCULATED: ${item.name} total = ${totalStock}`);
             } else {
-              // Update main stock only
+              // No variant - update main stock only
               const oldStock = Number(updatedBatchProducts[productIndex].stock || 0);
-              const newStock = oldStock - item.quantity;
+              const newStock = Math.max(0, oldStock - item.quantity);
               updatedBatchProducts[productIndex].stock = newStock;
 
-              console.log(`✅ Validated: ${item.name} - Stock: ${oldStock} → ${newStock}, Price: Rp${expectedPrice.toLocaleString('id-ID')}`);
+              console.log(`🔍 MAIN STOCK UPDATE: ${item.name} ${oldStock} → ${newStock}`);
             }
 
             // Update last modified
@@ -285,26 +299,26 @@ function AppContent() {
           });
         }
 
-        // Update batch system with all stock changes in single atomic operation
-        transaction.update(batchRef, {
-          products: updatedBatchProducts,
-          lastModified: Date.now()
-        });
-
-        console.log('✅ ATOMIC TRANSACTION: Batch system updated successfully!');
-        console.log(`📦 Updated ${validatedItems.length} items in batch`);
-        console.log('🔍 DEBUG: Updated batch products sample:', updatedBatchProducts.slice(0, 3).map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          stock: p.stock,
-          variantsStock: p.variants?.stock
-        })));
-
-        return {
-          validatedItems,
-          cartTotal
-        };
+      // Update batch system with all stock changes in single atomic operation
+      transaction.update(batchRef, {
+        products: updatedBatchProducts,
+        lastModified: Date.now()
       });
+
+      console.log('✅ ATOMIC TRANSACTION: Batch system updated successfully!');
+      console.log(`📦 Updated ${validatedItems.length} items in batch`);
+      console.log('🔍 DEBUG: Updated batch products sample:', updatedBatchProducts.slice(0, 3).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        stock: p.stock,
+        variantsStock: p.variants?.stock
+      })));
+
+      return {
+        validatedItems,
+        cartTotal
+      };
+    });
 
       // Transaction completed successfully
       const { validatedItems, cartTotal } = transactionResult;
@@ -349,13 +363,21 @@ function AppContent() {
         timestamp: Date.now()
       };
 
-      // Add to admin system (local state)
-      addOrder(orderRecord);
-
-      // Save to Firebase for cross-device sync (single source of truth)
-      await ordersService.createOrder(orderRecord);
+      // Save to Firebase only - single source of truth
+      const savedOrder = await ordersService.createOrder(orderRecord);
 
       console.log('✅ Order completed successfully with ATOMIC transaction');
+
+      // 🔥 FORCE BATCH REFRESH: Trigger real-time sync verification
+      console.log('🔄 FORCING batch refresh to verify atomic transaction results...');
+      try {
+        const batchRef = docRef(db, 'productBatches', 'batch_1');
+        await getDoc(batchRef); // Force read from server
+        console.log('✅ Batch refresh completed - should trigger real-time update');
+      } catch (refreshError) {
+        console.error('❌ Error forcing batch refresh:', refreshError);
+      }
+
       return orderId;
 
     } catch (error) {

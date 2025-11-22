@@ -235,10 +235,87 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   }, [addresses, selectedAddressId, formData.isDropship]);
 
+  // 🔥 CRITICAL FIX: Trigger shipping calculation AFTER addresses are fully loaded
+  useEffect(() => {
+    const defaultAddr = getDefaultAddress();
+    const autoCourier = shippingOptions.find(opt => opt.code);
+
+    console.log('🔍 AUTO-CALC DEBUG:', {
+      autoCourier: autoCourier?.code,
+      hasDefaultAddr: !!defaultAddr,
+      shippingCourier: formData.shippingCourier,
+      addressesLoaded: addresses.length > 0,
+      shouldTrigger: !!(autoCourier && defaultAddr && formData.shippingCourier === autoCourier.id && addresses.length > 0)
+    });
+
+    // 🔥 IMPORTANT: Only trigger if we have courier, address, AND addresses are loaded
+    if (autoCourier && defaultAddr && formData.shippingCourier === autoCourier.id && addresses.length > 0) {
+      const weight = calculateTotalWeight();
+      console.log('🚀 AUTO-CALCULATION: Triggering shipping cost for auto-selected courier:', {
+        courier: autoCourier.code,
+        courierId: formData.shippingCourier,
+        hasDefaultAddr: !!defaultAddr,
+        addressesLoaded: addresses.length > 0,
+        weight: weight,
+        cartItemsCount: cartItems.length,
+        hasValidWeight: weight > 0
+      });
+
+      // Only calculate if we have valid weight
+      if (weight <= 0) {
+        console.log('⚠️ SKIP: Weight is 0, waiting for cart items to load...');
+        return;
+      }
+
+      // Get destination ID
+      let destinationId = defaultAddr.subdistrictId;
+      if (!destinationId && defaultAddr.district) {
+        try {
+          const cacheKey = 'ongkir_subdistricts';
+          const cacheData = localStorage.getItem(cacheKey);
+          if (cacheData) {
+            const subdistricts = JSON.parse(cacheData);
+            const subdistrict = subdistricts.find((sub: any) =>
+              sub.subdistrict_name?.toLowerCase() === defaultAddr.district?.toLowerCase()
+            );
+            if (subdistrict) {
+              destinationId = subdistrict.subdistrict_id.toString();
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error getting subdistrict from cache:', error);
+        }
+      }
+
+      destinationId = destinationId || defaultAddr.cityId || '607';
+
+      // Trigger calculation with longer delay to ensure UI is updated
+      setTimeout(() => {
+        if (autoCourier.code && destinationId) {
+          calculateShippingCost(autoCourier.code, destinationId, weight);
+        }
+      }, 500); // Longer delay to ensure address UI is fully loaded
+    }
+  }, [formData.shippingCourier, addresses, cartItems]); // Also trigger when cart items load with valid weight
+
   // Optimized shipping calculation - SINGLE useEffect for both courier and address changes
   useEffect(() => {
     const defaultAddr = getDefaultAddress();
     const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
+
+    console.log('🔍 SHIPPING DEBUG:', {
+      selectedCourier,
+      hasDefaultAddr: !!defaultAddr,
+      shippingCourier: formData.shippingCourier,
+      courierCode: selectedCourier?.code,
+      defaultAddrData: defaultAddr ? {
+        id: defaultAddr.id,
+        fullAddress: defaultAddr.fullAddress,
+        subdistrictId: defaultAddr.subdistrictId,
+        district: defaultAddr.district,
+        cityId: defaultAddr.cityId
+      } : null
+    });
 
     // Only calculate if we have both courier and address
     if (selectedCourier?.code && defaultAddr && formData.shippingCourier) {

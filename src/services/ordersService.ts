@@ -155,24 +155,25 @@ class OrdersService {
             continue;
           }
 
-          if (item.selectedVariant && updatedBatchProducts[productIndex].variantsStock) {
-            // Handle variant stock restoration
-            const variantKey = `${item.selectedVariant.size}-${item.selectedVariant.color}`;
-            const currentVariantStock = Number(updatedBatchProducts[productIndex].variantsStock[variantKey] || 0);
-            const newVariantStock = currentVariantStock + item.quantity;
-            updatedBatchProducts[productIndex].variantsStock[variantKey] = newVariantStock;
+          if (item.selectedVariant && updatedBatchProducts[productIndex].variants?.stock) {
+            // Handle variant stock restoration - CORRECT STRUCTURE
+            const oldVariantStock = Number(updatedBatchProducts[productIndex].variants.stock[item.selectedVariant.size]?.[item.selectedVariant.color] || 0);
+            const newVariantStock = oldVariantStock + item.quantity;
+            updatedBatchProducts[productIndex].variants.stock[item.selectedVariant.size][item.selectedVariant.color] = newVariantStock;
 
             // Recalculate total stock from all variants
             let totalStock = 0;
-            if (updatedBatchProducts[productIndex].variantsStock) {
-              Object.values(updatedBatchProducts[productIndex].variantsStock).forEach((stockValue: any) => {
-                totalStock += Number(stockValue || 0);
+            if (updatedBatchProducts[productIndex].variants?.stock) {
+              Object.values(updatedBatchProducts[productIndex].variants.stock).forEach((sizeStock: any) => {
+                Object.values(sizeStock).forEach((colorStock: any) => {
+                  totalStock += Number(colorStock || 0);
+                });
               });
             }
             updatedBatchProducts[productIndex].stock = totalStock;
 
             console.log(`✅ RESTORED ${item.quantity} units to product ${item.productId} (${item.selectedVariant.size}, ${item.selectedVariant.color})`);
-            console.log(`📊 Variant stock: ${currentVariantStock} → ${newVariantStock}, Total stock: ${totalStock}`);
+            console.log(`📊 Variant stock: ${oldVariantStock} → ${newVariantStock}, Total stock: ${totalStock}`);
           } else {
             // Handle main stock restoration only
             const currentStock = Number(updatedBatchProducts[productIndex].stock || 0);

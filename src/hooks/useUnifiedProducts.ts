@@ -41,6 +41,15 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
           const products = batchData.products || [];
 
           console.log(`✅ UNIFIED: Batch updated with ${products.length} products (0 reads - from cache)`);
+        console.log('🚨 REAL-TIME UPDATE TRIGGERED by Firestore change!');
+          const gamisProduct = products.find((p: any) => p.id === 'fEcVaTAt9VefwMQcsFoq');
+          if (gamisProduct) {
+            console.log('🔥 CRITICAL: Gamis 7 stock in batch (AFTER UPDATE):', {
+              mainStock: gamisProduct.stock,
+              variantsStock: gamisProduct.variants?.stock,
+              hasVariants: !!gamisProduct.variants?.stock
+            });
+          }
           console.log('🔍 DEBUG: Sample product stock data:', products.slice(0, 3).map((p: any) => ({
             id: p.id,
             name: p.name,
@@ -50,14 +59,20 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
 
           // Transform data products sekali saja
           const transformedProducts: Product[] = products.map((data: any) => {
-            // Hitung total stock dari variants jika ada
-            const stock = Number(data.stock || 0);
-            const calculatedTotalStock = data.variants?.stock ?
-              Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
+            // 🔥 CRITICAL FIX: Prioritize calculated variant stock over main stock field
+            let calculatedTotalStock = 0;
+
+            if (data.variants?.stock && typeof data.variants?.stock === 'object') {
+              // Calculate total from variants (ACCURATE)
+              calculatedTotalStock = Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
                 return total + Object.values(sizeStock as any).reduce((sizeTotal: number, colorStock: any) => {
                   return sizeTotal + Number(colorStock || 0);
                 }, 0);
-              }, 0) : stock;
+              }, 0);
+            } else {
+              // Fallback to main stock field if no variants (ACCURATE)
+              calculatedTotalStock = Number(data.stock || 0);
+            }
 
             const variantsData = {
               sizes: data.variants?.sizes || data.sizes || [],

@@ -200,6 +200,12 @@ class CartServiceOptimized {
         };
 
         console.log('🔍 DEBUG: Created cart item with productId:', productId, 'from product:', product);
+        console.log('🔍 DEBUG: Cart item variant structure:', {
+          variant: cartItem.variant,
+          hasVariant: !!cartItem.variant,
+          variantSize: cartItem.variant?.size,
+          variantColor: cartItem.variant?.color
+        });
         currentItems.push(cartItem);
         console.log(`📦 Added new item to cart: ${cartItem.name}`);
       }
