@@ -50,14 +50,20 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
 
           // Transform data products sekali saja
           const transformedProducts: Product[] = products.map((data: any) => {
-            // Hitung total stock dari variants jika ada
-            const stock = Number(data.stock || 0);
-            const calculatedTotalStock = data.variants?.stock ?
-              Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
+            // 🔥 CRITICAL FIX: Prioritize calculated variant stock over main stock field
+            let calculatedTotalStock = 0;
+
+            if (data.variants?.stock && typeof data.variants?.stock === 'object') {
+              // Calculate total from variants (ACCURATE)
+              calculatedTotalStock = Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
                 return total + Object.values(sizeStock as any).reduce((sizeTotal: number, colorStock: any) => {
                   return sizeTotal + Number(colorStock || 0);
                 }, 0);
-              }, 0) : stock;
+              }, 0);
+            } else {
+              // Fallback to main stock field if no variants (ACCURATE)
+              calculatedTotalStock = Number(data.stock || 0);
+            }
 
             const variantsData = {
               sizes: data.variants?.sizes || data.sizes || [],

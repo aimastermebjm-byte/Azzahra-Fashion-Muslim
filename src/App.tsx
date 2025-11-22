@@ -250,13 +250,15 @@ function AppContent() {
           // Update stock in batch products array
           const productIndex = updatedBatchProducts.findIndex(p => p.id === item.productId);
           if (productIndex !== -1) {
-            if (item.variant && updatedBatchProducts[productIndex].variants?.stock) {
+            if (item.variant && updatedBatchProducts[productIndex].variants?.stock && item.variant.size && item.variant.color) {
               // Update variant stock (CORRECT STRUCTURE)
               const oldVariantStock = Number(updatedBatchProducts[productIndex].variants.stock[item.variant.size]?.[item.variant.color] || 0);
-              const newVariantStock = oldVariantStock - item.quantity;
+              const newVariantStock = Math.max(0, oldVariantStock - item.quantity);
               updatedBatchProducts[productIndex].variants.stock[item.variant.size][item.variant.color] = newVariantStock;
 
-              // Recalculate total stock from variants
+              console.log(`🔍 VARIANT UPDATE: ${item.name} (${item.variant.size}-${item.variant.color}) ${oldVariantStock} → ${newVariantStock}`);
+
+              // 🚨 CRITICAL: Recalculate total stock from ALL variants to ensure accuracy
               let totalStock = 0;
               if (updatedBatchProducts[productIndex].variants?.stock) {
                 Object.values(updatedBatchProducts[productIndex].variants.stock).forEach((sizeStock: any) => {
@@ -265,17 +267,19 @@ function AppContent() {
                   });
                 });
               }
+              // 🔥 IMPORTANT: Update main stock field to match calculated variant total
               updatedBatchProducts[productIndex].stock = totalStock;
 
-              console.log(`✅ Validated: ${item.name} (${item.variant.size}, ${item.variant.color}) - Variant Stock: ${oldVariantStock} → ${newVariantStock}, Total Stock: ${totalStock}`);
+              console.log(`🔍 TOTAL STOCK RECALCULATED: ${item.name} total = ${totalStock}`);
             } else {
-              // Update main stock only
+              // No variant - update main stock only
               const oldStock = Number(updatedBatchProducts[productIndex].stock || 0);
-              const newStock = oldStock - item.quantity;
+              const newStock = Math.max(0, oldStock - item.quantity);
               updatedBatchProducts[productIndex].stock = newStock;
 
-              console.log(`✅ Validated: ${item.name} - Stock: ${oldStock} → ${newStock}, Price: Rp${expectedPrice.toLocaleString('id-ID')}`);
+              console.log(`🔍 MAIN STOCK UPDATE: ${item.name} ${oldStock} → ${newStock}`);
             }
+          }
 
             // Update last modified
             updatedBatchProducts[productIndex].lastModified = Date.now();
