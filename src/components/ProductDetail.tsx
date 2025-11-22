@@ -145,28 +145,21 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     }
   };
 
-  // Get stock for specific variant
+  // Get stock for specific variant - BATCH SYSTEM
   const getVariantStock = (size: string, color: string) => {
-    
-    // Primary: Check if variant stock exists in Firestore structure
-    if (currentProduct.variants?.stock?.[size]?.[color] !== undefined) {
-      const stock = Number(currentProduct.variants.stock[size][color] || 0);
-            return stock;
+
+    // BATCH SYSTEM: Check variantsStock structure (size-color key)
+    if ((currentProduct as any).variantsStock) {
+      const variantKey = `${size}-${color}`;
+      const stock = Number((currentProduct as any).variantsStock[variantKey] || 0);
+      console.log(`🔍 BATCH VARIANT STOCK: ${variantKey} = ${stock}`);
+      return stock;
     }
 
-    // Secondary: Check if this is a non-variant currentProduct
+    // Fallback: Check if this is a non-variant product
     if (!currentProduct.variants?.sizes || currentProduct.variants.sizes.length === 0) {
+      console.log(`🔍 NON-VARIANT STOCK: ${currentProduct.stock}`);
       return currentProduct.stock || 0;
-    }
-
-    // Tertiary: For variant currentProducts with missing stock data, calculate from total
-    // This happens for currentProducts created before variant stock system was implemented
-    if (currentProduct.variants?.sizes && currentProduct.variants?.colors) {
-      const totalVariants = currentProduct.variants.sizes.length * currentProduct.variants.colors.length;
-      if (totalVariants > 0 && currentProduct.stock > 0) {
-        const calculatedStock = Math.floor(currentProduct.stock / totalVariants);
-                return calculatedStock;
-      }
     }
 
     // No stock data available
