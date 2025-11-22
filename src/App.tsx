@@ -25,7 +25,7 @@ import { OngkirTestPage } from './pages/OngkirTestPage';
 import { useUnifiedProducts } from './hooks/useUnifiedProducts';
 import { useFirebaseAuth } from './hooks/useFirebaseAuth';
 import { useAdmin } from './contexts/AdminContext';
-import { cartService } from './services/cartService';
+import { cartServiceOptimized } from './services/cartServiceOptimized';
 import { ordersService } from './services/ordersService';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from './utils/firebaseClient';
@@ -101,7 +101,7 @@ function AppContent() {
     setCurrentPage('home');
 
     // Clear cart from cartService only (Firebase-only)
-    cartService.clearCart().catch(error => {
+    cartServiceOptimized.clearCart().catch(error => {
       console.error('❌ Error clearing cart on logout:', error);
     });
       };
@@ -126,7 +126,7 @@ function AppContent() {
         price = product.retailPrice;
       }
 
-      await cartService.addToCart({
+      await cartServiceOptimized.addToCart({
         productId: product.id,
         name: product.name,
         price: price,
@@ -181,7 +181,7 @@ function AppContent() {
 
     try {
       // Get cart items from backend
-      const cartItems = await cartService.getCart();
+      const cartItems = await cartServiceOptimized.getCart();
 
       if (cartItems.length === 0) {
         alert('Keranjang belanja kosong!');
@@ -338,7 +338,7 @@ function AppContent() {
       });
 
       // Clear cart from backend (after successful stock reduction)
-      await cartService.clearCart();
+      await cartServiceOptimized.clearCart();
 
       // Save order to Firebase for cross-device sync
       const orderRecord = {

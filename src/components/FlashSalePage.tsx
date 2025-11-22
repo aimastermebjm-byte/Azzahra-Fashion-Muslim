@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Zap, Flame, Percent } from 'lucide-react';
 import ProductCard from './ProductCard';
-import { useRealTimeCart } from '../hooks/useRealTimeCart';
+import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
 
 interface FlashSalePageProps {
   user: any;
@@ -18,7 +18,7 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
   onAddToCart,
   flashSaleProducts // Data dari unified hook, 0 reads
 }) => {
-  const { cartItems } = useRealTimeCart();
+  const { cartItems } = useRealTimeCartOptimized();
 
   // 🔥 FLASH SALE TIMER: Simple countdown tanpa read tambahan
   const [timeLeft, setTimeLeft] = useState({

@@ -1,6 +1,5 @@
 import React from 'react';
-import { cartService } from '../services/cartService';
-import { useRealTimeCart } from '../hooks/useRealTimeCart';
+import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
 import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 
 interface CartPageProps {
@@ -14,9 +13,9 @@ const CartPage: React.FC<CartPageProps> = ({
   onBack,
   onCheckout
 }) => {
-  const { cartItems, loading, error } = useRealTimeCart();
+  const { cartItems, loading, error, updateQuantity: updateCartItem, removeFromCart: removeCartItem, getCartTotal } = useRealTimeCartOptimized();
 
-  const updateQuantity = async (productId: string, variant: any, newQuantity: number) => {
+  const handleUpdateQuantity = async (productId: string, variant: any, newQuantity: number) => {
     try {
       // Find the item in cart to get its ID
       const item = cartItems.find((item: any) =>
@@ -30,16 +29,16 @@ const CartPage: React.FC<CartPageProps> = ({
       }
 
       if (newQuantity === 0) {
-        await cartService.removeFromCart(item.id);
+        await removeCartItem(item.id);
       } else {
-        await cartService.updateQuantity(item.id, newQuantity);
+        await updateCartItem(item.id, newQuantity);
       }
     } catch (error) {
       console.error('❌ Failed to update quantity:', error);
     }
   };
 
-  const removeFromCart = async (productId: string, variant: any) => {
+  const handleRemoveFromCart = async (productId: string, variant: any) => {
     try {
       // Find the item in cart to get its ID
       const item = cartItems.find((item: any) =>
@@ -52,7 +51,7 @@ const CartPage: React.FC<CartPageProps> = ({
         return;
       }
 
-      await cartService.removeFromCart(item.id);
+      await removeCartItem(item.id);
     } catch (error) {
       console.error('❌ Failed to remove from cart:', error);
     }
@@ -205,14 +204,14 @@ const CartPage: React.FC<CartPageProps> = ({
                       <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
                         {itemQuantity > 1 ? (
                           <button
-                            onClick={() => updateQuantity(productId, variant, itemQuantity - 1)}
+                            onClick={() => handleUpdateQuantity(productId, variant, itemQuantity - 1)}
                             className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors"
                           >
                             <Minus className="w-4 h-4" />
                           </button>
                         ) : (
                           <button
-                            onClick={() => removeFromCart(productId, variant)}
+                            onClick={() => handleRemoveFromCart(productId, variant)}
                             className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-md transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -220,7 +219,7 @@ const CartPage: React.FC<CartPageProps> = ({
                         )}
                         <span className="w-8 text-center font-semibold">{itemQuantity}</span>
                         <button
-                          onClick={() => updateQuantity(productId, variant, itemQuantity + 1)}
+                          onClick={() => handleUpdateQuantity(productId, variant, itemQuantity + 1)}
                           className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors"
                         >
                           <Plus className="w-4 h-4" />
