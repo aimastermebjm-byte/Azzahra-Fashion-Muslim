@@ -51,6 +51,18 @@ class CartServiceOptimized {
         console.log('🔍 DEBUG: Raw items from Firestore:', items.length, items);
         console.log('🔍 DEBUG: First item structure:', items[0]);
 
+        // 🗑️ EMERGENCY CLEANUP: Clear corrupted cart data with empty productId or zero price
+        if (items.some((item: any) => !item.productId || item.productId === '' || item.price === 0)) {
+          console.log('🗑️ EMERGENCY: Corrupted cart data detected, clearing all items');
+          await setDoc(cartRef, {
+            userId: user.uid,
+            items: [],
+            lastUpdated: new Date().toISOString()
+          });
+          console.log('✅ Corrupted cart cleared successfully');
+          return [];
+        }
+
         // Validate and sanitize items (less strict)
         const originalLength = items.length;
         items = items.filter((item: any, index: any) => {
@@ -145,6 +157,13 @@ class CartServiceOptimized {
       }
 
       console.log('🛒 Adding to cart via Firestore persistence:', product.name);
+        console.log('🔍 DEBUG: Product structure for addToCart:', {
+          id: product.id,
+          name: product.name,
+          retailPrice: product.retailPrice,
+          resellerPrice: product.resellerPrice,
+          price: product.price
+        });
 
       const cartRef = doc(db, this.FIREBASE_COLLECTION, user.uid);
       const cartDoc = await getDoc(cartRef);
@@ -173,7 +192,7 @@ class CartServiceOptimized {
           id: this.generateCartItemId(),
           productId: productId,
           name: product.name || 'Unknown Product',
-          price: Number(user?.role === 'reseller' ? product.resellerPrice : product.retailPrice) || 0,
+          price: Number(product.resellerPrice || product.retailPrice || product.price) || 0,
           quantity: Number(quantity) || 1,
           image: product.image || product.images?.[0] || '/placeholder-product.jpg',
           ...(variant && { variant }), // Hanya include variant jika ada
