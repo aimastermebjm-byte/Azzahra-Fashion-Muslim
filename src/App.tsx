@@ -189,6 +189,13 @@ function AppContent() {
       }
 
       console.log('🚀 Starting ATOMIC transaction for checkout...', cartItems.length, 'items');
+      console.log('🔍 DEBUG: Cart items structure:', cartItems.map(item => ({
+        productId: item.productId,
+        name: item.name,
+        variant: item.variant,
+        quantity: item.quantity,
+        price: item.price
+      })));
 
       // Import transaction functions
       const { runTransaction, getDoc, doc: docRef } = await import('firebase/firestore');
