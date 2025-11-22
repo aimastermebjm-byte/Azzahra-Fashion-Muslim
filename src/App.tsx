@@ -510,7 +510,7 @@ function AppContent() {
         case 'product-detail':
         return (
           <ProductDetail
-            product={selectedProduct!}
+            currentProduct={selectedProduct!}
             user={user}
             onBack={() => setCurrentPage('home')}
             onLoginRequired={handleLoginRequired}
