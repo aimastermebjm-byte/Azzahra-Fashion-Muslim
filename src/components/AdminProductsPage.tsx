@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../types';
 import { useFirebaseProductsAdmin } from '../hooks/useFirebaseProductsAdmin';
-import { useFirebaseProducts } from '../hooks/useFirebaseProducts';
 import { useFirebaseFlashSaleSimpleOptimized } from '../hooks/useFirebaseFlashSaleSimpleOptimized';
 import { ProductTableSkeleton, FlashSaleStatusSkeleton, MenuSkeleton } from './LoadingSkeleton';
 import { uploadMultipleImages, validateImageFile, generateImageName } from '../utils/imageUpload';
@@ -23,8 +22,14 @@ interface FlashSaleConfig {
 const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) => {
   const { products, loading, updateProduct } = useFirebaseProductsAdmin();
 
-  // Tetap gunakan fungsi dari original hook untuk add/delete
-  const { addProduct, deleteProduct } = useFirebaseProducts();
+  // TODO: Implement add/delete functions for batch system
+  const addProduct = () => {
+    alert('Add product feature temporarily disabled for batch system migration');
+  };
+  const deleteProduct = () => {
+    alert('Delete product feature temporarily disabled for batch system migration');
+  };
+
   const { flashSaleProducts, isFlashSaleActive, timeLeft } = useFirebaseFlashSaleSimpleOptimized();
 
   // Flash sale config dari hooks
