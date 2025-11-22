@@ -235,7 +235,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   }, [addresses, selectedAddressId, formData.isDropship]);
 
-  // 🔥 CRITICAL FIX: Trigger shipping calculation AFTER courier auto-selection
+  // 🔥 CRITICAL FIX: Trigger shipping calculation AFTER addresses are fully loaded
   useEffect(() => {
     const defaultAddr = getDefaultAddress();
     const autoCourier = shippingOptions.find(opt => opt.code);
@@ -244,16 +244,17 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       autoCourier: autoCourier?.code,
       hasDefaultAddr: !!defaultAddr,
       shippingCourier: formData.shippingCourier,
-      shouldTrigger: !!(autoCourier && defaultAddr && formData.shippingCourier === autoCourier.id),
-      addressesLength: addresses.length
+      addressesLoaded: addresses.length > 0,
+      shouldTrigger: !!(autoCourier && defaultAddr && formData.shippingCourier === autoCourier.id && addresses.length > 0)
     });
 
-    // If we have auto-selected courier and default address, trigger calculation
-    if (autoCourier && defaultAddr && formData.shippingCourier === autoCourier.id) {
+    // 🔥 IMPORTANT: Only trigger if we have courier, address, AND addresses are loaded
+    if (autoCourier && defaultAddr && formData.shippingCourier === autoCourier.id && addresses.length > 0) {
       console.log('🚀 AUTO-CALCULATION: Triggering shipping cost for auto-selected courier:', {
         courier: autoCourier.code,
         courierId: formData.shippingCourier,
         hasDefaultAddr: !!defaultAddr,
+        addressesLoaded: addresses.length > 0,
         weight: calculateTotalWeight()
       });
 
@@ -279,14 +280,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
       destinationId = destinationId || defaultAddr.cityId || '607';
 
-      // Trigger calculation immediately
+      // Trigger calculation with longer delay to ensure UI is updated
       setTimeout(() => {
         if (autoCourier.code && destinationId) {
           calculateShippingCost(autoCourier.code, destinationId, calculateTotalWeight());
         }
-      }, 100); // Small delay to ensure state is set
+      }, 500); // Longer delay to ensure address UI is fully loaded
     }
-  }, [formData.shippingCourier, addresses, selectedAddressId]); // Trigger when courier, addresses, or selected address changes
+  }, [formData.shippingCourier, addresses]); // Only depend on courier and addresses array
 
   // Optimized shipping calculation - SINGLE useEffect for both courier and address changes
   useEffect(() => {
