@@ -148,22 +148,24 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   // Get stock for specific variant - BATCH SYSTEM
   const getVariantStock = (size: string, color: string) => {
 
+    const variantKey = `${size}-${color}`;
+    const variantsStock = (currentProduct as any).variantsStock;
+
+    // DEBUG: Log structure untuk troubleshooting (selalu jalan)
+    console.log('🔍 DEBUG variantsStock structure:', {
+      productId: currentProduct.id,
+      productName: currentProduct.name,
+      variantKey,
+      availableKeys: variantsStock ? Object.keys(variantsStock) : 'NO variantsStock',
+      fullStructure: variantsStock || 'NO variantsStock',
+      lookingFor: variantKey,
+      found: variantsStock ? variantKey in variantsStock : 'NO variantsStock',
+      hasVariantsStock: !!variantsStock,
+      productData: currentProduct
+    });
+
     // BATCH SYSTEM: Check variantsStock structure (size-color key)
-    if ((currentProduct as any).variantsStock) {
-      const variantKey = `${size}-${color}`;
-      const variantsStock = (currentProduct as any).variantsStock;
-
-      // DEBUG: Log structure untuk troubleshooting
-      console.log('🔍 DEBUG variantsStock structure:', {
-        productId: currentProduct.id,
-        productName: currentProduct.name,
-        variantKey,
-        availableKeys: Object.keys(variantsStock),
-        fullStructure: variantsStock,
-        lookingFor: variantKey,
-        found: variantKey in variantsStock
-      });
-
+    if (variantsStock) {
       const stock = Number(variantsStock[variantKey] || 0);
       console.log(`🔍 BATCH VARIANT STOCK: ${variantKey} = ${stock}`);
       return stock;
