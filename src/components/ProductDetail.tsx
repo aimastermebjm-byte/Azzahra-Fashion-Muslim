@@ -161,7 +161,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       lookingFor: variantKey,
       found: variantsStock ? variantKey in variantsStock : 'NO variantsStock',
       hasVariantsStock: !!variantsStock,
-      productData: currentProduct
+      productDataKeys: Object.keys(currentProduct),
+      hasVariants: !!currentProduct.variants,
+      variantsData: currentProduct.variants,
+      variantsDataKeys: currentProduct.variants ? Object.keys(currentProduct.variants) : 'NO variants'
     });
 
     // BATCH SYSTEM: Check variantsStock structure (size-color key)
