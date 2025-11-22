@@ -105,10 +105,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   const getDefaultAddress = () => {
-    const defaultAddr = addresses.find(addr => addr.isDefault) || addresses[0];
-    console.log('🔍 DEBUG: Default address found:', defaultAddr);
-    console.log('🔍 DEBUG: All addresses:', addresses);
-    return defaultAddr;
+    return addresses.find(addr => addr.isDefault) || addresses[0];
   };
 
   // Komerce states
@@ -243,19 +240,38 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     const defaultAddr = getDefaultAddress();
     const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
 
-    console.log('🔍 DEBUG: Shipping calculation trigger:', {
-      selectedCourier,
-      defaultAddr,
-      shippingCourier: formData.shippingCourier,
-      hasAddresses: addresses.length > 0
-    });
-
+  
     if (selectedCourier?.code && defaultAddr && formData.shippingCourier) {
       const weight = calculateTotalWeight();
 
-      // Use consistent destination ID - prioritize subdistrictId for accuracy, fallback to cityId
-      const destinationId = defaultAddr.subdistrictId || defaultAddr.cityId || '607';
+      // 🗺️ LOOKUP subdistrictId from localStorage cache if not available (0 reads)
+      let destinationId = defaultAddr.subdistrictId;
 
+      if (!destinationId && defaultAddr.district) {
+        // Try to get subdistrictId from localStorage cache (Firebase persistence synced)
+        try {
+          const cacheKey = 'ongkir_subdistricts';
+          const cacheData = localStorage.getItem(cacheKey);
+
+          if (cacheData) {
+            const subdistricts = JSON.parse(cacheData);
+            const subdistrict = subdistricts.find((sub: any) =>
+              sub.subdistrict_name?.toLowerCase() === defaultAddr.district?.toLowerCase()
+            );
+
+            if (subdistrict) {
+              destinationId = subdistrict.subdistrict_id.toString();
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error getting subdistrict from localStorage cache:', error);
+        }
+      }
+
+      // Final fallback
+      destinationId = destinationId || defaultAddr.cityId || '607';
+
+  
   
       // ULTRA FAST delay - almost instant response
       const timeoutId = setTimeout(() => {
