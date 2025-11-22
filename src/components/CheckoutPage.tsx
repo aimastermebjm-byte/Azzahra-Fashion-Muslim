@@ -250,13 +250,22 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     // 🔥 IMPORTANT: Only trigger if we have courier, address, AND addresses are loaded
     if (autoCourier && defaultAddr && formData.shippingCourier === autoCourier.id && addresses.length > 0) {
+      const weight = calculateTotalWeight();
       console.log('🚀 AUTO-CALCULATION: Triggering shipping cost for auto-selected courier:', {
         courier: autoCourier.code,
         courierId: formData.shippingCourier,
         hasDefaultAddr: !!defaultAddr,
         addressesLoaded: addresses.length > 0,
-        weight: calculateTotalWeight()
+        weight: weight,
+        cartItemsCount: cartItems.length,
+        hasValidWeight: weight > 0
       });
+
+      // Only calculate if we have valid weight
+      if (weight <= 0) {
+        console.log('⚠️ SKIP: Weight is 0, waiting for cart items to load...');
+        return;
+      }
 
       // Get destination ID
       let destinationId = defaultAddr.subdistrictId;
@@ -283,11 +292,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       // Trigger calculation with longer delay to ensure UI is updated
       setTimeout(() => {
         if (autoCourier.code && destinationId) {
-          calculateShippingCost(autoCourier.code, destinationId, calculateTotalWeight());
+          calculateShippingCost(autoCourier.code, destinationId, weight);
         }
       }, 500); // Longer delay to ensure address UI is fully loaded
     }
-  }, [formData.shippingCourier, addresses]); // Only depend on courier and addresses array
+  }, [formData.shippingCourier, addresses, cartItems]); // Also trigger when cart items load with valid weight
 
   // Optimized shipping calculation - SINGLE useEffect for both courier and address changes
   useEffect(() => {
