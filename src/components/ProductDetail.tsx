@@ -78,9 +78,19 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       return;
     }
 
+    console.log('🔍 DEBUG: ProductDetail variant creation:', {
+      hasVariants: !!(currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0),
+      selectedSize,
+      selectedColor,
+      sizes: currentProduct.variants?.sizes,
+      colors: currentProduct.variants?.colors
+    });
+
     const variant = (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0)
       ? { size: selectedSize, color: selectedColor }
       : undefined;
+
+    console.log('🔍 DEBUG: Final variant object:', variant);
     onAddToCart(currentProduct, variant, quantity);
 
     // Reset selections
