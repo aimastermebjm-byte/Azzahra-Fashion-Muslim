@@ -235,11 +235,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   }, [addresses, selectedAddressId, formData.isDropship]);
 
-  // Calculate shipping when both courier and address are selected - COMBINED LOGIC
+  // Optimized shipping calculation - SINGLE useEffect for both courier and address changes
   useEffect(() => {
     const defaultAddr = getDefaultAddress();
     const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
 
+    // Only calculate if we have both courier and address
     if (selectedCourier?.code && defaultAddr && formData.shippingCourier) {
       const weight = calculateTotalWeight();
 
@@ -247,7 +248,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       let destinationId = defaultAddr.subdistrictId;
 
       if (!destinationId && defaultAddr.district) {
-        // Try to get subdistrictId from localStorage cache (Firebase persistence synced)
+        // Fast localStorage lookup - no async needed
         try {
           const cacheKey = 'ongkir_subdistricts';
           const cacheData = localStorage.getItem(cacheKey);
@@ -270,11 +271,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       // Final fallback
       destinationId = destinationId || defaultAddr.cityId || '607';
 
-      // IMMEDIATE calculation - no delay needed
+      // IMMEDIATE calculation - NO DELAY
       calculateShippingCost(selectedCourier.code, destinationId, weight);
     }
-  }, [formData.shippingCourier, selectedAddressId]); // Remove addresses.length to prevent unnecessary recalculations
+  }, [formData.shippingCourier, selectedAddressId]); // Single effect for both changes
 
+  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const newValue = type === 'checkbox'
