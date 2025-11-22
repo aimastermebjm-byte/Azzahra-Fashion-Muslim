@@ -46,7 +46,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           console.log('✅ Product stock updated in real-time:', {
             productId: initialProduct.id,
             oldStock: currentProduct.stock,
-            newStock: updatedProduct.stock
+            newStock: updatedProduct.stock,
+            updatedProductKeys: Object.keys(updatedProduct),
+            hasVariantsStock: !!updatedProduct.variantsStock,
+            variantsStockData: updatedProduct.variantsStock
           });
           setCurrentProduct(updatedProduct);
         }
