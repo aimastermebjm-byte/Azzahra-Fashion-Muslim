@@ -495,7 +495,7 @@ function AppContent() {
           <AdminOrdersPage
             onBack={() => setCurrentPage('account')}
             user={user}
-            onRefreshProducts={refreshProducts}
+            onRefreshProducts={refresh}
             onNavigateToHome={() => setCurrentPage('home')}
           />
         );
