@@ -53,19 +53,20 @@ class CartServiceOptimized {
 
         // Validate and sanitize items (less strict)
         const originalLength = items.length;
-        items = items.filter((item, index) => {
-          const isValid = item && item.id && item.productId && item.name;
+        items = items.filter((item: any, index: any) => {
+          const isValid = item && item.id && item.name && item.productId && item.productId !== '' && item.productId !== 'unknown_';
           if (!isValid) {
             console.log(`❌ Item ${index} filtered out:`, {
               hasItem: !!item,
               hasId: !!(item?.id),
               hasProductId: !!(item?.productId),
+              productIdValue: item?.productId,
               hasName: !!(item?.name),
               itemData: item
             });
           }
           return isValid;
-        }).map(item => ({
+        }).map((item: any) => ({
           ...item,
           price: Number(item.price) || 0,
           quantity: Number(item.quantity) || 1
@@ -167,9 +168,10 @@ class CartServiceOptimized {
         console.log(`📊 Updated quantity for existing item: ${currentItems[existingItemIndex].quantity}`);
       } else {
         // Add new item
+        const productId = product.id || product.productId || 'unknown_' + Date.now();
         const cartItem: CartItem = {
           id: this.generateCartItemId(),
-          productId: product.id || '',
+          productId: productId,
           name: product.name || 'Unknown Product',
           price: Number(user?.role === 'reseller' ? product.resellerPrice : product.retailPrice) || 0,
           quantity: Number(quantity) || 1,
@@ -177,6 +179,8 @@ class CartServiceOptimized {
           ...(variant && { variant }), // Hanya include variant jika ada
           addedAt: new Date().toISOString()
         };
+
+        console.log('🔍 DEBUG: Created cart item with productId:', productId, 'from product:', product);
         currentItems.push(cartItem);
         console.log(`📦 Added new item to cart: ${cartItem.name}`);
       }
