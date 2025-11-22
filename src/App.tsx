@@ -293,6 +293,12 @@ function AppContent() {
 
         console.log('✅ ATOMIC TRANSACTION: Batch system updated successfully!');
         console.log(`📦 Updated ${validatedItems.length} items in batch`);
+        console.log('🔍 DEBUG: Updated batch products sample:', updatedBatchProducts.slice(0, 3).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          stock: p.stock,
+          variantsStock: p.variants?.stock
+        })));
 
         return {
           validatedItems,

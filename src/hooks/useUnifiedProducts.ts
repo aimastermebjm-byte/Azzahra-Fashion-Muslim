@@ -41,6 +41,12 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
           const products = batchData.products || [];
 
           console.log(`✅ UNIFIED: Batch updated with ${products.length} products (0 reads - from cache)`);
+          console.log('🔍 DEBUG: Sample product stock data:', products.slice(0, 3).map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            stock: p.stock,
+            variantsStock: p.variants?.stock
+          })));
 
           // Transform data products sekali saja
           const transformedProducts: Product[] = products.map((data: any) => {
