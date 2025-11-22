@@ -113,28 +113,21 @@ function AppContent() {
     }
 
     try {
-      // Get the correct price based on flash sale status and user role
-      let price;
-      if (product.isFlashSale && product.flashSalePrice) {
-        // Flash sale price takes priority
-        price = product.flashSalePrice;
-      } else if (user?.role === 'reseller') {
-        // Reseller price
-        price = product.resellerPrice;
-      } else {
-        // Retail price
-        price = product.retailPrice;
-      }
-
-      await cartServiceOptimized.addToCart({
-        productId: product.id,
-        name: product.name,
-        price: price,
-        image: product.images?.[0] || '',
+      console.log('🔍 DEBUG: App.tsx handleAddToCart called with:', {
+        product: product,
         variant: variant,
         quantity: quantity
       });
-            alert('Produk berhasil ditambahkan ke keranjang!');
+
+      // 🔥 CRITICAL FIX: Call cartService.addToCart with correct parameters
+      // cartService expects: (product, quantity, variant)
+      const success = await cartServiceOptimized.addToCart(product, quantity, variant);
+
+      if (success) {
+        alert('Produk berhasil ditambahkan ke keranjang!');
+      } else {
+        alert('Gagal menambahkan produk ke keranjang');
+      }
     } catch (error) {
       console.error('❌ Failed to add to cart:', error);
       alert('Gagal menambahkan produk ke keranjang');
