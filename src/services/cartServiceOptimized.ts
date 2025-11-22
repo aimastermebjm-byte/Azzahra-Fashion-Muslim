@@ -49,15 +49,23 @@ class CartServiceOptimized {
         let items = data?.items || [];
 
         console.log('🔍 DEBUG: Raw items from Firestore:', items.length, items);
+        console.log('🔍 DEBUG: First item structure:', items[0]);
 
         // Validate and sanitize items (less strict)
         const originalLength = items.length;
-        items = items.filter(item =>
-          item &&
-          item.id &&
-          item.productId &&
-          item.name
-        ).map(item => ({
+        items = items.filter((item, index) => {
+          const isValid = item && item.id && item.productId && item.name;
+          if (!isValid) {
+            console.log(`❌ Item ${index} filtered out:`, {
+              hasItem: !!item,
+              hasId: !!(item?.id),
+              hasProductId: !!(item?.productId),
+              hasName: !!(item?.name),
+              itemData: item
+            });
+          }
+          return isValid;
+        }).map(item => ({
           ...item,
           price: Number(item.price) || 0,
           quantity: Number(item.quantity) || 1
