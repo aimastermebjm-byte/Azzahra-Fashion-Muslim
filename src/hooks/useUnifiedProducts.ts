@@ -41,6 +41,14 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
           const products = batchData.products || [];
 
           console.log(`✅ UNIFIED: Batch updated with ${products.length} products (0 reads - from cache)`);
+          const gamisProduct = products.find((p: any) => p.id === 'fEcVaTAt9VefwMQcsFoq');
+          if (gamisProduct) {
+            console.log('🔥 CRITICAL: Gamis 7 stock in batch:', {
+              mainStock: gamisProduct.stock,
+              variantsStock: gamisProduct.variants?.stock,
+              hasVariants: !!gamisProduct.variants?.stock
+            });
+          }
           console.log('🔍 DEBUG: Sample product stock data:', products.slice(0, 3).map((p: any) => ({
             id: p.id,
             name: p.name,
