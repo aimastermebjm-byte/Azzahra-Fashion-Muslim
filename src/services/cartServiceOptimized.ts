@@ -11,12 +11,12 @@ export interface CartItem {
   name: string;
   price: number;
   quantity: number;
-  image?: string;
+  image: string;
   variant?: {
     size?: string;
     color?: string;
   };
-  addedAt: Date | string;
+  addedAt: string; // Selalu string untuk Firestore compatibility
 }
 
 export interface UserCart {
@@ -46,7 +46,18 @@ class CartServiceOptimized {
 
       if (cartDoc.exists()) {
         const data = cartDoc.data();
-        const items = data?.items || [];
+        let items = data?.items || [];
+
+        // Validate and sanitize items
+        items = items.filter(item =>
+          item &&
+          item.id &&
+          item.productId &&
+          item.name &&
+          typeof item.price === 'number' &&
+          typeof item.quantity === 'number'
+        );
+
         console.log('✅ Cart loaded from Firestore persistence:', items.length, 'items');
         return items;
       } else {
@@ -55,6 +66,21 @@ class CartServiceOptimized {
       }
     } catch (error) {
       console.error('❌ Error getting cart from Firestore:', error);
+      // Try to clear corrupted cart and return empty
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const cartRef = doc(db, this.FIREBASE_COLLECTION, user.uid);
+          await setDoc(cartRef, {
+            userId: user.uid,
+            items: [],
+            lastUpdated: new Date().toISOString()
+          });
+          console.log('🗑️ Cleared corrupted cart data');
+        }
+      } catch (clearError) {
+        console.error('❌ Failed to clear corrupted cart:', clearError);
+      }
       return [];
     }
   }
@@ -129,13 +155,13 @@ class CartServiceOptimized {
         // Add new item
         const cartItem: CartItem = {
           id: this.generateCartItemId(),
-          productId: product.id,
-          name: product.name,
-          price: user?.role === 'reseller' ? product.resellerPrice : product.retailPrice,
-          quantity,
-          image: product.image || product.images?.[0],
-          variant,
-          addedAt: new Date()
+          productId: product.id || '',
+          name: product.name || 'Unknown Product',
+          price: Number(user?.role === 'reseller' ? product.resellerPrice : product.retailPrice) || 0,
+          quantity: Number(quantity) || 1,
+          image: product.image || product.images?.[0] || '/placeholder-product.jpg',
+          ...(variant && { variant }), // Hanya include variant jika ada
+          addedAt: new Date().toISOString()
         };
         currentItems.push(cartItem);
         console.log(`📦 Added new item to cart: ${cartItem.name}`);
