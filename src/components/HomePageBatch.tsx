@@ -7,7 +7,7 @@ import { validateProducts } from '../utils/productUtils';
 import useFirebaseBatchProducts from '../hooks/useFirebaseBatchProducts';
 import useFirebaseBatchFlashSale from '../hooks/useFirebaseBatchFlashSale';
 import useFirebaseBatchFeaturedProducts from '../hooks/useFirebaseBatchFeaturedProducts';
-import { cartService } from '../services/cartService';
+import { cartServiceOptimized } from '../services/cartServiceOptimized';
 
 interface HomePageBatchProps {
   user: any;
@@ -76,7 +76,7 @@ const HomePageBatch: React.FC<HomePageBatchProps> = ({
     if (!user?.uid) return;
 
     try {
-      const cartItems = await cartService.getCart();
+      const cartItems = await cartServiceOptimized.getCart();
       setCartCount(cartItems.length);
     } catch (error) {
       console.error('Failed to load cart count:', error);

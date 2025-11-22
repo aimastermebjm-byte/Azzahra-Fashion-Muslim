@@ -5,7 +5,7 @@ import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
 import { useFirebaseFlashSaleSimpleOptimized } from '../hooks/useFirebaseFlashSaleSimpleOptimized';
-import { cartService } from '../services/cartService';
+import { cartServiceOptimized } from '../services/cartServiceOptimized';
 
 interface HomePageProps {
   user: any;
@@ -67,7 +67,7 @@ const HomePage: React.FC<HomePageProps> = ({
     if (!user?.uid) return;
 
     try {
-      const cartItems = await cartService.getCart();
+      const cartItems = await cartServiceOptimized.getCart();
       setCartCount(cartItems.length);
     } catch (error) {
       console.error('Failed to load cart count:', error);

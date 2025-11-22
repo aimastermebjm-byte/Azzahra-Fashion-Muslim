@@ -3,7 +3,7 @@ import { ArrowLeft, MapPin, Phone, User, Package, Copy, Loader2, AlertCircle, Pl
 import { addressService } from '../services/addressService';
 import AddressForm from './AddressForm';
 import { komerceService, KomerceCostResult } from '../utils/komerceService';
-import { cartService } from '../services/cartService';
+import { cartServiceOptimized } from '../services/cartServiceOptimized';
 
 interface CheckoutPageProps {
   user: any;
@@ -23,7 +23,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const loadCart = async () => {
     try {
       setLoading(true);
-      const items = await cartService.getCart();
+      const items = await cartServiceOptimized.getCart();
       setCartItems(items || []);
       } catch (error) {
       console.error('Failed to load cart for checkout:', error);
