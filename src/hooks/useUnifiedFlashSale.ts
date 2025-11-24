@@ -230,38 +230,54 @@ export const useUnifiedFlashSale = () => {
     try {
       console.log('🔥 FLASH SALE: Reading ALL batches real-time for data accuracy...');
 
-      // 🔥 Dynamic Batch Detection - Read ALL available batches
-      const allBatches: string[] = [];
-      for (let i = 1; i <= 10; i++) { // Check up to 10 batches (scalable for 2500 products)
-        allBatches.push(`batch_${i}`);
+      // 🔥 SMART BATCH DETECTION - Read only EXISTING batches from Firestore
+      console.log('🔍 Detecting available batches in Firestore...');
+      const validBatches: any[] = [];
+
+      // 🚀 ULTRA-SMART BATCH DETECTION - Stop at first non-existing batch
+      console.log('🔍 Starting SMART batch detection...');
+
+      // Ultra-efficient: Check batch_1 first, then continue ONLY if it exists
+      const batchRef = doc(db, 'productBatches', 'batch_1');
+      const batchSnap = await getDoc(batchRef);
+
+      if (batchSnap.exists()) {
+        const batchData = batchSnap.data();
+        if (batchData.products && batchData.products.length > 0) {
+          console.log(`✅ batch_1: ${batchData.products.length} products found`);
+          validBatches.push({ batchId: 'batch_1', data: batchData, exists: true });
+
+          // Only continue checking if batch_1 exists (for future scalability)
+          for (let i = 2; i <= 10; i++) {
+            const nextBatchId = `batch_${i}`;
+            const nextBatchRef = doc(db, 'productBatches', nextBatchId);
+            const nextBatchSnap = await getDoc(nextBatchRef);
+
+            if (nextBatchSnap.exists()) {
+              const nextBatchData = nextBatchSnap.data();
+              if (nextBatchData.products && nextBatchData.products.length > 0) {
+                console.log(`✅ ${nextBatchId}: ${nextBatchData.products.length} products found`);
+                validBatches.push({ batchId: nextBatchId, data: nextBatchData, exists: true });
+              } else {
+                console.log(`⚠️ ${nextBatchId}: No products - STOP checking further`);
+                break;
+              }
+            } else {
+              console.log(`⚠️ ${nextBatchId}: No batch data - STOP checking further`);
+              break;
+            }
+          }
+        } else {
+          console.log(`⚠️ batch_1: No products - No batches to process`);
+        }
+      } else {
+        console.log(`⚠️ batch_1: No batch data - No batches to process`);
       }
 
-      // 🔥 Read ALL batches in parallel for maximum efficiency
-      const batchReadPromises = allBatches.map(async (batchId) => {
-        try {
-          console.log(`📖 Reading ${batchId} from Firestore...`);
-          const batchRef = doc(db, 'productBatches', batchId);
-          const batchSnap = await getDoc(batchRef); // Force server read for fresh data
+      if (validBatches.length === 0) {
+        throw new Error('No valid product batches found for flash sale');
+      }
 
-          if (batchSnap.exists()) {
-            const batchData = batchSnap.data();
-            console.log(`✅ ${batchId}: ${batchData.products?.length || 0} products loaded`);
-            return { batchId, data: batchData, exists: true };
-          } else {
-            console.log(`⚠️ ${batchId}: No data found`);
-            return { batchId, exists: false };
-          }
-        } catch (error) {
-          console.log(`❌ ${batchId}: Error reading batch - ${error}`);
-          return { batchId, exists: false, error };
-        }
-      });
-
-      // Wait for all batch reads to complete
-      const batchResults = await Promise.all(batchReadPromises);
-
-      // Filter only existing batches with products
-      const validBatches = batchResults.filter(result => result.exists && result.data?.products?.length > 0);
       console.log(`🚀 Found ${validBatches.length} valid batches for flash sale`);
 
       if (validBatches.length === 0) {
@@ -315,7 +331,7 @@ export const useUnifiedFlashSale = () => {
           }
         }, { merge: true });
 
-        const affectedCount = updatedProducts.filter(p => p.isFlashSale === isActive).length;
+        const affectedCount = updatedProducts.filter((p: any) => p.isFlashSale === isActive).length;
         console.log(`✅ ${batchId}: Flash sale flags updated for ${affectedCount} products`);
 
         return { batchId, affectedCount, totalProducts: updatedProducts.length };
