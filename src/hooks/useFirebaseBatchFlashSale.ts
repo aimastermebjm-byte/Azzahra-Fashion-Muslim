@@ -104,10 +104,69 @@ export const useFirebaseBatchFlashSale = () => {
       setTimeLeft({ hours, minutes, seconds });
     } else {
       setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
-      // Flash sale ended
+
+      // 🔥 AUTO-CLEANUP: Flash sale ended - update batch_1
+      console.log('⏰ Flash sale expired - cleaning up batch_1...');
+      cleanupExpiredFlashSale();
+
+      // Update local state
       setFlashSaleConfig(prev => prev ? { ...prev, isActive: false } : null);
     }
   }, [flashSaleConfig]);
+
+  // 🔥 AUTO-CLEANUP: Remove flash sale flags when expired
+  const cleanupExpiredFlashSale = useCallback(async () => {
+    try {
+      console.log('🧹 Starting auto-cleanup for expired flash sale...');
+
+      // Import transaction functions
+      const { runTransaction, doc: docRef } = await import('firebase/firestore');
+      const batchRef = docRef(db, 'productBatches', 'batch_1');
+
+      // Execute transaction to update batch_1
+      await runTransaction(db, async (transaction) => {
+        const batchDoc = await transaction.get(batchRef);
+
+        if (!batchDoc.exists()) {
+          throw new Error('Batch data not found for cleanup');
+        }
+
+        const batchData = batchDoc.data();
+        const updatedProducts = [...batchData.products];
+
+        // Reset all flash sale products
+        let cleanedCount = 0;
+        updatedProducts.forEach((product: any) => {
+          if (product.isFlashSale) {
+            product.isFlashSale = false;
+            product.flashSalePrice = undefined;
+            cleanedCount++;
+          }
+        });
+
+        // Update flash sale config to inactive
+        const updatedBatchData = {
+          ...batchData,
+          products: updatedProducts,
+          flashSaleConfig: {
+            ...(batchData.flashSaleConfig || {}),
+            isActive: false,
+            lastCleanup: new Date().toISOString()
+          }
+        };
+
+        // Update batch_1
+        transaction.update(batchRef, updatedBatchData);
+
+        return cleanedCount;
+      });
+
+      console.log('✅ Auto-cleanup completed - flash sale flags removed from all products');
+
+    } catch (error) {
+      console.error('❌ Auto-cleanup failed:', error);
+    }
+  }, []);
 
   // 🔥 DEPRECATED: Using real-time batch listener instead (zero reads)
   // const loadFlashSaleConfig = useCallback(() => {
