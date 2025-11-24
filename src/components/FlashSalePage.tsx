@@ -9,6 +9,9 @@ interface FlashSalePageProps {
   onCartClick: () => void;
   onAddToCart: (product: any) => void;
   flashSaleProducts: any[]; // Data dari unified hook, 0 reads
+  timeLeft?: { hours: number; minutes: number; seconds: number }; // Timer dari batch config
+  isFlashSaleActive?: boolean; // Status dari batch config
+  flashSaleConfig?: any; // Config dari batch (optional, untuk debug)
 }
 
 const FlashSalePage: React.FC<FlashSalePageProps> = ({
@@ -16,40 +19,12 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
   onProductClick,
   onCartClick,
   onAddToCart,
-  flashSaleProducts // Data dari unified hook, 0 reads
+  flashSaleProducts, // Data dari unified hook, 0 reads
+  timeLeft = { hours: 0, minutes: 0, seconds: 0 }, // Timer dari batch config
+  isFlashSaleActive = flashSaleProducts.length > 0, // Status dari batch config
+  flashSaleConfig // Config dari batch (optional, untuk debug)
 }) => {
   const { cartItems } = useRealTimeCartOptimized();
-
-  // 🔥 FLASH SALE TIMER: Simple countdown tanpa read tambahan
-  const [timeLeft, setTimeLeft] = useState({
-    hours: 0,
-    minutes: 0,
-    seconds: 0
-  });
-  const [isFlashSaleActive, setIsFlashSaleActive] = useState(flashSaleProducts.length > 0);
-
-  // Simple countdown timer (bisa diset manual dari admin)
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date();
-      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
-      const diff = endOfDay.getTime() - now.getTime();
-
-      if (diff > 0) {
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-        setTimeLeft({ hours, minutes, seconds });
-        setIsFlashSaleActive(true);
-      } else {
-        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
-        setIsFlashSaleActive(false);
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [flashSaleProducts.length]);
 
   const handleAddToCart = (product: any) => {
     onAddToCart(product);

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { getFirestore, collection, getDoc, doc, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { useState, useEffect, useCallback } from 'react';
+import { doc, onSnapshot, runTransaction, getDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 
 interface Product {
@@ -223,7 +223,7 @@ export const useFirebaseBatchFlashSale = () => {
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, currentBatchIndex, batches, loadBatch]);
+  }, []);
 
   // Update timer every second
   useEffect(() => {
@@ -245,6 +245,9 @@ export const useFirebaseBatchFlashSale = () => {
         const flashSaleConfigFromBatch = {
           isActive: batchData.flashSaleConfig?.isActive || false,
           endTime: batchData.flashSaleConfig?.endTime || null,
+          startTime: batchData.flashSaleConfig?.startTime || new Date().toISOString(),
+          discountPercentage: batchData.flashSaleConfig?.discountPercentage || 20,
+          maxItemsPerUser: batchData.flashSaleConfig?.maxItemsPerUser || 5,
           flashSaleDiscount: batchData.flashSaleConfig?.flashSaleDiscount || 0,
           title: batchData.flashSaleConfig?.title || '',
           description: batchData.flashSaleConfig?.description || ''
