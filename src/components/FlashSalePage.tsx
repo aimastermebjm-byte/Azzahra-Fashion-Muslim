@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { ShoppingCart, Zap, Flame, Percent } from 'lucide-react';
 import ProductCard from './ProductCard';
 import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
+import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
 
 interface FlashSalePageProps {
   user: any;
@@ -20,40 +21,8 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
 }) => {
   const { cartItems } = useRealTimeCartOptimized();
 
-  // Client-side timer (0 reads, simple countdown)
-  const [timeLeft, setTimeLeft] = useState({
-    hours: 0,
-    minutes: 2, // 2 menit untuk testing
-    seconds: 0
-  });
-
-  // Simple countdown timer di client (NO firebase reads)
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev.hours === 0 && prev.minutes === 0 && prev.seconds === 0) {
-          clearInterval(timer);
-          return { hours: 0, minutes: 0, seconds: 0 };
-        }
-
-        let { hours, minutes, seconds } = prev;
-        if (seconds > 0) {
-          seconds--;
-        } else if (minutes > 0) {
-          minutes--;
-          seconds = 59;
-        } else if (hours > 0) {
-          hours--;
-          minutes = 59;
-          seconds = 59;
-        }
-
-        return { hours, minutes, seconds };
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
+  // 🔥 UNIFIED FLASH SALE: Single source of truth timer
+  const { timeLeft, isFlashSaleActive, flashSaleConfig, loading, error } = useUnifiedFlashSale();
 
   const handleAddToCart = (product: any) => {
     onAddToCart(product);

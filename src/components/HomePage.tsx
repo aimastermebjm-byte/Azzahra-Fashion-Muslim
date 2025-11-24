@@ -4,7 +4,7 @@ import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
-import { useFirebaseBatchFlashSale } from '../hooks/useFirebaseBatchFlashSale';
+import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
 import { cartServiceOptimized } from '../services/cartServiceOptimized';
 
 interface HomePageProps {
@@ -42,8 +42,9 @@ const HomePage: React.FC<HomePageProps> = ({
   const [cartCount, setCartCount] = useState(0);
   const [sortBy, setSortBy] = useState<'terbaru' | 'termurah'>('terbaru');
 
-  // Filter featured products from the products array
+  // Filter featured and flash sale products from the products array
   const featuredProducts = products.filter(product => product.isFeatured);
+  const flashSaleProducts = products.filter(product => product.isFlashSale);
 
   // Search states for cache functionality
   const [searchResults, setSearchResults] = useState<Product[]>([]);
@@ -54,13 +55,12 @@ const HomePage: React.FC<HomePageProps> = ({
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // 🚀 OPTIMIZED Flash sale hook (1 read total)
+  // 🚀 UNIFIED Flash sale hook (single source of truth)
   const {
     timeLeft,
     isFlashSaleActive,
-    flashSaleProducts: hookFlashSaleProducts,
-    loading: flashSaleLoading
-  } = useFirebaseBatchFlashSale();
+    flashSaleConfig
+  } = useUnifiedFlashSale();
 
   // Load cart count from backend
   const loadCartCount = async () => {
@@ -436,7 +436,7 @@ const HomePage: React.FC<HomePageProps> = ({
           </div>
 
           {/* Flash Sale Products */}
-          {flashSaleLoading ? (
+          {loading ? (
             <div className="grid grid-cols-2 gap-3">
               {[...Array(2)].map((_, index) => (
                 <div key={`flash-skeleton-${index}`} className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
@@ -448,62 +448,34 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              {hookFlashSaleProducts
+              {flashSaleProducts
                 .slice(0, 2)
                 .map((flashProduct) => {
-                  // Convert FlashSaleProduct to Product type
-                  const product: Product = {
-                    id: flashProduct.id,
-                    name: flashProduct.name,
-                    description: '',
-                    category: flashProduct.category,
-                    price: flashProduct.price,
-                    retailPrice: flashProduct.retailPrice || flashProduct.price,
-                    resellerPrice: flashProduct.resellerPrice,
-                    costPrice: flashProduct.costPrice,
-                    stock: flashProduct.stock,
-                    images: flashProduct.images,
-                    image: flashProduct.image,
-                    variants: flashProduct.variants,
-                    status: flashProduct.status,
-                    isFlashSale: flashProduct.isFlashSale,
-                    flashSalePrice: flashProduct.flashSalePrice,
-                    originalRetailPrice: flashProduct.originalRetailPrice,
-                    originalResellerPrice: flashProduct.originalResellerPrice,
-                    createdAt: flashProduct.createdAt,
-                    salesCount: 0,
-                    isFeatured: flashProduct.isFeatured || false,
-                    featuredOrder: flashProduct.featuredOrder || 0,
-                    weight: 0,
-                    unit: 'gram',
-                    estimatedReady: undefined
-                  };
-
                   const discountPercentage = Math.round(((flashProduct.originalRetailPrice || flashProduct.retailPrice) - flashProduct.flashSalePrice) / (flashProduct.originalRetailPrice || flashProduct.retailPrice) * 100);
 
                   return (
                     <div
-                      key={`flash-${product.id}`}
-                      onClick={() => onProductClick(product)}
+                      key={`flash-${flashProduct.id}`}
+                      onClick={() => onProductClick(flashProduct)}
                       className="bg-white/10 rounded-lg p-3 backdrop-blur-sm hover:bg-white/20 transition-colors cursor-pointer"
                     >
                       <div className="relative">
                         <img
-                          src={product.image || product.images?.[0] || '/placeholder-product.jpg'}
-                          alt={product.name}
+                          src={flashProduct.image || flashProduct.images?.[0] || '/placeholder-product.jpg'}
+                          alt={flashProduct.name}
                           className="w-full h-24 object-cover rounded mb-2"
                         />
                         <div className="absolute top-1 right-1 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
                           -{discountPercentage}%
                         </div>
                       </div>
-                      <h3 className="text-white font-medium text-sm mb-1 truncate">{product.name}</h3>
+                      <h3 className="text-white font-medium text-sm mb-1 truncate">{flashProduct.name}</h3>
                       <div className="flex items-center space-x-2">
                         <span className="text-white font-bold text-sm">
-                          Rp {product.flashSalePrice.toLocaleString('id-ID')}
+                          Rp {flashProduct.flashSalePrice.toLocaleString('id-ID')}
                         </span>
                         <span className="text-red-200 line-through text-xs">
-                          Rp {(product.originalRetailPrice || product.retailPrice).toLocaleString('id-ID')}
+                          Rp {(flashProduct.originalRetailPrice || flashProduct.retailPrice).toLocaleString('id-ID')}
                         </span>
                       </div>
                     </div>
@@ -512,7 +484,7 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
           )}
 
-          {hookFlashSaleProducts.length === 0 && !flashSaleLoading && isFlashSaleActive && (
+          {flashSaleProducts.length === 0 && !loading && isFlashSaleActive && (
             <div className="text-center py-4 text-red-100">
               <span className="text-3xl">🚫</span>
               <p className="text-sm mt-1">Tidak ada Flash Sale saat ini</p>

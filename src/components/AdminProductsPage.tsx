@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../types';
 import { useFirebaseProductsAdmin } from '../hooks/useFirebaseProductsAdmin';
-import { useFirebaseBatchFlashSale } from '../hooks/useFirebaseBatchFlashSale';
+import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
 import { ProductTableSkeleton, FlashSaleStatusSkeleton, MenuSkeleton } from './LoadingSkeleton';
 import { uploadMultipleImages, validateImageFile, generateImageName } from '../utils/imageUpload';
 
@@ -30,24 +30,26 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     alert('Delete product feature temporarily disabled for batch system migration');
   };
 
-  const { flashSaleProducts, isFlashSaleActive, timeLeft } = useFirebaseBatchFlashSale();
+  // 🔥 UNIFIED FLASH SALE: Single source of truth
+  const {
+    timeLeft,
+    isFlashSaleActive,
+    flashSaleConfig,
+    startFlashSale: startUnifiedFlashSale,
+    endFlashSale: stopUnifiedFlashSale,
+    loading: flashSaleLoading
+  } = useUnifiedFlashSale();
 
-  // Flash sale config dari hooks
-  const flashSaleConfig = {
+  // Flash sale products from current products list
+  const flashSaleProducts = products.filter(product => product.isFlashSale);
+
+  // Flash sale config untuk UI
+  const currentFlashSaleConfig = {
     isActive: isFlashSaleActive,
-    startTime: '',
-    endTime: '',
-    flashSaleDiscount: 20,
-    productIds: flashSaleProducts.map((p: any) => p.id)
-  };
-
-  // Placeholder functions untuk tombol flash sale
-  const startFlashSale = () => {
-    console.log('Start flash sale - akan diimplementasi');
-  };
-
-  const stopFlashSale = () => {
-    console.log('Stop flash sale - akan diimplementasi');
+    startTime: flashSaleConfig?.startTime || '',
+    endTime: flashSaleConfig?.endTime || '',
+    flashSaleDiscount: flashSaleConfig?.discountPercentage || 20,
+    productIds: flashSaleProducts.map(p => p.id)
   };
 
   
@@ -555,8 +557,14 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         }
       }
 
-      // Start flash sale
-      await startFlashSale(flashSaleFormData);
+      // Start flash sale with unified hook
+      const durationMinutes = flashSaleFormData.flashSaleDiscount > 0 ? 120 : 2; // Default 2 minutes
+      await startUnifiedFlashSale(
+        durationMinutes,
+        '⚡ Flash Sale',
+        'Diskon spesial terbatas!',
+        flashSaleFormData.flashSaleDiscount
+      );
       setShowFlashSaleModal(false);
 
       // Reset form
@@ -584,7 +592,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         });
       }
 
-      await stopFlashSale();
+      await stopUnifiedFlashSale();
     } catch (error) {
       console.error('Error ending flash sale:', error);
       alert('Gagal menghentikan flash sale');
@@ -736,7 +744,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               </div>
             </div>
             <p className="text-sm text-red-700 mt-2">
-              {products.filter(p => p.isFlashSale).length} produk dengan diskon Rp {flashSaleConfig?.flashSaleDiscount?.toLocaleString('id-ID') || 0}
+              {products.filter(p => p.isFlashSale).length} produk dengan diskon Rp {flashSaleConfig?.discountPercentage?.toLocaleString('id-ID') || 0}%
             </p>
           </div>
         )}
