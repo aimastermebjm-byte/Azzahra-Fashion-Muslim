@@ -539,32 +539,62 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
   // Flash sale operations
   const handleFlashSaleStart = async () => {
+    // Validasi: Pastikan semua field yang diperlukan terisi
+    if (!flashSaleFormData.startTime) {
+      alert('Mohon isi waktu mulai flash sale');
+      return;
+    }
+
+    if (!flashSaleFormData.endTime) {
+      alert('Mohon isi waktu selesai flash sale');
+      return;
+    }
+
     if (flashSaleFormData.productIds.length === 0) {
       alert('Pilih setidaknya satu produk untuk flash sale');
       return;
     }
 
+    if (!flashSaleFormData.flashSaleDiscount || flashSaleFormData.flashSaleDiscount <= 0) {
+      alert('Mohon isi jumlah diskon yang valid');
+      return;
+    }
+
     try {
-      // Update selected products with flash sale
-      for (const productId of flashSaleFormData.productIds) {
-        const product = products.find(p => p.id === productId);
-        if (product) {
-          const flashSalePrice = Math.round(product.retailPrice - flashSaleFormData.flashSaleDiscount);
-          await updateProduct(productId, {
-            isFlashSale: true,
-            flashSalePrice: Math.max(flashSalePrice, 1000)
-          });
-        }
+      // Parse waktu dari form tanpa default
+      const startTime = new Date(flashSaleFormData.startTime);
+      const endTime = new Date(flashSaleFormData.endTime);
+
+      // Validasi: Pastikan waktu selesai lebih besar dari waktu mulai
+      if (endTime <= startTime) {
+        alert('Waktu selesai harus lebih besar dari waktu mulai');
+        return;
       }
 
-      // Start flash sale with unified hook
-      const durationMinutes = flashSaleFormData.flashSaleDiscount > 0 ? 120 : 2; // Default 2 minutes
+      // Calculate duration dari start dan end time yang user set
+      const durationMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / (60 * 1000));
+
+      if (durationMinutes <= 0) {
+        alert('Durasi flash sale harus lebih dari 0 menit');
+        return;
+      }
+
+      console.log('🔥 Memulai flash sale dengan parameter user:');
+      console.log('- Start Time:', startTime.toISOString());
+      console.log('- End Time:', endTime.toISOString());
+      console.log('- Duration:', durationMinutes, 'menit');
+      console.log('- Discount:', flashSaleFormData.flashSaleDiscount);
+      console.log('- Products:', flashSaleFormData.productIds.length, 'produk');
+
+      // Start flash sale dengan unified hook menggunakan parameter EXACT dari user
       await startUnifiedFlashSale(
         durationMinutes,
         '⚡ Flash Sale',
         'Diskon spesial terbatas!',
-        flashSaleFormData.flashSaleDiscount
+        flashSaleFormData.flashSaleDiscount,
+        flashSaleFormData.productIds
       );
+
       setShowFlashSaleModal(false);
 
       // Reset form
@@ -575,9 +605,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         flashSaleDiscount: 0,
         productIds: []
       });
+
+      alert('✅ Flash sale berhasil dimulai dengan parameter yang Anda setting!');
     } catch (error) {
       console.error('Error starting flash sale:', error);
-      alert('Gagal memulai flash sale');
+      alert('Gagal memulai flash sale: ' + (error as Error).message);
     }
   };
 
@@ -744,7 +776,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               </div>
             </div>
             <p className="text-sm text-red-700 mt-2">
-              {products.filter(p => p.isFlashSale).length} produk dengan diskon Rp {flashSaleConfig?.discountPercentage?.toLocaleString('id-ID') || 0}%
+              {products.filter(p => p.isFlashSale).length} produk dengan diskon Rp {flashSaleConfig?.discountPercentage?.toLocaleString('id-ID') || 0}
             </p>
           </div>
         )}
