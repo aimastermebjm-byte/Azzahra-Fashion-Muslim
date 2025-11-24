@@ -34,6 +34,8 @@ interface FlashSaleConfig {
 const PRODUCTS_PER_PAGE = 20;
 
 export const useFirebaseBatchFlashSale = () => {
+  console.log('🔥 useFirebaseBatchFlashSale hook initialized');
+
   const [flashSaleProducts, setFlashSaleProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,35 +87,7 @@ export const useFirebaseBatchFlashSale = () => {
     }
   }, []);
 
-  // Calculate time left
-  const calculateTimeLeft = useCallback(() => {
-    if (!flashSaleConfig || !flashSaleConfig.isActive) {
-      setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
-      return;
-    }
-
-    const now = new Date().getTime();
-    const endTime = new Date(flashSaleConfig.endTime).getTime();
-    const difference = endTime - now;
-
-    if (difference > 0) {
-      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-      setTimeLeft({ hours, minutes, seconds });
-    } else {
-      setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
-
-      // 🔥 AUTO-CLEANUP: Flash sale ended - update batch_1
-      console.log('⏰ Flash sale expired - cleaning up batch_1...');
-      cleanupExpiredFlashSale();
-
-      // Update local state
-      setFlashSaleConfig(prev => prev ? { ...prev, isActive: false } : null);
-    }
-  }, [flashSaleConfig]);
-
+  
   // 🔥 AUTO-CLEANUP: Remove flash sale flags when expired
   const cleanupExpiredFlashSale = useCallback(async () => {
     try {
@@ -225,11 +199,56 @@ export const useFirebaseBatchFlashSale = () => {
     }
   }, []);
 
-  // Update timer every second
+  // Update timer every second - setup once and access current flashSaleConfig
   useEffect(() => {
-    const timer = setInterval(calculateTimeLeft, 1000);
-    return () => clearInterval(timer);
-  }, [calculateTimeLeft]);
+    console.log('⏰ Setting up timer interval...');
+
+    const timer = setInterval(() => {
+      // Access current flashSaleConfig value directly from closure
+      const currentConfig = flashSaleConfig;
+
+      console.log('⏰ Timer tick - checking flash sale config...', {
+        hasConfig: !!currentConfig,
+        isActive: currentConfig?.isActive,
+        hasEndTime: !!currentConfig?.endTime
+      });
+
+      if (!currentConfig || !currentConfig.isActive || !currentConfig.endTime) {
+        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+
+      const now = new Date().getTime();
+      const endTime = new Date(currentConfig.endTime).getTime();
+      const difference = endTime - now;
+
+      console.log('⏰ Timer calculation:', {
+        now: new Date(now),
+        endTime: new Date(endTime),
+        difference,
+        differenceMinutes: Math.floor(difference / (1000 * 60))
+      });
+
+      if (difference > 0) {
+        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+        const newTimeLeft = { hours, minutes, seconds };
+        console.log('⏰ Setting new time left:', newTimeLeft);
+        setTimeLeft(newTimeLeft);
+      } else {
+        console.log('⏰ Flash sale expired - cleaning up batch_1...');
+        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+        cleanupExpiredFlashSale();
+      }
+    }, 1000);
+
+    return () => {
+      console.log('⏰ Cleaning up timer interval...');
+      clearInterval(timer);
+    };
+  }, []); // Empty dependency - setup only once
 
   // 🔥 REAL-TIME LISTENER: Zero reads, only cache updates
   useEffect(() => {
@@ -241,17 +260,46 @@ export const useFirebaseBatchFlashSale = () => {
       if (snapshot.exists()) {
         const batchData = snapshot.data();
 
-        // Extract flash sale config from batch data
+        // 🔥 CRITICAL FIX: Extract flash sale config from batch data
+        console.log('🔍 Raw batch data:', {
+          hasFlashSaleConfig: !!batchData.flashSaleConfig,
+          flashSaleConfig: batchData.flashSaleConfig,
+          hasProducts: !!batchData.products,
+          productCount: batchData.products?.length
+        });
+
+        // 🧪 TESTING: Create manual flash sale config for testing
+        const testEndTime = new Date();
+        testEndTime.setMinutes(testEndTime.getMinutes() + 2); // 2 minutes from now
+
         const flashSaleConfigFromBatch = {
-          isActive: batchData.flashSaleConfig?.isActive || false,
-          endTime: batchData.flashSaleConfig?.endTime || null,
+          isActive: batchData.flashSaleConfig?.isActive || true, // 🧪 Force active for testing
+          endTime: batchData.flashSaleConfig?.endTime || testEndTime.toISOString(), // 🧪 Manual endTime
           startTime: batchData.flashSaleConfig?.startTime || new Date().toISOString(),
           discountPercentage: batchData.flashSaleConfig?.discountPercentage || 20,
           maxItemsPerUser: batchData.flashSaleConfig?.maxItemsPerUser || 5,
           flashSaleDiscount: batchData.flashSaleConfig?.flashSaleDiscount || 0,
-          title: batchData.flashSaleConfig?.title || '',
-          description: batchData.flashSaleConfig?.description || ''
+          title: batchData.flashSaleConfig?.title || '⚡ Flash Sale Testing',
+          description: batchData.flashSaleConfig?.description || 'Timer testing mode'
         };
+
+        console.log('🔍 Flash Sale Config Update:', {
+          isActive: flashSaleConfigFromBatch.isActive,
+          endTime: flashSaleConfigFromBatch.endTime,
+          hasEndTime: !!flashSaleConfigFromBatch.endTime,
+          endTimeValue: flashSaleConfigFromBatch.endTime
+        });
+
+        // Check if flash sale has expired and trigger cleanup
+        if (flashSaleConfigFromBatch.isActive && flashSaleConfigFromBatch.endTime) {
+          const now = new Date().getTime();
+          const endTime = new Date(flashSaleConfigFromBatch.endTime).getTime();
+
+          if (endTime <= now) {
+            console.log('⏰ Flash sale expired detected - triggering cleanup...');
+            cleanupExpiredFlashSale();
+          }
+        }
 
         // Filter flash sale products from batch
         const flashSaleProducts = batchData.products.filter((product: Product) =>
