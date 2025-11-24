@@ -1,8 +1,8 @@
-// 🔥 UNIFIED FLASH SALE HOOK - Single Source of Truth
-// Real-time timer dengan 0 reads setelah initial cache
+// 🔥 UNIFIED FLASH SALE HOOK - Truly Global State
+// Single listener untuk semua components
 
 import { useState, useEffect, useCallback } from 'react';
-import { doc, onSnapshot, setDoc, getDoc, runTransaction } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 
 interface FlashSaleConfig {
@@ -15,6 +15,82 @@ interface FlashSaleConfig {
   discountPercentage?: number;
 }
 
+// 🔥 TRULY GLOBAL STATE: Bukan class, tapi global variables
+let globalConfig: FlashSaleConfig | null = null;
+let globalUnsubscribe: (() => void) | null = null;
+let globalSubscribers: Array<(config: FlashSaleConfig | null) => void> = [];
+let globalSubscriberId = 0;
+
+// 🔥 GLOBAL FUNCTIONS: Di luar hook scope
+const subscribeToFlashSale = (callback: (config: FlashSaleConfig | null) => void) => {
+  // Generate unique ID untuk tracking
+  const subscriberId = globalSubscriberId++;
+
+  console.log(`🔥 [${subscriberId}] Subscribing to flash sale...`);
+
+  // Tambah subscriber
+  const subscriberWrapper = (config: FlashSaleConfig | null) => {
+    callback(config);
+  };
+
+  globalSubscribers.push(subscriberWrapper);
+
+  // Create global listener jika belum ada
+  if (!globalUnsubscribe) {
+    console.log('🔥 Creating GLOBAL flash sale listener (SINGLE INSTANCE)...');
+
+    const flashSaleRef = doc(db, 'flashSale', 'config');
+    globalUnsubscribe = onSnapshot(flashSaleRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          globalConfig = snapshot.data() as FlashSaleConfig;
+          console.log('🚀 GLOBAL flash sale config updated:', {
+            isActive: globalConfig.isActive,
+            endTime: globalConfig.endTime,
+            subscriberCount: globalSubscribers.length
+          });
+        } else {
+          console.log('❌ No flash sale config found');
+          globalConfig = null;
+        }
+
+        // Broadcast ke semua subscribers
+        globalSubscribers.forEach(sub => sub(globalConfig));
+      },
+      (error) => {
+        console.error('❌ GLOBAL flash sale listener error:', error);
+        globalConfig = null;
+        globalSubscribers.forEach(sub => sub(null));
+      }
+    );
+  } else {
+    console.log(`🔄 [${subscriberId}] Reusing existing GLOBAL flash sale listener`);
+  }
+
+  // Initial call
+  subscriberWrapper(globalConfig);
+
+  // Return unsubscribe function
+  return () => {
+    console.log(`🔄 [${subscriberId}] Unsubscribing from flash sale...`);
+
+    // Remove specific subscriber
+    globalSubscribers = globalSubscribers.filter(sub => sub !== subscriberWrapper);
+
+    // Cleanup global listener jika tidak ada subscribers lagi
+    // TAPI jangan cleanup terlalu cepat - tunggu 5 detik untuk mencegah cleanup saat pindah halaman
+    if (globalSubscribers.length === 0 && globalUnsubscribe) {
+      setTimeout(() => {
+        if (globalSubscribers.length === 0 && globalUnsubscribe) {
+          console.log('🔄 Cleaning up GLOBAL flash sale listener (delayed)');
+          globalUnsubscribe();
+          globalUnsubscribe = null;
+        }
+      }, 5000); // 5 detik delay
+    }
+  };
+};
+
 export const useUnifiedFlashSale = () => {
   const [flashSaleConfig, setFlashSaleConfig] = useState<FlashSaleConfig | null>(null);
   const [timeLeft, setTimeLeft] = useState({
@@ -25,72 +101,65 @@ export const useUnifiedFlashSale = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 🔥 REAL-TIME LISTENER: 1x read awal, lalu 0 reads (cache only)
+  // 🔥 SUBSCRIBE TO GLOBAL STATE
   useEffect(() => {
-    console.log('🔥 Starting unified flash sale listener...');
+    console.log('🔥 useUnifiedFlashSale: Setting up subscription...');
 
-    const flashSaleRef = doc(db, 'flashSale', 'config');
-    const unsubscribe = onSnapshot(flashSaleRef,
-      (snapshot) => {
-        setLoading(false);
-
-        if (snapshot.exists()) {
-          const config = snapshot.data() as FlashSaleConfig;
-          console.log('🚀 Flash sale config updated:', {
-            isActive: config.isActive,
-            endTime: config.endTime
-          });
-          setFlashSaleConfig(config);
-          setError(null);
-        } else {
-          console.log('❌ No flash sale config found');
-          setFlashSaleConfig(null);
-          setError('No flash sale configuration found');
-        }
-      },
-      (error) => {
-        console.error('❌ Flash sale listener error:', error);
-        setError('Failed to load flash sale config');
-        setLoading(false);
+    const unsubscribe = subscribeToFlashSale((config) => {
+      console.log('🔥 useUnifiedFlashSale: Config received:', config?.isActive);
+      setLoading(false);
+      setFlashSaleConfig(config);
+      if (config) {
+        setError(null);
+      } else {
+        setError('No flash sale configuration found');
       }
-    );
+    });
 
-    return () => {
-      console.log('🔄 Cleaning up flash sale listener');
-      unsubscribe();
-    };
+    return unsubscribe;
   }, []);
 
   // 🔥 CLIENT-SIDE TIMER: 0 Firebase reads, pure client calculation
   useEffect(() => {
-    const timer = setInterval(() => {
-      if (!flashSaleConfig || !flashSaleConfig.isActive) {
-        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
-        return;
-      }
+    let timerRef: NodeJS.Timeout | null = null;
 
-      const now = new Date().getTime();
-      const endTime = new Date(flashSaleConfig.endTime).getTime();
-      const difference = endTime - now;
+    // Start timer if active
+    if (flashSaleConfig?.isActive && flashSaleConfig.endTime) {
+      console.log('🕐 Starting timer with endTime:', flashSaleConfig.endTime);
 
-      if (difference > 0) {
-        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+      timerRef = setInterval(() => {
+        const now = new Date().getTime();
+        const endTime = new Date(flashSaleConfig.endTime).getTime();
+        const difference = endTime - now;
 
-        setTimeLeft({ hours, minutes, seconds });
-      } else {
-        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+        if (difference > 0) {
+          const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((difference % (1000 * 60)) / 1000);
 
-        // 🔥 AUTO-CLEANUP: Timer expired
-        if (flashSaleConfig.isActive) {
+          setTimeLeft({ hours, minutes, seconds });
+        } else {
+          setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+
+          if (timerRef) {
+            clearInterval(timerRef);
+            timerRef = null;
+          }
+
           console.log('⏰ Flash sale expired - triggering auto cleanup...');
           endFlashSale();
         }
-      }
-    }, 1000);
+      }, 1000);
+    } else {
+      // Reset timer if not active
+      setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+    }
 
-    return () => clearInterval(timer);
+    return () => {
+      if (timerRef) {
+        clearInterval(timerRef);
+      }
+    };
   }, [flashSaleConfig]);
 
   // 🔥 START FLASH SALE: 1 write only
@@ -98,7 +167,8 @@ export const useUnifiedFlashSale = () => {
     durationMinutes: number,
     title?: string,
     description?: string,
-    discountPercentage?: number
+    discountPercentage?: number,
+    selectedProductIds?: string[]
   ) => {
     try {
       console.log('🚀 Starting flash sale...');
@@ -119,8 +189,8 @@ export const useUnifiedFlashSale = () => {
       // Write ke Firebase (1 write)
       await setDoc(doc(db, 'flashSale', 'config'), flashSaleConfig);
 
-      // Update produk flags di batch
-      await updateProductFlashSaleFlags(true, discountPercentage || 20);
+      // Update produk flags di batch (hanya produk yang dipilih)
+      await updateProductFlashSaleFlags(true, discountPercentage || 20, selectedProductIds);
 
       console.log('✅ Flash sale started successfully!');
       return true;
@@ -155,49 +225,109 @@ export const useUnifiedFlashSale = () => {
     }
   }, []);
 
-  // 🔥 UPDATE PRODUK FLAGS: 1 write only (di batch)
-  const updateProductFlashSaleFlags = useCallback(async (isActive: boolean, discountPercentage: number) => {
+  // 🔥 UPDATE PRODUK FLAGS: Read all batches real-time for flash sale, 1 write per batch
+  const updateProductFlashSaleFlags = useCallback(async (isActive: boolean, discountPercentage: number, selectedProductIds?: string[]) => {
     try {
-      const batchRef = doc(db, 'productBatches', 'batch_1');
-      const batchSnap = await getDoc(batchRef);
+      console.log('🔥 FLASH SALE: Reading ALL batches real-time for data accuracy...');
 
-      if (!batchSnap.exists()) {
-        throw new Error('Batch data not found');
+      // 🔥 Dynamic Batch Detection - Read ALL available batches
+      const allBatches: string[] = [];
+      for (let i = 1; i <= 10; i++) { // Check up to 10 batches (scalable for 2500 products)
+        allBatches.push(`batch_${i}`);
       }
 
-      const batchData = batchSnap.data();
-      const updatedProducts = batchData.products.map((product: any) => {
-        if (isActive) {
-          // Set flash sale untuk produk yang ada (bisa disesuaikan)
-          return {
-            ...product,
-            isFlashSale: true,
-            flashSalePrice: Math.round(product.retailPrice * (1 - discountPercentage / 100)),
-            originalRetailPrice: product.originalRetailPrice || product.retailPrice
-          };
-        } else {
-          // Reset flash sale flags
-          return {
-            ...product,
-            isFlashSale: false,
-            flashSalePrice: undefined
-          };
+      // 🔥 Read ALL batches in parallel for maximum efficiency
+      const batchReadPromises = allBatches.map(async (batchId) => {
+        try {
+          console.log(`📖 Reading ${batchId} from Firestore...`);
+          const batchRef = doc(db, 'productBatches', batchId);
+          const batchSnap = await getDoc(batchRef); // Force server read for fresh data
+
+          if (batchSnap.exists()) {
+            const batchData = batchSnap.data();
+            console.log(`✅ ${batchId}: ${batchData.products?.length || 0} products loaded`);
+            return { batchId, data: batchData, exists: true };
+          } else {
+            console.log(`⚠️ ${batchId}: No data found`);
+            return { batchId, exists: false };
+          }
+        } catch (error) {
+          console.log(`❌ ${batchId}: Error reading batch - ${error}`);
+          return { batchId, exists: false, error };
         }
       });
 
-      // Update batch (1 write)
-      await setDoc(batchRef, {
-        ...batchData,
-        products: updatedProducts,
-        flashSaleConfig: {
-          ...(batchData.flashSaleConfig || {}),
-          isActive,
-          discountPercentage,
-          lastUpdated: new Date().toISOString()
-        }
-      }, { merge: true });
+      // Wait for all batch reads to complete
+      const batchResults = await Promise.all(batchReadPromises);
 
-      console.log(`✅ Flash sale flags ${isActive ? 'applied' : 'removed'} for ${updatedProducts.length} products`);
+      // Filter only existing batches with products
+      const validBatches = batchResults.filter(result => result.exists && result.data?.products?.length > 0);
+      console.log(`🚀 Found ${validBatches.length} valid batches for flash sale`);
+
+      if (validBatches.length === 0) {
+        throw new Error('No valid product batches found for flash sale');
+      }
+
+      // 🔥 Process all batches for flash sale updates
+      const updatePromises = validBatches.map(async ({ batchId, data: batchData }) => {
+        console.log(`🔄 Processing ${batchId} for flash sale updates...`);
+
+        const updatedProducts = batchData.products.map((product: any) => {
+          const shouldUpdate = selectedProductIds
+            ? selectedProductIds.includes(product.id)  // Only selected products
+            : isActive; // If no specific IDs, use global logic
+
+          if (shouldUpdate && isActive) {
+            // Apply flash sale to selected products
+            // discountPercentage is in RUPIAH, not percentage
+            const flashSalePrice = Math.max(product.retailPrice - discountPercentage, 1000); // Minimum 1000
+            return {
+              ...product,
+              isFlashSale: true,
+              flashSalePrice: flashSalePrice,
+              originalRetailPrice: product.originalRetailPrice || product.retailPrice
+            };
+          } else {
+            // Reset flash sale flags (if not active or not selected)
+            const updatedProduct = {
+              ...product,
+              isFlashSale: false,
+              flashSalePrice: undefined
+            };
+
+            // Remove undefined fields
+            delete updatedProduct.flashSalePrice;
+
+            return updatedProduct;
+          }
+        });
+
+        // Update this batch with flash sale changes
+        const batchRef = doc(db, 'productBatches', batchId);
+        await setDoc(batchRef, {
+          ...batchData,
+          products: updatedProducts,
+          flashSaleConfig: {
+            ...(batchData.flashSaleConfig || {}),
+            isActive,
+            discountPercentage,
+            lastUpdated: new Date().toISOString()
+          }
+        }, { merge: true });
+
+        const affectedCount = updatedProducts.filter(p => p.isFlashSale === isActive).length;
+        console.log(`✅ ${batchId}: Flash sale flags updated for ${affectedCount} products`);
+
+        return { batchId, affectedCount, totalProducts: updatedProducts.length };
+      });
+
+      // Execute all batch updates in parallel
+      const updateResults = await Promise.all(updatePromises);
+
+      // Summary
+      const totalAffected = updateResults.reduce((sum, result) => sum + result.affectedCount, 0);
+      const totalProducts = updateResults.reduce((sum, result) => sum + result.totalProducts, 0);
+      console.log(`🎉 FLASH SALE COMPLETE: ${totalAffected}/${totalProducts} products updated across ${validBatches.length} batches`);
     } catch (error) {
       console.error('❌ Failed to update product flash sale flags:', error);
       throw error;
@@ -221,7 +351,8 @@ export const useUnifiedFlashSale = () => {
     debug: {
       hasConfig: !!flashSaleConfig,
       isActive: flashSaleConfig?.isActive || false,
-      endTime: flashSaleConfig?.endTime || null
+      endTime: flashSaleConfig?.endTime || null,
+      subscriberCount: globalSubscribers.length
     }
   };
 };
