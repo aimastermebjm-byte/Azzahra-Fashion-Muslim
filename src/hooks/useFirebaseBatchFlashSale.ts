@@ -109,83 +109,17 @@ export const useFirebaseBatchFlashSale = () => {
     }
   }, [flashSaleConfig]);
 
-  // Load flash sale config
-  const loadFlashSaleConfig = useCallback(() => {
-    const configRef = doc(db, 'flashSale', 'config');
+  // 🔥 DEPRECATED: Using real-time batch listener instead (zero reads)
+  // const loadFlashSaleConfig = useCallback(() => {
+  //   // This was causing individual reads from flashSale/config
+  //   // Now using real-time listener on productBatches/batch_1
+  // }, []);
 
-    const unsubscribe = onSnapshot(configRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const config = snapshot.data() as FlashSaleConfig;
-        setFlashSaleConfig(config);
-        console.log('✅ Flash sale config loaded:', config);
-      } else {
-        // Default config if not exists
-        const defaultConfig: FlashSaleConfig = {
-          isActive: false,
-          startTime: new Date(),
-          endTime: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 jam dari sekarang
-          discountPercentage: 20,
-          maxItemsPerUser: 5,
-          title: "Flash Sale!",
-          description: "Diskon spesial untuk produk pilihan"
-        };
-        setFlashSaleConfig(defaultConfig);
-        console.log('⚙️ Using default flash sale config');
-      }
-    }, (err) => {
-      console.error('❌ Error loading flash sale config:', err);
-    });
-
-    return unsubscribe;
-  }, []);
-
-  // Load initial flash sale products
-  const loadInitialFlashSaleProducts = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      console.log('🔥 Loading initial flash sale products from batches...');
-
-      // Load beberapa batch pertama sampai dapat cukup flash sale products
-      let allFlashSaleProducts: Product[] = [];
-      let batchNumber = 1;
-
-      while (allFlashSaleProducts.length < PRODUCTS_PER_PAGE && batchNumber <= 5) { // Max 5 batch
-        const batch = await loadBatch(batchNumber);
-
-        if (batch) {
-          const flashSaleProducts = batch.products.filter((product: Product) =>
-            product.isFlashSale && product.stock > 0
-          );
-
-          allFlashSaleProducts.push(...flashSaleProducts);
-          console.log(`📦 Batch ${batchNumber}: ${flashSaleProducts.length} flash sale products`);
-        }
-
-        batchNumber++;
-      }
-
-      // Sort berdasarkan created date (terbaru dulu)
-      allFlashSaleProducts.sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-
-      // Ambil jumlah yang dibutuhkan
-      const initialProducts = allFlashSaleProducts.slice(0, PRODUCTS_PER_PAGE);
-
-      setFlashSaleProducts(initialProducts);
-      setHasMore(allFlashSaleProducts.length > PRODUCTS_PER_PAGE);
-
-      console.log(`✅ Loaded ${initialProducts.length} flash sale products`);
-
-    } catch (err) {
-      console.error('❌ Error loading flash sale products:', err);
-      setError('Gagal memuat produk flash sale');
-    } finally {
-      setLoading(false);
-    }
-  }, [loadBatch]);
+  // 🔥 DEPRECATED: Using real-time batch listener instead (zero reads)
+  // const loadInitialFlashSaleProducts = useCallback(async () => {
+  //   // This was causing multiple batch reads (batch_1 to batch_5)
+  //   // Now using real-time listener on productBatches/batch_1
+  // }, [loadBatch]);
 
   // Load more flash sale products
   const loadMoreFlashSaleProducts = useCallback(async () => {
@@ -238,17 +172,60 @@ export const useFirebaseBatchFlashSale = () => {
     return () => clearInterval(timer);
   }, [calculateTimeLeft]);
 
-  // Load config and initial products
+  // 🔥 REAL-TIME LISTENER: Zero reads, only cache updates
   useEffect(() => {
-    const unsubscribeConfig = loadFlashSaleConfig();
-    loadInitialFlashSaleProducts();
+    console.log('🔥 Starting real-time flash sale listener (0 reads expected)...');
+
+    // Listen to batch_1 changes only (single batch system)
+    const batchRef = doc(db, 'productBatches', 'batch_1');
+    const unsubscribe = onSnapshot(batchRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const batchData = snapshot.data();
+
+        // Extract flash sale config from batch data
+        const flashSaleConfigFromBatch = {
+          isActive: batchData.flashSaleConfig?.isActive || false,
+          endTime: batchData.flashSaleConfig?.endTime || null,
+          flashSaleDiscount: batchData.flashSaleConfig?.flashSaleDiscount || 0,
+          title: batchData.flashSaleConfig?.title || '',
+          description: batchData.flashSaleConfig?.description || ''
+        };
+
+        // Filter flash sale products from batch
+        const flashSaleProducts = batchData.products.filter((product: Product) =>
+          product.isFlashSale && product.stock > 0
+        );
+
+        console.log(`🚀 REAL-TIME UPDATE: ${flashSaleProducts.length} flash sale products (0 reads - from cache)`);
+
+        // Update state with zero additional reads
+        setFlashSaleConfig(flashSaleConfigFromBatch);
+        setFlashSaleProducts(flashSaleProducts.slice(0, PRODUCTS_PER_PAGE));
+        setHasMore(flashSaleProducts.length > PRODUCTS_PER_PAGE);
+        setLoading(false);
+        setError(null);
+
+        // Set batch info
+        setBatches(new Map([[1, { totalProducts: batchData.products.length }]]));
+        setCurrentBatchIndex(1);
+
+      } else {
+        console.log('❌ Batch data not found');
+        setFlashSaleConfig(null);
+        setFlashSaleProducts([]);
+        setLoading(false);
+      }
+    }, (error) => {
+      console.error('❌ Real-time listener error:', error);
+      setError('Failed to listen for flash sale updates');
+      setLoading(false);
+    });
 
     return () => {
-      if (unsubscribeConfig) {
-        unsubscribeConfig();
-      }
+      console.log('🔄 Unsubscribing from flash sale real-time listener');
+      unsubscribe();
     };
-  }, [loadFlashSaleConfig, loadInitialFlashSaleProducts]);
+  }, []);
 
   return {
     flashSaleProducts,
