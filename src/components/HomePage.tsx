@@ -4,7 +4,7 @@ import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
-import { useFirebaseFlashSaleSimpleOptimized } from '../hooks/useFirebaseFlashSaleSimpleOptimized';
+import { useFirebaseBatchFlashSale } from '../hooks/useFirebaseBatchFlashSale';
 import { cartServiceOptimized } from '../services/cartServiceOptimized';
 
 interface HomePageProps {
@@ -60,7 +60,7 @@ const HomePage: React.FC<HomePageProps> = ({
     isFlashSaleActive,
     flashSaleProducts: hookFlashSaleProducts,
     loading: flashSaleLoading
-  } = useFirebaseFlashSaleSimpleOptimized();
+  } = useFirebaseBatchFlashSale();
 
   // Load cart count from backend
   const loadCartCount = async () => {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../types';
 import { useFirebaseProductsAdmin } from '../hooks/useFirebaseProductsAdmin';
-import { useFirebaseFlashSaleSimpleOptimized } from '../hooks/useFirebaseFlashSaleSimpleOptimized';
+import { useFirebaseBatchFlashSale } from '../hooks/useFirebaseBatchFlashSale';
 import { ProductTableSkeleton, FlashSaleStatusSkeleton, MenuSkeleton } from './LoadingSkeleton';
 import { uploadMultipleImages, validateImageFile, generateImageName } from '../utils/imageUpload';
 
@@ -30,7 +30,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     alert('Delete product feature temporarily disabled for batch system migration');
   };
 
-  const { flashSaleProducts, isFlashSaleActive, timeLeft } = useFirebaseFlashSaleSimpleOptimized();
+  const { flashSaleProducts, isFlashSaleActive, timeLeft } = useFirebaseBatchFlashSale();
 
   // Flash sale config dari hooks
   const flashSaleConfig = {
