@@ -9,9 +9,6 @@ interface FlashSalePageProps {
   onCartClick: () => void;
   onAddToCart: (product: any) => void;
   flashSaleProducts: any[]; // Data dari unified hook, 0 reads
-  timeLeft?: { hours: number; minutes: number; seconds: number }; // Timer dari batch config
-  isFlashSaleActive?: boolean; // Status dari batch config
-  flashSaleConfig?: any; // Config dari batch (optional, untuk debug)
 }
 
 const FlashSalePage: React.FC<FlashSalePageProps> = ({
@@ -19,12 +16,44 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
   onProductClick,
   onCartClick,
   onAddToCart,
-  flashSaleProducts, // Data dari unified hook, 0 reads
-  timeLeft = { hours: 0, minutes: 0, seconds: 0 }, // Timer dari batch config
-  isFlashSaleActive = flashSaleProducts.length > 0, // Status dari batch config
-  flashSaleConfig // Config dari batch (optional, untuk debug)
+  flashSaleProducts // Data dari unified hook, 0 reads
 }) => {
   const { cartItems } = useRealTimeCartOptimized();
+
+  // Client-side timer (0 reads, simple countdown)
+  const [timeLeft, setTimeLeft] = useState({
+    hours: 0,
+    minutes: 2, // 2 menit untuk testing
+    seconds: 0
+  });
+
+  // Simple countdown timer di client (NO firebase reads)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev.hours === 0 && prev.minutes === 0 && prev.seconds === 0) {
+          clearInterval(timer);
+          return { hours: 0, minutes: 0, seconds: 0 };
+        }
+
+        let { hours, minutes, seconds } = prev;
+        if (seconds > 0) {
+          seconds--;
+        } else if (minutes > 0) {
+          minutes--;
+          seconds = 59;
+        } else if (hours > 0) {
+          hours--;
+          minutes = 59;
+          seconds = 59;
+        }
+
+        return { hours, minutes, seconds };
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const handleAddToCart = (product: any) => {
     onAddToCart(product);

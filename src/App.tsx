@@ -24,7 +24,6 @@ import BottomNavigation from './components/BottomNavigation';
 import { OngkirTestPage } from './pages/OngkirTestPage';
 import { useUnifiedProducts } from './hooks/useUnifiedProducts';
 import { useFirebaseAuth } from './hooks/useFirebaseAuth';
-import { useFirebaseBatchFlashSale } from './hooks/useFirebaseBatchFlashSale';
 import { useAdmin } from './contexts/AdminContext';
 import { cartServiceOptimized } from './services/cartServiceOptimized';
 import { ordersService } from './services/ordersService';
@@ -43,8 +42,6 @@ function AppContent() {
   const { user, login, logout } = useFirebaseAuth();
   // Optimized hooks with Firestore persistence only
   const { allProducts: products, featuredProducts, flashSaleProducts, loading, refresh, updateProductStock } = useUnifiedProducts();
-  // Flash sale data dengan timer yang benar dari batch config
-  const { timeLeft, isFlashSaleActive, flashSaleConfig } = useFirebaseBatchFlashSale();
   const { addOrder } = useAdmin();
 
   // Initialize Firebase-only app on app start
@@ -473,9 +470,6 @@ function AppContent() {
             onCartClick={handleCartClick}
             onAddToCart={handleQuickAddToCart}
             flashSaleProducts={flashSaleProducts}
-            timeLeft={timeLeft}
-            isFlashSaleActive={isFlashSaleActive}
-            flashSaleConfig={flashSaleConfig}
           />
         );
       case 'orders':
