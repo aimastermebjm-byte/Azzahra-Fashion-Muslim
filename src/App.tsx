@@ -368,15 +368,9 @@ function AppContent() {
 
       console.log('✅ Order completed successfully with ATOMIC transaction');
 
-      // 🔥 FORCE BATCH REFRESH: Trigger real-time sync verification
-      console.log('🔄 FORCING batch refresh to verify atomic transaction results...');
-      try {
-        const batchRef = docRef(db, 'productBatches', 'batch_1');
-        await getDoc(batchRef); // Force read from server
-        console.log('✅ Batch refresh completed - should trigger real-time update');
-      } catch (refreshError) {
-        console.error('❌ Error forcing batch refresh:', refreshError);
-      }
+      // ⚡ ATOMIC TRANSACTION already guarantees data consistency
+      // Real-time sync automatically triggered by onSnapshot listeners
+      // No need for forced batch refresh - eliminates 1 waste read
 
       return orderId;
 

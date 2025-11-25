@@ -4,7 +4,6 @@ import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
-import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
 import { cartServiceOptimized } from '../services/cartServiceOptimized';
 
 interface HomePageProps {
@@ -55,12 +54,12 @@ const HomePage: React.FC<HomePageProps> = ({
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // 🚀 UNIFIED Flash sale hook (single source of truth)
+  // 🚀 Flash sale detection from batch products (0 reads - from cache)
   const {
     timeLeft,
     isFlashSaleActive,
     flashSaleConfig
-  } = useUnifiedFlashSale();
+  } = useUnifiedProducts();
 
   // Load cart count from backend
   const loadCartCount = async () => {
@@ -526,6 +525,7 @@ const HomePage: React.FC<HomePageProps> = ({
                 onAddToCart={handleAddToCart}
                 user={user}
                 isFeatured={true}
+                isFlashSale={product.isFlashSale}
               />
             ))}
           </div>
@@ -669,6 +669,7 @@ const HomePage: React.FC<HomePageProps> = ({
                   onProductClick={onProductClick}
                   onAddToCart={handleAddToCart}
                   user={user}
+                  isFlashSale={product.isFlashSale}
                 />
               ))}
             </div>
