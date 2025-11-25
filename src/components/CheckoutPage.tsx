@@ -113,6 +113,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [ongkirResults, setOngkirResults] = useState<KomerceCostResult[]>([]);
   const [shippingError, setShippingError] = useState<string>('');
   const [selectedService, setSelectedService] = useState<KomerceCostResult | null>(null);
+  const [shippingCost, setShippingCost] = useState<number>(0);
 
   // Calculate total weight of cart items with smart rounding - OPTIMIZED for Firestore data
   const calculateTotalWeight = () => {
