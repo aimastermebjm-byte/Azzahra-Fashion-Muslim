@@ -1,7 +1,7 @@
 // Global Product State - Singleton Pattern
 // Single listener untuk semua components, ZERO additional reads
 
-import { useState, useEffect, useMemo, createContext, useContext } from 'react';
+import React, { useState, useEffect, useMemo, createContext, useContext } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
