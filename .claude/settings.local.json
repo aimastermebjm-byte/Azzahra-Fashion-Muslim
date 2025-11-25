@@ -45,7 +45,9 @@
       "Bash(npx tsx:*)",
       "Bash(node:*)",
       "Bash(npx vite:*)",
-      "Bash(nul)"
+      "Bash(nul)",
+      "Bash(move:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
