@@ -39,8 +39,6 @@ class CartServiceOptimized {
         return [];
       }
 
-      console.log('🔥 Loading cart from Firestore persistence for user:', user.uid);
-
       const cartRef = doc(db, this.FIREBASE_COLLECTION, user.uid);
       const cartDoc = await getDoc(cartRef);
 
@@ -48,44 +46,26 @@ class CartServiceOptimized {
         const data = cartDoc.data();
         let items = data?.items || [];
 
-        console.log('🔍 DEBUG: Raw items from Firestore:', items.length, items);
-        console.log('🔍 DEBUG: First item structure:', items[0]);
-
         // 🗑️ EMERGENCY CLEANUP: Clear corrupted cart data with empty productId or zero price
         if (items.some((item: any) => !item.productId || item.productId === '' || item.price === 0)) {
-          console.log('🗑️ EMERGENCY: Corrupted cart data detected, clearing all items');
           await setDoc(cartRef, {
             userId: user.uid,
             items: [],
             lastUpdated: new Date().toISOString()
           });
-          console.log('✅ Corrupted cart cleared successfully');
           return [];
         }
 
-        // Validate and sanitize items (less strict)
-        const originalLength = items.length;
-        items = items.filter((item: any, index: any) => {
-          const isValid = item && item.id && item.name && item.productId && item.productId !== '' && item.productId !== 'unknown_';
-          if (!isValid) {
-            console.log(`❌ Item ${index} filtered out:`, {
-              hasItem: !!item,
-              hasId: !!(item?.id),
-              hasProductId: !!(item?.productId),
-              productIdValue: item?.productId,
-              hasName: !!(item?.name),
-              itemData: item
-            });
-          }
-          return isValid;
+        // Validate and sanitize items
+        items = items.filter((item: any) => {
+          return item && item.id && item.name && item.productId &&
+                 item.productId !== '' && item.productId !== 'unknown_';
         }).map((item: any) => ({
           ...item,
           price: Number(item.price) || 0,
           quantity: Number(item.quantity) || 1
         }));
 
-        console.log('🔍 DEBUG: Filtered items:', items.length, `(filtered out ${originalLength - items.length} items)`);
-        console.log('✅ Cart loaded from Firestore persistence:', items.length, 'items');
         return items;
       } else {
         console.log('ℹ️ No cart found in Firestore - returning empty cart');

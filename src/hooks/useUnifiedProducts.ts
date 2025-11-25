@@ -41,21 +41,6 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
           const products = batchData.products || [];
 
           console.log(`✅ UNIFIED: Batch updated with ${products.length} products (0 reads - from cache)`);
-        console.log('🚨 REAL-TIME UPDATE TRIGGERED by Firestore change!');
-          const gamisProduct = products.find((p: any) => p.id === 'fEcVaTAt9VefwMQcsFoq');
-          if (gamisProduct) {
-            console.log('🔥 CRITICAL: Gamis 7 stock in batch (AFTER UPDATE):', {
-              mainStock: gamisProduct.stock,
-              variantsStock: gamisProduct.variants?.stock,
-              hasVariants: !!gamisProduct.variants?.stock
-            });
-          }
-          console.log('🔍 DEBUG: Sample product stock data:', products.slice(0, 3).map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            stock: p.stock,
-            variantsStock: p.variants?.stock
-          })));
 
           // Transform data products sekali saja
           const transformedProducts: Product[] = products.map((data: any) => {
