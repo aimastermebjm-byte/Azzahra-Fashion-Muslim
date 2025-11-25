@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Plus, Minus, ShoppingCart, Heart, Share2, Star } from 'lucide-react';
 import { Product } from '../types';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../utils/firebaseClient';
+import { useGlobalProducts } from '../hooks/useGlobalProducts';
 
 interface ProductDetailProps {
   currentProduct: Product;
@@ -28,31 +27,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [currentProduct, setCurrentProduct] = useState<Product>(initialProduct);
 
-  // Real-time update currentProduct stock from batch system
-  useEffect(() => {
-    
-    // Listen to batch system updates
-    const batchRef = doc(db, 'productBatches', 'batch_1');
-    const unsubscribe = onSnapshot(batchRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const batchData = snapshot.data();
-        const updatedProducts = batchData.products || [];
-        const updatedProduct = updatedProducts.find((p: any) => p.id === initialProduct.id);
+  // 🔥 GLOBAL STATE: 0 reads untuk product data
+  const { getProductById } = useGlobalProducts();
 
-        if (updatedProduct) {
-          setCurrentProduct(updatedProduct);
-        }
-      }
-    }, (error) => {
-      console.error('❌ Error listening to batch updates:', error);
-    });
-
-    return () => {
-            unsubscribe();
-    };
-  }, [initialProduct.id]);
+  const currentProduct = useMemo(() => {
+    return getProductById(initialProduct.id) || initialProduct;
+  }, [initialProduct.id, getProductById]);
 
   
   const handleAddToCart = () => {

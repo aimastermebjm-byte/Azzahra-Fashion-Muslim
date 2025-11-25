@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Search, ShoppingCart, User, Filter, Star, ArrowUpDown, RefreshCw } from 'lucide-react';
 import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
 import { cartServiceOptimized } from '../services/cartServiceOptimized';
-import { useUnifiedProducts } from '../hooks/useUnifiedProducts';
+import { useGlobalProducts } from '../hooks/useGlobalProducts';
 
 interface HomePageProps {
   user: any;
@@ -51,12 +51,17 @@ const HomePage: React.FC<HomePageProps> = ({
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // 🚀 Product data from batch system (0 reads - from cache)
-  const {
-    allProducts,
-    featuredProducts,
-    flashSaleProducts
-  } = useUnifiedProducts();
+  // 🚀 Product data from GLOBAL state (0 reads - single listener)
+  const { allProducts } = useGlobalProducts();
+
+  // 🔥 MEMOIZED FILTERING: Filter produk tanpa read tambahan
+  const featuredProducts = useMemo(() => {
+    return allProducts.filter(product => product.isFeatured === true);
+  }, [allProducts]);
+
+  const flashSaleProducts = useMemo(() => {
+    return allProducts.filter(product => product.isFlashSale === true);
+  }, [allProducts]);
 
   // Load cart count from backend
   const loadCartCount = async () => {

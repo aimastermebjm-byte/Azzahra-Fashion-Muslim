@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AdminProvider } from './contexts/AdminContext';
 // import { FlashSaleProvider } from './contexts/FlashSaleContext'; // DISABLED - Emergency fix
+import { GlobalProductsProvider } from './hooks/useGlobalProducts';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Cache busting version - force browser refresh
@@ -590,9 +591,11 @@ function AppContent() {
 function App() {
   return (
     <AdminProvider>
-      {/* <FlashSaleProvider> - DISABLED Emergency fix untuk infinite loop */}
-      <AppContent />
-      {/* </FlashSaleProvider> */}
+      <GlobalProductsProvider>
+        {/* <FlashSaleProvider> - DISABLED Emergency fix untuk infinite loop */}
+        <AppContent />
+        {/* </FlashSaleProvider> */}
+      </GlobalProductsProvider>
     </AdminProvider>
   );
 }
