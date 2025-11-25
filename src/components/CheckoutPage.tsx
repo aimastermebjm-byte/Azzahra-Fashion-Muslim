@@ -129,7 +129,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   
-  // Calculate shipping cost using RajaOngkir with smart caching - OPTIMIZED for J&T & multiple items
+  // Calculate shipping cost using RajaOngkir with localStorage cache PRIORITY - 0 reads for cached results
   const calculateShippingCost = async (courierCode: string, destinationCityId: string, weight: number) => {
     if (!courierCode || !destinationCityId || !weight) {
       return;
@@ -144,10 +144,47 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setLoadingShipping(true);
       setShippingError('');
 
-  
       // Special handling for J&T with multiple items
       const optimizedWeight = courierCode === 'jnt' && cartItems.length > 1 ? Math.max(weight, 1000) : weight;
 
+      // 🔥 LOCALSTORAGE CACHE PRIORITY: Check cache first (0 reads!)
+      const cacheKey = `ongkos_${courierCode}_${destinationCityId}_${optimizedWeight}`;
+      const cachedData = localStorage.getItem(cacheKey);
+
+      if (cachedData) {
+        try {
+          const { data, timestamp } = JSON.parse(cachedData);
+          const now = Date.now();
+
+          // Cache valid for 5 minutes
+          if (now - timestamp < 5 * 60 * 1000) {
+            console.log(`🚀 LOCALSTORAGE CACHE HIT: ${courierCode} → ${destinationCityId} (${optimizedWeight}g) - 0 reads!`);
+
+            if (data && data.length > 0) {
+              setOngkirResults(data);
+              const cheapestService = data[0];
+              setSelectedService(cheapestService);
+              setFormData(prev => ({
+                ...prev,
+                shippingCost: cheapestService.cost
+              }));
+              setShippingCost(cheapestService.cost);
+              setLoadingShipping(false);
+              return; // 🎯 SKIP API call - 0 reads achieved!
+            }
+          } else {
+            console.log('⏰ Cache expired, removing...');
+            localStorage.removeItem(cacheKey);
+          }
+        } catch (parseError) {
+          console.error('❌ Error parsing cache:', parseError);
+          localStorage.removeItem(cacheKey);
+        }
+      }
+
+      console.log(`📡 CACHE MISS: Fetching from API...`);
+
+      // Only if cache miss/expired, then call API (reads Firestore cache collection)
       const results = await komerceService.calculateShippingCost('2425', destinationCityId, optimizedWeight, courierCode);
 
       if (results && results.length > 0) {
@@ -157,12 +194,22 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         const cheapestService = results[0];
         setSelectedService(cheapestService);
 
+        // 🔥 SAVE TO LOCALSTORAGE: Cache for future use (next checkout = 0 reads)
+        const cacheKey = `ongkos_${courierCode}_${destinationCityId}_${optimizedWeight}`;
+        const cacheData = {
+          data: results,
+          timestamp: Date.now()
+        };
+        localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+        console.log(`💾 LOCALSTORAGE CACHE SAVED: ${courierCode} → ${destinationCityId} (${optimizedWeight}g)`);
+
         setFormData(prev => ({
           ...prev,
           shippingCost: cheapestService.cost,
           shippingService: cheapestService.service,
           shippingETD: cheapestService.etd
         }));
+        setShippingCost(cheapestService.cost);
 
         } else {
         setShippingError('Tidak dapat menghitung ongkir untuk kurir ini');
