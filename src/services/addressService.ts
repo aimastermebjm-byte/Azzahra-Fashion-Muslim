@@ -1,5 +1,5 @@
-// Address Management Service - Pure Firebase Real-time System
-// Single source of truth: Firebase Firestore only
+// Address Management Service - Firebase + LocalStorage Cache Persistence
+// Smart caching untuk 0 reads pada checkout berikutnya
 
 import { auth } from '../utils/firebaseClient';
 import { doc, getDoc, setDoc, collection, getDocs, query, where, deleteDoc, onSnapshot, updateDoc } from 'firebase/firestore';
@@ -27,8 +27,68 @@ export interface Address {
 
 class AddressService {
   private readonly collection = 'user_addresses';
+  private readonly cacheKey = 'user_addresses_cache';
+  private readonly cacheExpiry = 5 * 60 * 1000; // 5 menit
 
-  // Get all addresses for current user from Firebase only
+  // 🔥 CACHE MANAGEMENT: Get cached addresses
+  private getCachedAddresses(): Address[] | null {
+    try {
+      const user = auth.currentUser;
+      if (!user) return null;
+
+      const cacheData = localStorage.getItem(`${this.cacheKey}_${user.uid}`);
+      if (!cacheData) return null;
+
+      const { addresses, timestamp } = JSON.parse(cacheData);
+      const now = Date.now();
+
+      // Check if cache is still valid
+      if (now - timestamp < this.cacheExpiry) {
+        console.log('📦 Using cached addresses (0 reads):', addresses.length, 'addresses');
+        return addresses;
+      } else {
+        // Clear expired cache
+        localStorage.removeItem(`${this.cacheKey}_${user.uid}`);
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ Error reading cached addresses:', error);
+      return null;
+    }
+  }
+
+  // 🔥 CACHE MANAGEMENT: Set cached addresses
+  private setCachedAddresses(addresses: Address[]): void {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const cacheData = {
+        addresses,
+        timestamp: Date.now()
+      };
+
+      localStorage.setItem(`${this.cacheKey}_${user.uid}`, JSON.stringify(cacheData));
+      console.log('💾 Addresses cached for 5 minutes:', addresses.length, 'addresses');
+    } catch (error) {
+      console.error('❌ Error caching addresses:', error);
+    }
+  }
+
+  // 🔥 CACHE MANAGEMENT: Clear cached addresses
+  private clearCachedAddresses(): void {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      localStorage.removeItem(`${this.cacheKey}_${user.uid}`);
+      console.log('🗑️ Address cache cleared');
+    } catch (error) {
+      console.error('❌ Error clearing address cache:', error);
+    }
+  }
+
+  // 🔥 FIRESTORE + CACHE: Get addresses with cache persistence
   async getUserAddresses(): Promise<Address[]> {
     try {
       const user = auth.currentUser;
@@ -36,9 +96,17 @@ class AddressService {
         throw new Error('User not authenticated');
       }
 
-      console.log('🏠 Loading addresses from Firebase for user:', user.uid);
+      console.log('🏠 Loading addresses for user:', user.uid);
 
-      // Load from Firebase Firestore only
+      // 🔥 STEP 1: Try cache first (0 reads)
+      const cachedAddresses = this.getCachedAddresses();
+      if (cachedAddresses) {
+        return cachedAddresses;
+      }
+
+      console.log('🔄 Cache miss - loading from Firebase...');
+
+      // 🔥 STEP 2: Load from Firebase if cache miss/expired
       const addressesRef = collection(db, this.collection);
       const q = query(addressesRef, where('userId', '==', user.uid));
       const querySnapshot = await getDocs(q);
@@ -54,7 +122,11 @@ class AddressService {
         });
       });
 
-      console.log('✅ Addresses loaded from Firebase:', addresses.length, 'addresses');
+      console.log('✅ Addresses loaded from Firebase (1 read):', addresses.length, 'addresses');
+
+      // 🔥 STEP 3: Cache untuk next usage (0 reads)
+      this.setCachedAddresses(addresses);
+
       return addresses;
     } catch (error) {
       console.error('❌ Error getting user addresses:', error);
@@ -62,7 +134,7 @@ class AddressService {
     }
   }
 
-  // Set up real-time address listener
+  // 🔥 REAL-TIME + CACHE: Set up listener dengan cache update
   onAddressesChange(callback: (addresses: Address[]) => void): () => void {
     const user = auth.currentUser;
     if (!user) {
@@ -87,7 +159,11 @@ class AddressService {
         });
       });
 
-      console.log('📦 Real-time addresses update:', addresses.length, 'addresses');
+      console.log('📦 Real-time addresses update (0 reads):', addresses.length, 'addresses');
+
+      // 🔥 Update cache dengan data terbaru
+      this.setCachedAddresses(addresses);
+
       callback(addresses);
     }, (error) => {
       console.error('❌ Real-time address listener error:', error);
@@ -96,7 +172,7 @@ class AddressService {
     return unsubscribe;
   }
 
-  // Save new address to Firebase only
+  // 🔥 CACHE + FIRESTORE: Save address dengan cache invalidation
   async saveAddress(addressData: Omit<Address, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<Address> {
     try {
       const user = auth.currentUser;
@@ -123,7 +199,10 @@ class AddressService {
       const addressRef = doc(db, this.collection, newAddress.id);
       await setDoc(addressRef, newAddress);
 
-      console.log('✅ Address saved to Firebase:', newAddress.id);
+      // 🔥 Clear cache untuk force refresh pada next load
+      this.clearCachedAddresses();
+
+      console.log('✅ Address saved to Firebase (cache cleared):', newAddress.id);
       return newAddress;
     } catch (error) {
       console.error('❌ Error saving address:', error);
@@ -131,7 +210,7 @@ class AddressService {
     }
   }
 
-  // Update existing address in Firebase only
+  // 🔥 CACHE + FIRESTORE: Update address dengan cache invalidation
   async updateAddress(id: string, updateData: Partial<Omit<Address, 'id' | 'userId' | 'createdAt'>>): Promise<Address> {
     try {
       const user = auth.currentUser;
@@ -160,8 +239,11 @@ class AddressService {
 
       // Update in Firebase only
       await setDoc(addressRef, updatedAddress);
-      console.log('✅ Address updated in Firebase:', id);
 
+      // 🔥 Clear cache untuk force refresh pada next load
+      this.clearCachedAddresses();
+
+      console.log('✅ Address updated in Firebase (cache cleared):', id);
       return updatedAddress;
     } catch (error) {
       console.error('❌ Error updating address:', error);
@@ -169,7 +251,7 @@ class AddressService {
     }
   }
 
-  // Delete address from Firebase only
+  // 🔥 CACHE + FIRESTORE: Delete address dengan cache invalidation
   async deleteAddress(id: string): Promise<void> {
     try {
       const user = auth.currentUser;
@@ -191,7 +273,11 @@ class AddressService {
 
       // Delete from Firebase
       await deleteDoc(addressRef);
-      console.log('✅ Address deleted from Firebase:', id);
+
+      // 🔥 Clear cache untuk force refresh pada next load
+      this.clearCachedAddresses();
+
+      console.log('✅ Address deleted from Firebase (cache cleared):', id);
 
       // If deleted address was default, set first remaining address as default
       if (wasDefault) {
