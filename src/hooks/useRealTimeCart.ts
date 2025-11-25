@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { cartService, CartItem } from '../services/cartService';
+import { cartServiceOptimized, CartItem } from '../services/cartServiceOptimized';
 import { auth } from '../utils/firebaseClient';
 
 export const useRealTimeCart = () => {
@@ -24,11 +24,11 @@ export const useRealTimeCart = () => {
 
         
         // Initial load
-        const initialCart = await cartService.getCart();
+        const initialCart = await cartServiceOptimized.getCart();
         setCartItems(initialCart);
 
         // Set up real-time listener
-        unsubscribe = cartService.onCartChange((items) => {
+        unsubscribe = cartServiceOptimized.onCartChange((items: CartItem[]) => {
                     setCartItems(items);
           setLoading(false);
           setError(null);

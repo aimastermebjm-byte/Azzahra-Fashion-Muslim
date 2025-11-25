@@ -2,7 +2,7 @@
 // Real-time cart tanpa localStorage cache untuk 0 reads setelah initial load
 
 import { auth } from '../utils/firebaseClient';
-import { doc, onSnapshot, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc, getDocFromCache, updateDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 
 export interface CartItem {
