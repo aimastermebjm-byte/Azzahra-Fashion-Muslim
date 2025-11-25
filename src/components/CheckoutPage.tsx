@@ -555,8 +555,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   const totalPrice = getTotalPrice();
-  const shippingCost = formData.shippingCost || 0;
-  const finalTotal = totalPrice + shippingCost;
+  const currentShippingCost = formData.shippingCost || 0;
+  const finalTotal = totalPrice + currentShippingCost;
 
   // Check if selected courier supports automatic shipping calculation
   const selectedCourierOption = shippingOptions.find(opt => opt.id === formData.shippingCourier);
