@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, ShoppingCart, User, Filter, Star, ArrowUpDown, Clock, RefreshCw } from 'lucide-react';
+import { Search, ShoppingCart, User, Filter, Star, ArrowUpDown, RefreshCw } from 'lucide-react';
 import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
 import { cartServiceOptimized } from '../services/cartServiceOptimized';
+import { useUnifiedProducts } from '../hooks/useUnifiedProducts';
 
 interface HomePageProps {
   user: any;
@@ -41,10 +42,6 @@ const HomePage: React.FC<HomePageProps> = ({
   const [cartCount, setCartCount] = useState(0);
   const [sortBy, setSortBy] = useState<'terbaru' | 'termurah'>('terbaru');
 
-  // Filter featured and flash sale products from the products array
-  const featuredProducts = products.filter(product => product.isFeatured);
-  const flashSaleProducts = products.filter(product => product.isFlashSale);
-
   // Search states for cache functionality
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -54,11 +51,11 @@ const HomePage: React.FC<HomePageProps> = ({
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // 🚀 Flash sale detection from batch products (0 reads - from cache)
+  // 🚀 Product data from batch system (0 reads - from cache)
   const {
-    timeLeft,
-    isFlashSaleActive,
-    flashSaleConfig
+    allProducts,
+    featuredProducts,
+    flashSaleProducts
   } = useUnifiedProducts();
 
   // Load cart count from backend
@@ -413,23 +410,15 @@ const HomePage: React.FC<HomePageProps> = ({
                     Flash Sale
                   </h2>
                   <p className="text-red-100 text-sm font-medium">
-                    {isFlashSaleActive ? 'Diskon Terbatas!' : 'Nantikan Flash Sale Kami Selanjutnya'}
+                    {flashSaleProducts.length > 0 ? 'Diskon Terbatas!' : 'Nantikan Flash Sale Kami Selanjutnya'}
                   </p>
-                  {isFlashSaleActive && timeLeft && (
-                    <div className="flex items-center space-x-2 mt-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
-                      <Clock className="w-4 h-4 text-yellow-200" />
-                      <span className="text-sm font-bold text-yellow-200">
-                        {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
               <button
                 onClick={onNavigateToFlashSale}
                 className="bg-white text-red-500 px-4 py-2 rounded-full text-sm font-bold hover:bg-red-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                {isFlashSaleActive ? 'Lihat Semua' : 'Lihat Produk'}
+                {flashSaleProducts.length > 0 ? 'Lihat Semua' : 'Lihat Produk'}
               </button>
             </div>
           </div>
@@ -483,7 +472,7 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
           )}
 
-          {flashSaleProducts.length === 0 && !loading && isFlashSaleActive && (
+          {flashSaleProducts.length === 0 && !loading && (
             <div className="text-center py-4 text-red-100">
               <span className="text-3xl">🚫</span>
               <p className="text-sm mt-1">Tidak ada Flash Sale saat ini</p>
