@@ -346,6 +346,7 @@ function AppContent() {
         items: validatedItems.map(item => ({
           productId: item.productId,
           productName: item.name || 'Product',
+          productImage: item.image || item.productImage || '/placeholder-product.jpg',
           selectedVariant: {
             size: item.variant?.size || '',
             color: item.variant?.color || ''

@@ -8,7 +8,18 @@ export interface Order {
   userId: string;
   userName: string;
   userEmail: string;
-  items: any[];
+  items: {
+    productId: string;
+    productName: string;
+    productImage: string;
+    selectedVariant: {
+      size: string;
+      color: string;
+    };
+    quantity: number;
+    price: number;
+    total: number;
+  }[];
   shippingInfo: any;
   paymentMethod: string;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'awaiting_verification' | 'paid';

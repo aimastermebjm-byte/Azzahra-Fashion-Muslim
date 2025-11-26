@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { auth } from '../utils/firebaseClient';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
-import { db } from '../utils/firebaseClient';
 import { ordersService } from '../services/ordersService';
 
 export interface Order {
@@ -9,7 +7,18 @@ export interface Order {
   userId: string;
   userName: string;
   userEmail: string;
-  items: any[];
+  items: {
+    productId: string;
+    productName: string;
+    productImage: string;
+    selectedVariant: {
+      size: string;
+      color: string;
+    };
+    quantity: number;
+    price: number;
+    total: number;
+  }[];
   shippingInfo: any;
   paymentMethod: string;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'awaiting_verification' | 'paid';
@@ -28,74 +37,36 @@ export const useFirebaseOrders = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 🌍 GLOBAL ORDERS SHARING: Import global orders context
+  const { allOrders, loading: globalLoading, error: globalError, getUserOrders } = require('./useGlobalOrders');
+
   useEffect(() => {
-    let unsubscribe: (() => void) | null = null;
+    const user = auth.currentUser;
+    if (!user) {
+      setOrders([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
 
-    const setupOrdersListener = async () => {
-      try {
-        const user = auth.currentUser;
-        if (!user) {
-          setOrders([]);
-          setLoading(false);
-          return;
-        }
+    // 🚀 OPTIMIZED: Use global state instead of individual listener (0 additional reads!)
+    console.log('🔄 User orders using GLOBAL orders state (0 additional reads)...');
 
-        
-        // Set up real-time listener for orders (tanpa orderBy sementara)
-        const ordersRef = collection(db, 'orders');
-        const q = query(
-          ordersRef,
-          where('userId', '==', user.uid)
-        );
+    if (globalLoading) {
+      setLoading(true);
+    } else if (globalError) {
+      setError(globalError);
+      setLoading(false);
+    } else {
+      // Filter user orders from global state
+      const userOrders = allOrders.filter(order => order.userId === user.uid);
+      setOrders(userOrders);
+      setLoading(false);
+      setError(null);
 
-        unsubscribe = onSnapshot(
-          q,
-          (querySnapshot) => {
-            const loadedOrders: Order[] = [];
-            querySnapshot.forEach((doc) => {
-              const data = doc.data() as Omit<Order, 'id'>;
-              loadedOrders.push({
-                ...data,
-                id: doc.id,
-                createdAt: data.createdAt || new Date().toISOString(),
-                updatedAt: data.updatedAt || data.createdAt || new Date().toISOString()
-              });
-            });
-
-                        setOrders(loadedOrders);
-            setLoading(false);
-            setError(null);
-          },
-          async (error) => {
-            console.error('❌ Error listening to orders:', error);
-            setError(error.message);
-            setLoading(false);
-
-            // Fallback to ordersService
-              try {
-              const fallbackOrders = await ordersService.getUserOrders();
-              setOrders(fallbackOrders);
-              setError(null);
-            } catch (fallbackError) {
-              console.error('❌ Fallback also failed:', fallbackError);
-            }
-          }
-        );
-      } catch (error) {
-        console.error('❌ Error setting up orders listener:', error);
-        setError(error instanceof Error ? error.message : 'Unknown error');
-        setLoading(false);
-      }
-    };
-
-    setupOrdersListener();
-
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, []);
+      console.log(`✅ User orders loaded: ${userOrders.length} orders from global state`);
+    }
+  }, [allOrders, globalLoading, globalError, auth.currentUser?.uid]);
 
   return { orders, loading, error };
 };
