@@ -127,8 +127,8 @@ class CartServiceOptimized {
     };
   }
 
-  // 🔥 FIRESTORE PERSISTENCE: Add item to cart
-  async addToCart(product: any, quantity: number = 1, variant?: { size?: string; color?: string }): Promise<boolean> {
+  // 🔥 FIRESTORE PERSISTENCE: Add item to cart (optimized - 0 reads)
+  async addToCart(product: any, quantity: number = 1, variant?: { size?: string; color?: string }, existingItems: CartItem[] = []): Promise<boolean> {
     try {
       const user = auth.currentUser;
       if (!user) {
@@ -145,14 +145,9 @@ class CartServiceOptimized {
           price: product.price
         });
 
-      const cartRef = doc(db, this.FIREBASE_COLLECTION, user.uid);
-      const cartDoc = await getDoc(cartRef);
-
-      let currentItems: CartItem[] = [];
-      if (cartDoc.exists()) {
-        const data = cartDoc.data();
-        currentItems = data?.items || [];
-      }
+      // Use provided existing items instead of reading from Firestore
+      // This eliminates 1 read per addToCart operation
+      let currentItems = existingItems || [];
 
       // Check if item already exists
       const existingItemIndex = currentItems.findIndex(item =>
@@ -206,21 +201,25 @@ class CartServiceOptimized {
     }
   }
 
-  // 🔥 FIRESTORE PERSISTENCE: Update cart item quantity
-  async updateQuantity(itemId: string, newQuantity: number): Promise<boolean> {
+  // 🔥 FIRESTORE PERSISTENCE: Update cart item quantity (optimized - 0 reads)
+  async updateQuantity(itemId: string, newQuantity: number, currentItems?: CartItem[]): Promise<boolean> {
     try {
       const user = auth.currentUser;
       if (!user) return false;
 
       console.log(`🔄 Updating cart item quantity: ${itemId} → ${newQuantity}`);
 
-      const cartRef = doc(db, this.FIREBASE_COLLECTION, user.uid);
-      const cartDoc = await getDoc(cartRef);
+      // Use provided items instead of reading from Firestore (eliminates 1 read!)
+      let items = currentItems || [];
 
-      if (!cartDoc.exists()) return false;
-
-      const data = cartDoc.data();
-      let items = data?.items || [];
+      if (!items.length) {
+        // Fallback: Only read if no items provided
+        const cartRef = doc(db, this.FIREBASE_COLLECTION, user.uid);
+        const cartDoc = await getDoc(cartRef);
+        if (!cartDoc.exists()) return false;
+        const data = cartDoc.data();
+        items = data?.items || [];
+      }
 
       if (newQuantity <= 0) {
         // Remove item

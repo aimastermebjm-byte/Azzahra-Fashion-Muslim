@@ -28,7 +28,7 @@ export interface Address {
 class AddressService {
   private readonly collection = 'user_addresses';
   private readonly cacheKey = 'user_addresses_cache';
-  private readonly cacheExpiry = 5 * 60 * 1000; // 5 menit
+  private readonly cacheExpiry = Infinity; // Permanent cache (no expiry)
 
   // 🔥 CACHE MANAGEMENT: Get cached addresses
   private getCachedAddresses(): Address[] | null {
@@ -42,15 +42,9 @@ class AddressService {
       const { addresses, timestamp } = JSON.parse(cacheData);
       const now = Date.now();
 
-      // Check if cache is still valid
-      if (now - timestamp < this.cacheExpiry) {
-        console.log('📦 Using cached addresses (0 reads):', addresses.length, 'addresses');
-        return addresses;
-      } else {
-        // Clear expired cache
-        localStorage.removeItem(`${this.cacheKey}_${user.uid}`);
-        return null;
-      }
+      // Permanent cache - always valid (no expiry)
+      console.log('🏠 PERMANENT ADDRESS CACHE HIT: (0 reads):', addresses.length, 'addresses');
+      return addresses;
     } catch (error) {
       console.error('❌ Error reading cached addresses:', error);
       return null;
@@ -69,7 +63,7 @@ class AddressService {
       };
 
       localStorage.setItem(`${this.cacheKey}_${user.uid}`, JSON.stringify(cacheData));
-      console.log('💾 Addresses cached for 5 minutes:', addresses.length, 'addresses');
+      console.log('💾 PERMANENT ADDRESSES CACHED (0 future reads):', addresses.length, 'addresses');
     } catch (error) {
       console.error('❌ Error caching addresses:', error);
     }

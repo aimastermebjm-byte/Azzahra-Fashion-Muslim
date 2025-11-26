@@ -122,7 +122,7 @@ function AppContent() {
 
       // 🔥 CRITICAL FIX: Call cartService.addToCart with correct parameters
       // cartService expects: (product, quantity, variant)
-      const success = await cartServiceOptimized.addToCart(product, quantity, variant);
+      const success = await cartServiceOptimized.addToCart(product, quantity, variant, []); // 0 reads optimization
 
       if (success) {
         alert('Produk berhasil ditambahkan ke keranjang!');
@@ -165,7 +165,7 @@ function AppContent() {
     }, 500);
   };
   
-  const handleOrderComplete = async (orderData: any) => {
+  const handleOrderComplete = async (orderData: any, cartItems?: any[]) => {
     if (!user?.uid) {
       console.error('❌ Cannot complete order: User not logged in');
       return null;
@@ -174,16 +174,16 @@ function AppContent() {
     const orderId = 'AZF' + Date.now().toString().slice(-8);
 
     try {
-      // Get cart items from backend
-      const cartItems = await cartServiceOptimized.getCart();
+      // Use cartItems from parameter (eliminates 1 read!)
+      const items = cartItems || [];
 
-      if (cartItems.length === 0) {
+      if (items.length === 0) {
         alert('Keranjang belanja kosong!');
         return null;
       }
 
-      console.log('🚀 Starting ATOMIC transaction for checkout...', cartItems.length, 'items');
-      console.log('🔍 DEBUG: Cart items structure:', cartItems.map(item => ({
+      console.log('🚀 Starting ATOMIC transaction for checkout...', items.length, 'items');
+      console.log('🔍 DEBUG: Cart items structure:', items.map(item => ({
         productId: item.productId,
         name: item.name,
         variant: item.variant,
@@ -217,7 +217,7 @@ function AppContent() {
         const updatedBatchProducts = [...batchProducts];
 
         // Validate each item against batch data
-        for (const item of cartItems) {
+        for (const item of items) {
           console.log('🔍 DEBUG: Processing cart item:', {
             productId: item.productId,
             name: item.name,

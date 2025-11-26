@@ -7,7 +7,7 @@ import { cartServiceOptimized } from '../services/cartServiceOptimized';
 
 interface CheckoutPageProps {
   user: any;
-  clearCart: (orderData: any) => string;
+  clearCart: (orderData: any, cartItems: any[]) => string;
   onBack: () => void;
 }
 
@@ -148,6 +148,61 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       // Special handling for J&T with multiple items
       const optimizedWeight = courierCode === 'jnt' && cartItems.length > 1 ? Math.max(weight, 1000) : weight;
 
+      // 🔥 DIRECT RAJAONGKIR API - Bypass Firestore cache
+      const callRajaOngkirDirectAPI = async (
+        courierCode: string,
+        destinationCityId: string,
+        weight: number
+      ): Promise<any[]> => {
+        try {
+          const API_KEYS = [
+            'L3abavkD5358dc66be91f537G8MkpZHi', // Key 1: 100/day
+            'LVhqbq325358dc66be91f537xYjLL3Zi', // Key 2: 500/day
+            // TODO: Add more keys as needed
+          ];
+
+          // Rotate API key (simple rotation)
+          const keyIndex = Date.now() % API_KEYS.length;
+          const apiKey = API_KEYS[keyIndex];
+
+          const response = await fetch(`https://api.rajaongkir.com/starter/cost`, {
+            method: 'POST',
+            headers: {
+              'key': apiKey,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              origin: '2425', // Banjarmasin city ID
+              destination: destinationCityId,
+              weight: weight,
+              courier: courierCode
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`RajaOngkir API Error: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (data.rajaongkir.status.code === 200) {
+            return data.rajaongkir.results[0].costs.map((cost: any) => ({
+              name: data.rajaongkir.results[0].name,
+              code: courierCode,
+              service: cost.service,
+              description: cost.description,
+              cost: cost.cost[0].value,
+              etd: cost.cost[0].etd
+            }));
+          } else {
+            throw new Error(data.rajaongkir.status.description);
+          }
+        } catch (error) {
+          console.error('❌ Direct RajaOngkir API Error:', error);
+          throw error;
+        }
+      };
+
       // 🔥 LOCALSTORAGE CACHE PRIORITY: Check cache first (0 reads!)
       const cacheKey = `ongkos_${courierCode}_${destinationCityId}_${optimizedWeight}`;
       const cachedData = localStorage.getItem(cacheKey);
@@ -157,9 +212,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           const { data, timestamp } = JSON.parse(cachedData);
           const now = Date.now();
 
-          // Cache valid for 5 minutes
-          if (now - timestamp < 5 * 60 * 1000) {
-            console.log(`🚀 LOCALSTORAGE CACHE HIT: ${courierCode} → ${destinationCityId} (${optimizedWeight}g) - 0 reads!`);
+          // Cache valid for 30 days
+          if (now - timestamp < 30 * 24 * 60 * 60 * 1000) {
+            console.log(`🚀 ONGKIR CACHE HIT: ${courierCode} → ${destinationCityId} (${optimizedWeight}g) - 0 reads!`);
 
             if (data && data.length > 0) {
               setOngkirResults(data);
@@ -183,10 +238,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         }
       }
 
-      console.log(`📡 CACHE MISS: Fetching from API...`);
+      console.log(`📡 ONGKIR CACHE MISS: Direct RajaOngkir API call...`);
 
-      // Only if cache miss/expired, then call API (reads Firestore cache collection)
-      const results = await komerceService.calculateShippingCost('2425', destinationCityId, optimizedWeight, courierCode);
+      // Direct API call bypass Firestore cache (0 reads!)
+      const results = await callRajaOngkirDirectAPI(courierCode, destinationCityId, optimizedWeight);
 
       if (results && results.length > 0) {
         // Komerce returns multiple services! Let user choose
@@ -202,7 +257,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           timestamp: Date.now()
         };
         localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-        console.log(`💾 LOCALSTORAGE CACHE SAVED: ${courierCode} → ${destinationCityId} (${optimizedWeight}g)`);
+        console.log(`💾 ONGKIR CACHE SAVED: ${courierCode} → ${destinationCityId} (${optimizedWeight}g) - 30 days!`);
 
         setFormData(prev => ({
           ...prev,
@@ -540,8 +595,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       finalTotal: finalTotal
     };
 
-    // Create order and get order ID
-    const newOrderId = clearCart(orderData);
+    // Create order and get order ID (pass cartItems to eliminate duplicate read)
+    const newOrderId = clearCart(orderData, cartItems);
 
     // Show success message with instructions for payment
     if (formData.paymentMethod === 'transfer') {
