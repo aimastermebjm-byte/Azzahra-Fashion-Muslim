@@ -149,6 +149,9 @@ class CartServiceOptimized {
       // This eliminates 1 read per addToCart operation
       let currentItems = existingItems || [];
 
+      // Define cart reference for writing
+      const cartRef = doc(db, this.FIREBASE_COLLECTION, user.uid);
+
       // Check if item already exists
       const existingItemIndex = currentItems.findIndex(item =>
         item.productId === product.id &&
