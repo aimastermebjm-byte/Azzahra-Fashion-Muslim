@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { auth } from '../utils/firebaseClient';
-import { collection, query, where, doc, setDoc, getDocs } from 'firebase/firestore';
+import { doc, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
-import { onSnapshot } from 'firebase/firestore';
+
+// 🎯 GLOBAL ADMIN SHARING: Import global products context
+import { useGlobalProducts } from './useGlobalProducts';
 
 export const useFirebaseProductsAdmin = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -11,8 +13,11 @@ export const useFirebaseProductsAdmin = () => {
   const [error, setError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
 
+  // 🚀 OPTIMIZATION: Use global products state (0 reads!)
+  const { allProducts, loading: globalLoading } = useGlobalProducts();
+
   useEffect(() => {
-    const loadProducts = async (forceRefresh = false) => {
+    const loadProducts = async () => {
       try {
         const user = auth.currentUser;
         if (!user) {
@@ -22,24 +27,8 @@ export const useFirebaseProductsAdmin = () => {
           return;
         }
 
-        console.log('🔄 Loading products for admin from BATCH SYSTEM...', forceRefresh ? '(FORCE REFRESH)' : '');
-
-        // 🔥 BATCH SYSTEM: Always read fresh from Firestore for admin (no cache)
-        const batchRef = collection(db, 'productBatches');
-        const batchQuery = query(batchRef, where('__name__', '==', 'batch_1'));
-        const batchSnapshot = await getDocs(batchQuery);
-
-        if (batchSnapshot.empty || !batchSnapshot.docs[0].exists()) {
-          console.log('❌ Batch system not found');
-          setProducts([]);
-          setLoading(false);
-          setInitialLoad(false);
-          return;
-        }
-
-        const batchData = batchSnapshot.docs[0].data();
-        const allProducts = batchData.products || [];
-        console.log('📦 Products loaded from batch:', allProducts.length, 'products');
+        // 🚀 OPTIMIZED: Use global state instead of Firestore reads (0 reads!)
+        console.log('🔄 Admin using GLOBAL products state (0 reads)...');
 
         const loadedProducts: Product[] = [];
         allProducts.forEach((data: any) => {
@@ -103,39 +92,45 @@ export const useFirebaseProductsAdmin = () => {
       }
     };
 
-    // Load products once on component mount
-    loadProducts();
+    // 🚀 OPTIMIZED: Use global state instead of Firestore reads
+    if (allProducts && allProducts.length > 0) {
+      console.log('🚀 Admin: Using global products (0 reads)');
+      setProducts(allProducts);
+      setLoading(false);
+      setInitialLoad(false);
+    } else {
+      console.log('⚠️ Admin: No global products available');
+      setProducts([]);
+      setLoading(false);
+      setInitialLoad(false);
+    }
 
-    // Setup simple cross-tab cache invalidation listener for admin
+    // Setup simple cross-tab cache invalidation listener for admin (optional)
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'azzahra_cache_invalidation') {
         const data = JSON.parse(event.newValue || '{}');
         if (data.type === 'products') {
-          console.log('🔄 Admin: Cross-tab cache invalidation detected - force reloading products...');
-          // Force refresh with fresh data from Firestore
-          setTimeout(() => loadProducts(true), 100);
+          console.log('🔄 Admin: Cache invalidation - refreshing...');
+          // Force refresh with global state
+          setTimeout(() => {
+            if (allProducts && allProducts.length > 0) {
+              setProducts(allProducts);
+            }
+          }, 100);
         }
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
 
-    // Also reload when page becomes visible again (user switches tabs)
-    const handleVisibilityChange = () => {
-      if (!document.hidden && products.length > 0) {
-        console.log('🔄 Admin: Page became visible - refreshing products to ensure latest data...');
-        loadProducts(true);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+      // 🚀 OPTIMIZED: Remove auto-refresh loops that cause multiple reads
+    // Admin uses global state for real-time updates (0 reads!)
 
     // Cleanup on unmount
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [products.length]);
+  }, [allProducts.length]);
 
   // 🔥 BATCH SYSTEM: Update product in batch (not individual collection)
   const updateProduct = async (id: string, updates: any) => {
