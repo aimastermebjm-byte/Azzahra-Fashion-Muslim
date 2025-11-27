@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { auth } from '../utils/firebaseClient';
 import { ordersService } from '../services/ordersService';
 import { Order } from './useFirebaseOrders';
+import { useGlobalOrders } from './useGlobalOrders';
 
 export const useFirebaseAdminOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -10,7 +11,7 @@ export const useFirebaseAdminOrders = () => {
   const [initialLoad, setInitialLoad] = useState(true);
 
   // 🌍 GLOBAL ORDERS SHARING: Import global orders context
-  const { allOrders, loading: globalLoading, error: globalError } = require('./useGlobalOrders');
+  const { allOrders, loading: globalLoading, error: globalError } = useGlobalOrders();
 
   useEffect(() => {
     const user = auth.currentUser;
