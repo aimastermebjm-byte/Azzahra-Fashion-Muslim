@@ -155,27 +155,19 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         weight: number
       ): Promise<any[]> => {
         try {
-          const API_KEYS = [
-            'L3abavkD5358dc66be91f537G8MkpZHi', // Key 1: 100/day
-            'LVhqbq325358dc66be91f537xYjLL3Zi', // Key 2: 500/day
-            // TODO: Add more keys as needed
-          ];
 
-          // Rotate API key (simple rotation)
-          const keyIndex = Date.now() % API_KEYS.length;
-          const apiKey = API_KEYS[keyIndex];
-
-          const response = await fetch(`https://api.rajaongkir.com/starter/cost`, {
+          // Gunakan Vercel proxy (sama seperti di vite.config.ts) untuk CORS compliance
+          const response = await fetch('/api/rajaongkir/cost', {
             method: 'POST',
             headers: {
-              'key': apiKey,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
               origin: '2425', // Banjarmasin city ID
               destination: destinationCityId,
               weight: weight,
-              courier: courierCode
+              courier: courierCode,
+              price: 'lowest'
             })
           });
 
