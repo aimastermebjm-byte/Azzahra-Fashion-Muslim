@@ -552,7 +552,7 @@ const HomePage: React.FC<HomePageProps> = ({
             ))}
           </div>
 
-          {/* Status Filters */}
+          {/* Status and Sorting Filters - 1 Baris */}
           <div className="flex space-x-3 overflow-x-auto pb-2">
             <button
               onClick={() => setStatusFilter('all')}
@@ -562,8 +562,31 @@ const HomePage: React.FC<HomePageProps> = ({
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              <span className="text-sm font-medium">Semua Status</span>
+              <span className="text-sm font-medium">Semua</span>
             </button>
+
+            {/* Sorting Buttons */}
+            <button
+              onClick={() => setSortBy('terbaru')}
+              className={`flex-shrink-0 px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                sortBy === 'terbaru'
+                  ? 'bg-pink-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Terbaru
+            </button>
+            <button
+              onClick={() => setSortBy('termurah')}
+              className={`flex-shrink-0 px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                sortBy === 'termurah'
+                  ? 'bg-pink-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Termurah
+            </button>
+
             <button
               onClick={() => setStatusFilter('ready')}
               className={`flex-shrink-0 flex items-center space-x-2 px-4 py-2 rounded-full transition-colors ${
@@ -603,34 +626,7 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
           </div>
 
-          {/* Sorting Buttons */}
-          <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-            <div className="flex items-center text-sm text-gray-600 mr-2">
-              <ArrowUpDown className="w-4 h-4 mr-1" />
-              Urutkan:
-            </div>
-            <button
-              onClick={() => setSortBy('terbaru')}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                sortBy === 'terbaru'
-                  ? 'bg-pink-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              Terbaru
-            </button>
-                        <button
-              onClick={() => setSortBy('termurah')}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                sortBy === 'termurah'
-                  ? 'bg-pink-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              Termurah
-            </button>
-                      </div>
-        </div>
+          </div>
 
         {isSearching ? (
           <div className="text-center py-12">

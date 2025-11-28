@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ShoppingCart, ChevronUp, MessageCircle, Star } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ShoppingCart, ChevronUp, MessageCircle, Star, X, ZoomIn } from 'lucide-react';
 import { Product } from '../types';
 
 interface ProductCardProps {
@@ -21,6 +21,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
 
   const [showResellerMenu, setShowResellerMenu] = useState(false);
+  const [showZoomModal, setShowZoomModal] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  const [zoomScale, setZoomScale] = useState(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const imageRef = useRef<HTMLImageElement>(null);
 
   
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -42,6 +48,43 @@ const ProductCard: React.FC<ProductCardProps> = ({
     );
     window.open(`https://wa.me/6287815990944?text=${message}`, '_blank');
     setShowResellerMenu(false);
+  };
+
+  const handleImageZoom = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowZoomModal(true);
+  };
+
+  const handleZoomWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    setZoomScale(prevScale => Math.min(Math.max(prevScale + delta, 0.5), 4));
+  };
+
+  const handleDragStart = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - zoomPosition.x, y: e.clientY - zoomPosition.y });
+  };
+
+  const handleDragMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+
+    const newX = e.clientX - dragStart.x;
+    const newY = e.clientY - dragStart.y;
+    setZoomPosition({ x: newX, y: newY });
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  const handleImageClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (e.shiftKey || e.ctrlKey) {
+      handleImageZoom(e);
+    } else {
+      onProductClick(product);
+    }
   };
 
   const getTotalVariantStock = () => {
@@ -148,51 +191,124 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   return (
-    <div
-      onClick={() => onProductClick(product)}
-      className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group overflow-hidden ${
-        isFeatured ? 'ring-2 ring-yellow-400 shadow-lg' : ''
-      }`}
-    >
-      <div className="relative">
-        <img
-          src={product.image || product.images?.[0] || '/placeholder-product.jpg'}
-          alt={product.name}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-            const parent = target.parentElement;
-            if (parent) {
-              parent.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-              parent.innerHTML = '<div class="flex items-center justify-center h-full text-white text-center p-4"><div><div class="text-2xl mb-2">📦</div><div class="text-sm">No Image</div></div></div>';
-            }
-          }}
-        />
-        {getStatusBadge()}
-        {isFeatured && (
-          <div className="absolute top-2 right-2 bg-yellow-400 text-white p-1.5 rounded-full shadow-lg">
-            <Star className="w-4 h-4 fill-current" />
+    <>
+      <div
+        className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group overflow-hidden ${
+          isFeatured ? 'ring-2 ring-yellow-400 shadow-lg' : ''
+        }`}
+      >
+        <div className="relative">
+          <img
+            src={product.image || product.images?.[0] || '/placeholder-product.jpg'}
+            alt={product.name}
+            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
+            onClick={handleImageClick}
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const parent = target.parentElement;
+              if (parent) {
+                parent.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                parent.innerHTML = '<div class="flex items-center justify-center h-full text-white text-center p-4"><div><div class="text-2xl mb-2">📦</div><div class="text-sm">No Image</div></div></div>';
+              }
+            }}
+          />
+
+          {/* Zoom Button */}
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={handleImageZoom}
+              className="bg-black bg-opacity-60 text-white p-1.5 rounded-full hover:bg-opacity-80 transition-all shadow-lg"
+              title="Klik untuk zoom (Shift+Klik gambar)"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
           </div>
-        )}
-        <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={handleAddToCart}
-            className="bg-pink-500 text-white p-2 rounded-full hover:bg-pink-600 transition-colors shadow-lg"
-          >
-            <ShoppingCart className="w-4 h-4" />
-          </button>
+
+          {getStatusBadge()}
+          {isFeatured && (
+            <div className="absolute top-2 left-2 bg-yellow-400 text-white p-1.5 rounded-full shadow-lg">
+              <Star className="w-4 h-4 fill-current" />
+            </div>
+          )}
+          <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={handleAddToCart}
+              className="bg-pink-500 text-white p-2 rounded-full hover:bg-pink-600 transition-colors shadow-lg"
+            >
+              <ShoppingCart className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Zoom Hint */}
+          <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+            Shift+Klik untuk zoom
+          </div>
+        </div>
+
+        <div className="p-4">
+          <h3 className="font-semibold text-gray-800 mb-3 line-clamp-2 group-hover:text-pink-600 transition-colors">
+            {product.name}
+          </h3>
+
+          {getPrice()}
         </div>
       </div>
-      
-      <div className="p-4">
-        <h3 className="font-semibold text-gray-800 mb-3 line-clamp-2 group-hover:text-pink-600 transition-colors">
-          {product.name}
-        </h3>
 
-        {getPrice()}
-      </div>
-    </div>
+      {/* Zoom Modal */}
+      {showZoomModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90"
+          onClick={() => setShowZoomModal(false)}
+        >
+          <div className="relative max-w-4xl max-h-full p-4">
+            <button
+              onClick={() => setShowZoomModal(false)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors z-10"
+              type="button"
+              aria-label="Close zoom modal"
+              title="Tutup zoom modal"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <div
+              className="bg-white rounded-lg p-2 max-w-full max-h-[80vh] overflow-hidden relative"
+              onClick={(e) => e.stopPropagation()}
+              onWheel={handleZoomWheel}
+            >
+              <img
+                ref={imageRef}
+                src={product.image || product.images?.[0] || '/placeholder-product.jpg'}
+                alt={product.name}
+                className={`max-w-full max-h-full object-contain cursor-move transition-transform duration-200 ${
+                  isDragging ? 'cursor-grabbing' : 'cursor-grab'
+                }`}
+                style={{
+                  transform: `translate(${zoomPosition.x}px, ${zoomPosition.y}px) scale(${zoomScale})`,
+                  transformOrigin: 'center'
+                }}
+                draggable={false}
+                onMouseDown={handleDragStart}
+                onMouseMove={handleDragMove}
+                onMouseUp={handleDragEnd}
+                onMouseLeave={handleDragEnd}
+              />
+            </div>
+
+            <div className="text-center mt-4 text-white">
+              <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
+              <p className="text-sm text-gray-300">
+                🔍 Scroll untuk zoom • Drag untuk geser • Klik di luar gambar untuk menutup
+              </p>
+              <p className="text-xs text-gray-400 mt-2">
+                Zoom: {(zoomScale * 100).toFixed(0)}%
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
