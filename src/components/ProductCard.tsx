@@ -115,10 +115,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
       : `PO (${totalStock})`;
 
     return (
-      <div className={`absolute text-[10px] px-1 py-0.5 rounded font-medium shadow-lg ${
+      <div className={`absolute text-[10px] px-1 py-0.5 rounded font-medium ${
         displayStatus === 'ready'
-          ? 'bg-green-500 text-white'
-          : 'bg-orange-500 text-white'
+          ? 'text-pink-600'
+          : 'text-pink-500'
       }`}>
         {stockStatus}
       </div>
