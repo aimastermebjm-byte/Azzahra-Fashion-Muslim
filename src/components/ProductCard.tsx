@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { ShoppingCart, ChevronUp, MessageCircle, Star, X, ZoomIn } from 'lucide-react';
 import { Product } from '../types';
 
@@ -107,17 +107,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
     // Ready/PO badge with TOTAL stock count from all variants
     const totalStock = getTotalVariantStock();
 
-    // Handle backward compatibility for status field
-    const displayStatus = product.status ||
-                        (product.condition === 'baru' ? 'ready' : 'po') ||
-                        'ready'; // Default to 'ready' instead of based on stock
+    // Use status field with fallback to 'ready'
+    const displayStatus = product.status || 'ready';
 
     const stockStatus = displayStatus === 'ready'
       ? `Ready (${totalStock})`
       : `PO (${totalStock})`;
 
     return (
-      <div className={`absolute top-2 left-2 text-xs px-2 py-1 rounded font-medium ${
+      <div className={`absolute text-[8px] px-1 py-0.5 rounded font-medium shadow-lg ${
         displayStatus === 'ready'
           ? 'bg-green-500 text-white'
           : 'bg-orange-500 text-white'
@@ -214,20 +212,27 @@ const ProductCard: React.FC<ProductCardProps> = ({
             }}
           />
 
-          {/* Zoom Button */}
+          {/* Status Badge - Back to Top Left */}
+          <div className="absolute top-2 left-2">
+            {getStatusBadge()}
+          </div>
+
+        {/* Zoom Button */}
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={handleImageZoom}
+              type="button"
               className="bg-black bg-opacity-60 text-white p-1.5 rounded-full hover:bg-opacity-80 transition-all shadow-lg"
               title="Klik untuk zoom (Shift+Klik gambar)"
+              aria-label="Zoom gambar"
             >
               <ZoomIn className="w-4 h-4" />
             </button>
           </div>
 
-          {getStatusBadge()}
+          {/* Featured Product Star - Moved to Top Right */}
           {isFeatured && (
-            <div className="absolute top-2 left-2 bg-yellow-400 text-white p-1.5 rounded-full shadow-lg">
+            <div className="absolute top-12 right-2 bg-yellow-400 text-white p-1.5 rounded-full shadow-lg">
               <Star className="w-4 h-4 fill-current" />
             </div>
           )}
@@ -235,6 +240,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <button
               onClick={handleAddToCart}
               className="bg-pink-500 text-white p-2 rounded-full hover:bg-pink-600 transition-colors shadow-lg"
+              type="button"
+              aria-label="Tambah ke keranjang"
+              title="Tambah ke keranjang"
             >
               <ShoppingCart className="w-4 h-4" />
             </button>
