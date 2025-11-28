@@ -148,57 +148,33 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       // Special handling for J&T with multiple items
       const optimizedWeight = courierCode === 'jnt' && cartItems.length > 1 ? Math.max(weight, 1000) : weight;
 
-      // 🔥 DIRECT RAJAONGKIR API - Bypass Firestore cache
-      const callRajaOngkirDirectAPI = async (
+      // 🔥 PROXY API CALL - Use komerceService to avoid CORS
+      const callKomerceProxyAPI = async (
         courierCode: string,
         destinationCityId: string,
         weight: number
       ): Promise<any[]> => {
         try {
-          const API_KEYS = [
-            'L3abavkD5358dc66be91f537G8MkpZHi', // Key 1: 100/day
-            'LVhqbq325358dc66be91f537xYjLL3Zi', // Key 2: 500/day
-            // TODO: Add more keys as needed
-          ];
+          console.log(`🚚 Using Komerce Proxy API for ${courierCode} → ${destinationCityId}`);
 
-          // Rotate API key (simple rotation)
-          const keyIndex = Date.now() % API_KEYS.length;
-          const apiKey = API_KEYS[keyIndex];
+          const results = await komerceService.calculateShippingCost(
+            '2425', // Banjarmasin city ID
+            destinationCityId,
+            weight,
+            courierCode,
+            'lowest'
+          );
 
-          const response = await fetch(`https://api.rajaongkir.com/starter/cost`, {
-            method: 'POST',
-            headers: {
-              'key': apiKey,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              origin: '2425', // Banjarmasin city ID
-              destination: destinationCityId,
-              weight: weight,
-              courier: courierCode
-            })
-          });
-
-          if (!response.ok) {
-            throw new Error(`RajaOngkir API Error: ${response.status}`);
-          }
-
-          const data = await response.json();
-
-          if (data.rajaongkir.status.code === 200) {
-            return data.rajaongkir.results[0].costs.map((cost: any) => ({
-              name: data.rajaongkir.results[0].name,
-              code: courierCode,
-              service: cost.service,
-              description: cost.description,
-              cost: cost.cost[0].value,
-              etd: cost.cost[0].etd
-            }));
-          } else {
-            throw new Error(data.rajaongkir.status.description);
-          }
+          return results.map((result: KomerceCostResult) => ({
+            name: result.name,
+            code: result.code,
+            service: result.service,
+            description: result.description,
+            cost: result.cost,
+            etd: result.etd
+          }));
         } catch (error) {
-          console.error('❌ Direct RajaOngkir API Error:', error);
+          console.error('❌ Komerce Proxy API Error:', error);
           throw error;
         }
       };
@@ -238,10 +214,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         }
       }
 
-      console.log(`📡 ONGKIR CACHE MISS: Direct RajaOngkir API call...`);
+      console.log(`📡 ONGKIR CACHE MISS: Using Komerce Proxy API call...`);
 
-      // Direct API call bypass Firestore cache (0 reads!)
-      const results = await callRajaOngkirDirectAPI(courierCode, destinationCityId, optimizedWeight);
+      // Proxy API call through serverless function (0 reads, no CORS!)
+      const results = await callKomerceProxyAPI(courierCode, destinationCityId, optimizedWeight);
 
       if (results && results.length > 0) {
         // Komerce returns multiple services! Let user choose
