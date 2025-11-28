@@ -117,8 +117,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
     return (
       <div className={`absolute text-[10px] px-1 py-0.5 rounded font-medium ${
         displayStatus === 'ready'
-          ? 'text-pink-600'
-          : 'text-pink-500'
+          ? 'bg-white/90 text-pink-600 shadow-md'
+          : 'bg-white/90 text-pink-500 shadow-md'
       }`}>
         {stockStatus}
       </div>
