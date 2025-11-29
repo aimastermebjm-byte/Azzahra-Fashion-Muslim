@@ -129,6 +129,69 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     return totalGrams;
   };
 
+  // 🛡️ VALIDATION HELPER: Validate RajaOngkir API response structure
+  const validateRajaOngkirResponse = (data: any): boolean => {
+    return (
+      data &&
+      data.rajaongkir &&
+      data.rajaongkir.status &&
+      typeof data.rajaongkir.status.code === 'number' &&
+      data.rajaongkir.status.code === 200 &&
+      Array.isArray(data.rajaongkir.results) &&
+      data.rajaongkir.results.length > 0
+    );
+  };
+
+  // 🛡️ VALIDATION HELPER: Validate cached shipping data
+  const validateCachedData = (cachedData: string): any[] | null => {
+    try {
+      const { data, timestamp } = JSON.parse(cachedData);
+
+      // Check cache age (30 days)
+      const now = Date.now();
+      const maxAge = 30 * 24 * 60 * 60 * 1000;
+
+      if (now - timestamp > maxAge) {
+        return null; // Cache expired
+      }
+
+      // Validate data structure
+      if (!Array.isArray(data) || data.length === 0) {
+        return null; // Invalid cache data
+      }
+
+      // Validate each service entry
+      const isValid = data.every(service =>
+        service.name &&
+        service.code &&
+        service.service &&
+        typeof service.cost === 'number'
+      );
+
+      return isValid ? data : null;
+    } catch (error) {
+      console.error('❌ Cache validation error:', error);
+      return null;
+    }
+  };
+
+  // 💬 ERROR HELPER: Get meaningful error messages
+  const getErrorMessage = (error: any): string => {
+    if (error.message.includes('status 400')) {
+      return 'Kota tujuan tidak valid. Silakan periksa alamat pengiriman.';
+    } else if (error.message.includes('status 429')) {
+      return 'Terlalu banyak permintaan. Silakan coba lagi dalam beberapa saat.';
+    } else if (error.message.includes('status 403')) {
+      return 'API key tidak valid. Mohon hubungi admin.';
+    } else if (error.message.includes('undefined')) {
+      return 'Format response API tidak valid. Silakan refresh halaman.';
+    } else if (error.message.includes('Failed to fetch')) {
+      return 'Tidak dapat terhubung ke server. Silakan periksa koneksi internet.';
+    } else {
+      return 'Gagal menghitung ongkir. Silakan coba lagi.';
+    }
+  };
+
   
   // Calculate shipping cost using RajaOngkir with localStorage cache PRIORITY - 0 reads for cached results
   const calculateShippingCost = async (courierCode: string, destinationCityId: string, weight: number) => {
@@ -148,29 +211,16 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       // Special handling for J&T with multiple items
       const optimizedWeight = courierCode === 'jnt' && cartItems.length > 1 ? Math.max(weight, 1000) : weight;
 
-      // 🔥 DIRECT RAJAONGKIR API - Bypass Firestore cache
-      const callRajaOngkirDirectAPI = async (
+      // 🔥 OPTIMIZED: Direct backend API call (no CORS issues)
+      const callRajaOngkirBackendAPI = async (
         courierCode: string,
         destinationCityId: string,
         weight: number
       ): Promise<any[]> => {
         try {
-          const API_KEYS = [
-            'L3abavkD5358dc66be91f537G8MkpZHi', // Key 1: 100/day
-            'LVhqbq325358dc66be91f537xYjLL3Zi', // Key 2: 500/day
-            // TODO: Add more keys as needed
-          ];
-
-          // Rotate API key (simple rotation)
-          const keyIndex = Date.now() % API_KEYS.length;
-          const apiKey = API_KEYS[keyIndex];
-
-          const response = await fetch(`https://api.rajaongkir.com/starter/cost`, {
+          const response = await fetch('/api/rajaongkir/cost', {
             method: 'POST',
-            headers: {
-              'key': apiKey,
-              'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               origin: '2425', // Banjarmasin city ID
               destination: destinationCityId,
@@ -180,25 +230,43 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           });
 
           if (!response.ok) {
-            throw new Error(`RajaOngkir API Error: ${response.status}`);
+            throw new Error(`API Error: ${response.status}`);
           }
 
           const data = await response.json();
 
-          if (data.rajaongkir.status.code === 200) {
-            return data.rajaongkir.results[0].costs.map((cost: any) => ({
-              name: data.rajaongkir.results[0].name,
+          // 🔄 Check Komerce API response format (meta.status === 'success')
+          if (data.meta && data.meta.status === 'success' && data.data && data.data.length > 0) {
+            // Convert Komerce format to our internal format
+            return data.data.map((item: any) => ({
+              name: item.courier_name || courierCode.toUpperCase(),
               code: courierCode,
-              service: cost.service,
-              description: cost.description,
-              cost: cost.cost[0].value,
-              etd: cost.cost[0].etd
+              service: item.service || item.service_name || 'Regular',
+              description: item.description || 'Standard Service',
+              cost: item.price || item.cost || 0,
+              etd: item.etd || '1-2 days'
             }));
           } else {
-            throw new Error(data.rajaongkir.status.description);
+            // 🛡️ Enhanced error handling with better messages
+            const errorMsg = data.meta?.message || 'Invalid API response format';
+            throw new Error(`API Error: ${errorMsg}`);
           }
         } catch (error) {
-          console.error('❌ Direct RajaOngkir API Error:', error);
+          console.error('❌ Backend API Error:', error);
+
+          // 🛡️ Provide meaningful error messages based on error type
+          if (error instanceof TypeError && error.message.includes('undefined')) {
+            throw new Error('Format response API tidak valid. Silakan coba lagi.');
+          } else if (error.message.includes('status 400')) {
+            throw new Error('Kota tujuan tidak valid. Silakan periksa alamat pengiriman.');
+          } else if (error.message.includes('status 429')) {
+            throw new Error('Terlalu banyak permintaan. Silakan coba lagi dalam beberapa saat.');
+          } else if (error.message.includes('status 403')) {
+            throw new Error('API key tidak valid. Mohon hubungi admin.');
+          } else if (error.message.includes('Failed to fetch')) {
+            throw new Error('Tidak dapat terhubung ke server. Silakan periksa koneksi internet.');
+          }
+
           throw error;
         }
       };
@@ -208,40 +276,39 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       const cachedData = localStorage.getItem(cacheKey);
 
       if (cachedData) {
-        try {
-          const { data, timestamp } = JSON.parse(cachedData);
-          const now = Date.now();
+        // 🛡️ FIX: Use validation function for cache data
+        const validatedData = validateCachedData(cachedData);
 
-          // Cache valid for 30 days
-          if (now - timestamp < 30 * 24 * 60 * 60 * 1000) {
-            console.log(`🚀 ONGKIR CACHE HIT: ${courierCode} → ${destinationCityId} (${optimizedWeight}g) - 0 reads!`);
-
-            if (data && data.length > 0) {
-              setOngkirResults(data);
-              const cheapestService = data[0];
-              setSelectedService(cheapestService);
-              setFormData(prev => ({
-                ...prev,
-                shippingCost: cheapestService.cost
-              }));
-              setShippingCost(cheapestService.cost);
-              setLoadingShipping(false);
-              return; // 🎯 SKIP API call - 0 reads achieved!
-            }
-          } else {
-            console.log('⏰ Cache expired, removing...');
-            localStorage.removeItem(cacheKey);
-          }
-        } catch (parseError) {
-          console.error('❌ Error parsing cache:', parseError);
+        if (validatedData) {
+          console.log(`🚀 ONGKIR CACHE HIT: ${courierCode} → ${destinationCityId} (${optimizedWeight}g) - 0 reads!`);
+          setOngkirResults(validatedData);
+          const cheapestService = validatedData[0];
+          setSelectedService(cheapestService);
+          setFormData(prev => ({
+            ...prev,
+            shippingCost: cheapestService.cost
+          }));
+          setShippingCost(cheapestService.cost);
+          setLoadingShipping(false);
+          return; // 🎯 SKIP API call - 0 reads achieved!
+        } else {
+          console.log('⚠️ Cache invalid or corrupted, removing...');
           localStorage.removeItem(cacheKey);
         }
       }
 
-      console.log(`📡 ONGKIR CACHE MISS: Direct RajaOngkir API call...`);
+      console.log(`📡 ONGKIR CACHE MISS: Backend API call...`);
 
-      // Direct API call bypass Firestore cache (0 reads!)
-      const results = await callRajaOngkirDirectAPI(courierCode, destinationCityId, optimizedWeight);
+      // 🚀 Direct backend API call (optimized, no CORS issues)
+      let results: any[] = [];
+      try {
+        results = await callRajaOngkirBackendAPI(courierCode, destinationCityId, optimizedWeight);
+        console.log('✅ Backend API success');
+      } catch (backendError) {
+        console.error('❌ Backend API failed:', backendError);
+        // API call failed, return empty results
+        results = [];
+      }
 
       if (results && results.length > 0) {
         // Komerce returns multiple services! Let user choose
@@ -269,11 +336,13 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
         } else {
         setShippingError('Tidak dapat menghitung ongkir untuk kurir ini');
-        }
+      }
     } catch (error) {
       console.error('Error calculating shipping cost:', error);
-      setShippingError('Gagal menghitung ongkir. Silakan coba lagi.');
-      // NO FALLBACK - Show error to user
+
+      // 🛡️ Use helper function for better error messages
+      const errorMessage = getErrorMessage(error);
+      setShippingError(errorMessage);
     } finally {
       setLoadingShipping(false);
     }
