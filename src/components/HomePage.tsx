@@ -6,6 +6,7 @@ import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
 import { cartServiceOptimized } from '../services/cartServiceOptimized';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
+import { SearchCacheKey } from '../types/cache';
 
 interface HomePageProps {
   user: any;
@@ -41,6 +42,7 @@ const HomePage: React.FC<HomePageProps> = ({
   const [activeTab, setActiveTab] = useState<'all' | 'terbaru' | 'termurah'>('terbaru');
   const [cartCount, setCartCount] = useState(0);
   const [sortBy, setSortBy] = useState<'terbaru' | 'termurah'>('terbaru');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'ready' | 'po'>('all');
 
   // Search states for cache functionality
   const [searchResults, setSearchResults] = useState<Product[]>([]);
