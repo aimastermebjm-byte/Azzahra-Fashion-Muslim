@@ -601,7 +601,7 @@ const HomePage: React.FC<HomePageProps> = ({
               }`}
             >
               <span className="w-2 h-2 bg-current rounded-full"></span>
-              <span className="text-sm font-medium">Semua</span>
+              <span className="text-sm font-medium">Ready</span>
             </button>
             <button
               onClick={() => setStatusFilter('po')}
