@@ -38,7 +38,7 @@ const HomePage: React.FC<HomePageProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'ready' | 'po'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'terbaru' | 'termurah'>('terbaru');
   const [cartCount, setCartCount] = useState(0);
   const [sortBy, setSortBy] = useState<'terbaru' | 'termurah'>('terbaru');
 
@@ -539,7 +539,10 @@ const HomePage: React.FC<HomePageProps> = ({
             {categories.map((category) => (
               <button
                 key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
+                onClick={() => {
+                  setSelectedCategory(category.id);
+                  setActiveTab(category.id === 'all' ? 'all' : 'terbaru'); // Sync tab dengan kategori
+                }}
                 className={`flex-shrink-0 flex items-center space-x-2 px-4 py-2 rounded-full transition-colors ${
                   selectedCategory === category.id
                     ? 'bg-pink-500 text-white'
@@ -596,7 +599,7 @@ const HomePage: React.FC<HomePageProps> = ({
               }`}
             >
               <span className="w-2 h-2 bg-current rounded-full"></span>
-              <span className="text-sm font-medium">Ready</span>
+              <span className="text-sm font-medium">Semua</span>
             </button>
             <button
               onClick={() => setStatusFilter('po')}
