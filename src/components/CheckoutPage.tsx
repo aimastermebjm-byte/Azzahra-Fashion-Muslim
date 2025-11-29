@@ -177,17 +177,23 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
           const data = await response.json();
 
-          if (data.rajaongkir.status.code === 200) {
-            return data.rajaongkir.results[0].costs.map((cost: any) => ({
-              name: data.rajaongkir.results[0].name,
+          // Handle Komerce API response structure
+          if (data.meta && data.meta.status === 'success' && data.meta.code === 200) {
+            if (!data.data || data.data.length === 0) {
+              throw new Error(`No shipping services available for ${courierCode}`);
+            }
+
+            return data.data.map((service: any) => ({
+              name: service.courier_name || courierCode.toUpperCase(),
               code: courierCode,
-              service: cost.service,
-              description: cost.description,
-              cost: cost.cost[0].value,
-              etd: cost.cost[0].etd
+              service: service.service,
+              description: service.service_name || service.description,
+              cost: service.price || service.cost,
+              etd: service.etd || '1-2 days'
             }));
           } else {
-            throw new Error(data.rajaongkir.status.description);
+            const errorMessage = data.meta?.message || data.rajaongkir?.status?.description || 'Unknown API error';
+            throw new Error(errorMessage);
           }
         } catch (error) {
           console.error('❌ Direct RajaOngkir API Error:', error);
