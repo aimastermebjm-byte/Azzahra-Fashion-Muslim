@@ -20,15 +20,7 @@ interface FlashSaleConfig {
 }
 
 const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) => {
-  const { products, loading, updateProduct } = useFirebaseProductsAdmin();
-
-  // TODO: Implement add/delete functions for batch system
-  const addProduct = () => {
-    alert('Add product feature temporarily disabled for batch system migration');
-  };
-  const deleteProduct = () => {
-    alert('Delete product feature temporarily disabled for batch system migration');
-  };
+  const { products, loading, updateProduct, addProduct: addProductToBatch, deleteProduct: deleteProductFromBatch } = useFirebaseProductsAdmin();
 
   // 🔥 UNIFIED FLASH SALE: Single source of truth
   const {
@@ -351,6 +343,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       const newProduct = {
         ...formData,
         images: allImageUrls,
+        image: allImageUrls[0] || '/placeholder-product.jpg', // Add required image field
         // Convert string fields to numbers, preserving original values
         retailPrice: parseInt(formData.retailPrice) || 0,
         resellerPrice: parseInt(formData.resellerPrice) || 0,
@@ -359,9 +352,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         stock: totalStock, // Use calculated total stock from variants
         // IMPORTANT: Preserve all variants data exactly as entered
         variants: {
-          sizes: formData.variants.sizes,
-          colors: formData.variants.colors,
-          stock: formData.variants.stock
+          sizes: formData.variants.sizes || [],
+          colors: formData.variants.colors || [],
+          stock: formData.variants.stock || {}
         },
         // Preserve status exactly as selected in form
         status: formData.status,
@@ -382,7 +375,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         images: allImageUrls.length
       });
 
-      await addProduct(newProduct);
+      await addProductToBatch(newProduct);
 
       // Reset form
       setFormData({
@@ -468,7 +461,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return;
 
     try {
-      await deleteProduct(productId);
+      await deleteProductFromBatch(productId);
     } catch (error) {
       console.error('Error deleting product:', error);
       alert('Gagal menghapus produk');
@@ -653,7 +646,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       console.log(`🗑️ Menghapus ${selectedProducts.length} produk...`);
 
       for (const productId of selectedProducts) {
-        await deleteProduct(productId);
+        await deleteProductFromBatch(productId);
       }
 
       setSelectedProducts([]);

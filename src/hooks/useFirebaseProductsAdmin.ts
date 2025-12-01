@@ -261,5 +261,142 @@ export const useFirebaseProductsAdmin = () => {
     }
   };
 
-  return { products, loading: loading && initialLoad, error, initialLoad, updateProduct, updateProductStock };
+  // 🔥 BATCH SYSTEM: Add product to batch (not individual collection)
+  const addProduct = async (productData: Omit<Product, 'id'>) => {
+    try {
+      console.log('➕ Adding product to BATCH SYSTEM:', productData);
+
+      // Get current batch
+      const batchRef = collection(db, 'productBatches');
+      const batchQuery = query(batchRef, where('__name__', '==', 'batch_1'));
+      const batchSnapshot = await getDocs(batchQuery);
+
+      if (!batchSnapshot.empty && batchSnapshot.docs[0].exists()) {
+        const batchDoc = batchSnapshot.docs[0];
+        const batchData = batchDoc.data();
+        const products = batchData.products || [];
+
+        // Generate new product ID
+        const newProductId = `product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Create new product object
+        const newProduct: Product = {
+          ...productData,
+          id: newProductId,
+          createdAt: new Date(),
+          salesCount: 0,
+          featuredOrder: 0,
+          status: productData.status || 'ready',
+          estimatedReady: productData.estimatedReady
+        };
+
+        // Add to products array
+        products.push(newProduct);
+
+        // Update the batch
+        await setDoc(doc(db, 'productBatches', 'batch_1'), {
+          ...batchData,
+          products: products,
+          totalProducts: products.length,
+          updatedAt: new Date().toISOString()
+        });
+
+        console.log('✅ Product added successfully to batch system');
+
+        // Update local state immediately
+        setProducts(prev => [...prev, newProduct]);
+
+        return newProductId;
+      } else {
+        // Create new batch if doesn't exist
+        const newProductId = `product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const newProduct: Product = {
+          ...productData,
+          id: newProductId,
+          createdAt: new Date(),
+          salesCount: 0,
+          featuredOrder: 0,
+          status: productData.status || 'ready',
+          estimatedReady: productData.estimatedReady
+        };
+
+        await setDoc(doc(db, 'productBatches', 'batch_1'), {
+          id: 'batch_1',
+          products: [newProduct],
+          totalProducts: 1,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+
+        console.log('✅ New batch created and product added successfully');
+
+        // Update local state immediately
+        setProducts(prev => [...prev, newProduct]);
+
+        return newProductId;
+      }
+    } catch (error) {
+      console.error('❌ Error adding product to batch:', error);
+      throw error;
+    }
+  };
+
+  // 🔥 BATCH SYSTEM: Delete product from batch (not individual collection)
+  const deleteProduct = async (id: string) => {
+    try {
+      console.log('🗑️ Deleting product from BATCH SYSTEM:', id);
+
+      // Get current batch
+      const batchRef = collection(db, 'productBatches');
+      const batchQuery = query(batchRef, where('__name__', '==', 'batch_1'));
+      const batchSnapshot = await getDocs(batchQuery);
+
+      if (!batchSnapshot.empty && batchSnapshot.docs[0].exists()) {
+        const batchDoc = batchSnapshot.docs[0];
+        const batchData = batchDoc.data();
+        let products = batchData.products || [];
+
+        // Remove the product
+        const originalLength = products.length;
+        products = products.filter((product: any) => product.id !== id);
+
+        if (products.length === originalLength) {
+          console.warn('⚠️ Product not found in batch for deletion:', id);
+          return false;
+        }
+
+        // Update the batch
+        await setDoc(doc(db, 'productBatches', 'batch_1'), {
+          ...batchData,
+          products: products,
+          totalProducts: products.length,
+          updatedAt: new Date().toISOString()
+        });
+
+        console.log('✅ Product deleted successfully from batch system');
+
+        // Update local state immediately
+        setProducts(prev => prev.filter(product => product.id !== id));
+
+        return true;
+      } else {
+        console.error('❌ Batch system not found for product deletion');
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Error deleting product from batch:', error);
+      throw error;
+    }
+  };
+
+  return {
+    products,
+    loading: loading && initialLoad,
+    error,
+    initialLoad,
+    updateProduct,
+    updateProductStock,
+    addProduct,
+    deleteProduct
+  };
 };
