@@ -1,4 +1,4 @@
-import { getFirestore, collection, query, where, orderBy, limit, getDocs, getDoc, doc, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy, limit, getDocs, doc, Timestamp } from 'firebase/firestore';
 
 // Initialize Firestore
 const db = getFirestore();
@@ -116,24 +116,27 @@ class ReportsService {
 
       const snapshot = await getDocs(q);
 
-      // Get batch data once for all products
-      const batchDoc = await getDoc(doc(db, 'productBatches', 'batch_1'));
-      const batchData = batchDoc.exists() ? batchDoc.data() : { products: [] };
-      const batchProducts = batchData.products || [];
+      // Get products data once for all modal/costPrice information
+      const productsSnapshot = await getDocs(query(collection(db, 'products')));
+      const productsData: any[] = productsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
 
       return snapshot.docs.map(doc => {
         const orderData = doc.data();
 
-        // Map items with costPrice from productBatches
+        // Map items with costPrice from products collection
         const itemsWithCost = orderData.items?.map((item: any) => {
-          const product = batchProducts.find((p: any) => p.id === item.productId);
-          const costPrice = product?.costPrice || product?.modal || (item.price * 0.6); // fallback 60%
+          const product = productsData.find((p: any) => p.id === item.productId);
+          // Get modal/costPrice from products collection, with fallback hierarchy
+          const costPrice = product?.modal || product?.costPrice || (item.price * 0.6); // fallback 60%
 
           return {
-            name: item.name || item.productName || 'Unknown Product',
+            name: item.name || item.productName || product?.name || 'Unknown Product',
             quantity: item.quantity || 1,
-            price: item.price || 0,
-            total: (item.price || 0) * (item.quantity || 1),
+            price: item.price || product?.retailPrice || 0,
+            total: (item.price || product?.retailPrice || 0) * (item.quantity || 1),
             modal: costPrice,
             modalTotal: costPrice * (item.quantity || 1)
           };
