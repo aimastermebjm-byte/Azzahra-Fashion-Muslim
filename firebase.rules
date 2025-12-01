@@ -22,9 +22,43 @@ service firebase.storage {
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // TEMPORARY: Allow open access to products for development
+    // Allow read/write access to transactions for authenticated users
+    match /transactions/{transactionId} {
+      allow read, write: create: if request.auth != null;
+      allow read, write, delete: if Request.auth != null;
+    }
+
+    // Allow read/write access to products for authenticated users
     match /products/{productId} {
-      allow read, write: if true; // Temporary fix
+      allow read, write: if request.auth != null;
+    }
+
+    // Allow read/write access to orders for authenticated users
+    match /orders/{orderId} {
+      allow read, write: create: if Request.auth != null;
+      allow read, write, delete: if Request.auth != null && Request.auth.uid == resource.data.userId;
+    }
+
+    // Allow read/write access to user profiles for authenticated users
+    match /users/{userId} {
+      allow read, write: if Request.auth != null && Request.auth.uid == userId;
+    }
+
+    // Allow read access to categories for authenticated users
+    match /categories/{categoryId} {
+      allow read: if Request.auth != null;
+      allow write: if Request.auth != null && Request.auth.uid != null;
+    }
+
+    // Allow read/write access to flash sales for authenticated users
+    match /flashSales/{flashSaleId} {
+      allow read, write: create: if Request.auth != null;
+      allow read, write: if Request.auth != null && Request.auth.uid != null;
+    }
+
+    // Allow read/write access to flash sale config for authenticated users
+    match /flashSale/{documentId} {
+      allow read, write: if Request.auth != null && Request.auth.uid != null;
     }
 
     // 🔥 NEW: Allow access to productBatches for batch system
