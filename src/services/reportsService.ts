@@ -15,10 +15,13 @@ export interface Transaction {
     quantity: number;
     price: number;
     total: number;
+    modal?: number; // costPrice per unit
+    modalTotal?: number; // total modal for this item
   }[];
   subtotal: number;
   shippingCost: number;
   total: number;
+  totalModal?: number; // total modal for all items
   status: 'lunas' | 'belum_lunas';
   paymentMethod?: string;
   createdAt: Date;
@@ -69,6 +72,7 @@ export interface CashFlowReport {
 }
 
 class ReportsService {
+
   // Get transactions dengan filter
   static async getTransactions(filters: {
     startDate?: string;
@@ -111,8 +115,33 @@ class ReportsService {
       }
 
       const snapshot = await getDocs(q);
+
+      // Get batch data once for all products
+      const batchDoc = await getDoc(doc(db, 'productBatches', 'batch_1'));
+      const batchData = batchDoc.exists() ? batchDoc.data() : { products: [] };
+      const batchProducts = batchData.products || [];
+
       return snapshot.docs.map(doc => {
         const orderData = doc.data();
+
+        // Map items with costPrice from productBatches
+        const itemsWithCost = orderData.items?.map((item: any) => {
+          const product = batchProducts.find((p: any) => p.id === item.productId);
+          const costPrice = product?.costPrice || product?.modal || (item.price * 0.6); // fallback 60%
+
+          return {
+            name: item.name || item.productName || 'Unknown Product',
+            quantity: item.quantity || 1,
+            price: item.price || 0,
+            total: (item.price || 0) * (item.quantity || 1),
+            modal: costPrice,
+            modalTotal: costPrice * (item.quantity || 1)
+          };
+        }) || [];
+
+        // Calculate total modal
+        const totalModal = itemsWithCost.reduce((sum: number, item: any) => sum + (item.modalTotal || 0), 0);
+
         // Map orders collection fields to Transaction interface
         return {
           id: doc.id,
@@ -120,15 +149,11 @@ class ReportsService {
           date: orderData.createdAt ? new Date(orderData.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           customer: orderData.userName || 'Unknown Customer',
           phone: orderData.shippingInfo?.phone || '',
-          items: orderData.items?.map((item: any) => ({
-            name: item.name || item.productName || 'Unknown Product',
-            quantity: item.quantity || 1,
-            price: item.price || 0,
-            total: (item.price || 0) * (item.quantity || 1)
-          })) || [],
+          items: itemsWithCost,
           subtotal: orderData.totalAmount || 0,
           shippingCost: orderData.shippingCost || 0,
           total: orderData.finalTotal || (orderData.totalAmount || 0) + (orderData.shippingCost || 0),
+          totalModal,
           status: orderData.status === 'paid' ? 'lunas' : 'belum_lunas', // Map order status to transaction status
           paymentMethod: orderData.paymentMethod || '',
           createdAt: orderData.createdAt ? new Date(orderData.createdAt) : new Date(),

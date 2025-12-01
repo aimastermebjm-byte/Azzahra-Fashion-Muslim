@@ -636,7 +636,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {filteredTransactions.map((transaction) => {
-                      const modal = transaction.subtotal * 0.7; // Estimasi 70% modal
+                      const modal = transaction.totalModal || (transaction.subtotal * 0.6); // Use real modal or fallback 60%
                       const laba = transaction.subtotal - modal;
 
                       return (
@@ -1094,8 +1094,10 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pelanggan</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Laba</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     </tr>
                   </thead>
@@ -1127,11 +1129,17 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                           <td className="px-4 py-3 text-sm text-gray-900">
                             {item.quantity}
                           </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {formatCurrency(item.modal || 0)}
+                          </td>
                           <td className="px-4 py-3 text-sm text-gray-900">
                             {formatCurrency(item.price)}
                           </td>
                           <td className="px-4 py-3 text-sm font-medium text-gray-900">
                             {formatCurrency(item.total)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-green-600">
+                            {formatCurrency(item.total - (item.modal || 0) * item.quantity)}
                           </td>
                           {index === 0 && (
                             <td className="px-4 py-3 text-sm" rowSpan={transaction.items.length}>
