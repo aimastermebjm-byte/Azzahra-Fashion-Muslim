@@ -114,7 +114,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           ...formData.variants.stock,
           [newSize]: formData.variants.colors.reduce((acc, color) => ({
             ...acc,
-            [color]: '' // Empty string instead of 0
+            [color]: 0 // Stock must be number, not string
           }), {} as any)
         }
       }
@@ -152,7 +152,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
             ...acc,
             [size]: {
               ...existingStock,
-              [newColor]: '' // Empty string instead of 0
+              [newColor]: 0 // Stock must be number,not string
             }
           };
         }, {} as Record<string, Record<string, string>>)
@@ -345,16 +345,16 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         images: allImageUrls,
         image: allImageUrls[0] || '/placeholder-product.jpg', // Add required image field
         // Convert string fields to numbers, preserving original values
-        retailPrice: parseInt(formData.retailPrice) || 0,
-        resellerPrice: parseInt(formData.resellerPrice) || 0,
-        costPrice: parseInt(formData.costPrice) || 0,
-        weight: parseInt(formData.weight) || 0,
+        retailPrice: parseInt(formData.retailPrice || '0') || 0,
+        resellerPrice: parseInt(formData.resellerPrice || '0') || 0,
+        costPrice: parseInt(formData.costPrice || '0') || 0,
+        weight: parseInt(formData.weight || '0') || 0,
         stock: totalStock, // Use calculated total stock from variants
         // IMPORTANT: Preserve all variants data exactly as entered
         variants: {
-          sizes: formData.variants.sizes || [],
-          colors: formData.variants.colors || [],
-          stock: formData.variants.stock || {}
+          sizes: Array.isArray(formData.variants?.sizes) ? formData.variants.sizes : [],
+          colors: Array.isArray(formData.variants?.colors) ? formData.variants.colors : [],
+          stock: (typeof formData.variants?.stock === 'object' && formData.variants.stock !== null) ? formData.variants.stock : {}
         },
         // Preserve status exactly as selected in form
         status: formData.status,

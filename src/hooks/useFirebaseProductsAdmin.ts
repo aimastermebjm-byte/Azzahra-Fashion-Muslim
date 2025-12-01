@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { auth } from '../utils/firebaseClient';
 import { doc, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
@@ -10,87 +9,12 @@ import { useGlobalProducts } from './useGlobalProducts';
 export const useFirebaseProductsAdmin = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
 
   // 🚀 OPTIMIZATION: Use global products state (0 reads!)
-  const { allProducts, loading: globalLoading } = useGlobalProducts();
+  const { allProducts } = useGlobalProducts();
 
   useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        const user = auth.currentUser;
-        if (!user) {
-          setProducts([]);
-          setLoading(false);
-          setInitialLoad(false);
-          return;
-        }
-
-        // 🚀 OPTIMIZED: Use global state instead of Firestore reads (0 reads!)
-        console.log('🔄 Admin using GLOBAL products state (0 reads)...');
-
-        const loadedProducts: Product[] = [];
-        allProducts.forEach((data: any) => {
-
-          // Calculate total stock from variants if available
-          const stock = Number(data.stock || 0);
-          const calculatedTotalStock = data.variants?.stock ?
-            Object.values(data.variants.stock).reduce((total: number, sizeStock: any) => {
-              return total + Object.values(sizeStock as any).reduce((sizeTotal: number, colorStock: any) => {
-                return sizeTotal + Number(colorStock || 0);
-              }, 0);
-            }, 0) : stock;
-
-          const variantsData = {
-            sizes: data.variants?.sizes || data.sizes || [],
-            colors: data.variants?.colors || data.colors || [],
-            stock: data.variants?.stock && typeof data.variants?.stock === 'object' ? data.variants.stock : {}
-          };
-
-          loadedProducts.push({
-            id: data.id,
-            name: data.name || '',
-            description: data.description || '',
-            category: data.category || 'uncategorized',
-            retailPrice: Number(data.retailPrice || data.price || 0),
-            resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
-            costPrice: Number(data.costPrice) || Number(data.retailPrice || data.price || 0) * 0.6,
-            stock: calculatedTotalStock,
-            images: (data.images || []),
-            image: data.images?.[0] || '/placeholder-product.jpg',
-            variants: variantsData,
-            isFeatured: Boolean(data.isFeatured || data.featured),
-            isFlashSale: Boolean(data.isFlashSale),
-            flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
-            originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),
-            originalResellerPrice: Number(data.originalResellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
-            createdAt: data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt?.toDate()) : new Date(),
-            salesCount: Number(data.salesCount) || 0,
-            featuredOrder: Number(data.featuredOrder) || 0,
-            weight: Number(data.weight) || 0,
-            unit: 'gram',
-            status: data.status || (data.condition === 'baru' ? 'ready' : 'po') || 'ready',
-            estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
-          });
-        });
-
-        setProducts(loadedProducts);
-        setLoading(false);
-        setInitialLoad(false);
-        setError(null);
-
-        // Log info untuk debugging
-        const stockChangeCount = loadedProducts.filter(p => p.stock <= 5).length;
-        console.log(`✅ Admin products loaded: ${stockChangeCount} products with low stock (<=5)`);
-
-      } catch (error) {
-        console.error('❌ Error loading admin products:', error);
-        setError(error instanceof Error ? error.message : 'Unknown error');
-        setLoading(false);
-        setInitialLoad(false);
-      }
-    };
 
     // 🚀 OPTIMIZED: Use global state instead of Firestore reads
     if (allProducts && allProducts.length > 0) {
@@ -262,7 +186,7 @@ export const useFirebaseProductsAdmin = () => {
   };
 
   // 🔥 BATCH SYSTEM: Add product to batch (not individual collection)
-  const addProduct = async (productData: Omit<Product, 'id'>) => {
+  const addProduct = async (productData: any) => {
     try {
       console.log('➕ Adding product to BATCH SYSTEM:', productData);
 
@@ -277,17 +201,64 @@ export const useFirebaseProductsAdmin = () => {
         const products = batchData.products || [];
 
         // Generate new product ID
-        const newProductId = `product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const newProductId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
-        // Create new product object
+        // Create new product object dengan field yang sesuai data aktual
         const newProduct: Product = {
-          ...productData,
           id: newProductId,
+          name: productData.name || '',
+          description: productData.description || '',
+          category: productData.category || 'uncategorized',
+
+          // Pricing - sesuai dengan struktur data aktual
+          price: Number(productData.price || productData.retailPrice || 0),
+          retailPrice: Number(productData.retailPrice || productData.price || 0),
+          resellerPrice: Number(productData.resellerPrice || (Number(productData.retailPrice || productData.price || 0) * 0.8)),
+          costPrice: Number(productData.costPrice || (Number(productData.retailPrice || productData.price || 0) * 0.6)),
+          purchasePrice: Number(productData.purchasePrice || productData.costPrice || 0),
+          originalRetailPrice: Number(productData.retailPrice || productData.price || 0),
+          originalResellerPrice: Number(productData.resellerPrice || (Number(productData.retailPrice || productData.price || 0) * 0.8)),
+
+          // Stock dan status
+          stock: Number(productData.stock) || 0,
+          status: (productData.status === 'Ready Stock' || productData.status === 'ready') ? 'ready' : (productData.status as 'ready' | 'po' || 'ready'),
+          condition: productData.condition,
+          estimatedReady: productData.estimatedReady || undefined,
+
+          // Images
+          images: Array.isArray(productData.images) ? productData.images : [],
+          image: (Array.isArray(productData.images) && productData.images.length > 0) ? productData.images[0] : '/placeholder-product.jpg',
+
+          // Variants - nested structure yang benar
+          variants: {
+            sizes: Array.isArray(productData.variants?.sizes) ? productData.variants.sizes : [],
+            colors: Array.isArray(productData.variants?.colors) ? productData.variants.colors : [],
+            stock: (typeof productData.variants?.stock === 'object' && productData.variants.stock !== null) ? productData.variants.stock : {}
+          },
+
+          // Flash sale dan featured
+          isFeatured: Boolean(productData.isFeatured || productData.featured),
+          featured: Boolean(productData.featured || productData.isFeatured),
+          isFlashSale: Boolean(productData.isFlashSale),
+          flashSalePrice: Number(productData.flashSalePrice || productData.price || productData.retailPrice || 0),
+          flashSaleDiscount: productData.flashSaleDiscount || null,
+          discount: Number(productData.discount) || 0,
+
+          // Metadata
           createdAt: new Date(),
           salesCount: 0,
-          featuredOrder: 0,
-          status: productData.status || 'ready',
-          estimatedReady: productData.estimatedReady
+          reviews: 0,
+          rating: 0,
+
+          // Physical properties
+          weight: Number(productData.weight) || 0,
+          unit: productData.unit || 'pcs',
+
+          // Migration fields (opsional)
+          cleanupDate: undefined,
+          cleanupNote: undefined,
+          migrationDate: undefined,
+          migrationNote: undefined
         };
 
         // Add to products array
@@ -309,15 +280,64 @@ export const useFirebaseProductsAdmin = () => {
         return newProductId;
       } else {
         // Create new batch if doesn't exist
-        const newProductId = `product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const newProductId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+        // Create new product object dengan field yang sesuai data aktual
         const newProduct: Product = {
-          ...productData,
           id: newProductId,
+          name: productData.name || '',
+          description: productData.description || '',
+          category: productData.category || 'uncategorized',
+
+          // Pricing - sesuai dengan struktur data aktual
+          price: Number(productData.price || productData.retailPrice || 0),
+          retailPrice: Number(productData.retailPrice || productData.price || 0),
+          resellerPrice: Number(productData.resellerPrice || (Number(productData.retailPrice || productData.price || 0) * 0.8)),
+          costPrice: Number(productData.costPrice || (Number(productData.retailPrice || productData.price || 0) * 0.6)),
+          purchasePrice: Number(productData.purchasePrice || productData.costPrice || 0),
+          originalRetailPrice: Number(productData.retailPrice || productData.price || 0),
+          originalResellerPrice: Number(productData.resellerPrice || (Number(productData.retailPrice || productData.price || 0) * 0.8)),
+
+          // Stock dan status
+          stock: Number(productData.stock) || 0,
+          status: (productData.status === 'Ready Stock' || productData.status === 'ready') ? 'ready' : (productData.status as 'ready' | 'po' || 'ready'),
+          condition: productData.condition,
+          estimatedReady: productData.estimatedReady || undefined,
+
+          // Images
+          images: Array.isArray(productData.images) ? productData.images : [],
+          image: (Array.isArray(productData.images) && productData.images.length > 0) ? productData.images[0] : '/placeholder-product.jpg',
+
+          // Variants - nested structure yang benar
+          variants: {
+            sizes: Array.isArray(productData.variants?.sizes) ? productData.variants.sizes : [],
+            colors: Array.isArray(productData.variants?.colors) ? productData.variants.colors : [],
+            stock: (typeof productData.variants?.stock === 'object' && productData.variants.stock !== null) ? productData.variants.stock : {}
+          },
+
+          // Flash sale dan featured
+          isFeatured: Boolean(productData.isFeatured || productData.featured),
+          featured: Boolean(productData.featured || productData.isFeatured),
+          isFlashSale: Boolean(productData.isFlashSale),
+          flashSalePrice: Number(productData.flashSalePrice || productData.price || productData.retailPrice || 0),
+          flashSaleDiscount: productData.flashSaleDiscount || null,
+          discount: Number(productData.discount) || 0,
+
+          // Metadata
           createdAt: new Date(),
           salesCount: 0,
-          featuredOrder: 0,
-          status: productData.status || 'ready',
-          estimatedReady: productData.estimatedReady
+          reviews: 0,
+          rating: 0,
+
+          // Physical properties
+          weight: Number(productData.weight) || 0,
+          unit: productData.unit || 'pcs',
+
+          // Migration fields (opsional)
+          cleanupDate: undefined,
+          cleanupNote: undefined,
+          migrationDate: undefined,
+          migrationNote: undefined
         };
 
         await setDoc(doc(db, 'productBatches', 'batch_1'), {
@@ -392,7 +412,7 @@ export const useFirebaseProductsAdmin = () => {
   return {
     products,
     loading: loading && initialLoad,
-    error,
+    error: null,
     initialLoad,
     updateProduct,
     updateProductStock,

@@ -34,29 +34,57 @@ export const GlobalProductsProvider: React.FC<{ children: React.ReactNode }> = (
           name: data.name || '',
           description: data.description || '',
           category: data.category || 'uncategorized',
+
+          // Pricing - menggunakan field yang ada di data aktual
+          price: Number(data.price || data.sellingPrice || data.retailPrice || 0),
           retailPrice: Number(data.retailPrice || data.price || 0),
           resellerPrice: Number(data.resellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
-          costPrice: Number(data.costPrice) || Number(data.retailPrice || data.price || 0) * 0.6,
+          costPrice: Number(data.costPrice) || Number(data.purchasePrice || 0),
+          purchasePrice: Number(data.purchasePrice) || Number(data.costPrice || 0),
+          originalRetailPrice: Number(data.originalRetailPrice) || Number(data.price || data.retailPrice || 0),
+          originalResellerPrice: Number(data.originalResellerPrice) || Number(data.resellerPrice || 0),
+
+          // Stock dan status
           stock: Number(data.stock || 0),
-          images: data.images || [],
-          image: data.images?.[0] || '/placeholder-product.jpg',
+          status: data.status === 'Ready Stock' ? 'ready' : (data.status as 'ready' | 'po' || 'ready'),
+          condition: data.condition,
+          estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined,
+
+          // Images
+          images: Array.isArray(data.images) ? data.images : (data.image ? [data.image] : []),
+          image: data.image || (Array.isArray(data.images) && data.images.length > 0 ? data.images[0] : '/placeholder-product.jpg'),
+
+          // Variants - struktur nested yang benar
           variants: {
-            sizes: data.variants?.sizes || data.sizes || [],
-            colors: data.variants?.colors || data.colors || [],
-            stock: data.variants?.stock && typeof data.variants?.stock === 'object' ? data.variants.stock : {}
+            sizes: Array.isArray(data.variants?.sizes) ? data.variants.sizes : (Array.isArray(data.sizes) ? data.sizes : []),
+            colors: Array.isArray(data.variants?.colors) ? data.variants.colors : (Array.isArray(data.colors) ? data.colors : []),
+            stock: (data.variants?.stock && typeof data.variants?.stock === 'object') ? data.variants.stock : {}
           },
+
+          // Flash sale dan featured
           isFeatured: Boolean(data.isFeatured || data.featured),
+          featured: Boolean(data.featured),
           isFlashSale: Boolean(data.isFlashSale),
-          flashSalePrice: Number(data.flashSalePrice) || Number(data.retailPrice || data.price || 0),
-          originalRetailPrice: Number(data.originalRetailPrice) || Number(data.retailPrice || data.price || 0),
-          originalResellerPrice: Number(data.originalResellerPrice) || Number(data.retailPrice || data.price || 0) * 0.8,
-          createdAt: data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : data.createdAt?.toDate()) : new Date(),
+          flashSalePrice: Number(data.flashSalePrice) || Number(data.price || data.retailPrice || 0),
+          flashSaleDiscount: data.flashSaleDiscount || null,
+          discount: Number(data.discount) || 0,
+
+          // Metadata
+          createdAt: data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : (data.createdAt?.toDate ? data.createdAt.toDate() : new Date())) : new Date(),
+          updatedAt: data.updatedAt,
           salesCount: Number(data.salesCount) || 0,
-          featuredOrder: Number(data.featuredOrder) || 0,
+          reviews: Number(data.reviews) || 0,
+          rating: Number(data.rating) || 0,
+
+          // Physical properties
           weight: Number(data.weight) || 0,
-          unit: 'gram',
-          status: data.status || 'ready',
-          estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
+          unit: data.unit || 'pcs',
+
+          // Migration fields
+          cleanupDate: data.cleanupDate,
+          cleanupNote: data.cleanupNote,
+          migrationDate: data.migrationDate,
+          migrationNote: data.migrationNote
         }));
 
         setAllProducts(transformedProducts);
