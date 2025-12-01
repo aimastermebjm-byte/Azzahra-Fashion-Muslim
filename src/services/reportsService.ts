@@ -78,39 +78,44 @@ class ReportsService {
     limit?: number;
   } = {}): Promise<Transaction[]> {
     try {
-      let q = query(collection(db, 'transactions'));
+      const constraints = [];
 
       // Apply date filter
       if (filters.startDate || filters.endDate) {
         const startTimestamp = Timestamp.fromDate(new Date(filters.startDate + 'T00:00:00'));
         const endTimestamp = Timestamp.fromDate(new Date(filters.endDate + 'T23:59:59'));
-        q = q.where('createdAt', '>=', startTimestamp).where('createdAt', '<=', endTimestamp);
+        constraints.push(where('createdAt', '>=', startTimestamp));
+        constraints.push(where('createdAt', '<=', endTimestamp));
       }
 
       // Apply status filter
       if (filters.status && filters.status !== 'all') {
-        q = q.where('status', '==', filters.status);
+        constraints.push(where('status', '==', filters.status));
       }
 
-      // Apply customer filter
+      // Apply customer filter (simple contains search)
       if (filters.customerQuery) {
-        q = q.where('customer', '>=', filters.customerQuery).where('customer', '<=', filters.customerQuery);
+        constraints.push(where('customer', '>=', filters.customerQuery));
+        constraints.push(where('customer', '<=', filters.customerQuery + '\uf8ff'));
       }
+
+      // Create query with all constraints
+      let q = query(collection(db, 'transactions'), ...constraints);
 
       // Order by date descending
-      q = q.orderBy('createdAt', 'desc');
+      q = query(q, orderBy('createdAt', 'desc'));
 
       // Apply limit
       if (filters.limit) {
-        q = q.limit(filters.limit);
+        q = query(q, limit(filters.limit));
       }
 
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || doc.data().createdAt,
-        updatedAt: doc.data().updatedAt?.toDate() || doc.data().updatedAt
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate() || new Date()
       })) as Transaction[];
     } catch (error) {
       console.error('Error getting transactions:', error);
