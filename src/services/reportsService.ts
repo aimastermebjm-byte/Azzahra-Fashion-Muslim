@@ -1,4 +1,4 @@
-import { getFirestore, collection, query, where, orderBy, limit, getDocs, doc, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy, limit, getDocs, getDoc, doc, Timestamp } from 'firebase/firestore';
 
 // Initialize Firestore
 const db = getFirestore();
@@ -199,7 +199,7 @@ class ReportsService {
             productMap.set(item.name, {
               id: item.name, // Use name as ID for simplicity
               name: item.name,
-              category: item.category || 'other',
+              category: 'other',
               totalSold: item.quantity,
               totalRevenue: item.total,
               stock: 0, // Will be calculated separately
@@ -250,10 +250,10 @@ class ReportsService {
             id: transaction.customer, // Use customer name as ID
             name: transaction.customer,
             phone: transaction.phone || '',
-            email: transaction.email || '',
             totalOrders: 1,
             totalSpent: transaction.total,
-            lastOrderDate: new Date(transaction.createdAt)
+            lastOrderDate: new Date(transaction.createdAt),
+            createdAt: new Date()
           });
         }
       });
