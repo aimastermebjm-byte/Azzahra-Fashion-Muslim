@@ -116,9 +116,9 @@ class ReportsService {
 
       const snapshot = await getDocs(q);
 
-      // Get products data once for all modal/costPrice information
-      const productsSnapshot = await getDocs(query(collection(db, 'products')));
-      const productsData: any[] = productsSnapshot.docs.map(doc => ({
+      // Get productBatches data once for all modal/costPrice information
+      const productBatchesSnapshot = await getDocs(query(collection(db, 'productBatches')));
+      const productsData: any[] = productBatchesSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
@@ -271,10 +271,10 @@ class ReportsService {
   // Get inventory reports
   static async getInventoryReports(): Promise<InventoryReport[]> {
     try {
-      // Get products for inventory data
-      const productsSnapshot = await getDocs(query(collection(db, 'products')));
+      // Get productBatches for inventory data
+      const productBatchesSnapshot = await getDocs(query(collection(db, 'productBatches')));
 
-      return productsSnapshot.docs.map(doc => {
+      return productBatchesSnapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
