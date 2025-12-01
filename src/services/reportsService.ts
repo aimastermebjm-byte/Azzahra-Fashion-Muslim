@@ -99,8 +99,8 @@ class ReportsService {
         constraints.push(where('customer', '<=', filters.customerQuery + '\uf8ff'));
       }
 
-      // Create query with all constraints
-      let q = query(collection(db, 'transactions'), ...constraints);
+      // Create query with all constraints - reading from orders collection
+      let q = query(collection(db, 'orders'), ...constraints);
 
       // Order by date descending
       q = query(q, orderBy('createdAt', 'desc'));
@@ -111,12 +111,30 @@ class ReportsService {
       }
 
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date()
-      })) as Transaction[];
+      return snapshot.docs.map(doc => {
+        const orderData = doc.data();
+        // Map orders collection fields to Transaction interface
+        return {
+          id: doc.id,
+          invoice: `INV-${doc.id}`, // Generate invoice from order ID
+          date: orderData.createdAt ? new Date(orderData.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          customer: orderData.userName || 'Unknown Customer',
+          phone: orderData.shippingInfo?.phone || '',
+          items: orderData.items?.map((item: any) => ({
+            name: item.name || item.productName || 'Unknown Product',
+            quantity: item.quantity || 1,
+            price: item.price || 0,
+            total: (item.price || 0) * (item.quantity || 1)
+          })) || [],
+          subtotal: orderData.totalAmount || 0,
+          shippingCost: orderData.shippingCost || 0,
+          total: orderData.finalTotal || (orderData.totalAmount || 0) + (orderData.shippingCost || 0),
+          status: orderData.status === 'paid' ? 'lunas' : 'belum_lunas', // Map order status to transaction status
+          paymentMethod: orderData.paymentMethod || '',
+          createdAt: orderData.createdAt ? new Date(orderData.createdAt) : new Date(),
+          updatedAt: orderData.updatedAt ? new Date(orderData.updatedAt) : new Date()
+        };
+      }) as Transaction[];
     } catch (error) {
       console.error('Error getting transactions:', error);
       throw error;

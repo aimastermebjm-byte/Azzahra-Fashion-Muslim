@@ -16,9 +16,11 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // Allow read/write access to orders for authenticated users
+    // Allow read access to orders for reporting (public read for production)
+    // Allow write only for authenticated users
     match /orders/{orderId} {
-      allow read, write, create: if request.auth != null;
+      allow read: if true; // Public read for reporting system
+      allow write, create: if request.auth != null;
       allow read, write, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
