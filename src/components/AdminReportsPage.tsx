@@ -716,7 +716,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     {products.map((product) => (
                       <tr key={product.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          {item.name}
+                          {product.name}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-500">
                           {product.category}
