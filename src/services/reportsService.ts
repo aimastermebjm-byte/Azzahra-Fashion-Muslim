@@ -1,0 +1,381 @@
+import { getFirestore, collection, query, where, orderBy, limit, getDocs, doc, Timestamp } from 'firebase/firestore';
+
+// Initialize Firestore
+const db = getFirestore();
+
+// Report Service untuk mengambil data transaksi real dari Firestore
+export interface Transaction {
+  id: string;
+  invoice: string;
+  date: string;
+  customer: string;
+  phone: string;
+  items: {
+    name: string;
+    quantity: number;
+    price: number;
+    total: number;
+  }[];
+  subtotal: number;
+  shippingCost: number;
+  total: number;
+  status: 'lunas' | 'belum_lunas';
+  paymentMethod?: string;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+export interface ProductReport {
+  id: string;
+  name: string;
+  category: string;
+  totalSold: number;
+  totalRevenue: number;
+  stock: number;
+  profit: number;
+  lastSoldDate?: Date;
+}
+
+export interface CustomerReport {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  totalOrders: number;
+  totalSpent: number;
+  lastOrderDate?: Date;
+  createdAt: Date;
+}
+
+export interface InventoryReport {
+  id: string;
+  name: string;
+  category: string;
+  stock: number;
+  reserved: number;
+  available: number;
+  value: number;
+  lastUpdated: Date;
+}
+
+export interface CashFlowReport {
+  id: string;
+  date: string;
+  description: string;
+  type: 'income' | 'expense';
+  amount: number;
+  category: string;
+  createdAt: Date;
+}
+
+class ReportsService {
+  // Get transactions dengan filter
+  static async getTransactions(filters: {
+    startDate?: string;
+    endDate?: string;
+    status?: 'all' | 'lunas' | 'belum_lunas';
+    customerQuery?: string;
+    limit?: number;
+  } = {}): Promise<Transaction[]> {
+    try {
+      let q = query(collection(db, 'transactions'));
+
+      // Apply date filter
+      if (filters.startDate || filters.endDate) {
+        const startTimestamp = Timestamp.fromDate(new Date(filters.startDate + 'T00:00:00'));
+        const endTimestamp = Timestamp.fromDate(new Date(filters.endDate + 'T23:59:59'));
+        q = q.where('createdAt', '>=', startTimestamp).where('createdAt', '<=', endTimestamp);
+      }
+
+      // Apply status filter
+      if (filters.status && filters.status !== 'all') {
+        q = q.where('status', '==', filters.status);
+      }
+
+      // Apply customer filter
+      if (filters.customerQuery) {
+        q = q.where('customer', '>=', filters.customerQuery).where('customer', '<=', filters.customerQuery);
+      }
+
+      // Order by date descending
+      q = q.orderBy('createdAt', 'desc');
+
+      // Apply limit
+      if (filters.limit) {
+        q = q.limit(filters.limit);
+      }
+
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || doc.data().createdAt,
+        updatedAt: doc.data().updatedAt?.toDate() || doc.data().updatedAt
+      })) as Transaction[];
+    } catch (error) {
+      console.error('Error getting transactions:', error);
+      throw error;
+    }
+  }
+
+  // Get products report
+  static async getProductsReport(filters: {
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+  } = {}): Promise<ProductReport[]> {
+    try {
+      // Get all transactions within date range
+      const transactions = await this.getTransactions({
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        limit: filters.limit || 1000 // Default limit untuk data volume
+      });
+
+      // Process products from transactions
+      const productMap = new Map<string, ProductReport>();
+
+      transactions.forEach(transaction => {
+        transaction.items.forEach(item => {
+          const existing = productMap.get(item.name);
+          if (existing) {
+            // Update existing product
+            existing.totalSold += item.quantity;
+            existing.totalRevenue += item.total;
+            existing.lastSoldDate = new Date(Math.max(
+              new Date(existing.lastSoldDate || '').getTime(),
+              new Date(transaction.createdAt).getTime()
+            ));
+          } else {
+            // Create new product entry
+            productMap.set(item.name, {
+              id: item.name, // Use name as ID for simplicity
+              name: item.name,
+              category: item.category || 'other',
+              totalSold: item.quantity,
+              totalRevenue: item.total,
+              stock: 0, // Will be calculated separately
+              profit: item.total * 0.3, // Estimasi 30% profit
+              lastSoldDate: new Date(transaction.createdAt)
+            });
+          }
+        });
+      });
+
+      return Array.from(productMap.values());
+    } catch (error) {
+      console.error('Error getting products report:', error);
+      throw error;
+    }
+  }
+
+  // Get customer reports
+  static async getCustomerReports(filters: {
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+  } = {}): Promise<CustomerReport[]> {
+    try {
+      // Get transactions with customer data
+      const transactions = await this.getTransactions({
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        limit: filters.limit || 500
+      });
+
+      // Process customer data from transactions
+      const customerMap = new Map<string, CustomerReport>();
+
+      transactions.forEach(transaction => {
+        const existing = customerMap.get(transaction.customer);
+        if (existing) {
+          // Update existing customer
+          existing.totalOrders += 1;
+          existing.totalSpent += transaction.total;
+          existing.lastOrderDate = new Date(Math.max(
+            new Date(existing.lastOrderDate || '').getTime(),
+            new Date(transaction.createdAt).getTime()
+          ));
+        } else {
+          // Create new customer entry
+          customerMap.set(transaction.customer, {
+            id: transaction.customer, // Use customer name as ID
+            name: transaction.customer,
+            phone: transaction.phone || '',
+            email: transaction.email || '',
+            totalOrders: 1,
+            totalSpent: transaction.total,
+            lastOrderDate: new Date(transaction.createdAt)
+          });
+        }
+      });
+
+      return Array.from(customerMap.values());
+    } catch (error) {
+      console.error('Error getting customer reports:', error);
+      throw error;
+    }
+  }
+
+  // Get inventory reports
+  static async getInventoryReports(): Promise<InventoryReport[]> {
+    try {
+      // Get products for inventory data
+      const productsSnapshot = await getDocs(query(collection(db, 'products')));
+
+      return productsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name || '',
+          category: data.category || 'other',
+          stock: data.stock || 0,
+          reserved: data.reserved || 0,
+          available: (data.stock || 0) - (data.reserved || 0),
+          value: (data.stock || 0) * (data.retailPrice || 0), // Use retail price for inventory value
+          lastUpdated: data.updatedAt?.toDate() || new Date()
+        };
+      }) as InventoryReport[];
+    } catch (error) {
+      console.error('Error getting inventory reports:', error);
+      throw error;
+    }
+  }
+
+  // Get cash flow reports
+  static async getCashFlowReports(filters: {
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+  } = {}): Promise<CashFlowReport[]> {
+    try {
+      // Get transactions for cash flow
+      const transactions = await this.getTransactions({
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        limit: filters.limit || 500
+      });
+
+      // Process cash flow data
+      const cashFlowData: CashFlowReport[] = [];
+
+      transactions.forEach(transaction => {
+        // Income from sales
+        cashFlowData.push({
+          id: `${transaction.id}_income`,
+          date: transaction.date,
+          description: `Penjualan ${transaction.invoice}`,
+          type: 'income',
+          amount: transaction.subtotal,
+          category: 'penjualan',
+          createdAt: new Date(transaction.createdAt)
+        });
+
+        // Expense from shipping cost
+        if (transaction.shippingCost > 0) {
+          cashFlowData.push({
+            id: `${transaction.id}_expense`,
+            date: transaction.date,
+            description: `Biaya ongkir ${transaction.invoice}`,
+            type: 'expense',
+            amount: transaction.shippingCost,
+            category: 'ongkir',
+            createdAt: new Date(transaction.createdAt)
+          });
+        }
+      });
+
+      // Sort by date descending
+      cashFlowData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      return cashFlowData;
+    } catch (error) {
+      console.error('Error getting cash flow reports:', error);
+      throw error;
+    }
+  }
+
+  // Get profit/loss analysis
+  static async getProfitLossAnalysis(filters: {
+    startDate?: string;
+    endDate?: string;
+  } = {}): Promise<{
+    totalIncome: number;
+    totalExpense: number;
+    totalProfit: number;
+    profitMargin: number;
+  }> {
+    try {
+      const cashFlowData = await this.getCashFlowReports(filters);
+
+      const totalIncome = cashFlowData
+        .filter(item => item.type === 'income')
+        .reduce((sum, item) => sum + item.amount, 0);
+
+      const totalExpense = cashFlowData
+        .filter(item => item.type === 'expense')
+        .reduce((sum, item) => sum + item.amount, 0);
+
+      const totalProfit = totalIncome - totalExpense;
+      const profitMargin = totalIncome > 0 ? (totalProfit / totalIncome) * 100 : 0;
+
+      return {
+        totalIncome,
+        totalExpense,
+        totalProfit,
+        profitMargin
+      };
+    } catch (error) {
+      console.error('Error getting profit/loss analysis:', error);
+      throw error;
+    }
+  }
+
+  // Get summary statistics
+  static async getSummaryStats(filters: {
+    startDate?: string;
+    endDate?: string;
+  } = {}): Promise<{
+    totalTransactions: number;
+    totalRevenue: number;
+    totalExpenses: number;
+    totalShipping: number;
+    paidTransactions: number;
+    unpaidTransactions: number;
+    unpaidAmount: number;
+    averageTransaction: number;
+  }> {
+    try {
+      const transactions = await this.getTransactions(filters);
+
+      const totalTransactions = transactions.length;
+      const totalRevenue = transactions.reduce((sum, t) => sum + t.subtotal, 0);
+      const totalExpenses = transactions.reduce((sum, t) => sum + t.shippingCost, 0);
+      const totalShipping = totalExpenses; // Since we categorize shipping as expense
+
+      const paidTransactions = transactions.filter(t => t.status === 'lunas').length;
+      const unpaidTransactions = transactions.filter(t => t.status === 'belum_lunas').length;
+      const unpaidAmount = transactions
+        .filter(t => t.status === 'belum_lunas')
+        .reduce((sum, t) => sum + t.total, 0);
+
+      const averageTransaction = totalRevenue > 0 ? totalRevenue / totalTransactions : 0;
+
+      return {
+        totalTransactions,
+        totalRevenue,
+        totalExpenses,
+        totalShipping,
+        paidTransactions,
+        unpaidTransactions,
+        unpaidAmount,
+        averageTransaction
+      };
+    } catch (error) {
+      console.error('Error getting summary stats:', error);
+      throw error;
+    }
+  }
+}
+
+export default ReportsService;

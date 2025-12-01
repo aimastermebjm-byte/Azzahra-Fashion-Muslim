@@ -1,62 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  ArrowLeft, Download, Calendar, BarChart3, PieChart, TrendingUp, Package, Users,
+  ArrowLeft, Download, Calendar, BarChart3, PieChart, TrendingUp, TrendingDown, Package, Users,
   FileText, DollarSign, Truck, Filter, Eye, CheckCircle, XCircle,
   ShoppingCart, ArrowUpRight, ArrowDownRight, Box, Wallet, PiggyBank,
   CreditCard, Search, ChevronDown
 } from 'lucide-react';
-
-interface TransactionData {
-  id: string;
-  invoice: string;
-  date: string;
-  customer: string;
-  phone: string;
-  subtotal: number;
-  shippingCost: number;
-  total: number;
-  status: 'lunas' | 'belum_lunas';
-  paymentMethod?: string;
-  products: Array<{
-    name: string;
-    quantity: number;
-    price: number;
-    total: number;
-  }>;
-  createdAt: Date;
-}
-
-interface ProductData {
-  id: string;
-  name: string;
-  category: string;
-  sold: number;
-  revenue: number;
-  stock: number;
-  profit: number;
-  lastSold?: Date;
-}
-
-interface InventoryData {
-  id: string;
-  name: string;
-  category: string;
-  stock: number;
-  reserved: number;
-  available: number;
-  value: number;
-  lastUpdated: Date;
-}
-
-interface CashFlowData {
-  id: string;
-  date: string;
-  description: string;
-  type: 'income' | 'expense';
-  amount: number;
-  category: string;
-  createdAt: Date;
-}
+import ReportsService from '../services/reportsService';
+import {
+  Transaction,
+  ProductReport,
+  InventoryReport,
+  CashFlowReport
+} from '../services/reportsService';
 
 interface AdminReportsPageProps {
   onBack: () => void;
@@ -77,11 +32,135 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [customerFilter, setCustomerFilter] = useState<string>('');
 
   // Data states
-  const [transactions, setTransactions] = useState<TransactionData[]>([]);
-  const [products, setProducts] = useState<ProductData[]>([]);
-  const [inventory, setInventory] = useState<InventoryData[]>([]);
-  const [cashFlow, setCashFlow] = useState<CashFlowData[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [products, setProducts] = useState<ProductReport[]>([]);
+  const [inventory, setInventory] = useState<InventoryReport[]>([]);
+  const [cashFlow, setCashFlow] = useState<CashFlowReport[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Load real data from Firestore
+  const loadTransactions = async () => {
+    setLoading(true);
+    try {
+      const transactionData = await ReportsService.getTransactions({
+        startDate: dateFilter === 'custom' ? startDate : undefined,
+        endDate: dateFilter === 'custom' ? endDate : undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        customerQuery: customerFilter || undefined,
+        limit: 50 // Limit untuk performance
+      });
+      setTransactions(transactionData);
+    } catch (error) {
+      console.error('Error loading transactions:', error);
+      setTransactions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load products report
+  const loadProductsReport = async () => {
+    setLoading(true);
+    try {
+      const productData = await ReportsService.getProductsReport({
+        startDate: dateFilter === 'custom' ? startDate : undefined,
+        endDate: dateFilter === 'custom' ? endDate : undefined,
+        limit: 100 // Limit untuk performance
+      });
+      setProducts(productData);
+    } catch (error) {
+      console.error('Error loading products report:', error);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load inventory report
+  const loadInventoryReport = async () => {
+    setLoading(true);
+    try {
+      const inventoryData = await ReportsService.getInventoryReports();
+      setInventory(inventoryData);
+    } catch (error) {
+      console.error('Error loading inventory report:', error);
+      setInventory([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load cash flow report
+  const loadCashFlowReport = async () => {
+    setLoading(true);
+    try {
+      const cashFlowData = await ReportsService.getCashFlowReports({
+        startDate: dateFilter === 'custom' ? startDate : undefined,
+        endDate: dateFilter === 'custom' ? endDate : undefined,
+        limit: 100 // Limit untuk performance
+      });
+      setCashFlow(cashFlowData);
+    } catch (error) {
+      console.error('Error loading cash flow report:', error);
+      setCashFlow([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load summary statistics
+  const loadSummaryStats = async () => {
+    try {
+      const stats = await ReportsService.getSummaryStats({
+        startDate: dateFilter === 'custom' ? startDate : undefined,
+        endDate: dateFilter === 'custom' ? endDate : undefined
+      });
+
+      // Set summary data for display
+      const summaryData = {
+        totalTransactions: stats.totalTransactions,
+        totalRevenue: stats.totalRevenue,
+        totalExpenses: stats.totalExpenses,
+        totalProfit: stats.totalProfit,
+        profitMargin: stats.profitMargin
+      };
+
+      console.log('Summary stats loaded:', summaryData);
+    } catch (error) {
+      console.error('Error loading summary stats:', error);
+    }
+  }
+
+  // Load data based on active report type
+  useEffect(() => {
+    const loadData = () => {
+      switch (reportType) {
+        case 'sales':
+        case 'products':
+          loadProductsReport();
+          break;
+        case 'invoice':
+          loadTransactions();
+          break;
+        case 'inventory':
+          loadInventoryReport();
+          break;
+        case 'cashflow':
+          loadCashFlowReport();
+          break;
+        case 'profitloss':
+          loadSummaryStats();
+          break;
+        case 'detail':
+          loadTransactions();
+          break;
+        default:
+          loadTransactions();
+      }
+    };
+
+    loadData();
+  }, [dateFilter, statusFilter, customerFilter, reportType]);
 
   // Calculate date range based on filter
   const getDateRange = useMemo(() => {
@@ -637,16 +716,16 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     {products.map((product) => (
                       <tr key={product.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          {product.name}
+                          {item.name}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-500">
                           {product.category}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900">
-                          {product.sold}
+                          {product.totalSold}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900">
-                          {formatCurrency(product.revenue)}
+                          {formatCurrency(product.totalRevenue)}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900">
                           {product.stock}
@@ -1022,20 +1101,20 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {filteredTransactions.map((transaction) =>
-                      transaction.products.map((product, index) => (
+                      transaction.items.map((item, index) => (
                         <tr key={`${transaction.id}-${index}`} className="hover:bg-gray-50">
                           {index === 0 && (
-                            <td className="px-4 py-3 text-sm font-medium text-gray-900" rowSpan={transaction.products.length}>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900" rowSpan={transaction.items.length}>
                               {transaction.invoice}
                             </td>
                           )}
                           {index === 0 && (
-                            <td className="px-4 py-3 text-sm text-gray-500" rowSpan={transaction.products.length}>
+                            <td className="px-4 py-3 text-sm text-gray-500" rowSpan={transaction.items.length}>
                               {transaction.date}
                             </td>
                           )}
                           {index === 0 && (
-                            <td className="px-4 py-3 text-sm text-gray-900" rowSpan={transaction.products.length}>
+                            <td className="px-4 py-3 text-sm text-gray-900" rowSpan={transaction.items.length}>
                               <div>
                                 <div className="font-medium">{transaction.customer}</div>
                                 <div className="text-gray-500">{transaction.phone}</div>
@@ -1043,19 +1122,19 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                             </td>
                           )}
                           <td className="px-4 py-3 text-sm text-gray-900">
-                            {product.name}
+                            {item.name}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-900">
-                            {product.quantity}
+                            {item.quantity}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-900">
-                            {formatCurrency(product.price)}
+                            {formatCurrency(item.price)}
                           </td>
                           <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                            {formatCurrency(product.total)}
+                            {formatCurrency(item.total)}
                           </td>
                           {index === 0 && (
-                            <td className="px-4 py-3 text-sm" rowSpan={transaction.products.length}>
+                            <td className="px-4 py-3 text-sm" rowSpan={transaction.items.length}>
                               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                 transaction.status === 'lunas'
                                   ? 'bg-green-100 text-green-800'
