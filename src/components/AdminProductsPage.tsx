@@ -25,7 +25,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   const { allProducts, loading, error } = useGlobalProducts();
 
   // Use product CRUD functions for product management
-  const { addProduct } = useProductCRUD();
+  const { addProduct, deleteProduct } = useProductCRUD();
 
   // Log current state for debugging
   React.useEffect(() => {
@@ -497,7 +497,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return;
 
     try {
-      await deleteProductFromBatch(productId);
+      await deleteProduct(productId);
     } catch (error) {
       console.error('Error deleting product:', error);
       alert('Gagal menghapus produk');
@@ -682,7 +682,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       console.log(`🗑️ Menghapus ${selectedProducts.length} produk...`);
 
       for (const productId of selectedProducts) {
-        await deleteProductFromBatch(productId);
+        await deleteProduct(productId);
       }
 
       setSelectedProducts([]);
