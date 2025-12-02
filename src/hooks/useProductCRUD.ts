@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
+import { syncProductToGlobalIndex, deleteProductFromGlobalIndex } from '../services/globalIndexSync';
 
 export interface UseProductCRUDResult {
   products: Product[];
@@ -129,7 +130,10 @@ export const useProductCRUD = (): UseProductCRUDResult => {
           updatedAt: new Date().toISOString()
         });
 
-        console.log(`✅ SINGLE LISTENER: Product added with ID ${newProductId}`);
+        // Sync to globalindex collection
+        await syncProductToGlobalIndex(newProduct);
+
+        console.log(`✅ SINGLE LISTENER: Product added with ID ${newProductId} and synced to globalindex`);
         return newProductId;
       } else {
         throw new Error('Batch document not found');
@@ -200,7 +204,10 @@ export const useProductCRUD = (): UseProductCRUDResult => {
           updatedAt: new Date().toISOString()
         });
 
-        console.log(`✅ SINGLE LISTENER: Product deleted with ID ${id}`);
+        // Delete from globalindex collection
+        await deleteProductFromGlobalIndex(id);
+
+        console.log(`✅ SINGLE LISTENER: Product deleted with ID ${id} and removed from globalindex`);
         return true;
       }
       return false;
