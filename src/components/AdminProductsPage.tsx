@@ -19,44 +19,17 @@ interface FlashSaleConfig {
 }
 
 const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) => {
-  // Fallback untuk error import
-  const [importError, setImportError] = useState<string | null>(null);
+  // Use global products context instead of local CRUD
+  const { allProducts, loading, error } = useGlobalProducts();
 
-  // Load useProductCRUD dynamically with error handling
-  const [crudResult, setCrudResult] = React.useState<any>(null);
-
+  // Log current state for debugging
   React.useEffect(() => {
-    const loadCRUD = async () => {
-      try {
-        const { useProductCRUD } = await import('../hooks/useProductCRUD');
-        if (useProductCRUD) {
-          setCrudResult(useProductCRUD());
-        }
-      } catch (err) {
-        console.error('🚨 Failed to import useProductCRUD:', err);
-        setImportError('Gagal memuat CRUD produk. Menggunakan mode terbatas.');
-        // Set fallback
-        setCrudResult({
-          products: [],
-          loading: false,
-          error: null,
-          addProduct: async () => {
-            throw new Error('CRUD operations tidak tersedia. Silakan refresh halaman.');
-          },
-          updateProduct: async () => {
-            throw new Error('Update produk tidak tersedia. Silakan refresh halaman.');
-          },
-          deleteProduct: async () => {
-            throw new Error('Hapus produk tidak tersedia. Silakan refresh halaman.');
-          }
-        });
-      }
-    };
+    console.log('🔍 AdminProductsPage: Current products count:', allProducts?.length || 0);
+    console.log('🔍 AdminProductsPage: Current loading state:', loading);
+    console.log('🔍 AdminProductsPage: Current error state:', error);
+  }, [allProducts, loading, error]);
 
-    loadCRUD();
-  }, []); // Only run once on mount
-
-  const { products = [], loading = false, updateProduct, addProduct, deleteProduct } = crudResult || {};
+  const products = allProducts || [];
 
   // 🔥 UNIFIED FLASH SALE: Single source of truth
   const {
