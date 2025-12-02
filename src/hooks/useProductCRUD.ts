@@ -118,9 +118,13 @@ export const useProductCRUD = (): UseProductCRUDResult => {
 
         // Update batch
         const updatedProducts = [...currentProducts, newProduct];
+        const currentProductIds = batchData.productIds || [];
+        const updatedProductIds = [...currentProductIds, newProductId];
+
         await setDoc(batchDocRef, {
           ...batchData,
           products: updatedProducts,
+          productIds: updatedProductIds,
           totalProducts: updatedProducts.length,
           updatedAt: new Date().toISOString()
         });
@@ -185,10 +189,13 @@ export const useProductCRUD = (): UseProductCRUDResult => {
         const currentProducts = batchData.products || [];
 
         const updatedProducts = currentProducts.filter((product: Product) => product.id !== id);
+        const currentProductIds = batchData.productIds || [];
+        const updatedProductIds = currentProductIds.filter((productId: string) => productId !== id);
 
         await setDoc(batchDocRef, {
           ...batchData,
           products: updatedProducts,
+          productIds: updatedProductIds,
           totalProducts: updatedProducts.length,
           updatedAt: new Date().toISOString()
         });
