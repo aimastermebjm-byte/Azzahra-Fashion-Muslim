@@ -22,31 +22,39 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   // Fallback untuk error import
   const [importError, setImportError] = useState<string | null>(null);
 
-  // Try to import useProductCRUD, fallback to basic CRUD if failed
-  let useProductCRUDHook: any = null;
-  try {
-    useProductCRUDHook = require('../hooks/useProductCRUD').default;
-  } catch (importError) {
-    console.error('🚨 Failed to import useProductCRUD:', importError);
-    setImportError('Gagal memuat CRUD produk. Silakan refresh halaman.');
-    // Fallback to basic CRUD operations
-    useProductCRUDHook = {
-      products: [],
-      loading: false,
-      error: null,
-      addProduct: async () => {
-        throw new Error('CRUD operations tidak tersedia. Silakan refresh halaman.');
-      },
-      updateProduct: async () => {
-        throw new Error('Update produk tidak tersedia. Silakan refresh halaman.');
-      },
-      deleteProduct: async () => {
-        throw new Error('Hapus produk tidak tersedia. Silakan refresh halaman.');
+  // Simple direct import - use try-catch with useState for error handling
+  const [crudResult, setCrudResult] = useState<any>({
+    products: [],
+    loading: false,
+    error: null,
+    addProduct: async () => {
+      throw new Error('CRUD operations tidak tersedia. Silakan refresh halaman.');
+    },
+    updateProduct: async () => {
+      throw new Error('Update produk tidak tersedia. Silakan refresh halaman.');
+    },
+    deleteProduct: async () => {
+      throw new Error('Hapus produk tidak tersedia. Silakan refresh halaman.');
+    }
+  });
+
+  useEffect(() => {
+    const loadCRUD = async () => {
+      try {
+        const module = await import('../hooks/useProductCRUD');
+        if (module.useProductCRUD) {
+          setCrudResult(module.useProductCRUD());
+        }
+      } catch (importError) {
+        console.error('🚨 Failed to import useProductCRUD:', importError);
+        setImportError('Gagal memuat CRUD produk. Menggunakan mode terbatas.');
       }
     };
-  }
 
-  const { products, loading, updateProduct, addProduct, deleteProduct } = useProductCRUDHook || useProductCRUDHook;
+    loadCRUD();
+  }, []); // Empty dependency array to prevent infinite loop
+
+  const { products, loading, updateProduct, addProduct, deleteProduct } = crudResult;
 
   // 🔥 UNIFIED FLASH SALE: Single source of truth
   const {

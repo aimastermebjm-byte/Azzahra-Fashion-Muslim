@@ -3,12 +3,10 @@ import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 
 let globalUnsubscribe: (() => void) | null = null;
+let isInitialized = false;
 
 export const useSingletonFirestore = () => {
-  let globalUnsubscribe: (() => void) | null = null;
-  let isInitialized = false;
-
-  const subscribe = (callback: (products: any[]) => void) => {
+  const subscribe = (callback: (products: any[]) => void, setLoading?: (loading: boolean) => void) => {
     // Jika sudah ada listener, cleanup dulu
     if (globalUnsubscribe) {
       console.log('🔄 SINGLETON: Cleaning up previous listener');
@@ -32,7 +30,9 @@ export const useSingletonFirestore = () => {
           console.log('⚠️ SINGLETON: No batch document found');
           callback([]);
         }
-        setLoading(false);
+        if (setLoading) {
+          setLoading(false);
+        }
       });
 
       isInitialized = true;
