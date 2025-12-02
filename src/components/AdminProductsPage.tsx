@@ -348,8 +348,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         retailPrice: parseInt(formData.retailPrice || '0') || 0,
         resellerPrice: parseInt(formData.resellerPrice || '0') || 0,
         costPrice: parseInt(formData.costPrice || '0') || 0,
+        purchasePrice: parseInt(formData.costPrice || '0') || 0, // Required field
+        price: parseInt(formData.retailPrice || '0') || 0, // Required field (same as retailPrice)
+        originalRetailPrice: parseInt(formData.retailPrice || '0') || 0, // Required field
+        originalResellerPrice: parseInt(formData.resellerPrice || '0') || 0, // Required field
         weight: parseInt(formData.weight || '0') || 0,
         stock: totalStock, // Use calculated total stock from variants
+        unit: 'pcs', // Required field - default to pcs
         // IMPORTANT: Preserve all variants data exactly as entered
         variants: {
           sizes: Array.isArray(formData.variants?.sizes) ? formData.variants.sizes : [],
@@ -362,7 +367,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         salesCount: 0,
         isFeatured: false,
         isFlashSale: false,
-        flashSalePrice: parseInt(formData.retailPrice) || 0
+        flashSalePrice: parseInt(formData.retailPrice) || 0,
+        // Optional fields with defaults
+        condition: 'baru',
+        featured: false,
+        discount: 0,
+        reviews: 0,
+        rating: 0
       };
 
       // Important: Log to verify data being saved to Firestore
@@ -372,7 +383,16 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         colors: newProduct.variants.colors,
         status: newProduct.status,
         weight: newProduct.weight,
-        images: allImageUrls.length
+        unit: newProduct.unit,
+        images: allImageUrls,
+        imagesCount: allImageUrls.length,
+        price: newProduct.price,
+        retailPrice: newProduct.retailPrice,
+        resellerPrice: newProduct.resellerPrice,
+        costPrice: newProduct.costPrice,
+        purchasePrice: newProduct.purchasePrice,
+        originalRetailPrice: newProduct.originalRetailPrice,
+        originalResellerPrice: newProduct.originalResellerPrice
       });
 
       await addProductToBatch(newProduct);
@@ -980,8 +1000,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     </tr>
                   </thead>
                   <tbody>
-                    {currentProducts.map((product) => (
-                      <tr key={product.id} className="border-b hover:bg-gray-50">
+                    {currentProducts.map((product, index) => (
+                      <tr key={`${product.id}_${index}`} className="border-b hover:bg-gray-50">
                         <td className="p-3">
                           <input
                             type="checkbox"

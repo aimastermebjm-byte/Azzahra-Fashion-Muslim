@@ -222,8 +222,7 @@ export const useFirebaseProductsAdmin = () => {
           // Stock dan status
           stock: Number(productData.stock) || 0,
           status: (productData.status === 'Ready Stock' || productData.status === 'ready') ? 'ready' : (productData.status as 'ready' | 'po' || 'ready'),
-          condition: productData.condition,
-          estimatedReady: productData.estimatedReady || undefined,
+          condition: productData.condition || 'baru',
 
           // Images
           images: Array.isArray(productData.images) ? productData.images : [],
@@ -254,11 +253,7 @@ export const useFirebaseProductsAdmin = () => {
           weight: Number(productData.weight) || 0,
           unit: productData.unit || 'pcs',
 
-          // Migration fields (opsional)
-          cleanupDate: undefined,
-          cleanupNote: undefined,
-          migrationDate: undefined,
-          migrationNote: undefined
+          // Migration fields tidak diset ke undefined
         };
 
         // Add to products array
@@ -301,8 +296,7 @@ export const useFirebaseProductsAdmin = () => {
           // Stock dan status
           stock: Number(productData.stock) || 0,
           status: (productData.status === 'Ready Stock' || productData.status === 'ready') ? 'ready' : (productData.status as 'ready' | 'po' || 'ready'),
-          condition: productData.condition,
-          estimatedReady: productData.estimatedReady || undefined,
+          condition: productData.condition || 'baru',
 
           // Images
           images: Array.isArray(productData.images) ? productData.images : [],
@@ -333,11 +327,7 @@ export const useFirebaseProductsAdmin = () => {
           weight: Number(productData.weight) || 0,
           unit: productData.unit || 'pcs',
 
-          // Migration fields (opsional)
-          cleanupDate: undefined,
-          cleanupNote: undefined,
-          migrationDate: undefined,
-          migrationNote: undefined
+          // Migration fields tidak diset ke undefined
         };
 
         await setDoc(doc(db, 'productBatches', 'batch_1'), {
