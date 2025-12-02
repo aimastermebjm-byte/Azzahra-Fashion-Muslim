@@ -188,7 +188,25 @@ export const useFirebaseProductsAdmin = () => {
   // 🔥 BATCH SYSTEM: Add product to batch (not individual collection)
   const addProduct = async (productData: any) => {
     try {
-      console.log('➕ Adding product to BATCH SYSTEM:', productData);
+      console.log('➕ addProduct called with data:', productData);
+      console.log('📊 Product data keys:', Object.keys(productData));
+      console.log('🏷️ Product name:', productData.name);
+      console.log('💰 Product prices:', {
+        price: productData.price,
+        retailPrice: productData.retailPrice,
+        resellerPrice: productData.resellerPrice,
+        costPrice: productData.costPrice
+      });
+      console.log('📦 Product stock & variants:', {
+        stock: productData.stock,
+        status: productData.status,
+        variants: productData.variants
+      });
+      console.log('🖼️ Product images:', {
+        images: productData.images,
+        image: productData.image,
+        imagesCount: productData.images?.length || 0
+      });
 
       // Get current batch
       const batchRef = collection(db, 'productBatches');

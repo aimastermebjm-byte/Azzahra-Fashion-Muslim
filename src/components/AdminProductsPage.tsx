@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../types';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
+import { useFirebaseProductsAdmin } from '../hooks/useFirebaseProductsAdmin';
 import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
 import { ProductTableSkeleton, FlashSaleStatusSkeleton, MenuSkeleton } from './LoadingSkeleton';
 import { uploadMultipleImages, validateImageFile, generateImageName } from '../utils/imageUpload';
@@ -22,6 +23,9 @@ interface FlashSaleConfig {
 const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) => {
   // Use global products context instead of local CRUD
   const { allProducts, loading, error } = useGlobalProducts();
+
+  // Use admin functions for product management
+  const { addProduct } = useFirebaseProductsAdmin();
 
   // Log current state for debugging
   React.useEffect(() => {
@@ -405,7 +409,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         originalResellerPrice: newProduct.originalResellerPrice
       });
 
-      await addProductToBatch(newProduct);
+      console.log('🚀 About to call addProduct with data:', newProduct);
+      await addProduct(newProduct);
+      console.log('✅ addProduct completed successfully');
 
       // Reset form
       setFormData({
