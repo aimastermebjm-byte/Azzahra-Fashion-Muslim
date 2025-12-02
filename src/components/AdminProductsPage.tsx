@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../types';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
-import { useFirebaseProductsAdmin } from '../hooks/useFirebaseProductsAdmin';
+import { useProductCRUD } from '../hooks/useProductCRUD';
 import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
 import { ProductTableSkeleton, FlashSaleStatusSkeleton, MenuSkeleton } from './LoadingSkeleton';
 import { uploadMultipleImages, validateImageFile, generateImageName } from '../utils/imageUpload';
@@ -24,8 +24,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   // Use global products context instead of local CRUD
   const { allProducts, loading, error } = useGlobalProducts();
 
-  // Use admin functions for product management
-  const { addProduct } = useFirebaseProductsAdmin();
+  // Use product CRUD functions for product management
+  const { addProduct } = useProductCRUD();
 
   // Log current state for debugging
   React.useEffect(() => {
