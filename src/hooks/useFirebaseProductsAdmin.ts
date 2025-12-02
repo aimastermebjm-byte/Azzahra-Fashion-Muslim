@@ -18,7 +18,7 @@ export const useFirebaseProductsAdmin = () => {
 
     // 🚀 OPTIMIZED: Use global state instead of Firestore reads
     if (allProducts && allProducts.length > 0) {
-      console.log('🚀 Admin: Using global products (0 reads)');
+      console.log(`🚀 Admin: Using global products (${allProducts.length} total)`);
       setProducts(allProducts);
       setLoading(false);
       setInitialLoad(false);
@@ -271,6 +271,12 @@ export const useFirebaseProductsAdmin = () => {
 
         // Update local state immediately
         setProducts(prev => [...prev, newProduct]);
+
+        // 🔥 FORCE GLOBAL SYNC: Trigger page reload to refresh all listeners
+        setTimeout(() => {
+          console.log('🔄 Forcing page reload to sync global state...');
+          window.location.reload();
+        }, 2000);
 
         return newProductId;
       } else {

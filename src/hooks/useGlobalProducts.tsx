@@ -91,7 +91,7 @@ export const GlobalProductsProvider: React.FC<{ children: React.ReactNode }> = (
         setLoading(false);
         setError(null);
 
-        console.log(`🌍 GLOBAL: Products updated with ${products.length} products (0 reads - from cache)`);
+        console.log(`🌍 GLOBAL: Products updated with ${products.length} products (from Firestore real-time)`);
       } else {
         setAllProducts([]);
         setLoading(false);

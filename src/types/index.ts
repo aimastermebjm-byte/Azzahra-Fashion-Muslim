@@ -15,13 +15,14 @@ export interface Product {
   };
 
   // Pricing fields yang sesuai dengan data aktual
-  price: number; // Harga utama (sellingPrice/retailPrice)
-  retailPrice: number;
-  resellerPrice: number;
-  costPrice: number;
-  purchasePrice: number; // Tambahan dari data aktual
-  originalRetailPrice: number;
-  originalResellerPrice: number;
+  sellingPrice: number; // Harga jual utama
+  price: number; // Harga umum (sellingPrice/retailPrice)
+  retailPrice: number; // Harga retail
+  resellerPrice: number; // Harga reseller
+  costPrice: number; // Harga pokok
+  purchasePrice: number; // Harga beli
+  originalRetailPrice: number; // Harga retail asli
+  originalResellerPrice: number; // Harga reseller asli
 
   // Stock dan status
   stock: number;
