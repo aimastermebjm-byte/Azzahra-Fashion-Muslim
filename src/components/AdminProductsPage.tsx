@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../types';
-import { useFirebaseProductsAdmin } from '../hooks/useFirebaseProductsAdmin';
 import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
 import { ProductTableSkeleton, FlashSaleStatusSkeleton, MenuSkeleton } from './LoadingSkeleton';
 import { uploadMultipleImages, validateImageFile, generateImageName } from '../utils/imageUpload';
@@ -20,7 +19,7 @@ interface FlashSaleConfig {
 }
 
 const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) => {
-  const { products, loading, updateProduct, addProduct: addProductToBatch, deleteProduct: deleteProductFromBatch } = useFirebaseProductsAdmin();
+  const { products, loading, updateProduct, addProduct, deleteProduct } = useProductCRUD();
 
   // 🔥 UNIFIED FLASH SALE: Single source of truth
   const {
