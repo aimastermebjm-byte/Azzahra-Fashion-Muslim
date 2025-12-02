@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { Product } from '../types';
@@ -53,15 +53,15 @@ export const useProductCRUD = (): UseProductCRUDResult => {
   }, []);
 
   // Fetch products on mount
-  useState(() => {
+  useEffect(() => {
     const unsubscribe = fetchProducts();
     return () => {
-      if (unsubscribe) {
+      if (unsubscribe && typeof unsubscribe === 'function') {
         console.log('🔄 SINGLE LISTENER: Cleaning up...');
         unsubscribe();
       }
     };
-  });
+  }, []);
 
   const addProduct = useCallback(async (productData: any): Promise<string> => {
     setLoading(true);
@@ -84,7 +84,7 @@ export const useProductCRUD = (): UseProductCRUDResult => {
           name: productData.name || '',
           description: productData.description || '',
           category: productData.category || 'uncategorized',
-          sellingPrice: Number(productData.sellingPrice || productData.retailPrice || 0),
+          sellingPrice: Number(productData.originalSellingPrice || productData.price || productData.retailPrice || 0),
           price: Number(productData.price || productData.sellingPrice || productData.retailPrice || 0),
           retailPrice: Number(productData.retailPrice || 0),
           resellerPrice: Number(productData.resellerPrice || 0),

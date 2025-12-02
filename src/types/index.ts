@@ -23,6 +23,7 @@ export interface Product {
   purchasePrice: number; // Harga beli
   originalRetailPrice: number; // Harga retail asli
   originalResellerPrice: number; // Harga reseller asli
+  originalSellingPrice: number; // Harga jual asli (untuk backward compatibility)
 
   // Stock dan status
   stock: number;
