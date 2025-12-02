@@ -19,7 +19,34 @@ interface FlashSaleConfig {
 }
 
 const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) => {
-  const { products, loading, updateProduct, addProduct, deleteProduct } = useProductCRUD();
+  // Fallback untuk error import
+  const [importError, setImportError] = useState<string | null>(null);
+
+  // Try to import useProductCRUD, fallback to basic CRUD if failed
+  let useProductCRUDHook: any = null;
+  try {
+    useProductCRUDHook = require('../hooks/useProductCRUD').default;
+  } catch (importError) {
+    console.error('🚨 Failed to import useProductCRUD:', importError);
+    setImportError('Gagal memuat CRUD produk. Silakan refresh halaman.');
+    // Fallback to basic CRUD operations
+    useProductCRUDHook = {
+      products: [],
+      loading: false,
+      error: null,
+      addProduct: async () => {
+        throw new Error('CRUD operations tidak tersedia. Silakan refresh halaman.');
+      },
+      updateProduct: async () => {
+        throw new Error('Update produk tidak tersedia. Silakan refresh halaman.');
+      },
+      deleteProduct: async () => {
+        throw new Error('Hapus produk tidak tersedia. Silakan refresh halaman.');
+      }
+    };
+  }
+
+  const { products, loading, updateProduct, addProduct, deleteProduct } = useProductCRUDHook || useProductCRUDHook;
 
   // 🔥 UNIFIED FLASH SALE: Single source of truth
   const {
