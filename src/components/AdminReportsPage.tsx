@@ -42,9 +42,10 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const loadTransactions = async () => {
     setLoading(true);
     try {
+      const { start, end } = getDateRange;
       const transactionData = await ReportsService.getTransactions({
-        startDate: dateFilter === 'custom' ? startDate : undefined,
-        endDate: dateFilter === 'custom' ? endDate : undefined,
+        startDate: start,
+        endDate: end,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         customerQuery: customerFilter || undefined,
         limit: 50 // Limit untuk performance
@@ -62,9 +63,10 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const loadProductsReport = async () => {
     setLoading(true);
     try {
+      const { start, end } = getDateRange;
       const productData = await ReportsService.getProductsReport({
-        startDate: dateFilter === 'custom' ? startDate : undefined,
-        endDate: dateFilter === 'custom' ? endDate : undefined,
+        startDate: start,
+        endDate: end,
         limit: 100 // Limit untuk performance
       });
       setProducts(productData);
@@ -94,9 +96,10 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const loadCashFlowReport = async () => {
     setLoading(true);
     try {
+      const { start, end } = getDateRange;
       const cashFlowData = await ReportsService.getCashFlowReports({
-        startDate: dateFilter === 'custom' ? startDate : undefined,
-        endDate: dateFilter === 'custom' ? endDate : undefined,
+        startDate: start,
+        endDate: end,
         limit: 100 // Limit untuk performance
       });
       setCashFlow(cashFlowData);
@@ -111,9 +114,10 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   // Load summary statistics
   const loadSummaryStats = async () => {
     try {
+      const { start, end } = getDateRange;
       const stats = await ReportsService.getSummaryStats({
-        startDate: dateFilter === 'custom' ? startDate : undefined,
-        endDate: dateFilter === 'custom' ? endDate : undefined
+        startDate: start,
+        endDate: end
       });
 
       // Set summary data for display
@@ -133,34 +137,33 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
   // Load data based on active report type
   useEffect(() => {
-    const loadData = () => {
+    const loadData = async () => {
       switch (reportType) {
         case 'sales':
-        case 'products':
-          loadProductsReport();
-          break;
         case 'invoice':
-          loadTransactions();
+        case 'detail':
+          await loadTransactions();
+          break;
+        case 'products':
+          await loadProductsReport();
           break;
         case 'inventory':
-          loadInventoryReport();
+          await loadInventoryReport();
           break;
         case 'cashflow':
-          loadCashFlowReport();
+          await loadCashFlowReport();
           break;
         case 'profitloss':
-          loadSummaryStats();
-          break;
-        case 'detail':
-          loadTransactions();
+          await loadCashFlowReport();
+          await loadSummaryStats();
           break;
         default:
-          loadTransactions();
+          await loadTransactions();
       }
     };
 
     loadData();
-  }, [dateFilter, statusFilter, customerFilter, reportType]);
+  }, [reportType, statusFilter, customerFilter, getDateRange.start, getDateRange.end]);
 
   // Calculate date range based on filter
   const getDateRange = useMemo(() => {
@@ -207,144 +210,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     }
   }, [dateFilter, startDate, endDate]);
 
-  // Load mock data
-  const loadReportData = async () => {
-    setLoading(true);
-    try {
-      // Mock transaction data
-      const mockTransactions: TransactionData[] = [
-        {
-          id: '1',
-          invoice: 'INV-2024-001',
-          date: '2024-01-15',
-          customer: 'Siti Nurhaliza',
-          phone: '08123456789',
-          subtotal: 500000,
-          shippingCost: 20000,
-          total: 520000,
-          status: 'lunas',
-          paymentMethod: 'Transfer',
-          createdAt: new Date('2024-01-15T10:00:00'),
-          products: [
-            { name: 'Gamis Premium', quantity: 2, price: 250000, total: 500000 }
-          ]
-        },
-        {
-          id: '2',
-          invoice: 'INV-2024-002',
-          date: '2024-01-14',
-          customer: 'Ahmad Fauzi',
-          phone: '08234567890',
-          subtotal: 350000,
-          shippingCost: 15000,
-          total: 365000,
-          status: 'belum_lunas',
-          createdAt: new Date('2024-01-14T14:30:00'),
-          products: [
-            { name: 'Khimar Syar\'i', quantity: 1, price: 350000, total: 350000 }
-          ]
-        },
-        {
-          id: '3',
-          invoice: 'INV-2024-003',
-          date: '2024-01-13',
-          customer: 'Fatimah Azzahra',
-          phone: '08345678901',
-          subtotal: 450000,
-          shippingCost: 18000,
-          total: 468000,
-          status: 'lunas',
-          createdAt: new Date('2024-01-13T09:15:00'),
-          products: [
-            { name: 'Tunik Casual', quantity: 3, price: 150000, total: 450000 }
-          ]
-        }
-      ];
-      setTransactions(mockTransactions);
-
-      // Mock product data
-      const mockProducts: ProductData[] = [
-        {
-          id: '1',
-          name: 'Gamis Premium',
-          category: 'Gamis',
-          sold: 15,
-          revenue: 3750000,
-          stock: 25,
-          profit: 1250000,
-          lastSold: new Date('2024-01-15T10:00:00')
-        },
-        {
-          id: '2',
-          name: 'Khimar Syar\'i',
-          category: 'Khimar',
-          sold: 8,
-          revenue: 2800000,
-          stock: 12,
-          profit: 800000,
-          lastSold: new Date('2024-01-14T14:30:00')
-        }
-      ];
-      setProducts(mockProducts);
-
-      // Mock inventory data
-      const mockInventory: InventoryData[] = [
-        {
-          id: '1',
-          name: 'Gamis Premium',
-          category: 'Gamis',
-          stock: 25,
-          reserved: 3,
-          available: 22,
-          value: 6250000,
-          lastUpdated: new Date()
-        },
-        {
-          id: '2',
-          name: 'Khimar Syar\'i',
-          category: 'Khimar',
-          stock: 12,
-          reserved: 1,
-          available: 11,
-          value: 4200000,
-          lastUpdated: new Date()
-        }
-      ];
-      setInventory(mockInventory);
-
-      // Mock cash flow data
-      const mockCashFlow: CashFlowData[] = [
-        {
-          id: '1',
-          date: '2024-01-15',
-          description: 'Penjualan Gamis Premium',
-          type: 'income',
-          amount: 520000,
-          category: 'Penjualan',
-          createdAt: new Date('2024-01-15T10:00:00')
-        },
-        {
-          id: '2',
-          date: '2024-01-14',
-          description: 'Pembelian Bahan Baku',
-          type: 'expense',
-          amount: 1500000,
-          category: 'Operasional',
-          createdAt: new Date('2024-01-14T09:00:00')
-        }
-      ];
-      setCashFlow(mockCashFlow);
-
-    } catch (error) {
-      console.error('Error loading reports data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadReportData();
-  }, [getDateRange]);
+  // Remove mock loader - rely on real data above
 
   // Filter transactions based on filters
   const filteredTransactions = useMemo(() => {

@@ -85,10 +85,13 @@ class ReportsService {
       const constraints = [];
 
       // Apply date filter
-      if (filters.startDate || filters.endDate) {
-        const startTimestamp = Timestamp.fromDate(new Date(filters.startDate + 'T00:00:00'));
-        const endTimestamp = Timestamp.fromDate(new Date(filters.endDate + 'T23:59:59'));
+      if (filters.startDate) {
+        const startTimestamp = Timestamp.fromDate(new Date(`${filters.startDate}T00:00:00`));
         constraints.push(where('createdAt', '>=', startTimestamp));
+      }
+
+      if (filters.endDate) {
+        const endTimestamp = Timestamp.fromDate(new Date(`${filters.endDate}T23:59:59`));
         constraints.push(where('createdAt', '<=', endTimestamp));
       }
 
@@ -116,21 +119,45 @@ class ReportsService {
 
       const snapshot = await getDocs(q);
 
-      // Get productBatches data once for all modal/costPrice information
+      // Build quick lookup map for product cost data from batch system
       const productBatchesSnapshot = await getDocs(query(collection(db, 'productBatches')));
-      const productsData: any[] = productBatchesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const productMap = new Map<string, any>();
+      const productNameMap = new Map<string, any>();
+
+      productBatchesSnapshot.docs.forEach(batchDoc => {
+        const batchData = batchDoc.data();
+        const batchProducts = Array.isArray(batchData.products) ? batchData.products : [];
+
+        batchProducts.forEach((product: any) => {
+          if (product?.id) {
+            productMap.set(product.id, product);
+          }
+
+          if (product?.name) {
+            productNameMap.set(String(product.name).toLowerCase(), product);
+          }
+        });
+      });
 
       return snapshot.docs.map(doc => {
         const orderData = doc.data();
 
         // Map items with costPrice from products collection
         const itemsWithCost = orderData.items?.map((item: any) => {
-          const product = productsData.find((p: any) => p.id === item.productId);
-          // Get modal/costPrice from products collection, with fallback hierarchy
-          const costPrice = product?.modal || product?.costPrice || (item.price * 0.6); // fallback 60%
+          const normalizedName = String(item.name || item.productName || '').toLowerCase();
+          const product = productMap.get(item.productId) || (normalizedName ? productNameMap.get(normalizedName) : undefined);
+
+          // Get modal/costPrice from batch data with sensible fallbacks
+          const costPrice = Number(
+            item.modal ??
+            item.costPrice ??
+            product?.costPrice ??
+            product?.purchasePrice ??
+            product?.modal ??
+            product?.wholesalePrice ??
+            product?.resellerPrice ??
+            0
+          ) || Number(item.price || 0) * 0.6; // fallback 60%
 
           return {
             name: item.name || item.productName || product?.name || 'Unknown Product',
