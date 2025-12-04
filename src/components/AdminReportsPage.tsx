@@ -38,6 +38,51 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [cashFlow, setCashFlow] = useState<CashFlowReport[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Calculate date range based on filter
+  const getDateRange = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    switch (dateFilter) {
+      case 'hari_ini':
+        return {
+          start: today.toISOString().split('T')[0],
+          end: now.toISOString().split('T')[0]
+        };
+      case 'kemaren':
+        return {
+          start: yesterday.toISOString().split('T')[0],
+          end: yesterday.toISOString().split('T')[0]
+        };
+      case 'bulan_ini':
+        return {
+          start: firstDayOfMonth.toISOString().split('T')[0],
+          end: now.toISOString().split('T')[0]
+        };
+      case 'bulan_kemaren':
+        return {
+          start: firstDayOfLastMonth.toISOString().split('T')[0],
+          end: lastDayOfLastMonth.toISOString().split('T')[0]
+        };
+      case 'custom':
+        return {
+          start: startDate,
+          end: endDate
+        };
+      default:
+        return {
+          start: firstDayOfMonth.toISOString().split('T')[0],
+          end: now.toISOString().split('T')[0]
+        };
+    }
+  }, [dateFilter, startDate, endDate]);
+
   // Load real data from Firestore
   const loadTransactions = async () => {
     setLoading(true);
@@ -164,51 +209,6 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
     loadData();
   }, [reportType, statusFilter, customerFilter, getDateRange.start, getDateRange.end]);
-
-  // Calculate date range based on filter
-  const getDateRange = useMemo(() => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-
-    switch (dateFilter) {
-      case 'hari_ini':
-        return {
-          start: today.toISOString().split('T')[0],
-          end: now.toISOString().split('T')[0]
-        };
-      case 'kemaren':
-        return {
-          start: yesterday.toISOString().split('T')[0],
-          end: yesterday.toISOString().split('T')[0]
-        };
-      case 'bulan_ini':
-        return {
-          start: firstDayOfMonth.toISOString().split('T')[0],
-          end: now.toISOString().split('T')[0]
-        };
-      case 'bulan_kemaren':
-        return {
-          start: firstDayOfLastMonth.toISOString().split('T')[0],
-          end: lastDayOfLastMonth.toISOString().split('T')[0]
-        };
-      case 'custom':
-        return {
-          start: startDate,
-          end: endDate
-        };
-      default:
-        return {
-          start: firstDayOfMonth.toISOString().split('T')[0],
-          end: now.toISOString().split('T')[0]
-        };
-    }
-  }, [dateFilter, startDate, endDate]);
 
   // Remove mock loader - rely on real data above
 
