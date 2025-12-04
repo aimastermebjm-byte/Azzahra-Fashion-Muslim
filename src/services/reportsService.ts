@@ -1,4 +1,4 @@
-import { getFirestore, collection, query, where, orderBy, limit, getDocs, doc, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy, limit, getDocs, doc } from 'firebase/firestore';
 
 // Initialize Firestore
 const db = getFirestore();
@@ -86,13 +86,17 @@ class ReportsService {
 
       // Apply date filter
       if (filters.startDate) {
-        const startTimestamp = Timestamp.fromDate(new Date(`${filters.startDate}T00:00:00`));
-        constraints.push(where('createdAt', '>=', startTimestamp));
+        const startMillis = new Date(`${filters.startDate}T00:00:00`).getTime();
+        if (!Number.isNaN(startMillis)) {
+          constraints.push(where('timestamp', '>=', startMillis));
+        }
       }
 
       if (filters.endDate) {
-        const endTimestamp = Timestamp.fromDate(new Date(`${filters.endDate}T23:59:59`));
-        constraints.push(where('createdAt', '<=', endTimestamp));
+        const endMillis = new Date(`${filters.endDate}T23:59:59`).getTime();
+        if (!Number.isNaN(endMillis)) {
+          constraints.push(where('timestamp', '<=', endMillis));
+        }
       }
 
       // Apply status filter
@@ -109,8 +113,8 @@ class ReportsService {
       // Create query with all constraints - reading from orders collection
       let q = query(collection(db, 'orders'), ...constraints);
 
-      // Order by date descending
-      q = query(q, orderBy('createdAt', 'desc'));
+      // Order by newest first using numeric timestamp for consistent sorting
+      q = query(q, orderBy('timestamp', 'desc'));
 
       // Apply limit
       if (filters.limit) {
