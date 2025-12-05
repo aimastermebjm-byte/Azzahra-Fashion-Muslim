@@ -504,7 +504,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
             <button
               onClick={handleSubmitPayment}
               disabled={!paymentProof}
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all"
+              className="w-full btn-brand py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {selectedOrder?.paymentProof ? 'Upload Ulang Bukti Pembayaran' : 'Kirim Bukti Pembayaran'}
             </button>

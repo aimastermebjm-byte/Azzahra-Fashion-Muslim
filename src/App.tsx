@@ -30,6 +30,7 @@ import { cartServiceOptimized } from './services/cartServiceOptimized';
 import { ordersService } from './services/ordersService';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from './utils/firebaseClient';
+import './utils/forceSyncGlobalIndex'; // Load force sync function to window
 
 type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'admin-cache' | 'ongkir-test';
 
@@ -558,7 +559,7 @@ function AppContent() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-brand-surface text-slate-900">
         {renderCurrentPage()}
         {!showLogin && !currentPage.startsWith('admin-') && (
           <BottomNavigation currentPage={currentPage} onPageChange={setCurrentPage} />

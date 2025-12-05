@@ -2,10 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Prevent browser cache issues */
-body {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer base {
+  :root {
+    --brand-primary: #0F172A;
+    --brand-primary-dark: #070B16;
+    --brand-surface: #F7F4EE;
+    --brand-card: #FFFFFF;
+    --brand-border: #E2DED5;
+    --brand-accent: #D6A354;
+    --brand-accent-muted: #F4E7D3;
+  }
+
+  body {
+    background: var(--brand-surface);
+    color: var(--brand-primary);
+    font-family: 'Inter', 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .card-elevated {
+    @apply bg-brand-card border border-brand-border rounded-2xl shadow-brand-card;
+  }
+
+  .btn-brand {
+    @apply bg-brand-primary text-white font-semibold rounded-xl px-4 py-3 transition-colors duration-200 hover:bg-brand-primaryDark focus:ring-2 focus:ring-brand-accent focus:ring-offset-2 focus:ring-offset-brand-card;
+  }
+
+  .btn-brand-outline {
+    @apply border border-brand-primary text-brand-primary font-semibold rounded-xl px-4 py-3 transition-colors duration-200 hover:bg-brand-primary hover:text-white;
+  }
+
+  .badge-brand-success {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-brand-success/10 text-brand-success;
+  }
+
+  .badge-brand-warning {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-brand-warning/10 text-brand-warning;
+  }
 }
 
 /* Force refresh on development */

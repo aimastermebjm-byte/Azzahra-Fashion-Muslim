@@ -285,9 +285,9 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-brand-surface flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-pink-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-accent mx-auto mb-4"></div>
           <p className="text-gray-600 font-medium">Memuat data laporan...</p>
         </div>
       </div>
@@ -295,9 +295,9 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-brand-surface">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4">
+      <div className="bg-brand-gradient text-white p-6 shadow-brand-card">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <FileText className="w-6 h-6" />
@@ -305,7 +305,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           </div>
           <button
             onClick={onBack}
-            className="bg-white/20 px-3 py-1 rounded-full text-sm hover:bg-white/30 transition-colors"
+            className="bg-white/15 px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/25 transition-colors"
           >
             Kembali
           </button>
@@ -318,7 +318,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value as any)}
-              className="w-full pl-10 pr-4 py-3 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 appearance-none"
+              className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-white/50 appearance-none"
             >
               <option value="hari_ini">Hari Ini</option>
               <option value="kemaren">Kemaren</option>
@@ -326,7 +326,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
               <option value="bulan_kemaren">Bulan Kemaren</option>
               <option value="custom">Custom Tanggal</option>
             </select>
-            <Calendar className="absolute left-3 top-3 text-gray-400 w-5 h-5 pointer-events-none" />
+            <Calendar className="absolute left-3 top-3 text-white/70 w-5 h-5 pointer-events-none" />
           </div>
 
           {/* Custom Date Range */}
@@ -336,14 +336,14 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="px-3 py-3 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="px-3 py-3 rounded-2xl bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-white/50"
                 placeholder="Dari tanggal"
               />
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="px-3 py-3 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="px-3 py-3 rounded-2xl bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-white/50"
                 placeholder="Sampai tanggal"
               />
             </>
@@ -353,7 +353,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="px-3 py-3 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50"
+            className="px-3 py-3 rounded-2xl bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-white/50"
           >
             <option value="all">Semua Status</option>
             <option value="lunas">Lunas</option>
@@ -365,7 +365,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
             type="text"
             value={customerFilter}
             onChange={(e) => setCustomerFilter(e.target.value)}
-            className="px-3 py-3 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50"
+            className="px-3 py-3 rounded-2xl bg-white/10 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
             placeholder="Cari pelanggan..."
           />
         </div>
@@ -374,7 +374,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       {/* Summary Cards */}
       <div className="p-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="card-elevated p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Total Penjualan</p>
@@ -385,47 +385,47 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   {filteredTransactions.length} transaksi
                 </p>
               </div>
-              <div className="bg-green-100 p-3 rounded-full">
-                <DollarSign className="w-6 h-6 text-green-600" />
+              <div className="bg-brand-accentMuted p-3 rounded-2xl">
+                <DollarSign className="w-6 h-6 text-brand-primary" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="card-elevated p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Lunas</p>
-                <p className="text-xl font-bold text-green-600">
+                <p className="text-xl font-bold text-brand-success">
                   {summaryStats.lunasCount}
                 </p>
                 <p className="text-xs text-gray-500">
                   {formatCurrency(summaryStats.totalSales - summaryStats.totalBelumLunas)}
                 </p>
               </div>
-              <div className="bg-blue-100 p-3 rounded-full">
-                <CheckCircle className="w-6 h-6 text-blue-600" />
+              <div className="bg-brand-success/10 p-3 rounded-2xl">
+                <CheckCircle className="w-6 h-6 text-brand-success" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="card-elevated p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Belum Lunas</p>
-                <p className="text-xl font-bold text-orange-600">
+                <p className="text-xl font-bold text-brand-warning">
                   {summaryStats.belumLunasCount}
                 </p>
                 <p className="text-xs text-gray-500">
                   {formatCurrency(summaryStats.totalBelumLunas)}
                 </p>
               </div>
-              <div className="bg-orange-100 p-3 rounded-full">
-                <XCircle className="w-6 h-6 text-orange-600" />
+              <div className="bg-brand-warning/10 p-3 rounded-2xl">
+                <XCircle className="w-6 h-6 text-brand-warning" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="card-elevated p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Rata-rata</p>
@@ -434,8 +434,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 </p>
                 <p className="text-xs text-gray-500">per transaksi</p>
               </div>
-              <div className="bg-purple-100 p-3 rounded-full">
-                <TrendingUp className="w-6 h-6 text-purple-600" />
+              <div className="bg-brand-accentMuted p-3 rounded-2xl">
+                <TrendingUp className="w-6 h-6 text-brand-primary" />
               </div>
             </div>
           </div>
@@ -458,7 +458,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 onClick={() => setReportType(tab.id as any)}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
                   reportType === tab.id
-                    ? 'bg-pink-500 text-white'
+                    ? 'bg-brand-accent text-white shadow-brand-card'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
@@ -478,7 +478,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <h3 className="text-lg font-semibold text-gray-800">Laporan Penjualan</h3>
                 <button
                   onClick={() => exportToCSV(filteredTransactions, 'laporan_penjualan.csv')}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  className="flex items-center space-x-2 btn-brand"
                 >
                   <Download className="w-4 h-4" />
                   <span className="text-sm">Export CSV</span>
@@ -535,11 +535,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                             {formatCurrency(laba)}
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              transaction.status === 'lunas'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-orange-100 text-orange-800'
-                            }`}>
+                            <span className={transaction.status === 'lunas' ? 'badge-brand-success' : 'badge-brand-warning'}>
                               {transaction.status === 'lunas' ? 'Lunas' : 'Belum Lunas'}
                             </span>
                           </td>
@@ -559,7 +555,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <h3 className="text-lg font-semibold text-gray-800">Laporan Produk Terjual</h3>
                 <button
                   onClick={() => exportToCSV(products, 'laporan_produk.csv')}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  className="flex items-center space-x-2 btn-brand"
                 >
                   <Download className="w-4 h-4" />
                   <span className="text-sm">Export CSV</span>
@@ -614,7 +610,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <h3 className="text-lg font-semibold text-gray-800">Laporan Invoice Pelanggan</h3>
                 <button
                   onClick={() => exportToCSV(filteredTransactions, 'laporan_invoice.csv')}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  className="flex items-center space-x-2 btn-brand"
                 >
                   <Download className="w-4 h-4" />
                   <span className="text-sm">Export CSV</span>
@@ -652,11 +648,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                           {formatCurrency(transaction.total)}
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            transaction.status === 'lunas'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-orange-100 text-orange-800'
-                          }`}>
+                          <span className={transaction.status === 'lunas' ? 'badge-brand-success' : 'badge-brand-warning'}>
                             {transaction.status === 'lunas' ? 'Lunas' : 'Belum Lunas'}
                           </span>
                         </td>
@@ -680,7 +672,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <h3 className="text-lg font-semibold text-gray-800">Laporan Persediaan</h3>
                 <button
                   onClick={() => exportToCSV(inventory, 'laporan_persediaan.csv')}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  className="flex items-center space-x-2 btn-brand"
                 >
                   <Download className="w-4 h-4" />
                   <span className="text-sm">Export CSV</span>
@@ -711,10 +703,10 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                         <td className="px-4 py-3 text-sm text-gray-900">
                           {item.stock}
                         </td>
-                        <td className="px-4 py-3 text-sm text-orange-600">
+                        <td className="px-4 py-3 text-sm text-brand-warning">
                           {item.reserved}
                         </td>
-                        <td className="px-4 py-3 text-sm text-green-600">
+                        <td className="px-4 py-3 text-sm text-brand-success">
                           {item.available}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900">
@@ -735,7 +727,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <h3 className="text-lg font-semibold text-gray-800">Laporan Arus Kas</h3>
                 <button
                   onClick={() => exportToCSV(cashFlow, 'laporan_arus_kas.csv')}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  className="flex items-center space-x-2 btn-brand"
                 >
                   <Download className="w-4 h-4" />
                   <span className="text-sm">Export CSV</span>
@@ -744,49 +736,49 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
               {/* Summary Cards for Cash Flow */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="card-elevated border border-brand-success/30">
                   <div className="flex items-center">
-                    <ArrowUpRight className="w-8 h-8 text-green-600 mr-3" />
+                    <ArrowUpRight className="w-8 h-8 text-brand-success mr-3" />
                     <div>
-                      <p className="text-sm text-green-600 font-medium">Pemasukan</p>
-                      <p className="text-xl font-bold text-green-700">
+                      <p className="text-sm text-brand-success font-medium">Pemasukan</p>
+                      <p className="text-xl font-bold text-brand-success">
                         {formatCurrency(profitLossStats.totalIncome)}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="card-elevated border border-brand-warning/30">
                   <div className="flex items-center">
-                    <ArrowDownRight className="w-8 h-8 text-red-600 mr-3" />
+                    <ArrowDownRight className="w-8 h-8 text-brand-warning mr-3" />
                     <div>
-                      <p className="text-sm text-red-600 font-medium">Pengeluaran</p>
-                      <p className="text-xl font-bold text-red-700">
+                      <p className="text-sm text-brand-warning font-medium">Pengeluaran</p>
+                      <p className="text-xl font-bold text-brand-warning">
                         {formatCurrency(profitLossStats.totalExpense)}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className={`border rounded-lg p-4 ${
+                <div className={`card-elevated border ${
                   profitLossStats.profit >= 0
-                    ? 'bg-blue-50 border-blue-200'
-                    : 'bg-orange-50 border-orange-200'
+                    ? 'border-brand-accent/40'
+                    : 'border-brand-warning/40'
                 }`}>
                   <div className="flex items-center">
                     {profitLossStats.profit >= 0 ? (
-                      <TrendingUp className="w-8 h-8 text-blue-600 mr-3" />
+                      <TrendingUp className="w-8 h-8 text-brand-accent mr-3" />
                     ) : (
-                      <TrendingDown className="w-8 h-8 text-orange-600 mr-3" />
+                      <TrendingDown className="w-8 h-8 text-brand-warning mr-3" />
                     )}
                     <div>
                       <p className={`text-sm font-medium ${
-                        profitLossStats.profit >= 0 ? 'text-blue-600' : 'text-orange-600'
+                        profitLossStats.profit >= 0 ? 'text-brand-accent' : 'text-brand-warning'
                       }`}>
                         {profitLossStats.profit >= 0 ? 'Laba Bersih' : 'Rugi Bersih'}
                       </p>
                       <p className={`text-xl font-bold ${
-                        profitLossStats.profit >= 0 ? 'text-blue-700' : 'text-orange-700'
+                        profitLossStats.profit >= 0 ? 'text-brand-accent' : 'text-brand-warning'
                       }`}>
                         {formatCurrency(Math.abs(profitLossStats.profit))}
                       </p>
@@ -819,16 +811,12 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                           {flow.category}
                         </td>
                         <td className={`px-4 py-3 text-sm font-medium ${
-                          flow.type === 'income' ? 'text-green-600' : 'text-red-600'
+                          flow.type === 'income' ? 'text-brand-success' : 'text-brand-warning'
                         }`}>
                           {flow.type === 'income' ? '+' : '-'}{formatCurrency(flow.amount)}
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            flow.type === 'income'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
+                          <span className={flow.type === 'income' ? 'badge-brand-success' : 'badge-brand-warning'}>
                             {flow.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}
                           </span>
                         </td>
@@ -847,7 +835,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <h3 className="text-lg font-semibold text-gray-800">Laporan Rugi Laba</h3>
                 <button
                   onClick={() => exportToCSV([], 'laporan_rugi_laba.csv')}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  className="flex items-center space-x-2 btn-brand"
                 >
                   <Download className="w-4 h-4" />
                   <span className="text-sm">Export CSV</span>
@@ -855,20 +843,20 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
               </div>
 
               {/* Profit/Loss Summary */}
-              <div className="bg-white border rounded-lg p-6 mb-6">
+              <div className="card-elevated p-6 mb-6">
                 <h4 className="text-lg font-semibold text-gray-800 mb-4">Ringkasan Rugi Laba</h4>
 
                 <div className="space-y-4">
                   <div className="flex justify-between items-center py-2 border-b">
                     <span className="text-gray-600">Total Pemasukan</span>
-                    <span className="font-semibold text-green-600">
+                    <span className="font-semibold text-brand-success">
                       {formatCurrency(profitLossStats.totalIncome)}
                     </span>
                   </div>
 
                   <div className="flex justify-between items-center py-2 border-b">
                     <span className="text-gray-600">Total Pengeluaran</span>
-                    <span className="font-semibold text-red-600">
+                    <span className="font-semibold text-brand-warning">
                       {formatCurrency(profitLossStats.totalExpense)}
                     </span>
                   </div>
@@ -878,7 +866,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                       {profitLossStats.profit >= 0 ? 'Laba Bersih' : 'Rugi Bersih'}
                     </span>
                     <span className={`text-xl font-bold ${
-                      profitLossStats.profit >= 0 ? 'text-green-600' : 'text-red-600'
+                      profitLossStats.profit >= 0 ? 'text-brand-success' : 'text-brand-warning'
                     }`}>
                       {profitLossStats.profit >= 0 ? '+' : '-'}
                       {formatCurrency(Math.abs(profitLossStats.profit))}
@@ -889,7 +877,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Margin Profit</span>
                       <span className={`font-semibold ${
-                        profitLossStats.profitMargin >= 0 ? 'text-green-600' : 'text-red-600'
+                        profitLossStats.profitMargin >= 0 ? 'text-brand-success' : 'text-brand-warning'
                       }`}>
                         {profitLossStats.profitMargin.toFixed(2)}%
                       </span>
@@ -900,15 +888,15 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 {/* Detailed Breakdown */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Income Breakdown */}
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h5 className="font-semibold text-green-800 mb-3">Rincian Pemasukan</h5>
+                  <div className="card-elevated border border-brand-success/30">
+                    <h5 className="font-semibold text-brand-success mb-3">Rincian Pemasukan</h5>
                     <div className="space-y-2">
                       {cashFlow
                         .filter(c => c.type === 'income')
                         .map((income) => (
                           <div key={income.id} className="flex justify-between text-sm">
                             <span className="text-gray-600">{income.description}</span>
-                            <span className="text-green-700 font-medium">
+                            <span className="text-brand-success font-medium">
                               {formatCurrency(income.amount)}
                             </span>
                           </div>
@@ -917,15 +905,15 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   </div>
 
                   {/* Expense Breakdown */}
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <h5 className="font-semibold text-red-800 mb-3">Rincian Pengeluaran</h5>
+                  <div className="card-elevated border border-brand-warning/30">
+                    <h5 className="font-semibold text-brand-warning mb-3">Rincian Pengeluaran</h5>
                     <div className="space-y-2">
                       {cashFlow
                         .filter(c => c.type === 'expense')
                         .map((expense) => (
                           <div key={expense.id} className="flex justify-between text-sm">
                             <span className="text-gray-600">{expense.description}</span>
-                            <span className="text-red-700 font-medium">
+                            <span className="text-brand-warning font-medium">
                               {formatCurrency(expense.amount)}
                             </span>
                           </div>
@@ -944,7 +932,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <h3 className="text-lg font-semibold text-gray-800">Laporan Detail Transaksi</h3>
                 <button
                   onClick={() => exportToCSV(filteredTransactions, 'laporan_detail.csv')}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  className="flex items-center space-x-2 btn-brand"
                 >
                   <Download className="w-4 h-4" />
                   <span className="text-sm">Export CSV</span>
@@ -1009,11 +997,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                           </td>
                           {index === 0 && (
                             <td className="px-4 py-3 text-sm" rowSpan={transaction.items.length}>
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                transaction.status === 'lunas'
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-orange-100 text-orange-800'
-                              }`}>
+                              <span className={transaction.status === 'lunas' ? 'badge-brand-success' : 'badge-brand-warning'}>
                                 {transaction.status === 'lunas' ? 'Lunas' : 'Belum Lunas'}
                               </span>
                             </td>

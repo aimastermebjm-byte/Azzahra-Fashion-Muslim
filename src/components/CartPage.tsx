@@ -79,7 +79,7 @@ const CartPage: React.FC<CartPageProps> = ({
         </div>
 
         <div className="flex flex-col items-center justify-center h-96">
-          <div className="w-16 h-16 border-4 border-gray-300 border-t-pink-500 rounded-full animate-spin mb-4"></div>
+          <div className="w-16 h-16 border-4 border-gray-300 border-t-brand-accent rounded-full animate-spin mb-4"></div>
           <h3 className="text-lg font-semibold text-gray-600 mb-2">Memuat Keranjang...</h3>
         </div>
       </div>
@@ -88,7 +88,7 @@ const CartPage: React.FC<CartPageProps> = ({
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-brand-surface">
         <div className="bg-white shadow-sm sticky top-0 z-10">
           <div className="flex items-center p-4">
             <button onClick={onBack} className="mr-4">
@@ -104,7 +104,7 @@ const CartPage: React.FC<CartPageProps> = ({
           <p className="text-gray-500 text-center mb-6">{error}</p>
           <button
             onClick={onBack}
-            className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all"
+            className="btn-brand px-8"
           >
             Kembali
           </button>
@@ -115,7 +115,7 @@ const CartPage: React.FC<CartPageProps> = ({
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-brand-surface">
         <div className="bg-white shadow-sm sticky top-0 z-10">
           <div className="flex items-center p-4">
             <button onClick={onBack} className="mr-4">
@@ -134,7 +134,7 @@ const CartPage: React.FC<CartPageProps> = ({
           </p>
           <button
             onClick={onBack}
-            className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all"
+            className="btn-brand px-8"
           >
             Mulai Belanja
           </button>
@@ -146,14 +146,14 @@ const CartPage: React.FC<CartPageProps> = ({
   const totalPrice = getTotalPrice();
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32">
+    <div className="min-h-screen bg-brand-surface pb-32">
       <div className="bg-white shadow-sm sticky top-0 z-10">
         <div className="flex items-center p-4">
           <button onClick={onBack} className="mr-4">
             <ArrowLeft className="w-6 h-6 text-gray-600" />
           </button>
           <h1 className="text-lg font-semibold">Keranjang Belanja</h1>
-          <span className="ml-2 bg-pink-100 text-pink-600 text-xs px-2 py-1 rounded-full">
+          <span className="ml-2 bg-brand-accentMuted text-brand-primary text-xs px-2 py-1 rounded-full">
             {cartItems.length}
           </span>
         </div>
@@ -195,7 +195,7 @@ const CartPage: React.FC<CartPageProps> = ({
 
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col">
-                      <span className="text-lg font-bold text-pink-600">
+                      <span className="text-lg font-bold text-brand-accent">
                         Rp {itemPrice.toLocaleString('id-ID')}
                       </span>
                     </div>
@@ -245,14 +245,14 @@ const CartPage: React.FC<CartPageProps> = ({
       <div className="fixed bottom-20 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
         <div className="flex items-center justify-between mb-3">
           <span className="text-gray-600">Total ({cartItems.length} item)</span>
-          <span className="text-xl font-bold text-pink-600">
+          <span className="text-xl font-bold text-brand-accent">
             Rp {totalPrice.toLocaleString('id-ID')}
           </span>
         </div>
         
         <button
           onClick={onCheckout}
-          className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-4 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all"
+          className="w-full btn-brand text-center"
         >
           Checkout Sekarang
         </button>

@@ -219,7 +219,7 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
         {/* Add Address Button */}
         <button
           onClick={handleAddAddress}
-          className="fixed bottom-24 right-4 w-14 h-14 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full shadow-lg flex items-center justify-center hover:from-pink-600 hover:to-purple-700 transition-all"
+          className="fixed bottom-24 right-4 w-14 h-14 bg-brand-gradient text-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all"
         >
           <Plus className="w-6 h-6" />
         </button>

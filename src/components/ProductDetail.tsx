@@ -531,7 +531,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           <button
             onClick={handleAddToCart}
             disabled={currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0 ? (!selectedSize || !selectedColor) : false}
-            className="flex-1 bg-pink-100 text-pink-600 py-4 rounded-lg font-semibold hover:bg-pink-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            className="flex-1 btn-brand-outline py-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             <ShoppingCart className="w-5 h-5" />
             <span>Tambah ke Keranjang</span>
@@ -539,7 +539,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           <button
             onClick={handleBuyNow}
             disabled={currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0 ? (!selectedSize || !selectedColor) : false}
-            className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 text-white py-4 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 btn-brand py-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Beli Sekarang
           </button>
