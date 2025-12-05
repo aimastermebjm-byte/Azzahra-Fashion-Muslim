@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
+import BackButton from './BackButton';
+import PageHeader from './PageHeader';
 
 interface CacheSettings {
   // Auto check setting - ini yang penting!
@@ -362,12 +364,11 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <h2 className="text-red-800 text-xl font-semibold mb-2">Akses Ditolak</h2>
             <p className="text-red-600">Hanya pengguna dengan role 'owner' yang bisa mengakses manajemen cache.</p>
-            <button
+            <BackButton
               onClick={onBack}
-              className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              Go Back
-            </button>
+              className="mt-4 bg-red-600 text-white border-red-600 hover:bg-red-500"
+              label="Kembali"
+            />
           </div>
         </div>
       </div>
@@ -377,21 +378,12 @@ const AdminCacheManagement: React.FC<{ user: any; onBack: () => void }> = ({ use
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">🗄️ Manajemen Cache</h1>
-              <p className="text-gray-600 mt-1">Kelola pengaturan cache biaya pengiriman dan pantau performa</p>
-            </div>
-            <button
-              onClick={onBack}
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-            >
-              ← Kembali ke Admin
-            </button>
-          </div>
-        </div>
+        <PageHeader
+          title="🗄️ Manajemen Cache"
+          subtitle="Kelola TTL ongkir, bersihkan cache lama, dan pantau kesehatan data"
+          onBack={onBack}
+          variant="card"
+        />
 
         {/* Alert Message */}
         {message && (

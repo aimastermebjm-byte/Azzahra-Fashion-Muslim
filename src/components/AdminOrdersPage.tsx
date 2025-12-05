@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Package, Clock, CheckCircle, Truck, XCircle, Eye, Search, Filter, Calendar, Download, X, Upload, CreditCard, MapPin, Phone, Mail, Edit2, Check, User, AlertTriangle, Info } from 'lucide-react';
+import { Package, Clock, CheckCircle, Truck, XCircle, Eye, Search, Filter, Calendar, Download, X, Upload, CreditCard, MapPin, Phone, Mail, Edit2, Check, User, AlertTriangle, Info } from 'lucide-react';
+import PageHeader from './PageHeader';
 import { useFirebaseAdminOrders } from '../hooks/useFirebaseAdminOrders';
 import { ordersService } from '../services/ordersService';
 
@@ -335,44 +336,40 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4">
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={onBack}
-            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-xl font-bold">Kelola Pesanan</h1>
+      <PageHeader
+        title="Kelola Pesanan"
+        subtitle="Kelola status order, cek bukti bayar, dan tindak lanjuti pengiriman"
+        onBack={onBack}
+        variant="gradient"
+      >
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
+            <p className="text-xs uppercase tracking-wide text-white/70">Total Pesanan</p>
+            <p className="mt-1 text-2xl font-bold">{orders.length}</p>
+            <p className="text-xs text-white/70">Semua status</p>
+          </div>
+          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
+            <p className="text-xs uppercase tracking-wide text-white/70">Menunggu</p>
+            <p className="mt-1 text-2xl font-bold">
+              {getOrdersByStatus('pending').length + getOrdersByStatus('awaiting_verification').length}
+            </p>
+            <p className="text-xs text-white/70">Butuh aksi</p>
+          </div>
+          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
+            <p className="text-xs uppercase tracking-wide text-white/70">Selesai</p>
+            <p className="mt-1 text-2xl font-bold">{getOrdersByStatus('delivered').length}</p>
+            <p className="text-xs text-white/70">Berhasil dikirim</p>
+          </div>
+          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
+            <p className="text-xs uppercase tracking-wide text-white/70">Total Revenue</p>
+            <p className="mt-1 text-2xl font-bold">{Math.round(getTotalRevenue() / 1000)}K</p>
+            <p className="text-xs text-white/70">Perkiraan angka kasar</p>
+          </div>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Content */}
       <div className="p-4 space-y-4">
-        {/* Orders Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-blue-800 mb-1">Total Pesanan</h4>
-            <p className="text-2xl font-bold text-blue-600">{orders.length}</p>
-          </div>
-          <div className="bg-orange-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-orange-800 mb-1">Menunggu</h4>
-            <p className="text-2xl font-bold text-orange-600">
-              {getOrdersByStatus('pending').length + getOrdersByStatus('awaiting_verification').length}
-            </p>
-          </div>
-          <div className="bg-green-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-green-800 mb-1">Selesai</h4>
-            <p className="text-2xl font-bold text-green-600">{getOrdersByStatus('delivered').length}</p>
-          </div>
-          <div className="bg-purple-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-purple-800 mb-1">Total Revenue</h4>
-            <p className="text-2xl font-bold text-purple-600">
-              {Math.round(getTotalRevenue() / 1000)}K
-            </p>
-          </div>
-        </div>
 
         {/* Search and Filter */}
         <div className="bg-white rounded-lg shadow-sm p-4">

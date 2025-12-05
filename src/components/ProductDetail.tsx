@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Plus, Minus, ShoppingCart, Heart, Share2, Star } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, Heart, Share2, Star } from 'lucide-react';
+import PageHeader from './PageHeader';
+import { useToast } from './ToastProvider';
 import { Product } from '../types';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
 
@@ -27,6 +29,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const { showToast } = useToast();
 
   // 🔥 GLOBAL STATE: 0 reads untuk product data
   const { getProductById } = useGlobalProducts();
@@ -39,13 +42,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const handleAddToCart = () => {
     if (!user) {
       onLoginRequired();
+      showToast({
+        type: 'info',
+        title: 'Butuh login',
+        message: 'Masuk untuk menambahkan produk ke keranjang.'
+      });
       return;
     }
 
     // Check if variants exist and require selection
     if (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0) {
       if (!selectedSize || !selectedColor) {
-        alert('Pilih ukuran dan warna terlebih dahulu');
+        showToast({
+          type: 'warning',
+          title: 'Pilih varian',
+          message: 'Silakan pilih ukuran dan warna sebelum melanjutkan.'
+        });
         return;
       }
     }
@@ -55,7 +67,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       const stockMessage = (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0)
         ? `Stok tidak mencukupi! Stok tersedia untuk ${selectedSize} - ${selectedColor} adalah ${availableStock} pcs`
         : `Stok tidak mencukupi! Stok tersedia adalah ${availableStock} pcs`;
-      alert(stockMessage);
+      showToast({
+        type: 'warning',
+        title: 'Stok tidak mencukupi',
+        message: stockMessage
+      });
       return;
     }
 
@@ -73,6 +89,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
     console.log('🔍 DEBUG: Final variant object:', variant);
     onAddToCart(currentProduct, variant, quantity);
+    showToast({
+      type: 'success',
+      title: 'Masuk ke keranjang',
+      message: `${currentProduct.name} siap kamu checkout.`
+    });
 
     // Reset selections
     setSelectedSize('');
@@ -83,13 +104,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const handleBuyNow = () => {
     if (!user) {
       onLoginRequired();
+      showToast({
+        type: 'info',
+        title: 'Butuh login',
+        message: 'Masuk terlebih dahulu untuk melanjutkan transaksi.'
+      });
       return;
     }
 
     // Check if variants exist and require selection
     if (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0) {
       if (!selectedSize || !selectedColor) {
-        alert('Pilih ukuran dan warna terlebih dahulu');
+        showToast({
+          type: 'warning',
+          title: 'Pilih varian',
+          message: 'Silakan pilih ukuran dan warna sebelum lanjut.'
+        });
         return;
       }
     }
@@ -99,7 +129,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       const stockMessage = (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0)
         ? `Stok tidak mencukupi! Stok tersedia untuk ${selectedSize} - ${selectedColor} adalah ${availableStock} pcs`
         : `Stok tidak mencukupi! Stok tersedia adalah ${availableStock} pcs`;
-      alert(stockMessage);
+      showToast({
+        type: 'warning',
+        title: 'Stok tidak mencukupi',
+        message: stockMessage
+      });
       return;
     }
 
@@ -115,6 +149,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     }
     return user?.role === 'reseller' ? currentProduct.resellerPrice : currentProduct.retailPrice;
   };
+
+  const requiresVariantSelection = Boolean(currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0);
+  const isVariantIncomplete = requiresVariantSelection && (!selectedSize || !selectedColor);
+  const totalPrice = getPrice() * quantity;
 
   const getOriginalPrice = () => {
     return user?.role === 'reseller' ? currentProduct.resellerPrice : currentProduct.retailPrice;
@@ -174,31 +212,29 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Header */}
-      <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="flex items-center justify-between p-4">
-          <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full">
-            <ArrowLeft className="w-6 h-6 text-gray-600" />
-          </button>
-          <h1 className="text-lg font-semibold">Detail Produk</h1>
-          <div className="flex items-center space-x-2">
+      <PageHeader
+        title="Detail Produk"
+        subtitle="Lihat informasi lengkap, stok varian, dan promo aktif"
+        onBack={onBack}
+        variant="card"
+        actions={(
+          <div className="flex items-center gap-2">
+            <button className="rounded-full border border-gray-200 bg-white p-2 text-gray-600 transition hover:text-brand-primary">
+              <Share2 className="h-4 w-4" />
+            </button>
+            <button className="rounded-full border border-gray-200 bg-white p-2 text-gray-600 transition hover:text-rose-500">
+              <Heart className="h-4 w-4" />
+            </button>
             <button
               onClick={onNavigateToCart || (() => {})}
-              className={`p-2 rounded-full transition-colors relative ${
-                user ? 'bg-pink-500 text-white hover:bg-pink-600' : 'bg-gray-100 text-gray-400'
-              }`}
+              className="inline-flex items-center gap-2 rounded-full bg-brand-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-primary/90"
             >
-              <ShoppingCart className="w-5 h-5" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 rounded-full">
-              <Share2 className="w-5 h-5 text-gray-600" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 rounded-full">
-              <Heart className="w-5 h-5 text-gray-600" />
+              <ShoppingCart className="h-4 w-4" />
+              Keranjang
             </button>
           </div>
-        </div>
-      </div>
+        )}
+      />
 
         {/* Product Images */}
         <div className="bg-white">
@@ -206,40 +242,48 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             <img
               src={currentProduct.images?.[selectedImageIndex] || currentProduct.image || '/placeholder-currentProduct.jpg'}
               alt={currentProduct.name}
-              className="w-full h-96 object-cover"
+              className="w-full h-[420px] object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = '/placeholder-currentProduct.jpg';
               }}
             />
-            
+
             {currentProduct.isFlashSale && (
-              <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+              <div className="absolute top-4 left-4 rounded-full bg-red-500 px-4 py-1 text-sm font-semibold text-white shadow-lg">
                 FLASH SALE
               </div>
             )}
-            
+
             {currentProduct.status === 'po' && (
-              <div className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+              <div className="absolute top-4 right-4 rounded-full bg-orange-500 px-4 py-1 text-sm font-semibold text-white shadow-lg">
                 PRE ORDER
               </div>
             )}
+
+            <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2">
+              {currentProduct.tags?.map((tag: string) => (
+                <span key={tag} className="rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white">
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
-          
+
           {currentProduct.images && currentProduct.images.length > 1 && (
             <div className="flex space-x-2 p-4 overflow-x-auto">
               {currentProduct.images.map((image, index) => (
                 <button
                   key={index}
                   onClick={() => setSelectedImageIndex(index)}
-                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
-                    selectedImageIndex === index ? 'border-pink-500' : 'border-gray-200'
+                  className={`flex-shrink-0 rounded-2xl border-2 p-1 transition ${
+                    selectedImageIndex === index ? 'border-brand-primary shadow' : 'border-transparent'
                   }`}
                 >
                   <img
                     src={image}
                     alt={`${currentProduct.name} ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    className="h-16 w-16 rounded-xl object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = '/placeholder-currentProduct.jpg';
@@ -364,12 +408,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                     key={size}
                     onClick={() => setSelectedSize(size)}
                     disabled={sizeTotalStock === 0}
-                    className={`px-4 py-2 border rounded-lg font-medium transition-colors relative ${
+                    className={`relative rounded-full px-4 py-2 text-sm font-semibold transition shadow-sm ${
                       selectedSize === size
-                        ? 'border-pink-500 bg-pink-50 text-pink-600'
+                        ? 'bg-brand-primary text-white shadow-brand-card'
                         : sizeTotalStock === 0
-                        ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50'
-                        : 'border-gray-300 text-gray-600 hover:border-gray-400'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 hover:text-brand-primary border border-gray-200'
                     }`}
                   >
                     <span>{size}</span>
@@ -377,7 +421,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                       <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                     )}
                     {currentProduct.variants.stock && (
-                      <span className="text-xs text-gray-500 block">
+                      <span className="block text-xs font-normal text-gray-500">
                         {sizeTotalStock > 0 ? `${sizeTotalStock} pcs` : 'Habis'}
                       </span>
                     )}
@@ -392,42 +436,34 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             <h3 className="font-semibold text-gray-800 mb-3">Pilih Warna</h3>
             <div className="flex flex-wrap gap-2">
               {(currentProduct.variants?.colors || []).map((color) => {
-                // Get stock for this color (based on selected size, or total across all sizes if no size selected)
                 const colorStock = selectedSize
                   ? getVariantStock(selectedSize, color)
                   : (currentProduct.variants?.sizes || []).reduce((total, size) => total + getVariantStock(size, color), 0);
-
-                const isColorDisabled = selectedSize ? colorStock === 0 : false;
 
                 return (
                   <button
                     key={color}
                     onClick={() => setSelectedColor(color)}
-                    disabled={isColorDisabled}
-                    className={`px-4 py-2 border rounded-lg font-medium transition-colors relative ${
+                    disabled={colorStock === 0}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition ${
                       selectedColor === color
-                        ? 'border-pink-500 bg-pink-50 text-pink-600'
-                        : isColorDisabled
-                        ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50'
-                        : 'border-gray-300 text-gray-600 hover:border-gray-400'
+                        ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/40'
+                        : colorStock === 0
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 border border-gray-200 hover:text-brand-primary'
                     }`}
                   >
                     <span>{color}</span>
-                    {isColorDisabled && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                    )}
-                    {currentProduct.variants.stock && (
-                      <span className="text-xs text-gray-500 block">
-                        {colorStock > 0 ? `${colorStock} pcs` : 'Habis'}
-                      </span>
-                    )}
+                    <span className="block text-xs font-normal text-gray-500">
+                      {colorStock > 0 ? `${colorStock} pcs` : 'Habis'}
+                    </span>
                   </button>
                 );
               })}
             </div>
 
             {selectedSize && (
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="mt-2 text-xs text-gray-500">
                 💡 Stok warna ditampilkan untuk ukuran {selectedSize}
               </p>
             )}
@@ -525,31 +561,38 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           </div>
         </div>
 
-      {/* Bottom Action Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-50">
-        <div className="flex space-x-3">
-          <button
-            onClick={handleAddToCart}
-            disabled={currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0 ? (!selectedSize || !selectedColor) : false}
-            className="flex-1 btn-brand-outline py-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-          >
-            <ShoppingCart className="w-5 h-5" />
-            <span>Tambah ke Keranjang</span>
-          </button>
-          <button
-            onClick={handleBuyNow}
-            disabled={currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0 ? (!selectedSize || !selectedColor) : false}
-            className="flex-1 btn-brand py-4 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Beli Sekarang
-          </button>
+      {/* Sticky CTA */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Subtotal</p>
+            <p className="text-2xl font-bold text-brand-primary">
+              Rp {totalPrice.toLocaleString('id-ID')}
+            </p>
+            {requiresVariantSelection && (
+              <p className="text-xs text-slate-500">
+                {isVariantIncomplete ? 'Pilih ukuran dan warna terlebih dahulu' : `${selectedSize} / ${selectedColor}`}
+              </p>
+            )}
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <button
+              onClick={handleAddToCart}
+              disabled={isVariantIncomplete}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-brand-primary/30 bg-white px-6 py-3 text-sm font-semibold text-brand-primary shadow-sm transition hover:bg-brand-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              Tambah ke Keranjang
+            </button>
+            <button
+              onClick={handleBuyNow}
+              disabled={isVariantIncomplete}
+              className="inline-flex flex-1 items-center justify-center rounded-full bg-brand-primary px-6 py-3 text-sm font-semibold text-white shadow-brand-card transition hover:bg-brand-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Beli Sekarang
+            </button>
+          </div>
         </div>
-
-        {currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0 && (!selectedSize || !selectedColor) && (
-          <p className="text-center text-sm text-gray-500 mt-2">
-            Pilih ukuran dan warna terlebih dahulu
-          </p>
-        )}
       </div>
     </div>
   );

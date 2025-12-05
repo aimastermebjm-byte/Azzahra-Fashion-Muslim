@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, X, UserPlus, Crown, User, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, X, UserPlus, Crown, User } from 'lucide-react';
 // import { useSupabaseAuthSimple } from '../hooks/useSupabaseAuthSimple';
 // import CustomerRegistration from './CustomerRegistration';
 // import OwnerAdminRegistration from './OwnerAdminRegistration';

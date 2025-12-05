@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Users, Search, Filter, Plus, Eye, Edit, Trash2, Shield, Award } from 'lucide-react';
+import { Users, Search, Filter, Plus, Eye, Edit, Trash2, Shield, Award } from 'lucide-react';
+import PageHeader from './PageHeader';
 
 interface AdminUsersPageProps {
   onBack: () => void;
@@ -78,24 +79,18 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={onBack}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-xl font-bold">Kelola Pengguna</h1>
-          </div>
-          <button className="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center space-x-2">
+      <PageHeader
+        title="Kelola Pengguna"
+        subtitle="Pantau role, status, dan aktivitas pelanggan/reseller"
+        onBack={onBack}
+        variant="gradient"
+        actions={(
+          <button className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-white/90">
             <Plus className="w-4 h-4" />
-            <span>Tambah User</span>
+            Tambah User
           </button>
-        </div>
-      </div>
+        )}
+      />
 
       {/* Content */}
       <div className="p-4 space-y-4">

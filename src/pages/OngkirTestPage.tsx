@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Calculator, Package } from 'lucide-react';
+import { Calculator, Package } from 'lucide-react';
 import OngkirChecker from '../components/OngkirChecker';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/ui/EmptyState';
 
 interface OngkirTestPageProps {
   onBack?: () => void;
@@ -37,158 +39,100 @@ export const OngkirTestPage: React.FC<OngkirTestPageProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center">
-            <button
-              onClick={onBack}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 mr-3"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="flex items-center">
-              <Calculator className="w-6 h-6 text-blue-500 mr-3" />
-              <h1 className="text-xl font-bold text-gray-800">Cek Ongkos Kirim</h1>
-            </div>
+    <div className="min-h-screen bg-brand-surface pb-16">
+      <PageHeader
+        title="Cek Ongkos Kirim"
+        subtitle="Simulasikan biaya pengiriman dan bandingkan layanan kurir secara real-time"
+        onBack={onBack}
+        variant="card"
+        actions={selectedShipping ? (
+          <div className="text-right">
+            <p className="text-xs text-slate-500">Estimasi Terpilih</p>
+            <p className="text-lg font-semibold text-brand-primary">Rp {selectedShipping.cost.toLocaleString('id-ID')}</p>
           </div>
-        </div>
-      </div>
+        ) : undefined}
+      />
 
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Ongkir Checker */}
-          <div className="lg:col-span-2">
+      <div className="mx-auto max-w-5xl px-4 pb-12">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+          <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
             <OngkirChecker
-              originCityId="152" // Jakarta Pusat
-              weight={1000} // 1kg
+              originCityId="152"
+              weight={1000}
               onCostSelected={handleCostSelected}
             />
           </div>
 
-          {/* Selected Shipping Info */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <Package className="w-5 h-5 mr-2" />
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm lg:sticky lg:top-4">
+              <h2 className="flex items-center text-lg font-semibold text-slate-900">
+                <Package className="mr-2 h-5 w-5 text-brand-primary" />
                 Info Pengiriman
               </h2>
 
               {selectedShipping ? (
-                <div className="space-y-4">
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm font-medium text-green-800 mb-2">
-                      ✅ Pengiriman Terpilih
-                    </p>
-                    <div className="space-y-2">
-                      <div>
-                        <p className="text-sm text-gray-600">Kurir</p>
-                        <p className="font-medium text-gray-800">
-                          {formatCourierName(selectedShipping.courier)}
-                        </p>
+                <div className="mt-4 space-y-4">
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                    <p className="text-sm font-semibold text-emerald-700">✅ Pengiriman Terpilih</p>
+                    <div className="mt-3 space-y-2 text-sm text-slate-600">
+                      <div className="flex items-center justify-between">
+                        <span>Kurir</span>
+                        <span className="font-semibold text-slate-900">{formatCourierName(selectedShipping.courier)}</span>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Layanan</p>
-                        <p className="font-medium text-gray-800">
-                          {selectedShipping.service}
-                        </p>
+                      <div className="flex items-center justify-between">
+                        <span>Layanan</span>
+                        <span className="font-semibold text-slate-900">{selectedShipping.service}</span>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Estimasi</p>
-                        <p className="font-medium text-gray-800">
-                          {selectedShipping.etd}
-                        </p>
+                      <div className="flex items-center justify-between">
+                        <span>Estimasi</span>
+                        <span className="font-semibold text-slate-900">{selectedShipping.etd}</span>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Biaya</p>
-                        <p className="font-bold text-lg text-green-600">
-                          Rp {selectedShipping.cost.toLocaleString('id-ID')}
-                        </p>
+                      <div className="flex items-center justify-between text-base font-bold text-emerald-700">
+                        <span>Biaya</span>
+                        <span>Rp {selectedShipping.cost.toLocaleString('id-ID')}</span>
                       </div>
                     </div>
                   </div>
 
-                  <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200">
-                    Lanjut ke Pembayaran
-                  </button>
+                  <button className="btn-brand w-full">Lanjut ke Pembayaran</button>
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Package className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <p className="text-gray-500 text-sm mb-4">
-                    Belum ada metode pengiriman yang dipilih
-                  </p>
-                  <p className="text-gray-400 text-xs">
-                    Pilih kurir dan layanan di form sebelah kiri
-                  </p>
-                </div>
+                <EmptyState
+                  className="mt-6"
+                  icon={<Package className="h-10 w-10 text-brand-primary" />}
+                  title="Belum ada kurir dipilih"
+                  description="Isi formulir di sebelah kiri untuk melihat estimasi ongkir dari berbagai kurir."
+                />
               )}
 
-              {/* Informasi Tambahan */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">
-                  Informasi Tambahan
-                </h3>
-                <div className="space-y-2 text-xs text-gray-500">
-                  <div className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>Estimasi waktu pengiriman dapat berubah tergantung kondisi</span>
-                  </div>
-                  <div className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>Biaya yang tertera adalah estimasi dan belum termasuk asuransi</span>
-                  </div>
-                  <div className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>Proses pengiriman akan dilakukan pada hari kerja</span>
-                  </div>
-                </div>
+              <div className="mt-6 border-t border-dashed border-slate-200 pt-4 text-xs text-slate-500">
+                <p className="font-semibold text-slate-700">Informasi Tambahan</p>
+                <ul className="mt-2 space-y-1 list-disc pl-4">
+                  <li>Estimasi waktu dapat berubah sesuai kondisi operasional.</li>
+                  <li>Biaya belum termasuk asuransi dan penjemputan.</li>
+                  <li>Pengiriman diproses pada hari kerja operasional toko.</li>
+                </ul>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Contoh Penggunaan */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-800 mb-4">
-            Cara Penggunaan
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold">
-                1
+        <div className="mt-10 rounded-2xl border border-brand-primary/20 bg-brand-primary/5 p-6">
+          <h3 className="text-lg font-semibold text-brand-primary">Cara Penggunaan</h3>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((step) => (
+              <div key={step} className="text-center">
+                <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-brand-primary text-white font-bold">
+                  {step}
+                </div>
+                <p className="text-sm text-slate-600">
+                  {step === 1 && 'Pilih provinsi tujuan'}
+                  {step === 2 && 'Pilih kota/kabupaten'}
+                  {step === 3 && 'Pilih kurir favorit'}
+                  {step === 4 && 'Klik “Cek Ongkir”'}
+                </p>
               </div>
-              <p className="text-sm text-blue-700">
-                Pilih provinsi tujuan
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold">
-                2
-              </div>
-              <p className="text-sm text-blue-700">
-                Pilih kota/kabupaten
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold">
-                3
-              </div>
-              <p className="text-sm text-blue-700">
-                Pilih kurir
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold">
-                4
-              </div>
-              <p className="text-sm text-blue-700">
-                Klik "Cek Ongkir"
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </div>

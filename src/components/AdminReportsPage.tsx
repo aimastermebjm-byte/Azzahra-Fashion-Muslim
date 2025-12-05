@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import PageHeader from './PageHeader';
 import {
-  ArrowLeft, Download, Calendar, BarChart3, PieChart, TrendingUp, TrendingDown, Package, Users,
+  Download, Calendar, BarChart3, PieChart, TrendingUp, TrendingDown, Package, Users,
   FileText, DollarSign, Truck, Filter, Eye, CheckCircle, XCircle,
   ShoppingCart, ArrowUpRight, ArrowDownRight, Box, Wallet, PiggyBank,
   CreditCard, Search, ChevronDown
@@ -345,80 +346,120 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
   return (
     <div className="min-h-screen bg-brand-surface">
-      {/* Header */}
-      <div className="bg-brand-gradient text-white p-6 shadow-brand-card">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <FileText className="w-6 h-6" />
-            <h1 className="text-xl font-bold">Laporan Penjualan</h1>
+      <PageHeader
+        title="Laporan Penjualan"
+        subtitle="Pantau performa penjualan, persediaan, dan arus kas dalam satu tempat"
+        onBack={onBack}
+        variant="gradient"
+        align="between"
+      >
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
+            <p className="text-xs uppercase tracking-wide text-white/70">Periode</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {[
+                { value: 'hari_ini', label: 'Hari ini' },
+                { value: 'kemaren', label: 'Kemarin' },
+                { value: 'bulan_ini', label: 'Bulan ini' },
+                { value: 'bulan_kemaren', label: 'Bulan lalu' }
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setDateFilter(option.value as any)}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                    dateFilter === option.value ? 'bg-white text-brand-primary shadow-sm' : 'bg-white/10 text-white hover:bg-white/20'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+              <button
+                onClick={() => setDateFilter('custom')}
+                className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition ${
+                  dateFilter === 'custom' ? 'bg-white text-brand-primary shadow-sm' : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                <Calendar className="h-3.5 w-3.5" />
+                Custom
+              </button>
+            </div>
+            {dateFilter === 'custom' && (
+              <div className="mt-3 grid gap-2 md:grid-cols-2">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-sm text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+                />
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-sm text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+                />
+              </div>
+            )}
           </div>
-          <button
-            onClick={onBack}
-            className="bg-white/15 px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/25 transition-colors"
-          >
-            Kembali
-          </button>
-        </div>
 
-        {/* Date and Status Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          {/* Date Filter */}
-          <div className="relative">
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value as any)}
-              className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-white/50 appearance-none"
-            >
-              <option value="hari_ini">Hari Ini</option>
-              <option value="kemaren">Kemaren</option>
-              <option value="bulan_ini">Bulan Ini</option>
-              <option value="bulan_kemaren">Bulan Kemaren</option>
-              <option value="custom">Custom Tanggal</option>
-            </select>
-            <Calendar className="absolute left-3 top-3 text-white/70 w-5 h-5 pointer-events-none" />
+          <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
+            <p className="text-xs uppercase tracking-wide text-white/70">Status</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {[
+                { value: 'all', label: 'Semua' },
+                { value: 'lunas', label: 'Lunas' },
+                { value: 'belum_lunas', label: 'Belum lunas' }
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setStatusFilter(option.value as any)}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                    statusFilter === option.value ? 'bg-white text-brand-primary shadow-sm' : 'bg-white/10 text-white hover:bg-white/20'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Custom Date Range */}
-          {dateFilter === 'custom' && (
-            <>
+          <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
+            <p className="text-xs uppercase tracking-wide text-white/70">Cari Pelanggan</p>
+            <div className="mt-2 flex items-center gap-2 rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-brand-primary">
+              <Search className="h-4 w-4 text-brand-primary" />
               <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="px-3 py-3 rounded-2xl bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-white/50"
-                placeholder="Dari tanggal"
+                type="text"
+                value={customerFilter}
+                onChange={(e) => setCustomerFilter(e.target.value)}
+                className="w-full bg-transparent text-sm placeholder-brand-primary/60 focus:outline-none"
+                placeholder="Nama atau no. HP"
               />
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="px-3 py-3 rounded-2xl bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-white/50"
-                placeholder="Sampai tanggal"
-              />
-            </>
-          )}
+            </div>
+          </div>
 
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="px-3 py-3 rounded-2xl bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-white/50"
-          >
-            <option value="all">Semua Status</option>
-            <option value="lunas">Lunas</option>
-            <option value="belum_lunas">Belum Lunas</option>
-          </select>
-
-          {/* Customer Filter */}
-          <input
-            type="text"
-            value={customerFilter}
-            onChange={(e) => setCustomerFilter(e.target.value)}
-            className="px-3 py-3 rounded-2xl bg-white/10 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
-            placeholder="Cari pelanggan..."
-          />
+          <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
+            <p className="text-xs uppercase tracking-wide text-white/70">Filter Tambahan</p>
+            <div className="mt-2 grid gap-2">
+              <button
+                onClick={() => exportToCSV(filteredTransactions, 'laporan_penjualan.csv')}
+                className="flex items-center justify-between rounded-xl bg-white/15 px-3 py-2 text-xs font-semibold text-white hover:bg-white/25"
+              >
+                <span>Ekspor data</span>
+                <Download className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => {
+                  setStatusFilter('all');
+                  setCustomerFilter('');
+                  setDateFilter('bulan_ini');
+                }}
+                className="rounded-xl border border-white/30 px-3 py-2 text-xs font-semibold text-white/80 transition hover:border-white hover:text-white"
+              >
+                Reset filter
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Summary Cards */}
       <div className="p-4">

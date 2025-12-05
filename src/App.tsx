@@ -3,6 +3,7 @@ import { AdminProvider } from './contexts/AdminContext';
 // import { FlashSaleProvider } from './contexts/FlashSaleContext'; // DISABLED - Emergency fix
 import { GlobalProductsProvider } from './hooks/useGlobalProducts';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ToastProvider } from './components/ToastProvider';
 
 // Cache busting version - force browser refresh
 const APP_VERSION = '2.1.0';
@@ -593,9 +594,11 @@ function App() {
   return (
     <AdminProvider>
       <GlobalProductsProvider>
-        {/* <FlashSaleProvider> - DISABLED Emergency fix untuk infinite loop */}
-        <AppContent />
-        {/* </FlashSaleProvider> */}
+        <ToastProvider>
+          {/* <FlashSaleProvider> - DISABLED Emergency fix untuk infinite loop */}
+          <AppContent />
+          {/* </FlashSaleProvider> */}
+        </ToastProvider>
       </GlobalProductsProvider>
     </AdminProvider>
   );

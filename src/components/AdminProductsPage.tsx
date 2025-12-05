@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import PageHeader from './PageHeader';
 import { Product } from '../types';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
 import { useProductCRUD } from '../hooks/useProductCRUD';
@@ -764,64 +765,58 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4">
-        <div className="flex items-center space-x-3">
+      <PageHeader
+        title="Kelola Produk"
+        subtitle="Monitor stok, kelola varian, dan optimalkan katalog dengan cepat"
+        onBack={onBack}
+        variant="gradient"
+        actions={user?.role === 'admin' && (
           <button
-            onClick={onBack}
-            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            onClick={handleForceSyncGlobalIndex}
+            disabled={isForceSyncing}
+            className={`rounded-full px-4 py-2 text-sm font-semibold text-brand-primary transition ${
+              isForceSyncing ? 'bg-white/50 cursor-not-allowed' : 'bg-white text-brand-primary'
+            }`}
           >
-            <ArrowLeft className="w-5 h-5" />
+            {isForceSyncing ? 'Syncing…' : 'Force Sync GlobalIndex'}
           </button>
-          <h1 className="text-xl font-bold">Kelola Produk</h1>
+        )}
+      >
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
+            <p className="text-xs uppercase tracking-wider text-white/70">Total Produk</p>
+            <p className="mt-2 text-2xl font-bold">{products.length}</p>
+            <p className="text-xs text-white/70">Semua kategori</p>
+          </div>
+          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
+            <p className="text-xs uppercase tracking-wider text-white/70">Stok Tersedia</p>
+            <p className="mt-2 text-2xl font-bold">
+              {products.reduce((total, product) => total + product.stock, 0)}
+            </p>
+            <p className="text-xs text-white/70">Unit siap kirim</p>
+          </div>
+          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
+            <p className="text-xs uppercase tracking-wider text-white/70">Kategori Aktif</p>
+            <p className="mt-2 text-2xl font-bold">{categories.length}</p>
+            <p className="text-xs text-white/70">Sedang ditampilkan</p>
+          </div>
+          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
+            <p className="text-xs uppercase tracking-wider text-white/70">Produk Unggulan</p>
+            <p className="mt-2 text-2xl font-bold">{products.filter(p => p.isFeatured).length}</p>
+            <p className="text-xs text-white/70">Sedang dipromosikan</p>
+          </div>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Content */}
       <div className="p-4 space-y-4">
-        {/* Product Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-blue-800 mb-1">Total Produk</h4>
-            <p className="text-2xl font-bold text-blue-600">{products.length}</p>
-          </div>
-          <div className="bg-green-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-green-800 mb-1">Stok Tersedia</h4>
-            <p className="text-2xl font-bold text-green-600">
-              {products.reduce((total, product) => total + product.stock, 0)}
-            </p>
-          </div>
-          <div className="bg-purple-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-purple-800 mb-1">Kategori</h4>
-            <p className="text-2xl font-bold text-purple-600">{categories.length}</p>
-          </div>
-          <div className="bg-orange-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-orange-800 mb-1">Produk Unggulan</h4>
-            <p className="text-2xl font-bold text-orange-600">
-              {products.filter(p => p.isFeatured).length}
-            </p>
-          </div>
-        </div>
 
         {user?.role === 'admin' && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-semibold text-yellow-800">🔧 Debug Sync GlobalIndex</h3>
-                <p className="text-xs text-yellow-700">
-                  Paksa sinkron produk batch_1 → globalindex jika data publik tidak sesuai.
-                </p>
-              </div>
-              <button
-                onClick={handleForceSyncGlobalIndex}
-                disabled={isForceSyncing}
-                className={`px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors ${
-                  isForceSyncing ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-500 hover:bg-yellow-600'
-                }`}
-              >
-                {isForceSyncing ? 'Syncing…' : 'Force Sync GlobalIndex'}
-              </button>
-            </div>
+            <h3 className="text-sm font-semibold text-yellow-800">🔧 Debug Sync GlobalIndex</h3>
+            <p className="mt-1 text-xs text-yellow-700">
+              Gunakan tombol "Force Sync GlobalIndex" di header untuk memastikan katalog publik tetap sinkron.
+            </p>
             {forceSyncMessage && (
               <p
                 className={`text-xs mt-2 ${

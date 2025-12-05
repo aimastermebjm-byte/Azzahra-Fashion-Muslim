@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, Phone, User, Package, Copy, Loader2, AlertCircle, Plus, Edit2, Trash2 } from 'lucide-react';
+import { MapPin, Phone, User, Package, Copy, Loader2, AlertCircle, Plus, Edit2, Trash2 } from 'lucide-react';
 import { addressService } from '../services/addressService';
 import AddressForm from './AddressForm';
 import { komerceService, KomerceCostResult } from '../utils/komerceService';
 import { cartServiceOptimized } from '../services/cartServiceOptimized';
+import PageHeader from './PageHeader';
+import EmptyState from './ui/EmptyState';
+import { CardSkeleton, ListSkeleton } from './ui/Skeleton';
+import { useToast } from './ToastProvider';
 
 interface CheckoutPageProps {
   user: any;
@@ -18,6 +22,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 }) => {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
 
   // Load cart from backend
   const loadCart = async () => {
@@ -542,12 +547,20 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   const handleCopyAccount = (accountNumber: string, bankName: string) => {
     navigator.clipboard.writeText(accountNumber);
-    alert(`✅ Nomor rekening ${bankName} berhasil disalin!\n\n${accountNumber}\na.n. Fahrin`);
+    showToast({
+      type: 'success',
+      title: 'Nomor rekening disalin',
+      message: `${bankName} ${accountNumber} siap ditempel.`
+    });
   };
 
   const handleSubmitOrder = () => {
     if (!formData.name || !formData.phone || !formData.address) {
-      alert('Mohon lengkapi semua data pengiriman');
+      showToast({
+        type: 'warning',
+        title: 'Data belum lengkap',
+        message: 'Lengkapi nama, telepon, dan alamat penerima.'
+      });
       return;
     }
 
@@ -556,12 +569,20 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     // Check if selected courier has valid shipping cost
     if (supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {
-      alert('Mohon tunggu perhitungan ongkir selesai atau pilih kurir lain');
+      showToast({
+        type: 'warning',
+        title: 'Ongkir belum siap',
+        message: 'Tunggu perhitungan ongkir selesai atau pilih kurir lain.'
+      });
       return;
     }
 
     if (!supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {
-      alert('Mohon masukkan biaya ongkos kirim untuk kurir lokal');
+      showToast({
+        type: 'warning',
+        title: 'Isi biaya ongkir',
+        message: 'Masukkan biaya ongkos kirim untuk kurir lokal.'
+      });
       return;
     }
 
@@ -589,7 +610,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       paymentMethod: formData.paymentMethod,
       notes: formData.notes,
       totalAmount: totalPrice,
-      shippingCost: shippingCost,
+      shippingCost: shippingFee,
       finalTotal: finalTotal
     };
 
@@ -597,41 +618,69 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     const newOrderId = clearCart(orderData, cartItems);
 
     // Show success message with instructions for payment
-    if (formData.paymentMethod === 'transfer') {
-      alert(`🎉 Pesanan berhasil dibuat!\n\nID Pesanan: ${newOrderId}\nTotal: Rp ${finalTotal.toLocaleString('id-ID')}\n\nSilakan transfer ke:\n• BCA: 0511456494\n• BRI: 066301000115566\n• MANDIRI: 310011008896\n\na.n. Fahrin\n\nKemudian upload bukti pembayaran di menu "Pesanan"`);
-    } else {
-      alert(`🎉 Pesanan berhasil dibuat!\n\nID Pesanan: ${newOrderId}\nTotal: Rp ${finalTotal.toLocaleString('id-ID')}\n\nPembayaran Cash on Delivery (COD)\nBarang akan dikirim setelah konfirmasi.`);
-    }
+    showToast({
+      type: 'success',
+      title: 'Pesanan berhasil dibuat',
+      message: `ID Pesanan ${newOrderId} siap diproses. Cek detail di menu Pesanan.`
+    });
 
     // Redirect to home
     onBack();
   };
 
   const totalPrice = getTotalPrice();
-  const currentShippingCost = formData.shippingCost || 0;
-  const finalTotal = totalPrice + currentShippingCost;
+  const shippingFee = formData.shippingCost || shippingCost || 0;
+  const finalTotal = totalPrice + shippingFee;
+  const cartCount = cartItems?.length || 0;
 
   // Check if selected courier supports automatic shipping calculation
   const selectedCourierOption = shippingOptions.find(opt => opt.id === formData.shippingCourier);
   const supportsAutomatic = !!selectedCourierOption?.code;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="flex items-center p-4">
-          <button onClick={onBack} className="mr-4">
-            <ArrowLeft className="w-6 h-6 text-gray-600" />
-          </button>
-          <h1 className="text-lg font-semibold">Checkout</h1>
-        </div>
-      </div>
+    <div className="min-h-screen bg-brand-surface pb-16">
+      <PageHeader
+        title="Checkout"
+        subtitle={cartCount > 0 ? `${cartCount} produk siap dikirim` : 'Review detail pesanan sebelum konfirmasi pembayaran'}
+        onBack={onBack}
+        variant="card"
+        actions={(
+          <div className="text-right">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Total sementara</p>
+            <p className="text-2xl font-bold text-brand-primary">Rp {finalTotal.toLocaleString('id-ID')}</p>
+          </div>
+        )}
+      />
 
-      <div className="p-4 space-y-4">
+      <div className="mx-auto max-w-6xl px-4 pb-16">
+        {loading ? (
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)]">
+            <CardSkeleton lines={6} />
+            <CardSkeleton lines={4} />
+          </div>
+        ) : (
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)]">
+          <div className="space-y-6">
         {/* Order Items */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="font-semibold mb-3">Produk Pesanan</h3>
-          <div className="space-y-3">
-            {cartItems.map((item, index) => {
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-900">Produk Pesanan</h3>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{cartCount} produk</span>
+          </div>
+          <div className="mt-4 space-y-3">
+            {cartCount === 0 ? (
+              <EmptyState
+                compact
+                title="Belum ada produk"
+                description="Silakan kembali ke katalog untuk menambahkan produk ke keranjang."
+                action={(
+                  <button onClick={onBack} className="btn-brand">
+                    Kembali Belanja
+                  </button>
+                )}
+              />
+            ) : (
+            cartItems.map((item, index) => {
               // Safety checks
               if (!item) return null;
 
@@ -643,35 +692,36 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               const productId = item.productId || item.id || `product-${index}`;
 
               return (
-                <div key={`${productId}-${variant.size || 'default'}-${variant.color || 'default'}`} className="flex space-x-3">
+                <div key={`${productId}-${variant.size || 'default'}-${variant.color || 'default'}`} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white/70 p-3">
                   <img
                     src={itemImage}
                     alt={itemName}
-                    className="w-16 h-16 object-cover rounded-lg"
+                    className="h-16 w-16 rounded-lg object-cover shadow-sm"
                   />
                   <div className="flex-1">
-                    <h4 className="font-medium text-sm">{itemName}</h4>
+                    <h4 className="text-sm font-semibold text-slate-900">{itemName}</h4>
                     {variant && (variant.size || variant.color) && (
-                      <p className="text-xs text-gray-500">
-                        {variant.size || 'Standard'} - {variant.color || 'Default'}
+                      <p className="text-xs text-slate-500">
+                        {variant.size || 'Standard'} · {variant.color || 'Default'}
                       </p>
                     )}
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="text-sm font-semibold text-pink-600">
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="text-sm font-semibold text-brand-primary">
                         Rp {itemPrice.toLocaleString('id-ID')}
                       </span>
-                      <span className="text-sm text-gray-500">x{itemQuantity}</span>
+                      <span className="text-xs text-slate-500">x{itemQuantity}</span>
                     </div>
                   </div>
                 </div>
               );
-            }).filter(Boolean)}
+            }).filter(Boolean)
+            )}
           </div>
         </div>
 
         {/* Customer Information */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="font-semibold mb-3">Informasi Penerima</h3>
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">Informasi Penerima</h3>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -683,7 +733,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
                 placeholder="Masukkan nama penerima"
               />
             </div>
@@ -698,7 +748,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
                 placeholder="Masukkan nomor telepon"
               />
             </div>
@@ -706,19 +756,19 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         </div>
 
         {/* Courier Selection - MOVED TO TOP */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="font-semibold mb-3">Pilih Kurir Pengiriman</h3>
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">Pilih Kurir Pengiriman</h3>
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Package className="w-4 h-4 inline mr-1" />
+              <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <Package className="h-4 w-4 text-brand-primary" />
                 Kurir
               </label>
               <select
                 name="shippingCourier"
                 value={formData.shippingCourier}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
               >
                 {shippingOptions.map((option) => (
                   <option key={option.id} value={option.id}>
@@ -728,7 +778,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </select>
 
               {/* Courier Info */}
-              <div className="mt-2 text-xs text-gray-500">
+              <div className="mt-2 text-xs text-slate-500">
                 {supportsAutomatic ? (
                   <div className="text-green-600">
                     ✓ Otomatis via RajaOngkir dari Banjarmasin
@@ -742,24 +792,24 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
               {/* Loading indicator */}
               {loadingShipping && (
-                <div className="mt-2 flex items-center text-sm text-blue-600">
-                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                <div className="mt-2 flex items-center text-sm text-brand-primary">
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                   Menghitung ongkir...
                 </div>
               )}
 
               {/* Error message */}
               {shippingError && (
-                <div className="mt-2 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
+                <div className="mt-2 flex items-center text-sm text-red-600">
+                  <AlertCircle className="mr-1 h-4 w-4" />
                   {shippingError}
                 </div>
               )}
             </div>
 
             {/* Shipping Cost Display */}
-            {formData.shippingCost > 0 && (
-              <div className="bg-gray-50 p-3 rounded-lg">
+            {shippingFee > 0 && (
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 {/* Service Selection Dropdown */}
                 {ongkirResults.length > 1 && (
                   <div className="mb-3">
@@ -780,7 +830,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           }));
                         }
                       }}
-                      className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                      className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-transparent"
                     >
                       {ongkirResults.map((service, index) => (
                         <option key={index} value={service.service}>
@@ -792,29 +842,29 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 )}
 
                 {/* Weight Information */}
-                <div className="bg-blue-50 rounded-lg p-3 mb-3">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="font-medium text-blue-800">Berat Produk:</span>
-                    <span className="text-blue-600 font-semibold">
+                <div className="mb-3 rounded-xl bg-brand-primary/5 p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-brand-primary">Berat Produk:</span>
+                    <span className="font-semibold text-brand-primary">
                       {(calculateTotalWeight() / 1000).toFixed(2)} kg
                     </span>
                   </div>
-                  <div className="text-xs text-blue-600 mt-1">
+                  <div className="mt-1 text-xs text-brand-primary">
                     💡 Smart rounding: 0-1.25kg = 1kg, 1.251-2.25kg = 2kg, dst.
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">Biaya Ongkir:</span>
-                  <span className="text-sm font-semibold text-pink-600">
-                    Rp {formData.shippingCost.toLocaleString('id-ID')}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-slate-700">Biaya Ongkir:</span>
+                  <span className="text-sm font-semibold text-brand-primary">
+                    Rp {shippingFee.toLocaleString('id-ID')}
                   </span>
                 </div>
                 {formData.shippingService && (
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="mt-1 text-xs text-slate-500">
                     Service: {formData.shippingService} | Estimasi: {formData.shippingETD}
                     {ongkirResults.length > 1 && (
-                      <span className="ml-2 text-blue-600">
+                      <span className="ml-2 text-brand-primary">
                         ({ongkirResults.length} layanan tersedia)
                       </span>
                     )}
@@ -826,33 +876,38 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         </div>
 
         {/* Address Input */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="font-semibold">Alamat Pengiriman</h3>
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-900">Alamat Pengiriman</h3>
             <button
-              onClick={() => setShowAddressModal(true)}
-              className="text-pink-600 hover:text-pink-700 flex items-center text-sm font-medium"
+              onClick={() => {
+                setEditingAddress(null);
+                setShowAddressModal(true);
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-brand-primary/30 px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/5"
             >
-              <Plus className="w-4 h-4 mr-1" />
+              <Plus className="h-4 w-4" />
               Tambah Alamat
             </button>
           </div>
 
           {/* Address Selection */}
-          {addresses.length > 0 && (
-            <div className="space-y-2 mb-4">
+          {addressesLoading ? (
+            <ListSkeleton items={3} />
+          ) : addresses.length > 0 ? (
+            <div className="mb-4 space-y-2">
               {addresses.map((address) => (
                 <label
                   key={address.id}
-                  className={`block p-3 border rounded-lg cursor-pointer transition-colors ${
+                  className={`block rounded-2xl border p-3 transition ${
                     selectedAddressId === address.id
-                      ? 'border-pink-500 bg-pink-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
+                      : 'border-slate-200 hover:border-brand-primary/40'
                   }`}
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center mb-1">
+                      <div className="flex items-center gap-2">
                         <input
                           type="radio"
                           name="savedAddress"
@@ -867,41 +922,41 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                               provinceId: address.provinceId || '',
                               cityId: address.cityId || ''
                             }));
-
-                            // NOTE: Shipping calculation is handled by useEffect - no manual calculation needed
                           }}
-                          className="w-4 h-4 text-pink-600 mr-2"
+                          className="h-4 w-4 text-brand-primary"
                         />
-                        <span className="font-medium">{address.name}</span>
+                        <span className="text-sm font-semibold text-slate-900">{address.name}</span>
                         {address.isDefault && (
-                          <span className="ml-2 text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
                             Utama
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 ml-6">{address.phone}</p>
-                      <p className="text-sm text-gray-600 ml-6">{address.fullAddress}</p>
+                      <p className="ml-6 text-xs text-slate-500">{address.phone}</p>
+                      <p className="ml-6 text-sm text-slate-600">{address.fullAddress}</p>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex items-center gap-2">
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingAddress(address);
                           setShowAddressModal(true);
                         }}
-                        className="text-blue-600 hover:text-blue-700"
+                        className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:text-brand-primary"
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="h-4 w-4" />
                       </button>
                       {addresses.length > 1 && (
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteAddress(address.id);
                           }}
-                          className="text-red-600 hover:text-red-700"
+                          className="rounded-full border border-slate-200 p-2 text-rose-500 transition hover:bg-rose-50"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       )}
                     </div>
@@ -909,38 +964,43 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 </label>
               ))}
             </div>
+          ) : (
+            <EmptyState
+              title="Belum ada alamat"
+              description="Tambahkan alamat pengiriman untuk mempercepat proses checkout."
+              action={(
+                <button onClick={() => setShowAddressModal(true)} className="btn-brand">
+                  Tambah Alamat Baru
+                </button>
+              )}
+            />
           )}
 
-          {/* New Address Input */}
-          <div className="border-t pt-4">
-            {/* Address input removed - users must select from saved addresses */}
-
-            {/* Manual shipping cost input for non-automatic couriers */}
-            {!supportsAutomatic && (
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Biaya Ongkos Kirim (Rp)
-                </label>
-                <input
-                  type="number"
-                  name="shippingCost"
-                  value={formData.shippingCost || ''}
-                  onChange={handleInputChange}
-                  min="0"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="Masukkan biaya ongkos kirim"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  * Masukkan manual biaya ongkos kirim untuk kurir lokal
-                </p>
-              </div>
-            )}
-          </div>
+          {/* Manual shipping cost input for non-automatic couriers */}
+          {!supportsAutomatic && (
+            <div className="mt-4 border-t border-dashed border-slate-200 pt-4">
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Biaya Ongkos Kirim (Rp)
+              </label>
+              <input
+                type="number"
+                name="shippingCost"
+                value={formData.shippingCost || ''}
+                onChange={handleInputChange}
+                min="0"
+                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                placeholder="Masukkan biaya ongkos kirim"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                * Masukkan manual biaya ongkos kirim untuk kurir lokal
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Additional Options */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="font-semibold mb-3">Opsi Tambahan</h3>
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">Opsi Tambahan</h3>
 
           {/* Dropship Option */}
           <div className="mb-4">
@@ -950,9 +1010,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 name="isDropship"
                 checked={formData.isDropship}
                 onChange={handleInputChange}
-                className="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
+                className="h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
               />
-              <span className="text-sm font-medium text-gray-700">Kirim sebagai dropship</span>
+              <span className="text-sm font-medium text-slate-700">Kirim sebagai dropship</span>
             </label>
           </div>
 
@@ -964,7 +1024,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 name="dropshipName"
                 value={formData.dropshipName}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
                 placeholder="Nama pengirim dropship"
               />
               <input
@@ -972,7 +1032,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 name="dropshipPhone"
                 value={formData.dropshipPhone}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
                 placeholder="Nomor telepon pengirim"
               />
             </div>
@@ -988,108 +1048,136 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               value={formData.notes}
               onChange={handleInputChange}
               rows={3}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
               placeholder="Tambahkan catatan untuk pesanan (opsional)"
             />
           </div>
         </div>
 
         {/* Payment Method */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="font-semibold mb-3">Metode Pembayaran</h3>
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">Metode Pembayaran</h3>
           <div className="space-y-3">
-            <label className="flex items-center space-x-3">
+            <label className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2">
               <input
                 type="radio"
                 name="paymentMethod"
                 value="transfer"
                 checked={formData.paymentMethod === 'transfer'}
                 onChange={handleInputChange}
-                className="w-4 h-4 text-pink-600 border-gray-300 focus:ring-pink-500"
+                className="h-4 w-4 border-slate-300 text-brand-primary focus:ring-brand-primary"
               />
-              <span className="text-sm font-medium">Transfer Bank</span>
+              <div>
+                <p className="text-sm font-semibold text-slate-800">Transfer Bank</p>
+                <p className="text-xs text-slate-500">BCA · BRI · Mandiri</p>
+              </div>
             </label>
-            <label className="flex items-center space-x-3">
+            <label className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2">
               <input
                 type="radio"
                 name="paymentMethod"
                 value="cod"
                 checked={formData.paymentMethod === 'cod'}
                 onChange={handleInputChange}
-                className="w-4 h-4 text-pink-600 border-gray-300 focus:ring-pink-500"
+                className="h-4 w-4 border-slate-300 text-brand-primary focus:ring-brand-primary"
               />
-              <span className="text-sm font-medium">COD (Bayar di Tempat)</span>
+              <div>
+                <p className="text-sm font-semibold text-slate-800">COD (Bayar di Tempat)</p>
+                <p className="text-xs text-slate-500">Bayar saat paket diterima</p>
+              </div>
             </label>
           </div>
 
           {formData.paymentMethod === 'transfer' && (
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium text-gray-700 mb-2">Transfer ke:</p>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center">
+            <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <p className="text-sm font-semibold text-slate-800">Transfer ke:</p>
+              <div className="mt-3 space-y-2 text-sm text-slate-700">
+                <div className="flex items-center justify-between">
                   <span>BCA: 0511456494</span>
                   <button
                     onClick={() => handleCopyAccount('0511456494', 'BCA')}
-                    className="text-blue-600 hover:text-blue-700 text-xs"
+                    className="text-xs font-semibold text-brand-primary hover:text-brand-primary/80"
                   >
-                    <Copy className="w-3 h-3 inline mr-1" />
+                    <Copy className="mr-1 inline h-3 w-3" />
                     Salin
                   </button>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <span>BRI: 066301000115566</span>
                   <button
                     onClick={() => handleCopyAccount('066301000115566', 'BRI')}
-                    className="text-blue-600 hover:text-blue-700 text-xs"
+                    className="text-xs font-semibold text-brand-primary hover:text-brand-primary/80"
                   >
-                    <Copy className="w-3 h-3 inline mr-1" />
+                    <Copy className="mr-1 inline h-3 w-3" />
                     Salin
                   </button>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <span>MANDIRI: 310011008896</span>
                   <button
                     onClick={() => handleCopyAccount('310011008896', 'MANDIRI')}
-                    className="text-blue-600 hover:text-blue-700 text-xs"
+                    className="text-xs font-semibold text-brand-primary hover:text-brand-primary/80"
                   >
-                    <Copy className="w-3 h-3 inline mr-1" />
+                    <Copy className="mr-1 inline h-3 w-3" />
                     Salin
                   </button>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">a.n. Fahrin</p>
+              <p className="mt-2 text-xs text-slate-500">a.n. Fahrin</p>
             </div>
           )}
         </div>
 
-        {/* Order Summary */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="font-semibold mb-3">Ringkasan Pesanan</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Subtotal Produk</span>
-              <span className="text-sm font-medium">Rp {totalPrice.toLocaleString('id-ID')}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Biaya Ongkir</span>
-              <span className="text-sm font-medium">Rp {shippingCost.toLocaleString('id-ID')}</span>
-            </div>
-            <div className="border-t pt-2">
-              <div className="flex justify-between">
-                <span className="font-semibold">Total</span>
-                <span className="font-semibold text-pink-600">Rp {finalTotal.toLocaleString('id-ID')}</span>
+          </div>
+          <div className="space-y-6">
+            {/* Order Summary */}
+            <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-lg lg:sticky lg:top-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Total Pembayaran</p>
+                  <p className="text-2xl font-bold text-brand-primary">Rp {finalTotal.toLocaleString('id-ID')}</p>
+                </div>
+                <div className="rounded-full bg-brand-primary/10 px-3 py-1 text-xs font-semibold text-brand-primary">
+                  {formData.paymentMethod === 'cod' ? 'COD' : 'Transfer'}
+                </div>
               </div>
+              <div className="mt-4 space-y-3 text-sm">
+                <div className="flex items-center justify-between text-slate-600">
+                  <span>Subtotal Produk</span>
+                  <span className="font-semibold text-slate-900">Rp {totalPrice.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-600">
+                  <span>Biaya Ongkir</span>
+                  <span className="font-semibold text-slate-900">Rp {shippingFee.toLocaleString('id-ID')}</span>
+                </div>
+                {formData.shippingService && (
+                  <div className="text-xs text-slate-500">
+                    Kurir: {formData.shippingCourier?.toUpperCase()} · {formData.shippingService} ({formData.shippingETD || 'estimasi cepat'})
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={handleSubmitOrder}
+                className="btn-brand mt-6 w-full text-center"
+              >
+                Buat Pesanan
+              </button>
+              <p className="mt-3 text-center text-xs text-slate-500">
+                Dengan melanjutkan, kamu menyetujui syarat & ketentuan Azzahra Fashion Muslim.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-dashed border-brand-primary/30 bg-brand-primary/5 p-4 text-sm text-slate-600">
+              <h4 className="text-base font-semibold text-brand-primary">Tips Checkout</h4>
+              <ul className="mt-3 space-y-2 list-disc pl-4">
+                <li>Pastikan alamat lengkap beserta RT/RW dan patokan lokasi.</li>
+                <li>Untuk dropship, isi nama & nomor pengirim agar tercetak di resi.</li>
+                <li>Upload bukti transfer di menu Pesanan setelah pembayaran.</li>
+              </ul>
             </div>
           </div>
         </div>
-
-        {/* Submit Button */}
-        <button
-          onClick={handleSubmitOrder}
-          className="w-full bg-pink-600 text-white py-4 rounded-lg font-semibold hover:bg-pink-700 transition-colors shadow-lg"
-        >
-          Buat Pesanan
-        </button>
+        )}
       </div>
 
       {/* Address Modal */}
