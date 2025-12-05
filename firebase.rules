@@ -17,6 +17,13 @@ service cloud.firestore {
       );
     }
 
+    function isOwner() {
+      return isSignedIn() && (
+        request.auth.token.role == 'owner' ||
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'owner')
+      );
+    }
+
     // Allow read access to transactions for reporting (public read for production)
     // Allow write only for authenticated users
     match /transactions/{transactionId} {
@@ -88,6 +95,16 @@ service cloud.firestore {
       allow read: if true; // Public read for reporting system
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // Financial categories - owner only
+    match /financial_categories/{categoryId} {
+      allow read, write: if isOwner();
+    }
+
+    // Financial entries - owner only
+    match /financial_entries/{entryId} {
+      allow read, write: if isOwner();
     }
   }
 }

@@ -11,6 +11,7 @@ interface AccountPageProps {
   onNavigateToAdminReports?: () => void;
   onNavigateToAdminUsers?: () => void;
   onNavigateToAdminCache?: () => void;
+  onNavigateToAdminFinancials?: () => void;
   onNavigateToAddressManagement?: () => void;
   // Flash sale and featured products are now managed in AdminProductsPage
 }
@@ -23,6 +24,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
   onNavigateToAdminReports,
   onNavigateToAdminUsers,
   onNavigateToAdminCache,
+  onNavigateToAdminFinancials,
   onNavigateToAddressManagement
 }) => {
     const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -701,6 +703,13 @@ const AccountPage: React.FC<AccountPageProps> = ({
                 >
                   <Users className="w-6 h-6 mx-auto mb-2" />
                   <p className="text-sm">Kelola User</p>
+                </button>
+                <button
+                  onClick={onNavigateToAdminFinancials}
+                  className="p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <TrendingUp className="w-6 h-6 mx-auto mb-2" />
+                  <p className="text-sm">Biaya & Pendapatan</p>
                 </button>
               </div>
 
