@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Users, Search, Filter, Plus, Eye, Edit, Trash2, Shield, Award } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Users, Search, Filter, Plus, Eye, Edit, Trash2, Shield, Award, AlertCircle, RefreshCcw } from 'lucide-react';
 import PageHeader from './PageHeader';
+import { usersService, AdminUser } from '../services/usersService';
 
 interface AdminUsersPageProps {
   onBack: () => void;
@@ -11,55 +12,34 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Sample users data
-  const users = [
-    {
-      id: 'USR001',
-      name: 'Siti Nurhaliza',
-      email: 'siti@email.com',
-      phone: '08123456789',
-      role: 'customer',
-      status: 'active',
-      joinDate: '2024-01-10',
-      totalOrders: 5,
-      totalSpent: 1250000
-    },
-    {
-      id: 'USR002',
-      name: 'Ahmad Fauzi',
-      email: 'ahmad@email.com',
-      phone: '08234567890',
-      role: 'reseller',
-      status: 'active',
-      joinDate: '2024-01-05',
-      totalOrders: 12,
-      totalSpent: 2400000,
-      points: 450
-    },
-    {
-      id: 'USR003',
-      name: 'Ratna Dewi',
-      email: 'ratna@email.com',
-      phone: '08345678901',
-      role: 'customer',
-      status: 'active',
-      joinDate: '2024-01-08',
-      totalOrders: 3,
-      totalSpent: 675000
-    },
-    {
-      id: 'USR004',
-      name: 'Budi Santoso',
-      email: 'budi@email.com',
-      phone: '08456789012',
-      role: 'admin',
-      status: 'active',
-      joinDate: '2024-01-01',
-      totalOrders: 0,
-      totalSpent: 0
+  // Initial load: cache first, then Firestore
+  useEffect(() => {
+    const cached = usersService.getCachedUsers();
+    if (cached) {
+      setUsers(cached);
+      setLoading(false);
     }
-  ];
+
+    const fetch = async () => {
+      try {
+        setLoading(true);
+        const fresh = await usersService.fetchUsers();
+        setUsers(fresh);
+        setError(null);
+      } catch (err: any) {
+        console.error('Failed to load users:', err);
+        setError('Gagal memuat data user');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetch();
+  }, []);
 
   const roleConfig = {
     owner: { label: 'Owner', color: 'text-red-600 bg-red-100', icon: Shield },
@@ -68,14 +48,15 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
     customer: { label: 'Customer', color: 'text-green-600 bg-green-100', icon: Users }
   };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+  const filteredUsers = useMemo(() => {
+    return users.filter(u => {
+      const matchesSearch = (u.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (u.email || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+      const matchesStatus = statusFilter === 'all' || u.status === statusFilter;
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [users, searchQuery, roleFilter, statusFilter]);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -104,7 +85,7 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
           <div className="bg-green-50 rounded-lg p-4">
             <h4 className="text-sm font-medium text-green-800 mb-1">User Aktif</h4>
             <p className="text-2xl font-bold text-green-600">{users.filter(u => u.status === 'active').length}</p>
-            <p className="text-xs text-green-600">{Math.round((users.filter(u => u.status === 'active').length / users.length) * 100)}% aktivasi</p>
+            <p className="text-xs text-green-600">{users.length ? Math.round((users.filter(u => u.status === 'active').length / users.length) * 100) : 0}% aktivasi</p>
           </div>
           <div className="bg-purple-50 rounded-lg p-4">
             <h4 className="text-sm font-medium text-purple-800 mb-1">Reseller</h4>
@@ -113,8 +94,8 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
           </div>
           <div className="bg-orange-50 rounded-lg p-4">
             <h4 className="text-sm font-medium text-orange-800 mb-1">User Baru</h4>
-            <p className="text-2xl font-bold text-orange-600">2</p>
-            <p className="text-xs text-orange-600">Bulan ini</p>
+            <p className="text-2xl font-bold text-orange-600">{users.filter(u => u.joinDate)?.length || 0}</p>
+            <p className="text-xs text-orange-600">Berdasar data Firestore</p>
           </div>
         </div>
 
@@ -160,6 +141,24 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
 
         {/* Users List */}
         <div className="space-y-3">
+          {loading && (
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <RefreshCcw className="w-4 h-4 animate-spin" /> Memuat data user...
+            </div>
+          )}
+
+          {error && (
+            <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+              <AlertCircle className="w-4 h-4" /> {error}
+            </div>
+          )}
+
+          {!loading && !error && filteredUsers.length === 0 && (
+            <div className="rounded-lg border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+              Tidak ada user yang cocok dengan filter.
+            </div>
+          )}
+
           {filteredUsers.map((userItem) => {
             const roleInfo = roleConfig[userItem.role as keyof typeof roleConfig];
             const RoleIcon = roleInfo.icon;
@@ -216,7 +215,7 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
 
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-gray-500">
-                    Terakhir login: 2 hari yang lalu
+                    Terakhir login: {userItem.lastLoginAt ? userItem.lastLoginAt : 'N/A'}
                   </div>
                   <div className="flex items-center space-x-2">
                     <button className="p-1 text-blue-600 hover:text-blue-700 transition-colors">
