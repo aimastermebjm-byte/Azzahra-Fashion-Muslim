@@ -30,6 +30,46 @@ interface Subdistrict {
   province: string;
 }
 
+const ADDRESS_CACHE_PREFIX = 'addressFormCache';
+const ADDRESS_CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
+const isBrowser = typeof window !== 'undefined';
+
+const readPersistentCache = <T,>(key: string): T | null => {
+  if (!isBrowser) return null;
+
+  try {
+    const raw = localStorage.getItem(`${ADDRESS_CACHE_PREFIX}_${key}`);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as { data: T; timestamp: number };
+    if (!parsed?.data) return null;
+
+    const isExpired = Date.now() - parsed.timestamp > ADDRESS_CACHE_TTL;
+    if (isExpired) {
+      localStorage.removeItem(`${ADDRESS_CACHE_PREFIX}_${key}`);
+      return null;
+    }
+
+    return parsed.data;
+  } catch (storageError) {
+    console.error('❌ Error reading persisted address cache:', storageError);
+    return null;
+  }
+};
+
+const writePersistentCache = <T,>(key: string, data: T): void => {
+  if (!isBrowser) return;
+
+  try {
+    localStorage.setItem(
+      `${ADDRESS_CACHE_PREFIX}_${key}`,
+      JSON.stringify({ data, timestamp: Date.now() })
+    );
+  } catch (storageError) {
+    console.error('❌ Error writing persisted address cache:', storageError);
+  }
+};
+
 interface Address {
   name: string;
   phone: string;
@@ -97,12 +137,17 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
       try {
         // Preload cities for popular provinces (background, non-blocking)
         const cacheKey = `cities_${provinceId}`;
-        if (!addressCache.has(cacheKey)) {
-          const response = await fetch(`/api/address-cached?type=cities&provinceId=${provinceId}`);
-          const data = await response.json();
-          if (data.success && data.data) {
-            setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
-          }
+        const persistedData = readPersistentCache<City[]>(cacheKey);
+        if (persistedData) {
+          setAddressCache(prev => new Map(prev).set(cacheKey, persistedData));
+          return;
+        }
+
+        const response = await fetch(`/api/address-cached?type=cities&provinceId=${provinceId}`);
+        const data = await response.json();
+        if (data.success && data.data) {
+          setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
+          writePersistentCache(cacheKey, data.data);
         }
       } catch (error) {
         // Silently fail preload - not critical
@@ -168,25 +213,31 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   }, [formData.districtId]);
 
   const loadProvinces = async () => {
+    const cacheKey = 'provinces';
+
+    if (addressCache.has(cacheKey)) {
+      const cachedData = addressCache.get(cacheKey) as Province[];
+      setProvinces(cachedData);
+      return;
+    }
+
+    const persistedData = readPersistentCache<Province[]>(cacheKey);
+    if (persistedData) {
+      setProvinces(persistedData);
+      setAddressCache(prev => new Map(prev).set(cacheKey, persistedData));
+      return;
+    }
+
     setLoadingProvinces(true);
     try {
-      const cacheKey = 'provinces';
-
-      // Check in-memory cache first
-      if (addressCache.has(cacheKey)) {
-        const cachedData = addressCache.get(cacheKey);
-        setProvinces(cachedData);
-          return;
-      }
-
-        const response = await fetch('/api/address-cached?type=provinces');
+      const response = await fetch('/api/address-cached?type=provinces');
       const data = await response.json();
 
       if (data.success && data.data) {
         setProvinces(data.data);
-        // Save to in-memory cache
         setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
-          } else {
+        writePersistentCache(cacheKey, data.data);
+      } else {
         console.error('❌ Failed to load provinces from cache:', data.message);
       }
     } catch (error) {
@@ -199,25 +250,30 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   const loadCities = async () => {
     if (!formData.provinceId) return;
 
+    const cacheKey = `cities_${formData.provinceId}`;
+
+    if (addressCache.has(cacheKey)) {
+      setCities(addressCache.get(cacheKey) as City[]);
+      return;
+    }
+
+    const persistedData = readPersistentCache<City[]>(cacheKey);
+    if (persistedData) {
+      setCities(persistedData);
+      setAddressCache(prev => new Map(prev).set(cacheKey, persistedData));
+      return;
+    }
+
     setLoadingCities(true);
     try {
-      const cacheKey = `cities_${formData.provinceId}`;
-
-      // Check in-memory cache first
-      if (addressCache.has(cacheKey)) {
-        const cachedData = addressCache.get(cacheKey);
-        setCities(cachedData);
-        return;
-      }
-
-        const response = await fetch(`/api/address-cached?type=cities&provinceId=${formData.provinceId}`);
+      const response = await fetch(`/api/address-cached?type=cities&provinceId=${formData.provinceId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
         setCities(data.data);
-        // Save to in-memory cache
         setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
-            } else {
+        writePersistentCache(cacheKey, data.data);
+      } else {
         console.error('❌ Failed to load cities:', data.message);
       }
     } catch (error) {
@@ -230,25 +286,30 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   const loadDistricts = async () => {
     if (!formData.cityId) return;
 
+    const cacheKey = `districts_${formData.cityId}`;
+
+    if (addressCache.has(cacheKey)) {
+      setDistricts(addressCache.get(cacheKey) as District[]);
+      return;
+    }
+
+    const persistedData = readPersistentCache<District[]>(cacheKey);
+    if (persistedData) {
+      setDistricts(persistedData);
+      setAddressCache(prev => new Map(prev).set(cacheKey, persistedData));
+      return;
+    }
+
     setLoadingDistricts(true);
     try {
-      const cacheKey = `districts_${formData.cityId}`;
-
-      // Check in-memory cache first
-      if (addressCache.has(cacheKey)) {
-        const cachedData = addressCache.get(cacheKey);
-        setDistricts(cachedData);
-        return;
-      }
-
-          const response = await fetch(`/api/address-cached?type=districts&cityId=${formData.cityId}`);
+      const response = await fetch(`/api/address-cached?type=districts&cityId=${formData.cityId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
         setDistricts(data.data);
-        // Save to in-memory cache
         setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
-              } else {
+        writePersistentCache(cacheKey, data.data);
+      } else {
         console.error('❌ Failed to load districts:', data.message);
       }
     } catch (error) {
@@ -261,25 +322,30 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   const loadSubdistricts = async () => {
     if (!formData.districtId) return;
 
+    const cacheKey = `subdistricts_${formData.districtId}`;
+
+    if (addressCache.has(cacheKey)) {
+      setSubdistricts(addressCache.get(cacheKey) as Subdistrict[]);
+      return;
+    }
+
+    const persistedData = readPersistentCache<Subdistrict[]>(cacheKey);
+    if (persistedData) {
+      setSubdistricts(persistedData);
+      setAddressCache(prev => new Map(prev).set(cacheKey, persistedData));
+      return;
+    }
+
     setLoadingSubdistricts(true);
     try {
-      const cacheKey = `subdistricts_${formData.districtId}`;
-
-      // Check in-memory cache first
-      if (addressCache.has(cacheKey)) {
-        const cachedData = addressCache.get(cacheKey);
-        setSubdistricts(cachedData);
-        return;
-      }
-
-          const response = await fetch(`/api/address-cached?type=subdistricts&districtId=${formData.districtId}`);
+      const response = await fetch(`/api/address-cached?type=subdistricts&districtId=${formData.districtId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
         setSubdistricts(data.data);
-        // Save to in-memory cache
         setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
-            } else {
+        writePersistentCache(cacheKey, data.data);
+      } else {
         console.error('❌ Failed to load subdistricts:', data.message);
       }
     } catch (error) {
