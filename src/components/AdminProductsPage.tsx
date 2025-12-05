@@ -27,7 +27,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   const { allProducts, loading, error } = useGlobalProducts();
 
   // Use product CRUD functions for product management
-  const { addProduct, deleteProduct } = useProductCRUD();
+  const { addProduct, updateProduct, deleteProduct } = useProductCRUD();
 
   // Log current state for debugging
   React.useEffect(() => {
