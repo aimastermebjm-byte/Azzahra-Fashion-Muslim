@@ -3,6 +3,26 @@ import { getFirestore, collection, query, where, orderBy, limit, getDocs, doc } 
 // Initialize Firestore
 const db = getFirestore();
 
+const toMillis = (value: any): number | null => {
+  if (!value && value !== 0) {
+    return null;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+  if (typeof value?.toDate === 'function') {
+    return value.toDate().getTime();
+  }
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  return null;
+};
+
 // Report Service untuk mengambil data transaksi real dari Firestore
 export interface Transaction {
   id: string;
@@ -11,6 +31,7 @@ export interface Transaction {
   customer: string;
   phone: string;
   items: {
+    productId?: string;
     name: string;
     quantity: number;
     price: number;
@@ -104,12 +125,6 @@ class ReportsService {
         constraints.push(where('status', '==', filters.status));
       }
 
-      // Apply customer filter (simple contains search)
-      if (filters.customerQuery) {
-        constraints.push(where('customer', '>=', filters.customerQuery));
-        constraints.push(where('customer', '<=', filters.customerQuery + '\uf8ff'));
-      }
-
       // Create query with all constraints - reading from orders collection
       let q = query(collection(db, 'orders'), ...constraints);
 
@@ -143,13 +158,20 @@ class ReportsService {
         });
       });
 
-      return snapshot.docs.map(doc => {
+      const transactions = snapshot.docs.map(doc => {
         const orderData = doc.data();
+
+        const timestampMillis = toMillis(orderData.timestamp) ?? toMillis(orderData.createdAt) ?? Date.now();
+        const createdAtDate = new Date(timestampMillis);
+        const updatedAtDate = new Date(toMillis(orderData.updatedAt) ?? timestampMillis);
 
         // Map items with costPrice from products collection
         const itemsWithCost = orderData.items?.map((item: any) => {
           const normalizedName = String(item.name || item.productName || '').toLowerCase();
           const product = productMap.get(item.productId) || (normalizedName ? productNameMap.get(normalizedName) : undefined);
+          const resolvedProductId = (typeof item.productId === 'string' && item.productId.trim().length > 0)
+            ? item.productId.trim()
+            : (typeof product?.id === 'string' ? product.id : undefined);
 
           // Get modal/costPrice from batch data with sensible fallbacks
           const costPrice = Number(
@@ -163,13 +185,17 @@ class ReportsService {
             0
           ) || Number(item.price || 0) * 0.6; // fallback 60%
 
+          const unitPrice = Number(item.price ?? product?.retailPrice ?? product?.price ?? 0);
+          const quantity = Number(item.quantity || 1);
+
           return {
+            productId: resolvedProductId,
             name: item.name || item.productName || product?.name || 'Unknown Product',
-            quantity: item.quantity || 1,
-            price: item.price || product?.retailPrice || 0,
-            total: (item.price || product?.retailPrice || 0) * (item.quantity || 1),
+            quantity,
+            price: unitPrice,
+            total: unitPrice * quantity,
             modal: costPrice,
-            modalTotal: costPrice * (item.quantity || 1)
+            modalTotal: costPrice * quantity
           };
         }) || [];
 
@@ -180,7 +206,7 @@ class ReportsService {
         return {
           id: doc.id,
           invoice: `INV-${doc.id}`, // Generate invoice from order ID
-          date: orderData.createdAt ? new Date(orderData.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          date: new Date(timestampMillis).toISOString().split('T')[0],
           customer: orderData.userName || 'Unknown Customer',
           phone: orderData.shippingInfo?.phone || '',
           items: itemsWithCost,
@@ -190,10 +216,21 @@ class ReportsService {
           totalModal,
           status: orderData.status === 'paid' ? 'lunas' : 'belum_lunas', // Map order status to transaction status
           paymentMethod: orderData.paymentMethod || '',
-          createdAt: orderData.createdAt ? new Date(orderData.createdAt) : new Date(),
-          updatedAt: orderData.updatedAt ? new Date(orderData.updatedAt) : new Date()
+          createdAt: createdAtDate,
+          updatedAt: updatedAtDate
         };
       }) as Transaction[];
+
+      if (filters.customerQuery) {
+        const queryLower = filters.customerQuery.toLowerCase();
+        return transactions.filter(transaction => {
+          const customer = transaction.customer?.toLowerCase?.() || '';
+          const phone = transaction.phone || '';
+          return customer.includes(queryLower) || phone.includes(filters.customerQuery || '');
+        });
+      }
+
+      return transactions;
     } catch (error) {
       console.error('Error getting transactions:', error);
       throw error;
@@ -214,37 +251,69 @@ class ReportsService {
         limit: filters.limit || 1000 // Default limit untuk data volume
       });
 
-      // Process products from transactions
-      const productMap = new Map<string, ProductReport>();
+      // Process products from transactions (prefer productId when available)
+      const aggregatedProducts = new Map<string, ProductReport>();
 
       transactions.forEach(transaction => {
         transaction.items.forEach(item => {
-          const existing = productMap.get(item.name);
+          const key = item.productId || item.name;
+          if (!key) {
+            return;
+          }
+
+          const profitContribution = (item.total || 0) - (item.modalTotal ?? ((item.modal || 0) * (item.quantity || 0)));
+          const existing = aggregatedProducts.get(key);
+
           if (existing) {
-            // Update existing product
             existing.totalSold += item.quantity;
             existing.totalRevenue += item.total;
-            existing.lastSoldDate = new Date(Math.max(
-              new Date(existing.lastSoldDate || '').getTime(),
-              new Date(transaction.createdAt).getTime()
-            ));
+            existing.profit += profitContribution;
+            const previousDate = existing.lastSoldDate ? existing.lastSoldDate.getTime() : 0;
+            const currentDate = transaction.createdAt ? transaction.createdAt.getTime() : Date.now();
+            if (currentDate > previousDate) {
+              existing.lastSoldDate = new Date(currentDate);
+            }
           } else {
-            // Create new product entry
-            productMap.set(item.name, {
-              id: item.name, // Use name as ID for simplicity
-              name: item.name,
+            aggregatedProducts.set(key, {
+              id: key,
+              name: item.name || key,
               category: 'other',
               totalSold: item.quantity,
               totalRevenue: item.total,
-              stock: 0, // Will be calculated separately
-              profit: item.total * 0.3, // Estimasi 30% profit
-              lastSoldDate: new Date(transaction.createdAt)
+              stock: 0,
+              profit: profitContribution,
+              lastSoldDate: transaction.createdAt ? new Date(transaction.createdAt) : undefined
             });
           }
         });
       });
 
-      return Array.from(productMap.values());
+      // Enrich with latest inventory snapshot for stock/category
+      const inventoryReports = await this.getInventoryReports();
+      const inventoryById = new Map<string, InventoryReport>();
+      const inventoryByName = new Map<string, InventoryReport>();
+
+      inventoryReports.forEach(record => {
+        if (record.id) {
+          inventoryById.set(record.id, record);
+        }
+        if (record.name) {
+          inventoryByName.set(record.name.toLowerCase(), record);
+        }
+      });
+
+      return Array.from(aggregatedProducts.values()).map(product => {
+        const normalizedName = product.name ? product.name.toLowerCase() : '';
+        const inventory = inventoryById.get(product.id) || (normalizedName ? inventoryByName.get(normalizedName) : undefined);
+
+        return {
+          ...product,
+          category: inventory?.category || product.category,
+          stock: inventory?.stock ?? product.stock,
+          profit: product.profit,
+          lastSoldDate: product.lastSoldDate
+        };
+      });
     } catch (error) {
       console.error('Error getting products report:', error);
       throw error;
@@ -305,19 +374,56 @@ class ReportsService {
       // Get productBatches for inventory data
       const productBatchesSnapshot = await getDocs(query(collection(db, 'productBatches')));
 
-      return productBatchesSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          name: data.name || '',
-          category: data.category || 'other',
-          stock: data.stock || 0,
-          reserved: data.reserved || 0,
-          available: (data.stock || 0) - (data.reserved || 0),
-          value: (data.stock || 0) * (data.retailPrice || 0), // Use retail price for inventory value
-          lastUpdated: data.updatedAt?.toDate() || new Date()
-        };
-      }) as InventoryReport[];
+      const calculateVariantStock = (variantStock: any): number => {
+        if (!variantStock || typeof variantStock !== 'object') {
+          return 0;
+        }
+
+        return Object.values(variantStock).reduce((sizeTotal: number, sizeEntry: any) => {
+          if (typeof sizeEntry === 'object') {
+            return sizeTotal + Object.values(sizeEntry).reduce((colorTotal: number, colorEntry: any) => {
+              const value = Number(colorEntry || 0);
+              return colorTotal + (Number.isFinite(value) ? value : 0);
+            }, 0);
+          }
+          const value = Number(sizeEntry || 0);
+          return sizeTotal + (Number.isFinite(value) ? value : 0);
+        }, 0);
+      };
+
+      const inventory: InventoryReport[] = [];
+
+      productBatchesSnapshot.docs.forEach(batchDoc => {
+        const batchData = batchDoc.data();
+        const batchProducts = Array.isArray(batchData.products) ? batchData.products : [];
+
+        batchProducts.forEach((product: any, index: number) => {
+          const variantStockTotal = calculateVariantStock(product?.variants?.stock);
+          const baseStock = Number(product?.stock || 0);
+          const computedStock = variantStockTotal > 0 ? variantStockTotal : baseStock;
+          const reserved = Number(product?.reserved || 0);
+          const available = Math.max(0, computedStock - reserved);
+          const unitPrice = Number(product?.retailPrice ?? product?.price ?? 0);
+
+          const productLastUpdated = toMillis(product?.lastModified)
+            ?? toMillis(product?.updatedAt)
+            ?? toMillis(batchData?.updatedAt)
+            ?? Date.now();
+
+          inventory.push({
+            id: product?.id || `${batchDoc.id}_${index}`,
+            name: product?.name || `Produk ${index + 1}`,
+            category: product?.category || batchData?.category || 'other',
+            stock: computedStock,
+            reserved: Number.isFinite(reserved) ? reserved : 0,
+            available,
+            value: computedStock * (Number.isFinite(unitPrice) ? unitPrice : 0),
+            lastUpdated: new Date(productLastUpdated)
+          });
+        });
+      });
+
+      return inventory;
     } catch (error) {
       console.error('Error getting inventory reports:', error);
       throw error;
