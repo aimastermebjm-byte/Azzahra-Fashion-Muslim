@@ -473,6 +473,37 @@ class ReportsService {
         }
       });
 
+      // Append financial entries (owner-entered income/expense flagged for P&L)
+      try {
+        const finSnap = await getDocs(
+          query(
+            collection(db, 'financial_entries'),
+            where('includeInPnL', '==', true),
+            orderBy('createdAt', 'desc'),
+            limit(filters.limit || 500)
+          )
+        );
+
+        finSnap.forEach((docSnap) => {
+          const data = docSnap.data() as any;
+          const created = data.createdAt && typeof data.createdAt.toDate === 'function'
+            ? data.createdAt.toDate()
+            : new Date();
+
+          cashFlowData.push({
+            id: `fin_${docSnap.id}`,
+            date: data.effectiveDate || created.toISOString(),
+            description: data.note || (data.type === 'income' ? 'Pendapatan lain' : 'Biaya lain'),
+            type: data.type,
+            amount: Number(data.amount || 0),
+            category: data.category || 'lainnya',
+            createdAt: created
+          });
+        });
+      } catch (error) {
+        console.error('Error getting financial entries for cashflow:', error);
+      }
+
       // Sort by date descending
       cashFlowData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
