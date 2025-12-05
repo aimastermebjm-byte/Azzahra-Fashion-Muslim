@@ -73,10 +73,15 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   };
 
+  useEffect(() => {
+    loadAddresses();
+  }, [user]);
+
   // Set up real-time address listener
   useEffect(() => {
     const unsubscribe = addressService.onAddressesChange((userAddresses) => {
       setAddresses(userAddresses);
+      setAddressesLoading(false);
       });
 
     return () => unsubscribe();
