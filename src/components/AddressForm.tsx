@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Loader2, AlertCircle } from 'lucide-react';
 
 // Types for address data
@@ -93,21 +93,23 @@ interface AddressFormProps {
 }
 
 const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel }) => {
-  const [formData, setFormData] = useState<Address>({
-    name: initialData?.name || '',
-    phone: initialData?.phone || '',
-    fullAddress: initialData?.fullAddress || '',
-    province: initialData?.province || '',
-    provinceId: initialData?.provinceId || '',
-    city: initialData?.city || '',
-    cityId: initialData?.cityId || '',
-    district: initialData?.district || '',
-    districtId: initialData?.districtId || '',
-    subdistrict: initialData?.subdistrict || '',
-    subdistrictId: initialData?.subdistrictId || '',
-    postalCode: initialData?.postalCode || '',
-    isDefault: initialData?.isDefault || false
+  const buildFormState = (data?: Address | null): Address => ({
+    name: data?.name || '',
+    phone: data?.phone || '',
+    fullAddress: data?.fullAddress || '',
+    province: data?.province || '',
+    provinceId: data?.provinceId || '',
+    city: data?.city || '',
+    cityId: data?.cityId || '',
+    district: data?.district || '',
+    districtId: data?.districtId || '',
+    subdistrict: data?.subdistrict || '',
+    subdistrictId: data?.subdistrictId || '',
+    postalCode: data?.postalCode || '',
+    isDefault: data?.isDefault || false
   });
+
+  const [formData, setFormData] = useState<Address>(buildFormState(initialData));
 
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [cities, setCities] = useState<City[]>([]);
@@ -124,6 +126,7 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
   // In-memory cache to reduce API calls within browser session
   const [addressCache, setAddressCache] = useState<Map<string, any>>(new Map());
+  const isPrefillingRef = useRef(!!initialData);
 
   // Load provinces on component mount (preload for instant dropdown)
   useEffect(() => {
@@ -155,61 +158,93 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
     });
   }, []); // Only run once on mount
 
+  useEffect(() => {
+    setFormData(buildFormState(initialData));
+    isPrefillingRef.current = !!initialData;
+  }, [initialData]);
+
+  useEffect(() => {
+    const hydrateInitialData = async () => {
+      if (!initialData) {
+        isPrefillingRef.current = false;
+        return;
+      }
+
+      isPrefillingRef.current = true;
+
+      if (initialData.provinceId) {
+        await loadCities(initialData.provinceId);
+      }
+      if (initialData.cityId) {
+        await loadDistricts(initialData.cityId);
+      }
+      if (initialData.districtId) {
+        await loadSubdistricts(initialData.districtId);
+      }
+
+      isPrefillingRef.current = false;
+    };
+
+    void hydrateInitialData();
+  }, [initialData]);
+
   // Load cities when province changes
   useEffect(() => {
-    if (formData.provinceId) {
-      // Load cities immediately (eager loading)
-      loadCities();
+    if (!formData.provinceId) return;
 
-      // Only reset dependent fields (keep cities loading in background)
-      setDistricts([]);
-      setSubdistricts([]);
-      setFormData(prev => ({
-        ...prev,
-        city: '',
-        cityId: '',
-        district: '',
-        districtId: '',
-        subdistrict: '',
-        subdistrictId: '',
-        postalCode: ''
-      }));
-    }
+    // Load cities immediately (eager loading)
+    loadCities();
+
+    if (isPrefillingRef.current) return;
+
+    // Only reset dependent fields when user changes selection
+    setDistricts([]);
+    setSubdistricts([]);
+    setFormData(prev => ({
+      ...prev,
+      city: '',
+      cityId: '',
+      district: '',
+      districtId: '',
+      subdistrict: '',
+      subdistrictId: '',
+      postalCode: ''
+    }));
   }, [formData.provinceId]);
 
   // Load districts when city changes
   useEffect(() => {
-    if (formData.cityId) {
-      // Load districts immediately (eager loading)
-      loadDistricts();
+    if (!formData.cityId) return;
 
-      // Only reset dependent fields (keep districts loading in background)
-      setSubdistricts([]);
-      setFormData(prev => ({
-        ...prev,
-        district: '',
-        districtId: '',
-        subdistrict: '',
-        subdistrictId: '',
-        postalCode: ''
-      }));
-    }
+    loadDistricts();
+
+    if (isPrefillingRef.current) return;
+
+    setSubdistricts([]);
+    setFormData(prev => ({
+      ...prev,
+      district: '',
+      districtId: '',
+      subdistrict: '',
+      subdistrictId: '',
+      postalCode: ''
+    }));
   }, [formData.cityId]);
 
   // Load subdistricts when district changes
   useEffect(() => {
-    if (formData.districtId) {
-      // Load subdistricts immediately (eager loading)
-      loadSubdistricts();
+    if (!formData.districtId) return;
 
-      // Only reset dependent fields
-      setFormData(prev => ({
-        ...prev,
-        subdistrict: '',
-        subdistrictId: '',
-        postalCode: ''
-      }));
-    }
+    loadSubdistricts();
+
+    if (isPrefillingRef.current) return;
+
+    setFormData(prev => ({
+      ...prev,
+      subdistrict: '',
+      subdistrictId: '',
+      postalCode: ''
+    }));
   }, [formData.districtId]);
 
   const loadProvinces = async () => {
@@ -247,32 +282,35 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
     }
   };
 
-  const loadCities = async () => {
-    if (!formData.provinceId) return;
+  const loadCities = async (provinceIdOverride?: string) => {
+    const provinceId = provinceIdOverride || formData.provinceId;
+    if (!provinceId) return [];
 
-    const cacheKey = `cities_${formData.provinceId}`;
+    const cacheKey = `cities_${provinceId}`;
 
     if (addressCache.has(cacheKey)) {
-      setCities(addressCache.get(cacheKey) as City[]);
-      return;
+      const cached = addressCache.get(cacheKey) as City[];
+      setCities(cached);
+      return cached;
     }
 
     const persistedData = readPersistentCache<City[]>(cacheKey);
     if (persistedData) {
       setCities(persistedData);
       setAddressCache(prev => new Map(prev).set(cacheKey, persistedData));
-      return;
+      return persistedData;
     }
 
     setLoadingCities(true);
     try {
-      const response = await fetch(`/api/address-cached?type=cities&provinceId=${formData.provinceId}`);
+      const response = await fetch(`/api/address-cached?type=cities&provinceId=${provinceId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
         setCities(data.data);
         setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
         writePersistentCache(cacheKey, data.data);
+        return data.data;
       } else {
         console.error('❌ Failed to load cities:', data.message);
       }
@@ -281,34 +319,39 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
     } finally {
       setLoadingCities(false);
     }
+
+    return [];
   };
 
-  const loadDistricts = async () => {
-    if (!formData.cityId) return;
+  const loadDistricts = async (cityIdOverride?: string) => {
+    const cityId = cityIdOverride || formData.cityId;
+    if (!cityId) return [];
 
-    const cacheKey = `districts_${formData.cityId}`;
+    const cacheKey = `districts_${cityId}`;
 
     if (addressCache.has(cacheKey)) {
-      setDistricts(addressCache.get(cacheKey) as District[]);
-      return;
+      const cached = addressCache.get(cacheKey) as District[];
+      setDistricts(cached);
+      return cached;
     }
 
     const persistedData = readPersistentCache<District[]>(cacheKey);
     if (persistedData) {
       setDistricts(persistedData);
       setAddressCache(prev => new Map(prev).set(cacheKey, persistedData));
-      return;
+      return persistedData;
     }
 
     setLoadingDistricts(true);
     try {
-      const response = await fetch(`/api/address-cached?type=districts&cityId=${formData.cityId}`);
+      const response = await fetch(`/api/address-cached?type=districts&cityId=${cityId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
         setDistricts(data.data);
         setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
         writePersistentCache(cacheKey, data.data);
+        return data.data;
       } else {
         console.error('❌ Failed to load districts:', data.message);
       }
@@ -317,34 +360,39 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
     } finally {
       setLoadingDistricts(false);
     }
+
+    return [];
   };
 
-  const loadSubdistricts = async () => {
-    if (!formData.districtId) return;
+  const loadSubdistricts = async (districtIdOverride?: string) => {
+    const districtId = districtIdOverride || formData.districtId;
+    if (!districtId) return [];
 
-    const cacheKey = `subdistricts_${formData.districtId}`;
+    const cacheKey = `subdistricts_${districtId}`;
 
     if (addressCache.has(cacheKey)) {
-      setSubdistricts(addressCache.get(cacheKey) as Subdistrict[]);
-      return;
+      const cached = addressCache.get(cacheKey) as Subdistrict[];
+      setSubdistricts(cached);
+      return cached;
     }
 
     const persistedData = readPersistentCache<Subdistrict[]>(cacheKey);
     if (persistedData) {
       setSubdistricts(persistedData);
       setAddressCache(prev => new Map(prev).set(cacheKey, persistedData));
-      return;
+      return persistedData;
     }
 
     setLoadingSubdistricts(true);
     try {
-      const response = await fetch(`/api/address-cached?type=subdistricts&districtId=${formData.districtId}`);
+      const response = await fetch(`/api/address-cached?type=subdistricts&districtId=${districtId}`);
       const data = await response.json();
 
       if (data.success && data.data) {
         setSubdistricts(data.data);
         setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
         writePersistentCache(cacheKey, data.data);
+        return data.data;
       } else {
         console.error('❌ Failed to load subdistricts:', data.message);
       }
@@ -353,6 +401,8 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
     } finally {
       setLoadingSubdistricts(false);
     }
+
+    return [];
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
