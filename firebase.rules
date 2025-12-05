@@ -2,6 +2,21 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdminOrOwner() {
+      return isSignedIn() && (
+        (request.auth.token.role in ['admin', 'owner']) ||
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'owner'])
+      );
+    }
+
     // Allow read access to transactions for reporting (public read for production)
     // Allow write only for authenticated users
     match /transactions/{transactionId} {
@@ -28,10 +43,7 @@ service cloud.firestore {
     // - User can read/write dirinya sendiri
     // - Admin/owner dapat membaca & menulis semua user
     match /users/{userId} {
-      allow read, write: if request.auth != null && (
-        request.auth.uid == userId ||
-        (request.auth.token.role in ['admin', 'owner'])
-      );
+      allow read, write: if isSelf(userId) || isAdminOrOwner();
     }
 
     // Allow read access to categories for authenticated users
