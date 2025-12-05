@@ -74,15 +74,16 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
     });
   }, [entries, filterType, filterCategory, filterPnL]);
 
+  // Ringkasan selalu dihitung dari semua entri P&L (tidak terpengaruh filter agar angka laba/biaya konsisten)
   const summary = useMemo(() => {
-    const income = filteredEntries
+    const income = entries
       .filter(e => e.type === 'income' && e.includeInPnL)
-      .reduce((sum, e) => sum + (e.amount || 0), 0);
-    const expense = filteredEntries
+      .reduce((sum, e) => sum + Number(e.amount || 0), 0);
+    const expense = entries
       .filter(e => e.type === 'expense' && e.includeInPnL)
-      .reduce((sum, e) => sum + (e.amount || 0), 0);
+      .reduce((sum, e) => sum + Number(e.amount || 0), 0);
     return { income, expense, net: income - expense };
-  }, [filteredEntries]);
+  }, [entries]);
 
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return;
