@@ -127,6 +127,37 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     return getDefaultAddress() || null;
   };
 
+  const buildDestinationCandidates = (address?: any) => {
+    const candidates: { id: string; label: string }[] = [];
+
+    const normalizeId = (value?: string | number | null) => {
+      if (!value && value !== 0) return '';
+      return String(value).trim();
+    };
+
+    const subdistrictId = normalizeId(address?.subdistrictId);
+    const districtId = normalizeId(address?.districtId);
+    const cityId = normalizeId(address?.cityId);
+
+    if (subdistrictId) {
+      candidates.push({ id: subdistrictId, label: 'Kelurahan/Desa' });
+    }
+    if (districtId) {
+      candidates.push({ id: districtId, label: 'Kecamatan' });
+    }
+    if (cityId) {
+      candidates.push({ id: cityId, label: 'Kota/Kabupaten' });
+    }
+
+    // Always add Banjarmasin as last-resort fallback to avoid blocking checkout entirely
+    candidates.push({ id: '607', label: 'Fallback Kota (Banjarmasin)' });
+
+    // Deduplicate by destination id
+    return candidates.filter(
+      (candidate, index, self) => candidate.id && self.findIndex(item => item.id === candidate.id) === index
+    );
+  };
+
   // Komerce states
   const [loadingShipping, setLoadingShipping] = useState(false);
   const [ongkirResults, setOngkirResults] = useState<KomerceCostResult[]>([]);
@@ -150,157 +181,149 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   
   // Calculate shipping cost using RajaOngkir with localStorage cache PRIORITY - 0 reads for cached results
-  const calculateShippingCost = async (courierCode: string, destinationCityId: string, weight: number) => {
-    if (!courierCode || !destinationCityId || !weight) {
+  const calculateShippingCost = async (
+    courierCode: string,
+    destinationCandidates: { id: string; label: string }[],
+    weight: number
+  ) => {
+    if (!courierCode || !destinationCandidates?.length || !weight) {
       return;
     }
 
-    // Validate destinationCityId
-    if (!destinationCityId || destinationCityId === 'undefined' || destinationCityId === '') {
-      destinationCityId = '607'; // Banjarmasin fallback
+    const cleanedCandidates = destinationCandidates
+      .map(candidate => ({ ...candidate, id: candidate.id?.toString().trim() || '' }))
+      .filter(candidate => candidate.id && candidate.id !== 'undefined');
+
+    if (!cleanedCandidates.length) {
+      cleanedCandidates.push({ id: '607', label: 'Fallback Kota (Banjarmasin)' });
     }
 
-    try {
-      setLoadingShipping(true);
-      setShippingError('');
+    const optimizedWeight = courierCode === 'jnt' && cartItems.length > 1 ? Math.max(weight, 1000) : weight;
+    const callRajaOngkirDirectAPI = async (
+      destinationId: string
+    ): Promise<KomerceCostResult[]> => {
+      const response = await fetch('/api/rajaongkir/cost', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          origin: '2425', // Banjarmasin city ID
+          destination: destinationId,
+          weight: optimizedWeight,
+          courier: courierCode,
+          price: 'lowest'
+        })
+      });
 
-      // Special handling for J&T with multiple items
-      const optimizedWeight = courierCode === 'jnt' && cartItems.length > 1 ? Math.max(weight, 1000) : weight;
+      if (!response.ok) {
+        throw new Error(`RajaOngkir API Error: ${response.status}`);
+      }
 
-      // 🔥 DIRECT RAJAONGKIR API - Bypass Firestore cache
-      const callRajaOngkirDirectAPI = async (
-        courierCode: string,
-        destinationCityId: string,
-        weight: number
-      ): Promise<any[]> => {
-        try {
-
-          // Gunakan Vercel proxy (sama seperti di vite.config.ts) untuk CORS compliance
-          const response = await fetch('/api/rajaongkir/cost', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              origin: '2425', // Banjarmasin city ID
-              destination: destinationCityId,
-              weight: weight,
-              courier: courierCode,
-              price: 'lowest'
-            })
-          });
-
-          if (!response.ok) {
-            throw new Error(`RajaOngkir API Error: ${response.status}`);
-          }
-
-          const data = await response.json();
-
-          // Handle Komerce API response structure
-          if (data.meta && data.meta.status === 'success' && data.meta.code === 200) {
-            if (!data.data || data.data.length === 0) {
-              throw new Error(`No shipping services available for ${courierCode}`);
-            }
-
-            return data.data.map((service: any) => ({
-              name: service.courier_name || courierCode.toUpperCase(),
-              code: courierCode,
-              service: service.service,
-              description: service.service_name || service.description,
-              cost: service.price || service.cost,
-              etd: service.etd || '1-2 days'
-            }));
-          } else {
-            const errorMessage = data.meta?.message || data.rajaongkir?.status?.description || 'Unknown API error';
-            throw new Error(errorMessage);
-          }
-        } catch (error) {
-          console.error('❌ Direct RajaOngkir API Error:', error);
-          throw error;
+      const data = await response.json();
+      if (data.meta && data.meta.status === 'success' && data.meta.code === 200) {
+        if (!data.data || data.data.length === 0) {
+          throw new Error('No shipping services available for this destination');
         }
-      };
 
-      // 🔥 LOCALSTORAGE CACHE PRIORITY: Check cache first (0 reads!)
-      const cacheKey = `ongkos_${courierCode}_${destinationCityId}_${optimizedWeight}`;
-      const cachedData = localStorage.getItem(cacheKey);
+        return data.data.map((service: any) => ({
+          name: service.courier_name || courierCode.toUpperCase(),
+          code: courierCode,
+          service: service.service,
+          description: service.service_name || service.description,
+          cost: service.price || service.cost,
+          etd: service.etd || '1-2 days'
+        }));
+      }
 
-      if (cachedData) {
-        try {
-          const { data, timestamp } = JSON.parse(cachedData);
-          const now = Date.now();
+      const errorMessage = data.meta?.message || data.rajaongkir?.status?.description || 'Unknown API error';
+      throw new Error(errorMessage);
+    };
 
-          // Cache valid for 30 days
-          if (now - timestamp < 30 * 24 * 60 * 60 * 1000) {
-            console.log(`🚀 ONGKIR CACHE HIT: ${courierCode} → ${destinationCityId} (${optimizedWeight}g) - 0 reads!`);
+    const applyShippingResult = (
+      results: KomerceCostResult[],
+      cacheKey: string,
+      destinationId: string,
+      destinationLabel: string,
+      shouldPersistCache: boolean
+    ) => {
+      if (!results.length) return false;
 
-            if (data && data.length > 0) {
-              setOngkirResults(data);
-              const cheapestService = data[0];
-              setSelectedService(cheapestService);
-              setFormData(prev => ({
-                ...prev,
-                shippingCost: cheapestService.cost
-              }));
-              setShippingCost(cheapestService.cost);
-              setLoadingShipping(false);
-              return; // 🎯 SKIP API call - 0 reads achieved!
+      setOngkirResults(results);
+      const cheapestService = results[0];
+      setSelectedService(cheapestService);
+
+      if (shouldPersistCache) {
+        localStorage.setItem(cacheKey, JSON.stringify({ data: results, timestamp: Date.now() }));
+        console.log(`💾 ONGKIR CACHE SAVED: ${courierCode} → ${destinationId} (${optimizedWeight}g)`);
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        shippingCost: cheapestService.cost,
+        shippingService: cheapestService.service,
+        shippingETD: cheapestService.etd
+      }));
+      setShippingCost(cheapestService.cost);
+      console.log(`✅ Ongkir ${courierCode} pakai ${destinationLabel} (${destinationId})`);
+      return true;
+    };
+
+    setLoadingShipping(true);
+    setShippingError('');
+
+    let lastError: unknown = null;
+    let resolved = false;
+
+    try {
+      for (const candidate of cleanedCandidates) {
+        const cacheKey = `ongkos_${courierCode}_${candidate.id}_${optimizedWeight}`;
+        const cachedData = localStorage.getItem(cacheKey);
+
+        if (cachedData) {
+          try {
+            const { data, timestamp } = JSON.parse(cachedData);
+            const now = Date.now();
+
+            if (now - timestamp < 30 * 24 * 60 * 60 * 1000 && data?.length) {
+              console.log(`🚀 ONGKIR CACHE HIT: ${courierCode} → ${candidate.id} (${optimizedWeight}g)`);
+              resolved = applyShippingResult(data, cacheKey, candidate.id, candidate.label, false);
+              if (resolved) break;
+            } else if (now - timestamp >= 30 * 24 * 60 * 60 * 1000) {
+              localStorage.removeItem(cacheKey);
             }
-          } else {
-            console.log('⏰ Cache expired, removing...');
+          } catch (parseError) {
+            console.error('❌ Error parsing ongkir cache:', parseError);
             localStorage.removeItem(cacheKey);
           }
-        } catch (parseError) {
-          console.error('❌ Error parsing cache:', parseError);
-          localStorage.removeItem(cacheKey);
+        }
+
+        try {
+          console.log(`📡 ONGKIR FETCH: ${courierCode} (${candidate.label}) → ${candidate.id}`);
+          const results = await callRajaOngkirDirectAPI(candidate.id);
+          resolved = applyShippingResult(results, cacheKey, candidate.id, candidate.label, true);
+          if (resolved) {
+            break;
+          }
+        } catch (error) {
+          lastError = error;
+          console.warn(`⚠️ Ongkir gagal (${candidate.label}):`, error);
         }
       }
 
-      console.log(`📡 ONGKIR CACHE MISS: Direct RajaOngkir API call...`);
-
-      // Direct API call bypass Firestore cache (0 reads!)
-      const results = await callRajaOngkirDirectAPI(courierCode, destinationCityId, optimizedWeight);
-
-      if (results && results.length > 0) {
-        // Komerce returns multiple services! Let user choose
-        // Store all results and auto-select cheapest service by default
-        setOngkirResults(results);
-        const cheapestService = results[0];
-        setSelectedService(cheapestService);
-
-        // 🔥 SAVE TO LOCALSTORAGE: Cache for future use (next checkout = 0 reads)
-        const cacheKey = `ongkos_${courierCode}_${destinationCityId}_${optimizedWeight}`;
-        const cacheData = {
-          data: results,
-          timestamp: Date.now()
-        };
-        localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-        console.log(`💾 ONGKIR CACHE SAVED: ${courierCode} → ${destinationCityId} (${optimizedWeight}g) - 30 days!`);
-
+      if (!resolved) {
+        console.error('❌ Tidak ada kurir yang menjangkau tujuan ini', lastError);
+        setShippingError('Tujuan tidak terjangkau untuk kurir ini. Coba ganti kurir atau alamat.');
         setFormData(prev => ({
           ...prev,
-          shippingCost: cheapestService.cost,
-          shippingService: cheapestService.service,
-          shippingETD: cheapestService.etd
+          shippingCost: 0,
+          shippingService: '',
+          shippingETD: ''
         }));
-        setShippingCost(cheapestService.cost);
-
-        } else {
-        setShippingError('Tidak dapat menghitung ongkir untuk kurir ini');
-        }
-    } catch (error) {
-      console.error('Error calculating shipping cost:', error);
-      setShippingError('Gagal menghitung ongkir. Silakan coba lagi.');
-      // NO FALLBACK - Show error to user
+        setShippingCost(0);
+      }
     } finally {
       setLoadingShipping(false);
+      setTimeout(() => setLoadingShipping(false), 120);
     }
-
-    // Fast timeout to prevent loading state from stuck too long
-    const loadingTimeout = setTimeout(() => {
-      setLoadingShipping(false);
-    }, 100); // Ultra-fast timeout fallback
-
-    return () => clearTimeout(loadingTimeout);
   };
 
   const [formData, setFormData] = useState({
@@ -387,32 +410,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         return;
       }
 
-      // Get destination ID
-      let destinationId = defaultAddr.subdistrictId;
-      if (!destinationId && defaultAddr.district) {
-        try {
-          const cacheKey = 'ongkir_subdistricts';
-          const cacheData = localStorage.getItem(cacheKey);
-          if (cacheData) {
-            const subdistricts = JSON.parse(cacheData);
-            const subdistrict = subdistricts.find((sub: any) =>
-              sub.subdistrict_name?.toLowerCase() === defaultAddr.district?.toLowerCase()
-            );
-            if (subdistrict) {
-              destinationId = subdistrict.subdistrict_id.toString();
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error getting subdistrict from cache:', error);
-        }
-      }
-
-      destinationId = destinationId || defaultAddr.cityId || '607';
+      const destinationCandidates = buildDestinationCandidates(defaultAddr);
 
       // Trigger calculation with longer delay to ensure UI is updated
       setTimeout(() => {
-        if (autoCourier.code && destinationId) {
-          calculateShippingCost(autoCourier.code, destinationId, weight);
+        if (autoCourier.code) {
+          calculateShippingCost(autoCourier.code, destinationCandidates, weight);
         }
       }, 500); // Longer delay to ensure address UI is fully loaded
     }
@@ -440,36 +443,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     // Only calculate if we have both courier and address
     if (selectedCourier?.code && defaultAddr && formData.shippingCourier) {
       const weight = calculateTotalWeight();
-
-      // 🗺️ LOOKUP subdistrictId from localStorage cache if not available (0 reads)
-      let destinationId = defaultAddr.subdistrictId;
-
-      if (!destinationId && defaultAddr.district) {
-        // Fast localStorage lookup - no async needed
-        try {
-          const cacheKey = 'ongkir_subdistricts';
-          const cacheData = localStorage.getItem(cacheKey);
-
-          if (cacheData) {
-            const subdistricts = JSON.parse(cacheData);
-            const subdistrict = subdistricts.find((sub: any) =>
-              sub.subdistrict_name?.toLowerCase() === defaultAddr.district?.toLowerCase()
-            );
-
-            if (subdistrict) {
-              destinationId = subdistrict.subdistrict_id.toString();
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error getting subdistrict from localStorage cache:', error);
-        }
-      }
-
-      // Final fallback
-      destinationId = destinationId || defaultAddr.cityId || '607';
+      const destinationCandidates = buildDestinationCandidates(defaultAddr);
 
       // IMMEDIATE calculation - NO DELAY
-      calculateShippingCost(selectedCourier.code, destinationId, weight);
+      calculateShippingCost(selectedCourier.code, destinationCandidates, weight);
     }
   }, [formData.shippingCourier, selectedAddressId, addresses]); // Single effect for both changes
 
