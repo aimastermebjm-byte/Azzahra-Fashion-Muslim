@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowDownCircle, ArrowUpCircle, Plus, Filter, Calendar, Tags, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Plus, Filter, Calendar, Tags, Loader2, CheckCircle2, AlertTriangle, Trash2 } from 'lucide-react';
 import PageHeader from './PageHeader';
 import EmptyState from './ui/EmptyState';
 import { useToast } from './ToastProvider';
@@ -38,6 +38,12 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
   const [filterPnL, setFilterPnL] = useState<'all' | 'include' | 'exclude'>('all');
 
   const isOwner = user?.role === 'owner';
+
+  const parseAmount = (val: string) => {
+    // Hilangkan pemisah ribuan (titik/koma) agar input "100.000" menjadi 100000
+    const sanitized = val.replace(/[^0-9]/g, '');
+    return Number(sanitized || '0');
+  };
 
   useEffect(() => {
     if (!isOwner) return;
@@ -102,7 +108,8 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || Number(amount) <= 0) {
+    const parsedAmount = parseAmount(amount);
+    if (!parsedAmount || parsedAmount <= 0) {
       toast({ title: 'Nominal tidak valid', description: 'Isi nominal lebih dari 0', variant: 'destructive' });
       return;
     }
@@ -122,7 +129,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
 
       const created = await financialService.addEntry({
         type,
-        amount: Number(amount),
+        amount: parsedAmount,
         category: category,
         note: note.trim(),
         includeInPnL,
@@ -169,6 +176,18 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
         ? (dateVal as any).toDate()
         : new Date(dateVal as any);
     return date.toLocaleDateString('id-ID');
+  };
+
+  const handleDelete = async (entryId: string) => {
+    if (!window.confirm('Hapus entri ini?')) return;
+    try {
+      await financialService.deleteEntry(entryId);
+      setEntries((prev) => prev.filter((e) => e.id !== entryId));
+      toast({ title: 'Entri dihapus' });
+    } catch (err) {
+      console.error('Failed to delete entry', err);
+      toast({ title: 'Gagal menghapus', variant: 'destructive' });
+    }
   };
 
   if (!isOwner) {
@@ -420,8 +439,8 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
           ) : (
             <div className="space-y-2">
               {filteredEntries.map((entry) => (
-                <div key={entry.id} className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 flex items-start justify-between">
-                  <div>
+                <div key={entry.id} className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 flex items-start justify-between gap-3">
+                  <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className={`text-xs font-semibold px-2 py-1 rounded-full ${entry.type === 'income' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
                         {entry.type === 'income' ? 'Pendapatan' : 'Biaya'}
@@ -434,8 +453,14 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
                     <p className="text-sm text-slate-600">Kategori: {categories.find(c => c.id === entry.category)?.name || entry.category}</p>
                     {entry.note && <p className="text-xs text-slate-500 mt-1">{entry.note}</p>}
                   </div>
-                  <div className="text-right text-xs text-slate-500">
+                  <div className="flex flex-col items-end gap-2 text-xs text-slate-500">
                     <div>{renderEntryDate(entry)}</div>
+                    <button
+                      onClick={() => handleDelete(entry.id)}
+                      className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-slate-600 hover:bg-white"
+                    >
+                      <Trash2 className="w-3 h-3" /> Hapus
+                    </button>
                   </div>
                 </div>
               ))}

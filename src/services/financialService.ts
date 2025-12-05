@@ -1,6 +1,8 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
+  doc,
   getDocs,
   limit,
   orderBy,
@@ -163,5 +165,9 @@ export const financialService = {
       createdBy: entry.createdBy,
       createdByRole: entry.createdByRole
     };
+  },
+
+  async deleteEntry(id: string): Promise<void> {
+    await deleteDoc(doc(db, 'financial_entries', id));
   }
 };
