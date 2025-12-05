@@ -90,7 +90,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const addAddress = async (addressData: any) => {
     try {
       const newAddress = await addressService.saveAddress(addressData);
-      } catch (error) {
+      return newAddress;
+    } catch (error) {
       console.error('Failed to add address:', error);
       throw error;
     }
@@ -99,7 +100,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const updateAddress = async (id: string, updateData: any) => {
     try {
       const updatedAddress = await addressService.updateAddress(id, updateData);
-      } catch (error) {
+      return updatedAddress;
+    } catch (error) {
       console.error('Failed to update address:', error);
       throw error;
     }
@@ -116,6 +118,13 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   const getDefaultAddress = () => {
     return addresses.find(addr => addr.isDefault) || addresses[0];
+  };
+
+  const getActiveAddress = () => {
+    if (selectedAddressId) {
+      return addresses.find(addr => addr.id === selectedAddressId) || null;
+    }
+    return getDefaultAddress() || null;
   };
 
   // Komerce states
@@ -348,7 +357,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   // 🔥 CRITICAL FIX: Trigger shipping calculation AFTER addresses are fully loaded
   useEffect(() => {
-    const defaultAddr = getDefaultAddress();
+    const defaultAddr = getActiveAddress();
     const autoCourier = shippingOptions.find(opt => opt.code);
 
     console.log('🔍 AUTO-CALC DEBUG:', {
@@ -407,11 +416,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         }
       }, 500); // Longer delay to ensure address UI is fully loaded
     }
-  }, [formData.shippingCourier, addresses, cartItems]); // Also trigger when cart items load with valid weight
+  }, [formData.shippingCourier, addresses, cartItems, selectedAddressId]); // Also trigger when cart items load with valid weight
 
   // Optimized shipping calculation - SINGLE useEffect for both courier and address changes
   useEffect(() => {
-    const defaultAddr = getDefaultAddress();
+    const defaultAddr = getActiveAddress();
     const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
 
     console.log('🔍 SHIPPING DEBUG:', {
@@ -462,7 +471,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       // IMMEDIATE calculation - NO DELAY
       calculateShippingCost(selectedCourier.code, destinationId, weight);
     }
-  }, [formData.shippingCourier, selectedAddressId]); // Single effect for both changes
+  }, [formData.shippingCourier, selectedAddressId, addresses]); // Single effect for both changes
 
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -502,7 +511,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   useEffect(() => {
-    const defaultAddr = getDefaultAddress();
+    const defaultAddr = getActiveAddress();
     if (defaultAddr) {
       setSelectedAddressId(defaultAddr.id);
       setFormData(prev => ({
@@ -522,20 +531,40 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         ...prev,
         name: formData.isDropship ? prev.name : address.name,
         phone: formData.isDropship ? prev.phone : address.phone,
-        address: formData.isDropship ? prev.address : address.fullAddress
+        address: formData.isDropship ? prev.address : address.fullAddress,
+        provinceId: address.provinceId || prev.provinceId,
+        cityId: address.cityId || prev.cityId,
+        shippingCost: 0,
+        shippingService: '',
+        shippingETD: ''
       }));
+      setOngkirResults([]);
+      setSelectedService(null);
       // NOTE: Shipping calculation is handled by useEffect - no manual calculation needed
     }
   };
 
-  const handleSaveAddress = (addressData: any) => {
-    if (editingAddress) {
-      updateAddress(editingAddress.id, addressData);
-    } else {
-      addAddress(addressData);
+  const handleSaveAddress = async (addressData: any) => {
+    try {
+      if (editingAddress) {
+        await updateAddress(editingAddress.id, addressData);
+        setSelectedAddressId(editingAddress.id);
+      } else {
+        const created = await addAddress(addressData);
+        if (created?.id) {
+          setSelectedAddressId(created.id);
+        }
+      }
+      setShowAddressModal(false);
+      setEditingAddress(null);
+    } catch (error) {
+      console.error('Failed to save address:', error);
+      showToast({
+        type: 'danger',
+        title: 'Gagal menyimpan alamat',
+        message: 'Periksa koneksi dan coba lagi.'
+      });
     }
-    setShowAddressModal(false);
-    setEditingAddress(null);
   };
 
   const handleDeleteAddress = (id: string) => {
