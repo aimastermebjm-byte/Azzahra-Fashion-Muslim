@@ -137,7 +137,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     const subdistrictId = normalizeId(address?.subdistrictId);
     const districtId = normalizeId(address?.districtId);
-    const cityId = normalizeId(address?.cityId);
 
     if (subdistrictId) {
       candidates.push({ id: subdistrictId, label: 'Kelurahan/Desa' });
@@ -145,12 +144,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     if (districtId) {
       candidates.push({ id: districtId, label: 'Kecamatan' });
     }
-    if (cityId) {
-      candidates.push({ id: cityId, label: 'Kota/Kabupaten' });
-    }
-
-    // Always add Banjarmasin as last-resort fallback to avoid blocking checkout entirely
-    candidates.push({ id: '607', label: 'Fallback Kota (Banjarmasin)' });
 
     // Deduplicate by destination id
     return candidates.filter(
@@ -195,7 +188,15 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       .filter(candidate => candidate.id && candidate.id !== 'undefined');
 
     if (!cleanedCandidates.length) {
-      cleanedCandidates.push({ id: '607', label: 'Fallback Kota (Banjarmasin)' });
+      setShippingError('Alamat belum lengkap. Mohon pilih kecamatan/kelurahan terlebih dahulu.');
+      setFormData(prev => ({
+        ...prev,
+        shippingCost: 0,
+        shippingService: '',
+        shippingETD: ''
+      }));
+      setShippingCost(0);
+      return;
     }
 
     const optimizedWeight = courierCode === 'jnt' && cartItems.length > 1 ? Math.max(weight, 1000) : weight;
