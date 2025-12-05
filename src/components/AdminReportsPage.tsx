@@ -261,6 +261,55 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     };
   }, [cashFlow]);
 
+  const financialBreakdown = useMemo(() => {
+    const modalCost = filteredTransactions.reduce((sum, transaction) => {
+      const transactionModal = transaction.totalModal || (transaction.subtotal * 0.6);
+      return sum + transactionModal;
+    }, 0);
+
+    const pendapatanPenjualan = summaryStats.totalRevenue;
+    const pendapatanOngkir = summaryStats.totalShipping;
+    const pendapatanTotal = pendapatanPenjualan + pendapatanOngkir;
+
+    const ongkirPembelian = cashFlow
+      .filter(flow => flow.type === 'expense' && flow.category === 'ongkir')
+      .reduce((sum, flow) => sum + flow.amount, 0);
+
+    const biayaLain = cashFlow
+      .filter(flow => flow.type === 'expense' && flow.category !== 'ongkir')
+      .reduce((sum, flow) => sum + flow.amount, 0);
+
+    const totalBiaya = modalCost + ongkirPembelian + biayaLain;
+    const labaRugi = pendapatanTotal - totalBiaya;
+
+    return {
+      modalCost,
+      pendapatanPenjualan,
+      pendapatanOngkir,
+      pendapatanTotal,
+      ongkirPembelian,
+      biayaLain,
+      totalBiaya,
+      labaRugi
+    };
+  }, [filteredTransactions, summaryStats, cashFlow]);
+
+  const cashflowRecap = useMemo(() => {
+    const saldoSebelum = 0;
+    const pembelian = profitLossStats.totalExpense;
+    const penjualan = profitLossStats.totalIncome;
+    const total = penjualan - pembelian;
+    const saldoAkhir = saldoSebelum + total;
+
+    return {
+      saldoSebelum,
+      pembelian,
+      penjualan,
+      total,
+      saldoAkhir
+    };
+  }, [profitLossStats]);
+
   // Format currency
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -490,14 +539,9 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   <thead>
                     <tr className="bg-gray-50">
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pelanggan</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subtotal</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ongkir</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Laba</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -510,34 +554,14 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                           <td className="px-4 py-3 text-sm font-medium text-gray-900">
                             {transaction.invoice}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-500">
-                            {transaction.date}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            <div>
-                              <div className="font-medium">{transaction.customer}</div>
-                              <div className="text-gray-500">{transaction.phone}</div>
-                            </div>
-                          </td>
                           <td className="px-4 py-3 text-sm text-gray-900">
                             {formatCurrency(transaction.subtotal)}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {formatCurrency(transaction.shippingCost)}
-                          </td>
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                            {formatCurrency(transaction.total)}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-900">
                             {formatCurrency(modal)}
                           </td>
                           <td className="px-4 py-3 text-sm text-green-600">
                             {formatCurrency(laba)}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <span className={transaction.status === 'lunas' ? 'badge-brand-success' : 'badge-brand-warning'}>
-                              {transaction.status === 'lunas' ? 'Lunas' : 'Belum Lunas'}
-                            </span>
                           </td>
                         </tr>
                       );
@@ -567,36 +591,37 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   <thead>
                     <tr className="bg-gray-50">
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kategori</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terjual</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Revenue</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stok</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Profit</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Laba</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {products.map((product) => (
-                      <tr key={product.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          {product.name}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">
-                          {product.category}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          {product.totalSold}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          {formatCurrency(product.totalRevenue)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          {product.stock}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-green-600">
-                          {formatCurrency(product.profit)}
-                        </td>
-                      </tr>
-                    ))}
+                    {products.map((product) => {
+                      const averagePrice = product.totalSold > 0 ? product.totalRevenue / product.totalSold : 0;
+                      const modal = product.totalRevenue - product.profit;
+
+                      return (
+                        <tr key={product.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                            {product.name}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {product.totalSold}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {formatCurrency(averagePrice)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {formatCurrency(modal)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-brand-success">
+                            {formatCurrency(product.profit)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -621,23 +646,14 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <table className="w-full table-auto">
                   <thead>
                     <tr className="bg-gray-50">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pelanggan</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nominal</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {filteredTransactions.map((transaction) => (
                       <tr key={transaction.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          {transaction.invoice}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">
-                          {transaction.date}
-                        </td>
                         <td className="px-4 py-3 text-sm text-gray-900">
                           <div>
                             <div className="font-medium">{transaction.customer}</div>
@@ -645,17 +661,10 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                           </div>
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                          {transaction.invoice}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
                           {formatCurrency(transaction.total)}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className={transaction.status === 'lunas' ? 'badge-brand-success' : 'badge-brand-warning'}>
-                            {transaction.status === 'lunas' ? 'Lunas' : 'Belum Lunas'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <button className="text-blue-600 hover:text-blue-800">
-                            <Eye className="w-4 h-4" />
-                          </button>
                         </td>
                       </tr>
                     ))}
@@ -684,36 +693,34 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   <thead>
                     <tr className="bg-gray-50">
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kategori</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stok</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reserved</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Available</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nilai</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Modal</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {inventory.map((item) => (
-                      <tr key={item.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          {item.name}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">
-                          {item.category}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          {item.stock}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-brand-warning">
-                          {item.reserved}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-brand-success">
-                          {item.available}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          {formatCurrency(item.value)}
-                        </td>
-                      </tr>
-                    ))}
+                    {inventory.map((item) => {
+                      const stock = Number(item.stock) || 0;
+                      const modalPerUnit = stock > 0 ? (Number(item.value) || 0) / stock : 0;
+                      const totalModal = modalPerUnit * stock;
+
+                      return (
+                        <tr key={item.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                            {item.name}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {stock}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {formatCurrency(modalPerUnit)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {formatCurrency(totalModal)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -735,54 +742,27 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
               </div>
 
               {/* Summary Cards for Cash Flow */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="card-elevated border border-brand-success/30">
-                  <div className="flex items-center">
-                    <ArrowUpRight className="w-8 h-8 text-brand-success mr-3" />
-                    <div>
-                      <p className="text-sm text-brand-success font-medium">Pemasukan</p>
-                      <p className="text-xl font-bold text-brand-success">
-                        {formatCurrency(profitLossStats.totalIncome)}
-                      </p>
-                    </div>
+              <div className="card-elevated p-5 mb-6">
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Saldo Sebelum</span>
+                    <span className="font-semibold text-gray-900">{formatCurrency(cashflowRecap.saldoSebelum)}</span>
                   </div>
-                </div>
-
-                <div className="card-elevated border border-brand-warning/30">
-                  <div className="flex items-center">
-                    <ArrowDownRight className="w-8 h-8 text-brand-warning mr-3" />
-                    <div>
-                      <p className="text-sm text-brand-warning font-medium">Pengeluaran</p>
-                      <p className="text-xl font-bold text-brand-warning">
-                        {formatCurrency(profitLossStats.totalExpense)}
-                      </p>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Pembelian</span>
+                    <span className="font-semibold text-brand-warning">{formatCurrency(cashflowRecap.pembelian)}</span>
                   </div>
-                </div>
-
-                <div className={`card-elevated border ${
-                  profitLossStats.profit >= 0
-                    ? 'border-brand-accent/40'
-                    : 'border-brand-warning/40'
-                }`}>
-                  <div className="flex items-center">
-                    {profitLossStats.profit >= 0 ? (
-                      <TrendingUp className="w-8 h-8 text-brand-accent mr-3" />
-                    ) : (
-                      <TrendingDown className="w-8 h-8 text-brand-warning mr-3" />
-                    )}
-                    <div>
-                      <p className={`text-sm font-medium ${
-                        profitLossStats.profit >= 0 ? 'text-brand-accent' : 'text-brand-warning'
-                      }`}>
-                        {profitLossStats.profit >= 0 ? 'Laba Bersih' : 'Rugi Bersih'}
-                      </p>
-                      <p className={`text-xl font-bold ${
-                        profitLossStats.profit >= 0 ? 'text-brand-accent' : 'text-brand-warning'
-                      }`}>
-                        {formatCurrency(Math.abs(profitLossStats.profit))}
-                      </p>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Penjualan</span>
+                    <span className="font-semibold text-brand-success">{formatCurrency(cashflowRecap.penjualan)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Total</span>
+                    <span className="font-semibold text-brand-primary">{formatCurrency(cashflowRecap.total)}</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t pt-3">
+                    <span className="text-gray-600">Saldo Akhir</span>
+                    <span className="text-lg font-bold text-brand-primary">{formatCurrency(cashflowRecap.saldoAkhir)}</span>
                   </div>
                 </div>
               </div>
@@ -793,9 +773,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     <tr className="bg-gray-50">
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Deskripsi</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kategori</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jumlah</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipe</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nominal</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -807,18 +785,10 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                         <td className="px-4 py-3 text-sm text-gray-900">
                           {flow.description}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">
-                          {flow.category}
-                        </td>
                         <td className={`px-4 py-3 text-sm font-medium ${
                           flow.type === 'income' ? 'text-brand-success' : 'text-brand-warning'
                         }`}>
                           {flow.type === 'income' ? '+' : '-'}{formatCurrency(flow.amount)}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className={flow.type === 'income' ? 'badge-brand-success' : 'badge-brand-warning'}>
-                            {flow.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}
-                          </span>
                         </td>
                       </tr>
                     ))}
@@ -842,82 +812,71 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 </button>
               </div>
 
-              {/* Profit/Loss Summary */}
-              <div className="card-elevated p-6 mb-6">
-                <h4 className="text-lg font-semibold text-gray-800 mb-4">Ringkasan Rugi Laba</h4>
-
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center py-2 border-b">
-                    <span className="text-gray-600">Total Pemasukan</span>
-                    <span className="font-semibold text-brand-success">
-                      {formatCurrency(profitLossStats.totalIncome)}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center py-2 border-b">
-                    <span className="text-gray-600">Total Pengeluaran</span>
-                    <span className="font-semibold text-brand-warning">
-                      {formatCurrency(profitLossStats.totalExpense)}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center py-3">
-                    <span className="text-lg font-semibold text-gray-800">
-                      {profitLossStats.profit >= 0 ? 'Laba Bersih' : 'Rugi Bersih'}
-                    </span>
-                    <span className={`text-xl font-bold ${
-                      profitLossStats.profit >= 0 ? 'text-brand-success' : 'text-brand-warning'
-                    }`}>
-                      {profitLossStats.profit >= 0 ? '+' : '-'}
-                      {formatCurrency(Math.abs(profitLossStats.profit))}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Margin Profit</span>
-                      <span className={`font-semibold ${
-                        profitLossStats.profitMargin >= 0 ? 'text-brand-success' : 'text-brand-warning'
-                      }`}>
-                        {profitLossStats.profitMargin.toFixed(2)}%
-                      </span>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="card-elevated p-6 border border-brand-success/30">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-lg font-semibold text-brand-success">Pendapatan</h4>
+                      <ArrowUpRight className="w-6 h-6 text-brand-success" />
                     </div>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Penjualan</span>
+                        <span className="font-semibold text-gray-900">{formatCurrency(financialBreakdown.pendapatanPenjualan)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Ongkir Penjualan</span>
+                        <span className="font-semibold text-gray-900">{formatCurrency(financialBreakdown.pendapatanOngkir)}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-3 text-base">
+                        <span className="text-gray-600 font-semibold">Total Pendapatan</span>
+                        <span className="font-bold text-brand-success">{formatCurrency(financialBreakdown.pendapatanTotal)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="card-elevated p-6 border border-brand-warning/30">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-lg font-semibold text-brand-warning">Biaya</h4>
+                      <ArrowDownRight className="w-6 h-6 text-brand-warning" />
+                    </div>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Modal</span>
+                        <span className="font-semibold text-gray-900">{formatCurrency(financialBreakdown.modalCost)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Ongkir Pembelian</span>
+                        <span className="font-semibold text-gray-900">{formatCurrency(financialBreakdown.ongkirPembelian)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Biaya Lain</span>
+                        <span className="font-semibold text-gray-900">{formatCurrency(financialBreakdown.biayaLain)}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-3 text-base">
+                        <span className="text-gray-600 font-semibold">Total Biaya</span>
+                        <span className="font-bold text-brand-warning">{formatCurrency(financialBreakdown.totalBiaya)}</span>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-xs text-gray-500">*Biaya lain dapat diinput dari dashboard admin biaya (fitur mendatang).</p>
                   </div>
                 </div>
 
-                {/* Detailed Breakdown */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Income Breakdown */}
-                  <div className="card-elevated border border-brand-success/30">
-                    <h5 className="font-semibold text-brand-success mb-3">Rincian Pemasukan</h5>
-                    <div className="space-y-2">
-                      {cashFlow
-                        .filter(c => c.type === 'income')
-                        .map((income) => (
-                          <div key={income.id} className="flex justify-between text-sm">
-                            <span className="text-gray-600">{income.description}</span>
-                            <span className="text-brand-success font-medium">
-                              {formatCurrency(income.amount)}
-                            </span>
-                          </div>
-                        ))}
+                <div className={`card-elevated p-6 border ${
+                  financialBreakdown.labaRugi >= 0 ? 'border-brand-success/40' : 'border-brand-warning/40'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Laba / Rugi</p>
+                      <p className={`text-2xl font-bold ${financialBreakdown.labaRugi >= 0 ? 'text-brand-success' : 'text-brand-warning'}`}>
+                        {formatCurrency(financialBreakdown.labaRugi)}
+                      </p>
                     </div>
-                  </div>
-
-                  {/* Expense Breakdown */}
-                  <div className="card-elevated border border-brand-warning/30">
-                    <h5 className="font-semibold text-brand-warning mb-3">Rincian Pengeluaran</h5>
-                    <div className="space-y-2">
-                      {cashFlow
-                        .filter(c => c.type === 'expense')
-                        .map((expense) => (
-                          <div key={expense.id} className="flex justify-between text-sm">
-                            <span className="text-gray-600">{expense.description}</span>
-                            <span className="text-brand-warning font-medium">
-                              {formatCurrency(expense.amount)}
-                            </span>
-                          </div>
-                        ))}
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">Total Pendapatan</p>
+                      <p className="text-sm font-semibold text-gray-900">{formatCurrency(financialBreakdown.pendapatanTotal)}</p>
+                      <p className="text-xs text-gray-500 mt-2">Total Biaya</p>
+                      <p className="text-sm font-semibold text-gray-900">{formatCurrency(financialBreakdown.totalBiaya)}</p>
                     </div>
                   </div>
                 </div>

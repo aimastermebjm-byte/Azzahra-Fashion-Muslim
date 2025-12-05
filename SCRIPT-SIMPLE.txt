@@ -1,0 +1,68 @@
+(async function() {
+console.log('FORCE SYNC STARTING...');
+try {
+const { getFirestore, doc, getDoc, setDoc, getDocs, collection } = await import('firebase/firestore');
+const db = getFirestore();
+console.log('Firebase connected');
+const batchRef = doc(db, 'productBatches', 'batch_1');
+const batchSnap = await getDoc(batchRef);
+if (!batchSnap.exists()) { console.error('batch_1 not found!'); return; }
+const products = batchSnap.data().products || [];
+console.log('Found ' + products.length + ' products');
+const globalCol = collection(db, 'globalindex');
+const currentSnap = await getDocs(globalCol);
+const existing = new Set(currentSnap.docs.map(d => d.id));
+console.log('Current globalindex: ' + existing.size + ' documents');
+console.log('Syncing...');
+let success = 0;
+let failed = 0;
+for (let i = 0; i < products.length; i++) {
+const p = products[i];
+try {
+const docRef = doc(db, 'globalindex', p.id);
+await setDoc(docRef, {
+id: p.id,
+name: p.name || '',
+description: p.description || '',
+category: p.category || 'uncategorized',
+price: Number(p.price) || 0,
+retailPrice: Number(p.retailPrice) || 0,
+resellerPrice: Number(p.resellerPrice) || 0,
+costPrice: Number(p.costPrice) || 0,
+stock: Number(p.stock) || 0,
+status: p.status || 'ready',
+image: p.image || '/placeholder-product.jpg',
+images: Array.isArray(p.images) ? p.images : [],
+isFeatured: Boolean(p.isFeatured || p.featured),
+isFlashSale: Boolean(p.isFlashSale),
+flashSalePrice: Number(p.flashSalePrice || p.retailPrice) || 0,
+createdAt: p.createdAt || new Date(),
+salesCount: Number(p.salesCount) || 0,
+reviews: Number(p.reviews) || 0,
+rating: Number(p.rating) || 0,
+weight: Number(p.weight) || 0,
+unit: p.unit || 'pcs',
+lastSyncedAt: new Date().toISOString(),
+syncSource: 'console-sync'
+}, { merge: true });
+success++;
+const isNew = !existing.has(p.id);
+console.log((isNew ? 'NEW' : 'OK') + ' [' + (i+1) + '/' + products.length + '] ' + p.name);
+} catch (err) {
+failed++;
+console.error('FAIL [' + (i+1) + '/' + products.length + '] ' + p.name + ': ' + err.message);
+}
+}
+const finalSnap = await getDocs(globalCol);
+console.log('========================');
+console.log('SUCCESS: ' + success + ' products');
+console.log('FAILED: ' + failed + ' products');
+console.log('GLOBALINDEX NOW HAS: ' + finalSnap.docs.length + ' documents');
+console.log('========================');
+if (success === products.length) {
+console.log('ALL PRODUCTS SYNCED SUCCESSFULLY!');
+}
+} catch (error) {
+console.error('ERROR:', error);
+}
+})();

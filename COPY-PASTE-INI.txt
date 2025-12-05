@@ -1,0 +1,121 @@
+// ============================================================
+// 🚀 FORCE SYNC GLOBALINDEX - SIMPLE VERSION
+// ============================================================
+// CARA PAKAI:
+// 1. Buka http://localhost:5173 di browser
+// 2. Login sebagai admin  
+// 3. Tekan F12 (buka console)
+// 4. COPY semua script di bawah (mulai dari baris yang ada "async")
+// 5. PASTE ke console
+// 6. Tekan ENTER
+// ============================================================
+
+async function forceSyncNow() {
+  console.log('%c🚀 STARTING FORCE SYNC...', 'color: blue; font-size: 20px; font-weight: bold; background: #e0f0ff; padding: 10px;');
+  console.log('='.repeat(80));
+  
+  try {
+    // Ambil Firebase modules dari import yang sudah ada
+    const firebaseApp = await import('firebase/app');
+    const firestoreModule = await import('firebase/firestore');
+    
+    // Get firestore instance
+    const db = firestoreModule.getFirestore();
+    
+    console.log('✅ Firebase connected\n');
+    
+    // 1. GET BATCH_1
+    console.log('📦 Step 1: Reading batch_1...');
+    const batchRef = firestoreModule.doc(db, 'productBatches', 'batch_1');
+    const batchSnap = await firestoreModule.getDoc(batchRef);
+    
+    if (!batchSnap.exists()) {
+      console.error('❌ ERROR: batch_1 not found!');
+      return;
+    }
+    
+    const products = batchSnap.data().products || [];
+    console.log(`✅ Found ${products.length} products in batch_1\n`);
+    
+    // 2. GET CURRENT GLOBALINDEX
+    console.log('📊 Step 2: Checking current globalindex...');
+    const globalCol = firestoreModule.collection(db, 'globalindex');
+    const currentSnap = await firestoreModule.getDocs(globalCol);
+    const existing = new Set(currentSnap.docs.map(d => d.id));
+    console.log(`📊 Current globalindex: ${existing.size} documents\n`);
+    
+    // 3. SYNC PRODUCTS
+    console.log('%c🔄 Step 3: Syncing products...', 'color: orange; font-weight: bold;');
+    console.log('='.repeat(80));
+    
+    let success = 0;
+    let failed = 0;
+    
+    for (let i = 0; i < products.length; i++) {
+      const p = products[i];
+      
+      try {
+        const docRef = firestoreModule.doc(db, 'globalindex', p.id);
+        
+        await firestoreModule.setDoc(docRef, {
+          id: p.id,
+          name: p.name || '',
+          description: p.description || '',
+          category: p.category || 'uncategorized',
+          price: Number(p.price) || 0,
+          retailPrice: Number(p.retailPrice) || 0,
+          resellerPrice: Number(p.resellerPrice) || 0,
+          costPrice: Number(p.costPrice) || 0,
+          stock: Number(p.stock) || 0,
+          status: p.status || 'ready',
+          image: p.image || '/placeholder-product.jpg',
+          images: Array.isArray(p.images) ? p.images : [],
+          isFeatured: Boolean(p.isFeatured || p.featured),
+          isFlashSale: Boolean(p.isFlashSale),
+          flashSalePrice: Number(p.flashSalePrice || p.retailPrice) || 0,
+          createdAt: p.createdAt || new Date(),
+          salesCount: Number(p.salesCount) || 0,
+          reviews: Number(p.reviews) || 0,
+          rating: Number(p.rating) || 0,
+          weight: Number(p.weight) || 0,
+          unit: p.unit || 'pcs',
+          lastSyncedAt: new Date().toISOString(),
+          syncSource: 'console-force-sync'
+        }, { merge: true });
+        
+        success++;
+        const isNew = !existing.has(p.id);
+        console.log(`${isNew ? '🆕' : '✅'} [${i+1}/${products.length}] ${p.name}`);
+        
+      } catch (err) {
+        failed++;
+        console.error(`❌ [${i+1}/${products.length}] FAILED: ${p.name} - ${err.message}`);
+      }
+    }
+    
+    // 4. VERIFY
+    console.log('\n' + '='.repeat(80));
+    console.log('%c📊 RESULTS:', 'color: green; font-size: 16px; font-weight: bold;');
+    console.log('='.repeat(80));
+    console.log(`%c✅ Success: ${success}`, 'color: green; font-weight: bold; font-size: 14px;');
+    console.log(`%c❌ Failed: ${failed}`, failed > 0 ? 'color: red; font-weight: bold; font-size: 14px;' : 'color: gray;');
+    console.log(`%c📦 Total: ${products.length}`, 'color: blue; font-weight: bold; font-size: 14px;');
+    
+    const finalSnap = await firestoreModule.getDocs(globalCol);
+    console.log(`%c🔍 GlobalIndex now has: ${finalSnap.docs.length} documents`, 'color: blue; font-weight: bold; font-size: 14px;');
+    console.log('='.repeat(80));
+    
+    if (success === products.length) {
+      console.log('\n%c✅ ✅ ✅ PERFECT! ALL SYNCED! ✅ ✅ ✅', 'color: white; background: green; font-size: 20px; font-weight: bold; padding: 15px;');
+    } else {
+      console.log('\n%c⚠️ COMPLETED WITH ERRORS - Check log above', 'color: orange; font-size: 16px; font-weight: bold;');
+    }
+    
+  } catch (error) {
+    console.error('%c❌ FATAL ERROR:', 'color: white; background: red; font-size: 18px; padding: 10px;');
+    console.error(error);
+  }
+}
+
+// JALANKAN!
+forceSyncNow();

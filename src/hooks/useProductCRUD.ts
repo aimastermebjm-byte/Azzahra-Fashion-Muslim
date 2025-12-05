@@ -131,9 +131,16 @@ export const useProductCRUD = (): UseProductCRUDResult => {
         });
 
         // Sync to globalindex collection
-        await syncProductToGlobalIndex(newProduct);
-
-        console.log(`✅ SINGLE LISTENER: Product added with ID ${newProductId} and synced to globalindex`);
+        console.log('🔄 Attempting to sync to globalindex...');
+        const syncSuccess = await syncProductToGlobalIndex(newProduct);
+        
+        if (syncSuccess) {
+          console.log(`✅ SINGLE LISTENER: Product added with ID ${newProductId} and synced to globalindex`);
+        } else {
+          console.error(`⚠️ WARNING: Product added to batch but FAILED to sync to globalindex: ${newProductId}`);
+          console.error('⚠️ You may need to run manual force sync!');
+        }
+        
         return newProductId;
       } else {
         throw new Error('Batch document not found');
@@ -167,6 +174,16 @@ export const useProductCRUD = (): UseProductCRUDResult => {
           products: updatedProducts,
           updatedAt: new Date().toISOString()
         });
+
+        // Sync updated product to globalindex
+        const updatedProduct = updatedProducts.find((p: Product) => p.id === id);
+        if (updatedProduct) {
+          console.log('🔄 Syncing updated product to globalindex...');
+          const syncSuccess = await syncProductToGlobalIndex(updatedProduct);
+          if (!syncSuccess) {
+            console.error(`⚠️ WARNING: Product updated in batch but FAILED to sync to globalindex: ${id}`);
+          }
+        }
 
         console.log(`✅ SINGLE LISTENER: Product updated with ID ${id}`);
         return true;
