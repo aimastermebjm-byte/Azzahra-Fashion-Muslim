@@ -69,7 +69,8 @@ service cloud.firestore {
     // Allow read/write access to user addresses for authenticated users
     match /user_addresses/{addressId} {
       allow read: if true; // Public read for reporting system
-      allow write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
   }
 }
