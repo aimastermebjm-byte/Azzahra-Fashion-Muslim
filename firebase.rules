@@ -103,7 +103,7 @@ service cloud.firestore {
       allow write: if isSignedIn();
     }
 
-    // Financial payment methods (public read for checkout, write for any signed-in user/owner)
+    // Financial payment methods
     match /financial_payment_methods/{methodId} {
       allow read: if true;
       allow write: if isSignedIn();
