@@ -169,7 +169,7 @@ export const financialService = {
 
   async deleteEntry(id: string): Promise<void> {
     await deleteDoc(doc(db, 'financial_entries', id));
-  }
+  },
 
   async deleteCategory(id: string): Promise<void> {
     await deleteDoc(doc(db, 'financial_categories', id));
