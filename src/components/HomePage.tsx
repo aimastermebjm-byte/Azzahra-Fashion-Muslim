@@ -6,6 +6,7 @@ import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
 import { cartServiceOptimized } from '../services/cartServiceOptimized';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
+import { SearchCacheKey } from '../types/cache';
 
 interface HomePageProps {
   user: any;
@@ -38,9 +39,10 @@ const HomePage: React.FC<HomePageProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'ready' | 'po'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'terbaru' | 'termurah'>('terbaru');
   const [cartCount, setCartCount] = useState(0);
   const [sortBy, setSortBy] = useState<'terbaru' | 'termurah'>('terbaru');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'ready' | 'po'>('all');
 
   // Search states for cache functionality
   const [searchResults, setSearchResults] = useState<Product[]>([]);
@@ -320,9 +322,9 @@ const HomePage: React.FC<HomePageProps> = ({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-brand-surface flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-pink-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-accent mx-auto mb-4"></div>
           <p className="text-gray-600 font-medium">Memuat produk...</p>
         </div>
       </div>
@@ -331,13 +333,13 @@ const HomePage: React.FC<HomePageProps> = ({
 
   
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-brand-surface pb-20">
       {/* Header */}
-      <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white p-4">
+      <div className="bg-brand-gradient text-white p-6 shadow-brand-card">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-xl font-bold">Azzahra Fashion</h1>
-            <p className="text-pink-100 text-sm">Muslim Fashion Store</p>
+            <p className="text-brand-accent text-sm">Muslim Fashion Store</p>
           </div>
           <div className="flex items-center space-x-3">
             {user ? (
@@ -348,7 +350,7 @@ const HomePage: React.FC<HomePageProps> = ({
             ) : (
               <button
                 onClick={onLoginRequired}
-                className="bg-white/20 px-3 py-1 rounded-full text-sm hover:bg-white/30 transition-colors"
+                className="bg-white/15 px-4 py-2 rounded-full text-sm font-medium hover:bg-white/25 transition-colors"
               >
                 Login
               </button>
@@ -359,30 +361,30 @@ const HomePage: React.FC<HomePageProps> = ({
         {/* Search Bar */}
         <div className="flex items-center space-x-3">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-primary/50 w-5 h-5" />
             <input
               type="text"
               placeholder="Cari produk..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white/90 text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-accent"
             />
           </div>
           {/* Tombol Refresh untuk force update cross-device sync */}
           <button
             onClick={onRefreshProducts}
-            className="p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-shadow"
+            className="p-3 bg-white/20 backdrop-blur-md rounded-2xl shadow-md hover:shadow-lg transition-shadow"
             title="Refresh produk"
           >
-            <RefreshCw className="w-5 h-5 text-gray-600" />
+            <RefreshCw className="w-5 h-5 text-white" />
           </button>
           <button
             onClick={onCartClick}
-            className="relative p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-shadow"
+            className="relative p-3 bg-white/20 backdrop-blur-md rounded-2xl shadow-md hover:shadow-lg transition-shadow"
           >
-            <ShoppingCart className="w-6 h-6 text-gray-600" />
+            <ShoppingCart className="w-6 h-6 text-white" />
             {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="absolute -top-2 -right-2 bg-brand-accent text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {cartCount}
               </span>
             )}
@@ -397,7 +399,7 @@ const HomePage: React.FC<HomePageProps> = ({
 
       {/* Flash Sale Section */}
       <div className="px-4 mb-6">
-        <div className="bg-gradient-to-br from-red-600 via-red-500 to-orange-500 rounded-xl p-5 text-white shadow-xl relative overflow-hidden">
+        <div className="bg-brand-gradient rounded-2xl p-5 text-white shadow-brand-card relative overflow-hidden">
           {/* Premium animated background pattern */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -mr-16 -mt-16 animate-pulse"></div>
@@ -411,10 +413,10 @@ const HomePage: React.FC<HomePageProps> = ({
                   <span className="text-3xl">⚡</span>
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold bg-gradient-to-r from-yellow-200 to-white bg-clip-text text-transparent">
+                  <h2 className="text-xl font-bold text-white">
                     Flash Sale
                   </h2>
-                  <p className="text-red-100 text-sm font-medium">
+                  <p className="text-brand-accent text-sm font-medium">
                     {flashSaleProducts.length > 0 ? 'Diskon Terbatas!' : 'Nantikan Flash Sale Kami Selanjutnya'}
                   </p>
                 </div>
@@ -539,7 +541,10 @@ const HomePage: React.FC<HomePageProps> = ({
             {categories.map((category) => (
               <button
                 key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
+                onClick={() => {
+                  setSelectedCategory(category.id);
+                  setActiveTab(category.id === 'all' ? 'all' : 'terbaru'); // Sync tab dengan kategori
+                }}
                 className={`flex-shrink-0 flex items-center space-x-2 px-4 py-2 rounded-full transition-colors ${
                   selectedCategory === category.id
                     ? 'bg-pink-500 text-white'

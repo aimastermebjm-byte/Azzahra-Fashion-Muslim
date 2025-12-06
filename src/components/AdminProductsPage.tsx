@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import PageHeader from './PageHeader';
 import { Product } from '../types';
-import { useFirebaseProductsAdmin } from '../hooks/useFirebaseProductsAdmin';
+import { useGlobalProducts } from '../hooks/useGlobalProducts';
+import { useProductCRUD } from '../hooks/useProductCRUD';
 import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
 import { ProductTableSkeleton, FlashSaleStatusSkeleton, MenuSkeleton } from './LoadingSkeleton';
 import { uploadMultipleImages, validateImageFile, generateImageName } from '../utils/imageUpload';
+import { forceSyncAllProducts } from '../services/globalIndexSync';
 
 interface AdminProductsPageProps {
   onBack: () => void;
@@ -20,15 +23,20 @@ interface FlashSaleConfig {
 }
 
 const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) => {
-  const { products, loading, updateProduct } = useFirebaseProductsAdmin();
+  // Use global products context instead of local CRUD
+  const { allProducts, loading, error } = useGlobalProducts();
 
-  // TODO: Implement add/delete functions for batch system
-  const addProduct = () => {
-    alert('Add product feature temporarily disabled for batch system migration');
-  };
-  const deleteProduct = () => {
-    alert('Delete product feature temporarily disabled for batch system migration');
-  };
+  // Use product CRUD functions for product management
+  const { addProduct, updateProduct, deleteProduct } = useProductCRUD();
+
+  // Log current state for debugging
+  React.useEffect(() => {
+    console.log('🔍 AdminProductsPage: Current products count:', allProducts?.length || 0);
+    console.log('🔍 AdminProductsPage: Current loading state:', loading);
+    console.log('🔍 AdminProductsPage: Current error state:', error);
+  }, [allProducts, loading, error]);
+
+  const products = allProducts || [];
 
   // 🔥 UNIFIED FLASH SALE: Single source of truth
   const {
@@ -107,6 +115,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     productIds: []
   });
 
+  const [isForceSyncing, setIsForceSyncing] = useState(false);
+  const [forceSyncMessage, setForceSyncMessage] = useState<string | null>(null);
+
   // Categories
   const categories = ['Hijab', 'Gamis', 'Khimar', 'Tunik', 'Jaket', 'Bawahan', 'Aksesoris', 'Lainnya'];
 
@@ -122,7 +133,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           ...formData.variants.stock,
           [newSize]: formData.variants.colors.reduce((acc, color) => ({
             ...acc,
-            [color]: '' // Empty string instead of 0
+            [color]: 0 // Stock must be number, not string
           }), {} as any)
         }
       }
@@ -160,7 +171,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
             ...acc,
             [size]: {
               ...existingStock,
-              [newColor]: '' // Empty string instead of 0
+              [newColor]: 0 // Stock must be number,not string
             }
           };
         }, {} as Record<string, Record<string, string>>)
@@ -351,17 +362,23 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       const newProduct = {
         ...formData,
         images: allImageUrls,
+        image: allImageUrls[0] || '/placeholder-product.jpg', // Add required image field
         // Convert string fields to numbers, preserving original values
-        retailPrice: parseInt(formData.retailPrice) || 0,
-        resellerPrice: parseInt(formData.resellerPrice) || 0,
-        costPrice: parseInt(formData.costPrice) || 0,
-        weight: parseInt(formData.weight) || 0,
+        retailPrice: parseInt(formData.retailPrice || '0') || 0,
+        resellerPrice: parseInt(formData.resellerPrice || '0') || 0,
+        costPrice: parseInt(formData.costPrice || '0') || 0,
+        purchasePrice: parseInt(formData.costPrice || '0') || 0, // Required field
+        price: parseInt(formData.retailPrice || '0') || 0, // Required field (same as retailPrice)
+        originalRetailPrice: parseInt(formData.retailPrice || '0') || 0, // Required field
+        originalResellerPrice: parseInt(formData.resellerPrice || '0') || 0, // Required field
+        weight: parseInt(formData.weight || '0') || 0,
         stock: totalStock, // Use calculated total stock from variants
+        unit: 'pcs', // Required field - default to pcs
         // IMPORTANT: Preserve all variants data exactly as entered
         variants: {
-          sizes: formData.variants.sizes,
-          colors: formData.variants.colors,
-          stock: formData.variants.stock
+          sizes: Array.isArray(formData.variants?.sizes) ? formData.variants.sizes : [],
+          colors: Array.isArray(formData.variants?.colors) ? formData.variants.colors : [],
+          stock: (typeof formData.variants?.stock === 'object' && formData.variants.stock !== null) ? formData.variants.stock : {}
         },
         // Preserve status exactly as selected in form
         status: formData.status,
@@ -369,7 +386,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         salesCount: 0,
         isFeatured: false,
         isFlashSale: false,
-        flashSalePrice: parseInt(formData.retailPrice) || 0
+        flashSalePrice: parseInt(formData.retailPrice) || 0,
+        // Optional fields with defaults
+        condition: 'baru',
+        featured: false,
+        discount: 0,
+        reviews: 0,
+        rating: 0
       };
 
       // Important: Log to verify data being saved to Firestore
@@ -379,10 +402,21 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         colors: newProduct.variants.colors,
         status: newProduct.status,
         weight: newProduct.weight,
-        images: allImageUrls.length
+        unit: newProduct.unit,
+        images: allImageUrls,
+        imagesCount: allImageUrls.length,
+        price: newProduct.price,
+        retailPrice: newProduct.retailPrice,
+        resellerPrice: newProduct.resellerPrice,
+        costPrice: newProduct.costPrice,
+        purchasePrice: newProduct.purchasePrice,
+        originalRetailPrice: newProduct.originalRetailPrice,
+        originalResellerPrice: newProduct.originalResellerPrice
       });
 
+      console.log('🚀 About to call addProduct with data:', newProduct);
       await addProduct(newProduct);
+      console.log('✅ addProduct completed successfully');
 
       // Reset form
       setFormData({
@@ -534,6 +568,57 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     } catch (error) {
       console.error('Error updating products:', error);
       alert('Gagal memperbarui produk');
+    }
+  };
+
+  const handleAddToActiveFlashSale = async () => {
+    if (!isFlashSaleActive || !flashSaleConfig) {
+      alert('Tidak ada sesi Flash Sale aktif.');
+      return;
+    }
+
+    if (selectedProducts.length === 0) {
+      alert('Pilih produk terlebih dahulu.');
+      return;
+    }
+
+    if (!confirm(`Tambahkan ${selectedProducts.length} produk terpilih ke Flash Sale yang sedang berjalan?`)) {
+      return;
+    }
+
+    try {
+      // Kita menggunakan durasi SISA waktu agar sesuai dengan timer yang berjalan
+      // Atau menggunakan timer endTime asli dari config
+      const endTime = new Date(flashSaleConfig.endTime);
+      const now = new Date();
+      const remainingMinutes = Math.max(1, Math.floor((endTime.getTime() - now.getTime()) / (60 * 1000)));
+
+      // Gabungkan produk yang sudah ada di flash sale + produk baru
+      const existingFlashSaleIds = products.filter(p => p.isFlashSale).map(p => p.id);
+      // Gunakan Set untuk hindari duplikat
+      const allProductIds = Array.from(new Set([...existingFlashSaleIds, ...selectedProducts]));
+
+      console.log('🔥 Menambahkan produk ke sesi aktif:');
+      console.log('- Existing:', existingFlashSaleIds.length);
+      console.log('- Adding:', selectedProducts.length);
+      console.log('- Total:', allProductIds.length);
+
+      // Panggil startUnifiedFlashSale dengan ID gabungan
+      // Ini akan mengupdate produk yang baru dipilih menjadi flash sale
+      // dan memperpanjang/mempertahankan status produk lama
+      await startUnifiedFlashSale(
+        remainingMinutes,
+        '⚡ Flash Sale',
+        'Diskon spesial terbatas!',
+        flashSaleConfig.discountPercentage,
+        allProductIds
+      );
+
+      setSelectedProducts([]);
+      alert(`✅ Berhasil menambahkan ${selectedProducts.length} produk ke Flash Sale aktif!`);
+    } catch (error) {
+      console.error('Error adding to active flash sale:', error);
+      alert('Gagal menambahkan produk: ' + (error as Error).message);
     }
   };
 
@@ -709,75 +794,144 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     }
   };
 
+  const handleForceSyncGlobalIndex = async () => {
+    if (isForceSyncing) {
+      return;
+    }
+
+    setIsForceSyncing(true);
+    try {
+      const syncedCount = await forceSyncAllProducts();
+      const message = `Force sync selesai: ${syncedCount} produk tersinkron ke globalindex.`;
+      setForceSyncMessage(message);
+      console.log('✅ FORCE SYNC GLOBALINDEX:', message);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan tidak diketahui';
+      setForceSyncMessage(`Force sync gagal: ${errorMessage}`);
+      console.error('❌ Force sync globalindex gagal:', error);
+    } finally {
+      setIsForceSyncing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4">
-        <div className="flex items-center space-x-3">
+      <PageHeader
+        title="Kelola Produk"
+        subtitle="Monitor stok, kelola varian, dan optimalkan katalog dengan cepat"
+        onBack={onBack}
+        variant="gradient"
+        actions={user?.role === 'admin' && (
           <button
-            onClick={onBack}
-            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            onClick={handleForceSyncGlobalIndex}
+            disabled={isForceSyncing}
+            className={`rounded-full px-4 py-2 text-sm font-semibold text-brand-primary transition ${
+              isForceSyncing ? 'bg-white/50 cursor-not-allowed' : 'bg-white text-brand-primary'
+            }`}
           >
-            <ArrowLeft className="w-5 h-5" />
+            {isForceSyncing ? 'Syncing…' : 'Force Sync GlobalIndex'}
           </button>
-          <h1 className="text-xl font-bold">Kelola Produk</h1>
+        )}
+      >
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
+            <p className="text-xs uppercase tracking-wider text-white/70">Total Produk</p>
+            <p className="mt-2 text-2xl font-bold">{products.length}</p>
+            <p className="text-xs text-white/70">Semua kategori</p>
+          </div>
+          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
+            <p className="text-xs uppercase tracking-wider text-white/70">Stok Tersedia</p>
+            <p className="mt-2 text-2xl font-bold">
+              {products.reduce((total, product) => total + product.stock, 0)}
+            </p>
+            <p className="text-xs text-white/70">Unit siap kirim</p>
+          </div>
+          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
+            <p className="text-xs uppercase tracking-wider text-white/70">Kategori Aktif</p>
+            <p className="mt-2 text-2xl font-bold">{categories.length}</p>
+            <p className="text-xs text-white/70">Sedang ditampilkan</p>
+          </div>
+          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
+            <p className="text-xs uppercase tracking-wider text-white/70">Produk Unggulan</p>
+            <p className="mt-2 text-2xl font-bold">{products.filter(p => p.isFeatured).length}</p>
+            <p className="text-xs text-white/70">Sedang dipromosikan</p>
+          </div>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Content */}
       <div className="p-4 space-y-4">
-        {/* Product Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-blue-800 mb-1">Total Produk</h4>
-            <p className="text-2xl font-bold text-blue-600">{products.length}</p>
-          </div>
-          <div className="bg-green-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-green-800 mb-1">Stok Tersedia</h4>
-            <p className="text-2xl font-bold text-green-600">
-              {products.reduce((total, product) => total + product.stock, 0)}
-            </p>
-          </div>
-          <div className="bg-purple-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-purple-800 mb-1">Kategori</h4>
-            <p className="text-2xl font-bold text-purple-600">{categories.length}</p>
-          </div>
-          <div className="bg-orange-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-orange-800 mb-1">Produk Unggulan</h4>
-            <p className="text-2xl font-bold text-orange-600">
-              {products.filter(p => p.isFeatured).length}
-            </p>
-          </div>
-        </div>
 
-        {/* Flash Sale Status */}
-        {isFlashSaleActive && (
-          <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg shadow-sm p-4 border border-red-200">
+        {user?.role === 'admin' && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-yellow-800">🔧 Debug Sync GlobalIndex</h3>
+            <p className="mt-1 text-xs text-yellow-700">
+              Gunakan tombol "Force Sync GlobalIndex" di header untuk memastikan katalog publik tetap sinkron.
+            </p>
+            {forceSyncMessage && (
+              <p
+                className={`text-xs mt-2 ${
+                  forceSyncMessage.includes('gagal') ? 'text-red-600' : 'text-green-700'
+                }`}
+              >
+                {forceSyncMessage}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Flash Sale Widget - Replaces hidden menu */}
+        {isFlashSaleActive ? (
+          <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg shadow-sm p-4 border border-red-200 mb-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Flame className="w-5 h-5 text-red-600" />
-                <span className="font-semibold text-red-800">Flash Sale Aktif</span>
-              </div>
               <div className="flex items-center space-x-3">
+                <div className="p-2 bg-red-100 rounded-full">
+                  <Flame className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-red-800 text-lg">Flash Sale Sedang Berlangsung</h3>
+                  <p className="text-sm text-red-600">
+                    Diskon {flashSaleConfig?.discountPercentage}% untuk {products.filter(p => p.isFlashSale).length} produk
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
                 {timeLeft && (
-                  <div className="flex items-center space-x-1 bg-red-600 text-white px-3 py-1 rounded-full text-sm">
-                    <Clock className="w-4 h-4" />
-                    <span className="font-medium">
-                      {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
-                    </span>
+                  <div className="text-center px-4 py-2 bg-white rounded-lg shadow-sm border border-red-100">
+                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Sisa Waktu</p>
+                    <div className="flex items-center space-x-1 text-xl font-mono font-bold text-red-600">
+                      <Clock className="w-5 h-5 mr-1" />
+                      <span>
+                        {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
+                      </span>
+                    </div>
                   </div>
                 )}
                 <button
                   onClick={handleFlashSaleEnd}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm"
+                  className="bg-white text-red-600 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium shadow-sm"
                 >
-                  Stop Flash Sale
+                  Stop Sesi Ini
                 </button>
               </div>
             </div>
-            <p className="text-sm text-red-700 mt-2">
-              {products.filter(p => p.isFlashSale).length} produk dengan diskon Rp {flashSaleConfig?.discountPercentage?.toLocaleString('id-ID') || 0}
-            </p>
+          </div>
+        ) : (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm p-4 border border-blue-200 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 rounded-full">
+                  <Clock className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-blue-800 text-lg">Siap Mulai Flash Sale?</h3>
+                  <p className="text-sm text-blue-600">
+                    Pilih produk di tabel bawah, lalu klik "Set Flash Sale" untuk memulai.
+                  </p>
+                </div>
+              </div>
+              {/* No button here, guided action via table selection */}
+            </div>
           </div>
         )}
 
@@ -833,13 +987,14 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               </div>
             </button>
 
-            {/* Produk Unggulan */}
+            {/* Produk Unggulan - REMOVED (Now via Table Bulk Action) */}
+            {/* 
             <button
               onClick={() => {
                 const featuredProducts = products.filter(p => p.isFeatured);
                 if (featuredProducts.length > 0) {
                   setSelectedProducts(featuredProducts.map(p => p.id));
-                  setBatchFormData({ ...batchFormData, isFeatured: undefined }); // undefined untuk biarkan admin pilih
+                  setBatchFormData({ ...batchFormData, isFeatured: undefined }); 
                   setShowBatchModal(true);
                 } else {
                   alert('Belum ada produk unggulan. Pilih produk terlebih dahulu dari daftar produk.');
@@ -853,8 +1008,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 <p className="text-sm opacity-90">Kelola produk unggulan ({products.filter(p => p.isFeatured).length})</p>
               </div>
             </button>
+            */}
 
-            {/* Flash Sale */}
+            {/* Flash Sale - REMOVED (Now via Table Bulk Action) */}
+            {/*
             <button
               onClick={() => setShowFlashSaleModal(true)}
               className="bg-red-600 text-white p-4 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-3"
@@ -865,6 +1022,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 <p className="text-sm opacity-90">Atur diskon flash sale ({products.filter(p => p.isFlashSale).length})</p>
               </div>
             </button>
+            */}
           </div>
         </div>
 
@@ -918,6 +1076,58 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               {/* Batch Actions */}
               {selectedProducts.length > 0 && (
                 <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      // Jika flash sale sedang aktif, masukkan produk ke sesi aktif
+                      // Jika tidak aktif, buka modal setting baru
+                      if (isFlashSaleActive) {
+                        // Langsung update produk
+                        setFlashSaleFormData({
+                          ...flashSaleFormData,
+                          productIds: selectedProducts
+                        });
+                        // Panggil startUnifiedFlashSale dengan config yang sedang berjalan (extend ke produk baru)
+                        // ... logic akan dihandle di fungsi khusus
+                        handleAddToActiveFlashSale();
+                      } else {
+                        // Buka modal setting baru
+                        setFlashSaleFormData({
+                          ...flashSaleFormData,
+                          productIds: selectedProducts
+                        });
+                        setShowFlashSaleModal(true);
+                      }
+                    }}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                  >
+                    <Flame className="w-4 h-4" />
+                    <span>Set Flash Sale ({selectedProducts.length})</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setBatchFormData({ ...batchFormData, isFeatured: true });
+                      // Langsung eksekusi update untuk UX yang lebih cepat, atau buka modal konfirmasi?
+                      // Untuk konsistensi dengan Flash Sale, kita buka modal tapi khusus untuk konfirmasi
+                      // Tapi batch modal yang ada sekarang (Edit Massal) terlalu kompleks.
+                      // Kita buat simple confirm saja untuk Toggle Unggulan.
+                      if (confirm(`Tandai ${selectedProducts.length} produk sebagai Produk Unggulan?`)) {
+                        const updateFeatured = async () => {
+                          for (const pid of selectedProducts) {
+                            await updateProduct(pid, { isFeatured: true });
+                          }
+                          alert('✅ Berhasil menandai produk unggulan!');
+                          setSelectedProducts([]);
+                        };
+                        updateFeatured();
+                      }
+                    }}
+                    className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors flex items-center space-x-2"
+                  >
+                    <Star className="w-4 h-4" />
+                    <span>Set Unggulan</span>
+                  </button>
+
                   <button
                     onClick={() => setShowBatchModal(true)}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
@@ -987,8 +1197,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     </tr>
                   </thead>
                   <tbody>
-                    {currentProducts.map((product) => (
-                      <tr key={product.id} className="border-b hover:bg-gray-50">
+                    {currentProducts.map((product, index) => (
+                      <tr key={`${product.id}_${index}`} className="border-b hover:bg-gray-50">
                         <td className="p-3">
                           <input
                             type="checkbox"
@@ -2244,54 +2454,34 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Product Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Pilih Produk untuk Flash Sale
-                </label>
-                <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                  {products.filter(p => !p.isFlashSale).map((product) => (
-                    <label key={product.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={flashSaleFormData.productIds.includes(product.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFlashSaleFormData({
-                              ...flashSaleFormData,
-                              productIds: [...flashSaleFormData.productIds, product.id]
-                            });
-                          } else {
-                            setFlashSaleFormData({
-                              ...flashSaleFormData,
-                              productIds: flashSaleFormData.productIds.filter(id => id !== product.id)
-                            });
-                          }
-                        }}
-                        className="rounded border-gray-300 text-red-600 focus:ring-red-500"
-                      />
-                      <div className="flex items-center space-x-3 flex-1">
-                        {product.images.length > 0 ? (
-                          <img
-                            src={product.image || product.images[0] || '/placeholder-product.jpg'}
-                            alt={product.name}
-                            className="w-8 h-8 object-cover rounded"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                            <Package className="w-4 h-4 text-gray-400" />
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{product.name}</p>
-                          <p className="text-xs text-gray-500">Rp {product.retailPrice.toLocaleString('id-ID')}</p>
-                        </div>
-                      </div>
-                    </label>
-                  ))}
+              {/* Product Selection Info (Replacing selector) */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-sm text-blue-800">
+                <div className="flex items-center gap-2 mb-3 border-b border-blue-200 pb-2">
+                  <Star className="w-4 h-4 text-blue-600" />
+                  <span className="font-semibold">Konfirmasi Produk Terpilih: {flashSaleFormData.productIds.length} item</span>
                 </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  {flashSaleFormData.productIds.length} produk dipilih
+                
+                {/* List of selected products ONLY */}
+                <div className="max-h-40 overflow-y-auto pr-2 space-y-2">
+                  {products
+                    .filter(p => flashSaleFormData.productIds.includes(p.id))
+                    .map(p => (
+                      <div key={p.id} className="flex justify-between items-center text-xs bg-white p-2 rounded border border-blue-100 shadow-sm">
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          {p.images.length > 0 && (
+                            <img src={p.image || p.images[0]} alt="" className="w-6 h-6 object-cover rounded" />
+                          )}
+                          <span className="truncate font-medium">{p.name}</span>
+                        </div>
+                        <span className="font-mono text-blue-700 whitespace-nowrap ml-2">
+                          Rp {p.retailPrice.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    ))
+                  }
+                </div>
+                <p className="text-xs opacity-70 mt-2 italic">
+                  * Produk ini akan didaftarkan ke sesi Flash Sale baru.
                 </p>
               </div>
 

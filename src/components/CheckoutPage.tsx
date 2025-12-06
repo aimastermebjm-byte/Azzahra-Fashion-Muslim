@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, Phone, User, Package, Copy, Loader2, AlertCircle, Plus, Edit2, Trash2 } from 'lucide-react';
+import { MapPin, Phone, User, Package, Copy, Loader2, AlertCircle, Plus, Edit2, Trash2 } from 'lucide-react';
 import { addressService } from '../services/addressService';
 import AddressForm from './AddressForm';
 import { komerceService, KomerceCostResult } from '../utils/komerceService';
 import { cartServiceOptimized } from '../services/cartServiceOptimized';
+import PageHeader from './PageHeader';
+import EmptyState from './ui/EmptyState';
+import { CardSkeleton, ListSkeleton } from './ui/Skeleton';
+import { useToast } from './ToastProvider';
+import { financialService, PaymentMethod } from '../services/financialService';
 
 interface CheckoutPageProps {
   user: any;
@@ -18,6 +23,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 }) => {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(true);
 
   // Load cart from backend
   const loadCart = async () => {
@@ -68,19 +76,50 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   };
 
+  useEffect(() => {
+    loadAddresses();
+  }, [user]);
+
   // Set up real-time address listener
   useEffect(() => {
     const unsubscribe = addressService.onAddressesChange((userAddresses) => {
       setAddresses(userAddresses);
+      setAddressesLoading(false);
       });
 
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    const loadPaymentMethods = async () => {
+      try {
+        const methods = await financialService.listPaymentMethods();
+        if (!active) return;
+        setPaymentMethods(methods);
+        if (methods.length > 0) {
+          setFormData(prev => prev.paymentMethodId ? prev : { ...prev, paymentMethodId: methods[0].id });
+        }
+      } catch (error) {
+        console.error('Failed to load payment methods for checkout:', error);
+      } finally {
+        if (active) {
+          setPaymentMethodsLoading(false);
+        }
+      }
+    };
+
+    loadPaymentMethods();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const addAddress = async (addressData: any) => {
     try {
       const newAddress = await addressService.saveAddress(addressData);
-      } catch (error) {
+      return newAddress;
+    } catch (error) {
       console.error('Failed to add address:', error);
       throw error;
     }
@@ -89,7 +128,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const updateAddress = async (id: string, updateData: any) => {
     try {
       const updatedAddress = await addressService.updateAddress(id, updateData);
-      } catch (error) {
+      return updatedAddress;
+    } catch (error) {
       console.error('Failed to update address:', error);
       throw error;
     }
@@ -106,6 +146,37 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   const getDefaultAddress = () => {
     return addresses.find(addr => addr.isDefault) || addresses[0];
+  };
+
+  const getActiveAddress = () => {
+    if (selectedAddressId) {
+      return addresses.find(addr => addr.id === selectedAddressId) || null;
+    }
+    return getDefaultAddress() || null;
+  };
+
+  const buildDestinationCandidates = (address?: any) => {
+    const candidates: { id: string; label: string }[] = [];
+
+    const normalizeId = (value?: string | number | null) => {
+      if (!value && value !== 0) return '';
+      return String(value).trim();
+    };
+
+    const subdistrictId = normalizeId(address?.subdistrictId);
+    const districtId = normalizeId(address?.districtId);
+
+    if (subdistrictId) {
+      candidates.push({ id: subdistrictId, label: 'Kelurahan/Desa' });
+    }
+    if (districtId) {
+      candidates.push({ id: districtId, label: 'Kecamatan' });
+    }
+
+    // Deduplicate by destination id
+    return candidates.filter(
+      (candidate, index, self) => candidate.id && self.findIndex(item => item.id === candidate.id) === index
+    );
   };
 
   // Komerce states
@@ -131,151 +202,157 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   
   // Calculate shipping cost using RajaOngkir with localStorage cache PRIORITY - 0 reads for cached results
-  const calculateShippingCost = async (courierCode: string, destinationCityId: string, weight: number) => {
-    if (!courierCode || !destinationCityId || !weight) {
+  const calculateShippingCost = async (
+    courierCode: string,
+    destinationCandidates: { id: string; label: string }[],
+    weight: number
+  ) => {
+    if (!courierCode || !destinationCandidates?.length || !weight) {
       return;
     }
 
-    // Validate destinationCityId
-    if (!destinationCityId || destinationCityId === 'undefined' || destinationCityId === '') {
-      destinationCityId = '607'; // Banjarmasin fallback
+    const cleanedCandidates = destinationCandidates
+      .map(candidate => ({ ...candidate, id: candidate.id?.toString().trim() || '' }))
+      .filter(candidate => candidate.id && candidate.id !== 'undefined');
+
+    if (!cleanedCandidates.length) {
+      setShippingError('Alamat belum lengkap. Mohon pilih kecamatan/kelurahan terlebih dahulu.');
+      setFormData(prev => ({
+        ...prev,
+        shippingCost: 0,
+        shippingService: '',
+        shippingETD: ''
+      }));
+      setShippingCost(0);
+      return;
     }
 
-    try {
-      setLoadingShipping(true);
-      setShippingError('');
+    const optimizedWeight = courierCode === 'jnt' && cartItems.length > 1 ? Math.max(weight, 1000) : weight;
+    const callRajaOngkirDirectAPI = async (
+      destinationId: string
+    ): Promise<KomerceCostResult[]> => {
+      const response = await fetch('/api/rajaongkir/cost', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          origin: '2425', // Banjarmasin city ID
+          destination: destinationId,
+          weight: optimizedWeight,
+          courier: courierCode,
+          price: 'lowest'
+        })
+      });
 
-      // Special handling for J&T with multiple items
-      const optimizedWeight = courierCode === 'jnt' && cartItems.length > 1 ? Math.max(weight, 1000) : weight;
+      if (!response.ok) {
+        throw new Error(`RajaOngkir API Error: ${response.status}`);
+      }
 
-      // 🔥 DIRECT RAJAONGKIR API - Bypass Firestore cache
-      const callRajaOngkirDirectAPI = async (
-        courierCode: string,
-        destinationCityId: string,
-        weight: number
-      ): Promise<any[]> => {
-        try {
-
-          // Gunakan Vercel proxy (sama seperti di vite.config.ts) untuk CORS compliance
-          const response = await fetch('/api/rajaongkir/cost', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              origin: '2425', // Banjarmasin city ID
-              destination: destinationCityId,
-              weight: weight,
-              courier: courierCode,
-              price: 'lowest'
-            })
-          });
-
-          if (!response.ok) {
-            throw new Error(`RajaOngkir API Error: ${response.status}`);
-          }
-
-          const data = await response.json();
-
-          if (data.rajaongkir.status.code === 200) {
-            return data.rajaongkir.results[0].costs.map((cost: any) => ({
-              name: data.rajaongkir.results[0].name,
-              code: courierCode,
-              service: cost.service,
-              description: cost.description,
-              cost: cost.cost[0].value,
-              etd: cost.cost[0].etd
-            }));
-          } else {
-            throw new Error(data.rajaongkir.status.description);
-          }
-        } catch (error) {
-          console.error('❌ Direct RajaOngkir API Error:', error);
-          throw error;
+      const data = await response.json();
+      if (data.meta && data.meta.status === 'success' && data.meta.code === 200) {
+        if (!data.data || data.data.length === 0) {
+          throw new Error('No shipping services available for this destination');
         }
-      };
 
-      // 🔥 LOCALSTORAGE CACHE PRIORITY: Check cache first (0 reads!)
-      const cacheKey = `ongkos_${courierCode}_${destinationCityId}_${optimizedWeight}`;
-      const cachedData = localStorage.getItem(cacheKey);
+        return data.data.map((service: any) => ({
+          name: service.courier_name || courierCode.toUpperCase(),
+          code: courierCode,
+          service: service.service,
+          description: service.service_name || service.description,
+          cost: service.price || service.cost,
+          etd: service.etd || '1-2 days'
+        }));
+      }
 
-      if (cachedData) {
-        try {
-          const { data, timestamp } = JSON.parse(cachedData);
-          const now = Date.now();
+      const errorMessage = data.meta?.message || data.rajaongkir?.status?.description || 'Unknown API error';
+      throw new Error(errorMessage);
+    };
 
-          // Cache valid for 30 days
-          if (now - timestamp < 30 * 24 * 60 * 60 * 1000) {
-            console.log(`🚀 ONGKIR CACHE HIT: ${courierCode} → ${destinationCityId} (${optimizedWeight}g) - 0 reads!`);
+    const applyShippingResult = (
+      results: KomerceCostResult[],
+      cacheKey: string,
+      destinationId: string,
+      destinationLabel: string,
+      shouldPersistCache: boolean
+    ) => {
+      if (!results.length) return false;
 
-            if (data && data.length > 0) {
-              setOngkirResults(data);
-              const cheapestService = data[0];
-              setSelectedService(cheapestService);
-              setFormData(prev => ({
-                ...prev,
-                shippingCost: cheapestService.cost
-              }));
-              setShippingCost(cheapestService.cost);
-              setLoadingShipping(false);
-              return; // 🎯 SKIP API call - 0 reads achieved!
+      setOngkirResults(results);
+      const cheapestService = results[0];
+      setSelectedService(cheapestService);
+
+      if (shouldPersistCache) {
+        localStorage.setItem(cacheKey, JSON.stringify({ data: results, timestamp: Date.now() }));
+        console.log(`💾 ONGKIR CACHE SAVED: ${courierCode} → ${destinationId} (${optimizedWeight}g)`);
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        shippingCost: cheapestService.cost,
+        shippingService: cheapestService.service,
+        shippingETD: cheapestService.etd
+      }));
+      setShippingCost(cheapestService.cost);
+      console.log(`✅ Ongkir ${courierCode} pakai ${destinationLabel} (${destinationId})`);
+      return true;
+    };
+
+    setLoadingShipping(true);
+    setShippingError('');
+
+    let lastError: unknown = null;
+    let resolved = false;
+
+    try {
+      for (const candidate of cleanedCandidates) {
+        const cacheKey = `ongkos_${courierCode}_${candidate.id}_${optimizedWeight}`;
+        const cachedData = localStorage.getItem(cacheKey);
+
+        if (cachedData) {
+          try {
+            const { data, timestamp } = JSON.parse(cachedData);
+            const now = Date.now();
+
+            if (now - timestamp < 30 * 24 * 60 * 60 * 1000 && data?.length) {
+              console.log(`🚀 ONGKIR CACHE HIT: ${courierCode} → ${candidate.id} (${optimizedWeight}g)`);
+              resolved = applyShippingResult(data, cacheKey, candidate.id, candidate.label, false);
+              if (resolved) break;
+            } else if (now - timestamp >= 30 * 24 * 60 * 60 * 1000) {
+              localStorage.removeItem(cacheKey);
             }
-          } else {
-            console.log('⏰ Cache expired, removing...');
+          } catch (parseError) {
+            console.error('❌ Error parsing ongkir cache:', parseError);
             localStorage.removeItem(cacheKey);
           }
-        } catch (parseError) {
-          console.error('❌ Error parsing cache:', parseError);
-          localStorage.removeItem(cacheKey);
+        }
+
+        try {
+          console.log(`📡 ONGKIR FETCH: ${courierCode} (${candidate.label}) → ${candidate.id}`);
+          const results = await callRajaOngkirDirectAPI(candidate.id);
+          resolved = applyShippingResult(results, cacheKey, candidate.id, candidate.label, true);
+          if (resolved) {
+            break;
+          }
+        } catch (error) {
+          lastError = error;
+          console.warn(`⚠️ Ongkir gagal (${candidate.label}):`, error);
         }
       }
 
-      console.log(`📡 ONGKIR CACHE MISS: Direct RajaOngkir API call...`);
-
-      // Direct API call bypass Firestore cache (0 reads!)
-      const results = await callRajaOngkirDirectAPI(courierCode, destinationCityId, optimizedWeight);
-
-      if (results && results.length > 0) {
-        // Komerce returns multiple services! Let user choose
-        // Store all results and auto-select cheapest service by default
-        setOngkirResults(results);
-        const cheapestService = results[0];
-        setSelectedService(cheapestService);
-
-        // 🔥 SAVE TO LOCALSTORAGE: Cache for future use (next checkout = 0 reads)
-        const cacheKey = `ongkos_${courierCode}_${destinationCityId}_${optimizedWeight}`;
-        const cacheData = {
-          data: results,
-          timestamp: Date.now()
-        };
-        localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-        console.log(`💾 ONGKIR CACHE SAVED: ${courierCode} → ${destinationCityId} (${optimizedWeight}g) - 30 days!`);
-
+      if (!resolved) {
+        console.error('❌ Tidak ada kurir yang menjangkau tujuan ini', lastError);
+        setShippingError('Tujuan tidak terjangkau untuk kurir ini. Coba ganti kurir atau alamat.');
         setFormData(prev => ({
           ...prev,
-          shippingCost: cheapestService.cost,
-          shippingService: cheapestService.service,
-          shippingETD: cheapestService.etd
+          shippingCost: 0,
+          shippingService: '',
+          shippingETD: ''
         }));
-        setShippingCost(cheapestService.cost);
-
-        } else {
-        setShippingError('Tidak dapat menghitung ongkir untuk kurir ini');
-        }
-    } catch (error) {
-      console.error('Error calculating shipping cost:', error);
-      setShippingError('Gagal menghitung ongkir. Silakan coba lagi.');
-      // NO FALLBACK - Show error to user
+        setShippingCost(0);
+      }
     } finally {
       setLoadingShipping(false);
+      setTimeout(() => setLoadingShipping(false), 120);
     }
-
-    // Fast timeout to prevent loading state from stuck too long
-    const loadingTimeout = setTimeout(() => {
-      setLoadingShipping(false);
-    }, 100); // Ultra-fast timeout fallback
-
-    return () => clearTimeout(loadingTimeout);
   };
 
   const [formData, setFormData] = useState({
@@ -287,7 +364,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     isDropship: false,
     dropshipName: '',
     dropshipPhone: '',
-    paymentMethod: 'transfer',
+    paymentMethodId: '',
     shippingCourier: 'jnt',
     shippingCost: 0,
     shippingService: '',
@@ -304,6 +381,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     { id: 'lion', name: 'Lion Parcel', code: 'lion', price: 0 }, // Automatic via Komerce
     { id: 'idexpress', name: 'IDExpress', code: 'ide', price: 0 } // Automatic via Komerce
   ];
+
+  const selectedPaymentMethod = paymentMethods.find(method => method.id === formData.paymentMethodId);
 
   // Auto-select default courier and address when component mounts
   useEffect(() => {
@@ -332,7 +411,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   // 🔥 CRITICAL FIX: Trigger shipping calculation AFTER addresses are fully loaded
   useEffect(() => {
-    const defaultAddr = getDefaultAddress();
+    const defaultAddr = getActiveAddress();
     const autoCourier = shippingOptions.find(opt => opt.code);
 
     console.log('🔍 AUTO-CALC DEBUG:', {
@@ -362,40 +441,20 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         return;
       }
 
-      // Get destination ID
-      let destinationId = defaultAddr.subdistrictId;
-      if (!destinationId && defaultAddr.district) {
-        try {
-          const cacheKey = 'ongkir_subdistricts';
-          const cacheData = localStorage.getItem(cacheKey);
-          if (cacheData) {
-            const subdistricts = JSON.parse(cacheData);
-            const subdistrict = subdistricts.find((sub: any) =>
-              sub.subdistrict_name?.toLowerCase() === defaultAddr.district?.toLowerCase()
-            );
-            if (subdistrict) {
-              destinationId = subdistrict.subdistrict_id.toString();
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error getting subdistrict from cache:', error);
-        }
-      }
-
-      destinationId = destinationId || defaultAddr.cityId || '607';
+      const destinationCandidates = buildDestinationCandidates(defaultAddr);
 
       // Trigger calculation with longer delay to ensure UI is updated
       setTimeout(() => {
-        if (autoCourier.code && destinationId) {
-          calculateShippingCost(autoCourier.code, destinationId, weight);
+        if (autoCourier.code) {
+          calculateShippingCost(autoCourier.code, destinationCandidates, weight);
         }
       }, 500); // Longer delay to ensure address UI is fully loaded
     }
-  }, [formData.shippingCourier, addresses, cartItems]); // Also trigger when cart items load with valid weight
+  }, [formData.shippingCourier, addresses, cartItems, selectedAddressId]); // Also trigger when cart items load with valid weight
 
   // Optimized shipping calculation - SINGLE useEffect for both courier and address changes
   useEffect(() => {
-    const defaultAddr = getDefaultAddress();
+    const defaultAddr = getActiveAddress();
     const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
 
     console.log('🔍 SHIPPING DEBUG:', {
@@ -415,38 +474,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     // Only calculate if we have both courier and address
     if (selectedCourier?.code && defaultAddr && formData.shippingCourier) {
       const weight = calculateTotalWeight();
-
-      // 🗺️ LOOKUP subdistrictId from localStorage cache if not available (0 reads)
-      let destinationId = defaultAddr.subdistrictId;
-
-      if (!destinationId && defaultAddr.district) {
-        // Fast localStorage lookup - no async needed
-        try {
-          const cacheKey = 'ongkir_subdistricts';
-          const cacheData = localStorage.getItem(cacheKey);
-
-          if (cacheData) {
-            const subdistricts = JSON.parse(cacheData);
-            const subdistrict = subdistricts.find((sub: any) =>
-              sub.subdistrict_name?.toLowerCase() === defaultAddr.district?.toLowerCase()
-            );
-
-            if (subdistrict) {
-              destinationId = subdistrict.subdistrict_id.toString();
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error getting subdistrict from localStorage cache:', error);
-        }
-      }
-
-      // Final fallback
-      destinationId = destinationId || defaultAddr.cityId || '607';
+      const destinationCandidates = buildDestinationCandidates(defaultAddr);
 
       // IMMEDIATE calculation - NO DELAY
-      calculateShippingCost(selectedCourier.code, destinationId, weight);
+      calculateShippingCost(selectedCourier.code, destinationCandidates, weight);
     }
-  }, [formData.shippingCourier, selectedAddressId]); // Single effect for both changes
+  }, [formData.shippingCourier, selectedAddressId, addresses]); // Single effect for both changes
 
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -486,7 +519,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   useEffect(() => {
-    const defaultAddr = getDefaultAddress();
+    const defaultAddr = getActiveAddress();
     if (defaultAddr) {
       setSelectedAddressId(defaultAddr.id);
       setFormData(prev => ({
@@ -506,20 +539,40 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         ...prev,
         name: formData.isDropship ? prev.name : address.name,
         phone: formData.isDropship ? prev.phone : address.phone,
-        address: formData.isDropship ? prev.address : address.fullAddress
+        address: formData.isDropship ? prev.address : address.fullAddress,
+        provinceId: address.provinceId || prev.provinceId,
+        cityId: address.cityId || prev.cityId,
+        shippingCost: 0,
+        shippingService: '',
+        shippingETD: ''
       }));
+      setOngkirResults([]);
+      setSelectedService(null);
       // NOTE: Shipping calculation is handled by useEffect - no manual calculation needed
     }
   };
 
-  const handleSaveAddress = (addressData: any) => {
-    if (editingAddress) {
-      updateAddress(editingAddress.id, addressData);
-    } else {
-      addAddress(addressData);
+  const handleSaveAddress = async (addressData: any) => {
+    try {
+      if (editingAddress) {
+        await updateAddress(editingAddress.id, addressData);
+        setSelectedAddressId(editingAddress.id);
+      } else {
+        const created = await addAddress(addressData);
+        if (created?.id) {
+          setSelectedAddressId(created.id);
+        }
+      }
+      setShowAddressModal(false);
+      setEditingAddress(null);
+    } catch (error) {
+      console.error('Failed to save address:', error);
+      showToast({
+        type: 'danger',
+        title: 'Gagal menyimpan alamat',
+        message: 'Periksa koneksi dan coba lagi.'
+      });
     }
-    setShowAddressModal(false);
-    setEditingAddress(null);
   };
 
   const handleDeleteAddress = (id: string) => {
@@ -536,12 +589,20 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   const handleCopyAccount = (accountNumber: string, bankName: string) => {
     navigator.clipboard.writeText(accountNumber);
-    alert(`✅ Nomor rekening ${bankName} berhasil disalin!\n\n${accountNumber}\na.n. Fahrin`);
+    showToast({
+      type: 'success',
+      title: 'Nomor rekening disalin',
+      message: `${bankName} ${accountNumber} siap ditempel.`
+    });
   };
 
   const handleSubmitOrder = () => {
     if (!formData.name || !formData.phone || !formData.address) {
-      alert('Mohon lengkapi semua data pengiriman');
+      showToast({
+        type: 'warning',
+        title: 'Data belum lengkap',
+        message: 'Lengkapi nama, telepon, dan alamat penerima.'
+      });
       return;
     }
 
@@ -550,12 +611,29 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     // Check if selected courier has valid shipping cost
     if (supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {
-      alert('Mohon tunggu perhitungan ongkir selesai atau pilih kurir lain');
+      showToast({
+        type: 'warning',
+        title: 'Ongkir belum siap',
+        message: 'Tunggu perhitungan ongkir selesai atau pilih kurir lain.'
+      });
       return;
     }
 
     if (!supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {
-      alert('Mohon masukkan biaya ongkos kirim untuk kurir lokal');
+      showToast({
+        type: 'warning',
+        title: 'Isi biaya ongkir',
+        message: 'Masukkan biaya ongkos kirim untuk kurir lokal.'
+      });
+      return;
+    }
+
+    if (!selectedPaymentMethod) {
+      showToast({
+        type: 'warning',
+        title: 'Metode pembayaran belum siap',
+        message: 'Hubungi admin untuk menambahkan metode pembayaran.'
+      });
       return;
     }
 
@@ -580,10 +658,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         shippingService: formData.shippingService,
         shippingETD: formData.shippingETD
       },
-      paymentMethod: formData.paymentMethod,
+      paymentMethod: selectedPaymentMethod.name,
       notes: formData.notes,
+      paymentMethodId: selectedPaymentMethod.id,
+      paymentMethodName: selectedPaymentMethod.name,
       totalAmount: totalPrice,
-      shippingCost: shippingCost,
+      shippingCost: shippingFee,
       finalTotal: finalTotal
     };
 
@@ -591,41 +671,69 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     const newOrderId = clearCart(orderData, cartItems);
 
     // Show success message with instructions for payment
-    if (formData.paymentMethod === 'transfer') {
-      alert(`🎉 Pesanan berhasil dibuat!\n\nID Pesanan: ${newOrderId}\nTotal: Rp ${finalTotal.toLocaleString('id-ID')}\n\nSilakan transfer ke:\n• BCA: 0511456494\n• BRI: 066301000115566\n• MANDIRI: 310011008896\n\na.n. Fahrin\n\nKemudian upload bukti pembayaran di menu "Pesanan"`);
-    } else {
-      alert(`🎉 Pesanan berhasil dibuat!\n\nID Pesanan: ${newOrderId}\nTotal: Rp ${finalTotal.toLocaleString('id-ID')}\n\nPembayaran Cash on Delivery (COD)\nBarang akan dikirim setelah konfirmasi.`);
-    }
+    showToast({
+      type: 'success',
+      title: 'Pesanan berhasil dibuat',
+      message: `ID Pesanan ${newOrderId} siap diproses. Cek detail di menu Pesanan.`
+    });
 
     // Redirect to home
     onBack();
   };
 
   const totalPrice = getTotalPrice();
-  const currentShippingCost = formData.shippingCost || 0;
-  const finalTotal = totalPrice + currentShippingCost;
+  const shippingFee = formData.shippingCost || shippingCost || 0;
+  const finalTotal = totalPrice + shippingFee;
+  const cartCount = cartItems?.length || 0;
 
   // Check if selected courier supports automatic shipping calculation
   const selectedCourierOption = shippingOptions.find(opt => opt.id === formData.shippingCourier);
   const supportsAutomatic = !!selectedCourierOption?.code;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="flex items-center p-4">
-          <button onClick={onBack} className="mr-4">
-            <ArrowLeft className="w-6 h-6 text-gray-600" />
-          </button>
-          <h1 className="text-lg font-semibold">Checkout</h1>
-        </div>
-      </div>
+    <div className="min-h-screen bg-brand-surface pb-16">
+      <PageHeader
+        title="Checkout"
+        subtitle={cartCount > 0 ? `${cartCount} produk siap dikirim` : 'Review detail pesanan sebelum konfirmasi pembayaran'}
+        onBack={onBack}
+        variant="card"
+        actions={(
+          <div className="text-right">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Total sementara</p>
+            <p className="text-2xl font-bold text-brand-primary">Rp {finalTotal.toLocaleString('id-ID')}</p>
+          </div>
+        )}
+      />
 
-      <div className="p-4 space-y-4">
+      <div className="mx-auto max-w-6xl px-4 pb-16">
+        {loading ? (
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)]">
+            <CardSkeleton lines={6} />
+            <CardSkeleton lines={4} />
+          </div>
+        ) : (
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)]">
+          <div className="space-y-6">
         {/* Order Items */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="font-semibold mb-3">Produk Pesanan</h3>
-          <div className="space-y-3">
-            {cartItems.map((item, index) => {
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-900">Produk Pesanan</h3>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{cartCount} produk</span>
+          </div>
+          <div className="mt-4 space-y-3">
+            {cartCount === 0 ? (
+              <EmptyState
+                compact
+                title="Belum ada produk"
+                description="Silakan kembali ke katalog untuk menambahkan produk ke keranjang."
+                action={(
+                  <button onClick={onBack} className="btn-brand">
+                    Kembali Belanja
+                  </button>
+                )}
+              />
+            ) : (
+            cartItems.map((item, index) => {
               // Safety checks
               if (!item) return null;
 
@@ -637,35 +745,36 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               const productId = item.productId || item.id || `product-${index}`;
 
               return (
-                <div key={`${productId}-${variant.size || 'default'}-${variant.color || 'default'}`} className="flex space-x-3">
+                <div key={`${productId}-${variant.size || 'default'}-${variant.color || 'default'}`} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white/70 p-3">
                   <img
                     src={itemImage}
                     alt={itemName}
-                    className="w-16 h-16 object-cover rounded-lg"
+                    className="h-16 w-16 rounded-lg object-cover shadow-sm"
                   />
                   <div className="flex-1">
-                    <h4 className="font-medium text-sm">{itemName}</h4>
+                    <h4 className="text-sm font-semibold text-slate-900">{itemName}</h4>
                     {variant && (variant.size || variant.color) && (
-                      <p className="text-xs text-gray-500">
-                        {variant.size || 'Standard'} - {variant.color || 'Default'}
+                      <p className="text-xs text-slate-500">
+                        {variant.size || 'Standard'} · {variant.color || 'Default'}
                       </p>
                     )}
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="text-sm font-semibold text-pink-600">
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="text-sm font-semibold text-brand-primary">
                         Rp {itemPrice.toLocaleString('id-ID')}
                       </span>
-                      <span className="text-sm text-gray-500">x{itemQuantity}</span>
+                      <span className="text-xs text-slate-500">x{itemQuantity}</span>
                     </div>
                   </div>
                 </div>
               );
-            }).filter(Boolean)}
+            }).filter(Boolean)
+            )}
           </div>
         </div>
 
         {/* Customer Information */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="font-semibold mb-3">Informasi Penerima</h3>
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">Informasi Penerima</h3>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -677,7 +786,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
                 placeholder="Masukkan nama penerima"
               />
             </div>
@@ -692,7 +801,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
                 placeholder="Masukkan nomor telepon"
               />
             </div>
@@ -700,19 +809,19 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         </div>
 
         {/* Courier Selection - MOVED TO TOP */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="font-semibold mb-3">Pilih Kurir Pengiriman</h3>
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">Pilih Kurir Pengiriman</h3>
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Package className="w-4 h-4 inline mr-1" />
+              <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <Package className="h-4 w-4 text-brand-primary" />
                 Kurir
               </label>
               <select
                 name="shippingCourier"
                 value={formData.shippingCourier}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
               >
                 {shippingOptions.map((option) => (
                   <option key={option.id} value={option.id}>
@@ -722,7 +831,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </select>
 
               {/* Courier Info */}
-              <div className="mt-2 text-xs text-gray-500">
+              <div className="mt-2 text-xs text-slate-500">
                 {supportsAutomatic ? (
                   <div className="text-green-600">
                     ✓ Otomatis via RajaOngkir dari Banjarmasin
@@ -736,24 +845,24 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
               {/* Loading indicator */}
               {loadingShipping && (
-                <div className="mt-2 flex items-center text-sm text-blue-600">
-                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                <div className="mt-2 flex items-center text-sm text-brand-primary">
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                   Menghitung ongkir...
                 </div>
               )}
 
               {/* Error message */}
               {shippingError && (
-                <div className="mt-2 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
+                <div className="mt-2 flex items-center text-sm text-red-600">
+                  <AlertCircle className="mr-1 h-4 w-4" />
                   {shippingError}
                 </div>
               )}
             </div>
 
             {/* Shipping Cost Display */}
-            {formData.shippingCost > 0 && (
-              <div className="bg-gray-50 p-3 rounded-lg">
+            {shippingFee > 0 && (
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 {/* Service Selection Dropdown */}
                 {ongkirResults.length > 1 && (
                   <div className="mb-3">
@@ -774,7 +883,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           }));
                         }
                       }}
-                      className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                      className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-transparent"
                     >
                       {ongkirResults.map((service, index) => (
                         <option key={index} value={service.service}>
@@ -786,29 +895,29 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 )}
 
                 {/* Weight Information */}
-                <div className="bg-blue-50 rounded-lg p-3 mb-3">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="font-medium text-blue-800">Berat Produk:</span>
-                    <span className="text-blue-600 font-semibold">
+                <div className="mb-3 rounded-xl bg-brand-primary/5 p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-brand-primary">Berat Produk:</span>
+                    <span className="font-semibold text-brand-primary">
                       {(calculateTotalWeight() / 1000).toFixed(2)} kg
                     </span>
                   </div>
-                  <div className="text-xs text-blue-600 mt-1">
+                  <div className="mt-1 text-xs text-brand-primary">
                     💡 Smart rounding: 0-1.25kg = 1kg, 1.251-2.25kg = 2kg, dst.
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">Biaya Ongkir:</span>
-                  <span className="text-sm font-semibold text-pink-600">
-                    Rp {formData.shippingCost.toLocaleString('id-ID')}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-slate-700">Biaya Ongkir:</span>
+                  <span className="text-sm font-semibold text-brand-primary">
+                    Rp {shippingFee.toLocaleString('id-ID')}
                   </span>
                 </div>
                 {formData.shippingService && (
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="mt-1 text-xs text-slate-500">
                     Service: {formData.shippingService} | Estimasi: {formData.shippingETD}
                     {ongkirResults.length > 1 && (
-                      <span className="ml-2 text-blue-600">
+                      <span className="ml-2 text-brand-primary">
                         ({ongkirResults.length} layanan tersedia)
                       </span>
                     )}
@@ -820,33 +929,38 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         </div>
 
         {/* Address Input */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="font-semibold">Alamat Pengiriman</h3>
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-900">Alamat Pengiriman</h3>
             <button
-              onClick={() => setShowAddressModal(true)}
-              className="text-pink-600 hover:text-pink-700 flex items-center text-sm font-medium"
+              onClick={() => {
+                setEditingAddress(null);
+                setShowAddressModal(true);
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-brand-primary/30 px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/5"
             >
-              <Plus className="w-4 h-4 mr-1" />
+              <Plus className="h-4 w-4" />
               Tambah Alamat
             </button>
           </div>
 
           {/* Address Selection */}
-          {addresses.length > 0 && (
-            <div className="space-y-2 mb-4">
+          {addressesLoading ? (
+            <ListSkeleton items={3} />
+          ) : addresses.length > 0 ? (
+            <div className="mb-4 space-y-2">
               {addresses.map((address) => (
                 <label
                   key={address.id}
-                  className={`block p-3 border rounded-lg cursor-pointer transition-colors ${
+                  className={`block rounded-2xl border p-3 transition ${
                     selectedAddressId === address.id
-                      ? 'border-pink-500 bg-pink-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
+                      : 'border-slate-200 hover:border-brand-primary/40'
                   }`}
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center mb-1">
+                      <div className="flex items-center gap-2">
                         <input
                           type="radio"
                           name="savedAddress"
@@ -861,41 +975,41 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                               provinceId: address.provinceId || '',
                               cityId: address.cityId || ''
                             }));
-
-                            // NOTE: Shipping calculation is handled by useEffect - no manual calculation needed
                           }}
-                          className="w-4 h-4 text-pink-600 mr-2"
+                          className="h-4 w-4 text-brand-primary"
                         />
-                        <span className="font-medium">{address.name}</span>
+                        <span className="text-sm font-semibold text-slate-900">{address.name}</span>
                         {address.isDefault && (
-                          <span className="ml-2 text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
                             Utama
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 ml-6">{address.phone}</p>
-                      <p className="text-sm text-gray-600 ml-6">{address.fullAddress}</p>
+                      <p className="ml-6 text-xs text-slate-500">{address.phone}</p>
+                      <p className="ml-6 text-sm text-slate-600">{address.fullAddress}</p>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex items-center gap-2">
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingAddress(address);
                           setShowAddressModal(true);
                         }}
-                        className="text-blue-600 hover:text-blue-700"
+                        className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:text-brand-primary"
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="h-4 w-4" />
                       </button>
                       {addresses.length > 1 && (
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteAddress(address.id);
                           }}
-                          className="text-red-600 hover:text-red-700"
+                          className="rounded-full border border-slate-200 p-2 text-rose-500 transition hover:bg-rose-50"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       )}
                     </div>
@@ -903,38 +1017,43 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 </label>
               ))}
             </div>
+          ) : (
+            <EmptyState
+              title="Belum ada alamat"
+              description="Tambahkan alamat pengiriman untuk mempercepat proses checkout."
+              action={(
+                <button onClick={() => setShowAddressModal(true)} className="btn-brand">
+                  Tambah Alamat Baru
+                </button>
+              )}
+            />
           )}
 
-          {/* New Address Input */}
-          <div className="border-t pt-4">
-            {/* Address input removed - users must select from saved addresses */}
-
-            {/* Manual shipping cost input for non-automatic couriers */}
-            {!supportsAutomatic && (
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Biaya Ongkos Kirim (Rp)
-                </label>
-                <input
-                  type="number"
-                  name="shippingCost"
-                  value={formData.shippingCost || ''}
-                  onChange={handleInputChange}
-                  min="0"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="Masukkan biaya ongkos kirim"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  * Masukkan manual biaya ongkos kirim untuk kurir lokal
-                </p>
-              </div>
-            )}
-          </div>
+          {/* Manual shipping cost input for non-automatic couriers */}
+          {!supportsAutomatic && (
+            <div className="mt-4 border-t border-dashed border-slate-200 pt-4">
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Biaya Ongkos Kirim (Rp)
+              </label>
+              <input
+                type="number"
+                name="shippingCost"
+                value={formData.shippingCost || ''}
+                onChange={handleInputChange}
+                min="0"
+                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                placeholder="Masukkan biaya ongkos kirim"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                * Masukkan manual biaya ongkos kirim untuk kurir lokal
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Additional Options */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="font-semibold mb-3">Opsi Tambahan</h3>
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">Opsi Tambahan</h3>
 
           {/* Dropship Option */}
           <div className="mb-4">
@@ -944,9 +1063,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 name="isDropship"
                 checked={formData.isDropship}
                 onChange={handleInputChange}
-                className="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
+                className="h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
               />
-              <span className="text-sm font-medium text-gray-700">Kirim sebagai dropship</span>
+              <span className="text-sm font-medium text-slate-700">Kirim sebagai dropship</span>
             </label>
           </div>
 
@@ -958,7 +1077,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 name="dropshipName"
                 value={formData.dropshipName}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
                 placeholder="Nama pengirim dropship"
               />
               <input
@@ -966,7 +1085,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 name="dropshipPhone"
                 value={formData.dropshipPhone}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
                 placeholder="Nomor telepon pengirim"
               />
             </div>
@@ -982,108 +1101,136 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               value={formData.notes}
               onChange={handleInputChange}
               rows={3}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
               placeholder="Tambahkan catatan untuk pesanan (opsional)"
             />
           </div>
         </div>
 
         {/* Payment Method */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="font-semibold mb-3">Metode Pembayaran</h3>
-          <div className="space-y-3">
-            <label className="flex items-center space-x-3">
-              <input
-                type="radio"
-                name="paymentMethod"
-                value="transfer"
-                checked={formData.paymentMethod === 'transfer'}
-                onChange={handleInputChange}
-                className="w-4 h-4 text-pink-600 border-gray-300 focus:ring-pink-500"
-              />
-              <span className="text-sm font-medium">Transfer Bank</span>
-            </label>
-            <label className="flex items-center space-x-3">
-              <input
-                type="radio"
-                name="paymentMethod"
-                value="cod"
-                checked={formData.paymentMethod === 'cod'}
-                onChange={handleInputChange}
-                className="w-4 h-4 text-pink-600 border-gray-300 focus:ring-pink-500"
-              />
-              <span className="text-sm font-medium">COD (Bayar di Tempat)</span>
-            </label>
-          </div>
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">Metode Pembayaran</h3>
+          {paymentMethodsLoading ? (
+            <div className="space-y-2">
+              {[...Array(2)].map((_, idx) => (
+                <div key={idx} className="h-12 rounded-xl bg-slate-100 animate-pulse" />
+              ))}
+            </div>
+          ) : paymentMethods.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-4 text-sm text-amber-700">
+              Metode pembayaran belum dikonfigurasi. Silakan hubungi admin agar dapat melanjutkan checkout.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {paymentMethods.map((method) => (
+                <label key={method.id} className={`flex items-center gap-3 rounded-xl border px-3 py-2 transition ${formData.paymentMethodId === method.id ? 'border-brand-primary bg-brand-primary/5' : 'border-slate-200 bg-white'}`}>
+                  <input
+                    type="radio"
+                    name="paymentMethodId"
+                    value={method.id}
+                    checked={formData.paymentMethodId === method.id}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 border-slate-300 text-brand-primary focus:ring-brand-primary"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{method.name}</p>
+                    <p className="text-xs text-slate-500">Metode pembayaran toko</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
 
-          {formData.paymentMethod === 'transfer' && (
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium text-gray-700 mb-2">Transfer ke:</p>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center">
+          {selectedPaymentMethod && selectedPaymentMethod.name.toLowerCase().includes('transfer') && (
+            <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <p className="text-sm font-semibold text-slate-800">Transfer ke:</p>
+              <div className="mt-3 space-y-2 text-sm text-slate-700">
+                <div className="flex items-center justify-between">
                   <span>BCA: 0511456494</span>
                   <button
                     onClick={() => handleCopyAccount('0511456494', 'BCA')}
-                    className="text-blue-600 hover:text-blue-700 text-xs"
+                    className="text-xs font-semibold text-brand-primary hover:text-brand-primary/80"
                   >
-                    <Copy className="w-3 h-3 inline mr-1" />
+                    <Copy className="mr-1 inline h-3 w-3" />
                     Salin
                   </button>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <span>BRI: 066301000115566</span>
                   <button
                     onClick={() => handleCopyAccount('066301000115566', 'BRI')}
-                    className="text-blue-600 hover:text-blue-700 text-xs"
+                    className="text-xs font-semibold text-brand-primary hover:text-brand-primary/80"
                   >
-                    <Copy className="w-3 h-3 inline mr-1" />
+                    <Copy className="mr-1 inline h-3 w-3" />
                     Salin
                   </button>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <span>MANDIRI: 310011008896</span>
                   <button
                     onClick={() => handleCopyAccount('310011008896', 'MANDIRI')}
-                    className="text-blue-600 hover:text-blue-700 text-xs"
+                    className="text-xs font-semibold text-brand-primary hover:text-brand-primary/80"
                   >
-                    <Copy className="w-3 h-3 inline mr-1" />
+                    <Copy className="mr-1 inline h-3 w-3" />
                     Salin
                   </button>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">a.n. Fahrin</p>
+              <p className="mt-2 text-xs text-slate-500">a.n. Fahrin</p>
             </div>
           )}
         </div>
 
-        {/* Order Summary */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="font-semibold mb-3">Ringkasan Pesanan</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Subtotal Produk</span>
-              <span className="text-sm font-medium">Rp {totalPrice.toLocaleString('id-ID')}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Biaya Ongkir</span>
-              <span className="text-sm font-medium">Rp {shippingCost.toLocaleString('id-ID')}</span>
-            </div>
-            <div className="border-t pt-2">
-              <div className="flex justify-between">
-                <span className="font-semibold">Total</span>
-                <span className="font-semibold text-pink-600">Rp {finalTotal.toLocaleString('id-ID')}</span>
+          </div>
+          <div className="space-y-6">
+            {/* Order Summary */}
+            <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-lg lg:sticky lg:top-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Total Pembayaran</p>
+                  <p className="text-2xl font-bold text-brand-primary">Rp {finalTotal.toLocaleString('id-ID')}</p>
+                </div>
+                <div className="rounded-full bg-brand-primary/10 px-3 py-1 text-xs font-semibold text-brand-primary">
+                  {selectedPaymentMethod?.name || 'Metode belum dipilih'}
+                </div>
               </div>
+              <div className="mt-4 space-y-3 text-sm">
+                <div className="flex items-center justify-between text-slate-600">
+                  <span>Subtotal Produk</span>
+                  <span className="font-semibold text-slate-900">Rp {totalPrice.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-600">
+                  <span>Biaya Ongkir</span>
+                  <span className="font-semibold text-slate-900">Rp {shippingFee.toLocaleString('id-ID')}</span>
+                </div>
+                {formData.shippingService && (
+                  <div className="text-xs text-slate-500">
+                    Kurir: {formData.shippingCourier?.toUpperCase()} · {formData.shippingService} ({formData.shippingETD || 'estimasi cepat'})
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={handleSubmitOrder}
+                className="btn-brand mt-6 w-full text-center"
+              >
+                Buat Pesanan
+              </button>
+              <p className="mt-3 text-center text-xs text-slate-500">
+                Dengan melanjutkan, kamu menyetujui syarat & ketentuan Azzahra Fashion Muslim.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-dashed border-brand-primary/30 bg-brand-primary/5 p-4 text-sm text-slate-600">
+              <h4 className="text-base font-semibold text-brand-primary">Tips Checkout</h4>
+              <ul className="mt-3 space-y-2 list-disc pl-4">
+                <li>Pastikan alamat lengkap beserta RT/RW dan patokan lokasi.</li>
+                <li>Untuk dropship, isi nama & nomor pengirim agar tercetak di resi.</li>
+                <li>Upload bukti transfer di menu Pesanan setelah pembayaran.</li>
+              </ul>
             </div>
           </div>
         </div>
-
-        {/* Submit Button */}
-        <button
-          onClick={handleSubmitOrder}
-          className="w-full bg-pink-600 text-white py-4 rounded-lg font-semibold hover:bg-pink-700 transition-colors shadow-lg"
-        >
-          Buat Pesanan
-        </button>
+        )}
       </div>
 
       {/* Address Modal */}

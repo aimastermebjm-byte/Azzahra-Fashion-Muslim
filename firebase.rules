@@ -1,108 +1,118 @@
 rules_version = '2';
 
-service firebase.storage {
-  match /b/{bucket}/o {
-    // Allow read access to all authenticated users for payment proofs
-    match /payment-proofs/{orderId}/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid != null;
-    }
-
-    // Allow read/write access for product images (for migration and app usage)
-    match /products/{productId}/{allPaths=**} {
-      allow read: if true; // Public read access for product images
-      allow write: if true; // Temporary open access for migration
-    }
-
-    // Allow general read access for public files (if needed in future)
-    match /public/{allPaths=**} {
-      allow read: if true;
-    }
-  }
-}
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    // TEMPORARY: Allow open access to products for development
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdminOrOwner() {
+      return isSignedIn() && (
+        (request.auth.token.role in ['admin', 'owner']) ||
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'owner'])
+      );
+    }
+
+    function isOwner() {
+      return isSignedIn() && (
+        request.auth.token.role == 'owner' ||
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'owner')
+      );
+    }
+
+    // Allow read access to transactions for reporting (public read for production)
+    // Allow write only for authenticated users
+    match /transactions/{transactionId} {
+      allow read: if true; // Public read for reporting system
+      allow write, create: if request.auth != null;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // Allow read/write access to products for authenticated users
     match /products/{productId} {
-      allow read, write: if true; // Temporary fix
+      allow read: if true; // Public read for reporting system
+      allow write: if request.auth != null;
     }
 
-    // 🔥 NEW: Allow access to productBatches for batch system
-    match /productBatches/{batchId} {
-      allow read: if true; // Public read access for all users
-      allow write: if true; // Temporary open access for batch setup
-    }
-
-    // Allow read/write access to orders for authenticated users and admins
+    // Allow read access to orders for reporting (public read for production)
+    // Allow write only for authenticated users
     match /orders/{orderId} {
-      // Users can access their own orders
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-
-      // Admins and owners can access all orders - check user role in users collection
-      allow read, write, delete: if request.auth != null &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'owner']);
+      allow read: if true; // Public read for reporting system
+      allow write, create: if request.auth != null;
+      allow read, write, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
-    // Allow read/write access to user profiles for the user themselves
+    // Allow read/write access to user profiles
+    // - User can read/write dirinya sendiri
+    // - Admin/owner dapat membaca & menulis semua user
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      // Allow admin service account to read/write user data for management
-      allow read, write: if request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'owner'];
-      // Allow self-creation for cache management auto-setup
-      allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.role == 'owner';
+      allow read, write: if isSelf(userId) || isAdminOrOwner();
     }
 
-    // Allow read/write access to user addresses for the user themselves
-    match /user_addresses/{addressId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-    }
-
-    // Allow read/write access to user carts for authenticated users
-    match /user_carts/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // Allow read/write access to categories for authenticated users
+    // Allow read access to categories for authenticated users
     match /categories/{categoryId} {
-      allow read: if request.auth != null;
+      allow read: if true; // Public read for reporting system
       allow write: if request.auth != null && request.auth.uid != null;
     }
 
     // Allow read/write access to flash sales for authenticated users
     match /flashSales/{flashSaleId} {
-      allow read, write: if true; // Temporary fix
+      allow read: if true; // Public read for reporting system
+      allow write: if request.auth != null;
     }
 
-    // Allow read/write access to flash sale config (singular collection name)
+    // Allow read/write access to flash sale config for authenticated users
     match /flashSale/{documentId} {
-      allow read, write: if true; // Public access for flash sale system
+      allow read: if true; // Public read for reporting system
+      allow write: if request.auth != null && request.auth.uid != null;
     }
 
-    // Allow read/write access to shipping cache for cost optimization
-    match /shipping_cache/{cacheId} {
-      allow read, write: if true; // Allow public access for caching system
+    // Allow read/write access to batches for authenticated users
+    match /productBatches/{batchId} {
+      allow read: if true; // Public read for reporting system
+      allow write: if request.auth != null;
     }
 
-    // Allow read/write access to address cache for dropdown optimization
-    match /address_provinces/{cacheId} {
-      allow read, write: if true; // Allow public access for caching system
-    }
-    match /address_cities/{cacheId} {
-      allow read, write: if true; // Allow public access for caching system
-    }
-    match /address_districts/{cacheId} {
-      allow read, write: if true; // Allow public access for caching system
-    }
-    match /address_subdistricts/{cacheId} {
-      allow read, write: if true; // Allow public access for caching system
+    // Allow read/write access to global index for authenticated users
+    match /globalindex/{productId} {
+      allow read: if true; // Public read for reporting system
+      allow write: if request.auth != null;
+      allow delete: if request.auth != null;
     }
 
-    // Allow read/write access to settings for cache configuration
-    match /settings/{settingId} {
-      allow read, write: if true; // Allow public access for settings management
+    // Allow read/write access to user carts for authenticated users
+    match /user_carts/{userId} {
+      allow read: if true; // Public read for reporting system
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Allow read/write access to user addresses for authenticated users
+    match /user_addresses/{addressId} {
+      allow read: if true; // Public read for reporting system
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // Financial categories
+    match /financial_categories/{categoryId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // Financial payment methods
+    match /financial_payment_methods/{methodId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // Financial entries
+    match /financial_entries/{entryId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
     }
   }
 }

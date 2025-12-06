@@ -48,7 +48,10 @@
       "Bash(nul)",
       "Bash(move:*)",
       "Bash(git rm:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(firebase firestore:collection:*)",
+      "Bash(git clean:*)"
     ],
     "deny": [],
     "ask": []

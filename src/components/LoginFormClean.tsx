@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, X, UserPlus, Crown, User, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, X, UserPlus, Crown, User } from 'lucide-react';
 // import { useSupabaseAuthSimple } from '../hooks/useSupabaseAuthSimple';
 // import CustomerRegistration from './CustomerRegistration';
 // import OwnerAdminRegistration from './OwnerAdminRegistration';
@@ -102,7 +102,7 @@ const LoginFormClean: React.FC<LoginFormProps> = ({ onSuccess, onClose }) => {
         </button>
 
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-brand-gradient rounded-full flex items-center justify-center mx-auto mb-4">
             <User className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Login</h2>
@@ -119,7 +119,7 @@ const LoginFormClean: React.FC<LoginFormProps> = ({ onSuccess, onClose }) => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-3 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full pl-10 pr-3 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-brand-accent"
                 placeholder="nama@gmail.com"
                 required
               />
@@ -135,7 +135,7 @@ const LoginFormClean: React.FC<LoginFormProps> = ({ onSuccess, onClose }) => {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full pl-10 pr-10 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-brand-accent"
                 placeholder="Masukkan password"
                 required
               />
@@ -160,7 +160,7 @@ const LoginFormClean: React.FC<LoginFormProps> = ({ onSuccess, onClose }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all"
+            className="w-full btn-brand disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <div className="flex items-center justify-center">
@@ -182,7 +182,7 @@ const LoginFormClean: React.FC<LoginFormProps> = ({ onSuccess, onClose }) => {
           {/* Customer Registration Button */}
           <button
             onClick={() => setShowCustomerRegistration(true)}
-            className="w-full bg-gradient-to-r from-green-500 to-blue-600 text-white py-3 px-4 rounded-lg hover:from-green-600 hover:to-blue-700 font-semibold transition-all flex items-center justify-center space-x-2"
+            className="w-full btn-brand-outline flex items-center justify-center space-x-2"
           >
             <UserPlus className="w-5 h-5" />
             <span>Registrasi Customer</span>
@@ -191,7 +191,7 @@ const LoginFormClean: React.FC<LoginFormProps> = ({ onSuccess, onClose }) => {
           {/* Owner/Admin Registration Button */}
           <button
             onClick={() => setShowOwnerRegistration(true)}
-            className="w-full bg-gradient-to-r from-red-500 to-orange-500 text-white py-3 px-4 rounded-lg hover:from-red-600 hover:to-orange-600 font-semibold transition-all flex items-center justify-center space-x-2"
+            className="w-full bg-brand-accent text-white py-3 px-4 rounded-xl hover:bg-brand-accent/90 font-semibold transition-all flex items-center justify-center space-x-2"
           >
             <Crown className="w-5 h-5" />
             <span>Registrasi Owner/Admin</span>

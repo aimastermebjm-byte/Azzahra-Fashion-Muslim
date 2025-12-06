@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { auth } from '../utils/firebaseClient';
-import { collection, query, onSnapshot, orderBy, where } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, limit } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { ordersService } from '../services/ordersService';
 import { Order } from './useFirebaseOrders';
@@ -25,21 +25,18 @@ export const useFirebaseAdminOrders = () => {
         }
 
   
-        // Set up real-time listener for ALL orders (admin)
+        // Set up real-time listener for orders (admin)
+        // Optimization: Limit to 50 latest orders for dashboard view
+        // User can use specific search/filter tools to find older orders (which should use direct queries)
         const ordersRef = collection(db, 'orders');
         const q = query(
           ordersRef,
-          orderBy('timestamp', 'desc')
-        );
-
-        // Mobile-optimized query with limit for faster initial load
-        const mobileOptimizedQuery = query(
-          ordersRef,
-          orderBy('timestamp', 'desc')
+          orderBy('timestamp', 'desc'),
+          limit(50)
         );
 
         unsubscribe = onSnapshot(
-          mobileOptimizedQuery,
+          q,
           (querySnapshot) => {
   
             const loadedOrders: Order[] = [];
@@ -66,7 +63,8 @@ export const useFirebaseAdminOrders = () => {
             // Fallback to ordersService
             setInitialLoad(false);
             try {
-              const fallbackOrders = await ordersService.getAllOrders();
+              // Try fetching limited batch manually if realtime fails
+              const fallbackOrders = await ordersService.getAllOrders(); // Ideally this should also be limited
               setOrders(fallbackOrders);
               setError(null);
             } catch (fallbackError) {

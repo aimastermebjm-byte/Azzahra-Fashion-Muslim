@@ -3,6 +3,7 @@ import { AdminProvider } from './contexts/AdminContext';
 // import { FlashSaleProvider } from './contexts/FlashSaleContext'; // DISABLED - Emergency fix
 import { GlobalProductsProvider } from './hooks/useGlobalProducts';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ToastProvider } from './components/ToastProvider';
 
 // Cache busting version - force browser refresh
 const APP_VERSION = '2.1.0';
@@ -20,6 +21,8 @@ import AdminProductsPage from './components/AdminProductsPage';
 import AdminOrdersPage from './components/AdminOrdersPage';
 import AdminReportsPage from './components/AdminReportsPage';
 import AdminUsersPage from './components/AdminUsersPage';
+import AdminFinancialPage from './components/AdminFinancialPage';
+import AdminMasterDataPage from './components/AdminMasterDataPage';
 import AdminCacheManagement from './components/AdminCacheManagement';
 import BottomNavigation from './components/BottomNavigation';
 import { OngkirTestPage } from './pages/OngkirTestPage';
@@ -30,8 +33,9 @@ import { cartServiceOptimized } from './services/cartServiceOptimized';
 import { ordersService } from './services/ordersService';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from './utils/firebaseClient';
+import './utils/forceSyncGlobalIndex'; // Load force sync function to window
 
-type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'admin-cache' | 'ongkir-test';
+type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'admin-cache' | 'admin-financials' | 'admin-master' | 'ongkir-test';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -355,7 +359,9 @@ function AppContent() {
           total: item.total || 0
         })),
         shippingInfo: orderData.shippingInfo,
-        paymentMethod: orderData.paymentMethod,
+        paymentMethod: orderData.paymentMethodName || orderData.paymentMethod || '',
+        paymentMethodId: orderData.paymentMethodId || null,
+        paymentMethodName: orderData.paymentMethodName || orderData.paymentMethod || '',
         status: 'pending' as const,
         totalAmount: calculatedSubtotal,
         shippingCost: calculatedShippingCost,
@@ -429,6 +435,14 @@ function AppContent() {
     setCurrentPage('admin-cache');
   };
 
+  const handleNavigateToAdminFinancials = () => {
+    setCurrentPage('admin-financials');
+  };
+
+  const handleNavigateToAdminMaster = () => {
+    setCurrentPage('admin-master');
+  };
+
   
   
   const renderCurrentPage = () => {
@@ -479,6 +493,8 @@ function AppContent() {
             onNavigateToAdminReports={handleNavigateToAdminReports}
             onNavigateToAdminUsers={handleNavigateToAdminUsers}
             onNavigateToAdminCache={handleNavigateToAdminCache}
+            onNavigateToAdminFinancials={handleNavigateToAdminFinancials}
+            onNavigateToAdminMaster={handleNavigateToAdminMaster}
             onNavigateToAddressManagement={() => setCurrentPage('address-management')}
           />
         );
@@ -506,6 +522,10 @@ function AppContent() {
         return <AdminUsersPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-cache':
         return <AdminCacheManagement onBack={() => setCurrentPage('account')} user={user} />;
+      case 'admin-financials':
+        return <AdminFinancialPage onBack={() => setCurrentPage('account')} user={user} />;
+      case 'admin-master':
+        return <AdminMasterDataPage onBack={() => setCurrentPage('account')} user={user} />;
         case 'ongkir-test':
         return <OngkirTestPage onBack={() => setCurrentPage('home')} />;
         case 'product-detail':
@@ -558,7 +578,7 @@ function AppContent() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-brand-surface text-slate-900">
         {renderCurrentPage()}
         {!showLogin && !currentPage.startsWith('admin-') && (
           <BottomNavigation currentPage={currentPage} onPageChange={setCurrentPage} />
@@ -592,9 +612,11 @@ function App() {
   return (
     <AdminProvider>
       <GlobalProductsProvider>
-        {/* <FlashSaleProvider> - DISABLED Emergency fix untuk infinite loop */}
-        <AppContent />
-        {/* </FlashSaleProvider> */}
+        <ToastProvider>
+          {/* <FlashSaleProvider> - DISABLED Emergency fix untuk infinite loop */}
+          <AppContent />
+          {/* </FlashSaleProvider> */}
+        </ToastProvider>
       </GlobalProductsProvider>
     </AdminProvider>
   );

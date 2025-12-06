@@ -4,5 +4,13 @@
   },
   "storage": {
     "rules": "firebase.rules"
+  },
+  "functions": {
+    "hello": {
+      "source": "index.js",
+      "codebase": "nodejs18",
+      "runtime": "nodejs18",
+      "remoteSource": "index.js"
+    }
   }
 }

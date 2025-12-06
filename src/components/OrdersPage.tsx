@@ -148,6 +148,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
           filteredUserOrders.map((order) => {
             const statusInfo = statusConfig[order.status as keyof typeof statusConfig];
             const StatusIcon = statusInfo.icon;
+            const paymentMethodLabel = (order.paymentMethodName || order.paymentMethod || 'Metode tidak diketahui').trim();
+            const isTransferMethod = paymentMethodLabel.toLowerCase().includes('transfer');
             
             return (
               <div key={order.id} className="bg-white rounded-lg shadow-sm p-4">
@@ -183,6 +185,10 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
                   <span className="text-sm text-gray-600">Total Pesanan</span>
                   <span className="font-bold text-pink-600">Rp {order.finalTotal.toLocaleString('id-ID')}</span>
                 </div>
+
+                <div className="mt-2 text-xs text-gray-500">
+                  Metode Pembayaran: {paymentMethodLabel}
+                </div>
                 
                 <div className="mt-3 flex space-x-2">
                   <button
@@ -191,7 +197,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
                   >
                     Detail
                   </button>
-                  {order.status === 'pending' && order.paymentMethod === 'transfer' && !order.paymentProof && (
+                  {order.status === 'pending' && isTransferMethod && !order.paymentProof && (
                     <button 
                       onClick={() => handlePayNow(order)}
                       className="flex-1 bg-orange-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors flex items-center justify-center space-x-1"
@@ -504,7 +510,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
             <button
               onClick={handleSubmitPayment}
               disabled={!paymentProof}
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all"
+              className="w-full btn-brand py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {selectedOrder?.paymentProof ? 'Upload Ulang Bukti Pembayaran' : 'Kirim Bukti Pembayaran'}
             </button>

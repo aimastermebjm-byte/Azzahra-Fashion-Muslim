@@ -1,0 +1,121 @@
+// ============================================
+// 🚀 ALTERNATIF - Kalau script pertama error
+// ============================================
+// Script ini akses Firebase dari window.__FIREBASE__
+// Paste ke console dan tekan ENTER
+// ============================================
+
+(async function() {
+  console.log('%c🚀 SYNC STARTING (ALTERNATIVE METHOD)...', 'background: purple; color: white; font-size: 18px; padding: 10px;');
+  
+  try {
+    // Cari Firebase di window objects
+    let firestore;
+    
+    // Method 1: Dari window modules
+    if (window.__firestore) {
+      firestore = window.__firestore;
+    }
+    // Method 2: Dari React DevTools globals  
+    else if (window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+      console.log('Trying to access Firebase from React...');
+    }
+    // Method 3: Manual setup
+    else {
+      console.log('⚠️ Cannot auto-detect Firebase. Please make sure you are logged in as admin.');
+      console.log('💡 TIP: Open Network tab, filter "firestore", then try this script again.');
+      return;
+    }
+    
+    console.log('✅ Attempting sync via Firestore REST API...\n');
+    
+    // Get project ID from config
+    const projectId = 'YOUR_PROJECT_ID'; // GANTI dengan Project ID Firebase Anda!
+    
+    if (projectId === 'YOUR_PROJECT_ID') {
+      console.error('❌ PLEASE EDIT THIS SCRIPT:');
+      console.error('   Replace "YOUR_PROJECT_ID" with your actual Firebase project ID');
+      console.error('   You can find it in Firebase Console → Project Settings');
+      return;
+    }
+    
+    // Get auth token
+    const auth = firebase?.auth?.();
+    if (!auth || !auth.currentUser) {
+      console.error('❌ Not authenticated! Please login first.');
+      return;
+    }
+    
+    const token = await auth.currentUser.getIdToken();
+    
+    // Fetch batch_1
+    console.log('📦 Fetching batch_1...');
+    const batchUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/productBatches/batch_1`;
+    const batchRes = await fetch(batchUrl, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    const batchData = await batchRes.json();
+    const products = batchData.fields?.products?.arrayValue?.values || [];
+    
+    console.log(`✅ Found ${products.length} products\n`);
+    
+    // Sync each product
+    console.log('🔄 Syncing to globalindex...\n');
+    let success = 0, failed = 0;
+    
+    for (let i = 0; i < products.length; i++) {
+      const p = products[i].mapValue.fields;
+      const productId = p.id.stringValue;
+      
+      try {
+        const docUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/globalindex/${productId}`;
+        
+        const docData = {
+          fields: {
+            id: { stringValue: productId },
+            name: { stringValue: p.name?.stringValue || '' },
+            price: { doubleValue: Number(p.price?.doubleValue || 0) },
+            retailPrice: { doubleValue: Number(p.retailPrice?.doubleValue || 0) },
+            stock: { integerValue: Number(p.stock?.integerValue || 0) },
+            lastSyncedAt: { stringValue: new Date().toISOString() },
+            syncSource: { stringValue: 'console-rest-api' }
+          }
+        };
+        
+        const res = await fetch(docUrl, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(docData)
+        });
+        
+        if (res.ok) {
+          success++;
+          console.log(`✅ [${i+1}/${products.length}] ${p.name?.stringValue || productId}`);
+        } else {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        
+      } catch (err) {
+        failed++;
+        console.error(`❌ [${i+1}/${products.length}] Failed: ${err.message}`);
+      }
+    }
+    
+    console.log('\n' + '='.repeat(60));
+    console.log(`%c✅ Success: ${success}`, 'color: green; font-weight: bold; font-size: 16px;');
+    console.log(`%c❌ Failed: ${failed}`, 'color: red; font-weight: bold; font-size: 16px;');
+    console.log('='.repeat(60));
+    
+  } catch (error) {
+    console.error('%c❌ FATAL ERROR:', 'background: red; color: white; font-size: 18px; padding: 10px;');
+    console.error(error);
+    console.log('\n💡 TRY THIS:');
+    console.log('1. Make sure you are logged in as admin');
+    console.log('2. Check browser Network tab for any blocked requests');
+    console.log('3. Try the first script method again');
+  }
+})();
