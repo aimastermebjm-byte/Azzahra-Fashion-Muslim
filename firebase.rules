@@ -97,20 +97,22 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
-    // Financial categories - owner only
+    // Financial categories
     match /financial_categories/{categoryId} {
-      allow read, write: if isOwner();
+      allow read: if true;
+      allow write: if isSignedIn();
     }
 
-    // Financial payment methods - owner write, public read (needed for checkout)
+    // Financial payment methods (public read for checkout, write for any signed-in user/owner)
     match /financial_payment_methods/{methodId} {
       allow read: if true;
-      allow write: if isOwner();
+      allow write: if isSignedIn();
     }
 
-    // Financial entries - owner only
+    // Financial entries
     match /financial_entries/{entryId} {
-      allow read, write: if isOwner();
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
     }
   }
 }
