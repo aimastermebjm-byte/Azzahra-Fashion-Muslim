@@ -191,23 +191,24 @@ const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <>
       <div
-        className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group overflow-hidden ${
-          isFeatured ? 'ring-2 ring-yellow-400 shadow-lg' : ''
+        className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 ${
+          isFeatured ? 'ring-2 ring-yellow-400' : ''
         }`}
       >
-        <div className="relative">
+        <div className="relative aspect-[4/5] bg-gray-50 overflow-hidden">
           <img
             src={product.image || product.images?.[0] || '/placeholder-product.jpg'}
             alt={product.name}
-            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
+            className="w-full h-full object-contain mix-blend-multiply hover:scale-105 transition-transform duration-500 ease-out p-2"
             onClick={handleImageClick}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
               const parent = target.parentElement;
               if (parent) {
-                parent.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                parent.innerHTML = '<div class="flex items-center justify-center h-full text-white text-center p-4"><div><div class="text-2xl mb-2">📦</div><div class="text-sm">No Image</div></div></div>';
+                parent.classList.remove('bg-gray-50');
+                parent.classList.add('bg-gradient-to-br', 'from-blue-100', 'to-purple-100');
+                parent.innerHTML = '<div class="flex items-center justify-center h-full w-full text-gray-400 text-center p-4 flex-col"><div class="text-3xl mb-2">📦</div><div class="text-xs font-medium">No Image</div></div>';
               }
             }}
           />
