@@ -2,6 +2,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { registerPWA } from './pwa-register';
+
+// Register PWA service worker
+registerPWA();
 
 // Cache busting for development
 if (import.meta.env.DEV) {
