@@ -25,6 +25,7 @@ import AdminFinancialPage from './components/AdminFinancialPage';
 import AdminMasterDataPage from './components/AdminMasterDataPage';
 import AdminCacheManagement from './components/AdminCacheManagement';
 import BottomNavigation from './components/BottomNavigation';
+import InstallPrompt from './components/InstallPrompt';
 import { OngkirTestPage } from './pages/OngkirTestPage';
 import { useUnifiedProducts } from './hooks/useUnifiedProducts';
 import { useFirebaseAuth } from './hooks/useFirebaseAuth';
@@ -603,6 +604,9 @@ function AppContent() {
             onClose={() => setShowRegistration(false)}
           />
         )}
+        
+        {/* PWA Install Prompt */}
+        <InstallPrompt />
       </div>
     </ErrorBoundary>
   );
