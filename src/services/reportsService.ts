@@ -462,18 +462,6 @@ class ReportsService {
           createdAt: new Date(transaction.createdAt)
         });
 
-        // Expense from shipping cost
-        if (transaction.shippingCost > 0) {
-          cashFlowData.push({
-            id: `${transaction.id}_expense`,
-            date: transaction.date,
-            description: `Biaya ongkir pesanan ${transaction.invoice}`,
-            type: 'expense',
-            amount: transaction.shippingCost,
-            category: 'Ongkir Penjualan',
-            createdAt: new Date(transaction.createdAt)
-          });
-        }
       });
 
       // Append financial entries (owner-entered income/expense flagged for P&L)
