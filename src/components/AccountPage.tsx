@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { User, Package, Heart, MapPin, LogOut, Crown, Star, User as UserIcon, Shield, Eye, EyeOff, RefreshCw, Award, BarChart3, Users, TrendingUp, Package as PackageIcon, Mail, Phone, Key, Layers } from 'lucide-react';
+import { User, Package, Heart, MapPin, LogOut, Crown, Star, User as UserIcon, Shield, Eye, EyeOff, RefreshCw, Award, BarChart3, Users, TrendingUp, Package as PackageIcon, Mail, Phone, Key, Layers, Download } from 'lucide-react';
 // import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 // import { useSupabaseAuthSimple } from '../hooks/useSupabaseAuthSimple';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 
 interface AccountPageProps {
   user: any;
@@ -38,9 +39,11 @@ const AccountPage: React.FC<AccountPageProps> = ({
     confirmPassword: ''
   });
 
-  // Use auth hook directly to get user data as fallback
-  // const { user: hookUser, loading: authLoading } = useSupabaseAuthSimple();
-  // const { updateProfile } = useSupabaseAuth();
+  const { updateProfile } = useSupabaseAuth();
+  */
+
+  // PWA Install Hook
+  const { isInstalled, installApp, canInstall } = usePWAInstall();
 
   // Use prop user if available, otherwise use hook user
   const user = propUser;
@@ -922,7 +925,29 @@ const AccountPage: React.FC<AccountPageProps> = ({
       </div>
 
       {/* Logout */}
-      <div className="p-4">
+      <div className="p-4 space-y-3">
+        {/* Install App Button (Visible if not installed) */}
+        {!isInstalled && (
+          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg shadow-sm text-white overflow-hidden">
+            <button
+              onClick={installApp}
+              className="w-full p-4 flex items-center space-x-3 hover:bg-white/10 transition-colors"
+            >
+              <div className="p-2 bg-white/20 rounded-lg">
+                <Download className="w-6 h-6" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="font-bold">Install Aplikasi Azzahra</p>
+                <p className="text-xs opacity-90">
+                  {canInstall 
+                    ? "Klik untuk install sekarang" 
+                    : "Tambahkan ke layar utama HP Anda"}
+                </p>
+              </div>
+            </button>
+          </div>
+        )}
+
         <div className="bg-white rounded-lg shadow-sm">
           <button
             onClick={handleLogout}
@@ -932,6 +957,10 @@ const AccountPage: React.FC<AccountPageProps> = ({
             <span>Keluar</span>
           </button>
         </div>
+        
+        <p className="text-center text-xs text-gray-400 mt-4">
+          Versi Aplikasi 2.1.0 (PWA Ready)
+        </p>
       </div>
     </div>
   );
