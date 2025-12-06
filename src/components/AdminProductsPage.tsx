@@ -571,6 +571,57 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     }
   };
 
+  const handleAddToActiveFlashSale = async () => {
+    if (!isFlashSaleActive || !flashSaleConfig) {
+      alert('Tidak ada sesi Flash Sale aktif.');
+      return;
+    }
+
+    if (selectedProducts.length === 0) {
+      alert('Pilih produk terlebih dahulu.');
+      return;
+    }
+
+    if (!confirm(`Tambahkan ${selectedProducts.length} produk terpilih ke Flash Sale yang sedang berjalan?`)) {
+      return;
+    }
+
+    try {
+      // Kita menggunakan durasi SISA waktu agar sesuai dengan timer yang berjalan
+      // Atau menggunakan timer endTime asli dari config
+      const endTime = new Date(flashSaleConfig.endTime);
+      const now = new Date();
+      const remainingMinutes = Math.max(1, Math.floor((endTime.getTime() - now.getTime()) / (60 * 1000)));
+
+      // Gabungkan produk yang sudah ada di flash sale + produk baru
+      const existingFlashSaleIds = products.filter(p => p.isFlashSale).map(p => p.id);
+      // Gunakan Set untuk hindari duplikat
+      const allProductIds = Array.from(new Set([...existingFlashSaleIds, ...selectedProducts]));
+
+      console.log('🔥 Menambahkan produk ke sesi aktif:');
+      console.log('- Existing:', existingFlashSaleIds.length);
+      console.log('- Adding:', selectedProducts.length);
+      console.log('- Total:', allProductIds.length);
+
+      // Panggil startUnifiedFlashSale dengan ID gabungan
+      // Ini akan mengupdate produk yang baru dipilih menjadi flash sale
+      // dan memperpanjang/mempertahankan status produk lama
+      await startUnifiedFlashSale(
+        remainingMinutes,
+        '⚡ Flash Sale',
+        'Diskon spesial terbatas!',
+        flashSaleConfig.discountPercentage,
+        allProductIds
+      );
+
+      setSelectedProducts([]);
+      alert(`✅ Berhasil menambahkan ${selectedProducts.length} produk ke Flash Sale aktif!`);
+    } catch (error) {
+      console.error('Error adding to active flash sale:', error);
+      alert('Gagal menambahkan produk: ' + (error as Error).message);
+    }
+  };
+
   // Flash sale operations
   const handleFlashSaleStart = async () => {
     // Validasi: Pastikan semua field yang diperlukan terisi
@@ -829,34 +880,58 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           </div>
         )}
 
-        {/* Flash Sale Status */}
-        {isFlashSaleActive && (
-          <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg shadow-sm p-4 border border-red-200">
+        {/* Flash Sale Widget - Replaces hidden menu */}
+        {isFlashSaleActive ? (
+          <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg shadow-sm p-4 border border-red-200 mb-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Flame className="w-5 h-5 text-red-600" />
-                <span className="font-semibold text-red-800">Flash Sale Aktif</span>
-              </div>
               <div className="flex items-center space-x-3">
+                <div className="p-2 bg-red-100 rounded-full">
+                  <Flame className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-red-800 text-lg">Flash Sale Sedang Berlangsung</h3>
+                  <p className="text-sm text-red-600">
+                    Diskon {flashSaleConfig?.discountPercentage}% untuk {products.filter(p => p.isFlashSale).length} produk
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
                 {timeLeft && (
-                  <div className="flex items-center space-x-1 bg-red-600 text-white px-3 py-1 rounded-full text-sm">
-                    <Clock className="w-4 h-4" />
-                    <span className="font-medium">
-                      {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
-                    </span>
+                  <div className="text-center px-4 py-2 bg-white rounded-lg shadow-sm border border-red-100">
+                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Sisa Waktu</p>
+                    <div className="flex items-center space-x-1 text-xl font-mono font-bold text-red-600">
+                      <Clock className="w-5 h-5 mr-1" />
+                      <span>
+                        {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
+                      </span>
+                    </div>
                   </div>
                 )}
                 <button
                   onClick={handleFlashSaleEnd}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm"
+                  className="bg-white text-red-600 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium shadow-sm"
                 >
-                  Stop Flash Sale
+                  Stop Sesi Ini
                 </button>
               </div>
             </div>
-            <p className="text-sm text-red-700 mt-2">
-              {products.filter(p => p.isFlashSale).length} produk dengan diskon Rp {flashSaleConfig?.discountPercentage?.toLocaleString('id-ID') || 0}
-            </p>
+          </div>
+        ) : (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm p-4 border border-blue-200 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 rounded-full">
+                  <Clock className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-blue-800 text-lg">Siap Mulai Flash Sale?</h3>
+                  <p className="text-sm text-blue-600">
+                    Pilih produk di tabel bawah, lalu klik "Set Flash Sale" untuk memulai.
+                  </p>
+                </div>
+              </div>
+              {/* No button here, guided action via table selection */}
+            </div>
           </div>
         )}
 
@@ -912,13 +987,14 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               </div>
             </button>
 
-            {/* Produk Unggulan */}
+            {/* Produk Unggulan - REMOVED (Now via Table Bulk Action) */}
+            {/* 
             <button
               onClick={() => {
                 const featuredProducts = products.filter(p => p.isFeatured);
                 if (featuredProducts.length > 0) {
                   setSelectedProducts(featuredProducts.map(p => p.id));
-                  setBatchFormData({ ...batchFormData, isFeatured: undefined }); // undefined untuk biarkan admin pilih
+                  setBatchFormData({ ...batchFormData, isFeatured: undefined }); 
                   setShowBatchModal(true);
                 } else {
                   alert('Belum ada produk unggulan. Pilih produk terlebih dahulu dari daftar produk.');
@@ -932,8 +1008,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 <p className="text-sm opacity-90">Kelola produk unggulan ({products.filter(p => p.isFeatured).length})</p>
               </div>
             </button>
+            */}
 
-            {/* Flash Sale */}
+            {/* Flash Sale - REMOVED (Now via Table Bulk Action) */}
+            {/*
             <button
               onClick={() => setShowFlashSaleModal(true)}
               className="bg-red-600 text-white p-4 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-3"
@@ -944,6 +1022,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 <p className="text-sm opacity-90">Atur diskon flash sale ({products.filter(p => p.isFlashSale).length})</p>
               </div>
             </button>
+            */}
           </div>
         </div>
 
@@ -997,6 +1076,58 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               {/* Batch Actions */}
               {selectedProducts.length > 0 && (
                 <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      // Jika flash sale sedang aktif, masukkan produk ke sesi aktif
+                      // Jika tidak aktif, buka modal setting baru
+                      if (isFlashSaleActive) {
+                        // Langsung update produk
+                        setFlashSaleFormData({
+                          ...flashSaleFormData,
+                          productIds: selectedProducts
+                        });
+                        // Panggil startUnifiedFlashSale dengan config yang sedang berjalan (extend ke produk baru)
+                        // ... logic akan dihandle di fungsi khusus
+                        handleAddToActiveFlashSale();
+                      } else {
+                        // Buka modal setting baru
+                        setFlashSaleFormData({
+                          ...flashSaleFormData,
+                          productIds: selectedProducts
+                        });
+                        setShowFlashSaleModal(true);
+                      }
+                    }}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                  >
+                    <Flame className="w-4 h-4" />
+                    <span>Set Flash Sale ({selectedProducts.length})</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setBatchFormData({ ...batchFormData, isFeatured: true });
+                      // Langsung eksekusi update untuk UX yang lebih cepat, atau buka modal konfirmasi?
+                      // Untuk konsistensi dengan Flash Sale, kita buka modal tapi khusus untuk konfirmasi
+                      // Tapi batch modal yang ada sekarang (Edit Massal) terlalu kompleks.
+                      // Kita buat simple confirm saja untuk Toggle Unggulan.
+                      if (confirm(`Tandai ${selectedProducts.length} produk sebagai Produk Unggulan?`)) {
+                        const updateFeatured = async () => {
+                          for (const pid of selectedProducts) {
+                            await updateProduct(pid, { isFeatured: true });
+                          }
+                          alert('✅ Berhasil menandai produk unggulan!');
+                          setSelectedProducts([]);
+                        };
+                        updateFeatured();
+                      }
+                    }}
+                    className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors flex items-center space-x-2"
+                  >
+                    <Star className="w-4 h-4" />
+                    <span>Set Unggulan</span>
+                  </button>
+
                   <button
                     onClick={() => setShowBatchModal(true)}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
@@ -2323,54 +2454,34 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Product Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Pilih Produk untuk Flash Sale
-                </label>
-                <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                  {products.filter(p => !p.isFlashSale).map((product) => (
-                    <label key={product.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={flashSaleFormData.productIds.includes(product.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFlashSaleFormData({
-                              ...flashSaleFormData,
-                              productIds: [...flashSaleFormData.productIds, product.id]
-                            });
-                          } else {
-                            setFlashSaleFormData({
-                              ...flashSaleFormData,
-                              productIds: flashSaleFormData.productIds.filter(id => id !== product.id)
-                            });
-                          }
-                        }}
-                        className="rounded border-gray-300 text-red-600 focus:ring-red-500"
-                      />
-                      <div className="flex items-center space-x-3 flex-1">
-                        {product.images.length > 0 ? (
-                          <img
-                            src={product.image || product.images[0] || '/placeholder-product.jpg'}
-                            alt={product.name}
-                            className="w-8 h-8 object-cover rounded"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                            <Package className="w-4 h-4 text-gray-400" />
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{product.name}</p>
-                          <p className="text-xs text-gray-500">Rp {product.retailPrice.toLocaleString('id-ID')}</p>
-                        </div>
-                      </div>
-                    </label>
-                  ))}
+              {/* Product Selection Info (Replacing selector) */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-sm text-blue-800">
+                <div className="flex items-center gap-2 mb-3 border-b border-blue-200 pb-2">
+                  <Star className="w-4 h-4 text-blue-600" />
+                  <span className="font-semibold">Konfirmasi Produk Terpilih: {flashSaleFormData.productIds.length} item</span>
                 </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  {flashSaleFormData.productIds.length} produk dipilih
+                
+                {/* List of selected products ONLY */}
+                <div className="max-h-40 overflow-y-auto pr-2 space-y-2">
+                  {products
+                    .filter(p => flashSaleFormData.productIds.includes(p.id))
+                    .map(p => (
+                      <div key={p.id} className="flex justify-between items-center text-xs bg-white p-2 rounded border border-blue-100 shadow-sm">
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          {p.images.length > 0 && (
+                            <img src={p.image || p.images[0]} alt="" className="w-6 h-6 object-cover rounded" />
+                          )}
+                          <span className="truncate font-medium">{p.name}</span>
+                        </div>
+                        <span className="font-mono text-blue-700 whitespace-nowrap ml-2">
+                          Rp {p.retailPrice.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    ))
+                  }
+                </div>
+                <p className="text-xs opacity-70 mt-2 italic">
+                  * Produk ini akan didaftarkan ke sesi Flash Sale baru.
                 </p>
               </div>
 

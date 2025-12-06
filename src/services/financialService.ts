@@ -5,6 +5,7 @@ import {
   doc,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -271,6 +272,58 @@ export const financialService = {
     const cached = readPaymentMethodCache();
     if (cached) {
       writePaymentMethodCache(cached.filter((method) => method.id !== id));
+    }
+  },
+
+  subscribeToEntries(
+    callback: (data: { entries: FinancialEntry[]; loading: boolean; error: Error | null }) => void,
+    limitCount: number = 20
+  ): () => void {
+    try {
+      // Initial loading state
+      callback({ entries: [], loading: true, error: null });
+
+      const q = query(
+        collection(db, 'financial_entries'),
+        orderBy('createdAt', 'desc'),
+        limit(limitCount)
+      );
+
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const entries: FinancialEntry[] = [];
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data() as any;
+            entries.push({
+              id: docSnap.id,
+              type: data.type,
+              amount: Number(data.amount || 0),
+              category: data.category,
+              paymentMethodId: data.paymentMethodId || null,
+              paymentMethodName: data.paymentMethodName || null,
+              note: data.note,
+              includeInPnL: !!data.includeInPnL,
+              createdAt: data.createdAt || null,
+              effectiveDate: data.effectiveDate || null,
+              createdBy: data.createdBy,
+              createdByRole: data.createdByRole
+            });
+          });
+
+          callback({ entries, loading: false, error: null });
+        },
+        (err) => {
+          console.error('Error subscribing to financial entries:', err);
+          callback({ entries: [], loading: false, error: err as Error });
+        }
+      );
+
+      return unsubscribe;
+    } catch (err) {
+      console.error('Failed to set up subscription:', err);
+      callback({ entries: [], loading: false, error: err as Error });
+      return () => {};
     }
   }
 };

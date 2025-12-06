@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Package, Heart, MapPin, LogOut, Crown, Star, User as UserIcon, Shield, Eye, EyeOff, RefreshCw, Award, BarChart3, Users, TrendingUp, Package as PackageIcon, Mail, Phone, Key } from 'lucide-react';
+import { User, Package, Heart, MapPin, LogOut, Crown, Star, User as UserIcon, Shield, Eye, EyeOff, RefreshCw, Award, BarChart3, Users, TrendingUp, Package as PackageIcon, Mail, Phone, Key, Layers } from 'lucide-react';
 // import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 // import { useSupabaseAuthSimple } from '../hooks/useSupabaseAuthSimple';
 
@@ -12,6 +12,7 @@ interface AccountPageProps {
   onNavigateToAdminUsers?: () => void;
   onNavigateToAdminCache?: () => void;
   onNavigateToAdminFinancials?: () => void;
+  onNavigateToAdminMaster?: () => void;
   onNavigateToAddressManagement?: () => void;
   // Flash sale and featured products are now managed in AdminProductsPage
 }
@@ -25,6 +26,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
   onNavigateToAdminUsers,
   onNavigateToAdminCache,
   onNavigateToAdminFinancials,
+  onNavigateToAdminMaster,
   onNavigateToAddressManagement
 }) => {
     const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -710,6 +712,13 @@ const AccountPage: React.FC<AccountPageProps> = ({
                 >
                   <TrendingUp className="w-6 h-6 mx-auto mb-2" />
                   <p className="text-sm">Biaya & Pendapatan</p>
+                </button>
+                <button
+                  onClick={onNavigateToAdminMaster}
+                  className="p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <Layers className="w-6 h-6 mx-auto mb-2" />
+                  <p className="text-sm">Data Master</p>
                 </button>
               </div>
 

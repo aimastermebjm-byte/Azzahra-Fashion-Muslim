@@ -16,29 +16,17 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Initial load: cache first, then Firestore
+  // Initial load: cache first, then subscribe
   useEffect(() => {
-    const cached = usersService.getCachedUsers();
-    if (cached) {
-      setUsers(cached);
-      setLoading(false);
-    }
+    const unsubscribe = usersService.subscribeToUsers((data) => {
+      setUsers(data.users);
+      setLoading(data.loading);
+      if (data.error) setError(data.error.message);
+    });
 
-    const fetch = async () => {
-      try {
-        setLoading(true);
-        const fresh = await usersService.fetchUsers();
-        setUsers(fresh);
-        setError(null);
-      } catch (err: any) {
-        console.error('Failed to load users:', err);
-        setError('Gagal memuat data user');
-      } finally {
-        setLoading(false);
-      }
+    return () => {
+      unsubscribe();
     };
-
-    void fetch();
   }, []);
 
   const roleConfig = {
