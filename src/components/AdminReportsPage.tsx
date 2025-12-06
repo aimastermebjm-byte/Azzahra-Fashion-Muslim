@@ -276,9 +276,16 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       .filter(flow => flow.type === 'expense' && flow.category === 'ongkir')
       .reduce((sum, flow) => sum + flow.amount, 0);
 
-    const biayaLain = cashFlow
-      .filter(flow => flow.type === 'expense' && flow.category !== 'ongkir')
-      .reduce((sum, flow) => sum + flow.amount, 0);
+    const nonShippingExpenses = cashFlow.filter(flow => flow.type === 'expense' && flow.category !== 'ongkir');
+    const biayaLain = nonShippingExpenses.reduce((sum, flow) => sum + flow.amount, 0);
+    const biayaPerKategoriMap = nonShippingExpenses.reduce<Record<string, number>>((acc, flow) => {
+      const key = flow.category || 'Lainnya';
+      acc[key] = (acc[key] || 0) + flow.amount;
+      return acc;
+    }, {});
+    const biayaLainPerKategori = Object.entries(biayaPerKategoriMap)
+      .map(([category, amount]) => ({ category, amount }))
+      .sort((a, b) => b.amount - a.amount);
 
     const totalBiaya = modalCost + ongkirPembelian + biayaLain;
     const labaRugi = pendapatanTotal - totalBiaya;
@@ -290,6 +297,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       pendapatanTotal,
       ongkirPembelian,
       biayaLain,
+      biayaLainPerKategori,
       totalBiaya,
       labaRugi
     };
@@ -890,16 +898,28 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                         <span className="text-gray-600">Ongkir Pembelian</span>
                         <span className="font-semibold text-gray-900">{formatCurrency(financialBreakdown.ongkirPembelian)}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Biaya Lain</span>
-                        <span className="font-semibold text-gray-900">{formatCurrency(financialBreakdown.biayaLain)}</span>
-                      </div>
+                      {financialBreakdown.biayaLain > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Biaya Operasional</span>
+                            <span className="font-semibold text-gray-900">{formatCurrency(financialBreakdown.biayaLain)}</span>
+                          </div>
+                          <div className="rounded-lg bg-gray-50 p-3 space-y-1 text-xs text-gray-600">
+                            {financialBreakdown.biayaLainPerKategori.map((item) => (
+                              <div key={item.category} className="flex justify-between">
+                                <span className="font-medium text-gray-700">{item.category}</span>
+                                <span className="font-semibold text-gray-900">{formatCurrency(item.amount)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <div className="flex justify-between border-t pt-3 text-base">
                         <span className="text-gray-600 font-semibold">Total Biaya</span>
                         <span className="font-bold text-brand-warning">{formatCurrency(financialBreakdown.totalBiaya)}</span>
                       </div>
                     </div>
-                    <p className="mt-3 text-xs text-gray-500">*Biaya lain dapat diinput dari dashboard admin biaya (fitur mendatang).</p>
+                    <p className="mt-3 text-xs text-gray-500">*Biaya operasional diambil dari entri "Biaya & Pendapatan" yang ditandai hitung laba/rugi.</p>
                   </div>
                 </div>
 
