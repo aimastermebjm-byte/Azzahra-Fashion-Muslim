@@ -467,10 +467,10 @@ class ReportsService {
           cashFlowData.push({
             id: `${transaction.id}_expense`,
             date: transaction.date,
-            description: `Biaya ongkir ${transaction.invoice}`,
+            description: `Biaya ongkir pesanan ${transaction.invoice}`,
             type: 'expense',
             amount: transaction.shippingCost,
-            category: 'ongkir',
+            category: 'Ongkir Penjualan',
             createdAt: new Date(transaction.createdAt)
           });
         }

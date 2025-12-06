@@ -29,6 +29,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
   const [note, setNote] = useState('');
   const [effectiveDate, setEffectiveDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [includeInPnL, setIncludeInPnL] = useState(true);
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
 
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showAddCategory, setShowAddCategory] = useState(false);
@@ -79,6 +80,9 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
       return true;
     });
   }, [entries, filterType, filterCategory, filterPnL]);
+
+  const expenseCategories = useMemo(() => categories.filter((cat) => cat.type === 'expense'), [categories]);
+  const incomeCategories = useMemo(() => categories.filter((cat) => cat.type === 'income'), [categories]);
 
   // Ringkasan selalu dihitung dari semua entri P&L (tidak terpengaruh filter agar angka laba/biaya konsisten)
   const summary = useMemo(() => {
@@ -187,6 +191,31 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
     } catch (err) {
       console.error('Failed to delete entry', err);
       toast({ title: 'Gagal menghapus', variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    const target = categories.find((cat) => cat.id === categoryId);
+    if (!target) return;
+    if (!window.confirm(`Hapus kategori "${target.name}"?`)) {
+      return;
+    }
+    try {
+      setDeletingCategoryId(categoryId);
+      await financialService.deleteCategory(categoryId);
+      setCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
+      setEntries((prev) => prev.map((entry) => (
+        entry.category === categoryId ? { ...entry, category: '' } : entry
+      )));
+      if (category === categoryId) {
+        setCategory('');
+      }
+      toast({ title: 'Kategori dihapus', description: target.name });
+    } catch (err) {
+      console.error('Failed to delete category', err);
+      toast({ title: 'Gagal hapus kategori', variant: 'destructive' });
+    } finally {
+      setDeletingCategoryId(null);
     }
   };
 
@@ -412,6 +441,63 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
               <option value="include">Hanya yang hitung laba/rugi</option>
               <option value="exclude">Hanya yang tidak dihitung</option>
             </select>
+          </div>
+        </div>
+
+        {/* Manage Categories */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 text-slate-700">
+              <Tags className="w-4 h-4" />
+              <span className="text-sm font-semibold">Kelola Kategori</span>
+            </div>
+            <span className="text-xs text-slate-500">Hapus kategori untuk membuat ulang</span>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">Biaya</p>
+              <div className="space-y-2">
+                {expenseCategories.length === 0 && (
+                  <p className="text-xs text-slate-400">Belum ada kategori biaya</p>
+                )}
+                {expenseCategories.map((cat) => (
+                  <div key={cat.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    <span className="text-slate-800">{cat.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCategory(cat.id)}
+                      disabled={deletingCategoryId === cat.id}
+                      className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Hapus
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">Pendapatan</p>
+              <div className="space-y-2">
+                {incomeCategories.length === 0 && (
+                  <p className="text-xs text-slate-400">Belum ada kategori pendapatan</p>
+                )}
+                {incomeCategories.map((cat) => (
+                  <div key={cat.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    <span className="text-slate-800">{cat.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCategory(cat.id)}
+                      disabled={deletingCategoryId === cat.id}
+                      className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Hapus
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 

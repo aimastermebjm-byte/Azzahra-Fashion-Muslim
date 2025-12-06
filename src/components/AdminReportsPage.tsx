@@ -273,10 +273,12 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     const pendapatanTotal = pendapatanPenjualan + pendapatanOngkir;
 
     const ongkirPembelian = cashFlow
-      .filter(flow => flow.type === 'expense' && flow.category === 'ongkir')
+      .filter(flow => flow.type === 'expense' && (flow.category || '').toLowerCase() === 'ongkir pembelian')
       .reduce((sum, flow) => sum + flow.amount, 0);
 
-    const nonShippingExpenses = cashFlow.filter(flow => flow.type === 'expense' && flow.category !== 'ongkir');
+    const nonShippingExpenses = cashFlow.filter(
+      flow => flow.type === 'expense' && (flow.category || '').toLowerCase() !== 'ongkir pembelian'
+    );
     const biayaLain = nonShippingExpenses.reduce((sum, flow) => sum + flow.amount, 0);
     const biayaPerKategoriMap = nonShippingExpenses.reduce<Record<string, number>>((acc, flow) => {
       const key = flow.category || 'Lainnya';
