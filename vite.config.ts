@@ -8,6 +8,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'auto', // 🔥 FORCE Auto-Injection of SW
+      devOptions: {
+        enabled: true // Enable PWA in dev mode for testing
+      },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifestFilename: 'manifest.json',
       manifest: {
@@ -17,19 +21,23 @@ export default defineConfig({
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
+        display_override: ["window-controls-overlay", "minimal-ui"], // 🔥 Hardening display mode
         scope: '/',
         start_url: '/',
         orientation: 'portrait',
+        prefer_related_applications: false, // 🔥 Force Web App over Native
         icons: [
           {
             src: 'pwa-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable' // 🔥 Restored maskable for compliance
           },
           {
             src: 'pwa-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
       },
