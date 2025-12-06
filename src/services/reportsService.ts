@@ -45,6 +45,8 @@ export interface Transaction {
   totalModal?: number; // total modal for all items
   status: 'lunas' | 'belum_lunas';
   paymentMethod?: string;
+  paymentMethodId?: string | null;
+  paymentMethodName?: string | null;
   createdAt: Date;
   updatedAt?: Date;
 }
@@ -89,6 +91,9 @@ export interface CashFlowReport {
   type: 'income' | 'expense';
   amount: number;
   category: string;
+  paymentMethodId?: string;
+  paymentMethodName?: string;
+  source?: 'sale' | 'financial';
   createdAt: Date;
 }
 
@@ -215,7 +220,9 @@ class ReportsService {
           total: orderData.finalTotal || (orderData.totalAmount || 0) + (orderData.shippingCost || 0),
           totalModal,
           status: orderData.status === 'paid' ? 'lunas' : 'belum_lunas', // Map order status to transaction status
-          paymentMethod: orderData.paymentMethod || '',
+          paymentMethod: orderData.paymentMethodName || orderData.paymentMethod || '',
+          paymentMethodId: orderData.paymentMethodId || null,
+          paymentMethodName: orderData.paymentMethodName || orderData.paymentMethod || null,
           createdAt: createdAtDate,
           updatedAt: updatedAtDate
         };
@@ -435,10 +442,54 @@ class ReportsService {
     startDate?: string;
     endDate?: string;
     limit?: number;
+    paymentMethodId?: string;
   } = {}): Promise<CashFlowReport[]> {
     try {
       const startMillis = filters.startDate ? new Date(`${filters.startDate}T00:00:00`).getTime() : null;
       const endMillis = filters.endDate ? new Date(`${filters.endDate}T23:59:59`).getTime() : null;
+      const selectedPaymentMethodId = filters.paymentMethodId?.trim() || null;
+
+      const paymentMethodsSnap = await getDocs(query(collection(db, 'financial_payment_methods')));
+      const paymentMethodById = new Map<string, string>();
+      const paymentMethodByName = new Map<string, { id: string; name: string }>();
+      paymentMethodsSnap.forEach((methodDoc) => {
+        const data = methodDoc.data() as any;
+        const name = data?.name || 'Tanpa nama';
+        paymentMethodById.set(methodDoc.id, name);
+        paymentMethodByName.set(name.toLowerCase(), { id: methodDoc.id, name });
+      });
+
+      const resolvePaymentMethod = (value?: string | null): { id: string; name: string } | null => {
+        if (!value || typeof value !== 'string') {
+          return null;
+        }
+        const trimmed = value.trim();
+        if (!trimmed) {
+          return null;
+        }
+        if (paymentMethodById.has(trimmed)) {
+          return { id: trimmed, name: paymentMethodById.get(trimmed)! };
+        }
+        const normalized = trimmed.toLowerCase();
+        if (paymentMethodByName.has(normalized)) {
+          return paymentMethodByName.get(normalized)!;
+        }
+        return null;
+      };
+
+      const matchesPaymentFilter = (methodId?: string | null, methodName?: string | null) => {
+        if (!selectedPaymentMethodId) {
+          return true;
+        }
+        if (methodId && methodId === selectedPaymentMethodId) {
+          return true;
+        }
+        const filterName = paymentMethodById.get(selectedPaymentMethodId)?.toLowerCase();
+        if (filterName && methodName && methodName.toLowerCase() === filterName) {
+          return true;
+        }
+        return false;
+      };
 
       // Get transactions for cash flow
       const transactions = await this.getTransactions({
@@ -451,6 +502,14 @@ class ReportsService {
       const cashFlowData: CashFlowReport[] = [];
 
       transactions.forEach(transaction => {
+        const resolvedPayment = resolvePaymentMethod(transaction.paymentMethodId || transaction.paymentMethodName || transaction.paymentMethod);
+        const paymentMethodId = resolvedPayment?.id;
+        const paymentMethodName = resolvedPayment?.name || transaction.paymentMethodName || transaction.paymentMethod || null;
+
+        if (!matchesPaymentFilter(paymentMethodId, paymentMethodName)) {
+          return;
+        }
+
         // Income from sales
         cashFlowData.push({
           id: `${transaction.id}_income`,
@@ -459,6 +518,9 @@ class ReportsService {
           type: 'income',
           amount: transaction.subtotal,
           category: 'penjualan',
+          paymentMethodId,
+          paymentMethodName: paymentMethodName || undefined,
+          source: 'sale',
           createdAt: new Date(transaction.createdAt)
         });
 
@@ -505,6 +567,14 @@ class ReportsService {
           const resolvedCategory = categoryNameById.get(data?.category) || data?.category || 'lainnya';
           const description = data.note || resolvedCategory || (entryType === 'income' ? 'Pendapatan lain' : 'Biaya lain');
 
+          const resolvedMethod = resolvePaymentMethod(data?.paymentMethodId || data?.paymentMethodName);
+          const entryPaymentMethodId = resolvedMethod?.id || (typeof data?.paymentMethodId === 'string' ? data.paymentMethodId : undefined);
+          const entryPaymentMethodName = resolvedMethod?.name || (typeof data?.paymentMethodName === 'string' ? data.paymentMethodName : null);
+
+          if (!matchesPaymentFilter(entryPaymentMethodId, entryPaymentMethodName)) {
+            return;
+          }
+
           cashFlowData.push({
             id: `fin_${docSnap.id}`,
             date: effectiveDate.toISOString().split('T')[0],
@@ -512,6 +582,9 @@ class ReportsService {
             type: entryType,
             amount: Number(data.amount || 0),
             category: resolvedCategory,
+            paymentMethodId: entryPaymentMethodId,
+            paymentMethodName: entryPaymentMethodName || undefined,
+            source: 'financial',
             createdAt: effectiveDate
           });
         });
@@ -533,6 +606,7 @@ class ReportsService {
   static async getProfitLossAnalysis(filters: {
     startDate?: string;
     endDate?: string;
+    paymentMethodId?: string;
   } = {}): Promise<{
     totalIncome: number;
     totalExpense: number;

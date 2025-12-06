@@ -465,6 +465,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             filteredOrders.map((order) => {
               const statusInfo = statusConfig[order.status as keyof typeof statusConfig];
               const StatusIcon = statusInfo.icon;
+              const paymentMethodLabel = (order.paymentMethodName || order.paymentMethod || 'Metode tidak diketahui').trim();
 
               return (
                 <div key={order.id} className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow">
@@ -494,9 +495,9 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      {order.items.length} item • {order.paymentMethod === 'transfer' ? 'Transfer Bank' : 'COD'}
-                    </div>
+                  <div className="text-sm text-gray-600">
+                    {order.items.length} item • {paymentMethodLabel}
+                  </div>
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleViewOrder(order)}

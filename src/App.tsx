@@ -358,7 +358,9 @@ function AppContent() {
           total: item.total || 0
         })),
         shippingInfo: orderData.shippingInfo,
-        paymentMethod: orderData.paymentMethod,
+        paymentMethod: orderData.paymentMethodName || orderData.paymentMethod || '',
+        paymentMethodId: orderData.paymentMethodId || null,
+        paymentMethodName: orderData.paymentMethodName || orderData.paymentMethod || '',
         status: 'pending' as const,
         totalAmount: calculatedSubtotal,
         shippingCost: calculatedShippingCost,

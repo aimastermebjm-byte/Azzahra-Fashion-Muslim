@@ -11,6 +11,8 @@ export interface Order {
   items: any[];
   shippingInfo: any;
   paymentMethod: string;
+  paymentMethodId?: string | null;
+  paymentMethodName?: string | null;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'awaiting_verification' | 'paid';
   totalAmount: number;
   shippingCost: number;

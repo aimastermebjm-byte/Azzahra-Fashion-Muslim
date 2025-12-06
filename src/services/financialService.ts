@@ -28,6 +28,8 @@ export interface FinancialEntry {
   type: FinancialType;
   amount: number;
   category: string;
+  paymentMethodId?: string | null;
+  paymentMethodName?: string | null;
   note?: string;
   includeInPnL: boolean;
   createdAt?: Timestamp | Date | string | null;
@@ -36,7 +38,14 @@ export interface FinancialEntry {
   createdByRole?: string;
 }
 
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  isActive?: boolean;
+}
+
 const CATEGORY_CACHE_KEY = 'financial-categories-permanent';
+const PAYMENT_METHOD_CACHE_KEY = 'financial-payment-methods-permanent';
 
 const readCategoryCache = (): FinancialCategory[] | null => {
   try {
@@ -56,6 +65,27 @@ const writeCategoryCache = (categories: FinancialCategory[]) => {
     localStorage.setItem(CATEGORY_CACHE_KEY, JSON.stringify(categories));
   } catch (err) {
     console.error('⚠️ Failed to write category cache', err);
+  }
+};
+
+const readPaymentMethodCache = (): PaymentMethod[] | null => {
+  try {
+    const raw = localStorage.getItem(PAYMENT_METHOD_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PaymentMethod[];
+    if (!Array.isArray(parsed)) return null;
+    return parsed;
+  } catch (err) {
+    console.error('⚠️ Failed to read payment method cache', err);
+    return null;
+  }
+};
+
+const writePaymentMethodCache = (methods: PaymentMethod[]) => {
+  try {
+    localStorage.setItem(PAYMENT_METHOD_CACHE_KEY, JSON.stringify(methods));
+  } catch (err) {
+    console.error('⚠️ Failed to write payment method cache', err);
   }
 };
 
@@ -101,6 +131,39 @@ export const financialService = {
     return newCategory;
   },
 
+  async listPaymentMethods(): Promise<PaymentMethod[]> {
+    const cached = readPaymentMethodCache();
+    if (cached) return cached;
+
+    const snap = await getDocs(query(collection(db, 'financial_payment_methods'), orderBy('createdAt', 'desc')));
+    const methods: PaymentMethod[] = [];
+    snap.forEach((docSnap) => {
+      const data = docSnap.data() as any;
+      methods.push({
+        id: docSnap.id,
+        name: data.name || 'Tanpa nama',
+        isActive: data.isActive ?? true
+      });
+    });
+    writePaymentMethodCache(methods);
+    return methods;
+  },
+
+  async addPaymentMethod(name: string, createdBy?: string, createdByRole?: string): Promise<PaymentMethod> {
+    const docRef = await addDoc(collection(db, 'financial_payment_methods'), {
+      name,
+      isActive: true,
+      createdAt: serverTimestamp(),
+      createdBy: createdBy || null,
+      createdByRole: createdByRole || null
+    });
+
+    const newMethod: PaymentMethod = { id: docRef.id, name, isActive: true };
+    const cached = readPaymentMethodCache() || [];
+    writePaymentMethodCache([newMethod, ...cached]);
+    return newMethod;
+  },
+
   async listEntries(options?: { pageSize?: number; cursor?: DocumentSnapshot | null }): Promise<ListEntriesResult> {
     const size = options?.pageSize ?? 10;
     const baseQuery = query(
@@ -119,6 +182,8 @@ export const financialService = {
         type: data.type,
         amount: Number(data.amount || 0),
         category: data.category,
+        paymentMethodId: data.paymentMethodId || null,
+        paymentMethodName: data.paymentMethodName || null,
         note: data.note,
         includeInPnL: !!data.includeInPnL,
         createdAt: data.createdAt || null,
@@ -139,6 +204,8 @@ export const financialService = {
     type: FinancialType;
     amount: number;
     category: string;
+    paymentMethodId: string;
+    paymentMethodName?: string;
     note?: string;
     includeInPnL: boolean;
     effectiveDate?: string | Date | null;
@@ -148,7 +215,8 @@ export const financialService = {
     const payload = {
       ...entry,
       createdAt: serverTimestamp(),
-      effectiveDate: entry.effectiveDate ? new Date(entry.effectiveDate) : null
+      effectiveDate: entry.effectiveDate ? new Date(entry.effectiveDate) : null,
+      paymentMethodName: entry.paymentMethodName || null
     };
 
     const docRef = await addDoc(collection(db, 'financial_entries'), payload);
@@ -158,6 +226,8 @@ export const financialService = {
       type: entry.type,
       amount: entry.amount,
       category: entry.category,
+      paymentMethodId: entry.paymentMethodId,
+      paymentMethodName: entry.paymentMethodName || null,
       note: entry.note,
       includeInPnL: entry.includeInPnL,
       createdAt: new Date(),
@@ -176,6 +246,14 @@ export const financialService = {
     const cached = readCategoryCache();
     if (cached) {
       writeCategoryCache(cached.filter((cat) => cat.id !== id));
+    }
+  },
+
+  async deletePaymentMethod(id: string): Promise<void> {
+    await deleteDoc(doc(db, 'financial_payment_methods', id));
+    const cached = readPaymentMethodCache();
+    if (cached) {
+      writePaymentMethodCache(cached.filter((method) => method.id !== id));
     }
   }
 };

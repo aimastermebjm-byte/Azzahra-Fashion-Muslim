@@ -8,6 +8,7 @@ import PageHeader from './PageHeader';
 import EmptyState from './ui/EmptyState';
 import { CardSkeleton, ListSkeleton } from './ui/Skeleton';
 import { useToast } from './ToastProvider';
+import { financialService, PaymentMethod } from '../services/financialService';
 
 interface CheckoutPageProps {
   user: any;
@@ -23,6 +24,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(true);
 
   // Load cart from backend
   const loadCart = async () => {
@@ -85,6 +88,31 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       });
 
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const loadPaymentMethods = async () => {
+      try {
+        const methods = await financialService.listPaymentMethods();
+        if (!active) return;
+        setPaymentMethods(methods);
+        if (methods.length > 0) {
+          setFormData(prev => prev.paymentMethodId ? prev : { ...prev, paymentMethodId: methods[0].id });
+        }
+      } catch (error) {
+        console.error('Failed to load payment methods for checkout:', error);
+      } finally {
+        if (active) {
+          setPaymentMethodsLoading(false);
+        }
+      }
+    };
+
+    loadPaymentMethods();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const addAddress = async (addressData: any) => {
@@ -336,7 +364,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     isDropship: false,
     dropshipName: '',
     dropshipPhone: '',
-    paymentMethod: 'transfer',
+    paymentMethodId: '',
     shippingCourier: 'jnt',
     shippingCost: 0,
     shippingService: '',
@@ -353,6 +381,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     { id: 'lion', name: 'Lion Parcel', code: 'lion', price: 0 }, // Automatic via Komerce
     { id: 'idexpress', name: 'IDExpress', code: 'ide', price: 0 } // Automatic via Komerce
   ];
+
+  const selectedPaymentMethod = paymentMethods.find(method => method.id === formData.paymentMethodId);
 
   // Auto-select default courier and address when component mounts
   useEffect(() => {
@@ -598,6 +628,15 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       return;
     }
 
+    if (!selectedPaymentMethod) {
+      showToast({
+        type: 'warning',
+        title: 'Metode pembayaran belum siap',
+        message: 'Hubungi admin untuk menambahkan metode pembayaran.'
+      });
+      return;
+    }
+
     const orderData = {
       items: cartItems.map(item => ({
         ...item,
@@ -619,8 +658,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         shippingService: formData.shippingService,
         shippingETD: formData.shippingETD
       },
-      paymentMethod: formData.paymentMethod,
+      paymentMethod: selectedPaymentMethod.name,
       notes: formData.notes,
+      paymentMethodId: selectedPaymentMethod.id,
+      paymentMethodName: selectedPaymentMethod.name,
       totalAmount: totalPrice,
       shippingCost: shippingFee,
       finalTotal: finalTotal
@@ -1069,38 +1110,38 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         {/* Payment Method */}
         <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-900 mb-3">Metode Pembayaran</h3>
-          <div className="space-y-3">
-            <label className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2">
-              <input
-                type="radio"
-                name="paymentMethod"
-                value="transfer"
-                checked={formData.paymentMethod === 'transfer'}
-                onChange={handleInputChange}
-                className="h-4 w-4 border-slate-300 text-brand-primary focus:ring-brand-primary"
-              />
-              <div>
-                <p className="text-sm font-semibold text-slate-800">Transfer Bank</p>
-                <p className="text-xs text-slate-500">BCA · BRI · Mandiri</p>
-              </div>
-            </label>
-            <label className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2">
-              <input
-                type="radio"
-                name="paymentMethod"
-                value="cod"
-                checked={formData.paymentMethod === 'cod'}
-                onChange={handleInputChange}
-                className="h-4 w-4 border-slate-300 text-brand-primary focus:ring-brand-primary"
-              />
-              <div>
-                <p className="text-sm font-semibold text-slate-800">COD (Bayar di Tempat)</p>
-                <p className="text-xs text-slate-500">Bayar saat paket diterima</p>
-              </div>
-            </label>
-          </div>
+          {paymentMethodsLoading ? (
+            <div className="space-y-2">
+              {[...Array(2)].map((_, idx) => (
+                <div key={idx} className="h-12 rounded-xl bg-slate-100 animate-pulse" />
+              ))}
+            </div>
+          ) : paymentMethods.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-4 text-sm text-amber-700">
+              Metode pembayaran belum dikonfigurasi. Silakan hubungi admin agar dapat melanjutkan checkout.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {paymentMethods.map((method) => (
+                <label key={method.id} className={`flex items-center gap-3 rounded-xl border px-3 py-2 transition ${formData.paymentMethodId === method.id ? 'border-brand-primary bg-brand-primary/5' : 'border-slate-200 bg-white'}`}>
+                  <input
+                    type="radio"
+                    name="paymentMethodId"
+                    value={method.id}
+                    checked={formData.paymentMethodId === method.id}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 border-slate-300 text-brand-primary focus:ring-brand-primary"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{method.name}</p>
+                    <p className="text-xs text-slate-500">Metode pembayaran toko</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
 
-          {formData.paymentMethod === 'transfer' && (
+          {selectedPaymentMethod && selectedPaymentMethod.name.toLowerCase().includes('transfer') && (
             <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
               <p className="text-sm font-semibold text-slate-800">Transfer ke:</p>
               <div className="mt-3 space-y-2 text-sm text-slate-700">
@@ -1150,7 +1191,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   <p className="text-2xl font-bold text-brand-primary">Rp {finalTotal.toLocaleString('id-ID')}</p>
                 </div>
                 <div className="rounded-full bg-brand-primary/10 px-3 py-1 text-xs font-semibold text-brand-primary">
-                  {formData.paymentMethod === 'cod' ? 'COD' : 'Transfer'}
+                  {selectedPaymentMethod?.name || 'Metode belum dipilih'}
                 </div>
               </div>
               <div className="mt-4 space-y-3 text-sm">

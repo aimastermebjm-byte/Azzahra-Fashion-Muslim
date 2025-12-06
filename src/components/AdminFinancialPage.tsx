@@ -3,7 +3,7 @@ import { ArrowDownCircle, ArrowUpCircle, Plus, Filter, Calendar, Tags, Loader2, 
 import PageHeader from './PageHeader';
 import EmptyState from './ui/EmptyState';
 import { useToast } from './ToastProvider';
-import { financialService, FinancialCategory, FinancialEntry, FinancialType } from '../services/financialService';
+import { financialService, FinancialCategory, FinancialEntry, FinancialType, PaymentMethod } from '../services/financialService';
 
 interface AdminFinancialPageProps {
   onBack: () => void;
@@ -16,6 +16,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
   const { toast } = useToast();
 
   const [categories, setCategories] = useState<FinancialCategory[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [entries, setEntries] = useState<FinancialEntry[]>([]);
   const [cursor, setCursor] = useState<any>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -26,6 +27,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
   const [type, setType] = useState<FinancialType>('expense');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
   const [note, setNote] = useState('');
   const [effectiveDate, setEffectiveDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [includeInPnL, setIncludeInPnL] = useState(true);
@@ -33,10 +35,14 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
 
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newPaymentMethodName, setNewPaymentMethodName] = useState('');
+  const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false);
+  const [deletingPaymentMethodId, setDeletingPaymentMethodId] = useState<string | null>(null);
 
   const [filterType, setFilterType] = useState<'all' | FinancialType>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterPnL, setFilterPnL] = useState<'all' | 'include' | 'exclude'>('all');
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState<string>('all');
 
   const isOwner = user?.role === 'owner';
 
@@ -52,11 +58,15 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
     const loadInitial = async () => {
       setLoading(true);
       try {
-        const [cats, initialEntries] = await Promise.all([
+        const [cats, methods, initialEntries] = await Promise.all([
           financialService.listCategories(),
+          financialService.listPaymentMethods(),
           financialService.listEntries({ pageSize: 10 })
         ]);
         setCategories(cats);
+        setPaymentMethods(methods);
+        setCategory((prev) => prev || (cats[0]?.id ?? ''));
+        setPaymentMethod((prev) => prev || (methods[0]?.id ?? ''));
         setEntries(initialEntries.entries);
         setCursor(initialEntries.cursor);
         setHasMore(initialEntries.hasMore);
@@ -75,14 +85,29 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
     return entries.filter((entry) => {
       if (filterType !== 'all' && entry.type !== filterType) return false;
       if (filterCategory !== 'all' && entry.category !== filterCategory) return false;
+      if (filterPaymentMethod !== 'all') {
+        const selectedName = paymentMethodMap.get(filterPaymentMethod)?.name?.toLowerCase();
+        const entryName = entry.paymentMethodName?.toLowerCase();
+        const matchById = entry.paymentMethodId === filterPaymentMethod;
+        const matchByName = selectedName && entryName && selectedName === entryName;
+        if (!matchById && !matchByName) {
+          return false;
+        }
+      }
       if (filterPnL === 'include' && !entry.includeInPnL) return false;
       if (filterPnL === 'exclude' && entry.includeInPnL) return false;
       return true;
     });
-  }, [entries, filterType, filterCategory, filterPnL]);
+  }, [entries, filterType, filterCategory, filterPaymentMethod, filterPnL]);
 
   const expenseCategories = useMemo(() => categories.filter((cat) => cat.type === 'expense'), [categories]);
   const incomeCategories = useMemo(() => categories.filter((cat) => cat.type === 'income'), [categories]);
+  const paymentMethodMap = useMemo(() => {
+    return paymentMethods.reduce((map, method) => {
+      map.set(method.id, method);
+      return map;
+    }, new Map<string, PaymentMethod>());
+  }, [paymentMethods]);
 
   // Ringkasan selalu dihitung dari semua entri P&L (tidak terpengaruh filter agar angka laba/biaya konsisten)
   const summary = useMemo(() => {
@@ -110,6 +135,21 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
     }
   };
 
+  const handleAddPaymentMethod = async () => {
+    if (!newPaymentMethodName.trim()) return;
+    try {
+      const created = await financialService.addPaymentMethod(newPaymentMethodName.trim(), user?.uid, user?.role);
+      setPaymentMethods((prev) => [created, ...prev]);
+      setPaymentMethod(created.id);
+      setNewPaymentMethodName('');
+      setShowAddPaymentMethod(false);
+      toast({ title: 'Metode ditambahkan', description: created.name, variant: 'success' });
+    } catch (err) {
+      console.error('Failed to add payment method', err);
+      toast({ title: 'Gagal menambah metode', variant: 'destructive' });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsedAmount = parseAmount(amount);
@@ -119,6 +159,10 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
     }
     if (!category) {
       toast({ title: 'Kategori wajib', description: 'Pilih atau buat kategori', variant: 'destructive' });
+      return;
+    }
+    if (!paymentMethod) {
+      toast({ title: 'Metode pembayaran wajib', description: 'Pilih atau buat metode pembayaran', variant: 'destructive' });
       return;
     }
 
@@ -135,6 +179,8 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
         type,
         amount: parsedAmount,
         category: category,
+        paymentMethodId: paymentMethod,
+        paymentMethodName: paymentMethodMap.get(paymentMethod)?.name,
         note: note.trim(),
         includeInPnL,
         effectiveDate,
@@ -216,6 +262,34 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
       toast({ title: 'Gagal hapus kategori', variant: 'destructive' });
     } finally {
       setDeletingCategoryId(null);
+    }
+  };
+
+  const handleDeletePaymentMethod = async (methodId: string) => {
+    const target = paymentMethods.find((method) => method.id === methodId);
+    if (!target) return;
+    if (!window.confirm(`Hapus metode "${target.name}"?`)) {
+      return;
+    }
+    try {
+      setDeletingPaymentMethodId(methodId);
+      await financialService.deletePaymentMethod(methodId);
+      setPaymentMethods((prev) => {
+        const next = prev.filter((method) => method.id !== methodId);
+        setPaymentMethod((current) => (current === methodId ? (next[0]?.id ?? '') : current));
+        return next;
+      });
+      setEntries((prev) => prev.map((entry) => (
+        entry.paymentMethodId === methodId
+          ? { ...entry, paymentMethodId: null, paymentMethodName: target.name }
+          : entry
+      )));
+      toast({ title: 'Metode dihapus', description: target.name });
+    } catch (err) {
+      console.error('Failed to delete payment method', err);
+      toast({ title: 'Gagal hapus metode', variant: 'destructive' });
+    } finally {
+      setDeletingPaymentMethodId(null);
     }
   };
 
@@ -357,6 +431,47 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
             </div>
 
             <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Metode Pembayaran</label>
+              <div className="flex gap-2">
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                >
+                  <option value="">Pilih metode</option>
+                  {paymentMethods.map((method) => (
+                    <option key={method.id} value={method.id}>{method.name}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowAddPaymentMethod((v) => !v)}
+                  className="inline-flex items-center justify-center rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+              {showAddPaymentMethod && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newPaymentMethodName}
+                    onChange={(e) => setNewPaymentMethodName(e.target.value)}
+                    className="flex-1 rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                    placeholder="Nama metode (mis. Transfer BCA)"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddPaymentMethod}
+                    className="rounded-lg bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90"
+                  >
+                    Simpan
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Tanggal</label>
               <div className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2">
                 <Calendar className="w-4 h-4 text-slate-500" />
@@ -433,6 +548,17 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
             </select>
 
             <select
+              value={filterPaymentMethod}
+              onChange={(e) => setFilterPaymentMethod(e.target.value)}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            >
+              <option value="all">Semua metode bayar</option>
+              {paymentMethods.map((method) => (
+                <option key={method.id} value={method.id}>{method.name}</option>
+              ))}
+            </select>
+
+            <select
               value={filterPnL}
               onChange={(e) => setFilterPnL(e.target.value as any)}
               className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
@@ -501,6 +627,37 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
           </div>
         </div>
 
+        {/* Manage Payment Methods */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 text-slate-700">
+              <Tags className="w-4 h-4" />
+              <span className="text-sm font-semibold">Kelola Metode Pembayaran</span>
+            </div>
+            <span className="text-xs text-slate-500">Pastikan sama dengan arus kas/penjualan</span>
+          </div>
+          {paymentMethods.length === 0 ? (
+            <p className="text-xs text-slate-400">Belum ada metode pembayaran</p>
+          ) : (
+            <div className="space-y-2">
+              {paymentMethods.map((method) => (
+                <div key={method.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                  <span className="text-slate-800">{method.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeletePaymentMethod(method.id)}
+                    disabled={deletingPaymentMethodId === method.id}
+                    className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Hapus
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* List */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 space-y-3">
           <div className="flex items-center justify-between">
@@ -537,6 +694,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
                     </div>
                     <p className="mt-2 text-lg font-bold text-slate-900">{currency.format(entry.amount || 0)}</p>
                     <p className="text-sm text-slate-600">Kategori: {categories.find(c => c.id === entry.category)?.name || entry.category}</p>
+                    <p className="text-sm text-slate-600">Metode: {entry.paymentMethodId ? paymentMethodMap.get(entry.paymentMethodId)?.name || '-' : entry.paymentMethodName || '-'}</p>
                     {entry.note && <p className="text-xs text-slate-500 mt-1">{entry.note}</p>}
                   </div>
                   <div className="flex flex-col items-end gap-2 text-xs text-slate-500">

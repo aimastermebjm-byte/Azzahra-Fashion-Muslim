@@ -7,6 +7,7 @@ import {
   CreditCard, Search, ChevronDown
 } from 'lucide-react';
 import ReportsService from '../services/reportsService';
+import { financialService, PaymentMethod } from '../services/financialService';
 import {
   Transaction,
   ProductReport,
@@ -31,12 +32,14 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   // Additional filters for sales report
   const [statusFilter, setStatusFilter] = useState<'all' | 'lunas' | 'belum_lunas'>('all');
   const [customerFilter, setCustomerFilter] = useState<string>('');
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState<'all' | string>('all');
 
   // Data states
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [products, setProducts] = useState<ProductReport[]>([]);
   const [inventory, setInventory] = useState<InventoryReport[]>([]);
   const [cashFlow, setCashFlow] = useState<CashFlowReport[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Calculate date range based on filter
@@ -138,6 +141,19 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     }
   };
 
+  useEffect(() => {
+    const loadPaymentMethods = async () => {
+      try {
+        const methods = await financialService.listPaymentMethods();
+        setPaymentMethods(methods);
+      } catch (error) {
+        console.error('Error loading payment methods:', error);
+      }
+    };
+
+    loadPaymentMethods();
+  }, []);
+
   // Load cash flow report
   const loadCashFlowReport = async () => {
     setLoading(true);
@@ -146,7 +162,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       const cashFlowData = await ReportsService.getCashFlowReports({
         startDate: start,
         endDate: end,
-        limit: 100 // Limit untuk performance
+        limit: 100, // Limit untuk performance
+        paymentMethodId: paymentMethodFilter !== 'all' ? paymentMethodFilter : undefined
       });
       setCashFlow(cashFlowData);
     } catch (error) {
@@ -209,7 +226,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     };
 
     loadData();
-  }, [reportType, statusFilter, customerFilter, getDateRange.start, getDateRange.end]);
+  }, [reportType, statusFilter, customerFilter, paymentMethodFilter, getDateRange.start, getDateRange.end]);
 
   // Remove mock loader - rely on real data above
 
@@ -449,6 +466,19 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
             <p className="text-xs uppercase tracking-wide text-white/70">Filter Tambahan</p>
             <div className="mt-2 grid gap-2">
+              <div>
+                <label className="text-[11px] uppercase tracking-wide text-white/60">Metode Pembayaran (Arus Kas)</label>
+                <select
+                  value={paymentMethodFilter}
+                  onChange={(e) => setPaymentMethodFilter(e.target.value as any)}
+                  className="mt-1 w-full rounded-xl border border-white/30 bg-white/90 px-3 py-2 text-xs font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+                >
+                  <option value="all">Semua metode</option>
+                  {paymentMethods.map((method) => (
+                    <option key={method.id} value={method.id}>{method.name}</option>
+                  ))}
+                </select>
+              </div>
               <button
                 onClick={() => exportToCSV(filteredTransactions, 'laporan_penjualan.csv')}
                 className="flex items-center justify-between rounded-xl bg-white/15 px-3 py-2 text-xs font-semibold text-white hover:bg-white/25"
@@ -461,6 +491,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   setStatusFilter('all');
                   setCustomerFilter('');
                   setDateFilter('bulan_ini');
+                  setPaymentMethodFilter('all');
                 }}
                 className="rounded-xl border border-white/30 px-3 py-2 text-xs font-semibold text-white/80 transition hover:border-white hover:text-white"
               >
@@ -824,6 +855,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     <tr className="bg-gray-50">
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Deskripsi</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metode</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nominal</th>
                     </tr>
                   </thead>
@@ -835,6 +867,9 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900">
                           {flow.description}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500">
+                          {flow.paymentMethodName || '—'}
                         </td>
                         <td className={`px-4 py-3 text-sm font-medium ${
                           flow.type === 'income' ? 'text-brand-success' : 'text-brand-warning'
