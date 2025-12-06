@@ -437,6 +437,9 @@ class ReportsService {
     limit?: number;
   } = {}): Promise<CashFlowReport[]> {
     try {
+      const startMillis = filters.startDate ? new Date(`${filters.startDate}T00:00:00`).getTime() : null;
+      const endMillis = filters.endDate ? new Date(`${filters.endDate}T23:59:59`).getTime() : null;
+
       // Get transactions for cash flow
       const transactions = await this.getTransactions({
         startDate: filters.startDate,
@@ -478,7 +481,6 @@ class ReportsService {
         const finSnap = await getDocs(
           query(
             collection(db, 'financial_entries'),
-            where('includeInPnL', '==', true),
             orderBy('createdAt', 'desc'),
             limit(filters.limit || 500)
           )
@@ -486,18 +488,33 @@ class ReportsService {
 
         finSnap.forEach((docSnap) => {
           const data = docSnap.data() as any;
-          const created = data.createdAt && typeof data.createdAt.toDate === 'function'
-            ? data.createdAt.toDate()
-            : new Date();
+          if (!data?.includeInPnL) {
+            return;
+          }
+
+          const effectiveMillis = toMillis(data?.effectiveDate)
+            ?? toMillis(data?.createdAt)
+            ?? Date.now();
+
+          if (startMillis && effectiveMillis < startMillis) {
+            return;
+          }
+
+          if (endMillis && effectiveMillis > endMillis) {
+            return;
+          }
+
+          const effectiveDate = new Date(effectiveMillis);
+          const entryType = data?.type === 'income' ? 'income' : 'expense';
 
           cashFlowData.push({
             id: `fin_${docSnap.id}`,
-            date: data.effectiveDate || created.toISOString(),
-            description: data.note || (data.type === 'income' ? 'Pendapatan lain' : 'Biaya lain'),
-            type: data.type,
+            date: effectiveDate.toISOString().split('T')[0],
+            description: data.note || (entryType === 'income' ? 'Pendapatan lain' : 'Biaya lain'),
+            type: entryType,
             amount: Number(data.amount || 0),
             category: data.category || 'lainnya',
-            createdAt: created
+            createdAt: effectiveDate
           });
         });
       } catch (error) {
