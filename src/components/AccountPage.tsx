@@ -39,9 +39,6 @@ const AccountPage: React.FC<AccountPageProps> = ({
     confirmPassword: ''
   });
 
-  const { updateProfile } = useSupabaseAuth();
-  */
-
   // PWA Install Hook
   const { isInstalled, installApp, canInstall } = usePWAInstall();
 
