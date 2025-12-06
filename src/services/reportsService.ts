@@ -478,6 +478,14 @@ class ReportsService {
 
       // Append financial entries (owner-entered income/expense flagged for P&L)
       try {
+        // Load categories once to resolve readable names (so P&L shows the selected category, e.g., "Gaji Karyawan")
+        const categoriesSnap = await getDocs(query(collection(db, 'financial_categories')));
+        const categoryNameById = new Map<string, string>();
+        categoriesSnap.forEach((catDoc) => {
+          const catData = catDoc.data() as any;
+          categoryNameById.set(catDoc.id, catData?.name || 'Tanpa kategori');
+        });
+
         const finSnap = await getDocs(
           query(
             collection(db, 'financial_entries'),
@@ -506,14 +514,16 @@ class ReportsService {
 
           const effectiveDate = new Date(effectiveMillis);
           const entryType = data?.type === 'income' ? 'income' : 'expense';
+          const resolvedCategory = categoryNameById.get(data?.category) || data?.category || 'lainnya';
+          const description = data.note || resolvedCategory || (entryType === 'income' ? 'Pendapatan lain' : 'Biaya lain');
 
           cashFlowData.push({
             id: `fin_${docSnap.id}`,
             date: effectiveDate.toISOString().split('T')[0],
-            description: data.note || (entryType === 'income' ? 'Pendapatan lain' : 'Biaya lain'),
+            description,
             type: entryType,
             amount: Number(data.amount || 0),
-            category: data.category || 'lainnya',
+            category: resolvedCategory,
             createdAt: effectiveDate
           });
         });
