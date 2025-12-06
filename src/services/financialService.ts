@@ -12,7 +12,7 @@ import {
   Timestamp,
   DocumentSnapshot
 } from 'firebase/firestore';
-import { db } from '../utils/firebaseClient';
+import { auth, db } from '../utils/firebaseClient';
 
 export type FinancialType = 'income' | 'expense';
 
@@ -46,6 +46,9 @@ export interface PaymentMethod {
 
 const CATEGORY_CACHE_KEY = 'financial-categories-permanent';
 const PAYMENT_METHOD_CACHE_KEY = 'financial-payment-methods-permanent';
+const PAYMENT_METHODS_API_ENDPOINT = '/api/payment-methods';
+
+const isDevelopment = typeof import.meta !== 'undefined' && !!import.meta.env?.DEV;
 
 const readCategoryCache = (): FinancialCategory[] | null => {
   try {
@@ -87,6 +90,46 @@ const writePaymentMethodCache = (methods: PaymentMethod[]) => {
   } catch (err) {
     console.error('⚠️ Failed to write payment method cache', err);
   }
+};
+
+const extractApiErrorMessage = async (response: Response): Promise<string> => {
+  try {
+    const data = await response.json();
+    if (typeof data?.message === 'string') {
+      return data.message;
+    }
+  } catch (error) {
+    // ignore json parse errors
+  }
+  return `Request failed with status ${response.status}`;
+};
+
+const requireAuthToken = async (): Promise<string> => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error('Sesi login kedaluwarsa. Silakan login ulang untuk mengelola metode pembayaran.');
+  }
+  return currentUser.getIdToken();
+};
+
+const addPaymentMethodDirect = async (
+  name: string,
+  createdBy?: string,
+  createdByRole?: string
+): Promise<PaymentMethod> => {
+  const docRef = await addDoc(collection(db, 'financial_payment_methods'), {
+    name,
+    isActive: true,
+    createdAt: serverTimestamp(),
+    createdBy: createdBy || null,
+    createdByRole: createdByRole || null
+  });
+
+  return { id: docRef.id, name, isActive: true };
+};
+
+const deletePaymentMethodDirect = async (id: string): Promise<void> => {
+  await deleteDoc(doc(db, 'financial_payment_methods', id));
 };
 
 export interface ListEntriesResult {
@@ -150,18 +193,45 @@ export const financialService = {
   },
 
   async addPaymentMethod(name: string, createdBy?: string, createdByRole?: string): Promise<PaymentMethod> {
-    const docRef = await addDoc(collection(db, 'financial_payment_methods'), {
-      name,
-      isActive: true,
-      createdAt: serverTimestamp(),
-      createdBy: createdBy || null,
-      createdByRole: createdByRole || null
-    });
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      throw new Error('Nama metode wajib diisi');
+    }
 
-    const newMethod: PaymentMethod = { id: docRef.id, name, isActive: true };
-    const cached = readPaymentMethodCache() || [];
-    writePaymentMethodCache([newMethod, ...cached]);
-    return newMethod;
+    try {
+      const token = await requireAuthToken();
+      const response = await fetch(PAYMENT_METHODS_API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ name: trimmedName })
+      });
+
+      if (!response.ok) {
+        const message = await extractApiErrorMessage(response);
+        throw new Error(message);
+      }
+
+      const payload = await response.json();
+      const created: PaymentMethod = payload?.data?.method || { id: payload?.data?.id, name: trimmedName, isActive: true };
+      const cached = readPaymentMethodCache() || [];
+      writePaymentMethodCache([created, ...cached]);
+      return created;
+    } catch (error) {
+      if (isDevelopment) {
+        console.warn('Payment method API unavailable, falling back to direct Firestore write (dev only).', error);
+        const fallback = await addPaymentMethodDirect(trimmedName, createdBy, createdByRole);
+        const cached = readPaymentMethodCache() || [];
+        writePaymentMethodCache([fallback, ...cached]);
+        return fallback;
+      }
+
+      throw error instanceof Error
+        ? error
+        : new Error('Gagal menambah metode pembayaran.');
+    }
   },
 
   async listEntries(options?: { pageSize?: number; cursor?: DocumentSnapshot | null }): Promise<ListEntriesResult> {
@@ -250,7 +320,35 @@ export const financialService = {
   },
 
   async deletePaymentMethod(id: string): Promise<void> {
-    await deleteDoc(doc(db, 'financial_payment_methods', id));
+    if (!id) {
+      throw new Error('ID metode pembayaran tidak valid');
+    }
+
+    try {
+      const token = await requireAuthToken();
+      const url = `${PAYMENT_METHODS_API_ENDPOINT}?id=${encodeURIComponent(id)}`;
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const message = await extractApiErrorMessage(response);
+        throw new Error(message);
+      }
+    } catch (error) {
+      if (isDevelopment) {
+        console.warn('Payment method API unavailable, falling back to direct Firestore delete (dev only).', error);
+        await deletePaymentMethodDirect(id);
+      } else {
+        throw error instanceof Error
+          ? error
+          : new Error('Gagal menghapus metode pembayaran.');
+      }
+    }
+
     const cached = readPaymentMethodCache();
     if (cached) {
       writePaymentMethodCache(cached.filter((method) => method.id !== id));

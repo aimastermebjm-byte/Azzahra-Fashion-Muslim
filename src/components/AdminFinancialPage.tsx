@@ -146,7 +146,8 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
       toast({ title: 'Metode ditambahkan', description: created.name, variant: 'success' });
     } catch (err) {
       console.error('Failed to add payment method', err);
-      toast({ title: 'Gagal menambah metode', variant: 'destructive' });
+      const message = err instanceof Error ? err.message : 'Periksa koneksi atau izin akses.';
+      toast({ title: 'Gagal menambah metode', description: message, variant: 'destructive' });
     }
   };
 
@@ -287,7 +288,8 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
       toast({ title: 'Metode dihapus', description: target.name });
     } catch (err) {
       console.error('Failed to delete payment method', err);
-      toast({ title: 'Gagal hapus metode', variant: 'destructive' });
+      const message = err instanceof Error ? err.message : 'Periksa koneksi atau izin akses.';
+      toast({ title: 'Gagal hapus metode', description: message, variant: 'destructive' });
     } finally {
       setDeletingPaymentMethodId(null);
     }
