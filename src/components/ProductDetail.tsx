@@ -99,11 +99,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     };
     
     onAddToCart(productWithPrice, variant, quantity);
-    showToast({
-      type: 'success',
-      title: 'Masuk ke keranjang',
-      message: `${currentProduct.name} siap kamu checkout.`
-    });
+    // No toast notification - silent add to cart
 
     // Reset selections
     setSelectedSize('');

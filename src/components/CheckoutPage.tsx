@@ -105,7 +105,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         if (!active) return;
         setPaymentMethods(methods);
         if (methods.length > 0) {
-          setFormData(prev => prev.paymentMethodId ? prev : { ...prev, paymentMethodId: methods[0].id });
+          // Default to "Transfer Bank" if available, otherwise first method
+          const transferMethod = methods.find(m => m.name.toLowerCase().includes('transfer') || m.name.toLowerCase().includes('bank'));
+          const defaultMethodId = transferMethod ? transferMethod.id : methods[0].id;
+          setFormData(prev => prev.paymentMethodId ? prev : { ...prev, paymentMethodId: defaultMethodId });
         }
       } catch (error) {
         console.error('Failed to load payment methods for checkout:', error);

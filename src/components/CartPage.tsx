@@ -58,7 +58,8 @@ const CartPage: React.FC<CartPageProps> = ({
   const handleBulkDelete = async () => {
     if (selectedItems.size === 0) return;
     
-    const confirmDelete = window.confirm(`Hapus ${selectedItems.size} produk dari keranjang?`);
+    const itemCount = selectedItems.size; // Save count before clearing
+    const confirmDelete = window.confirm(`Hapus ${itemCount} produk dari keranjang?`);
     if (!confirmDelete) return;
 
     try {
@@ -66,9 +67,9 @@ const CartPage: React.FC<CartPageProps> = ({
       const deletePromises = Array.from(selectedItems).map(itemId => removeCartItem(itemId));
       await Promise.all(deletePromises);
       
-      // Clear selection
+      // Clear selection after successful delete
       setSelectedItems(new Set());
-      console.log(`✅ Berhasil menghapus ${selectedItems.size} produk`);
+      console.log(`✅ Berhasil menghapus ${itemCount} produk`);
     } catch (error) {
       console.error('❌ Failed to bulk delete:', error);
     }

@@ -158,13 +158,20 @@ function AppContent() {
       return;
     }
 
-    // Add to cart first
+    // Add to cart first and get the item ID
     await handleAddToCart(product, variant, quantity);
 
-    // Then go to checkout
-    setTimeout(() => {
-      setCurrentPage('checkout');
-    }, 500);
+    // Get cart to find the newly added item
+    const cartItems = await cartServiceOptimized.getCart();
+    const latestItem = cartItems[cartItems.length - 1]; // Last added item
+    
+    if (latestItem) {
+      // Set selected item for checkout (only the item just added)
+      setSelectedCartItemIds([latestItem.id]);
+    }
+
+    // Go directly to checkout
+    setCurrentPage('checkout');
   };
   
   const handleOrderComplete = async (orderData: any, cartItems?: any[]) => {
