@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
 import { Plus, Minus, Trash2, ShoppingBag, ShieldCheck, Truck } from 'lucide-react';
 import PageHeader from './PageHeader';
@@ -16,6 +16,17 @@ const CartPage: React.FC<CartPageProps> = ({
   onCheckout
 }) => {
   const { cartItems, loading, error, updateQuantity: updateCartItem, removeFromCart: removeCartItem, getCartTotal } = useRealTimeCartOptimized();
+  
+  // State untuk checkbox selection
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  
+  // Select all items by default when cart loads
+  React.useEffect(() => {
+    if (cartItems.length > 0 && selectedItems.size === 0) {
+      const allItemIds = cartItems.map(item => item.id);
+      setSelectedItems(new Set(allItemIds));
+    }
+  }, [cartItems]);
 
   const handleUpdateQuantity = async (productId: string, variant: any, newQuantity: number) => {
     try {
@@ -59,9 +70,31 @@ const CartPage: React.FC<CartPageProps> = ({
     }
   };
 
+  // Toggle item selection
+  const toggleItemSelection = (itemId: string) => {
+    const newSelection = new Set(selectedItems);
+    if (newSelection.has(itemId)) {
+      newSelection.delete(itemId);
+    } else {
+      newSelection.add(itemId);
+    }
+    setSelectedItems(newSelection);
+  };
+
+  // Toggle select all
+  const toggleSelectAll = () => {
+    if (selectedItems.size === cartItems.length) {
+      setSelectedItems(new Set());
+    } else {
+      const allItemIds = cartItems.map(item => item.id);
+      setSelectedItems(new Set(allItemIds));
+    }
+  };
+
+  // Calculate total for selected items only
   const getTotalPrice = () => {
     return cartItems.reduce((total: number, item: any) => {
-      if (!item) return total;
+      if (!item || !selectedItems.has(item.id)) return total;
       const itemPrice = item.price || 0;
       const itemQuantity = item.quantity || 1;
       return total + (itemPrice * itemQuantity);
@@ -70,7 +103,8 @@ const CartPage: React.FC<CartPageProps> = ({
 
   const totalPrice = getTotalPrice();
   const cartCount = cartItems?.length || 0;
-  const orderSubtotal = typeof getCartTotal === 'function' ? getCartTotal() : totalPrice;
+  const selectedCount = selectedItems.size;
+  const orderSubtotal = totalPrice;
   const formatCurrency = (value: number) => `Rp ${value.toLocaleString('id-ID')}`;
 
   const pageHeader = (
@@ -148,6 +182,21 @@ const CartPage: React.FC<CartPageProps> = ({
       {pageHeader}
 
       <div className="mx-auto max-w-6xl space-y-6 px-4 pb-8">
+        {/* Select All Checkbox */}
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-4 shadow-sm">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selectedItems.size === cartItems.length && cartItems.length > 0}
+              onChange={toggleSelectAll}
+              className="h-5 w-5 rounded border-gray-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+            />
+            <span className="font-semibold text-slate-900">
+              Pilih Semua ({cartItems.length} produk)
+            </span>
+          </label>
+        </div>
+
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
           <div className="space-y-4">
             {cartItems
@@ -166,14 +215,25 @@ const CartPage: React.FC<CartPageProps> = ({
                 const productId = item.productId || item.id || `product-${index}`;
                 const variant = item.variant || {};
 
+                const isSelected = selectedItems.has(item.id);
+
                 return (
-                  <div key={`${productId}-${variant.size || 'default'}-${variant.color || 'default'}`} className="rounded-2xl border border-white/40 bg-white/95 p-4 shadow-sm">
+                  <div key={`${productId}-${variant.size || 'default'}-${variant.color || 'default'}`} className={`rounded-2xl border p-4 shadow-sm transition-all ${isSelected ? 'border-brand-primary bg-brand-primary/5' : 'border-white/40 bg-white/95'}`}>
                     <div className="flex flex-col gap-4 sm:flex-row">
-                      <img
-                        src={itemImage}
-                        alt={itemName}
-                        className="h-24 w-24 rounded-xl object-cover"
-                      />
+                      {/* Checkbox */}
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleItemSelection(item.id)}
+                          className="mt-1 h-5 w-5 rounded border-gray-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+                        />
+                        <img
+                          src={itemImage}
+                          alt={itemName}
+                          className="h-24 w-24 rounded-xl object-cover"
+                        />
+                      </div>
                       <div className="flex-1">
                         <h3 className="mb-1 text-base font-semibold text-slate-900">{itemName}</h3>
 
@@ -232,6 +292,10 @@ const CartPage: React.FC<CartPageProps> = ({
             <h3 className="text-lg font-semibold text-slate-900">Ringkasan Pesanan</h3>
             <div className="mt-4 space-y-3 text-sm">
               <div className="flex items-center justify-between text-slate-600">
+                <span>Produk Dipilih</span>
+                <span className="font-semibold text-slate-900">{selectedCount} dari {cartCount}</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-600">
                 <span>Subtotal</span>
                 <span className="font-semibold text-slate-900">{formatCurrency(orderSubtotal)}</span>
               </div>
@@ -246,9 +310,10 @@ const CartPage: React.FC<CartPageProps> = ({
             </div>
             <button
               onClick={onCheckout}
-              className="btn-brand mt-4 w-full"
+              disabled={selectedCount === 0}
+              className="btn-brand mt-4 w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Lanjut ke Checkout
+              Checkout ({selectedCount} Produk)
             </button>
             <div className="mt-4 space-y-2 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
               <p className="flex items-center gap-2">

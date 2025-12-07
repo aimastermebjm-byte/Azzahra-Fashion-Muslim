@@ -128,14 +128,11 @@ function AppContent() {
       // Call cartService.addToCart - let it read existing cart items
       const success = await cartServiceOptimized.addToCart(product, quantity, variant);
 
-      if (success) {
-        alert('Produk berhasil ditambahkan ke keranjang!');
-      } else {
-        alert('Gagal menambahkan produk ke keranjang');
+      if (!success) {
+        console.error('❌ Failed to add to cart');
       }
     } catch (error) {
       console.error('❌ Failed to add to cart:', error);
-      alert('Gagal menambahkan produk ke keranjang');
     }
   };
 
@@ -182,7 +179,7 @@ function AppContent() {
       const items = cartItems || [];
 
       if (items.length === 0) {
-        alert('Keranjang belanja kosong!');
+        console.log('⚠️ Keranjang belanja kosong');
         return null;
       }
 
@@ -384,15 +381,8 @@ function AppContent() {
     } catch (error) {
       console.error('❌ ATOMIC TRANSACTION FAILED:', error);
 
-      // Show user-friendly error message
-      if (error.message.includes('tidak mencukupi')) {
-        alert(`⚠️ CHECKOUT GAGAL:\n\n${error.message}\n\nMohon periksa kembali keranjang Anda atau kurangi jumlah pesanan.`);
-      } else if (error.message.includes('tidak ditemukan')) {
-        alert(`⚠️ CHECKOUT GAGAL:\n\n${error.message}\n\nMohon refresh halaman dan coba lagi.`);
-      } else {
-        alert(`⚠️ CHECKOUT GAGAL:\n\nTerjadi kesalahan saat memproses pesanan. Silakan coba lagi.\n\nError: ${error.message}`);
-      }
-
+      // Log error without alert
+      console.error('⚠️ CHECKOUT GAGAL:', error.message);
       return null;
     }
   };
