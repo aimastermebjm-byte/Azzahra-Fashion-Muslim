@@ -15,7 +15,7 @@ const CartPage: React.FC<CartPageProps> = ({
   onBack,
   onCheckout
 }) => {
-  const { cartItems, loading, error, updateQuantity: updateCartItem, removeFromCart: removeCartItem, getCartTotal } = useRealTimeCartOptimized();
+  const { cartItems, loading, error, updateQuantity: updateCartItem, removeFromCart: removeCartItem, removeBulkFromCart: removeBulkCartItems, getCartTotal } = useRealTimeCartOptimized();
   
   // State untuk checkbox selection
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -63,9 +63,9 @@ const CartPage: React.FC<CartPageProps> = ({
     if (!confirmDelete) return;
 
     try {
-      // Delete all selected items
-      const deletePromises = Array.from(selectedItems).map(itemId => removeCartItem(itemId));
-      await Promise.all(deletePromises);
+      // Delete all selected items in one Firestore operation (no race condition)
+      const itemIdsToDelete = Array.from(selectedItems);
+      await removeBulkCartItems(itemIdsToDelete);
       
       // Clear selection after successful delete
       setSelectedItems(new Set());

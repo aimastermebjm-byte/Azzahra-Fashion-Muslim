@@ -63,6 +63,10 @@ export const useRealTimeCartOptimized = () => {
     return await cartServiceOptimized.removeFromCart(itemId);
   };
 
+  const removeBulkFromCart = async (itemIds: string[]) => {
+    return await cartServiceOptimized.removeBulkFromCart(itemIds);
+  };
+
   const clearCart = async () => {
     return await cartServiceOptimized.clearCart();
   };
@@ -82,6 +86,7 @@ export const useRealTimeCartOptimized = () => {
     addToCart,
     updateQuantity,
     removeFromCart,
+    removeBulkFromCart,
     clearCart,
     getCartTotal,
     getCartItemsCount

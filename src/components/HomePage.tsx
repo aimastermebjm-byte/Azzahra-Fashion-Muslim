@@ -334,30 +334,8 @@ const HomePage: React.FC<HomePageProps> = ({
   
   return (
     <div className="min-h-screen bg-brand-surface pb-20">
-      {/* Header */}
-      <div className="bg-brand-gradient text-white p-6 shadow-brand-card">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-xl font-bold">Azzahra Fashion</h1>
-            <p className="text-brand-accent text-sm">Muslim Fashion Store</p>
-          </div>
-          <div className="flex items-center space-x-3">
-            {user ? (
-              <div className="flex items-center space-x-2">
-                <User className="w-5 h-5" />
-                <span className="text-sm">{user.name}</span>
-              </div>
-            ) : (
-              <button
-                onClick={onLoginRequired}
-                className="bg-white/15 px-4 py-2 rounded-full text-sm font-medium hover:bg-white/25 transition-colors"
-              >
-                Login
-              </button>
-            )}
-          </div>
-        </div>
-
+      {/* Header - Sticky */}
+      <div className="sticky top-0 z-50 bg-brand-gradient text-white p-6 shadow-brand-card">
         {/* Search Bar */}
         <div className="flex items-center space-x-3">
           <div className="flex-1 relative">

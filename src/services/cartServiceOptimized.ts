@@ -311,6 +311,39 @@ class CartServiceOptimized {
     }
   }
 
+  // 🔥 FIRESTORE PERSISTENCE: Remove multiple items from cart (BULK DELETE)
+  async removeBulkFromCart(itemIds: string[]): Promise<boolean> {
+    try {
+      const user = auth.currentUser;
+      if (!user) return false;
+
+      console.log(`🗑️ Bulk removing ${itemIds.length} items from cart`);
+
+      const cartRef = doc(db, this.FIREBASE_COLLECTION, user.uid);
+      const cartDoc = await getDoc(cartRef);
+
+      if (!cartDoc.exists()) return false;
+
+      const data = cartDoc.data();
+      let items = data?.items || [];
+
+      // Remove all items in the list
+      items = items.filter((item: CartItem) => !itemIds.includes(item.id));
+
+      await updateDoc(cartRef, {
+        items: items,
+        lastUpdated: new Date().toISOString()
+      });
+
+      console.log(`✅ Bulk removed ${itemIds.length} items from cart successfully`);
+      return true;
+
+    } catch (error) {
+      console.error('❌ Error bulk removing from cart:', error);
+      return false;
+    }
+  }
+
   // 🔥 FIRESTORE PERSISTENCE: Clear cart
   async clearCart(): Promise<boolean> {
     try {
