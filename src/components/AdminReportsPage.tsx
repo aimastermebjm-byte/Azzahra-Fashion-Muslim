@@ -251,10 +251,14 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       const matchesCustomer = !customerFilter ||
         transaction.customer.toLowerCase().includes(customerFilter.toLowerCase()) ||
         transaction.phone.includes(customerFilter);
+      
+      // Filter by category - check if any item in transaction has matching category
+      const matchesCategory = categoryFilter === 'all' || 
+        (transaction.items && transaction.items.some((item: any) => item.category === categoryFilter));
 
-      return matchesDate && matchesStatus && matchesCustomer;
+      return matchesDate && matchesStatus && matchesCustomer && matchesCategory;
     });
-  }, [transactions, getDateRange, statusFilter, customerFilter]);
+  }, [transactions, getDateRange, statusFilter, customerFilter, categoryFilter]);
 
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
@@ -652,6 +656,25 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 </button>
               </div>
 
+              {/* Filter Kategori Produk */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter Kategori Produk
+                </label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                >
+                  <option value="all">Semua Kategori</option>
+                  {productCategories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="overflow-x-auto">
                 <table className="w-full table-auto">
                   <thead>
@@ -696,12 +719,31 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">Laporan Produk Terjual</h3>
                 <button
-                  onClick={() => exportToCSV(products, 'laporan_produk.csv')}
+                  onClick={() => exportToCSV(products.filter(p => categoryFilter === 'all' || p.category === categoryFilter), 'laporan_produk.csv')}
                   className="flex items-center space-x-2 btn-brand"
                 >
                   <Download className="w-4 h-4" />
                   <span className="text-sm">Export CSV</span>
                 </button>
+              </div>
+
+              {/* Filter Kategori Produk */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter Kategori Produk
+                </label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                >
+                  <option value="all">Semua Kategori</option>
+                  {productCategories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="overflow-x-auto">
@@ -716,7 +758,9 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {products.map((product) => {
+                    {products
+                      .filter(p => categoryFilter === 'all' || p.category === categoryFilter)
+                      .map((product) => {
                       const averagePrice = product.totalSold > 0 ? product.totalRevenue / product.totalSold : 0;
                       const modal = product.totalRevenue - product.profit;
 
@@ -798,12 +842,31 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">Laporan Persediaan</h3>
                 <button
-                  onClick={() => exportToCSV(inventory, 'laporan_persediaan.csv')}
+                  onClick={() => exportToCSV(inventory.filter(i => categoryFilter === 'all' || i.category === categoryFilter), 'laporan_persediaan.csv')}
                   className="flex items-center space-x-2 btn-brand"
                 >
                   <Download className="w-4 h-4" />
                   <span className="text-sm">Export CSV</span>
                 </button>
+              </div>
+
+              {/* Filter Kategori Produk */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter Kategori Produk
+                </label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                >
+                  <option value="all">Semua Kategori</option>
+                  {productCategories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="overflow-x-auto">
@@ -817,7 +880,9 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {inventory.map((item) => {
+                    {inventory
+                      .filter(i => categoryFilter === 'all' || i.category === categoryFilter)
+                      .map((item) => {
                       const stock = Number(item.stock) || 0;
                       const modalPerUnit = stock > 0 ? (Number(item.value) || 0) / stock : 0;
                       const totalModal = modalPerUnit * stock;
