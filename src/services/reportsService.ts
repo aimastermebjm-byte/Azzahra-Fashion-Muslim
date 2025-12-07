@@ -94,6 +94,7 @@ export interface CashFlowReport {
   paymentMethodId?: string;
   paymentMethodName?: string;
   source?: 'sale' | 'financial';
+  includeInPnL?: boolean;
   createdAt: Date;
 }
 
@@ -510,17 +511,18 @@ class ReportsService {
           return;
         }
 
-        // Income from sales
+        // Income from sales (total including shipping cost paid by customer)
         cashFlowData.push({
           id: `${transaction.id}_income`,
           date: transaction.date,
           description: `Penjualan ${transaction.invoice}`,
           type: 'income',
-          amount: transaction.subtotal,
+          amount: transaction.total,
           category: 'penjualan',
           paymentMethodId,
           paymentMethodName: paymentMethodName || undefined,
           source: 'sale',
+          includeInPnL: true,
           createdAt: new Date(transaction.createdAt)
         });
 
@@ -546,9 +548,6 @@ class ReportsService {
 
         finSnap.forEach((docSnap) => {
           const data = docSnap.data() as any;
-          if (!data?.includeInPnL) {
-            return;
-          }
 
           const effectiveMillis = toMillis(data?.effectiveDate)
             ?? toMillis(data?.createdAt)
@@ -585,6 +584,7 @@ class ReportsService {
             paymentMethodId: entryPaymentMethodId,
             paymentMethodName: entryPaymentMethodName || undefined,
             source: 'financial',
+            includeInPnL: !!data?.includeInPnL,
             createdAt: effectiveDate
           });
         });
@@ -617,11 +617,11 @@ class ReportsService {
       const cashFlowData = await this.getCashFlowReports(filters);
 
       const totalIncome = cashFlowData
-        .filter(item => item.type === 'income')
+        .filter(item => item.type === 'income' && item.includeInPnL !== false)
         .reduce((sum, item) => sum + item.amount, 0);
 
       const totalExpense = cashFlowData
-        .filter(item => item.type === 'expense')
+        .filter(item => item.type === 'expense' && item.includeInPnL !== false)
         .reduce((sum, item) => sum + item.amount, 0);
 
       const totalProfit = totalIncome - totalExpense;

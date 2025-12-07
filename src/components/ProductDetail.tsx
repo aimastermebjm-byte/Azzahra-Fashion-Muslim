@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Minus, ShoppingCart, Heart, Share2, Star } from 'lucide-react';
-import PageHeader from './PageHeader';
+import { Plus, Minus, ShoppingCart, Heart, Share2, Star, ArrowLeft } from 'lucide-react';
 import { useToast } from './ToastProvider';
 import { Product } from '../types';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
+import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
 
 interface ProductDetailProps {
   currentProduct: Product;
@@ -24,6 +24,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   onBuyNow,
   onNavigateToCart
 }) => {
+  // Get cart count for badge
+  const { cartItems } = useRealTimeCartOptimized();
+  const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
@@ -88,7 +91,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       : undefined;
 
     console.log('🔍 DEBUG: Final variant object:', variant);
-    onAddToCart(currentProduct, variant, quantity);
+    
+    // Pass product with correct price based on user role and flash sale
+    const productWithPrice = {
+      ...currentProduct,
+      price: getPrice() // Use calculated price based on flash sale and user role
+    };
+    
+    onAddToCart(productWithPrice, variant, quantity);
     showToast({
       type: 'success',
       title: 'Masuk ke keranjang',
@@ -140,7 +150,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     const variant = (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0)
       ? { size: selectedSize, color: selectedColor }
       : null;
-    onBuyNow(currentProduct, variant, quantity);
+    
+    // Pass product with correct price based on user role and flash sale
+    const productWithPrice = {
+      ...currentProduct,
+      price: getPrice() // Use calculated price based on flash sale and user role
+    };
+    
+    onBuyNow(productWithPrice, variant, quantity);
   };
 
   const getPrice = () => {
@@ -211,13 +228,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
   
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <PageHeader
-        title="Detail Produk"
-        subtitle="Lihat informasi lengkap, stok varian, dan promo aktif"
-        onBack={onBack}
-        variant="card"
-        actions={(
+    <div className="min-h-screen bg-gray-50 pb-32 md:pb-24">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-40 bg-white shadow-sm">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onBack}
+              className="rounded-full p-2 text-gray-600 transition hover:bg-gray-100"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div>
+              <h1 className="text-sm font-semibold text-gray-900">Detail Produk</h1>
+              <p className="text-xs text-gray-500 hidden sm:block">Lihat informasi lengkap produk</p>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <button className="rounded-full border border-gray-200 bg-white p-2 text-gray-600 transition hover:text-brand-primary">
               <Share2 className="h-4 w-4" />
@@ -227,14 +253,19 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             </button>
             <button
               onClick={onNavigateToCart || (() => {})}
-              className="inline-flex items-center gap-2 rounded-full bg-brand-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-primary/90"
+              className="relative inline-flex items-center gap-2 rounded-full bg-brand-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-primary/90"
             >
               <ShoppingCart className="h-4 w-4" />
-              Keranjang
+              <span className="hidden sm:inline">Keranjang</span>
+              {cartItemCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                  {cartItemCount}
+                </span>
+              )}
             </button>
           </div>
-        )}
-      />
+        </div>
+      </div>
 
         {/* Product Images */}
         <div className="bg-white">
@@ -562,7 +593,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         </div>
 
       {/* Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 backdrop-blur">
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white shadow-lg">
         <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs uppercase tracking-wide text-slate-500">Subtotal</p>

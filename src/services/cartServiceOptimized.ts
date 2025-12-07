@@ -166,11 +166,26 @@ class CartServiceOptimized {
       } else {
         // Add new item
         const productId = product.id || product.productId || 'unknown_' + Date.now();
+        
+        // Determine price with correct priority:
+        // 1. If product.price is set (already calculated by ProductDetail based on role/flash sale)
+        // 2. Flash sale price if active
+        // 3. Retail price (default for owner, customer, admin)
+        // 4. Fallback to any price field available
+        let itemPrice = 0;
+        if (product.price && Number(product.price) > 0) {
+          itemPrice = Number(product.price);
+        } else if (product.isFlashSale && product.flashSalePrice > 0) {
+          itemPrice = Number(product.flashSalePrice);
+        } else {
+          itemPrice = Number(product.retailPrice || product.resellerPrice || 0);
+        }
+        
         const cartItem: CartItem = {
           id: this.generateCartItemId(),
           productId: productId,
           name: product.name || 'Unknown Product',
-          price: Number(product.resellerPrice || product.retailPrice || product.price) || 0,
+          price: itemPrice,
           quantity: Number(quantity) || 1,
           image: product.image || product.images?.[0] || '/placeholder-product.jpg',
           ...(variant && { variant }), // Hanya include variant jika ada

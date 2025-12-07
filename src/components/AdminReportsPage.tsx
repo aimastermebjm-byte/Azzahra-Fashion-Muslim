@@ -280,6 +280,9 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   }, [cashFlow]);
 
   const financialBreakdown = useMemo(() => {
+    // Filter cashflow for P&L (only entries with includeInPnL = true)
+    const pnlCashFlow = cashFlow.filter(flow => flow.includeInPnL !== false);
+
     const modalCost = filteredTransactions.reduce((sum, transaction) => {
       const transactionModal = transaction.totalModal || (transaction.subtotal * 0.6);
       return sum + transactionModal;
@@ -289,11 +292,11 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     const pendapatanOngkir = summaryStats.totalShipping;
     const pendapatanTotal = pendapatanPenjualan + pendapatanOngkir;
 
-    const ongkirPembelian = cashFlow
+    const ongkirPembelian = pnlCashFlow
       .filter(flow => flow.type === 'expense' && (flow.category || '').toLowerCase() === 'ongkir pembelian')
       .reduce((sum, flow) => sum + flow.amount, 0);
 
-    const nonShippingExpenses = cashFlow.filter(
+    const nonShippingExpenses = pnlCashFlow.filter(
       flow => flow.type === 'expense' && (flow.category || '').toLowerCase() !== 'ongkir pembelian'
     );
     const biayaLain = nonShippingExpenses.reduce((sum, flow) => sum + flow.amount, 0);
@@ -324,19 +327,39 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
   const cashflowRecap = useMemo(() => {
     const saldoSebelum = 0;
-    const pembelian = profitLossStats.totalExpense;
-    const penjualan = profitLossStats.totalIncome;
-    const total = penjualan - pembelian;
+    
+    // Group by category for dynamic breakdown
+    const incomeByCategory = cashFlow
+      .filter(flow => flow.type === 'income')
+      .reduce<Record<string, number>>((acc, flow) => {
+        const key = flow.category || 'Lainnya';
+        acc[key] = (acc[key] || 0) + flow.amount;
+        return acc;
+      }, {});
+    
+    const expenseByCategory = cashFlow
+      .filter(flow => flow.type === 'expense')
+      .reduce<Record<string, number>>((acc, flow) => {
+        const key = flow.category || 'Lainnya';
+        acc[key] = (acc[key] || 0) + flow.amount;
+        return acc;
+      }, {});
+    
+    const totalIncome = Object.values(incomeByCategory).reduce((sum, amount) => sum + amount, 0);
+    const totalExpense = Object.values(expenseByCategory).reduce((sum, amount) => sum + amount, 0);
+    const total = totalIncome - totalExpense;
     const saldoAkhir = saldoSebelum + total;
 
     return {
       saldoSebelum,
-      pembelian,
-      penjualan,
+      incomeByCategory: Object.entries(incomeByCategory).map(([category, amount]) => ({ category, amount })),
+      expenseByCategory: Object.entries(expenseByCategory).map(([category, amount]) => ({ category, amount })),
+      totalIncome,
+      totalExpense,
       total,
       saldoAkhir
     };
-  }, [profitLossStats]);
+  }, [cashFlow]);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -830,17 +853,42 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     <span className="text-gray-600">Saldo Sebelum</span>
                     <span className="font-semibold text-gray-900">{formatCurrency(cashflowRecap.saldoSebelum)}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Pembelian</span>
-                    <span className="font-semibold text-brand-warning">{formatCurrency(cashflowRecap.pembelian)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Penjualan</span>
-                    <span className="font-semibold text-brand-success">{formatCurrency(cashflowRecap.penjualan)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Total</span>
-                    <span className="font-semibold text-brand-primary">{formatCurrency(cashflowRecap.total)}</span>
+                  
+                  {/* Pendapatan per kategori */}
+                  {cashflowRecap.incomeByCategory.length > 0 && (
+                    <>
+                      <div className="pt-2 border-t">
+                        <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Pendapatan</p>
+                      </div>
+                      {cashflowRecap.incomeByCategory.map(({ category, amount }) => (
+                        <div key={`income-${category}`} className="flex items-center justify-between pl-3">
+                          <span className="text-gray-600 capitalize">{category}</span>
+                          <span className="font-semibold text-brand-success">+{formatCurrency(amount)}</span>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                  
+                  {/* Biaya per kategori */}
+                  {cashflowRecap.expenseByCategory.length > 0 && (
+                    <>
+                      <div className="pt-2 border-t">
+                        <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Biaya</p>
+                      </div>
+                      {cashflowRecap.expenseByCategory.map(({ category, amount }) => (
+                        <div key={`expense-${category}`} className="flex items-center justify-between pl-3">
+                          <span className="text-gray-600 capitalize">{category}</span>
+                          <span className="font-semibold text-brand-warning">-{formatCurrency(amount)}</span>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                  
+                  <div className="flex items-center justify-between border-t pt-3">
+                    <span className="text-gray-600 font-semibold">Total Arus Kas</span>
+                    <span className={`font-bold ${cashflowRecap.total >= 0 ? 'text-brand-success' : 'text-brand-warning'}`}>
+                      {formatCurrency(cashflowRecap.total)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between border-t pt-3">
                     <span className="text-gray-600">Saldo Akhir</span>
