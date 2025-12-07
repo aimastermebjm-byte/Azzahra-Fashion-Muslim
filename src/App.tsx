@@ -43,6 +43,7 @@ function AppContent() {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
+  const [selectedCartItemIds, setSelectedCartItemIds] = useState<string[]>([]);
 
   // Firebase Authentication
   const { user, login, logout } = useFirebaseAuth();

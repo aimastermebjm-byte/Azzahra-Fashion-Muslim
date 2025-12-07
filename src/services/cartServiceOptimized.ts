@@ -237,12 +237,14 @@ class CartServiceOptimized {
 
       console.log(`🔄 Updating cart item quantity: ${itemId} → ${newQuantity}`);
 
+      // Define cart reference first
+      const cartRef = doc(db, this.FIREBASE_COLLECTION, user.uid);
+
       // Use provided items instead of reading from Firestore (eliminates 1 read!)
       let items = currentItems || [];
 
       if (!items.length) {
         // Fallback: Only read if no items provided
-        const cartRef = doc(db, this.FIREBASE_COLLECTION, user.uid);
         const cartDoc = await getDoc(cartRef);
         if (!cartDoc.exists()) return false;
         const data = cartDoc.data();
