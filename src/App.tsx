@@ -125,9 +125,8 @@ function AppContent() {
         quantity: quantity
       });
 
-      // 🔥 CRITICAL FIX: Call cartService.addToCart with correct parameters
-      // cartService expects: (product, quantity, variant)
-      const success = await cartServiceOptimized.addToCart(product, quantity, variant, []); // 0 reads optimization
+      // Call cartService.addToCart - let it read existing cart items
+      const success = await cartServiceOptimized.addToCart(product, quantity, variant);
 
       if (success) {
         alert('Produk berhasil ditambahkan ke keranjang!');

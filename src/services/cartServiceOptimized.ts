@@ -145,12 +145,22 @@ class CartServiceOptimized {
           price: product.price
         });
 
-      // Use provided existing items instead of reading from Firestore
-      // This eliminates 1 read per addToCart operation
-      let currentItems = existingItems || [];
-
       // Define cart reference for writing
       const cartRef = doc(db, this.FIREBASE_COLLECTION, user.uid);
+
+      // Use provided existing items OR read from Firestore
+      let currentItems = existingItems;
+      if (!currentItems || currentItems.length === 0) {
+        // Read current cart from Firestore to avoid overwriting
+        const cartDoc = await getDoc(cartRef);
+        if (cartDoc.exists()) {
+          const data = cartDoc.data();
+          currentItems = data?.items || [];
+          console.log('📖 Read existing cart:', currentItems.length, 'items');
+        } else {
+          currentItems = [];
+        }
+      }
 
       // Check if item already exists
       const existingItemIndex = currentItems.findIndex(item =>
