@@ -49,6 +49,11 @@ const HomePage: React.FC<HomePageProps> = ({
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  
+  // Dynamic categories from master
+  const [categories, setCategories] = useState<Array<{id: string; name: string; icon: string}>>([
+    { id: 'all', name: 'Semua', icon: '🛍️' }
+  ]);
 
   // Infinite scroll with Intersection Observer
   const observer = useRef<IntersectionObserver | null>(null);
@@ -177,14 +182,63 @@ const HomePage: React.FC<HomePageProps> = ({
     }
   };
 
-  const categories = [
-    { id: 'all', name: 'Semua', icon: '🛍️' },
-    { id: 'hijab', name: 'Hijab', icon: '🧕' },
-    { id: 'gamis', name: 'Gamis', icon: '👗' },
-    { id: 'khimar', name: 'Khimar', icon: '🧕' },
-    { id: 'tunik', name: 'Tunik', icon: '👚' },
-    { id: 'abaya', name: 'Abaya', icon: '🥻' }
-  ];
+  // Load categories from master data
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        console.log('🔄 Loading categories from master...');
+        
+        // Initialize default categories first time
+        await productCategoryService.initializeDefaultCategories();
+        
+        // Load categories from master
+        const masterCategories = await productCategoryService.listCategories();
+        console.log('✅ Loaded categories:', masterCategories);
+        
+        // Category icon mapping
+        const getCategoryIcon = (name: string): string => {
+          const icons: Record<string, string> = {
+            'hijab': '🧕',
+            'gamis': '👗',
+            'khimar': '🧕',
+            'tunik': '👚',
+            'aksesoris': '✨',
+            'abaya': '🥻',
+            'outer': '🧥',
+            'dress': '👗',
+            'default': '📦'
+          };
+          return icons[name.toLowerCase()] || icons['default'];
+        };
+        
+        // Map to HomePage format
+        const mappedCategories = masterCategories.map(cat => ({
+          id: cat.name.toLowerCase(),
+          name: cat.name,
+          icon: getCategoryIcon(cat.name)
+        }));
+        
+        setCategories([
+          { id: 'all', name: 'Semua', icon: '🛍️' },
+          ...mappedCategories
+        ]);
+        
+        console.log('✅ Categories set:', mappedCategories.length);
+      } catch (error) {
+        console.error('❌ Failed to load categories:', error);
+        // Fallback to default if error
+        setCategories([
+          { id: 'all', name: 'Semua', icon: '🛍️' },
+          { id: 'hijab', name: 'Hijab', icon: '🧕' },
+          { id: 'gamis', name: 'Gamis', icon: '👗' },
+          { id: 'khimar', name: 'Khimar', icon: '🧕' },
+          { id: 'tunik', name: 'Tunik', icon: '👚' }
+        ]);
+      }
+    };
+
+    loadCategories();
+  }, []);
 
   const handleAddToCart = (product: Product) => {
     onAddToCart(product);

@@ -136,13 +136,21 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
   const handleAddProductCategory = async () => {
     if (!newProductCategoryName.trim()) return;
     try {
+      console.log('🔄 Attempting to add category:', newProductCategoryName.trim());
       const created = await productCategoryService.addCategory(newProductCategoryName.trim(), user?.uid, user?.role);
+      console.log('✅ Category added successfully:', created);
       setProductCategories((prev) => [created, ...prev]);
       setNewProductCategoryName('');
       setShowAddProductCategory(false);
       toast({ title: 'Kategori produk ditambahkan', description: created.name, variant: 'success' });
     } catch (err) {
-      console.error('Failed to add product category', err);
+      console.error('❌ Failed to add product category:', err);
+      console.error('Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : null,
+        user: user?.uid,
+        role: user?.role
+      });
       const message = err instanceof Error ? err.message : 'Periksa koneksi atau izin akses.';
       toast({ title: 'Gagal menambah kategori produk', description: message, variant: 'destructive' });
     }
