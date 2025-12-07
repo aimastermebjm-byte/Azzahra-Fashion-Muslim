@@ -135,5 +135,39 @@ export const productCategoryService = {
   clearCache(): void {
     localStorage.removeItem(CACHE_KEY);
     console.log('✅ Product category cache cleared');
+  },
+
+  /**
+   * Initialize default categories (run once)
+   */
+  async initializeDefaultCategories(): Promise<void> {
+    try {
+      const existing = await this.listCategories();
+      
+      // Default categories yang sudah ada di sistem
+      const defaultCategories = [
+        { name: 'Hijab', icon: '🧕' },
+        { name: 'Gamis', icon: '👗' },
+        { name: 'Khimar', icon: '🧕' },
+        { name: 'Tunik', icon: '👚' },
+        { name: 'Aksesoris', icon: '✨' }
+      ];
+
+      // Add only if not exists
+      for (const cat of defaultCategories) {
+        const exists = existing.find(e => 
+          e.name.toLowerCase() === cat.name.toLowerCase()
+        );
+        
+        if (!exists) {
+          await this.addCategory(cat.name, 'system', 'system');
+          console.log(`✅ Added default category: ${cat.name}`);
+        }
+      }
+
+      console.log('✅ Default categories initialized');
+    } catch (error) {
+      console.error('❌ Failed to initialize default categories:', error);
+    }
   }
 };

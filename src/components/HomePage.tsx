@@ -7,6 +7,7 @@ import { validateProducts } from '../utils/productUtils';
 import { cartServiceOptimized } from '../services/cartServiceOptimized';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
 import { SearchCacheKey } from '../types/cache';
+import { productCategoryService, ProductCategory } from '../services/productCategoryService';
 
 interface HomePageProps {
   user: any;
