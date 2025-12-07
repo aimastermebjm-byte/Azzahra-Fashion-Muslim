@@ -114,5 +114,11 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isSignedIn();
     }
+
+    // Product categories (Master data)
+    match /product_categories/{categoryId} {
+      allow read: if true; // Public read
+      allow create, update, delete: if isOwner(); // Only owner can edit
+    }
   }
 }
