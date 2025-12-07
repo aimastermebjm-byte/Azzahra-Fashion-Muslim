@@ -8,6 +8,7 @@ import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
 import { ProductTableSkeleton, FlashSaleStatusSkeleton, MenuSkeleton } from './LoadingSkeleton';
 import { uploadMultipleImages, validateImageFile, generateImageName } from '../utils/imageUpload';
 import { forceSyncAllProducts } from '../services/globalIndexSync';
+import { productCategoryService, ProductCategory } from '../services/productCategoryService';
 
 interface AdminProductsPageProps {
   onBack: () => void;
@@ -118,8 +119,24 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   const [isForceSyncing, setIsForceSyncing] = useState(false);
   const [forceSyncMessage, setForceSyncMessage] = useState<string | null>(null);
 
-  // Categories
-  const categories = ['Hijab', 'Gamis', 'Khimar', 'Tunik', 'Jaket', 'Bawahan', 'Aksesoris', 'Lainnya'];
+  // Categories - Load from master
+  const [categories, setCategories] = useState<string[]>(['Hijab', 'Gamis', 'Khimar', 'Tunik', 'Aksesoris']);
+  
+  // Load categories from master on mount
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const masterCategories = await productCategoryService.listCategories();
+        const categoryNames = masterCategories.map(cat => cat.name);
+        setCategories(categoryNames);
+        console.log('✅ Loaded categories for AdminProductsPage:', categoryNames);
+      } catch (error) {
+        console.error('❌ Failed to load categories:', error);
+        // Fallback tetap pakai default
+      }
+    };
+    loadCategories();
+  }, []);
 
   // Variant management helpers
   const addSize = () => {
