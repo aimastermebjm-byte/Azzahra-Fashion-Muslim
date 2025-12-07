@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import ReportsService from '../services/reportsService';
 import { financialService, PaymentMethod } from '../services/financialService';
+import { productCategoryService, ProductCategory } from '../services/productCategoryService';
 import {
   Transaction,
   ProductReport,
@@ -33,6 +34,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [statusFilter, setStatusFilter] = useState<'all' | 'lunas' | 'belum_lunas'>('all');
   const [customerFilter, setCustomerFilter] = useState<string>('');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<'all' | string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | string>('all');
 
   // Data states
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -40,6 +42,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [inventory, setInventory] = useState<InventoryReport[]>([]);
   const [cashFlow, setCashFlow] = useState<CashFlowReport[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Calculate date range based on filter
@@ -151,7 +154,17 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       }
     };
 
+    const loadProductCategories = async () => {
+      try {
+        const categories = await productCategoryService.listCategories();
+        setProductCategories(categories);
+      } catch (error) {
+        console.error('Error loading product categories:', error);
+      }
+    };
+
     loadPaymentMethods();
+    loadProductCategories();
   }, []);
 
   // Load cash flow report
