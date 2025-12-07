@@ -563,35 +563,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           </div>
         </div>
 
-        {/* Product Details */}
-        <div className="bg-white mt-2 p-4">
-          <h3 className="font-semibold text-gray-800 mb-3">Detail Produk</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Kategori:</span>
-              <span className="font-medium capitalize">{currentProduct.category}</span>
-            </div>
-            {currentProduct.status === 'po' && currentProduct.estimatedReady && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">Estimasi Ready:</span>
-                <span className="font-medium">{currentProduct.estimatedReady.toLocaleDateString('id-ID')}</span>
-              </div>
-            )}
-            <div className="flex justify-between">
-              <span className="text-gray-600">Berat:</span>
-              <span className="font-medium">{currentProduct.weight} gram</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Kondisi:</span>
-              <span className="font-medium text-green-600">Baru</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Garansi:</span>
-              <span className="font-medium">Garansi Toko</span>
-            </div>
-          </div>
-        </div>
-
       {/* Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white shadow-lg">
         <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
