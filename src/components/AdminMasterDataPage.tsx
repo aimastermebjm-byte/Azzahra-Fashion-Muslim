@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Tags, Plus, Trash2, CreditCard, Layers } from 'lucide-react';
+import { Tags, Plus, Trash2, CreditCard, Layers, Package } from 'lucide-react';
 import PageHeader from './PageHeader';
 import EmptyState from './ui/EmptyState';
 import { useToast } from './ToastProvider';
 import { financialService, FinancialCategory, FinancialType, PaymentMethod } from '../services/financialService';
+import { productCategoryService, ProductCategory } from '../services/productCategoryService';
 
 interface AdminMasterDataPageProps {
   onBack: () => void;
@@ -12,10 +13,11 @@ interface AdminMasterDataPageProps {
 
 const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user }) => {
   const { showToast: toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'categories' | 'paymentMethods'>('categories');
+  const [activeTab, setActiveTab] = useState<'categories' | 'paymentMethods' | 'productCategories'>('categories');
   
   const [categories, setCategories] = useState<FinancialCategory[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Category Form
@@ -29,6 +31,11 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
   const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false);
   const [deletingPaymentMethodId, setDeletingPaymentMethodId] = useState<string | null>(null);
 
+  // Product Category Form
+  const [newProductCategoryName, setNewProductCategoryName] = useState('');
+  const [showAddProductCategory, setShowAddProductCategory] = useState(false);
+  const [deletingProductCategoryId, setDeletingProductCategoryId] = useState<string | null>(null);
+
   const isOwner = user?.role === 'owner';
 
   useEffect(() => {
@@ -40,9 +47,12 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
         if (activeTab === 'categories') {
           const data = await financialService.listCategories();
           setCategories(data);
-        } else {
+        } else if (activeTab === 'paymentMethods') {
           const data = await financialService.listPaymentMethods();
           setPaymentMethods(data);
+        } else if (activeTab === 'productCategories') {
+          const data = await productCategoryService.listCategories();
+          setProductCategories(data);
         }
       } catch (err) {
         console.error('Failed to load master data', err);
@@ -123,6 +133,41 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
     }
   };
 
+  const handleAddProductCategory = async () => {
+    if (!newProductCategoryName.trim()) return;
+    try {
+      const created = await productCategoryService.addCategory(newProductCategoryName.trim(), user?.uid, user?.role);
+      setProductCategories((prev) => [created, ...prev]);
+      setNewProductCategoryName('');
+      setShowAddProductCategory(false);
+      toast({ title: 'Kategori produk ditambahkan', description: created.name, variant: 'success' });
+    } catch (err) {
+      console.error('Failed to add product category', err);
+      const message = err instanceof Error ? err.message : 'Periksa koneksi atau izin akses.';
+      toast({ title: 'Gagal menambah kategori produk', description: message, variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteProductCategory = async (categoryId: string) => {
+    const target = productCategories.find((cat) => cat.id === categoryId);
+    if (!target) return;
+    if (!window.confirm(`Hapus kategori produk "${target.name}"?`)) {
+      return;
+    }
+    try {
+      setDeletingProductCategoryId(categoryId);
+      await productCategoryService.deleteCategory(categoryId);
+      setProductCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
+      toast({ title: 'Kategori produk dihapus', description: target.name });
+    } catch (err) {
+      console.error('Failed to delete product category', err);
+      const message = err instanceof Error ? err.message : 'Periksa koneksi atau izin akses.';
+      toast({ title: 'Gagal hapus kategori produk', description: message, variant: 'destructive' });
+    } finally {
+      setDeletingProductCategoryId(null);
+    }
+  };
+
   if (!isOwner) {
     return (
       <div className="min-h-screen bg-brand-surface">
@@ -171,6 +216,17 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
             <CreditCard className="w-4 h-4" />
             Metode Pembayaran
           </button>
+          <button
+            onClick={() => setActiveTab('productCategories')}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'productCategories'
+                ? 'bg-brand-primary text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <Package className="w-4 h-4" />
+            Kategori Produk
+          </button>
         </div>
 
         {/* Content */}
@@ -180,7 +236,9 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
               <div key={idx} className="h-16 rounded-lg bg-slate-100 animate-pulse" />
             ))}
           </div>
-        ) : activeTab === 'categories' ? (
+        ) : (
+          <>
+            {activeTab === 'categories' && (
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-slate-700">
@@ -270,7 +328,9 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
               </div>
             </div>
           </div>
-        ) : (
+            )}
+
+            {activeTab === 'paymentMethods' && (
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-slate-700">
@@ -327,6 +387,67 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
               </div>
             )}
           </div>
+            )}
+
+            {activeTab === 'productCategories' && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-slate-700">
+                <Package className="w-4 h-4" />
+                <span className="text-sm font-semibold">Kategori Produk</span>
+              </div>
+              <button
+                onClick={() => setShowAddProductCategory(!showAddProductCategory)}
+                className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary hover:text-brand-primary/80"
+              >
+                <Plus className="w-4 h-4" /> Tambah Baru
+              </button>
+            </div>
+
+            {showAddProductCategory && (
+              <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+                <p className="text-xs font-semibold text-slate-500 uppercase">Tambah Kategori Produk Baru</p>
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={newProductCategoryName}
+                    onChange={(e) => setNewProductCategoryName(e.target.value)}
+                    className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                    placeholder="Nama Kategori (mis. Gamis, Hijab, Aksesoris)"
+                  />
+                  <button
+                    onClick={handleAddProductCategory}
+                    disabled={!newProductCategoryName.trim()}
+                    className="rounded-lg bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90 disabled:opacity-50"
+                  >
+                    Simpan
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {productCategories.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-4">Belum ada kategori produk tersimpan.</p>
+            ) : (
+              <div className="space-y-2">
+                {productCategories.map((cat) => (
+                  <div key={cat.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">
+                    <span className="text-slate-800 font-medium">{cat.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteProductCategory(cat.id)}
+                      disabled={deletingProductCategoryId === cat.id}
+                      className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                    >
+                      <Trash2 className="w-3 h-3" /> Hapus
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+            )}
+          </>
         )}
       </div>
     </div>
