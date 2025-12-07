@@ -14,14 +14,16 @@ interface CheckoutPageProps {
   user: any;
   clearCart: (orderData: any, cartItems: any[]) => string;
   onBack: () => void;
+  selectedCartItemIds?: string[];
 }
 
 const CheckoutPage: React.FC<CheckoutPageProps> = ({
   user,
   clearCart,
-  onBack
+  onBack,
+  selectedCartItemIds = []
 }) => {
-  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [allCartItems, setAllCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -32,10 +34,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     try {
       setLoading(true);
       const items = await cartServiceOptimized.getCart();
-      setCartItems(items || []);
+      setAllCartItems(items || []);
       } catch (error) {
       console.error('Failed to load cart for checkout:', error);
-      setCartItems([]);
+      setAllCartItems([]);
     } finally {
       setLoading(false);
     }
@@ -44,6 +46,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   useEffect(() => {
     loadCart(); // Load regardless of user state
   }, [user]);
+
+  // Filter cart items based on selected IDs
+  const cartItems = selectedCartItemIds.length > 0
+    ? allCartItems.filter(item => selectedCartItemIds.includes(item.id))
+    : allCartItems;
 
   const getTotalPrice = () => {
     return cartItems.reduce((total, item) => {

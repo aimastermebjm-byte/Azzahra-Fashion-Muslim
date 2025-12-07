@@ -392,7 +392,8 @@ function AppContent() {
     setCurrentPage('cart');
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = (selectedItemIds: string[]) => {
+    setSelectedCartItemIds(selectedItemIds);
     setCurrentPage('checkout');
   };
 
@@ -544,6 +545,7 @@ function AppContent() {
             user={user}
             clearCart={handleOrderComplete}
             onBack={() => setCurrentPage('cart')}
+            selectedCartItemIds={selectedCartItemIds}
           />
         );
       default:

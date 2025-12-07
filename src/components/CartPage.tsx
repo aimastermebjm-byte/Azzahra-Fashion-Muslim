@@ -7,7 +7,7 @@ import EmptyState from './ui/EmptyState';
 interface CartPageProps {
   user: any;
   onBack: () => void;
-  onCheckout: () => void;
+  onCheckout: (selectedItemIds: string[]) => void;
 }
 
 const CartPage: React.FC<CartPageProps> = ({
@@ -28,45 +28,49 @@ const CartPage: React.FC<CartPageProps> = ({
     }
   }, [cartItems]);
 
-  const handleUpdateQuantity = async (productId: string, variant: any, newQuantity: number) => {
+  // Update quantity using item ID directly
+  const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
     try {
-      // Find the item in cart to get its ID
-      const item = cartItems.find((item: any) =>
-        item.productId === productId &&
-        JSON.stringify(item.variant) === JSON.stringify(variant)
-      );
-
-      if (!item) {
-        console.error('❌ Item not found in cart');
-        return;
-      }
-
       if (newQuantity === 0) {
-        await removeCartItem(item.id);
+        await removeCartItem(itemId);
       } else {
-        await updateCartItem(item.id, newQuantity);
+        await updateCartItem(itemId, newQuantity);
       }
     } catch (error) {
       console.error('❌ Failed to update quantity:', error);
     }
   };
 
-  const handleRemoveFromCart = async (productId: string, variant: any) => {
+  // Remove single item
+  const handleRemoveFromCart = async (itemId: string) => {
     try {
-      // Find the item in cart to get its ID
-      const item = cartItems.find((item: any) =>
-        item.productId === productId &&
-        JSON.stringify(item.variant) === JSON.stringify(variant)
-      );
-
-      if (!item) {
-        console.error('❌ Item not found in cart');
-        return;
-      }
-
-      await removeCartItem(item.id);
+      await removeCartItem(itemId);
+      // Also remove from selection
+      const newSelection = new Set(selectedItems);
+      newSelection.delete(itemId);
+      setSelectedItems(newSelection);
     } catch (error) {
       console.error('❌ Failed to remove from cart:', error);
+    }
+  };
+
+  // Bulk delete selected items
+  const handleBulkDelete = async () => {
+    if (selectedItems.size === 0) return;
+    
+    const confirmDelete = window.confirm(`Hapus ${selectedItems.size} produk dari keranjang?`);
+    if (!confirmDelete) return;
+
+    try {
+      // Delete all selected items
+      const deletePromises = Array.from(selectedItems).map(itemId => removeCartItem(itemId));
+      await Promise.all(deletePromises);
+      
+      // Clear selection
+      setSelectedItems(new Set());
+      console.log(`✅ Berhasil menghapus ${selectedItems.size} produk`);
+    } catch (error) {
+      console.error('❌ Failed to bulk delete:', error);
     }
   };
 
@@ -182,19 +186,31 @@ const CartPage: React.FC<CartPageProps> = ({
       {pageHeader}
 
       <div className="mx-auto max-w-6xl space-y-6 px-4 pb-8">
-        {/* Select All Checkbox */}
+        {/* Select All Checkbox & Bulk Delete */}
         <div className="rounded-2xl border border-white/40 bg-white/95 p-4 shadow-sm">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={selectedItems.size === cartItems.length && cartItems.length > 0}
-              onChange={toggleSelectAll}
-              className="h-5 w-5 rounded border-gray-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
-            />
-            <span className="font-semibold text-slate-900">
-              Pilih Semua ({cartItems.length} produk)
-            </span>
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedItems.size === cartItems.length && cartItems.length > 0}
+                onChange={toggleSelectAll}
+                className="h-5 w-5 rounded border-gray-300 text-brand-primary focus:ring-brand-primary cursor-pointer"
+              />
+              <span className="font-semibold text-slate-900">
+                Pilih Semua ({cartItems.length} produk)
+              </span>
+            </label>
+            
+            {selectedItems.size > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                className="inline-flex items-center gap-2 rounded-lg bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600"
+              >
+                <Trash2 className="h-4 w-4" />
+                Hapus ({selectedItems.size})
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
@@ -249,29 +265,29 @@ const CartPage: React.FC<CartPageProps> = ({
                           </div>
 
                           <div className="flex items-center space-x-2 rounded-full bg-slate-100 px-2 py-1">
-                            {itemQuantity > 1 ? (
-                              <button
-                                onClick={() => handleUpdateQuantity(productId, variant, itemQuantity - 1)}
-                                className="flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-slate-200"
-                              >
-                                <Minus className="w-4 h-4" />
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleRemoveFromCart(productId, variant)}
-                                className="flex h-8 w-8 items-center justify-center rounded-md text-rose-500 transition-colors hover:bg-rose-50"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
+                            <button
+                              onClick={() => handleUpdateQuantity(item.id, itemQuantity - 1)}
+                              className="flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-slate-200"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
                             <span className="w-8 text-center font-semibold">{itemQuantity}</span>
                             <button
-                              onClick={() => handleUpdateQuantity(productId, variant, itemQuantity + 1)}
+                              onClick={() => handleUpdateQuantity(item.id, itemQuantity + 1)}
                               className="flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-slate-200"
                             >
                               <Plus className="w-4 h-4" />
                             </button>
                           </div>
+                          
+                          {/* Trash button separately */}
+                          <button
+                            onClick={() => handleRemoveFromCart(item.id)}
+                            className="rounded-lg p-2 text-rose-500 transition-colors hover:bg-rose-50"
+                            title="Hapus produk"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
 
                         <div className="mt-3 flex items-center justify-between text-sm text-slate-500">
@@ -309,7 +325,7 @@ const CartPage: React.FC<CartPageProps> = ({
               </div>
             </div>
             <button
-              onClick={onCheckout}
+              onClick={() => onCheckout(Array.from(selectedItems))}
               disabled={selectedCount === 0}
               className="btn-brand mt-4 w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
