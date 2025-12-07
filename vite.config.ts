@@ -43,6 +43,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg}'],
+        skipWaiting: true, // Force new SW to activate immediately
+        clientsClaim: true, // Take control of all clients immediately
+        cleanupOutdatedCaches: true, // Clean old caches
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
