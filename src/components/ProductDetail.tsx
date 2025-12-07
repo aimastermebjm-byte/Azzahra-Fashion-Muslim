@@ -228,23 +228,23 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
   
   return (
-    <div className="min-h-screen bg-gray-50 pb-32 md:pb-24">
+    <div className="min-h-screen bg-gray-50 pb-40 sm:pb-32">
       {/* Sticky Header */}
       <div className="sticky top-0 z-40 bg-white shadow-sm">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-2 px-3 py-3 sm:px-4">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
             <button
               onClick={onBack}
-              className="rounded-full p-2 text-gray-600 transition hover:bg-gray-100"
+              className="rounded-full p-2 text-gray-600 transition hover:bg-gray-100 flex-shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <div>
-              <h1 className="text-sm font-semibold text-gray-900">Detail Produk</h1>
-              <p className="text-xs text-gray-500 hidden sm:block">Lihat informasi lengkap produk</p>
+            <div className="min-w-0">
+              <h1 className="text-sm font-semibold text-gray-900 truncate">Detail Produk</h1>
+              <p className="text-xs text-gray-500 hidden lg:block">Lihat informasi lengkap produk</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <button className="rounded-full border border-gray-200 bg-white p-2 text-gray-600 transition hover:text-brand-primary">
               <Share2 className="h-4 w-4" />
             </button>
@@ -253,10 +253,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             </button>
             <button
               onClick={onNavigateToCart || (() => {})}
-              className="relative inline-flex items-center gap-2 rounded-full bg-brand-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-primary/90"
+              className="relative inline-flex items-center gap-1.5 rounded-full bg-brand-primary px-3 py-2 sm:px-4 text-sm font-semibold text-white transition hover:bg-brand-primary/90 whitespace-nowrap"
             >
-              <ShoppingCart className="h-4 w-4" />
-              <span className="hidden sm:inline">Keranjang</span>
+              <ShoppingCart className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden md:inline">Keranjang</span>
               {cartItemCount > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
                   {cartItemCount}
@@ -503,8 +503,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         )}
 
         {/* Quantity Selection */}
-        <div className="bg-white mt-2 p-4">
-          <div className="mb-6">
+        <div className="bg-white mt-2 p-4 mb-4">
+          <div className="mb-4">
             <h3 className="font-semibold text-gray-800 mb-3">Jumlah</h3>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3 bg-gray-100 rounded-lg p-1">
@@ -564,32 +564,32 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         </div>
 
       {/* Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white shadow-lg">
-        <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white shadow-lg safe-area-inset-bottom">
+        <div className="mx-auto flex max-w-4xl flex-col gap-2 px-3 py-3 sm:px-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-shrink-0">
             <p className="text-xs uppercase tracking-wide text-slate-500">Subtotal</p>
-            <p className="text-2xl font-bold text-brand-primary">
+            <p className="text-xl sm:text-2xl font-bold text-brand-primary">
               Rp {totalPrice.toLocaleString('id-ID')}
             </p>
             {requiresVariantSelection && (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 truncate">
                 {isVariantIncomplete ? 'Pilih ukuran dan warna terlebih dahulu' : `${selectedSize} / ${selectedColor}`}
               </p>
             )}
           </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:min-w-[400px]">
             <button
               onClick={handleAddToCart}
               disabled={isVariantIncomplete}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-brand-primary/30 bg-white px-6 py-3 text-sm font-semibold text-brand-primary shadow-sm transition hover:bg-brand-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-brand-primary/30 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary shadow-sm transition hover:bg-brand-primary/5 disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
             >
               <ShoppingCart className="h-4 w-4" />
-              Tambah ke Keranjang
+              <span className="hidden sm:inline">Tambah ke </span>Keranjang
             </button>
             <button
               onClick={handleBuyNow}
               disabled={isVariantIncomplete}
-              className="inline-flex flex-1 items-center justify-center rounded-full bg-brand-primary px-6 py-3 text-sm font-semibold text-white shadow-brand-card transition hover:bg-brand-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex flex-1 items-center justify-center rounded-full bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white shadow-brand-card transition hover:bg-brand-primary/90 disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
             >
               Beli Sekarang
             </button>
