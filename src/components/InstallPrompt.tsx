@@ -34,14 +34,33 @@ const InstallPrompt: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const handleAppInstalled = () => {
+      setIsStandalone(true);
+      setShowBanner(false);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
 
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    
+
+    setDeferredPrompt(null);
+
     if (outcome === 'accepted') {
-      setDeferredPrompt(null);
+      setIsStandalone(true);
+      setShowBanner(false);
+    } else {
+      setShowBanner(false);
     }
   };
 
