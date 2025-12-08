@@ -89,7 +89,13 @@ export class SalesHistoryService {
         orderCount,
         lastOrderDate
       };
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+        console.error('❌ MISSING FIRESTORE INDEX for orders collection!');
+        console.error('📋 Query requires composite index: createdAt + status');
+        console.error('🔧 Run: firebase deploy --only firestore:indexes');
+        console.error('⏳ Wait 5-10 minutes for index to build, then retry');
+      }
       console.error('Error fetching product sales:', error);
       return {
         productId,
@@ -176,7 +182,13 @@ export class SalesHistoryService {
       });
 
       return salesMap;
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+        console.error('❌ MISSING FIRESTORE INDEX for orders collection!');
+        console.error('📋 Query requires composite index: createdAt + status');
+        console.error('🔧 Run: firebase deploy --only firestore:indexes');
+        console.error('⏳ Wait 5-10 minutes for index to build, then retry');
+      }
       console.error('Error fetching batch product sales:', error);
       return salesMap;
     }
@@ -248,7 +260,13 @@ export class SalesHistoryService {
       salesArray.sort((a, b) => b.totalQuantity - a.totalQuantity);
 
       return salesArray.slice(0, limit);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+        console.error('❌ MISSING FIRESTORE INDEX for orders collection!');
+        console.error('📋 Query requires composite index: createdAt + status');
+        console.error('🔧 Run: firebase deploy --only firestore:indexes');
+        console.error('⏳ Wait 5-10 minutes for index to build, then retry');
+      }
       console.error('Error fetching top selling products:', error);
       return [];
     }
