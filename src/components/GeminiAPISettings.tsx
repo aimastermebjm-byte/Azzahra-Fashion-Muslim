@@ -123,9 +123,11 @@ export const GeminiAPISettings: React.FC<GeminiAPISettingsProps> = ({ onSave, on
             <p className="text-blue-900 font-medium mb-1">Get your FREE API Key</p>
             <p className="text-blue-800 mb-2">
               Gemini API offers 1,500 FREE requests per day - perfect for AI Auto Upload!
+              <br />
+              <span className="text-xs">Using: Gemini 1.5 Pro (multimodal vision model)</span>
             </p>
             <a
-              href="https://makersuite.google.com/app/apikey"
+              href="https://aistudio.google.com/app/apikey"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
