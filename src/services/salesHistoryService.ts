@@ -132,11 +132,30 @@ export class SalesHistoryService {
     );
 
     try {
+      // DEBUG: First check ALL orders without filters
+      console.log('🔍 DEBUG: Checking ALL orders first...');
+      const allOrdersSnapshot = await getDocs(collection(db, 'orders'));
+      console.log(`📦 Total orders in database: ${allOrdersSnapshot.size}`);
+      
+      if (allOrdersSnapshot.size > 0) {
+        console.log('\n📋 Sample of first 3 orders:');
+        allOrdersSnapshot.docs.slice(0, 3).forEach((doc, i) => {
+          const order = doc.data();
+          console.log(`Order ${i + 1}:`, {
+            id: doc.id,
+            status: order.status,
+            createdAt: order.createdAt ? (order.createdAt.toDate ? order.createdAt.toDate().toISOString() : order.createdAt) : 'MISSING',
+            itemsCount: order.items?.length || 0
+          });
+        });
+      }
+      
       const snapshot = await getDocs(q);
 
       // DEBUG: Log query results
-      console.log('🔍 DEBUG getBatchProductSales:');
+      console.log('\n🔍 DEBUG getBatchProductSales with FILTERS:');
       console.log('- Date range:', startDate.toISOString(), 'to', endDate.toISOString());
+      console.log('- Status filter: paid, delivered, processing');
       console.log('- Orders found:', snapshot.size);
       console.log('- Looking for product IDs:', productIds);
 
