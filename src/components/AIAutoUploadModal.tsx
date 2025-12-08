@@ -3,6 +3,7 @@ import { X, Upload, Sparkles, TrendingUp, Image as ImageIcon, CheckCircle, Alert
 import { geminiService, GeminiClothingAnalysis } from '../services/geminiVisionService';
 import { similarityService, SimilarityScore } from '../services/similarityService';
 import { collageService } from '../services/collageService';
+import { salesHistoryService, ProductSalesData } from '../services/salesHistoryService';
 import { hasGeminiAPIKey, loadGeminiAPIKey } from '../utils/encryption';
 import GeminiAPISettings from './GeminiAPISettings';
 import { Product } from '../types';
@@ -223,36 +224,120 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
   
   // Calculate similarity with existing products
   const calculateSimilarity = async (analysisResults: AnalysisResult[]) => {
+    setAnalysisProgress(60);
+    
     if (existingProducts.length === 0) {
       setRecommendation('manual');
+      setSimilarityResults([]);
       return;
     }
     
-    // For now, use first image analysis as representative
-    // In production, you might want to average or use most confident analysis
-    const primaryAnalysis = analysisResults[0]?.analysis;
-    
-    if (!primaryAnalysis) return;
-    
-    // Compare with existing products (mock similarity for now)
-    // In production, you'd need to have analysis data stored for existing products
-    const similarities: SimilarityResult[] = [];
-    
-    // For demo purposes, we'll just show some mock data
-    // In real implementation, you'd retrieve analysis data for each product
-    // and calculate actual similarity
-    
-    // Mock sales data (in production, query from orders collection)
-    const mockSales: Record<string, number> = {};
-    
-    existingProducts.slice(0, 5).forEach(product => {
-      mockSales[product.id] = Math.floor(Math.random() * 20);
-    });
-    
-    setRecommendation('manual');
-    setSimilarityResults([]);
-    
-    setAnalysisProgress(100);
+    try {
+      // Use first image analysis as primary reference
+      const primaryAnalysis = analysisResults[0]?.analysis;
+      
+      if (!primaryAnalysis) {
+        setRecommendation('manual');
+        return;
+      }
+      
+      console.log('🔍 Calculating similarity with', existingProducts.length, 'products...');
+      console.log('📊 Primary analysis:', primaryAnalysis);
+      
+      // Get all product IDs
+      const productIds = existingProducts.map(p => p.id);
+      
+      // Query sales data for all products (last 3 months)
+      console.log('💰 Querying sales data for 3 months...');
+      const salesData = await salesHistoryService.getBatchProductSales(productIds, 3);
+      
+      setAnalysisProgress(75);
+      
+      // Calculate similarity for each product in same category
+      const similarities: SimilarityResult[] = [];
+      const primaryCategory = primaryAnalysis.clothing_type.main_type;
+      
+      console.log('🎯 Primary category:', primaryCategory);
+      
+      for (const product of existingProducts) {
+        const productSales = salesData.get(product.id);
+        
+        // Skip if no sales data
+        if (!productSales) continue;
+        
+        // Calculate category-based similarity
+        // Note: For now, we compare based on category since existing products don't have AI analysis
+        // In future, we can enhance this by analyzing existing products too
+        const categorySimilarity = salesHistoryService.calculateCategorySimilarity(
+          primaryCategory,
+          product.category
+        );
+        
+        // Create a mock similarity score based on category
+        const mockScore: SimilarityScore = {
+          overall: categorySimilarity,
+          breakdown: {
+            model: categorySimilarity,
+            motif: 50,
+            lace: 50,
+            hem_pleats: 50,
+            sleeves: 50,
+            accessories: 50,
+            color: 50
+          },
+          matchingFeatures: [
+            `Category: ${product.category} (${categorySimilarity}% match)`
+          ],
+          differingFeatures: []
+        };
+        
+        similarities.push({
+          product,
+          score: mockScore,
+          salesLast3Months: productSales.totalQuantity
+        });
+      }
+      
+      // Sort by sales (descending)
+      similarities.sort((a, b) => b.salesLast3Months - a.salesLast3Months);
+      
+      // Keep top 10
+      const topSimilarities = similarities.slice(0, 10);
+      
+      setSimilarityResults(topSimilarities);
+      
+      console.log('📈 Top similar products:', topSimilarities);
+      
+      setAnalysisProgress(90);
+      
+      // Calculate recommendation
+      const totalSales = topSimilarities.reduce((sum, s) => sum + s.salesLast3Months, 0);
+      const avgSimilarity = topSimilarities.length > 0
+        ? topSimilarities.reduce((sum, s) => sum + s.score.overall, 0) / topSimilarities.length
+        : 0;
+      
+      console.log('📊 Total sales:', totalSales, 'pcs');
+      console.log('📊 Avg similarity:', avgSimilarity.toFixed(1), '%');
+      
+      // Auto-upload criteria:
+      // 1. Average similarity >= 80%
+      // 2. Total sales of similar products >= 4 pcs
+      if (avgSimilarity >= 80 && totalSales >= 4) {
+        setRecommendation('auto');
+        console.log('✅ RECOMMENDED: Auto upload (High similarity + Good sales)');
+      } else if (avgSimilarity >= 60 && totalSales >= 2) {
+        setRecommendation('manual');
+        console.log('⚠️ MANUAL REVIEW: Moderate similarity or sales');
+      } else {
+        setRecommendation('not_recommended');
+        console.log('❌ NOT RECOMMENDED: Low similarity or no sales history');
+      }
+      
+    } catch (error: any) {
+      console.error('Error calculating similarity:', error);
+      setRecommendation('manual');
+      setSimilarityResults([]);
+    }
   };
   
   // Generate collage
@@ -700,6 +785,12 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
   onBack,
   onNext
 }) => {
+  // Calculate totals
+  const totalSales = similarityResults.reduce((sum, s) => sum + s.salesLast3Months, 0);
+  const avgSimilarity = similarityResults.length > 0
+    ? similarityResults.reduce((sum, s) => sum + s.score.overall, 0) / similarityResults.length
+    : 0;
+  
   return (
     <div className="space-y-6">
       {/* Success Message */}
@@ -708,7 +799,7 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
         <div className="flex-1">
           <p className="text-sm font-medium text-green-900 mb-1">Analysis Complete!</p>
           <p className="text-sm text-green-800">
-            Successfully analyzed {analysisResults.length} images. You can now proceed to create the collage.
+            Successfully analyzed {analysisResults.length} images. Compared with {similarityResults.length} similar products.
           </p>
         </div>
       </div>
@@ -758,12 +849,100 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
         </div>
       </div>
       
+      {/* Similarity Results */}
+      {similarityResults.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Similar Products (Last 3 Months)</h3>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {similarityResults.slice(0, 5).map((result, index) => (
+              <div key={result.product.id} className="p-3 border border-gray-200 rounded-lg bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {index + 1}. {result.product.name}
+                    </p>
+                    <div className="flex items-center gap-4 mt-1">
+                      <span className="text-xs text-gray-600">
+                        Category: {result.product.category}
+                      </span>
+                      <span className="text-xs text-gray-600">
+                        Similarity: {result.score.overall}%
+                      </span>
+                      <span className="text-xs font-semibold text-green-600">
+                        Sales: {result.salesLast3Months} pcs
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Summary Stats */}
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-600 mb-1">Average Similarity</p>
+              <p className="text-2xl font-bold text-blue-900">{avgSimilarity.toFixed(1)}%</p>
+            </div>
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-xs text-green-600 mb-1">Total Sales (3 months)</p>
+              <p className="text-2xl font-bold text-green-900">{totalSales} pcs</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Recommendation */}
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-800">
-          <strong>💡 Tip:</strong> You can now proceed to generate a collage and create the product listing.
-        </p>
-      </div>
+      {recommendation === 'auto' && (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-green-900 mb-1">✅ HIGHLY RECOMMENDED FOR AUTO UPLOAD</p>
+              <p className="text-xs text-green-800">
+                Similar products sold well ({totalSales} pcs) with high similarity ({avgSimilarity.toFixed(1)}%). 
+                This product has strong potential!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {recommendation === 'manual' && (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-yellow-900 mb-1">⚠️ MANUAL REVIEW RECOMMENDED</p>
+              <p className="text-xs text-yellow-800">
+                Moderate similarity or sales. Review the analysis before uploading.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {recommendation === 'not_recommended' && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-red-900 mb-1">❌ LOW CONFIDENCE</p>
+              <p className="text-xs text-red-800">
+                Low similarity or no sales history for similar products. Consider carefully before uploading.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {similarityResults.length === 0 && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>💡 Note:</strong> No similar products found in sales history. This is a new type of product!
+          </p>
+        </div>
+      )}
       
       {/* Actions */}
       <div className="flex gap-3 justify-end">
