@@ -134,6 +134,12 @@ export class SalesHistoryService {
     try {
       const snapshot = await getDocs(q);
 
+      // DEBUG: Log query results
+      console.log('🔍 DEBUG getBatchProductSales:');
+      console.log('- Date range:', startDate.toISOString(), 'to', endDate.toISOString());
+      console.log('- Orders found:', snapshot.size);
+      console.log('- Looking for product IDs:', productIds);
+
       // Initialize sales data for all products
       productIds.forEach(id => {
         salesMap.set(id, {
@@ -148,15 +154,31 @@ export class SalesHistoryService {
       });
 
       // Process all orders
-      snapshot.docs.forEach(doc => {
+      snapshot.docs.forEach((doc, orderIndex) => {
         const order = doc.data();
         const items = order.items || [];
 
-        items.forEach((item: any) => {
+        console.log(`\n📦 Order ${orderIndex + 1} (${doc.id}):`, {
+          status: order.status,
+          createdAt: order.createdAt ? new Date(order.createdAt.seconds * 1000).toISOString() : 'NO DATE',
+          itemsCount: items.length
+        });
+
+        items.forEach((item: any, itemIndex: number) => {
+          console.log(`  Item ${itemIndex + 1}:`, {
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity,
+            price: item.price,
+            match: productIds.includes(item.productId) ? '✅ MATCH!' : '❌ no match'
+          });
+
           if (productIds.includes(item.productId)) {
             const currentData = salesMap.get(item.productId)!;
             const quantity = item.quantity || 0;
             const price = item.price || 0;
+
+            console.log(`    💰 Adding to sales: +${quantity} pcs`);
 
             currentData.totalQuantity += quantity;
             currentData.totalRevenue += price * quantity;
@@ -179,6 +201,13 @@ export class SalesHistoryService {
             }
           }
         });
+      });
+
+      console.log('\n📊 Final sales summary:');
+      salesMap.forEach((data, productId) => {
+        if (data.totalQuantity > 0) {
+          console.log(`  ✅ ${data.productName || productId}: ${data.totalQuantity} pcs`);
+        }
       });
 
       return salesMap;
