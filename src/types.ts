@@ -32,6 +32,52 @@ export interface Product {
   image: string; // Main image (backward compatibility)
   weight?: number; // Weight in grams (optional, defaults to 1000g = 1kg)
   unit?: string; // Weight unit (e.g., 'gram', 'kg', 'pcs')
+  aiAnalysis?: {
+    clothing_type: {
+      main_type: string;
+      silhouette: string;
+      length: string;
+      confidence: number;
+    };
+    pattern_type: {
+      pattern: string;
+      complexity: string;
+      confidence: number;
+    };
+    lace_details: {
+      has_lace: boolean;
+      locations: Array<{
+        position: string;
+        coverage: string;
+        lace_type: string;
+      }>;
+      confidence: number;
+    };
+    hem_pleats: {
+      has_pleats: boolean;
+      pleat_type: string;
+      depth: string;
+      fullness: number;
+      confidence: number;
+    };
+    sleeve_details: {
+      has_pleats: boolean;
+      sleeve_type: string;
+      pleat_position: string;
+      ruffle_count: number;
+      cuff_style: string;
+      confidence: number;
+    };
+    embellishments: {
+      beads: { has: boolean; locations: string[]; density: number };
+      embroidery: { has: boolean; pattern: string };
+      sequins: { has: boolean; locations: string[] };
+      gold_thread: { has: boolean; coverage: number };
+    };
+    colors: string[];
+    fabric_texture: string;
+    analyzedAt?: Date;
+  };
 }
 
 export interface FlashSale {

@@ -428,7 +428,7 @@ export class SimilarityService {
     }
     
     if (scores.accessories >= 70) {
-      matches.push('Embellishments (similar)`);
+      matches.push('Embellishments (similar)');
     }
     
     if (scores.color >= 70) {

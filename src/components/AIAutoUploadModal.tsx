@@ -4,6 +4,7 @@ import { geminiService, GeminiClothingAnalysis } from '../services/geminiVisionS
 import { similarityService, SimilarityScore } from '../services/similarityService';
 import { collageService } from '../services/collageService';
 import { salesHistoryService, ProductSalesData } from '../services/salesHistoryService';
+import { productAnalysisService } from '../services/productAnalysisService';
 import { hasGeminiAPIKey, loadGeminiAPIKey } from '../utils/encryption';
 import GeminiAPISettings from './GeminiAPISettings';
 import { Product } from '../types';
@@ -241,7 +242,7 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
         return;
       }
       
-      console.log('🔍 Calculating similarity with', existingProducts.length, 'products...');
+      console.log('🔍 Calculating AI-powered similarity with', existingProducts.length, 'products...');
       console.log('📊 Primary analysis:', primaryAnalysis);
       
       // Get all product IDs
@@ -251,13 +252,32 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
       console.log('💰 Querying sales data for 3 months...');
       const salesData = await salesHistoryService.getBatchProductSales(productIds, 3);
       
+      setAnalysisProgress(65);
+      
+      // Analyze products that don't have AI analysis yet (in background)
+      const productsNeedingAnalysis = existingProducts.filter(p => !p.aiAnalysis?.analyzedAt);
+      
+      if (productsNeedingAnalysis.length > 0) {
+        console.log(`🤖 ${productsNeedingAnalysis.length} products need AI analysis - analyzing in background...`);
+        
+        // Analyze up to 10 products per upload (to avoid rate limits)
+        const toAnalyze = productsNeedingAnalysis.slice(0, 10);
+        
+        for (let i = 0; i < toAnalyze.length; i++) {
+          try {
+            await productAnalysisService.analyzeProduct(toAnalyze[i]);
+            setAnalysisProgress(65 + (i / toAnalyze.length) * 10); // Progress 65% -> 75%
+          } catch (error) {
+            console.error('Error analyzing product:', error);
+            // Continue with next product
+          }
+        }
+      }
+      
       setAnalysisProgress(75);
       
-      // Calculate similarity for each product in same category
+      // Calculate similarity for each product
       const similarities: SimilarityResult[] = [];
-      const primaryCategory = primaryAnalysis.clothing_type.main_type;
-      
-      console.log('🎯 Primary category:', primaryCategory);
       
       for (const product of existingProducts) {
         const productSales = salesData.get(product.id);
@@ -265,41 +285,97 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
         // Skip if no sales data
         if (!productSales) continue;
         
-        // Calculate category-based similarity
-        // Note: For now, we compare based on category since existing products don't have AI analysis
-        // In future, we can enhance this by analyzing existing products too
-        const categorySimilarity = salesHistoryService.calculateCategorySimilarity(
-          primaryCategory,
-          product.category
-        );
+        let similarityScore: SimilarityScore;
         
-        // Create a mock similarity score based on category
-        const mockScore: SimilarityScore = {
-          overall: categorySimilarity,
-          breakdown: {
-            model: categorySimilarity,
-            motif: 50,
-            lace: 50,
-            hem_pleats: 50,
-            sleeves: 50,
-            accessories: 50,
-            color: 50
-          },
-          matchingFeatures: [
-            `Category: ${product.category} (${categorySimilarity}% match)`
-          ],
-          differingFeatures: []
-        };
+        // If product has AI analysis, use full AI comparison
+        if (product.aiAnalysis?.analyzedAt) {
+          console.log(`✨ Using AI analysis for ${product.name}`);
+          
+          // Convert to GeminiClothingAnalysis type
+          const existingAnalysis: GeminiClothingAnalysis = {
+            clothing_type: {
+              main_type: product.aiAnalysis.clothing_type.main_type as any,
+              silhouette: product.aiAnalysis.clothing_type.silhouette as any,
+              length: product.aiAnalysis.clothing_type.length as any,
+              confidence: product.aiAnalysis.clothing_type.confidence
+            },
+            pattern_type: {
+              pattern: product.aiAnalysis.pattern_type.pattern as any,
+              complexity: product.aiAnalysis.pattern_type.complexity as any,
+              confidence: product.aiAnalysis.pattern_type.confidence
+            },
+            lace_details: {
+              has_lace: product.aiAnalysis.lace_details.has_lace,
+              locations: product.aiAnalysis.lace_details.locations as any,
+              confidence: product.aiAnalysis.lace_details.confidence
+            },
+            hem_pleats: {
+              has_pleats: product.aiAnalysis.hem_pleats.has_pleats,
+              pleat_type: product.aiAnalysis.hem_pleats.pleat_type as any,
+              depth: product.aiAnalysis.hem_pleats.depth as any,
+              fullness: product.aiAnalysis.hem_pleats.fullness,
+              confidence: product.aiAnalysis.hem_pleats.confidence
+            },
+            sleeve_details: {
+              has_pleats: product.aiAnalysis.sleeve_details.has_pleats,
+              sleeve_type: product.aiAnalysis.sleeve_details.sleeve_type as any,
+              pleat_position: product.aiAnalysis.sleeve_details.pleat_position as any,
+              ruffle_count: product.aiAnalysis.sleeve_details.ruffle_count,
+              cuff_style: product.aiAnalysis.sleeve_details.cuff_style as any,
+              confidence: product.aiAnalysis.sleeve_details.confidence
+            },
+            embellishments: product.aiAnalysis.embellishments,
+            colors: product.aiAnalysis.colors,
+            fabric_texture: product.aiAnalysis.fabric_texture as any
+          };
+          
+          // Use actual AI similarity calculation
+          similarityScore = similarityService.calculateSimilarity(
+            primaryAnalysis,
+            existingAnalysis
+          );
+          
+          console.log(`📊 AI Similarity for ${product.name}: ${similarityScore.overall}%`);
+        } else {
+          // Fallback to category-based similarity
+          console.log(`⚠️ No AI analysis for ${product.name}, using category similarity`);
+          
+          const categorySimilarity = salesHistoryService.calculateCategorySimilarity(
+            primaryAnalysis.clothing_type.main_type,
+            product.category
+          );
+          
+          similarityScore = {
+            overall: categorySimilarity,
+            breakdown: {
+              model: categorySimilarity,
+              motif: 50,
+              lace: 50,
+              hem_pleats: 50,
+              sleeves: 50,
+              accessories: 50,
+              color: 50
+            },
+            matchingFeatures: [
+              `Category: ${product.category} (${categorySimilarity}% match - needs AI analysis)`
+            ],
+            differingFeatures: []
+          };
+        }
         
         similarities.push({
           product,
-          score: mockScore,
+          score: similarityScore,
           salesLast3Months: productSales.totalQuantity
         });
       }
       
-      // Sort by sales (descending)
-      similarities.sort((a, b) => b.salesLast3Months - a.salesLast3Months);
+      // Sort by overall similarity first, then by sales
+      similarities.sort((a, b) => {
+        const scoreDiff = b.score.overall - a.score.overall;
+        if (Math.abs(scoreDiff) > 5) return scoreDiff; // If score diff > 5%, sort by score
+        return b.salesLast3Months - a.salesLast3Months; // Otherwise sort by sales
+      });
       
       // Keep top 10
       const topSimilarities = similarities.slice(0, 10);
@@ -317,14 +393,14 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
         : 0;
       
       console.log('📊 Total sales:', totalSales, 'pcs');
-      console.log('📊 Avg similarity:', avgSimilarity.toFixed(1), '%');
+      console.log('📊 Avg similarity (AI-powered):', avgSimilarity.toFixed(1), '%');
       
       // Auto-upload criteria:
       // 1. Average similarity >= 80%
       // 2. Total sales of similar products >= 4 pcs
       if (avgSimilarity >= 80 && totalSales >= 4) {
         setRecommendation('auto');
-        console.log('✅ RECOMMENDED: Auto upload (High similarity + Good sales)');
+        console.log('✅ RECOMMENDED: Auto upload (High AI similarity + Good sales)');
       } else if (avgSimilarity >= 60 && totalSales >= 2) {
         setRecommendation('manual');
         console.log('⚠️ MANUAL REVIEW: Moderate similarity or sales');
