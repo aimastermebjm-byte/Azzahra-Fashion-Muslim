@@ -6,6 +6,8 @@ import {
   ShoppingCart, ArrowUpRight, ArrowDownRight, Box, Wallet, PiggyBank,
   CreditCard, Search, ChevronDown
 } from 'lucide-react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import ReportsService from '../services/reportsService';
 import { financialService, PaymentMethod } from '../services/financialService';
 import { productCategoryService, ProductCategory } from '../services/productCategoryService';
@@ -23,7 +25,7 @@ interface AdminReportsPageProps {
 
 const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => {
   // Report type untuk tab navigation
-  const [reportType, setReportType] = useState<'sales' | 'products' | 'invoice' | 'inventory' | 'cashflow' | 'profitloss' | 'detail'>('sales');
+  const [reportType, setReportType] = useState<'summary' | 'sales' | 'products' | 'invoice' | 'inventory' | 'cashflow' | 'profitloss' | 'detail'>('summary');
 
   // Date filtering
   const [dateFilter, setDateFilter] = useState<'hari_ini' | 'kemaren' | 'bulan_ini' | 'bulan_kemaren' | 'custom'>('bulan_ini');
@@ -43,6 +45,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [cashFlow, setCashFlow] = useState<CashFlowReport[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Calculate date range based on filter
@@ -163,8 +166,22 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       }
     };
 
+    const loadUsers = async () => {
+      try {
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        const usersData = usersSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setUsers(usersData);
+      } catch (error) {
+        console.error('Error loading users:', error);
+      }
+    };
+
     loadPaymentMethods();
     loadProductCategories();
+    loadUsers();
   }, []);
 
   // Load cash flow report
@@ -414,6 +431,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   // Dynamic title & subtitle based on reportType
   const getReportInfo = () => {
     switch (reportType) {
+      case 'summary':
+        return { title: 'Ringkasan Laporan', subtitle: 'Overview performa bisnis dan grafik penjualan' };
       case 'sales':
         return { title: 'Laporan Penjualan', subtitle: 'Pantau transaksi dan performa penjualan' };
       case 'products':
@@ -454,6 +473,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 onChange={(e) => setReportType(e.target.value as any)}
                 className="w-full appearance-none rounded-xl border border-white/30 bg-white/95 px-4 py-3 pr-10 text-sm font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer"
               >
+                <option value="summary">📈 Ringkasan Laporan</option>
                 <option value="sales">📊 Laporan Penjualan</option>
                 <option value="products">📦 Laporan Produk Terjual</option>
                 <option value="invoice">📄 Laporan Invoice</option>
@@ -519,20 +539,22 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
             </div>
           )}
 
-          {/* Customer Search - Only for sales/invoice/detail */}
+          {/* Customer Filter - Only for sales/invoice/detail */}
           {(reportType === 'sales' || reportType === 'invoice' || reportType === 'detail') && (
             <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
-              <label className="text-xs uppercase tracking-wide text-white/70 mb-2 block">Cari Pelanggan</label>
-              <div className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-brand-primary">
-                <Search className="h-4 w-4 text-brand-primary flex-shrink-0" />
-                <input
-                  type="text"
-                  value={customerFilter}
-                  onChange={(e) => setCustomerFilter(e.target.value)}
-                  className="w-full bg-transparent text-sm placeholder-brand-primary/60 focus:outline-none"
-                  placeholder="Nama/No. HP"
-                />
-              </div>
+              <label className="text-xs uppercase tracking-wide text-white/70 mb-2 block">Pilih Pelanggan</label>
+              <select
+                value={customerFilter}
+                onChange={(e) => setCustomerFilter(e.target.value)}
+                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-white/50"
+              >
+                <option value="">Semua Pelanggan</option>
+                {users.map((usr) => (
+                  <option key={usr.id} value={usr.name || usr.email}>
+                    {usr.name || usr.email} {usr.phone && `(${usr.phone})`}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
@@ -595,78 +617,97 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
         </div>
       </PageHeader>
 
-      {/* Summary Cards */}
       <div className="p-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="card-elevated p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm">Total Penjualan</p>
-                <p className="text-xl font-bold text-gray-800">
-                  {formatCurrency(summaryStats.totalSales)}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {filteredTransactions.length} transaksi
-                </p>
-              </div>
-              <div className="bg-brand-accentMuted p-3 rounded-2xl">
-                <DollarSign className="w-6 h-6 text-brand-primary" />
-              </div>
-            </div>
-          </div>
-
-          <div className="card-elevated p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm">Lunas</p>
-                <p className="text-xl font-bold text-brand-success">
-                  {summaryStats.lunasCount}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {formatCurrency(summaryStats.totalSales - summaryStats.totalBelumLunas)}
-                </p>
-              </div>
-              <div className="bg-brand-success/10 p-3 rounded-2xl">
-                <CheckCircle className="w-6 h-6 text-brand-success" />
-              </div>
-            </div>
-          </div>
-
-          <div className="card-elevated p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm">Belum Lunas</p>
-                <p className="text-xl font-bold text-brand-warning">
-                  {summaryStats.belumLunasCount}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {formatCurrency(summaryStats.totalBelumLunas)}
-                </p>
-              </div>
-              <div className="bg-brand-warning/10 p-3 rounded-2xl">
-                <XCircle className="w-6 h-6 text-brand-warning" />
-              </div>
-            </div>
-          </div>
-
-          <div className="card-elevated p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm">Rata-rata</p>
-                <p className="text-xl font-bold text-gray-800">
-                  {formatCurrency(summaryStats.averageTransaction)}
-                </p>
-                <p className="text-xs text-gray-500">per transaksi</p>
-              </div>
-              <div className="bg-brand-accentMuted p-3 rounded-2xl">
-                <TrendingUp className="w-6 h-6 text-brand-primary" />
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Report Content */}
         <div className="bg-white rounded-lg shadow-md">
+          {/* Ringkasan Laporan */}
+          {reportType === 'summary' && (
+            <div className="p-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Ringkasan Performa Bisnis</h3>
+              
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="card-elevated p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-500 text-sm">Total Penjualan</p>
+                      <p className="text-xl font-bold text-gray-800">
+                        {formatCurrency(summaryStats.totalSales)}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {filteredTransactions.length} transaksi
+                      </p>
+                    </div>
+                    <div className="bg-brand-accentMuted p-3 rounded-2xl">
+                      <DollarSign className="w-6 h-6 text-brand-primary" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card-elevated p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-500 text-sm">Lunas</p>
+                      <p className="text-xl font-bold text-brand-success">
+                        {summaryStats.lunasCount}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {formatCurrency(summaryStats.totalSales - summaryStats.totalBelumLunas)}
+                      </p>
+                    </div>
+                    <div className="bg-brand-success/10 p-3 rounded-2xl">
+                      <CheckCircle className="w-6 h-6 text-brand-success" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card-elevated p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-500 text-sm">Belum Lunas</p>
+                      <p className="text-xl font-bold text-brand-warning">
+                        {summaryStats.belumLunasCount}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {formatCurrency(summaryStats.totalBelumLunas)}
+                      </p>
+                    </div>
+                    <div className="bg-brand-warning/10 p-3 rounded-2xl">
+                      <XCircle className="w-6 h-6 text-brand-warning" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card-elevated p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-500 text-sm">Rata-rata</p>
+                      <p className="text-xl font-bold text-gray-800">
+                        {formatCurrency(summaryStats.averageTransaction)}
+                      </p>
+                      <p className="text-xs text-gray-500">per transaksi</p>
+                    </div>
+                    <div className="bg-brand-accentMuted p-3 rounded-2xl">
+                      <TrendingUp className="w-6 h-6 text-brand-primary" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sales Chart */}
+              <div className="card-elevated p-6 mt-6">
+                <h4 className="text-base font-semibold text-gray-800 mb-4">Grafik Penjualan</h4>
+                <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                  <div className="text-center">
+                    <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">Grafik penjualan akan ditampilkan di sini</p>
+                    <p className="text-xs text-gray-400 mt-1">Implementasi Chart.js atau Recharts sedang dalam proses</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Penjualan Tab */}
           {reportType === 'sales' && (
             <div className="p-4">
