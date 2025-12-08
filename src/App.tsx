@@ -478,10 +478,11 @@ function AppContent() {
             onCartClick={handleCartClick}
             onAddToCart={handleQuickAddToCart}
             flashSaleProducts={flashSaleProducts}
+            onBack={() => setCurrentPage('home')}
           />
         );
       case 'orders':
-        return <OrdersPage user={user} />;
+        return <OrdersPage user={user} onBack={() => setCurrentPage('home')} />;
       case 'account':
         return (
           <AccountPage
@@ -580,7 +581,7 @@ function AppContent() {
     <ErrorBoundary>
       <div className="min-h-screen bg-brand-surface text-slate-900">
         {renderCurrentPage()}
-        {!showLogin && !currentPage.startsWith('admin-') && currentPage === 'home' && (
+        {!showLogin && !currentPage.startsWith('admin-') && ['home', 'flash-sale', 'orders', 'account'].includes(currentPage) && (
           <BottomNavigation currentPage={currentPage} onPageChange={setCurrentPage} />
         )}
         <InstallPrompt />

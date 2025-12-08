@@ -1039,45 +1039,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               ))}
             </div>
           )}
-
-          {selectedPaymentMethod && selectedPaymentMethod.name.toLowerCase().includes('transfer') && (
-            <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-              <p className="text-sm font-semibold text-slate-800">Transfer ke:</p>
-              <div className="mt-3 space-y-2 text-sm text-slate-700">
-                <div className="flex items-center justify-between">
-                  <span>BCA: 0511456494</span>
-                  <button
-                    onClick={() => handleCopyAccount('0511456494', 'BCA')}
-                    className="text-xs font-semibold text-brand-primary hover:text-brand-primary/80"
-                  >
-                    <Copy className="mr-1 inline h-3 w-3" />
-                    Salin
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>BRI: 066301000115566</span>
-                  <button
-                    onClick={() => handleCopyAccount('066301000115566', 'BRI')}
-                    className="text-xs font-semibold text-brand-primary hover:text-brand-primary/80"
-                  >
-                    <Copy className="mr-1 inline h-3 w-3" />
-                    Salin
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>MANDIRI: 310011008896</span>
-                  <button
-                    onClick={() => handleCopyAccount('310011008896', 'MANDIRI')}
-                    className="text-xs font-semibold text-brand-primary hover:text-brand-primary/80"
-                  >
-                    <Copy className="mr-1 inline h-3 w-3" />
-                    Salin
-                  </button>
-                </div>
-              </div>
-              <p className="mt-2 text-xs text-slate-500">a.n. Fahrin</p>
-            </div>
-          )}
         </div>
 
         {/* Additional Options */}
@@ -1164,15 +1125,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </div>
                 )}
               </div>
-              <button
-                onClick={handleSubmitOrder}
-                className="btn-brand mt-6 w-full text-center"
-              >
-                Buat Pesanan
-              </button>
-              <p className="mt-3 text-center text-xs text-slate-500">
-                Dengan melanjutkan, kamu menyetujui syarat & ketentuan Azzahra Fashion Muslim.
-              </p>
             </div>
 
             <div className="rounded-2xl border border-dashed border-brand-primary/30 bg-brand-primary/5 p-4 text-sm text-slate-600">

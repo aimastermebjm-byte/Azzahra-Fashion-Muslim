@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { Package, Clock, Truck, CheckCircle, Search, XCircle, CreditCard, Upload, X, Copy } from 'lucide-react';
 import { ordersService } from '../services/ordersService';
 import { useFirebaseOrders } from '../hooks/useFirebaseOrders';
+import BackButton from './BackButton';
 
 interface OrdersPageProps {
   user: any;
+  onBack?: () => void;
 }
 
-const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
+const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -91,8 +93,9 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
       <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="p-4">
-          <h1 className="text-lg font-semibold text-center">Pesanan Saya</h1>
+        <div className="p-4 flex items-center gap-4">
+          {onBack && <BackButton onClick={onBack} />}
+          <h1 className="text-lg font-semibold flex-1 text-center">Pesanan Saya</h1>
         </div>
         
         {/* Search */}

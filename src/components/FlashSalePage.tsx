@@ -3,6 +3,7 @@ import { ShoppingCart, Zap, Flame, Percent } from 'lucide-react';
 import ProductCard from './ProductCard';
 import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
 import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
+import BackButton from './BackButton';
 
 interface FlashSalePageProps {
   user: any;
@@ -10,6 +11,7 @@ interface FlashSalePageProps {
   onCartClick: () => void;
   onAddToCart: (product: any) => void;
   flashSaleProducts: any[]; // Data dari unified hook, 0 reads
+  onBack?: () => void;
 }
 
 const FlashSalePage: React.FC<FlashSalePageProps> = ({
@@ -17,7 +19,8 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
   onProductClick,
   onCartClick,
   onAddToCart,
-  flashSaleProducts // Data dari unified hook, 0 reads
+  flashSaleProducts, // Data dari unified hook, 0 reads
+  onBack
 }) => {
   const { cartItems } = useRealTimeCartOptimized();
 
@@ -43,7 +46,10 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-xl font-bold text-white">Flash Sale ⚡</h1>
+            <div className="flex items-center gap-3">
+              {onBack && <BackButton onClick={onBack} variant="dark" />}
+              <h1 className="text-xl font-bold text-white">Flash Sale ⚡</h1>
+            </div>
             <button
               onClick={onCartClick}
               className="relative p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
@@ -104,7 +110,10 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold text-white">Flash Sale ⚡</h1>
+          <div className="flex items-center gap-3">
+            {onBack && <BackButton onClick={onBack} variant="dark" />}
+            <h1 className="text-xl font-bold text-white">Flash Sale ⚡</h1>
+          </div>
           <button
             onClick={onCartClick}
             className="relative p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
