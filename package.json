@@ -17,8 +17,10 @@
     "migration:safe-preview": "node scripts/previewMigration.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.75.1",
     "@types/dotenv": "^6.1.1",
+    "crypto-js": "^4.2.0",
     "dotenv": "^17.2.3",
     "firebase": "^12.4.0",
     "firebase-admin": "^13.6.0",
@@ -30,6 +32,7 @@
   "devDependencies": {
     "@babel/code-frame": "^7.27.1",
     "@eslint/js": "^9.9.1",
+    "@types/crypto-js": "^4.2.2",
     "@types/node": "^24.9.1",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",

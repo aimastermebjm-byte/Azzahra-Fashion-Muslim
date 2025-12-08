@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { Product } from '../types';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
@@ -9,6 +9,7 @@ import { ProductTableSkeleton, FlashSaleStatusSkeleton, MenuSkeleton } from './L
 import { uploadMultipleImages, validateImageFile, generateImageName } from '../utils/imageUpload';
 import { forceSyncAllProducts } from '../services/globalIndexSync';
 import { productCategoryService, ProductCategory } from '../services/productCategoryService';
+import AIAutoUploadModal from './AIAutoUploadModal';
 
 interface AdminProductsPageProps {
   onBack: () => void;
@@ -68,6 +69,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [showVariantBatchModal, setShowVariantBatchModal] = useState(false);
   const [showFlashSaleModal, setShowFlashSaleModal] = useState(false);
+  const [showAIUploadModal, setShowAIUploadModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -1001,6 +1003,17 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               <div className="text-left">
                 <p className="font-semibold">Tambah Produk</p>
                 <p className="text-sm opacity-90">Tambah produk baru</p>
+              </div>
+            </button>
+            {/* AI Auto Upload */}
+            <button
+              onClick={() => setShowAIUploadModal(true)}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg flex items-center space-x-3"
+            >
+              <Sparkles className="w-6 h-6" />
+              <div className="text-left">
+                <p className="font-semibold">🤖 AI Auto Upload</p>
+                <p className="text-sm opacity-90">Upload produk dengan AI</p>
               </div>
             </button>
 
@@ -2575,6 +2588,64 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
             </div>
           </div>
         </div>
+      )}
+
+      {/* AI Auto Upload Modal */}
+      {showAIUploadModal && (
+        <AIAutoUploadModal
+          isOpen={showAIUploadModal}
+          onClose={() => setShowAIUploadModal(false)}
+          existingProducts={products}
+          onSuccess={async (productData) => {
+            try {
+              console.log('AI Upload product data:', productData);
+              
+              // Upload collage image to Firebase Storage
+              const collageFile = productData.collageFile;
+              const uploadedImages = await uploadMultipleImages([collageFile]);
+              
+              if (uploadedImages.length === 0) {
+                throw new Error('Failed to upload collage image');
+              }
+              
+              const collageUrl = uploadedImages[0];
+              
+              // Create product with collage image
+              const newProduct = {
+                name: productData.name,
+                description: `${productData.variantCount} varian: ${productData.variantLabels.join(', ')}`,
+                category: productData.category,
+                retailPrice: parseInt(productData.retailPrice),
+                resellerPrice: parseInt(productData.resellerPrice),
+                costPrice: 0,
+                weight: 1000,
+                images: [collageUrl],
+                variants: {
+                  sizes: ['Ukuran 1'],
+                  colors: productData.variantLabels,
+                  stock: {
+                    'Ukuran 1': productData.variantLabels.reduce((acc: any, label: string) => {
+                      acc[label] = parseInt(productData.stockPerVariant) || 0;
+                      return acc;
+                    }, {})
+                  }
+                },
+                status: 'ready' as 'ready' | 'po',
+                isFeatured: false,
+                isFlashSale: false,
+                flashSaleDiscount: 0
+              };
+              
+              await addProduct(newProduct);
+              
+              setShowAIUploadModal(false);
+              alert('✅ Produk berhasil di-upload dengan AI!');
+            } catch (error: any) {
+              console.error('Failed to create AI product:', error);
+              alert(`❌ Gagal upload produk: ${error.message}`);
+            }
+          }}
+        />
       )}
     </div>
   );
