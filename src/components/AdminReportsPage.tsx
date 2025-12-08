@@ -411,133 +411,186 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     );
   }
 
+  // Dynamic title & subtitle based on reportType
+  const getReportInfo = () => {
+    switch (reportType) {
+      case 'sales':
+        return { title: 'Laporan Penjualan', subtitle: 'Pantau transaksi dan performa penjualan' };
+      case 'products':
+        return { title: 'Laporan Produk Terjual', subtitle: 'Analisa produk terlaris dan performa produk' };
+      case 'invoice':
+        return { title: 'Laporan Invoice', subtitle: 'Daftar invoice dan tagihan pelanggan' };
+      case 'inventory':
+        return { title: 'Laporan Persediaan', subtitle: 'Monitoring stok dan nilai inventory' };
+      case 'cashflow':
+        return { title: 'Laporan Arus Kas', subtitle: 'Track pemasukan dan pengeluaran bisnis' };
+      case 'profitloss':
+        return { title: 'Laporan Rugi Laba', subtitle: 'Analisa profit dan loss bisnis' };
+      case 'detail':
+        return { title: 'Laporan Detail', subtitle: 'Informasi lengkap semua transaksi' };
+      default:
+        return { title: 'Laporan', subtitle: 'Pilih jenis laporan' };
+    }
+  };
+
+  const reportInfo = getReportInfo();
+
   return (
     <div className="min-h-screen bg-brand-surface">
       <PageHeader
-        title="Laporan Penjualan"
-        subtitle="Pantau performa penjualan, persediaan, dan arus kas dalam satu tempat"
+        title={reportInfo.title}
+        subtitle={reportInfo.subtitle}
         onBack={onBack}
         variant="gradient"
         align="between"
       >
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        {/* Report Type Selector Dropdown */}
+        <div className="mb-4">
           <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
-            <p className="text-xs uppercase tracking-wide text-white/70">Periode</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {[
-                { value: 'hari_ini', label: 'Hari ini' },
-                { value: 'kemaren', label: 'Kemarin' },
-                { value: 'bulan_ini', label: 'Bulan ini' },
-                { value: 'bulan_kemaren', label: 'Bulan lalu' }
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setDateFilter(option.value as any)}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                    dateFilter === option.value ? 'bg-white text-brand-primary shadow-sm' : 'bg-white/10 text-white hover:bg-white/20'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-              <button
-                onClick={() => setDateFilter('custom')}
-                className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition ${
-                  dateFilter === 'custom' ? 'bg-white text-brand-primary shadow-sm' : 'bg-white/10 text-white hover:bg-white/20'
-                }`}
+            <label className="text-xs uppercase tracking-wide text-white/70 mb-2 block">Jenis Laporan</label>
+            <div className="relative">
+              <select
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value as any)}
+                className="w-full appearance-none rounded-xl border border-white/30 bg-white/95 px-4 py-3 pr-10 text-sm font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer"
               >
-                <Calendar className="h-3.5 w-3.5" />
-                Custom
-              </button>
+                <option value="sales">📊 Laporan Penjualan</option>
+                <option value="products">📦 Laporan Produk Terjual</option>
+                <option value="invoice">📄 Laporan Invoice</option>
+                <option value="inventory">📦 Laporan Persediaan</option>
+                <option value="cashflow">💰 Laporan Arus Kas</option>
+                <option value="profitloss">📈 Laporan Rugi Laba</option>
+                <option value="detail">👁 Laporan Detail</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-primary pointer-events-none" />
             </div>
+          </div>
+        </div>
+
+        {/* Filters - Compact Dropdown Style */}
+        <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
+          {/* Periode Filter */}
+          <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
+            <label className="text-xs uppercase tracking-wide text-white/70 mb-2 block">Periode</label>
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value as any)}
+              className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-white/50"
+            >
+              <option value="hari_ini">Hari ini</option>
+              <option value="kemaren">Kemarin</option>
+              <option value="bulan_ini">Bulan ini</option>
+              <option value="bulan_kemaren">Bulan lalu</option>
+              <option value="custom">Custom Range</option>
+            </select>
             {dateFilter === 'custom' && (
-              <div className="mt-3 grid gap-2 md:grid-cols-2">
+              <div className="mt-2 grid gap-2">
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-sm text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+                  className="rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-xs text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+                  placeholder="Dari"
                 />
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-sm text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+                  className="rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-xs text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+                  placeholder="Sampai"
                 />
               </div>
             )}
           </div>
 
-          <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
-            <p className="text-xs uppercase tracking-wide text-white/70">Status</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {[
-                { value: 'all', label: 'Semua' },
-                { value: 'lunas', label: 'Lunas' },
-                { value: 'belum_lunas', label: 'Belum lunas' }
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setStatusFilter(option.value as any)}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                    statusFilter === option.value ? 'bg-white text-brand-primary shadow-sm' : 'bg-white/10 text-white hover:bg-white/20'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
+          {/* Status Filter - Only for sales/invoice */}
+          {(reportType === 'sales' || reportType === 'invoice' || reportType === 'detail') && (
+            <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
+              <label className="text-xs uppercase tracking-wide text-white/70 mb-2 block">Status</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-white/50"
+              >
+                <option value="all">Semua Status</option>
+                <option value="lunas">Lunas</option>
+                <option value="belum_lunas">Belum Lunas</option>
+              </select>
             </div>
-          </div>
+          )}
 
-          <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
-            <p className="text-xs uppercase tracking-wide text-white/70">Cari Pelanggan</p>
-            <div className="mt-2 flex items-center gap-2 rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-brand-primary">
-              <Search className="h-4 w-4 text-brand-primary" />
-              <input
-                type="text"
-                value={customerFilter}
-                onChange={(e) => setCustomerFilter(e.target.value)}
-                className="w-full bg-transparent text-sm placeholder-brand-primary/60 focus:outline-none"
-                placeholder="Nama atau no. HP"
-              />
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
-            <p className="text-xs uppercase tracking-wide text-white/70">Filter Tambahan</p>
-            <div className="mt-2 grid gap-2">
-              <div>
-                <label className="text-[11px] uppercase tracking-wide text-white/60">Metode Pembayaran (Arus Kas)</label>
-                <select
-                  value={paymentMethodFilter}
-                  onChange={(e) => setPaymentMethodFilter(e.target.value as any)}
-                  className="mt-1 w-full rounded-xl border border-white/30 bg-white/90 px-3 py-2 text-xs font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
-                >
-                  <option value="all">Semua metode</option>
-                  {paymentMethods.map((method) => (
-                    <option key={method.id} value={method.id}>{method.name}</option>
-                  ))}
-                </select>
+          {/* Customer Search - Only for sales/invoice/detail */}
+          {(reportType === 'sales' || reportType === 'invoice' || reportType === 'detail') && (
+            <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
+              <label className="text-xs uppercase tracking-wide text-white/70 mb-2 block">Cari Pelanggan</label>
+              <div className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-brand-primary">
+                <Search className="h-4 w-4 text-brand-primary flex-shrink-0" />
+                <input
+                  type="text"
+                  value={customerFilter}
+                  onChange={(e) => setCustomerFilter(e.target.value)}
+                  className="w-full bg-transparent text-sm placeholder-brand-primary/60 focus:outline-none"
+                  placeholder="Nama/No. HP"
+                />
               </div>
-              <button
-                onClick={() => exportToCSV(filteredTransactions, 'laporan_penjualan.csv')}
-                className="flex items-center justify-between rounded-xl bg-white/15 px-3 py-2 text-xs font-semibold text-white hover:bg-white/25"
-              >
-                <span>Ekspor data</span>
-                <Download className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => {
-                  setStatusFilter('all');
-                  setCustomerFilter('');
-                  setDateFilter('bulan_ini');
-                  setPaymentMethodFilter('all');
-                }}
-                className="rounded-xl border border-white/30 px-3 py-2 text-xs font-semibold text-white/80 transition hover:border-white hover:text-white"
-              >
-                Reset filter
-              </button>
             </div>
+          )}
+
+          {/* Payment Method Filter - Only for cashflow */}
+          {reportType === 'cashflow' && (
+            <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
+              <label className="text-xs uppercase tracking-wide text-white/70 mb-2 block">Metode Pembayaran</label>
+              <select
+                value={paymentMethodFilter}
+                onChange={(e) => setPaymentMethodFilter(e.target.value as any)}
+                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-white/50"
+              >
+                <option value="all">Semua Metode</option>
+                {paymentMethods.map((method) => (
+                  <option key={method.id} value={method.id}>{method.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Category Filter - Only for products/inventory */}
+          {(reportType === 'products' || reportType === 'inventory') && (
+            <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
+              <label className="text-xs uppercase tracking-wide text-white/70 mb-2 block">Kategori Produk</label>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-white/50"
+              >
+                <option value="all">Semua Kategori</option>
+                {productCategories.map((cat) => (
+                  <option key={cat.id} value={cat.name}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white flex flex-col gap-2">
+            <button
+              onClick={() => exportToCSV(filteredTransactions, `laporan_${reportType}.csv`)}
+              className="flex items-center justify-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-xs font-semibold text-white hover:bg-white/25 transition"
+            >
+              <Download className="h-4 w-4" />
+              <span>Export</span>
+            </button>
+            <button
+              onClick={() => {
+                setStatusFilter('all');
+                setCustomerFilter('');
+                setDateFilter('bulan_ini');
+                setPaymentMethodFilter('all');
+                setCategoryFilter('all');
+              }}
+              className="rounded-xl border border-white/30 px-3 py-2 text-xs font-semibold text-white/80 transition hover:border-white hover:text-white"
+            >
+              Reset
+            </button>
           </div>
         </div>
       </PageHeader>
@@ -612,67 +665,13 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="bg-white rounded-lg shadow-md mb-4">
-          <div className="flex space-x-1 p-1 overflow-x-auto">
-            {[
-              { id: 'sales', label: 'Penjualan', icon: FileText },
-              { id: 'products', label: 'Produk Terjual', icon: Package },
-              { id: 'invoice', label: 'Invoice', icon: FileText },
-              { id: 'inventory', label: 'Persediaan', icon: Box },
-              { id: 'cashflow', label: 'Arus Kas', icon: Wallet },
-              { id: 'profitloss', label: 'Rugi Laba', icon: TrendingUp },
-              { id: 'detail', label: 'Detail', icon: Eye }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setReportType(tab.id as any)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
-                  reportType === tab.id
-                    ? 'bg-brand-accent text-white shadow-brand-card'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                <span className="text-sm font-medium">{tab.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Tab Content */}
+        {/* Report Content */}
         <div className="bg-white rounded-lg shadow-md">
           {/* Penjualan Tab */}
           {reportType === 'sales' && (
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Laporan Penjualan</h3>
-                <button
-                  onClick={() => exportToCSV(filteredTransactions, 'laporan_penjualan.csv')}
-                  className="flex items-center space-x-2 btn-brand"
-                >
-                  <Download className="w-4 h-4" />
-                  <span className="text-sm">Export CSV</span>
-                </button>
-              </div>
-
-              {/* Filter Kategori Produk */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filter Kategori Produk
-                </label>
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                >
-                  <option value="all">Semua Kategori</option>
-                  {productCategories.map((cat) => (
-                    <option key={cat.id} value={cat.name}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+                <h3 className="text-lg font-semibold text-gray-800">Transaksi Penjualan</h3>
               </div>
 
               <div className="overflow-x-auto">
@@ -717,33 +716,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           {reportType === 'products' && (
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Laporan Produk Terjual</h3>
-                <button
-                  onClick={() => exportToCSV(products.filter(p => categoryFilter === 'all' || p.category === categoryFilter), 'laporan_produk.csv')}
-                  className="flex items-center space-x-2 btn-brand"
-                >
-                  <Download className="w-4 h-4" />
-                  <span className="text-sm">Export CSV</span>
-                </button>
-              </div>
-
-              {/* Filter Kategori Produk */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filter Kategori Produk
-                </label>
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                >
-                  <option value="all">Semua Kategori</option>
-                  {productCategories.map((cat) => (
-                    <option key={cat.id} value={cat.name}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+                <h3 className="text-lg font-semibold text-gray-800">Produk Terlaris</h3>
               </div>
 
               <div className="overflow-x-auto">
@@ -794,14 +767,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           {reportType === 'invoice' && (
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Laporan Invoice Pelanggan</h3>
-                <button
-                  onClick={() => exportToCSV(filteredTransactions, 'laporan_invoice.csv')}
-                  className="flex items-center space-x-2 btn-brand"
-                >
-                  <Download className="w-4 h-4" />
-                  <span className="text-sm">Export CSV</span>
-                </button>
+                <h3 className="text-lg font-semibold text-gray-800">Daftar Invoice</h3>
               </div>
 
               <div className="overflow-x-auto">
@@ -840,33 +806,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           {reportType === 'inventory' && (
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Laporan Persediaan</h3>
-                <button
-                  onClick={() => exportToCSV(inventory.filter(i => categoryFilter === 'all' || i.category === categoryFilter), 'laporan_persediaan.csv')}
-                  className="flex items-center space-x-2 btn-brand"
-                >
-                  <Download className="w-4 h-4" />
-                  <span className="text-sm">Export CSV</span>
-                </button>
-              </div>
-
-              {/* Filter Kategori Produk */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filter Kategori Produk
-                </label>
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                >
-                  <option value="all">Semua Kategori</option>
-                  {productCategories.map((cat) => (
-                    <option key={cat.id} value={cat.name}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+                <h3 className="text-lg font-semibold text-gray-800">Stok Persediaan</h3>
               </div>
 
               <div className="overflow-x-auto">
@@ -914,14 +854,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           {reportType === 'cashflow' && (
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Laporan Arus Kas</h3>
-                <button
-                  onClick={() => exportToCSV(cashFlow, 'laporan_arus_kas.csv')}
-                  className="flex items-center space-x-2 btn-brand"
-                >
-                  <Download className="w-4 h-4" />
-                  <span className="text-sm">Export CSV</span>
-                </button>
+                <h3 className="text-lg font-semibold text-gray-800">Transaksi Kas & Bank</h3>
               </div>
 
               {/* Summary Cards for Cash Flow */}
@@ -1014,14 +947,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           {reportType === 'profitloss' && (
             <div className="p-4">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold text-gray-800">Laporan Rugi Laba</h3>
-                <button
-                  onClick={() => exportToCSV([], 'laporan_rugi_laba.csv')}
-                  className="flex items-center space-x-2 btn-brand"
-                >
-                  <Download className="w-4 h-4" />
-                  <span className="text-sm">Export CSV</span>
-                </button>
+                <h3 className="text-lg font-semibold text-gray-800">Profit & Loss Statement</h3>
               </div>
 
               <div className="space-y-6">
@@ -1112,14 +1038,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           {reportType === 'detail' && (
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Laporan Detail Transaksi</h3>
-                <button
-                  onClick={() => exportToCSV(filteredTransactions, 'laporan_detail.csv')}
-                  className="flex items-center space-x-2 btn-brand"
-                >
-                  <Download className="w-4 h-4" />
-                  <span className="text-sm">Export CSV</span>
-                </button>
+                <h3 className="text-lg font-semibold text-gray-800">Detail Lengkap Transaksi</h3>
               </div>
 
               <div className="overflow-x-auto">
