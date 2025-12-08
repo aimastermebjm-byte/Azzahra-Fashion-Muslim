@@ -109,18 +109,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
     // Use status field with fallback to 'ready'
     const displayStatus = product.status || 'ready';
-
-    const stockStatus = displayStatus === 'ready'
-      ? `Ready (${totalStock})`
-      : `PO (${totalStock})`;
+    const isReady = displayStatus === 'ready';
 
     return (
-      <div className={`absolute text-[10px] px-1 py-0.5 rounded-full font-medium backdrop-blur ${
-        displayStatus === 'ready'
-          ? 'bg-white/95 text-pink-700 shadow-lg border border-pink-200'
-          : 'bg-white/95 text-pink-600 shadow-lg border border-pink-200'
+      <div className={`flex items-center gap-1 px-2.5 py-1 rounded-lg backdrop-blur-md shadow-md text-xs font-semibold ${
+        isReady 
+          ? 'bg-emerald-500/95 text-white border border-emerald-400/50' 
+          : 'bg-amber-500/95 text-white border border-amber-400/50'
       }`}>
-        {stockStatus}
+        {isReady ? '✓' : '⏱'} {isReady ? 'Ready' : 'PO'} · {totalStock}
       </div>
     );
   };
