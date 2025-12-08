@@ -7,7 +7,7 @@ import {
   CreditCard, Search, ChevronDown
 } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db } from '../utils/firebaseClient';
 import ReportsService from '../services/reportsService';
 import { financialService, PaymentMethod } from '../services/financialService';
 import { productCategoryService, ProductCategory } from '../services/productCategoryService';
