@@ -122,9 +122,9 @@ export class GeminiVisionService {
     }
     
     try {
-      // Test with a simple prompt - use gemini-pro for text only
+      // Test with a simple prompt - use gemini-2.5-flash (current stable model)
       const model = this.genAI.getGenerativeModel({ 
-        model: "gemini-pro"
+        model: "gemini-2.5-flash"
       });
       
       const result = await model.generateContent("Say 'OK' if you can read this.");
@@ -151,7 +151,7 @@ export class GeminiVisionService {
     this.rateLimiter.canMakeRequest();
     
     const model = this.genAI.getGenerativeModel({
-      model: "gemini-1.5-pro",
+      model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0.2 // Low temperature for consistent results

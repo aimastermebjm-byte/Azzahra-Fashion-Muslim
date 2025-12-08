@@ -124,7 +124,7 @@ export const GeminiAPISettings: React.FC<GeminiAPISettingsProps> = ({ onSave, on
             <p className="text-blue-800 mb-2">
               Gemini API offers 1,500 FREE requests per day - perfect for AI Auto Upload!
               <br />
-              <span className="text-xs">Using: Gemini 1.5 Pro (multimodal vision model)</span>
+              <span className="text-xs">Using: Gemini 2.5 Flash (stable multimodal model)</span>
             </p>
             <a
               href="https://aistudio.google.com/app/apikey"
