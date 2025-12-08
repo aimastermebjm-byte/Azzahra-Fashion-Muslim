@@ -23,6 +23,43 @@ interface AdminReportsPageProps {
   user: any;
 }
 
+// Cache keys
+const USERS_CACHE_KEY = 'reports-users-cache';
+const USERS_CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+
+// Cache helpers
+const readUsersCache = (): { data: any[], timestamp: number } | null => {
+  try {
+    const raw = localStorage.getItem(USERS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed.data || !Array.isArray(parsed.data)) return null;
+    
+    // Check if cache expired (7 days)
+    const now = Date.now();
+    if (parsed.timestamp && (now - parsed.timestamp) > USERS_CACHE_EXPIRY) {
+      localStorage.removeItem(USERS_CACHE_KEY);
+      return null;
+    }
+    
+    return parsed;
+  } catch (err) {
+    console.error('⚠️ Failed to read users cache', err);
+    return null;
+  }
+};
+
+const writeUsersCache = (users: any[]) => {
+  try {
+    localStorage.setItem(USERS_CACHE_KEY, JSON.stringify({
+      data: users,
+      timestamp: Date.now()
+    }));
+  } catch (err) {
+    console.error('⚠️ Failed to write users cache', err);
+  }
+};
+
 const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => {
   // Report type untuk tab navigation
   const [reportType, setReportType] = useState<'summary' | 'sales' | 'products' | 'invoice' | 'inventory' | 'cashflow' | 'profitloss' | 'detail'>('summary');
@@ -168,12 +205,26 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
     const loadUsers = async () => {
       try {
+        // Check cache first
+        const cached = readUsersCache();
+        if (cached) {
+          console.log('✅ Users loaded from cache (expires in', Math.round((USERS_CACHE_EXPIRY - (Date.now() - cached.timestamp)) / (24 * 60 * 60 * 1000)), 'days)');
+          setUsers(cached.data);
+          return;
+        }
+
+        // Cache miss - fetch from Firestore
+        console.log('🔥 Fetching users from Firestore...');
         const usersSnapshot = await getDocs(collection(db, 'users'));
         const usersData = usersSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        
+        // Write to cache
+        writeUsersCache(usersData);
         setUsers(usersData);
+        console.log('✅ Users cached for 7 days');
       } catch (error) {
         console.error('Error loading users:', error);
       }
