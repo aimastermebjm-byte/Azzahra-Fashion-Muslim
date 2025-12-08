@@ -724,6 +724,129 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         ) : (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)]">
           <div className="space-y-6">
+        {/* Address Input */}
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-900">Alamat Pengiriman</h3>
+            <button
+              onClick={() => {
+                setEditingAddress(null);
+                setShowAddressModal(true);
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-brand-primary/30 px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/5"
+            >
+              <Plus className="h-4 w-4" />
+              Tambah Alamat
+            </button>
+          </div>
+
+          {/* Address Selection */}
+          {addressesLoading ? (
+            <ListSkeleton items={3} />
+          ) : addresses.length > 0 ? (
+            <div className="mb-4 space-y-2">
+              {addresses.map((address) => (
+                <label
+                  key={address.id}
+                  className={`block rounded-2xl border p-3 transition ${
+                    selectedAddressId === address.id
+                      ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
+                      : 'border-slate-200 hover:border-brand-primary/40'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="savedAddress"
+                          checked={selectedAddressId === address.id}
+                          onChange={() => {
+                            setSelectedAddressId(address.id);
+                            setFormData(prev => ({
+                              ...prev,
+                              name: formData.isDropship ? prev.name : address.name,
+                              phone: formData.isDropship ? prev.phone : address.phone,
+                              address: address.fullAddress,
+                              provinceId: address.provinceId || '',
+                              cityId: address.cityId || ''
+                            }));
+                          }}
+                          className="h-4 w-4 text-brand-primary"
+                        />
+                        <span className="text-sm font-semibold text-slate-900">{address.name}</span>
+                        {address.isDefault && (
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
+                            Utama
+                          </span>
+                        )}
+                      </div>
+                      <p className="ml-6 text-xs text-slate-500">{address.phone}</p>
+                      <p className="ml-6 text-sm text-slate-600">{address.fullAddress}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingAddress(address);
+                          setShowAddressModal(true);
+                        }}
+                        className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:text-brand-primary"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      {addresses.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteAddress(address.id);
+                          }}
+                          className="rounded-full border border-slate-200 p-2 text-rose-500 transition hover:bg-rose-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="Belum ada alamat"
+              description="Tambahkan alamat pengiriman untuk mempercepat proses checkout."
+              action={(
+                <button onClick={() => setShowAddressModal(true)} className="btn-brand">
+                  Tambah Alamat Baru
+                </button>
+              )}
+            />
+          )}
+
+          {/* Manual shipping cost input for non-automatic couriers */}
+          {!supportsAutomatic && (
+            <div className="mt-4 border-t border-dashed border-slate-200 pt-4">
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Biaya Ongkos Kirim (Rp)
+              </label>
+              <input
+                type="number"
+                name="shippingCost"
+                value={formData.shippingCost || ''}
+                onChange={handleInputChange}
+                min="0"
+                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                placeholder="Masukkan biaya ongkos kirim"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                * Masukkan manual biaya ongkos kirim untuk kurir lokal
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Order Items */}
         <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
           <div className="flex items-center justify-between">
@@ -889,185 +1012,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           </div>
         </div>
 
-        {/* Address Input */}
-        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-900">Alamat Pengiriman</h3>
-            <button
-              onClick={() => {
-                setEditingAddress(null);
-                setShowAddressModal(true);
-              }}
-              className="inline-flex items-center gap-2 rounded-full border border-brand-primary/30 px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/5"
-            >
-              <Plus className="h-4 w-4" />
-              Tambah Alamat
-            </button>
-          </div>
-
-          {/* Address Selection */}
-          {addressesLoading ? (
-            <ListSkeleton items={3} />
-          ) : addresses.length > 0 ? (
-            <div className="mb-4 space-y-2">
-              {addresses.map((address) => (
-                <label
-                  key={address.id}
-                  className={`block rounded-2xl border p-3 transition ${
-                    selectedAddressId === address.id
-                      ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
-                      : 'border-slate-200 hover:border-brand-primary/40'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="savedAddress"
-                          checked={selectedAddressId === address.id}
-                          onChange={() => {
-                            setSelectedAddressId(address.id);
-                            setFormData(prev => ({
-                              ...prev,
-                              name: formData.isDropship ? prev.name : address.name,
-                              phone: formData.isDropship ? prev.phone : address.phone,
-                              address: address.fullAddress,
-                              provinceId: address.provinceId || '',
-                              cityId: address.cityId || ''
-                            }));
-                          }}
-                          className="h-4 w-4 text-brand-primary"
-                        />
-                        <span className="text-sm font-semibold text-slate-900">{address.name}</span>
-                        {address.isDefault && (
-                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
-                            Utama
-                          </span>
-                        )}
-                      </div>
-                      <p className="ml-6 text-xs text-slate-500">{address.phone}</p>
-                      <p className="ml-6 text-sm text-slate-600">{address.fullAddress}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingAddress(address);
-                          setShowAddressModal(true);
-                        }}
-                        className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:text-brand-primary"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      {addresses.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteAddress(address.id);
-                          }}
-                          className="rounded-full border border-slate-200 p-2 text-rose-500 transition hover:bg-rose-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </label>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              title="Belum ada alamat"
-              description="Tambahkan alamat pengiriman untuk mempercepat proses checkout."
-              action={(
-                <button onClick={() => setShowAddressModal(true)} className="btn-brand">
-                  Tambah Alamat Baru
-                </button>
-              )}
-            />
-          )}
-
-          {/* Manual shipping cost input for non-automatic couriers */}
-          {!supportsAutomatic && (
-            <div className="mt-4 border-t border-dashed border-slate-200 pt-4">
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Biaya Ongkos Kirim (Rp)
-              </label>
-              <input
-                type="number"
-                name="shippingCost"
-                value={formData.shippingCost || ''}
-                onChange={handleInputChange}
-                min="0"
-                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                placeholder="Masukkan biaya ongkos kirim"
-              />
-              <p className="mt-1 text-xs text-slate-500">
-                * Masukkan manual biaya ongkos kirim untuk kurir lokal
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Additional Options */}
-        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-900 mb-3">Opsi Tambahan</h3>
-
-          {/* Notes */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Catatan Pesanan
-            </label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleInputChange}
-              rows={3}
-              className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-              placeholder="Tambahkan catatan untuk pesanan (opsional)"
-            />
-          </div>
-
-          {/* Dropship Option */}
-          <div className="border-t pt-4">
-            <label className="flex items-center space-x-3 mb-4">
-              <input
-                type="checkbox"
-                name="isDropship"
-                checked={formData.isDropship}
-                onChange={handleInputChange}
-                className="h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
-              />
-              <span className="text-sm font-medium text-slate-700">Kirim sebagai dropship</span>
-            </label>
-
-            {/* Dropship Fields */}
-            {formData.isDropship && (
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  name="dropshipName"
-                  value={formData.dropshipName}
-                  onChange={handleInputChange}
-                  className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                  placeholder="Nama pengirim dropship"
-                />
-                <input
-                  type="tel"
-                  name="dropshipPhone"
-                  value={formData.dropshipPhone}
-                  onChange={handleInputChange}
-                  className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                  placeholder="Nomor telepon pengirim"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Payment Method */}
         <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-900 mb-3">Metode Pembayaran</h3>
@@ -1140,6 +1084,62 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               <p className="mt-2 text-xs text-slate-500">a.n. Fahrin</p>
             </div>
           )}
+        </div>
+
+        {/* Additional Options */}
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">Opsi Tambahan</h3>
+
+          {/* Notes */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Catatan Pesanan
+            </label>
+            <textarea
+              name="notes"
+              value={formData.notes}
+              onChange={handleInputChange}
+              rows={3}
+              className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+              placeholder="Tambahkan catatan untuk pesanan (opsional)"
+            />
+          </div>
+
+          {/* Dropship Option */}
+          <div className="border-t pt-4">
+            <label className="flex items-center space-x-3 mb-4">
+              <input
+                type="checkbox"
+                name="isDropship"
+                checked={formData.isDropship}
+                onChange={handleInputChange}
+                className="h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
+              />
+              <span className="text-sm font-medium text-slate-700">Kirim sebagai dropship</span>
+            </label>
+
+            {/* Dropship Fields */}
+            {formData.isDropship && (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  name="dropshipName"
+                  value={formData.dropshipName}
+                  onChange={handleInputChange}
+                  className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  placeholder="Nama pengirim dropship"
+                />
+                <input
+                  type="tel"
+                  name="dropshipPhone"
+                  value={formData.dropshipPhone}
+                  onChange={handleInputChange}
+                  className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  placeholder="Nomor telepon pengirim"
+                />
+              </div>
+            )}
+          </div>
         </div>
 
           </div>
