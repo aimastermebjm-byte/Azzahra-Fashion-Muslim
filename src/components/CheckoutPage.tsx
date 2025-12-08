@@ -782,43 +782,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           </div>
         </div>
 
-        {/* Customer Information */}
-        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-900 mb-3">Informasi Penerima</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                <User className="w-4 h-4 inline mr-1" />
-                Nama Penerima
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                placeholder="Masukkan nama penerima"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                <Phone className="w-4 h-4 inline mr-1" />
-                Nomor Telepon
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                placeholder="Masukkan nomor telepon"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Courier Selection - MOVED TO TOP */}
+        {/* Courier Selection */}
         <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-900 mb-3">Pilih Kurir Pengiriman</h3>
           <div className="space-y-3">
@@ -903,19 +867,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     </select>
                   </div>
                 )}
-
-                {/* Weight Information */}
-                <div className="mb-3 rounded-xl bg-brand-primary/5 p-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium text-brand-primary">Berat Produk:</span>
-                    <span className="font-semibold text-brand-primary">
-                      {(calculateTotalWeight() / 1000).toFixed(2)} kg
-                    </span>
-                  </div>
-                  <div className="mt-1 text-xs text-brand-primary">
-                    💡 Smart rounding: 0-1.25kg = 1kg, 1.251-2.25kg = 2kg, dst.
-                  </div>
-                </div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-slate-700">Biaya Ongkir:</span>
@@ -1065,44 +1016,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-900 mb-3">Opsi Tambahan</h3>
 
-          {/* Dropship Option */}
-          <div className="mb-4">
-            <label className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                name="isDropship"
-                checked={formData.isDropship}
-                onChange={handleInputChange}
-                className="h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
-              />
-              <span className="text-sm font-medium text-slate-700">Kirim sebagai dropship</span>
-            </label>
-          </div>
-
-          {/* Dropship Fields */}
-          {formData.isDropship && (
-            <div className="border-t pt-4 space-y-3">
-              <input
-                type="text"
-                name="dropshipName"
-                value={formData.dropshipName}
-                onChange={handleInputChange}
-                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                placeholder="Nama pengirim dropship"
-              />
-              <input
-                type="tel"
-                name="dropshipPhone"
-                value={formData.dropshipPhone}
-                onChange={handleInputChange}
-                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                placeholder="Nomor telepon pengirim"
-              />
-            </div>
-          )}
-
           {/* Notes */}
-          <div className="border-t pt-4">
+          <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Catatan Pesanan
             </label>
@@ -1114,6 +1029,42 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
               placeholder="Tambahkan catatan untuk pesanan (opsional)"
             />
+          </div>
+
+          {/* Dropship Option */}
+          <div className="border-t pt-4">
+            <label className="flex items-center space-x-3 mb-4">
+              <input
+                type="checkbox"
+                name="isDropship"
+                checked={formData.isDropship}
+                onChange={handleInputChange}
+                className="h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
+              />
+              <span className="text-sm font-medium text-slate-700">Kirim sebagai dropship</span>
+            </label>
+
+            {/* Dropship Fields */}
+            {formData.isDropship && (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  name="dropshipName"
+                  value={formData.dropshipName}
+                  onChange={handleInputChange}
+                  className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  placeholder="Nama pengirim dropship"
+                />
+                <input
+                  type="tel"
+                  name="dropshipPhone"
+                  value={formData.dropshipPhone}
+                  onChange={handleInputChange}
+                  className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  placeholder="Nomor telepon pengirim"
+                />
+              </div>
+            )}
           </div>
         </div>
 
