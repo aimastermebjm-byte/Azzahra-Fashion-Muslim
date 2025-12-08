@@ -580,7 +580,7 @@ function AppContent() {
     <ErrorBoundary>
       <div className="min-h-screen bg-brand-surface text-slate-900">
         {renderCurrentPage()}
-        {!showLogin && !currentPage.startsWith('admin-') && (
+        {!showLogin && !currentPage.startsWith('admin-') && currentPage === 'home' && (
           <BottomNavigation currentPage={currentPage} onPageChange={setCurrentPage} />
         )}
         <InstallPrompt />
