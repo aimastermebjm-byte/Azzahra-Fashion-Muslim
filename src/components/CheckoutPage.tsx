@@ -1138,8 +1138,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
           </div>
           <div className="space-y-6">
-            {/* Order Summary */}
-            <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-lg lg:sticky lg:top-4">
+            {/* Order Summary - Desktop Sidebar */}
+            <div className="hidden lg:block rounded-2xl border border-white/40 bg-white/95 p-5 shadow-lg lg:sticky lg:top-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-wide text-slate-500">Total Pembayaran</p>
@@ -1175,7 +1175,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </p>
             </div>
 
-            <div className="rounded-2xl border border-dashed border-brand-primary/30 bg-brand-primary/5 p-4 text-sm text-slate-600">
+            <div className="hidden lg:block rounded-2xl border border-dashed border-brand-primary/30 bg-brand-primary/5 p-4 text-sm text-slate-600">
               <h4 className="text-base font-semibold text-brand-primary">Tips Checkout</h4>
               <ul className="mt-3 space-y-2 list-disc pl-4">
                 <li>Pastikan alamat lengkap beserta RT/RW dan patokan lokasi.</li>
@@ -1187,6 +1187,29 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         </div>
         )}
       </div>
+
+      {/* Floating Checkout Button - Fixed Bottom Right */}
+      {!loading && (
+        <div className="fixed bottom-4 right-4 z-40 flex flex-col gap-2 items-end">
+          <div className="rounded-2xl border border-white/40 bg-white/95 backdrop-blur-md shadow-2xl p-4 min-w-[280px]">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Total Pembayaran</p>
+              <div className="rounded-full bg-brand-primary/10 px-2 py-0.5 text-xs font-semibold text-brand-primary">
+                {selectedPaymentMethod?.name || 'Pilih metode'}
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-brand-primary mb-4">
+              Rp {finalTotal.toLocaleString('id-ID')}
+            </p>
+            <button
+              onClick={handleSubmitOrder}
+              className="btn-brand w-full text-center text-sm py-3"
+            >
+              Buat Pesanan
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Address Modal */}
       {showAddressModal && (
