@@ -254,24 +254,14 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
       
       setAnalysisProgress(65);
       
-      // Analyze products that don't have AI analysis yet (in background)
+      // TODO: Background analysis disabled due to CORS issue
+      // Browser cannot fetch Firebase Storage images directly
+      // Need to implement server-side analysis (Cloud Functions) later
       const productsNeedingAnalysis = existingProducts.filter(p => !p.aiAnalysis?.analyzedAt);
       
       if (productsNeedingAnalysis.length > 0) {
-        console.log(`🤖 ${productsNeedingAnalysis.length} products need AI analysis - analyzing in background...`);
-        
-        // Analyze up to 10 products per upload (to avoid rate limits)
-        const toAnalyze = productsNeedingAnalysis.slice(0, 10);
-        
-        for (let i = 0; i < toAnalyze.length; i++) {
-          try {
-            await productAnalysisService.analyzeProduct(toAnalyze[i]);
-            setAnalysisProgress(65 + (i / toAnalyze.length) * 10); // Progress 65% -> 75%
-          } catch (error) {
-            console.error('Error analyzing product:', error);
-            // Continue with next product
-          }
-        }
+        console.log(`ℹ️ ${productsNeedingAnalysis.length} products need AI analysis (background analysis disabled for now)`);
+        console.log(`💡 For now using category-based similarity. Full AI analysis coming soon!`);
       }
       
       setAnalysisProgress(75);
