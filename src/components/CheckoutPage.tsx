@@ -1139,7 +1139,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           </div>
           <div className="space-y-6">
             {/* Order Summary - Desktop Sidebar */}
-            <div className="hidden lg:block rounded-2xl border border-white/40 bg-white/95 p-5 shadow-lg lg:sticky lg:top-4">
+            <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-lg lg:sticky lg:top-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-wide text-slate-500">Total Pembayaran</p>
@@ -1175,7 +1175,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </p>
             </div>
 
-            <div className="hidden lg:block rounded-2xl border border-dashed border-brand-primary/30 bg-brand-primary/5 p-4 text-sm text-slate-600">
+            <div className="rounded-2xl border border-dashed border-brand-primary/30 bg-brand-primary/5 p-4 text-sm text-slate-600">
               <h4 className="text-base font-semibold text-brand-primary">Tips Checkout</h4>
               <ul className="mt-3 space-y-2 list-disc pl-4">
                 <li>Pastikan alamat lengkap beserta RT/RW dan patokan lokasi.</li>
@@ -1188,25 +1188,27 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         )}
       </div>
 
-      {/* Floating Checkout Button - Fixed Bottom Right */}
+      {/* Floating Checkout Button - Fixed Bottom */}
       {!loading && (
-        <div className="fixed bottom-4 right-4 z-40 flex flex-col gap-2 items-end">
-          <div className="rounded-2xl border border-white/40 bg-white/95 backdrop-blur-md shadow-2xl p-4 min-w-[280px]">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Total Pembayaran</p>
-              <div className="rounded-full bg-brand-primary/10 px-2 py-0.5 text-xs font-semibold text-brand-primary">
-                {selectedPaymentMethod?.name || 'Pilih metode'}
+        <div className="fixed bottom-0 left-0 right-0 lg:bottom-4 lg:left-4 lg:right-4 z-40">
+          <div className="bg-white/98 backdrop-blur-md shadow-2xl border-t lg:border lg:rounded-2xl border-white/40 p-4">
+            <div className="flex items-center justify-between gap-4 max-w-6xl mx-auto">
+              {/* Total - Kiri */}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Total Pembayaran</p>
+                <p className="text-xl lg:text-2xl font-bold text-brand-primary truncate">
+                  Rp {finalTotal.toLocaleString('id-ID')}
+                </p>
               </div>
+              
+              {/* Button - Kanan */}
+              <button
+                onClick={handleSubmitOrder}
+                className="btn-brand px-6 py-3 text-sm font-semibold whitespace-nowrap flex-shrink-0"
+              >
+                Buat Pesanan
+              </button>
             </div>
-            <p className="text-2xl font-bold text-brand-primary mb-4">
-              Rp {finalTotal.toLocaleString('id-ID')}
-            </p>
-            <button
-              onClick={handleSubmitOrder}
-              className="btn-brand w-full text-center text-sm py-3"
-            >
-              Buat Pesanan
-            </button>
           </div>
         </div>
       )}
