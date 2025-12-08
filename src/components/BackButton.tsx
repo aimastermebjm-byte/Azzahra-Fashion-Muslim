@@ -19,7 +19,7 @@ const variantClasses: Record<BackButtonVariant, string> = {
 
 const BackButton: React.FC<BackButtonProps> = ({
   onClick,
-  label = 'Kembali',
+  label = '',
   className = '',
   variant = 'light',
   icon
@@ -30,10 +30,11 @@ const BackButton: React.FC<BackButtonProps> = ({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${variantClass} ${className}`}
+      className={`inline-flex items-center gap-2 rounded-full border p-2 text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${variantClass} ${className}`}
+      aria-label="Kembali"
     >
       {icon ?? <ArrowLeft className="w-4 h-4" />}
-      <span>{label}</span>
+      {label && <span>{label}</span>}
     </button>
   );
 };

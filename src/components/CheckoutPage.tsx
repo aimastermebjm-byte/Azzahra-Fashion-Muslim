@@ -707,12 +707,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         subtitle={cartCount > 0 ? `${cartCount} produk siap dikirim` : 'Review detail pesanan sebelum konfirmasi pembayaran'}
         onBack={onBack}
         variant="card"
-        actions={(
-          <div className="text-right">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Total sementara</p>
-            <p className="text-2xl font-bold text-brand-primary">Rp {finalTotal.toLocaleString('id-ID')}</p>
-          </div>
-        )}
       />
 
       <div className="mx-auto max-w-6xl px-4 pb-16">
