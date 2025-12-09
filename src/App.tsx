@@ -355,13 +355,15 @@ function AppContent() {
         items: validatedItems.map(item => ({
           productId: item.productId,
           productName: item.name || 'Product',
+          productImage: item.image || item.productImage || item.images?.[0] || '',
           selectedVariant: {
             size: item.variant?.size || '',
             color: item.variant?.color || ''
           },
           quantity: item.quantity,
           price: item.price || 0,
-          total: item.total || 0
+          total: item.total || 0,
+          category: item.category || ''
         })),
         shippingInfo: orderData.shippingInfo,
         paymentMethod: orderData.paymentMethodName || orderData.paymentMethod || '',
