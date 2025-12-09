@@ -300,6 +300,9 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
 
     const fetchImageAsBase64 = async (url: string): Promise<string> => {
       const fixedUrl = normalizeStorageUrl(url);
+      if (!fixedUrl || fixedUrl.includes('/undefined/')) {
+        throw new Error('Invalid image URL');
+      }
       const response = await fetch(fixedUrl, { mode: 'cors' });
       const blob = await response.blob();
       return await new Promise((resolve, reject) => {
@@ -319,8 +322,8 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
       }
 
       const imageUrl = product.images?.[0] || product.image;
-      if (!imageUrl) {
-        console.log(`⏭️ Skipping ${product.name} - no image available for AI analysis`);
+      if (!imageUrl || imageUrl.includes('/undefined/')) {
+        console.log(`⏭️ Skipping ${product.name} - invalid/missing image URL`);
         return null;
       }
 
