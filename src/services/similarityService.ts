@@ -59,9 +59,12 @@ export class SimilarityService {
       colorScore * weights.color
     );
 
-    // Strong-match booster: if core features align, lift to at least 90%
-    const coreStrong = modelScore >= 90 && motifScore >= 80 && colorScore >= 80;
-    if (coreStrong) {
+    // Strong-match boosters
+    const boosterCore = modelScore >= 90 && motifScore >= 80 && colorScore >= 70;
+    const boosterShapePattern = modelScore >= 80 && motifScore >= 80 && colorScore >= 60;
+    if (boosterCore) {
+      overall = Math.max(overall, 95);
+    } else if (boosterShapePattern) {
       overall = Math.max(overall, 90);
     }
     
