@@ -272,9 +272,9 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                 {selectedOrder.items?.map((item, index) => (
                   <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                     <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {item.productImage ? (
+                      {(item.productImage || item.image) ? (
                         <img
-                          src={item.productImage}
+                          src={item.productImage || item.image}
                           alt={item.productName}
                           className="w-full h-full object-cover"
                         />

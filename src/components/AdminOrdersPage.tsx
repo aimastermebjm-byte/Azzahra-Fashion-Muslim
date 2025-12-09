@@ -651,9 +651,9 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   {selectedOrder.items?.map((item: any, index: number) => (
                     <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
                       <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
-                        {item.productImage ? (
+                        {(item.productImage || item.image) ? (
                           <img
-                            src={item.productImage}
+                            src={item.productImage || item.image}
                             alt={item.productName}
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -666,7 +666,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             }}
                           />
                         ) : null}
-                        <Package className="w-8 h-8 text-gray-400" style={{ display: item.productImage ? 'none' : 'flex' }} />
+                        <Package className="w-8 h-8 text-gray-400" style={{ display: (item.productImage || item.image) ? 'none' : 'flex' }} />
                       </div>
                       <div className="flex-1">
                         <p className="font-medium">{item.productName}</p>

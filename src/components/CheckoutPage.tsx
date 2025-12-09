@@ -654,7 +654,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         total: (item.price || 0) * (item.quantity || 1),
         productName: item.name || item.productName || 'Produk',
         productId: item.productId || item.id,
-        selectedVariant: item.variant
+        productImage: item.image || item.productImage || item.images?.[0] || '', // ✅ Save image
+        selectedVariant: item.variant,
+        category: item.category || '' // Also save category for sales analysis
       })),
       shippingInfo: {
         name: formData.name,
