@@ -150,48 +150,58 @@ export class GeminiVisionService {
     // Check rate limit
     this.rateLimiter.canMakeRequest();
     
-    const model = this.genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.2 // Low temperature for consistent results
-      }
-    });
+    const modelNames = ["gemini-2.5-flash", "gemini-3-pro", "gemini-1.5-flash"];
+    
+    let result = null;
+    let lastError = null;
     
     const prompt = this.buildAnalysisPrompt();
     
-    try {
-      const result = await model.generateContent([
-        prompt,
-        {
-          inlineData: {
-            data: imageBase64,
-            mimeType: "image/jpeg"
+    for (const modelName of modelNames) {
+      try {
+        const model = this.genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.2
           }
-        }
-      ]);
+        });
+        
+        result = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              data: imageBase64,
+              mimeType: "image/jpeg"
+            }
+          }
+        ]);
+        
+        if (result) break; // Success
+      } catch (e) {
+        lastError = e;
+        console.warn(`Gemini model ${modelName} failed, trying next...`);
+      }
+    }
+    
+    if (!result) {
+      console.error('Gemini analysis failed:', lastError);
       
-      const responseText = result.response.text();
-      const analysis = JSON.parse(responseText);
-      
-      return this.validateAndCleanAnalysis(analysis);
-    } catch (error: any) {
-      console.error('Gemini analysis failed:', error);
-      
-      if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('401')) {
+      if (lastError?.message?.includes('API_KEY_INVALID') || lastError?.message?.includes('401')) {
         throw new Error('API_KEY_INVALID: Invalid API key.');
       }
       
-      if (error.message?.includes('RATE_LIMIT') || error.message?.includes('429')) {
+      if (lastError?.message?.includes('RATE_LIMIT') || lastError?.message?.includes('429')) {
         throw new Error('RATE_LIMIT: Too many requests. Please wait.');
-      }
-      
-      if (error.message?.includes('TIMEOUT') || error.message?.includes('timeout')) {
-        throw new Error('TIMEOUT: Request timeout. Please try again.');
       }
       
       throw new Error('Failed to analyze image. Please try again.');
     }
+    
+    const responseText = result.response.text();
+    const analysis = JSON.parse(responseText);
+    
+    return this.validateAndCleanAnalysis(analysis);
   }
   
   private buildAnalysisPrompt(): string {
