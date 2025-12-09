@@ -18,21 +18,21 @@ export interface SimilarityScore {
 export interface FeatureWeights {
   model: number;        // 25%
   motif: number;        // 20%
-  lace: number;         // 15%
-  hem_pleats: number;   // 10%
-  sleeves: number;      // 10%
-  accessories: number;  // 10%
-  color: number;        // 10%
+  lace: number;         // 10%
+  hem_pleats: number;   // 5%
+  sleeves: number;      // 5%
+  accessories: number;  // 5%
+  color: number;        // 20%
 }
 
 export const DEFAULT_WEIGHTS: FeatureWeights = {
-  model: 0.25,
+  model: 0.35,
   motif: 0.20,
-  lace: 0.15,
-  hem_pleats: 0.10,
-  sleeves: 0.10,
-  accessories: 0.10,
-  color: 0.10
+  lace: 0.10,
+  hem_pleats: 0.05,
+  sleeves: 0.05,
+  accessories: 0.05,
+  color: 0.20
 };
 
 export class SimilarityService {
@@ -49,7 +49,7 @@ export class SimilarityService {
     const accessoriesScore = this.compareAccessories(analysis1.embellishments, analysis2.embellishments);
     const colorScore = this.compareColors(analysis1.colors, analysis2.colors);
     
-    const overall = (
+    let overall = (
       modelScore * weights.model +
       motifScore * weights.motif +
       laceScore * weights.lace +
@@ -58,6 +58,12 @@ export class SimilarityService {
       accessoriesScore * weights.accessories +
       colorScore * weights.color
     );
+
+    // Strong-match booster: if core features align, lift to at least 90%
+    const coreStrong = modelScore >= 90 && motifScore >= 80 && colorScore >= 80;
+    if (coreStrong) {
+      overall = Math.max(overall, 90);
+    }
     
     const matchingFeatures = this.identifyMatches(analysis1, analysis2, {
       model: modelScore,
@@ -390,14 +396,18 @@ export class SimilarityService {
   private compareColors(colors1: string[], colors2: string[]): number {
     if (colors1.length === 0 || colors2.length === 0) return 50;
     
-    const commonColors = colors1.filter(c => 
-      colors2.some(c2 => c.toLowerCase() === c2.toLowerCase())
-    ).length;
-    
-    const maxColors = Math.max(colors1.length, colors2.length);
-    const score = (commonColors / maxColors) * 100;
-    
-    return score;
+    const norm = (arr: string[]) => arr.map(c => c.toLowerCase());
+    const a = norm(colors1);
+    const b = norm(colors2);
+
+    const common = a.filter(c => b.includes(c)).length;
+    const union = new Set([...a, ...b]).size;
+    const overlap = union > 0 ? (common / union) * 100 : 0;
+
+    // Emphasize dominant color match: if at least 2 colors and 80% overlap, treat as perfect
+    if (overlap >= 80) return 100;
+
+    return overlap;
   }
   
   private identifyMatches(
