@@ -254,19 +254,18 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
       
       setAnalysisProgress(65);
       
-      // TODO: Background analysis disabled due to CORS issue
-      // Browser cannot fetch Firebase Storage images directly
-      // Need to implement server-side analysis (Cloud Functions) later
-      const productsNeedingAnalysis = existingProducts.filter(p => !p.aiAnalysis?.analyzedAt);
+      // Filter: Only compare with products that have AI analysis
+      const analyzedProducts = existingProducts.filter(p => p.aiAnalysis?.analyzedAt);
+      const notAnalyzed = existingProducts.length - analyzedProducts.length;
       
-      if (productsNeedingAnalysis.length > 0) {
-        console.log(`ℹ️ ${productsNeedingAnalysis.length} products need AI analysis (background analysis disabled for now)`);
-        console.log(`💡 For now using category-based similarity. Full AI analysis coming soon!`);
+      if (notAnalyzed > 0) {
+        console.log(`ℹ️ ${notAnalyzed} products skipped (no AI analysis yet)`);
       }
+      console.log(`✅ Comparing with ${analyzedProducts.length} AI-analyzed products`);
       
       setAnalysisProgress(75);
       
-      // Calculate similarity for each product
+      // Calculate similarity for each product - ONLY AI-analyzed products
       const similarities: SimilarityResult[] = [];
       
       for (const product of existingProducts) {
@@ -275,83 +274,59 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
         // Skip if no sales data
         if (!productSales) continue;
         
-        let similarityScore: SimilarityScore;
-        
-        // If product has AI analysis, use full AI comparison
-        if (product.aiAnalysis?.analyzedAt) {
-          console.log(`✨ Using AI analysis for ${product.name}`);
-          
-          // Convert to GeminiClothingAnalysis type
-          const existingAnalysis: GeminiClothingAnalysis = {
-            clothing_type: {
-              main_type: product.aiAnalysis.clothing_type.main_type as any,
-              silhouette: product.aiAnalysis.clothing_type.silhouette as any,
-              length: product.aiAnalysis.clothing_type.length as any,
-              confidence: product.aiAnalysis.clothing_type.confidence
-            },
-            pattern_type: {
-              pattern: product.aiAnalysis.pattern_type.pattern as any,
-              complexity: product.aiAnalysis.pattern_type.complexity as any,
-              confidence: product.aiAnalysis.pattern_type.confidence
-            },
-            lace_details: {
-              has_lace: product.aiAnalysis.lace_details.has_lace,
-              locations: product.aiAnalysis.lace_details.locations as any,
-              confidence: product.aiAnalysis.lace_details.confidence
-            },
-            hem_pleats: {
-              has_pleats: product.aiAnalysis.hem_pleats.has_pleats,
-              pleat_type: product.aiAnalysis.hem_pleats.pleat_type as any,
-              depth: product.aiAnalysis.hem_pleats.depth as any,
-              fullness: product.aiAnalysis.hem_pleats.fullness,
-              confidence: product.aiAnalysis.hem_pleats.confidence
-            },
-            sleeve_details: {
-              has_pleats: product.aiAnalysis.sleeve_details.has_pleats,
-              sleeve_type: product.aiAnalysis.sleeve_details.sleeve_type as any,
-              pleat_position: product.aiAnalysis.sleeve_details.pleat_position as any,
-              ruffle_count: product.aiAnalysis.sleeve_details.ruffle_count,
-              cuff_style: product.aiAnalysis.sleeve_details.cuff_style as any,
-              confidence: product.aiAnalysis.sleeve_details.confidence
-            },
-            embellishments: product.aiAnalysis.embellishments,
-            colors: product.aiAnalysis.colors,
-            fabric_texture: product.aiAnalysis.fabric_texture as any
-          };
-          
-          // Use actual AI similarity calculation
-          similarityScore = similarityService.calculateSimilarity(
-            primaryAnalysis,
-            existingAnalysis
-          );
-          
-          console.log(`📊 AI Similarity for ${product.name}: ${similarityScore.overall}%`);
-        } else {
-          // Fallback to category-based similarity
-          console.log(`⚠️ No AI analysis for ${product.name}, using category similarity`);
-          
-          const categorySimilarity = salesHistoryService.calculateCategorySimilarity(
-            primaryAnalysis.clothing_type.main_type,
-            product.category
-          );
-          
-          similarityScore = {
-            overall: categorySimilarity,
-            breakdown: {
-              model: categorySimilarity,
-              motif: 50,
-              lace: 50,
-              hem_pleats: 50,
-              sleeves: 50,
-              accessories: 50,
-              color: 50
-            },
-            matchingFeatures: [
-              `Category: ${product.category} (${categorySimilarity}% match - needs AI analysis)`
-            ],
-            differingFeatures: []
-          };
+        // ✅ ONLY use products with AI analysis (skip non-AI products)
+        if (!product.aiAnalysis?.analyzedAt) {
+          console.log(`⏭️ Skipping ${product.name} - no AI analysis yet`);
+          continue;
         }
+        
+        console.log(`✨ Using AI analysis for ${product.name}`);
+        
+        // Convert to GeminiClothingAnalysis type
+        const existingAnalysis: GeminiClothingAnalysis = {
+          clothing_type: {
+            main_type: product.aiAnalysis.clothing_type.main_type as any,
+            silhouette: product.aiAnalysis.clothing_type.silhouette as any,
+            length: product.aiAnalysis.clothing_type.length as any,
+            confidence: product.aiAnalysis.clothing_type.confidence
+          },
+          pattern_type: {
+            pattern: product.aiAnalysis.pattern_type.pattern as any,
+            complexity: product.aiAnalysis.pattern_type.complexity as any,
+            confidence: product.aiAnalysis.pattern_type.confidence
+          },
+          lace_details: {
+            has_lace: product.aiAnalysis.lace_details.has_lace,
+            locations: product.aiAnalysis.lace_details.locations as any,
+            confidence: product.aiAnalysis.lace_details.confidence
+          },
+          hem_pleats: {
+            has_pleats: product.aiAnalysis.hem_pleats.has_pleats,
+            pleat_type: product.aiAnalysis.hem_pleats.pleat_type as any,
+            depth: product.aiAnalysis.hem_pleats.depth as any,
+            fullness: product.aiAnalysis.hem_pleats.fullness,
+            confidence: product.aiAnalysis.hem_pleats.confidence
+          },
+          sleeve_details: {
+            has_pleats: product.aiAnalysis.sleeve_details.has_pleats,
+            sleeve_type: product.aiAnalysis.sleeve_details.sleeve_type as any,
+            pleat_position: product.aiAnalysis.sleeve_details.pleat_position as any,
+            ruffle_count: product.aiAnalysis.sleeve_details.ruffle_count,
+            cuff_style: product.aiAnalysis.sleeve_details.cuff_style as any,
+            confidence: product.aiAnalysis.sleeve_details.confidence
+          },
+          embellishments: product.aiAnalysis.embellishments,
+          colors: product.aiAnalysis.colors,
+          fabric_texture: product.aiAnalysis.fabric_texture as any
+        };
+        
+        // Use actual AI similarity calculation
+        const similarityScore = similarityService.calculateSimilarity(
+          primaryAnalysis,
+          existingAnalysis
+        );
+        
+        console.log(`📊 AI Similarity for ${product.name}: ${similarityScore.overall}%`);
         
         similarities.push({
           product,
