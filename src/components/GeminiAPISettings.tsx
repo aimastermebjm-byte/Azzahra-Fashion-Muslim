@@ -49,6 +49,7 @@ export const GeminiAPISettings: React.FC<GeminiAPISettingsProps> = ({ onSave, on
       geminiService.initialize(apiKey);
       
       // Test connection
+      // Note: We use geminiVisionService's internal test which now handles model fallbacks
       const success = await geminiService.testConnection();
       
       if (success) {
