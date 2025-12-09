@@ -1,6 +1,6 @@
 // Orders Service - Sync orders across devices using Firebase
 import { auth } from '../utils/firebaseClient';
-import { doc, setDoc, collection, getDocs, query, where, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs, query, where, updateDoc, deleteDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 
 export interface Order {
@@ -18,8 +18,8 @@ export interface Order {
   shippingCost: number;
   finalTotal: number;
   notes?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Timestamp | string; // Support both Timestamp (new) and string (legacy)
+  updatedAt: Timestamp | string;
   timestamp: number;
   paymentProof?: string;
   paymentProofData?: string;
@@ -43,8 +43,8 @@ class OrdersService {
         ...orderData,
         id: this.generateOrderId(),
         userId: user.uid,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: Timestamp.now(), // ✅ Use Firestore Timestamp for queries
+        updatedAt: Timestamp.now(),
         timestamp: Date.now()
       };
 
@@ -110,7 +110,7 @@ class OrdersService {
 
       await updateDoc(orderRef, {
         status: newStatus,
-        updatedAt: new Date().toISOString()
+        updatedAt: Timestamp.now()
       });
 
       console.log('✅ Order status updated successfully');
@@ -264,7 +264,7 @@ class OrdersService {
         paymentProof: paymentProofName,
         paymentProofData: paymentProofData, // Base64 image data
         paymentProofUrl: '', // Empty since we use base64
-        updatedAt: new Date().toISOString()
+        updatedAt: Timestamp.now()
       };
 
       if (status) {
