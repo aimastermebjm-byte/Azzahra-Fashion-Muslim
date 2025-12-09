@@ -80,6 +80,16 @@ export const GlobalProductsProvider: React.FC<{ children: React.ReactNode }> = (
           weight: Number(data.weight) || 0,
           unit: data.unit || 'pcs',
 
+          // AI analysis (if available)
+          aiAnalysis: data.aiAnalysis ? {
+            ...data.aiAnalysis,
+            analyzedAt: data.aiAnalysis.analyzedAt
+              ? (typeof data.aiAnalysis.analyzedAt === 'string'
+                ? new Date(data.aiAnalysis.analyzedAt)
+                : (data.aiAnalysis.analyzedAt?.toDate ? data.aiAnalysis.analyzedAt.toDate() : new Date()))
+              : undefined
+          } : undefined,
+
           // Migration fields
           cleanupDate: data.cleanupDate,
           cleanupNote: data.cleanupNote,
