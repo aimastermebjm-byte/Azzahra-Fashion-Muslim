@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, Sparkles, TrendingUp, Image as ImageIcon, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Upload, Sparkles, TrendingUp, Image as ImageIcon, CheckCircle, AlertCircle, Loader2, Settings } from 'lucide-react';
 import { geminiService, GeminiClothingAnalysis } from '../services/geminiVisionService';
 import { similarityService, SimilarityScore } from '../services/similarityService';
 import { collageService } from '../services/collageService';
@@ -517,12 +517,21 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowAPISettings(true)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
+              title="Configure Gemini API Key"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
         
         {/* Progress Steps */}
