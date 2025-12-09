@@ -292,8 +292,15 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
       fabric_texture: analysis.fabric_texture as any
     });
 
+    const normalizeStorageUrl = (url: string): string => {
+      if (!url) return url;
+      // Fix malformed bucket host: replace ".firebasestorage.app" with ".appspot.com"
+      return url.replace('firebasestorage.app', 'appspot.com');
+    };
+
     const fetchImageAsBase64 = async (url: string): Promise<string> => {
-      const response = await fetch(url);
+      const fixedUrl = normalizeStorageUrl(url);
+      const response = await fetch(fixedUrl, { mode: 'cors' });
       const blob = await response.blob();
       return await new Promise((resolve, reject) => {
         const reader = new FileReader();
