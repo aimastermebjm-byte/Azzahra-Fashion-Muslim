@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Azzahra Fashion Muslim</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      width: 100%;
+      max-width: 400px;
+    }
+    
+    .logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .logo h1 {
+      color: #667eea;
+      font-size: 28px;
+      margin-bottom: 5px;
+    }
+    
+    .logo p {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+      margin-top: 10px;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .message {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .message.success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #10b981;
+      display: block;
+    }
+    
+    .message.error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #ef4444;
+      display: block;
+    }
+    
+    .demo-accounts {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f9fafb;
+      border-radius: 10px;
+      border: 2px dashed #e5e7eb;
+    }
+    
+    .demo-accounts h3 {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    
+    .demo-account {
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .demo-account:hover {
+      border-color: #667eea;
+      transform: translateX(5px);
+    }
+    
+    .demo-account:last-child {
+      margin-bottom: 0;
+    }
+    
+    .demo-account .role {
+      font-weight: bold;
+      color: #667eea;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    
+    .demo-account .email {
+      color: #666;
+      font-size: 12px;
+    }
+    
+    .demo-account .password {
+      color: #999;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+    
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      color: #666;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <h1>👗 Azzahra Fashion</h1>
+      <p>Login ke Dashboard</p>
+    </div>
+    
+    <div id="message" class="message"></div>
+    
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="admin@example.com" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" required>
+      </div>
+      
+      <button type="submit" id="loginBtn">
+        🔐 LOGIN
+      </button>
+    </form>
+    
+    <div class="demo-accounts">
+      <h3>📋 Akun Demo (Klik untuk auto-fill)</h3>
+      
+      <div class="demo-account" onclick="fillDemo('owner')">
+        <div class="role">👑 OWNER</div>
+        <div class="email">Email: owner@test.com</div>
+        <div class="password">Password: owner123</div>
+      </div>
+      
+      <div class="demo-account" onclick="fillDemo('admin')">
+        <div class="role">⚙️ ADMIN</div>
+        <div class="email">Email: admin@test.com</div>
+        <div class="password">Password: admin123</div>
+      </div>
+      
+      <div class="demo-account" onclick="fillDemo('reseller')">
+        <div class="role">💼 RESELLER</div>
+        <div class="email">Email: reseller@test.com</div>
+        <div class="password">Password: reseller123</div>
+      </div>
+      
+      <div class="demo-account" onclick="fillDemo('customer')">
+        <div class="role">🛍️ CUSTOMER</div>
+        <div class="email">Email: customer@test.com</div>
+        <div class="password">Password: customer123</div>
+      </div>
+    </div>
+    
+    <div class="footer">
+      © 2025 Azzahra Fashion Muslim
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs",
+      authDomain: "azzahra-fashion-muslim-ab416.firebaseapp.com",
+      projectId: "azzahra-fashion-muslim-ab416",
+      storageBucket: "azzahra-fashion-muslim-ab416.firebasestorage.app",
+      messagingSenderId: "822661485961",
+      appId: "1:822661485961:web:4603488d8bef0119f3fd58",
+      measurementId: "G-NZSXEKPQER"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Demo accounts data
+    const demoAccounts = {
+      owner: { email: 'owner@test.com', password: 'owner123' },
+      admin: { email: 'admin@test.com', password: 'admin123' },
+      reseller: { email: 'reseller@test.com', password: 'reseller123' },
+      customer: { email: 'customer@test.com', password: 'customer123' }
+    };
+
+    // Fill demo credentials
+    window.fillDemo = function(role) {
+      const account = demoAccounts[role];
+      document.getElementById('email').value = account.email;
+      document.getElementById('password').value = account.password;
+      showMessage('✅ Kredensial demo di-isi! Klik LOGIN untuk masuk.', 'success');
+    };
+
+    // Show message
+    function showMessage(text, type) {
+      const msgDiv = document.getElementById('message');
+      msgDiv.textContent = text;
+      msgDiv.className = `message ${type}`;
+      
+      if (type === 'success') {
+        setTimeout(() => {
+          msgDiv.style.display = 'none';
+        }, 3000);
+      }
+    }
+
+    // Login form handler
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const loginBtn = document.getElementById('loginBtn');
+      
+      loginBtn.disabled = true;
+      loginBtn.textContent = '⏳ LOGGING IN...';
+      
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        
+        showMessage('✅ Login berhasil! Redirecting...', 'success');
+        
+        // Redirect to home after 1 second
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+        
+      } catch (error) {
+        console.error('Login error:', error);
+        
+        let errorMessage = 'Login gagal!';
+        
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+          errorMessage = '❌ Email atau password salah!';
+        } else if (error.code === 'auth/invalid-email') {
+          errorMessage = '❌ Format email tidak valid!';
+        } else if (error.code === 'auth/too-many-requests') {
+          errorMessage = '❌ Terlalu banyak percobaan. Coba lagi nanti.';
+        } else if (error.code === 'auth/network-request-failed') {
+          errorMessage = '❌ Koneksi internet bermasalah!';
+        } else {
+          errorMessage = `❌ ${error.message}`;
+        }
+        
+        showMessage(errorMessage, 'error');
+        loginBtn.disabled = false;
+        loginBtn.textContent = '🔐 LOGIN';
+      }
+    });
+
+    // Check if already logged in
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        showMessage('✅ Sudah login! Redirecting...', 'success');
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+      }
+    });
+  </script>
+</body>
+</html>
