@@ -293,9 +293,8 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
     });
 
     const normalizeStorageUrl = (url: string): string => {
-      if (!url) return url;
-      // Fix malformed bucket host: replace ".firebasestorage.app" with ".appspot.com"
-      return url.replace('firebasestorage.app', 'appspot.com');
+      // Gunakan URL apa adanya; jangan ganti domain bucket
+      return url || '';
     };
 
     const fetchImageAsBase64 = async (url: string): Promise<string> => {
@@ -305,6 +304,9 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
         throw new Error('Invalid image URL');
       }
       const response = await fetch(fixedUrl, { mode: 'cors' });
+      if (!response.ok) {
+        throw new Error(`Image fetch failed: ${response.status}`);
+      }
       const blob = await response.blob();
       return await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -316,6 +318,9 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
         reader.readAsDataURL(blob);
       });
     };
+
+    let autoAnalysisCount = 0;
+    const MAX_AUTO_ANALYZE = 5; // prevent rate limit
 
     const getOrAnalyzeProduct = async (product: Product): Promise<GeminiClothingAnalysis | null> => {
       if (product.aiAnalysis?.clothing_type) {
@@ -329,9 +334,14 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
       }
 
       try {
+        if (autoAnalysisCount >= MAX_AUTO_ANALYZE) {
+          console.log(`⏭️ Skipping ${product.name} - auto-analyze budget reached`);
+          return null;
+        }
         console.log(`🤖 Auto-analyzing product (no cached AI): ${product.name}`);
         const base64 = await fetchImageAsBase64(imageUrl);
         const analysis = await geminiService.analyzeClothingImage(base64);
+        autoAnalysisCount += 1;
         return analysis;
       } catch (err) {
         console.error(`❌ Failed auto-analysis for ${product.name}:`, err);
