@@ -300,7 +300,8 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
 
     const fetchImageAsBase64 = async (url: string): Promise<string> => {
       const fixedUrl = normalizeStorageUrl(url);
-      if (!fixedUrl || fixedUrl.includes('/undefined/')) {
+      const invalid = !fixedUrl || fixedUrl.includes('/undefined/') || fixedUrl.includes('undefined%2F');
+      if (invalid) {
         throw new Error('Invalid image URL');
       }
       const response = await fetch(fixedUrl, { mode: 'cors' });
@@ -322,7 +323,7 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
       }
 
       const imageUrl = product.images?.[0] || product.image;
-      if (!imageUrl || imageUrl.includes('/undefined/')) {
+      if (!imageUrl || imageUrl.includes('/undefined/') || imageUrl.includes('undefined%2F')) {
         console.log(`⏭️ Skipping ${product.name} - invalid/missing image URL`);
         return null;
       }
@@ -343,7 +344,7 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
     
     for (const product of existingProducts) {
       const productSales = salesData.get(product.id);
-      if (!productSales) continue;
+      if (!productSales || productSales.totalQuantity <= 0) continue;
 
       const existingAnalysis = await getOrAnalyzeProduct(product);
       if (!existingAnalysis) {
