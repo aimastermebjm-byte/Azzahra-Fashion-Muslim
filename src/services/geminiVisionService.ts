@@ -121,25 +121,40 @@ export class GeminiVisionService {
       throw new Error('Gemini not initialized. Please set API key first.');
     }
     
-    try {
-      // Test with a simple prompt - use gemini-2.5-flash (current stable model)
-      const model = this.genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash"
-      });
-      
-      const result = await model.generateContent("Say 'OK' if you can read this.");
-      const response = result.response.text();
-      
-      return response.toLowerCase().includes('ok');
-    } catch (error: any) {
-      console.error('Gemini test connection failed:', error);
-      
-      if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('401')) {
-        throw new Error('API_KEY_INVALID: Invalid API key. Please check your key.');
+    // Use fallback models for connection testing too (Free Tier optimized)
+    const modelNames = [
+      "gemini-1.5-flash", 
+      "gemini-1.5-flash-latest", 
+      "gemini-1.5-flash-001"
+    ];
+    
+    let lastError = null;
+    
+    for (const modelName of modelNames) {
+      try {
+        const model = this.genAI.getGenerativeModel({ 
+          model: modelName
+        });
+        
+        const result = await model.generateContent("Say 'OK' if you can read this.");
+        const response = result.response.text();
+        
+        if (response.toLowerCase().includes('ok')) {
+          return true;
+        }
+      } catch (error: any) {
+        lastError = error;
+        // Continue to next model
       }
-      
-      throw error;
     }
+    
+    console.error('Gemini test connection failed:', lastError);
+    
+    if (lastError?.message?.includes('API_KEY_INVALID') || lastError?.message?.includes('401')) {
+      throw new Error('API_KEY_INVALID: Invalid API key. Please check your key.');
+    }
+    
+    throw lastError || new Error('Connection test failed for all models');
   }
   
   async analyzeClothingImage(imageBase64: string): Promise<GeminiClothingAnalysis> {
@@ -150,7 +165,13 @@ export class GeminiVisionService {
     // Check rate limit
     this.rateLimiter.canMakeRequest();
     
-    const modelNames = ["gemini-2.5-flash", "gemini-3-pro", "gemini-1.5-flash"];
+    // Model names optimized for Free Tier & Stability
+    const modelNames = [
+      "gemini-1.5-flash",          // Standard Free Tier
+      "gemini-1.5-flash-latest",   // Latest stable
+      "gemini-1.5-flash-001",      // Fixed version
+      "gemini-pro-vision"          // Legacy fallback
+    ];
     
     let result = null;
     let lastError = null;
