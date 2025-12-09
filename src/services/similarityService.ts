@@ -26,13 +26,13 @@ export interface FeatureWeights {
 }
 
 export const DEFAULT_WEIGHTS: FeatureWeights = {
-  model: 0.35,
-  motif: 0.20,
-  lace: 0.10,
+  model: 0.45,      // Naik drastis (45%)
+  motif: 0.35,      // Naik drastis (35%) - Total 80% hanya dari Model & Motif
+  lace: 0.10,       // Detail penting
   hem_pleats: 0.05,
   sleeves: 0.05,
-  accessories: 0.05,
-  color: 0.20
+  accessories: 0.0, // Abaikan aksesoris kecil
+  color: 0.0        // Abaikan warna sepenuhnya (0%) sesuai request
 };
 
 export class SimilarityService {
@@ -47,6 +47,9 @@ export class SimilarityService {
     const hemScore = this.compareHemPleats(analysis1.hem_pleats, analysis2.hem_pleats);
     const sleeveScore = this.compareSleeves(analysis1.sleeve_details, analysis2.sleeve_details);
     const accessoriesScore = this.compareAccessories(analysis1.embellishments, analysis2.embellishments);
+    
+    // Warna dihitung tapi tidak masuk bobot utama jika weight.color = 0
+    // Namun kita tetap hitung untuk info
     const colorScore = this.compareColors(analysis1.colors, analysis2.colors);
     
     let overall = (
@@ -59,12 +62,12 @@ export class SimilarityService {
       colorScore * weights.color
     );
 
-    // Strong-match boosters
-    const boosterCore = modelScore >= 90 && motifScore >= 80 && colorScore >= 70;
-    const boosterShapePattern = modelScore >= 80 && motifScore >= 80 && colorScore >= 60;
-    if (boosterCore) {
-      overall = Math.max(overall, 95);
-    } else if (boosterShapePattern) {
+    // Strong-match boosters (MODEL & MOTIF ONLY)
+    // Jika Model & Motif sangat mirip, langsung anggap produk sama
+    if (modelScore >= 80 && motifScore >= 80) {
+      overall = Math.max(overall, 95); 
+    }
+    else if (modelScore >= 70 && motifScore >= 70) {
       overall = Math.max(overall, 90);
     }
     
@@ -403,15 +406,70 @@ export class SimilarityService {
     const a = norm(colors1);
     const b = norm(colors2);
 
+    // Direct overlap
     const common = a.filter(c => b.includes(c)).length;
+    
+    // Fuzzy overlap check
+    let fuzzyMatches = 0;
+    const usedIndices = new Set<number>();
+    
+    a.forEach(c1 => {
+      // If exact match exists, it's already counted in 'common'
+      if (b.includes(c1)) return;
+      
+      // Check for substring match (e.g. "dark blue" matches "blue")
+      const matchIndex = b.findIndex((c2, idx) => {
+        if (usedIndices.has(idx)) return false;
+        return c1.includes(c2) || c2.includes(c1) || this.areSimilarColors(c1, c2);
+      });
+      
+      if (matchIndex !== -1) {
+        fuzzyMatches++;
+        usedIndices.add(matchIndex);
+      }
+    });
+
+    const totalMatches = common + fuzzyMatches;
     const union = new Set([...a, ...b]).size;
-    const overlap = union > 0 ? (common / union) * 100 : 0;
+    
+    // Adjusted union: if fuzzy matched, don't double count
+    // But Jaccard is simpler. Let's just use a weighted coverage.
+    // If a has 2 colors and both are matched (fuzzy or exact), score 100.
+    
+    const coverageA = totalMatches / a.length;
+    const coverageB = totalMatches / b.length;
+    const avgCoverage = (coverageA + coverageB) / 2;
+    
+    if (avgCoverage >= 0.8) return 100;
+    if (avgCoverage >= 0.5) return 80;
+    if (avgCoverage > 0) return 50;
 
-    // Emphasize dominant color match: if at least 2 colors and 80% overlap, treat as perfect
-    if (overlap >= 80) return 100;
-
-    return overlap;
+    return 0;
   }
+
+  private areSimilarColors(c1: string, c2: string): boolean {
+    const map: Record<string, string[]> = {
+      'pink': ['magenta', 'fuchsia', 'rose', 'salmon', 'dusty pink'],
+      'blue': ['navy', 'azure', 'sky', 'indigo', 'denim'],
+      'green': ['olive', 'sage', 'emerald', 'lime', 'mint'],
+      'white': ['cream', 'ivory', 'off-white', 'beige', 'broken white'],
+      'red': ['maroon', 'burgundy', 'crimson', 'scarlet'],
+      'yellow': ['mustard', 'gold', 'amber'],
+      'purple': ['lilac', 'lavender', 'violet', 'plum'],
+      'brown': ['choco', 'mocca', 'tan', 'khaki', 'coffee'],
+      'grey': ['silver', 'charcoal', 'slate']
+    };
+
+    // Check if both colors belong to the same group
+    for (const group in map) {
+      const variants = map[group];
+      const isC1 = c1 === group || variants.includes(c1);
+      const isC2 = c2 === group || variants.includes(c2);
+      if (isC1 && isC2) return true;
+    }
+    return false;
+  }
+
   
   private identifyMatches(
     analysis1: GeminiClothingAnalysis, 

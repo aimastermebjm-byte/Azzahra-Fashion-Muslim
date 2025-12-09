@@ -343,8 +343,12 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
         const analysis = await geminiService.analyzeClothingImage(base64);
         autoAnalysisCount += 1;
         return analysis;
-      } catch (err) {
-        console.error(`❌ Failed auto-analysis for ${product.name}:`, err);
+      } catch (err: any) {
+        if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+          console.error(`❌ CORS/Network Error for ${product.name}: Unable to fetch image for auto-analysis. This usually requires configuring CORS on Firebase Storage.`);
+        } else {
+          console.error(`❌ Failed auto-analysis for ${product.name}:`, err);
+        }
         return null;
       }
     };
