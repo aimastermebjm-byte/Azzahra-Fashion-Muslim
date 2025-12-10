@@ -121,11 +121,11 @@ export class GeminiVisionService {
       throw new Error('Gemini not initialized. Please set API key first.');
     }
     
-    // Use fallback models for connection testing too (Free Tier optimized)
+    // Use Gemini 2.5 Flash (latest stable model for Free Tier)
     const modelNames = [
-      "gemini-1.5-flash", 
-      "gemini-1.5-flash-latest", 
-      "gemini-1.5-flash-001"
+      "gemini-2.0-flash-exp",     // Experimental 2.0
+      "gemini-1.5-flash",         // Stable 1.5
+      "gemini-1.5-pro"            // Pro fallback
     ];
     
     let lastError = null;
@@ -140,10 +140,12 @@ export class GeminiVisionService {
         const response = result.response.text();
         
         if (response.toLowerCase().includes('ok')) {
+          console.log(`✓ Connected with model: ${modelName}`);
           return true;
         }
       } catch (error: any) {
         lastError = error;
+        console.warn(`Model ${modelName} failed:`, error.message);
         // Continue to next model
       }
     }
@@ -167,10 +169,9 @@ export class GeminiVisionService {
     
     // Model names optimized for Free Tier & Stability
     const modelNames = [
-      "gemini-1.5-flash",          // Standard Free Tier
-      "gemini-1.5-flash-latest",   // Latest stable
-      "gemini-1.5-flash-001",      // Fixed version
-      "gemini-pro-vision"          // Legacy fallback
+      "gemini-2.0-flash-exp",      // Latest experimental 2.0
+      "gemini-1.5-flash",          // Stable Free Tier
+      "gemini-1.5-pro"             // Pro fallback
     ];
     
     let result = null;
@@ -399,10 +400,9 @@ Valid values:
     
     // Model names optimized for Free Tier & Stability
     const modelNames = [
-      "gemini-1.5-flash",
-      "gemini-1.5-flash-latest",
-      "gemini-1.5-flash-001",
-      "gemini-pro-vision" // Legacy fallback
+      "gemini-2.0-flash-exp",      // Latest experimental 2.0
+      "gemini-1.5-flash",          // Stable Free Tier
+      "gemini-1.5-pro"             // Pro fallback
     ];
     
     let result = null;
