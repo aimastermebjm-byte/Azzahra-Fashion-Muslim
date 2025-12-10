@@ -295,8 +295,16 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
           await new Promise(resolve => setTimeout(resolve, 300));
           
         } catch (error: any) {
-          console.error(`Error comparing with ${product.name}:`, error);
-          // Continue to next product
+          console.error(`❌ Error comparing with ${product.name}:`, error.message);
+          
+          // If CORS error, show warning but continue
+          if (error.message.includes('CORS')) {
+            console.warn(`⚠️ CORS error for ${product.name} - Firebase Storage CORS needs to be configured`);
+            console.warn('📝 See: https://firebase.google.com/docs/storage/web/download-files#cors_configuration');
+          }
+          
+          // Continue to next product (don't stop entire process)
+          continue;
         }
       }
       

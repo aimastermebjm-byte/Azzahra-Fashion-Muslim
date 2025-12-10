@@ -235,19 +235,34 @@ Return ONLY valid JSON (no markdown, no backticks):
     existingProductName: string
   ): Promise<ComparisonResult> {
     try {
-      // Fetch existing product image
-      const response = await fetch(existingImageUrl);
+      // Fetch existing product image with CORS mode
+      console.log(`🔄 Fetching image: ${existingImageUrl}`);
+      
+      const response = await fetch(existingImageUrl, {
+        mode: 'cors',
+        credentials: 'omit',
+        cache: 'force-cache' // Use cache if available
+      });
+      
       if (!response.ok) {
-        throw new Error(`Failed to fetch existing product image: ${response.statusText}`);
+        throw new Error(`Failed to fetch existing product image: ${response.status} ${response.statusText}`);
       }
       
       const blob = await response.blob();
-      const existingImageFile = new File([blob], 'existing.jpg', { type: blob.type });
+      console.log(`✓ Fetched image: ${blob.size} bytes, type: ${blob.type}`);
+      
+      const existingImageFile = new File([blob], 'existing.jpg', { type: blob.type || 'image/jpeg' });
       
       // Compare using main method
       return await this.compareProductImages(newImageFile, existingImageFile, existingProductName);
     } catch (error: any) {
-      console.error('Error comparing with existing product:', error);
+      console.error('❌ Error comparing with existing product:', error);
+      
+      // CORS error - provide helpful message
+      if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
+        throw new Error(`CORS error: Cannot fetch image from Firebase Storage. Please configure CORS or use cached product images.`);
+      }
+      
       throw new Error(`Failed to compare with existing product: ${error.message}`);
     }
   }
