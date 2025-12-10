@@ -20,6 +20,7 @@
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.75.1",
     "@types/dotenv": "^6.1.1",
+    "blurhash": "^2.0.5",
     "crypto-js": "^4.2.0",
     "dotenv": "^17.2.3",
     "firebase": "^12.4.0",

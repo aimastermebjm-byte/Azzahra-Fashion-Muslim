@@ -376,6 +376,98 @@ Valid values:
   getRateLimitStatus() {
     return this.rateLimiter.getRemainingRequests();
   }
+  
+  /**
+   * Compare two clothing images using Gemini Vision API
+   * Sends both images in one prompt for direct visual comparison
+   * @param image1Base64 - Base64 encoded first image
+   * @param image2Base64 - Base64 encoded second image
+   * @param prompt - Comparison prompt
+   * @returns Parsed JSON comparison result
+   */
+  async compareClothingImages(
+    image1Base64: string,
+    image2Base64: string,
+    prompt: string
+  ): Promise<any> {
+    if (!this.genAI) {
+      throw new Error('Gemini not initialized. Please set API key first.');
+    }
+    
+    // Check rate limit
+    this.rateLimiter.canMakeRequest();
+    
+    // Model names optimized for Free Tier & Stability
+    const modelNames = [
+      "gemini-1.5-flash",
+      "gemini-1.5-flash-latest",
+      "gemini-1.5-flash-001",
+      "gemini-pro-vision" // Legacy fallback
+    ];
+    
+    let result = null;
+    let lastError = null;
+    
+    for (const modelName of modelNames) {
+      try {
+        const model = this.genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.05,  // Very low for consistency
+            topK: 1,            // Force most confident answer
+            topP: 0.1           // Very deterministic
+          }
+        });
+        
+        // Send both images + prompt in one request
+        result = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              data: image1Base64,
+              mimeType: "image/jpeg"
+            }
+          },
+          {
+            inlineData: {
+              data: image2Base64,
+              mimeType: "image/jpeg"
+            }
+          }
+        ]);
+        
+        if (result) break; // Success, exit loop
+      } catch (e: any) {
+        lastError = e;
+        console.warn(`Gemini model ${modelName} failed, trying next...`, e.message);
+      }
+    }
+    
+    if (!result) {
+      console.error('Gemini comparison failed:', lastError);
+      
+      if (lastError?.message?.includes('API_KEY_INVALID') || lastError?.message?.includes('401')) {
+        throw new Error('API_KEY_INVALID: Invalid API key.');
+      }
+      
+      if (lastError?.message?.includes('RATE_LIMIT') || lastError?.message?.includes('429')) {
+        throw new Error('RATE_LIMIT: Too many requests. Please wait.');
+      }
+      
+      throw new Error('Failed to compare images. Please try again.');
+    }
+    
+    const responseText = result.response.text();
+    
+    try {
+      const parsedResult = JSON.parse(responseText);
+      return parsedResult;
+    } catch (parseError) {
+      console.error('Failed to parse Gemini response:', responseText);
+      throw new Error('Invalid response format from Gemini API');
+    }
+  }
 }
 
 export const geminiService = new GeminiVisionService();

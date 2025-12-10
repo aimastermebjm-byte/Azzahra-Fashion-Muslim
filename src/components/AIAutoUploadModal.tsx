@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, Sparkles, TrendingUp, Image as ImageIcon, CheckCircle, AlertCircle, Loader2, Settings } from 'lucide-react';
 import { geminiService, GeminiClothingAnalysis } from '../services/geminiVisionService';
-import { similarityService, SimilarityScore } from '../services/similarityService';
+import { imageComparisonService, ComparisonResult } from '../services/imageComparisonService';
 import { collageService } from '../services/collageService';
 import { salesHistoryService, ProductSalesData } from '../services/salesHistoryService';
-import { productAnalysisService } from '../services/productAnalysisService';
 import { hasGeminiAPIKey, loadGeminiAPIKey } from '../utils/encryption';
 import GeminiAPISettings from './GeminiAPISettings';
 import { Product } from '../types';
@@ -27,8 +26,9 @@ interface AnalysisResult {
 
 interface SimilarityResult {
   product: Product;
-  score: SimilarityScore;
+  score: ComparisonResult;
   salesLast3Months: number;
+  aiReasoning?: string;
 }
 
 export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
@@ -223,7 +223,7 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
     }
   };
   
-  // Calculate similarity with existing products
+  // Calculate similarity with existing products using Image Understanding
   const calculateSimilarity = async (analysisResults: AnalysisResult[]) => {
     setAnalysisProgress(60);
     
@@ -234,191 +234,105 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
     }
     
     try {
-      // Use first image analysis as primary reference
-      const primaryAnalysis = analysisResults[0]?.analysis;
+      console.log('📊 Step 1: Filtering products by sales...');
       
-      if (!primaryAnalysis) {
-        setRecommendation('manual');
+      // STEP 1: Get sales data and filter products with sales > 4pcs (3 months)
+      const productIds = existingProducts.map(p => p.id);
+      const salesData = await salesHistoryService.getBatchProductSales(productIds, 3);
+      
+      const productsWithGoodSales = existingProducts.filter(p => {
+        const sales = salesData.get(p.id);
+        return sales && sales.totalQuantity > 4; // FILTER: > 4pcs
+      });
+      
+      console.log(`✓ Found ${productsWithGoodSales.length} products with >4pcs sales (last 3 months)`);
+      
+      if (productsWithGoodSales.length === 0) {
+        console.log('⚠️ No products with sufficient sales history');
+        setRecommendation('not_recommended');
+        setSimilarityResults([]);
+        setAnalysisProgress(100);
         return;
       }
       
-      console.log('🔍 Calculating AI-powered similarity with', existingProducts.length, 'products...');
-      console.log('📊 Primary analysis:', primaryAnalysis);
+      setAnalysisProgress(70);
       
-      // Get all product IDs
-      const productIds = existingProducts.map(p => p.id);
+      // STEP 2: Compare uploaded image with existing products using Image Understanding
+      console.log('🔍 Step 2: Comparing images using AI...');
       
-      // Query sales data for all products (last 3 months)
-      console.log('💰 Querying sales data for 3 months...');
-      const salesData = await salesHistoryService.getBatchProductSales(productIds, 3);
+      const similarities: SimilarityResult[] = [];
+      const referenceImage = images[0]; // Use first uploaded image as reference
       
-      setAnalysisProgress(65);
-      
-    // Helper: normalize stored analysis
-    const normalizeStoredAnalysis = (analysis: any): GeminiClothingAnalysis => ({
-      clothing_type: {
-        main_type: analysis.clothing_type.main_type as any,
-        silhouette: analysis.clothing_type.silhouette as any,
-        length: analysis.clothing_type.length as any,
-        confidence: analysis.clothing_type.confidence
-      },
-      pattern_type: {
-        pattern: analysis.pattern_type.pattern as any,
-        complexity: analysis.pattern_type.complexity as any,
-        confidence: analysis.pattern_type.confidence
-      },
-      lace_details: {
-        has_lace: analysis.lace_details.has_lace,
-        locations: analysis.lace_details.locations as any,
-        confidence: analysis.lace_details.confidence
-      },
-      hem_pleats: {
-        has_pleats: analysis.hem_pleats.has_pleats,
-        pleat_type: analysis.hem_pleats.pleat_type as any,
-        depth: analysis.hem_pleats.depth as any,
-        fullness: analysis.hem_pleats.fullness,
-        confidence: analysis.hem_pleats.confidence
-      },
-      sleeve_details: {
-        has_pleats: analysis.sleeve_details.has_pleats,
-        sleeve_type: analysis.sleeve_details.sleeve_type as any,
-        pleat_position: analysis.sleeve_details.pleat_position as any,
-        ruffle_count: analysis.sleeve_details.ruffle_count,
-        cuff_style: analysis.sleeve_details.cuff_style as any,
-        confidence: analysis.sleeve_details.confidence
-      },
-      embellishments: analysis.embellishments,
-      colors: analysis.colors,
-      fabric_texture: analysis.fabric_texture as any
-    });
-
-    const normalizeStorageUrl = (url: string): string => {
-      // Gunakan URL apa adanya; jangan ganti domain bucket
-      return url || '';
-    };
-
-    const fetchImageAsBase64 = async (url: string): Promise<string> => {
-      const fixedUrl = normalizeStorageUrl(url);
-      const invalid = !fixedUrl || fixedUrl.includes('/undefined/') || fixedUrl.includes('undefined%2F');
-      if (invalid) {
-        throw new Error('Invalid image URL');
-      }
-      const response = await fetch(fixedUrl, { mode: 'cors' });
-      if (!response.ok) {
-        throw new Error(`Image fetch failed: ${response.status}`);
-      }
-      const blob = await response.blob();
-      return await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          resolve(result.split(',')[1] || '');
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    };
-
-    let autoAnalysisCount = 0;
-    const MAX_AUTO_ANALYZE = 5; // prevent rate limit
-
-    const getOrAnalyzeProduct = async (product: Product): Promise<GeminiClothingAnalysis | null> => {
-      if (product.aiAnalysis?.clothing_type) {
-        return normalizeStoredAnalysis(product.aiAnalysis);
-      }
-
-      const imageUrl = product.images?.[0] || product.image;
-      if (!imageUrl || imageUrl.includes('/undefined/') || imageUrl.includes('undefined%2F')) {
-        console.log(`⏭️ Skipping ${product.name} - invalid/missing image URL`);
-        return null;
-      }
-
-      try {
-        if (autoAnalysisCount >= MAX_AUTO_ANALYZE) {
-          console.log(`⏭️ Skipping ${product.name} - auto-analyze budget reached`);
-          return null;
+      for (let i = 0; i < productsWithGoodSales.length; i++) {
+        const product = productsWithGoodSales[i];
+        
+        setAnalysisProgress(70 + (i / productsWithGoodSales.length) * 20); // 70-90%
+        
+        try {
+          const productImageUrl = product.images?.[0] || product.image;
+          if (!productImageUrl || productImageUrl.includes('/undefined/') || productImageUrl.includes('undefined%2F')) {
+            console.log(`⏭️ Skipping ${product.name} - invalid image URL`);
+            continue;
+          }
+          
+          // Compare using imageComparisonService (with cache + AI)
+          const comparisonResult = await imageComparisonService.compareWithExistingProduct(
+            referenceImage,
+            productImageUrl,
+            product.name
+          );
+          
+          console.log(`✓ ${product.name}: ${comparisonResult.overall_similarity}% (Model: ${comparisonResult.breakdown.model_type}%, Motif: ${comparisonResult.breakdown.motif_pattern}%)`);
+          
+          similarities.push({
+            product,
+            score: comparisonResult,
+            salesLast3Months: salesData.get(product.id)?.totalQuantity || 0,
+            aiReasoning: comparisonResult.recommendation
+          });
+          
+          // Small delay to avoid rate limit
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+        } catch (error: any) {
+          console.error(`Error comparing with ${product.name}:`, error);
+          // Continue to next product
         }
-        console.log(`🤖 Auto-analyzing product (no cached AI): ${product.name}`);
-        const base64 = await fetchImageAsBase64(imageUrl);
-        const analysis = await geminiService.analyzeClothingImage(base64);
-        autoAnalysisCount += 1;
-        return analysis;
-      } catch (err: any) {
-        if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
-          console.error(`❌ CORS/Network Error for ${product.name}: Unable to fetch image for auto-analysis. This usually requires configuring CORS on Firebase Storage.`);
-        } else {
-          console.error(`❌ Failed auto-analysis for ${product.name}:`, err);
-        }
-        return null;
       }
-    };
-
-    setAnalysisProgress(75);
-    const similarities: SimilarityResult[] = [];
-    
-    for (const product of existingProducts) {
-      const productSales = salesData.get(product.id);
-      if (!productSales || productSales.totalQuantity <= 0) continue;
-
-      const existingAnalysis = await getOrAnalyzeProduct(product);
-      if (!existingAnalysis) {
-        console.log(`⏭️ Skipping ${product.name} - AI analysis unavailable`);
-        continue;
-      }
-
-      console.log(`✨ Using AI analysis for ${product.name}`);
-
-      const similarityScore = similarityService.calculateSimilarity(
-        primaryAnalysis,
-        existingAnalysis
-      );
       
-      console.log(`📊 AI Similarity for ${product.name}: ${similarityScore.overall}%`);
+      // Sort by similarity score
+      similarities.sort((a, b) => b.score.overall_similarity - a.score.overall_similarity);
+      setSimilarityResults(similarities);
       
-      similarities.push({
-        product,
-        score: similarityScore,
-        salesLast3Months: productSales.totalQuantity
-      });
-    }
+      setAnalysisProgress(95);
       
-      // Sort by overall similarity first, then by sales
-      similarities.sort((a, b) => {
-        const scoreDiff = b.score.overall - a.score.overall;
-        if (Math.abs(scoreDiff) > 5) return scoreDiff; // If score diff > 5%, sort by score
-        return b.salesLast3Months - a.salesLast3Months; // Otherwise sort by sales
-      });
+      // STEP 3: Check similarity > 80% and calculate recommendation
+      const highSimilarityProducts = similarities.filter(s => s.score.overall_similarity > 80);
       
-      // Keep top 10
-      const topSimilarities = similarities.slice(0, 10);
+      console.log(`📊 Products with >80% similarity: ${highSimilarityProducts.length}`);
       
-      setSimilarityResults(topSimilarities);
-      
-      console.log('📈 Top similar products:', topSimilarities);
-      
-      setAnalysisProgress(90);
-      
-      // Calculate recommendation
-      const totalSales = topSimilarities.reduce((sum, s) => sum + s.salesLast3Months, 0);
-      const avgSimilarity = topSimilarities.length > 0
-        ? topSimilarities.reduce((sum, s) => sum + s.score.overall, 0) / topSimilarities.length
-        : 0;
-      
-      console.log('📊 Total sales:', totalSales, 'pcs');
-      console.log('📊 Avg similarity (AI-powered):', avgSimilarity.toFixed(1), '%');
-      
-      // Auto-upload criteria:
-      // 1. Average similarity >= 80%
-      // 2. Total sales of similar products >= 4 pcs
-      if (avgSimilarity >= 80 && totalSales >= 4) {
+      if (highSimilarityProducts.length > 0) {
+        const totalSales = highSimilarityProducts.reduce((sum, s) => sum + s.salesLast3Months, 0);
+        const avgSimilarity = highSimilarityProducts.reduce((sum, s) => sum + s.score.overall_similarity, 0) / highSimilarityProducts.length;
+        
+        console.log('✅ RECOMMENDATION: UPLOAD');
+        console.log(`   - ${highSimilarityProducts.length} similar products found`);
+        console.log(`   - Avg similarity: ${avgSimilarity.toFixed(1)}%`);
+        console.log(`   - Total sales: ${totalSales} pcs`);
+        
         setRecommendation('auto');
-        console.log('✅ RECOMMENDED: Auto upload (High AI similarity + Good sales)');
-      } else if (avgSimilarity >= 60 && totalSales >= 2) {
-        setRecommendation('manual');
-        console.log('⚠️ MANUAL REVIEW: Moderate similarity or sales');
       } else {
-        setRecommendation('not_recommended');
-        console.log('❌ NOT RECOMMENDED: Low similarity or no sales history');
+        const moderateSimilarityProducts = similarities.filter(s => s.score.overall_similarity >= 60);
+        
+        if (moderateSimilarityProducts.length > 0) {
+          console.log('⚠️ RECOMMENDATION: MANUAL REVIEW');
+          console.log(`   - Found ${moderateSimilarityProducts.length} products with 60-80% similarity`);
+          setRecommendation('manual');
+        } else {
+          console.log('❌ RECOMMENDATION: NOT RECOMMENDED');
+          console.log('   - No similar products found (all <60%)');
+          setRecommendation('not_recommended');
+        }
       }
       
     } catch (error: any) {
@@ -960,10 +874,13 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
                     </p>
                     <div className="flex items-center gap-4 mt-1">
                       <span className="text-xs text-gray-600">
-                        Category: {result.product.category}
+                        Similarity: {result.score.overall_similarity}%
                       </span>
-                      <span className="text-xs text-gray-600">
-                        Similarity: {result.score.overall}%
+                      <span className="text-xs text-gray-500">
+                        Model: {result.score.breakdown.model_type}%
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        Motif: {result.score.breakdown.motif_pattern}%
                       </span>
                       <span className="text-xs font-semibold text-green-600">
                         Sales: {result.salesLast3Months} pcs
@@ -976,14 +893,25 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
           </div>
           
           {/* Summary Stats */}
-          <div className="mt-4 grid grid-cols-2 gap-4">
+          <div className="mt-4 grid grid-cols-3 gap-4">
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs text-blue-600 mb-1">Average Similarity</p>
-              <p className="text-2xl font-bold text-blue-900">{avgSimilarity.toFixed(1)}%</p>
+              <p className="text-xs text-blue-600 mb-1">Products Checked</p>
+              <p className="text-2xl font-bold text-blue-900">{similarityResults.length}</p>
+              <p className="text-xs text-gray-500 mt-1">sales &gt;4pcs</p>
+            </div>
+            <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+              <p className="text-xs text-purple-600 mb-1">High Match (&gt;80%)</p>
+              <p className="text-2xl font-bold text-purple-900">
+                {similarityResults.filter(s => s.score.overall_similarity > 80).length}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">strong similarity</p>
             </div>
             <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-xs text-green-600 mb-1">Total Sales (3 months)</p>
-              <p className="text-2xl font-bold text-green-900">{totalSales} pcs</p>
+              <p className="text-xs text-green-600 mb-1">Total Sales (3mo)</p>
+              <p className="text-2xl font-bold text-green-900">
+                {similarityResults.reduce((sum, s) => sum + s.salesLast3Months, 0)} pcs
+              </p>
+              <p className="text-xs text-gray-500 mt-1">from similar items</p>
             </div>
           </div>
         </div>
@@ -995,10 +923,11 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
           <div className="flex items-start gap-3">
             <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-green-900 mb-1">✅ HIGHLY RECOMMENDED FOR AUTO UPLOAD</p>
+              <p className="text-sm font-semibold text-green-900 mb-1">✅ RECOMMENDED FOR UPLOAD</p>
               <p className="text-xs text-green-800">
-                Similar products sold well ({totalSales} pcs) with high similarity ({avgSimilarity.toFixed(1)}%). 
-                This product has strong potential!
+                Ditemukan {similarityResults.filter(s => s.score.overall_similarity > 80).length} produk dengan kemiripan motif + model &gt;80%. 
+                Produk-produk tersebut memiliki sales history yang bagus ({similarityResults.reduce((sum, s) => sum + s.salesLast3Months, 0)} pcs). 
+                Produk baru ini berpotensi laku dengan baik!
               </p>
             </div>
           </div>
@@ -1012,7 +941,8 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
             <div>
               <p className="text-sm font-semibold text-yellow-900 mb-1">⚠️ MANUAL REVIEW RECOMMENDED</p>
               <p className="text-xs text-yellow-800">
-                Moderate similarity or sales. Review the analysis before uploading.
+                Ada produk dengan kemiripan 60-80%, tapi tidak cukup tinggi untuk auto recommendation. 
+                Review hasil comparison sebelum upload.
               </p>
             </div>
           </div>
@@ -1024,9 +954,10 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-red-900 mb-1">❌ LOW CONFIDENCE</p>
+              <p className="text-sm font-semibold text-red-900 mb-1">❌ LOW SIMILARITY</p>
               <p className="text-xs text-red-800">
-                Low similarity or no sales history for similar products. Consider carefully before uploading.
+                Tidak ditemukan produk dengan kemiripan motif + model &gt;80%. 
+                Ini adalah tipe produk baru yang belum ada di inventory.
               </p>
             </div>
           </div>
@@ -1036,7 +967,8 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
       {similarityResults.length === 0 && (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>💡 Note:</strong> No similar products found in sales history. This is a new type of product!
+            <strong>💡 Note:</strong> Tidak ada produk dengan sales &gt;4pcs dalam 3 bulan terakhir. 
+            Ini adalah produk baru yang belum bisa dibandingkan!
           </p>
         </div>
       )}
