@@ -123,7 +123,7 @@ export class GeminiVisionService {
     
     // Use Gemini 2.5 Flash (latest stable model for Free Tier)
     const modelNames = [
-      "gemini-2.0-flash-exp",     // Experimental 2.0
+      "gemini-2.5-flash",         // Latest 2.5 (per docs)
       "gemini-1.5-flash",         // Stable 1.5
       "gemini-1.5-pro"            // Pro fallback
     ];
@@ -169,7 +169,7 @@ export class GeminiVisionService {
     
     // Model names optimized for Free Tier & Stability
     const modelNames = [
-      "gemini-2.0-flash-exp",      // Latest experimental 2.0
+      "gemini-2.5-flash",          // Latest 2.5 (per docs)
       "gemini-1.5-flash",          // Stable Free Tier
       "gemini-1.5-pro"             // Pro fallback
     ];
@@ -400,7 +400,7 @@ Valid values:
     
     // Model names optimized for Free Tier & Stability
     const modelNames = [
-      "gemini-2.0-flash-exp",      // Latest experimental 2.0
+      "gemini-2.5-flash",          // Latest 2.5 (per docs)
       "gemini-1.5-flash",          // Stable Free Tier
       "gemini-1.5-pro"             // Pro fallback
     ];
