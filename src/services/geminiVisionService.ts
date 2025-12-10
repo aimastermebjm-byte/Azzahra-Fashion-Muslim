@@ -121,11 +121,12 @@ export class GeminiVisionService {
       throw new Error('Gemini not initialized. Please set API key first.');
     }
     
-    // Use Gemini 2.5 Flash (latest stable model for Free Tier)
+    // Use stable models available in v1beta API
     const modelNames = [
-      "gemini-2.5-flash",         // Latest 2.5 (per docs)
-      "gemini-1.5-flash",         // Stable 1.5
-      "gemini-1.5-pro"            // Pro fallback
+      "gemini-1.5-flash-latest",  // Latest flash (stable)
+      "gemini-1.5-flash-002",     // Fixed version 002
+      "gemini-1.5-flash-001",     // Fixed version 001
+      "gemini-1.5-flash"          // Base flash model
     ];
     
     let lastError = null;
@@ -169,9 +170,10 @@ export class GeminiVisionService {
     
     // Model names optimized for Free Tier & Stability
     const modelNames = [
-      "gemini-2.5-flash",          // Latest 2.5 (per docs)
-      "gemini-1.5-flash",          // Stable Free Tier
-      "gemini-1.5-pro"             // Pro fallback
+      "gemini-1.5-flash-latest",   // Latest flash (stable)
+      "gemini-1.5-flash-002",      // Fixed version 002
+      "gemini-1.5-flash-001",      // Fixed version 001
+      "gemini-1.5-flash"           // Base flash model
     ];
     
     let result = null;
@@ -400,9 +402,10 @@ Valid values:
     
     // Model names optimized for Free Tier & Stability
     const modelNames = [
-      "gemini-2.5-flash",          // Latest 2.5 (per docs)
-      "gemini-1.5-flash",          // Stable Free Tier
-      "gemini-1.5-pro"             // Pro fallback
+      "gemini-1.5-flash-latest",   // Latest flash (stable)
+      "gemini-1.5-flash-002",      // Fixed version 002
+      "gemini-1.5-flash-001",      // Fixed version 001
+      "gemini-1.5-flash"           // Base flash model
     ];
     
     let result = null;
