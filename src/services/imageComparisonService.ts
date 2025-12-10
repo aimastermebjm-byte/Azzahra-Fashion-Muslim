@@ -238,10 +238,15 @@ Return ONLY valid JSON (no markdown, no backticks):
       // Fetch existing product image with CORS mode
       console.log(`🔄 Fetching image: ${existingImageUrl}`);
       
-      const response = await fetch(existingImageUrl, {
+      // Add cache-busting query param to bypass Service Worker cache
+      const cacheBustUrl = existingImageUrl.includes('?') 
+        ? `${existingImageUrl}&_cb=${Date.now()}`
+        : `${existingImageUrl}?_cb=${Date.now()}`;
+      
+      const response = await fetch(cacheBustUrl, {
         mode: 'cors',
         credentials: 'omit',
-        cache: 'force-cache' // Use cache if available
+        cache: 'no-cache' // Force fresh fetch, bypass cache
       });
       
       if (!response.ok) {
