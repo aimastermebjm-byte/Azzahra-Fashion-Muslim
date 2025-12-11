@@ -477,48 +477,128 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         </div>
       )}
 
-      {/* ✨ NEW: Simple Test Modal (Temporary - Phase 1) */}
+      {/* ✨ Phase 2: Beautiful Payment Method Modal */}
       {showMethodModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <div className="text-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
-                🎉 Multi-Select Works!
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+              <h2 className="text-2xl font-bold text-gray-900 text-center">
+                💳 Pilih Metode Pembayaran
               </h2>
-              <p className="text-sm text-gray-600">
-                Foundation tested successfully. Beautiful payment modals coming in Phase 2!
+              <p className="text-sm text-gray-600 text-center mt-2">
+                Pilih cara verifikasi pembayaran Anda
               </p>
             </div>
 
-            <div className="bg-blue-50 rounded-lg p-4 mb-4">
-              <p className="text-sm font-semibold text-blue-900 mb-2">Selected Orders:</p>
-              <ul className="space-y-1">
-                {paymentData?.orders.map((order: any) => (
-                  <li key={order.id} className="text-xs text-blue-700">
-                    • #{order.id} - Rp {order.finalTotal.toLocaleString('id-ID')}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-3 pt-3 border-t border-blue-200">
-                <p className="text-lg font-bold text-blue-900">
-                  Total: Rp {paymentData?.subtotal.toLocaleString('id-ID')}
+            <div className="p-6 space-y-6">
+              {/* Orders Summary */}
+              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200">
+                <p className="text-sm font-semibold text-blue-900 mb-3">
+                  📦 Pesanan Yang Akan Dibayar:
                 </p>
+                <div className="space-y-2 mb-3 max-h-32 overflow-y-auto">
+                  {paymentData?.orders.map((order: any) => (
+                    <div key={order.id} className="flex justify-between items-center text-sm">
+                      <span className="text-blue-700">#{order.id.substring(0, 12)}...</span>
+                      <span className="font-semibold text-blue-900">
+                        Rp {order.finalTotal.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="pt-3 border-t border-blue-200">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-blue-900">Total:</span>
+                    <span className="text-xl font-bold text-blue-900">
+                      Rp {paymentData?.subtotal.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-3">
+              {/* Auto Verification Option */}
               <button
                 onClick={() => handleChooseMethod('auto')}
-                className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+                className="w-full text-left border-2 border-green-500 rounded-xl p-5 hover:shadow-lg transition-all bg-gradient-to-br from-green-50 to-emerald-50"
               >
-                ✨ Test Auto Mode (Coming Soon!)
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Check className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-lg font-bold text-gray-900">✨ Verifikasi Otomatis</h3>
+                      <span className="px-2 py-0.5 bg-green-600 text-white text-xs font-semibold rounded-full">
+                        RECOMMENDED
+                      </span>
+                    </div>
+                    <ul className="space-y-1.5 mb-3">
+                      <li className="text-sm text-gray-700 flex items-start gap-2">
+                        <span className="text-green-600 font-bold">✓</span>
+                        <span>Cepat (1-5 menit otomatis terverifikasi)</span>
+                      </li>
+                      <li className="text-sm text-gray-700 flex items-start gap-2">
+                        <span className="text-green-600 font-bold">✓</span>
+                        <span>Tidak perlu upload bukti transfer</span>
+                      </li>
+                      <li className="text-sm text-gray-700 flex items-start gap-2">
+                        <span className="text-green-600 font-bold">✓</span>
+                        <span>Pesanan langsung diproses</span>
+                      </li>
+                    </ul>
+                    <div className="bg-white rounded-lg p-3 border border-green-200">
+                      <p className="text-xs text-green-700 mb-1">Transfer dengan kode unik:</p>
+                      <p className="text-lg font-bold text-green-900">
+                        Rp {paymentData?.subtotal.toLocaleString('id-ID')}.XX
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        (Kode unik akan dibuat otomatis)
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </button>
+
+              {/* Manual Verification Option */}
               <button
                 onClick={() => handleChooseMethod('manual')}
-                className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+                className="w-full text-left border-2 border-gray-300 rounded-xl p-5 hover:border-blue-500 hover:shadow-lg transition-all bg-white"
               >
-                📸 Test Manual Mode (Coming Soon!)
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Upload className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">📸 Verifikasi Manual</h3>
+                    <ul className="space-y-1.5 mb-3">
+                      <li className="text-sm text-gray-700 flex items-start gap-2">
+                        <span className="text-blue-600 font-bold">•</span>
+                        <span>Upload bukti transfer setelah bayar</span>
+                      </li>
+                      <li className="text-sm text-gray-700 flex items-start gap-2">
+                        <span className="text-blue-600 font-bold">•</span>
+                        <span>Verifikasi dalam 1-24 jam (saat jam kerja)</span>
+                      </li>
+                      <li className="text-sm text-gray-700 flex items-start gap-2">
+                        <span className="text-blue-600 font-bold">•</span>
+                        <span>Nominal transfer bisa dibulatkan</span>
+                      </li>
+                    </ul>
+                    <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                      <p className="text-xs text-blue-700 mb-1">Transfer:</p>
+                      <p className="text-lg font-bold text-blue-900">
+                        Rp {paymentData?.subtotal.toLocaleString('id-ID')}
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        (Tanpa kode unik)
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </button>
+
+              {/* Cancel Button */}
               <button
                 onClick={() => {
                   setShowMethodModal(false);
@@ -527,89 +607,320 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                 }}
                 className="w-full px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
               >
-                Cancel
+                Batal
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ✨ NEW: Temporary Instructions Modal */}
-      {showInstructionsModal && (
+      {/* ✨ Phase 2: Beautiful Payment Instructions Modal (Auto Mode) */}
+      {showInstructionsModal && paymentData?.paymentGroup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              💳 Payment Instructions (Test)
-            </h2>
-            <div className="bg-green-50 rounded-lg p-4 mb-4">
-              <p className="text-sm font-semibold text-green-900 mb-2">
-                Auto Mode Activated!
-              </p>
-              {paymentData?.paymentGroup && (
-                <>
-                  <p className="text-xs text-green-700 mb-2">
-                    Payment Group ID: {paymentData.paymentGroup.id}
-                  </p>
-                  <p className="text-2xl font-bold text-green-900 mb-1">
-                    Rp {paymentData.paymentGroup.exactPaymentAmount.toLocaleString('id-ID')}
-                  </p>
-                  <p className="text-xs text-green-600">
-                    Code: {paymentData.paymentGroup.uniquePaymentCode}
-                  </p>
-                </>
-              )}
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={handleBackFromInstructions}
+                  className="p-2 hover:bg-white/20 rounded-full transition-all"
+                >
+                  <ArrowLeft className="w-5 h-5 text-white" />
+                </button>
+                <h2 className="text-xl font-bold text-white flex-1 text-center">
+                  💳 Instruksi Pembayaran
+                </h2>
+                <button
+                  onClick={handleCloseInstructions}
+                  className="p-2 hover:bg-white/20 rounded-full transition-all"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
             </div>
-            <p className="text-sm text-gray-600 mb-4">
-              ✅ Payment group created successfully!<br/>
-              📋 Beautiful instructions modal coming in Phase 2!
-            </p>
-            <div className="space-y-2">
+
+            <div className="p-6 space-y-6">
+              {/* PENTING Warning */}
+              <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4">
+                <p className="text-sm font-bold text-amber-900 mb-2">
+                  ⚠️ PENTING: Transfer PERSIS sesuai nominal!
+                </p>
+                <p className="text-xs text-amber-700">
+                  Jangan dibulatkan! 2 angka terakhir adalah kode unik untuk verifikasi otomatis.
+                </p>
+              </div>
+
+              {/* Exact Amount */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-300">
+                <p className="text-sm font-semibold text-green-800 mb-2">Total Transfer:</p>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-4xl font-bold text-green-900">
+                      Rp {paymentData.paymentGroup.exactPaymentAmount.toLocaleString('id-ID')}
+                    </p>
+                    <p className="text-sm text-green-700 mt-1">
+                      = Rp {paymentData.paymentGroup.originalTotal.toLocaleString('id-ID')} 
+                      <span className="font-mono font-bold text-green-900"> + {paymentData.paymentGroup.uniquePaymentCode}</span>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleCopy(paymentData.paymentGroup.exactPaymentAmount.toString(), 'Nominal')}
+                  className="w-full px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <Copy className="w-4 h-4" />
+                  Copy Nominal
+                </button>
+              </div>
+
+              {/* Bank Accounts */}
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-gray-900">Transfer ke rekening:</p>
+                
+                {/* BCA */}
+                <div className="border-2 border-blue-200 rounded-xl p-4 bg-blue-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-xs text-blue-700 font-medium">🏦 Bank BCA</p>
+                      <p className="text-lg font-bold text-blue-900 font-mono">1234567890</p>
+                      <p className="text-xs text-blue-700">a.n. Azzahra Fashion Muslim</p>
+                    </div>
+                    <button
+                      onClick={() => handleCopy('1234567890', 'Nomor rekening BCA')}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-all"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Mandiri */}
+                <div className="border-2 border-yellow-200 rounded-xl p-4 bg-yellow-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-xs text-yellow-700 font-medium">🏦 Bank Mandiri</p>
+                      <p className="text-lg font-bold text-yellow-900 font-mono">9876543210</p>
+                      <p className="text-xs text-yellow-700">a.n. Azzahra Fashion Muslim</p>
+                    </div>
+                    <button
+                      onClick={() => handleCopy('9876543210', 'Nomor rekening Mandiri')}
+                      className="px-3 py-2 bg-yellow-600 text-white rounded-lg text-xs font-semibold hover:bg-yellow-700 transition-all"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Orders Being Paid */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-sm font-semibold text-gray-900 mb-2">
+                  📦 Pesanan Yang Dibayar ({paymentData.orders.length}):
+                </p>
+                <div className="space-y-1.5">
+                  {paymentData.orders.map((order: any) => (
+                    <div key={order.id} className="flex justify-between text-xs">
+                      <span className="text-gray-600">#{order.id}</span>
+                      <span className="font-semibold text-gray-900">
+                        Rp {order.finalTotal.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p className="text-sm font-semibold text-blue-900 mb-2">📋 Cara Pembayaran:</p>
+                <ol className="text-xs text-blue-800 space-y-1.5 list-decimal list-inside">
+                  <li>Copy nominal transfer di atas</li>
+                  <li>Copy nomor rekening (BCA atau Mandiri)</li>
+                  <li>Buka aplikasi mobile banking Anda</li>
+                  <li>Transfer PERSIS Rp {paymentData.paymentGroup.exactPaymentAmount.toLocaleString('id-ID')}</li>
+                  <li>Selesai! Pembayaran akan terverifikasi otomatis dalam 1-5 menit</li>
+                </ol>
+              </div>
+
+              {/* Confirm Button */}
               <button
                 onClick={() => {
                   setShowInstructionsModal(false);
                   setPaymentData(null);
                   setSelectedOrderIds([]);
-                  showToast('✅ Test complete! Payment group created.', 'success');
+                  showToast('✅ Silakan lakukan transfer sesuai instruksi', 'success');
                 }}
-                className="w-full px-4 py-3 bg-pink-500 text-white rounded-xl font-semibold hover:bg-pink-600"
+                className="w-full px-6 py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all text-lg"
               >
-                Close (Test Complete)
+                Saya Mengerti, Akan Transfer Sekarang
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ✨ NEW: Temporary Upload Modal */}
+      {/* ✨ Phase 2: Beautiful Upload Bukti Modal (Manual Mode) */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              📸 Upload Bukti (Test)
-            </h2>
-            <div className="bg-blue-50 rounded-lg p-4 mb-4">
-              <p className="text-sm font-semibold text-blue-900 mb-2">
-                Manual Mode Activated!
-              </p>
-              <p className="text-lg font-bold text-blue-900">
-                Total: Rp {paymentData?.subtotal.toLocaleString('id-ID')}
-              </p>
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => {
+                    setShowUploadModal(false);
+                    setShowMethodModal(true);
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-full transition-all"
+                >
+                  <ArrowLeft className="w-5 h-5 text-white" />
+                </button>
+                <h2 className="text-xl font-bold text-white flex-1 text-center">
+                  📸 Upload Bukti Transfer
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowUploadModal(false);
+                    setPaymentData(null);
+                    setSelectedOrderIds([]);
+                    setPaymentProof(null);
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-full transition-all"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
             </div>
-            <p className="text-sm text-gray-600 mb-4">
-              ✅ Manual mode works!<br/>
-              📋 Beautiful upload form coming in Phase 2!
-            </p>
-            <button
-              onClick={() => {
-                setShowUploadModal(false);
-                setPaymentData(null);
-                setSelectedOrderIds([]);
-                showToast('✅ Test complete! Manual mode activated.', 'success');
-              }}
-              className="w-full px-4 py-3 bg-pink-500 text-white rounded-xl font-semibold hover:bg-pink-600"
-            >
-              Close (Test Complete)
-            </button>
+
+            <div className="p-6 space-y-6">
+              {/* Orders Summary */}
+              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200">
+                <p className="text-sm font-semibold text-blue-900 mb-3">
+                  📦 Pesanan Yang Akan Dibayar ({paymentData?.orders.length}):
+                </p>
+                <div className="space-y-2 mb-3 max-h-32 overflow-y-auto">
+                  {paymentData?.orders.map((order: any) => (
+                    <div key={order.id} className="flex justify-between text-sm">
+                      <span className="text-blue-700">#{order.id.substring(0, 12)}...</span>
+                      <span className="font-semibold text-blue-900">
+                        Rp {order.finalTotal.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="pt-3 border-t border-blue-200">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-blue-900">Total:</span>
+                    <span className="text-xl font-bold text-blue-900">
+                      Rp {paymentData?.subtotal.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bank Accounts */}
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-gray-900">Transfer ke rekening:</p>
+                
+                <div className="border border-blue-200 rounded-xl p-3 bg-blue-50">
+                  <p className="text-xs text-blue-700 font-medium mb-1">🏦 Bank BCA</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-base font-bold text-blue-900 font-mono">1234567890</p>
+                      <p className="text-xs text-blue-700">a.n. Azzahra Fashion Muslim</p>
+                    </div>
+                    <button
+                      onClick={() => handleCopy('1234567890', 'Nomor rekening BCA')}
+                      className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border border-yellow-200 rounded-xl p-3 bg-yellow-50">
+                  <p className="text-xs text-yellow-700 font-medium mb-1">🏦 Bank Mandiri</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-base font-bold text-yellow-900 font-mono">9876543210</p>
+                      <p className="text-xs text-yellow-700">a.n. Azzahra Fashion Muslim</p>
+                    </div>
+                    <button
+                      onClick={() => handleCopy('9876543210', 'Nomor rekening Mandiri')}
+                      className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg text-xs font-semibold hover:bg-yellow-700"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Upload Section */}
+              <div className="space-y-3">
+                <label className="block">
+                  <span className="text-sm font-semibold text-gray-900 mb-2 block">
+                    Upload Bukti Transfer:
+                  </span>
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-pink-500 transition-all cursor-pointer bg-gray-50">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="payment-proof-upload"
+                    />
+                    <label htmlFor="payment-proof-upload" className="cursor-pointer block text-center">
+                      <Upload className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm font-medium text-gray-700">
+                        {paymentProof ? paymentProof.name : 'Klik untuk pilih gambar'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        PNG, JPG, atau JPEG (max 5MB)
+                      </p>
+                    </label>
+                  </div>
+                </label>
+
+                {paymentProof && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <p className="text-xs text-green-700 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Gambar siap diupload: {paymentProof.name}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Instructions */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p className="text-sm font-semibold text-blue-900 mb-2">📋 Instruksi:</p>
+                <ol className="text-xs text-blue-800 space-y-1.5 list-decimal list-inside">
+                  <li>Transfer total di atas ke salah satu rekening</li>
+                  <li>Screenshot/foto bukti transfer</li>
+                  <li>Upload bukti di atas</li>
+                  <li>Klik "Kirim Bukti Transfer"</li>
+                  <li>Admin akan verifikasi dalam 1-24 jam</li>
+                </ol>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                onClick={handleSubmitManualPayment}
+                disabled={!paymentProof || uploadingProof}
+                className="w-full px-6 py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {uploadingProof ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Mengupload...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-5 h-5" />
+                    Kirim Bukti Transfer
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
