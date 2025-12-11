@@ -656,10 +656,22 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     const isTransferBank = selectedPaymentMethod.name.toLowerCase().includes('transfer') || 
                           selectedPaymentMethod.name.toLowerCase().includes('bank');
     
-    // ✨ Generate unique payment code if auto verification mode AND payment method is transfer bank
+    // ✨ Use the SAME unique code shown in preview (not generate new one!)
     const shouldUseUniqueCode = formData.verificationMode === 'auto' && isTransferBank;
-    const uniqueCode = shouldUseUniqueCode ? generateUniquePaymentCode() : undefined;
+    const uniqueCode = shouldUseUniqueCode ? previewUniqueCode : undefined;
     const exactAmount = uniqueCode ? calculateExactAmount(finalTotal, uniqueCode) : undefined;
+
+    // ✅ DEBUG: Log values before order creation
+    console.log('🔍 ORDER CREATION DEBUG:', {
+      shouldUseUniqueCode,
+      isTransferBank,
+      verificationMode: formData.verificationMode,
+      paymentMethod: selectedPaymentMethod.name,
+      finalTotal,
+      uniqueCode,
+      exactAmount,
+      willUseAmount: exactAmount || finalTotal
+    });
 
     const orderData = {
       items: cartItems.map(item => ({
@@ -690,7 +702,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       paymentMethodName: selectedPaymentMethod.name,
       totalAmount: totalPrice,
       shippingCost: shippingFee,
-      // ✅ FIX: finalTotal should be exactAmount for auto mode with unique code
+      // ✅ CRITICAL FIX: finalTotal MUST be exactAmount for auto mode
       finalTotal: exactAmount || finalTotal,
       // ✨ NEW: Unique payment code fields (only if auto mode + transfer bank)
       verificationMode: shouldUseUniqueCode ? 'auto' : 'manual',
@@ -698,6 +710,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       exactPaymentAmount: exactAmount,
       originalAmount: finalTotal
     };
+
+    // ✅ DEBUG: Log final orderData
+    console.log('📦 ORDER DATA:', orderData);
 
     // Create order and get order ID (pass cartItems to eliminate duplicate read)
     const newOrderId = clearCart(orderData, cartItems);
