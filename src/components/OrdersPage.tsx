@@ -675,19 +675,36 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
               {/* Bank Accounts */}
               <div className="space-y-3">
-                <p className="text-sm font-semibold text-gray-900">Transfer ke rekening:</p>
+                <p className="text-sm font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
                 
                 {/* BCA */}
                 <div className="border-2 border-blue-200 rounded-xl p-4 bg-blue-50">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <p className="text-xs text-blue-700 font-medium">🏦 Bank BCA</p>
-                      <p className="text-lg font-bold text-blue-900 font-mono">1234567890</p>
-                      <p className="text-xs text-blue-700">a.n. Azzahra Fashion Muslim</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-xs text-blue-700 font-medium mb-1">🏦 Bank BCA</p>
+                      <p className="text-lg font-bold text-blue-900 font-mono">0511456494</p>
+                      <p className="text-xs text-blue-700 mt-0.5">a.n. Fahrin</p>
                     </div>
                     <button
-                      onClick={() => handleCopy('1234567890', 'Nomor rekening BCA')}
-                      className="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-all"
+                      onClick={() => handleCopy('0511456494', 'Nomor rekening BCA')}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-all flex-shrink-0"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* BRI */}
+                <div className="border-2 border-cyan-200 rounded-xl p-4 bg-cyan-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-xs text-cyan-700 font-medium mb-1">🏦 Bank BRI</p>
+                      <p className="text-lg font-bold text-cyan-900 font-mono">066301000115566</p>
+                      <p className="text-xs text-cyan-700 mt-0.5">a.n. Fahrin</p>
+                    </div>
+                    <button
+                      onClick={() => handleCopy('066301000115566', 'Nomor rekening BRI')}
+                      className="px-3 py-2 bg-cyan-600 text-white rounded-lg text-xs font-semibold hover:bg-cyan-700 transition-all flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
@@ -696,15 +713,15 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
                 {/* Mandiri */}
                 <div className="border-2 border-yellow-200 rounded-xl p-4 bg-yellow-50">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <p className="text-xs text-yellow-700 font-medium">🏦 Bank Mandiri</p>
-                      <p className="text-lg font-bold text-yellow-900 font-mono">9876543210</p>
-                      <p className="text-xs text-yellow-700">a.n. Azzahra Fashion Muslim</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-xs text-yellow-700 font-medium mb-1">🏦 Bank Mandiri</p>
+                      <p className="text-lg font-bold text-yellow-900 font-mono">310011008896</p>
+                      <p className="text-xs text-yellow-700 mt-0.5">a.n. Fahrin</p>
                     </div>
                     <button
-                      onClick={() => handleCopy('9876543210', 'Nomor rekening Mandiri')}
-                      className="px-3 py-2 bg-yellow-600 text-white rounded-lg text-xs font-semibold hover:bg-yellow-700 transition-all"
+                      onClick={() => handleCopy('310011008896', 'Nomor rekening Mandiri')}
+                      className="px-3 py-2 bg-yellow-600 text-white rounded-lg text-xs font-semibold hover:bg-yellow-700 transition-all flex-shrink-0"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
@@ -819,18 +836,34 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
               {/* Bank Accounts */}
               <div className="space-y-3">
-                <p className="text-sm font-semibold text-gray-900">Transfer ke rekening:</p>
+                <p className="text-sm font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
                 
                 <div className="border border-blue-200 rounded-xl p-3 bg-blue-50">
                   <p className="text-xs text-blue-700 font-medium mb-1">🏦 Bank BCA</p>
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-base font-bold text-blue-900 font-mono">1234567890</p>
-                      <p className="text-xs text-blue-700">a.n. Azzahra Fashion Muslim</p>
+                    <div className="flex-1">
+                      <p className="text-base font-bold text-blue-900 font-mono">0511456494</p>
+                      <p className="text-xs text-blue-700 mt-0.5">a.n. Fahrin</p>
                     </div>
                     <button
-                      onClick={() => handleCopy('1234567890', 'Nomor rekening BCA')}
-                      className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700"
+                      onClick={() => handleCopy('0511456494', 'Nomor rekening BCA')}
+                      className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 flex-shrink-0"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border border-cyan-200 rounded-xl p-3 bg-cyan-50">
+                  <p className="text-xs text-cyan-700 font-medium mb-1">🏦 Bank BRI</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-base font-bold text-cyan-900 font-mono">066301000115566</p>
+                      <p className="text-xs text-cyan-700 mt-0.5">a.n. Fahrin</p>
+                    </div>
+                    <button
+                      onClick={() => handleCopy('066301000115566', 'Nomor rekening BRI')}
+                      className="px-3 py-1.5 bg-cyan-600 text-white rounded-lg text-xs font-semibold hover:bg-cyan-700 flex-shrink-0"
                     >
                       <Copy className="w-3 h-3" />
                     </button>
@@ -840,13 +873,13 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                 <div className="border border-yellow-200 rounded-xl p-3 bg-yellow-50">
                   <p className="text-xs text-yellow-700 font-medium mb-1">🏦 Bank Mandiri</p>
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-base font-bold text-yellow-900 font-mono">9876543210</p>
-                      <p className="text-xs text-yellow-700">a.n. Azzahra Fashion Muslim</p>
+                    <div className="flex-1">
+                      <p className="text-base font-bold text-yellow-900 font-mono">310011008896</p>
+                      <p className="text-xs text-yellow-700 mt-0.5">a.n. Fahrin</p>
                     </div>
                     <button
-                      onClick={() => handleCopy('9876543210', 'Nomor rekening Mandiri')}
-                      className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg text-xs font-semibold hover:bg-yellow-700"
+                      onClick={() => handleCopy('310011008896', 'Nomor rekening Mandiri')}
+                      className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg text-xs font-semibold hover:bg-yellow-700 flex-shrink-0"
                     >
                       <Copy className="w-3 h-3" />
                     </button>
