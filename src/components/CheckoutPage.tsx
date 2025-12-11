@@ -718,6 +718,13 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const finalTotal = totalPrice + shippingFee;
   const cartCount = cartItems?.length || 0;
 
+  // ✨ Calculate display total (includes unique code if auto mode + transfer bank)
+  const isTransferBankSelected = selectedPaymentMethod && 
+    (selectedPaymentMethod.name.toLowerCase().includes('transfer') || 
+     selectedPaymentMethod.name.toLowerCase().includes('bank'));
+  const shouldShowUniqueCode = formData.verificationMode === 'auto' && isTransferBankSelected;
+  const displayTotal = shouldShowUniqueCode ? finalTotal + previewUniqueCode : finalTotal;
+
   // Check if selected courier supports automatic shipping calculation
   const selectedCourierOption = shippingOptions.find(opt => opt.id === formData.shippingCourier);
   const supportsAutomatic = !!selectedCourierOption?.code;
@@ -1207,7 +1214,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-wide text-slate-500">Total Pembayaran</p>
-                  <p className="text-2xl font-bold text-brand-primary">Rp {finalTotal.toLocaleString('id-ID')}</p>
+                  <p className="text-2xl font-bold text-brand-primary">
+                    Rp {displayTotal.toLocaleString('id-ID')}
+                  </p>
+                  {shouldShowUniqueCode && (
+                    <p className="text-xs text-slate-600 mt-1">
+                      = Rp {finalTotal.toLocaleString('id-ID')} + kode unik {previewUniqueCode}
+                    </p>
+                  )}
                 </div>
                 <div className="rounded-full bg-brand-primary/10 px-3 py-1 text-xs font-semibold text-brand-primary">
                   {selectedPaymentMethod?.name || 'Metode belum dipilih'}
@@ -1252,8 +1266,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               <div className="flex-1 min-w-0">
                 <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Total Pembayaran</p>
                 <p className="text-xl lg:text-2xl font-bold text-brand-primary truncate">
-                  Rp {finalTotal.toLocaleString('id-ID')}
+                  Rp {displayTotal.toLocaleString('id-ID')}
                 </p>
+                {shouldShowUniqueCode && (
+                  <p className="text-xs text-slate-600">+ kode unik {previewUniqueCode}</p>
+                )}
               </div>
               
               {/* Button - Kanan */}
