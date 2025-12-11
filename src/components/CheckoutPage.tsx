@@ -1122,11 +1122,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   <p className="text-2xl font-bold text-brand-primary">
                     Rp {displayTotal.toLocaleString('id-ID')}
                   </p>
-                  {shouldShowUniqueCode && (
-                    <p className="text-xs text-slate-600 mt-1">
-                      = Rp {finalTotal.toLocaleString('id-ID')} + kode unik {previewUniqueCode}
-                    </p>
-                  )}
+                  {/* ✅ SIMPLIFIED: No unique code display */}
                 </div>
                 <div className="rounded-full bg-brand-primary/10 px-3 py-1 text-xs font-semibold text-brand-primary">
                   {selectedPaymentMethod?.name || 'Metode belum dipilih'}
@@ -1173,9 +1169,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 <p className="text-xl lg:text-2xl font-bold text-brand-primary truncate">
                   Rp {displayTotal.toLocaleString('id-ID')}
                 </p>
-                {shouldShowUniqueCode && (
-                  <p className="text-xs text-slate-600">+ kode unik {previewUniqueCode}</p>
-                )}
+                {/* ✅ SIMPLIFIED: No unique code display */}
               </div>
               
               {/* Button - Kanan */}
