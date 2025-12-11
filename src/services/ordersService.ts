@@ -218,6 +218,22 @@ class OrdersService {
   }
 
   // Update order payment verification - FREE Base64 in Firestore
+  // ✨ NEW: Update order general data (for edit functionality)
+  async updateOrder(orderId: string, updateData: Partial<Order>): Promise<boolean> {
+    try {
+      const orderRef = doc(db, this.collection, orderId);
+      await updateDoc(orderRef, {
+        ...updateData,
+        updatedAt: Timestamp.now()
+      });
+      console.log('✅ Order updated successfully:', orderId);
+      return true;
+    } catch (error) {
+      console.error('❌ Error updating order:', error);
+      return false;
+    }
+  }
+
   async updateOrderPayment(orderId: string, proof: File | string, status?: string): Promise<boolean> {
     try {
       console.log('💳 Updating order payment in Firebase Firestore:', orderId);

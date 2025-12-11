@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Clock, CheckCircle, Truck, XCircle, Eye, Search, Filter, Calendar, Download, X, Upload, CreditCard, MapPin, Phone, Mail, Edit2, Check, User, AlertTriangle, Info } from 'lucide-react';
+import { Package, Clock, CheckCircle, Truck, XCircle, Eye, Search, Filter, Calendar, Download, X, Upload, CreditCard, MapPin, Phone, Mail, Edit2, Check, User, AlertTriangle, Info, Trash2 } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { useFirebaseAdminOrders } from '../hooks/useFirebaseAdminOrders';
 import { ordersService } from '../services/ordersService';
@@ -26,6 +26,11 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   const [uploadingPaymentProof, setUploadingPaymentProof] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedOrderForUpload, setSelectedOrderForUpload] = useState<any>(null);
+
+  // ✨ NEW: Bulk operations state
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<any>(null);
 
   // Modern confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -78,6 +83,99 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
   const deleteOrder = async (orderId: string) => {
     return await ordersService.deleteOrder(orderId);
+  };
+
+  // ✨ NEW: Bulk operations functions
+  const toggleSelectOrder = (orderId: string) => {
+    setSelectedOrderIds(prev => 
+      prev.includes(orderId) 
+        ? prev.filter(id => id !== orderId)
+        : [...prev, orderId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedOrderIds.length === filteredOrders.length) {
+      setSelectedOrderIds([]);
+    } else {
+      setSelectedOrderIds(filteredOrders.map(order => order.id));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedOrderIds.length === 0) {
+      showModernAlert('Peringatan', 'Pilih minimal 1 pesanan untuk dihapus', 'warning');
+      return;
+    }
+
+    showModernConfirm(
+      'Konfirmasi Bulk Delete', 
+      `Apakah Anda yakin ingin menghapus ${selectedOrderIds.length} pesanan sekaligus? Stock akan dikembalikan.`,
+      async () => {
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const orderId of selectedOrderIds) {
+          try {
+            const order = orders.find(o => o.id === orderId);
+            if (order) {
+              await ordersService.restoreStockForOrderManually(order);
+            }
+            await deleteOrder(orderId);
+            successCount++;
+          } catch (error) {
+            console.error(`Failed to delete order ${orderId}:`, error);
+            failCount++;
+          }
+        }
+
+        setSelectedOrderIds([]);
+
+        if (failCount === 0) {
+          showModernAlert('Berhasil', `${successCount} pesanan berhasil dihapus`, 'success');
+        } else {
+          showModernAlert('Selesai dengan Error', `${successCount} berhasil, ${failCount} gagal`, 'warning');
+        }
+
+        // Trigger refresh
+        window.dispatchEvent(new CustomEvent('orderCancelled', {
+          detail: { action: 'bulkDeleted', count: successCount }
+        }));
+
+        if (onRefreshProducts) {
+          onRefreshProducts();
+        }
+      },
+      { type: 'error', confirmText: 'Ya, Hapus Semua', cancelText: 'Batal' }
+    );
+  };
+
+  const handleEditOrder = (order: any) => {
+    setEditingOrder({ ...order });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEditOrder = async () => {
+    if (!editingOrder) return;
+
+    try {
+      // Update order in Firebase
+      await ordersService.updateOrder(editingOrder.id, {
+        shippingInfo: editingOrder.shippingInfo,
+        notes: editingOrder.notes,
+        status: editingOrder.status
+      });
+
+      showModernAlert('Berhasil', 'Pesanan berhasil diupdate', 'success');
+      setShowEditModal(false);
+      setEditingOrder(null);
+
+      // Trigger refresh
+      window.dispatchEvent(new CustomEvent('orderUpdated'));
+    } catch (error) {
+      console.error('Error updating order:', error);
+      showModernAlert('Error', 'Gagal mengupdate pesanan', 'error');
+    }
   };
 
   // Get orders by status
@@ -453,6 +551,39 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           </div>
         </div>
 
+        {/* ✨ NEW: Bulk Operations Toolbar */}
+        {user?.role === 'owner' && filteredOrders.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedOrderIds.length === filteredOrders.length && filteredOrders.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 text-brand-primary border-gray-300 rounded focus:ring-brand-primary"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    {selectedOrderIds.length > 0 
+                      ? `${selectedOrderIds.length} dipilih` 
+                      : 'Pilih Semua'}
+                  </span>
+                </label>
+              </div>
+              
+              {selectedOrderIds.length > 0 && (
+                <button
+                  onClick={handleBulkDelete}
+                  className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Hapus {selectedOrderIds.length} Pesanan</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Orders List */}
         <div className="space-y-3">
           {filteredOrders.length === 0 ? (
@@ -469,36 +600,50 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
               return (
                 <div key={order.id} className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <p className="font-semibold text-lg">#{order.id}</p>
-                      <p className="text-sm text-gray-600">{order.userName} • {order.userEmail}</p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(order.createdAt).toLocaleDateString('id-ID', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                        <StatusIcon className="w-3 h-3" />
-                        <span>{statusInfo.label}</span>
+                  <div className="flex items-start space-x-3">
+                    {/* ✨ NEW: Checkbox for bulk selection (Owner only) */}
+                    {user?.role === 'owner' && (
+                      <div className="pt-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedOrderIds.includes(order.id)}
+                          onChange={() => toggleSelectOrder(order.id)}
+                          className="w-4 h-4 text-brand-primary border-gray-300 rounded focus:ring-brand-primary"
+                        />
                       </div>
-                      <p className="text-lg font-semibold text-pink-600 mt-1">
-                        Rp {order.finalTotal.toLocaleString('id-ID')}
-                      </p>
-                    </div>
-                  </div>
+                    )}
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="font-semibold text-lg">#{order.id}</p>
+                          <p className="text-sm text-gray-600">{order.userName} • {order.userEmail}</p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(order.createdAt).toLocaleDateString('id-ID', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                            <StatusIcon className="w-3 h-3" />
+                            <span>{statusInfo.label}</span>
+                          </div>
+                          <p className="text-lg font-semibold text-pink-600 mt-1">
+                            Rp {order.finalTotal.toLocaleString('id-ID')}
+                          </p>
+                        </div>
+                      </div>
 
-                  <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-600">
-                    {order.items.length} item • {paymentMethodLabel}
-                  </div>
-                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-600">
+                        {order.items.length} item • {paymentMethodLabel}
+                      </div>
+                        <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleViewOrder(order)}
                         className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
@@ -559,15 +704,27 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         </button>
                       )}
 
+                      {/* ✨ NEW: Edit button (Owner only) */}
                       {user?.role === 'owner' && (
-                        <button
-                          onClick={() => handleDeleteOrder(order.id)}
-                          className="flex items-center space-x-1 text-red-600 hover:text-red-700 text-sm font-medium"
-                        >
-                          <XCircle className="w-4 h-4" />
-                          <span>Batal</span>
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleEditOrder(order)}
+                            className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteOrder(order.id)}
+                            className="flex items-center space-x-1 text-red-600 hover:text-red-700 text-sm font-medium"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            <span>Hapus</span>
+                          </button>
+                        </>
                       )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1057,6 +1214,126 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                 }`}
               >
                 {confirmModalData.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✨ NEW: Edit Order Modal */}
+      {showEditModal && editingOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl z-10">
+              <h3 className="text-xl font-bold text-gray-900">Edit Pesanan #{editingOrder.id}</h3>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingOrder(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-5 space-y-4">
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Status Pesanan</label>
+                <select
+                  value={editingOrder.status}
+                  onChange={(e) => setEditingOrder({ ...editingOrder, status: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                >
+                  <option value="pending">Menunggu Pembayaran</option>
+                  <option value="awaiting_verification">Menunggu Verifikasi</option>
+                  <option value="paid">Dibayar</option>
+                  <option value="processing">Diproses</option>
+                  <option value="shipped">Dikirim</option>
+                  <option value="delivered">Selesai</option>
+                  <option value="cancelled">Dibatalkan</option>
+                </select>
+              </div>
+
+              {/* Shipping Info */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-gray-900 flex items-center space-x-2">
+                  <MapPin className="w-4 h-4" />
+                  <span>Informasi Pengiriman</span>
+                </h4>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nama Penerima</label>
+                  <input
+                    type="text"
+                    value={editingOrder.shippingInfo?.name || ''}
+                    onChange={(e) => setEditingOrder({
+                      ...editingOrder,
+                      shippingInfo: { ...editingOrder.shippingInfo, name: e.target.value }
+                    })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">No. Telepon</label>
+                  <input
+                    type="text"
+                    value={editingOrder.shippingInfo?.phone || ''}
+                    onChange={(e) => setEditingOrder({
+                      ...editingOrder,
+                      shippingInfo: { ...editingOrder.shippingInfo, phone: e.target.value }
+                    })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap</label>
+                  <textarea
+                    value={editingOrder.shippingInfo?.address || ''}
+                    onChange={(e) => setEditingOrder({
+                      ...editingOrder,
+                      shippingInfo: { ...editingOrder.shippingInfo, address: e.target.value }
+                    })}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Catatan Pesanan</label>
+                <textarea
+                  value={editingOrder.notes || ''}
+                  onChange={(e) => setEditingOrder({ ...editingOrder, notes: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  placeholder="Tambahkan catatan (opsional)"
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="px-6 py-4 bg-gray-50 rounded-b-2xl flex items-center justify-end space-x-3 sticky bottom-0">
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingOrder(null);
+                }}
+                className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-xl font-medium transition-all"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSaveEditOrder}
+                className="px-5 py-2.5 bg-brand-primary text-white rounded-xl font-medium hover:bg-brand-primary/90 transition-all hover:shadow-lg"
+              >
+                Simpan Perubahan
               </button>
             </div>
           </div>
