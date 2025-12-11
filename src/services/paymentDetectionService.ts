@@ -261,11 +261,92 @@ class PaymentDetectionService {
     return costs[s2.length];
   }
 
-  // Match detection with orders
+  // ✨ NEW: Match detection by EXACT amount with unique code (100% confidence if name also matches)
+  async matchByExactAmount(
+    detectedAmount: number,
+    senderName: string,
+    pendingOrders: any[]
+  ): Promise<{ orderId: string; confidence: number; reason: string } | null> {
+    console.log('🔍 Searching for exact amount match:', detectedAmount);
+    
+    // Find orders with exact payment amount (unique code system)
+    const exactMatches = pendingOrders.filter(order => 
+      order.exactPaymentAmount === detectedAmount && 
+      order.verificationMode === 'auto' &&
+      order.status === 'pending'
+    );
+
+    if (exactMatches.length === 0) {
+      console.log('❌ No exact amount match found');
+      return null;
+    }
+
+    if (exactMatches.length > 1) {
+      console.warn('⚠️ Multiple orders with same exact amount (collision detected)!', exactMatches.length);
+      // Fallback to name matching
+    }
+
+    // Get the first match (should be only one in normal cases)
+    const matchedOrder = exactMatches[0];
+
+    // ✅ SECURITY CHECK: Validate sender name matches order customer name
+    const customerName = matchedOrder.shippingInfo?.name || matchedOrder.userName || '';
+    const nameSimilarity = this.calculateSimilarity(senderName, customerName);
+
+    console.log('🔐 Security check:', {
+      senderName,
+      customerName,
+      similarity: nameSimilarity + '%'
+    });
+
+    // If name similarity is high (>70%), confidence = 100%
+    if (nameSimilarity >= 70) {
+      return {
+        orderId: matchedOrder.id,
+        confidence: 100,
+        reason: `Exact amount match (${detectedAmount}) + Name match (${Math.round(nameSimilarity)}%)`
+      };
+    }
+
+    // If name similarity is medium (50-69%), confidence = 85% (require admin review)
+    if (nameSimilarity >= 50) {
+      return {
+        orderId: matchedOrder.id,
+        confidence: 85,
+        reason: `Exact amount match but name partially matches (${Math.round(nameSimilarity)}%)`
+      };
+    }
+
+    // If name similarity is low (<50%), confidence = 60% (suspicious, require admin review)
+    return {
+      orderId: matchedOrder.id,
+      confidence: 60,
+      reason: `⚠️ Exact amount match but DIFFERENT sender name! Expected: "${customerName}", Got: "${senderName}"`
+    };
+  }
+
+  // Match detection with orders (LEGACY - fallback for manual mode)
   async matchDetectionWithOrders(
     detection: PaymentDetection,
     pendingOrders: any[]
   ): Promise<{ orderId: string; confidence: number }[]> {
+    // ✨ PRIORITY 1: Try exact amount match first (for auto verification mode)
+    const exactMatch = await this.matchByExactAmount(
+      detection.amount,
+      detection.senderName,
+      pendingOrders
+    );
+
+    if (exactMatch && exactMatch.confidence >= 85) {
+      console.log('✅ EXACT MATCH FOUND with high confidence:', exactMatch);
+      return [{
+        orderId: exactMatch.orderId,
+        confidence: exactMatch.confidence
+      }];
+    }
+
+    // ✨ FALLBACK: Use legacy matching algorithm for manual mode or when no exact match
+    console.log('📊 Using legacy matching algorithm...');
     const matches: { orderId: string; confidence: number }[] = [];
 
     for (const order of pendingOrders) {

@@ -24,6 +24,12 @@ export interface Order {
   paymentProof?: string;
   paymentProofData?: string;
   paymentProofUrl?: string;
+  
+  // ✨ NEW: Unique Payment Code System (OPTIONAL - Backward Compatible)
+  verificationMode?: 'auto' | 'manual'; // Default: 'manual' (existing behavior)
+  uniquePaymentCode?: number;          // 2-digit code (10-99) for auto verification
+  exactPaymentAmount?: number;         // finalTotal + uniquePaymentCode
+  originalAmount?: number;             // Store original finalTotal for reference
 }
 
 class OrdersService {

@@ -9,6 +9,7 @@ import EmptyState from './ui/EmptyState';
 import { CardSkeleton, ListSkeleton } from './ui/Skeleton';
 import { useToast } from './ToastProvider';
 import { financialService, PaymentMethod } from '../services/financialService';
+import { generateUniquePaymentCode, calculateExactAmount } from '../utils/uniqueCodeGenerator';
 
 interface CheckoutPageProps {
   user: any;
@@ -379,8 +380,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     shippingCost: 0,
     shippingService: '',
     shippingETD: '',
-    notes: ''
+    notes: '',
+    verificationMode: 'auto' as 'auto' | 'manual' // ✨ NEW: Default to auto
   });
+
+  // ✨ NEW: Generate unique code once for preview (will be regenerated on submit)
+  const [previewUniqueCode] = useState(() => generateUniquePaymentCode());
 
   const shippingOptions = [
     { id: 'jnt', name: 'J&T Express', code: 'jnt', price: 0 }, // RajaOngkir supported
@@ -647,6 +652,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       return;
     }
 
+    // ✨ Generate unique payment code if auto verification mode
+    const uniqueCode = formData.verificationMode === 'auto' 
+      ? generateUniquePaymentCode() 
+      : undefined;
+    const exactAmount = uniqueCode 
+      ? calculateExactAmount(finalTotal, uniqueCode) 
+      : undefined;
+
     const orderData = {
       items: cartItems.map(item => ({
         ...item,
@@ -676,7 +689,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       paymentMethodName: selectedPaymentMethod.name,
       totalAmount: totalPrice,
       shippingCost: shippingFee,
-      finalTotal: finalTotal
+      finalTotal: finalTotal,
+      // ✨ NEW: Unique payment code fields (only if auto mode)
+      verificationMode: formData.verificationMode,
+      uniquePaymentCode: uniqueCode,
+      exactPaymentAmount: exactAmount,
+      originalAmount: finalTotal
     };
 
     // Create order and get order ID (pass cartItems to eliminate duplicate read)
@@ -1041,6 +1059,85 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               ))}
             </div>
           )}
+        </div>
+
+        {/* ✨ NEW: Payment Verification Mode */}
+        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">Metode Verifikasi Pembayaran</h3>
+          
+          <div className="space-y-3">
+            {/* Auto Verification (Default) */}
+            <label className={`flex gap-3 rounded-xl border-2 p-4 transition cursor-pointer ${formData.verificationMode === 'auto' ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-white hover:border-green-300'}`}>
+              <input
+                type="radio"
+                name="verificationMode"
+                value="auto"
+                checked={formData.verificationMode === 'auto'}
+                onChange={handleInputChange}
+                className="mt-1 h-4 w-4 border-slate-300 text-green-600 focus:ring-green-500"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-bold text-slate-900">✨ Verifikasi Otomatis</span>
+                  <span className="px-2 py-0.5 bg-green-600 text-white text-xs font-semibold rounded-full">Rekomendasi</span>
+                </div>
+                <ul className="text-xs text-slate-600 space-y-0.5 mb-2">
+                  <li>✓ Pembayaran langsung terverifikasi (1-2 menit)</li>
+                  <li>✓ Tidak perlu upload bukti transfer</li>
+                  <li>✓ Proses pesanan lebih cepat</li>
+                </ul>
+                
+                {formData.verificationMode === 'auto' && (
+                  <div className="mt-3 pt-3 border-t border-green-200">
+                    <p className="text-xs font-semibold text-green-800 mb-2">💰 Total yang harus ditransfer (contoh):</p>
+                    <div className="flex items-baseline gap-1 mb-1">
+                      <span className="text-2xl font-bold text-green-900">
+                        Rp {Math.floor(finalTotal).toLocaleString('id-ID')}
+                      </span>
+                      <span className="text-2xl font-bold text-green-600">
+                        .{String(previewUniqueCode).padStart(2, '0')}
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2">
+                      ⚠️ <strong>PENTING:</strong> Transfer PERSIS dengan 2 angka di belakang titik. Angka unik akan dibuat saat checkout & ditampilkan di halaman konfirmasi!
+                    </p>
+                  </div>
+                )}
+              </div>
+            </label>
+
+            {/* Manual Verification */}
+            <label className={`flex gap-3 rounded-xl border p-4 transition cursor-pointer ${formData.verificationMode === 'manual' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
+              <input
+                type="radio"
+                name="verificationMode"
+                value="manual"
+                checked={formData.verificationMode === 'manual'}
+                onChange={handleInputChange}
+                className="mt-1 h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-semibold text-slate-900">📸 Verifikasi Manual</span>
+                </div>
+                <ul className="text-xs text-slate-600 space-y-0.5">
+                  <li>• Upload bukti transfer setelah bayar</li>
+                  <li>• Verifikasi dalam 1-2 jam (saat jam kerja)</li>
+                  <li>• Transfer nominal bisa dibulatkan</li>
+                </ul>
+                
+                {formData.verificationMode === 'manual' && (
+                  <div className="mt-3 pt-3 border-t border-blue-200">
+                    <p className="text-xs font-semibold text-blue-800 mb-1">💰 Total pembayaran:</p>
+                    <span className="text-2xl font-bold text-blue-900">
+                      Rp {finalTotal.toLocaleString('id-ID')}
+                    </span>
+                    <p className="text-xs text-slate-600 mt-1">(Boleh dibulatkan)</p>
+                  </div>
+                )}
+              </div>
+            </label>
+          </div>
         </div>
 
         {/* Additional Options */}
