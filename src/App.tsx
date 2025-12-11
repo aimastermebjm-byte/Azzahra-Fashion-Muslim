@@ -25,6 +25,7 @@ import AdminUsersPage from './components/AdminUsersPage';
 import AdminFinancialPage from './components/AdminFinancialPage';
 import AdminMasterDataPage from './components/AdminMasterDataPage';
 import AdminCacheManagement from './components/AdminCacheManagement';
+import AdminPaymentVerificationPage from './components/AdminPaymentVerificationPage';
 import BottomNavigation from './components/BottomNavigation';
 import InstallPrompt from './components/InstallPrompt';
 import { OngkirTestPage } from './pages/OngkirTestPage';
@@ -37,7 +38,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from './utils/firebaseClient';
 import './utils/forceSyncGlobalIndex'; // Load force sync function to window
 
-type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'admin-cache' | 'admin-financials' | 'admin-master' | 'ongkir-test';
+type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'admin-cache' | 'admin-financials' | 'admin-master' | 'admin-payment-verification' | 'ongkir-test';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -523,6 +524,7 @@ function AppContent() {
             onLogout={handleLogout}
             onNavigateToAdminProducts={handleNavigateToAdminProducts}
             onNavigateToAdminOrders={handleNavigateToAdminOrders}
+            onNavigateToAdminPaymentVerification={handleNavigateToAdminPaymentVerification}
             onNavigateToAdminReports={handleNavigateToAdminReports}
             onNavigateToAdminUsers={handleNavigateToAdminUsers}
             onNavigateToAdminCache={handleNavigateToAdminCache}
@@ -547,6 +549,13 @@ function AppContent() {
             user={user}
             onRefreshProducts={refresh}
             onNavigateToHome={() => setCurrentPage('home')}
+          />
+        );
+      case 'admin-payment-verification':
+        return (
+          <AdminPaymentVerificationPage
+            onBack={() => setCurrentPage('account')}
+            user={user}
           />
         );
       case 'admin-reports':

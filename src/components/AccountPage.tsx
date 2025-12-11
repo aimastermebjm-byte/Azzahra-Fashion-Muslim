@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Package, Heart, MapPin, LogOut, Crown, Star, User as UserIcon, Shield, Eye, EyeOff, RefreshCw, Award, BarChart3, Users, TrendingUp, Package as PackageIcon, Mail, Phone, Key, Layers } from 'lucide-react';
+import { User, Package, Heart, MapPin, LogOut, Crown, Star, User as UserIcon, Shield, Eye, EyeOff, RefreshCw, Award, BarChart3, Users, TrendingUp, Package as PackageIcon, Mail, Phone, Key, Layers, CreditCard } from 'lucide-react';
 // import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 // import { useSupabaseAuthSimple } from '../hooks/useSupabaseAuthSimple';
 
@@ -13,6 +13,7 @@ interface AccountPageProps {
   onNavigateToAdminCache?: () => void;
   onNavigateToAdminFinancials?: () => void;
   onNavigateToAdminMaster?: () => void;
+  onNavigateToAdminPaymentVerification?: () => void;
   onNavigateToAddressManagement?: () => void;
   // Flash sale and featured products are now managed in AdminProductsPage
 }
@@ -27,6 +28,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
   onNavigateToAdminCache,
   onNavigateToAdminFinancials,
   onNavigateToAdminMaster,
+  onNavigateToAdminPaymentVerification,
   onNavigateToAddressManagement
 }) => {
     const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -484,6 +486,13 @@ const AccountPage: React.FC<AccountPageProps> = ({
                   <p className="text-sm">Kelola Pesanan</p>
                 </button>
                 <button
+                  onClick={onNavigateToAdminPaymentVerification}
+                  className="p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <CreditCard className="w-6 h-6 mx-auto mb-2" />
+                  <p className="text-sm">Verifikasi Pembayaran</p>
+                </button>
+                <button
                   onClick={onNavigateToAdminReports}
                   className="p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
@@ -687,6 +696,13 @@ const AccountPage: React.FC<AccountPageProps> = ({
                 >
                   <Package className="w-6 h-6 mx-auto mb-2" />
                   <p className="text-sm">Kelola Pesanan</p>
+                </button>
+                <button
+                  onClick={onNavigateToAdminPaymentVerification}
+                  className="p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <CreditCard className="w-6 h-6 mx-auto mb-2" />
+                  <p className="text-sm">Verifikasi Pembayaran</p>
                 </button>
                 <button
                   onClick={onNavigateToAdminReports}
