@@ -51,7 +51,7 @@ class PaymentDetectionService {
   // Get all pending payment detections
   async getPendingDetections(): Promise<PaymentDetection[]> {
     try {
-      const pendingRef = collection(db, `${this.COLLECTION}/pending/items`);
+      const pendingRef = collection(db, 'paymentDetectionsPending');
       const q = query(pendingRef, orderBy('createdAt', 'desc'));
       const snapshot = await getDocs(q);
       
@@ -68,7 +68,7 @@ class PaymentDetectionService {
   // Get verified payment detections
   async getVerifiedDetections(): Promise<PaymentDetection[]> {
     try {
-      const verifiedRef = collection(db, `${this.COLLECTION}/verified/items`);
+      const verifiedRef = collection(db, 'paymentDetectionsVerified');
       const q = query(verifiedRef, orderBy('verifiedAt', 'desc'));
       const snapshot = await getDocs(q);
       
@@ -84,7 +84,7 @@ class PaymentDetectionService {
 
   // Listen to pending detections (real-time)
   onPendingDetectionsChange(callback: (detections: PaymentDetection[]) => void): () => void {
-    const pendingRef = collection(db, `${this.COLLECTION}/pending/items`);
+    const pendingRef = collection(db, 'paymentDetectionsPending');
     const q = query(pendingRef, orderBy('createdAt', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -111,7 +111,7 @@ class PaymentDetectionService {
   ): Promise<void> {
     try {
       // Get detection from pending
-      const pendingRef = doc(db, `${this.COLLECTION}/pending/items`, detectionId);
+      const pendingRef = doc(db, 'paymentDetectionsPending', detectionId);
       const pendingDoc = await getDoc(pendingRef);
       
       if (!pendingDoc.exists()) {
@@ -121,7 +121,7 @@ class PaymentDetectionService {
       const detectionData = pendingDoc.data();
 
       // Move to verified
-      const verifiedRef = doc(db, `${this.COLLECTION}/verified/items`, detectionId);
+      const verifiedRef = doc(db, 'paymentDetectionsVerified', detectionId);
       await setDoc(verifiedRef, {
         ...detectionData,
         status: 'verified',
@@ -145,7 +145,7 @@ class PaymentDetectionService {
   async markAsIgnored(detectionId: string, reason: string): Promise<void> {
     try {
       // Get detection from pending
-      const pendingRef = doc(db, `${this.COLLECTION}/pending/items`, detectionId);
+      const pendingRef = doc(db, 'paymentDetectionsPending', detectionId);
       const pendingDoc = await getDoc(pendingRef);
       
       if (!pendingDoc.exists()) {
@@ -155,7 +155,7 @@ class PaymentDetectionService {
       const detectionData = pendingDoc.data();
 
       // Move to ignored
-      const ignoredRef = doc(db, `${this.COLLECTION}/ignored/items`, detectionId);
+      const ignoredRef = doc(db, 'paymentDetectionsIgnored', detectionId);
       await setDoc(ignoredRef, {
         ...detectionData,
         status: 'ignored',
@@ -176,7 +176,7 @@ class PaymentDetectionService {
   // Get settings
   async getSettings(): Promise<PaymentDetectionSettings> {
     try {
-      const settingsRef = doc(db, `${this.COLLECTION}/settings/config`);
+      const settingsRef = doc(db, 'paymentDetectionSettings', 'config');
       const settingsDoc = await getDoc(settingsRef);
       
       if (settingsDoc.exists()) {
@@ -213,7 +213,7 @@ class PaymentDetectionService {
   // Update settings
   async updateSettings(settings: PaymentDetectionSettings): Promise<void> {
     try {
-      const settingsRef = doc(db, `${this.COLLECTION}/settings/config`);
+      const settingsRef = doc(db, 'paymentDetectionSettings', 'config');
       await setDoc(settingsRef, settings, { merge: true });
       console.log('✅ Settings updated:', settings);
     } catch (error) {
@@ -225,7 +225,7 @@ class PaymentDetectionService {
   // Add mock detection for testing (temporary - for development)
   async addMockDetection(detection: Omit<PaymentDetection, 'id' | 'createdAt' | 'status'>): Promise<void> {
     try {
-      const pendingRef = collection(db, `${this.COLLECTION}/pending/items`);
+      const pendingRef = collection(db, 'paymentDetectionsPending');
       const newDocRef = doc(pendingRef);
       
       await setDoc(newDocRef, {

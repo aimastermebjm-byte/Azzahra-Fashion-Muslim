@@ -35,6 +35,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
   const [settings, setSettings] = useState<PaymentDetectionSettings | null>(null);
   const [selectedDetection, setSelectedDetection] = useState<PaymentDetection | null>(null);
   const [showScreenshot, setShowScreenshot] = useState(false);
+  const [initializing, setInitializing] = useState(false);
   const { showToast } = useToast();
 
   // Load data on mount
@@ -166,6 +167,69 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
     }
   };
 
+  const handleInitializeSystem = async () => {
+    try {
+      setInitializing(true);
+      showToast('🔄 Menginisialisasi system...', 'info');
+
+      // 1. Create default settings if not exists
+      if (!settings || !settings.mode) {
+        await paymentDetectionService.updateSettings({
+          mode: 'semi-auto',
+          enabled: true,
+          autoConfirmThreshold: 90,
+          autoConfirmRules: {
+            exactAmountMatch: true,
+            nameSimilarity: 80,
+            maxOrderAge: 7200
+          }
+        });
+        showToast('✅ Settings created', 'success');
+      }
+
+      // 2. Add mock payment detections
+      const mockDetections = [
+        {
+          amount: 250000,
+          senderName: 'SITI NURHALIZA',
+          bank: 'BRI',
+          timestamp: new Date().toISOString(),
+          rawText: 'BRIMo\nTransfer Masuk\nRp250.000,00\ndari SITI NURHALIZA'
+        },
+        {
+          amount: 180000,
+          senderName: 'AHMAD DHANI',
+          bank: 'Mandiri',
+          timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
+          rawText: "Livin' by Mandiri\nTransaksi Berhasil\nTransfer Diterima Rp 180.000\nDari: AHMAD DHANI"
+        },
+        {
+          amount: 320000,
+          senderName: 'RINA SUSANTI',
+          bank: 'BCA',
+          timestamp: new Date(Date.now() - 10 * 60000).toISOString(),
+          rawText: 'BCA mobile\nInfo Rekening\nTransfer masuk Rp320.000\ndari 9876543210 a.n RINA SUSANTI'
+        }
+      ];
+
+      for (const detection of mockDetections) {
+        await paymentDetectionService.addMockDetection(detection);
+      }
+
+      showToast('✅ System berhasil diinisialisasi!', 'success');
+      showToast('🔄 Memuat data...', 'info');
+      
+      // Reload data
+      await loadData();
+      await loadSettings();
+    } catch (error) {
+      console.error('Error initializing system:', error);
+      showToast('❌ Gagal menginisialisasi system', 'error');
+    } finally {
+      setInitializing(false);
+    }
+  };
+
   // Get confidence badge color
   const getConfidenceBadge = (confidence?: number) => {
     if (!confidence) return { color: 'bg-gray-500', text: 'No Match', icon: '❓' };
@@ -283,9 +347,34 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
             <h3 className="text-lg font-semibold text-gray-700 mb-2">
               Tidak Ada Pembayaran Pending
             </h3>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 mb-4">
               Pembayaran yang terdeteksi akan muncul di sini
             </p>
+            
+            {/* Initialize System Button */}
+            {!settings?.mode && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 max-w-md mx-auto">
+                <div className="text-sm text-blue-700 mb-3">
+                  💡 System belum diinisialisasi. Klik tombol di bawah untuk setup awal & add mock data untuk testing.
+                </div>
+                <button
+                  onClick={handleInitializeSystem}
+                  disabled={initializing}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 mx-auto"
+                >
+                  {initializing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span>Menginisialisasi...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>🚀 Initialize System</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           filteredDetections.map((detection) => {

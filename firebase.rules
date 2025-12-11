@@ -120,5 +120,22 @@ service cloud.firestore {
       allow read: if true; // Public read
       allow create, update, delete: if isOwner(); // Only owner can edit
     }
+
+    // Payment Detection System - Admin/Owner only
+    match /paymentDetectionsPending/{detectionId} {
+      allow read, write: if isAdminOrOwner();
+    }
+
+    match /paymentDetectionsVerified/{detectionId} {
+      allow read, write: if isAdminOrOwner();
+    }
+
+    match /paymentDetectionsIgnored/{detectionId} {
+      allow read, write: if isAdminOrOwner();
+    }
+
+    match /paymentDetectionSettings/{settingId} {
+      allow read, write: if isAdminOrOwner();
+    }
   }
 }
