@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Search, ShoppingCart, User, Filter, Star, ArrowUpDown, MessageCircle } from 'lucide-react';
+import { Search, ShoppingCart, User, Filter, Star, ArrowUpDown, MessageCircle, X } from 'lucide-react';
 import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
@@ -389,39 +389,107 @@ const HomePage: React.FC<HomePageProps> = ({
   
   return (
     <div className="min-h-screen bg-brand-surface pb-20">
-      {/* Header - Sticky */}
-      <div className="sticky top-0 z-50 bg-brand-gradient text-white p-6 shadow-brand-card">
-        {/* Search Bar */}
-        <div className="flex items-center space-x-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-primary/50 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Cari produk..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white/90 text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-accent"
-            />
+      {/* Header - Sticky - Premium Glassmorphism */}
+      <div className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-brand-primary/98 via-brand-info/98 to-brand-primary/98 shadow-xl border-b border-white/10">
+        <div className="px-2 sm:px-4 py-3 sm:py-4">
+          {/* Search Bar - Premium */}
+          <div className="flex items-center space-x-2">
+            <div className="flex-1 relative group">
+              {/* Animated Search Icon */}
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                <Search className={`w-5 h-5 transition-all duration-300 ${
+                  searchQuery 
+                    ? 'text-brand-accent scale-110' 
+                    : 'text-gray-400 group-focus-within:text-brand-accent group-focus-within:scale-110'
+                }`} />
+              </div>
+              
+              {/* Input Field */}
+              <input
+                type="text"
+                placeholder="Cari hijab, gamis, atau busana favoritmu..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-12 py-3.5 
+                           rounded-2xl 
+                           bg-white shadow-lg 
+                           text-gray-900 
+                           placeholder:text-gray-400 
+                           focus:outline-none 
+                           focus:ring-2 
+                           focus:ring-brand-accent/50 
+                           focus:shadow-2xl 
+                           transition-all duration-300
+                           hover:shadow-xl"
+              />
+              
+              {/* Loading Indicator */}
+              {isSearching && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  <div className="w-5 h-5 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+              
+              {/* Clear Button */}
+              {searchQuery && !isSearching && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 
+                             text-gray-400 hover:text-gray-600 
+                             transition-colors p-1 hover:bg-gray-100 rounded-full"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            
+            {/* WhatsApp Button - Enhanced with Gradient & Pulse */}
+            <button
+              onClick={() => window.open('https://wa.me/6281952989904?text=Halo%20Admin%20Azzahra%20Fashion%2C%20saya%20ingin%20bertanya', '_blank')}
+              className="relative p-3 sm:p-3.5 
+                         bg-gradient-to-br from-green-500 to-green-600 
+                         rounded-2xl 
+                         shadow-lg hover:shadow-2xl 
+                         hover:scale-105 
+                         transition-all duration-300 
+                         group"
+              title="Hubungi Admin via WhatsApp"
+            >
+              <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:scale-110 transition-transform" />
+              {/* Pulse animation ring */}
+              <span className="absolute inset-0 rounded-2xl bg-green-400/50 animate-ping opacity-20" />
+            </button>
+            
+            {/* Cart Button - Premium Badge with Gradient */}
+            <button
+              onClick={onCartClick}
+              className="relative p-3 sm:p-3.5 
+                         bg-gradient-to-br from-brand-accent to-amber-600 
+                         rounded-2xl 
+                         shadow-lg hover:shadow-2xl 
+                         hover:scale-105 
+                         transition-all duration-300 
+                         group"
+            >
+              <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:scale-110 transition-transform" />
+              
+              {/* Premium Badge with Bounce */}
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 
+                                 bg-gradient-to-br from-red-500 to-pink-600 
+                                 text-white 
+                                 text-xs font-bold 
+                                 rounded-full 
+                                 w-6 h-6 
+                                 flex items-center justify-center 
+                                 shadow-lg 
+                                 ring-2 ring-white 
+                                 animate-bounce">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </button>
           </div>
-          {/* Tombol WhatsApp untuk hubungi admin */}
-          <button
-            onClick={() => window.open('https://wa.me/6281952989904?text=Halo%20Admin%20Azzahra%20Fashion%2C%20saya%20ingin%20bertanya', '_blank')}
-            className="p-3 bg-green-500/90 backdrop-blur-md rounded-2xl shadow-md hover:shadow-lg hover:bg-green-600/90 transition-all"
-            title="Hubungi Admin via WhatsApp"
-          >
-            <MessageCircle className="w-5 h-5 text-white" />
-          </button>
-          <button
-            onClick={onCartClick}
-            className="relative p-3 bg-white/20 backdrop-blur-md rounded-2xl shadow-md hover:shadow-lg transition-shadow"
-          >
-            <ShoppingCart className="w-6 h-6 text-white" />
-            {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-brand-accent text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
-          </button>
         </div>
       </div>
 
@@ -566,101 +634,174 @@ const HomePage: React.FC<HomePageProps> = ({
         )}
       </div>
 
-      {/* Categories */}
-      <div className="px-1 sm:px-3 md:px-4">
-        <div className="flex flex-col space-y-2">
-          {/* Product Categories */}
-          <div className="flex space-x-3 overflow-x-auto pb-2">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => {
-                  setSelectedCategory(category.id);
-                  setActiveTab(category.id === 'all' ? 'all' : 'terbaru'); // Sync tab dengan kategori
-                }}
-                className={`flex-shrink-0 flex items-center space-x-2 px-4 py-2 rounded-full transition-colors ${
-                  selectedCategory === category.id
-                    ? 'bg-pink-500 text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <span>{category.icon}</span>
-                <span className="text-sm font-medium">{category.name}</span>
-              </button>
-            ))}
+      {/* Categories - Segmented Control Premium */}
+      <div className="px-1 sm:px-3 md:px-4 mb-4">
+        <div className="bg-white rounded-2xl p-1.5 shadow-lg border border-gray-100">
+          <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
+            {categories.map((category) => {
+              const productCount = category.id === 'all' 
+                ? filteredProducts.length 
+                : filteredProducts.filter(p => p.category === category.id).length;
+              
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => {
+                    setSelectedCategory(category.id);
+                    setActiveTab(category.id === 'all' ? 'all' : 'terbaru');
+                  }}
+                  className={`
+                    flex-shrink-0 
+                    flex items-center space-x-2 
+                    px-4 py-2.5 
+                    rounded-xl 
+                    text-sm font-medium 
+                    transition-all duration-300
+                    ${selectedCategory === category.id
+                      ? 'bg-gradient-to-r from-brand-primary to-brand-info text-white shadow-md scale-105'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }
+                  `}
+                >
+                  <span className="text-lg">{category.icon}</span>
+                  <span>{category.name}</span>
+                  
+                  {/* Product count badge on active */}
+                  {selectedCategory === category.id && productCount > 0 && (
+                    <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">
+                      {productCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
+        </div>
+      </div>
+      
+      {/* Filters & Sort - Grouped Premium Chips */}
+      <div className="px-1 sm:px-3 md:px-4">
+        <div className="space-y-3 mb-4">
 
-          {/* Status and Sorting Filters - 1 Baris */}
-          <div className="flex space-x-3 overflow-x-auto pb-2">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`flex-shrink-0 flex items-center space-x-2 px-4 py-2 rounded-full transition-colors ${
-                statusFilter === 'all'
-                  ? 'bg-gray-700 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <span className="text-sm font-medium">Semua</span>
-            </button>
-
-            {/* Sorting Buttons */}
-            <button
-              onClick={() => setSortBy('terbaru')}
-              className={`flex-shrink-0 px-3 py-2 rounded-full text-sm font-medium transition-colors ${
-                sortBy === 'terbaru'
-                  ? 'bg-pink-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              Terbaru
-            </button>
-            <button
-              onClick={() => setSortBy('termurah')}
-              className={`flex-shrink-0 px-3 py-2 rounded-full text-sm font-medium transition-colors ${
-                sortBy === 'termurah'
-                  ? 'bg-pink-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              Termurah
-            </button>
-
-            <button
-              onClick={() => setStatusFilter('ready')}
-              className={`flex-shrink-0 flex items-center space-x-2 px-4 py-2 rounded-full transition-colors ${
-                statusFilter === 'ready'
-                  ? 'bg-green-500 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-green-300'
-              }`}
-            >
-              <span className="w-2 h-2 bg-current rounded-full"></span>
-              <span className="text-sm font-medium">Ready</span>
-            </button>
-            <button
-              onClick={() => setStatusFilter('po')}
-              className={`flex-shrink-0 flex items-center space-x-2 px-4 py-2 rounded-full transition-colors ${
-                statusFilter === 'po'
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-orange-300'
-              }`}
-            >
-              <span className="w-2 h-2 bg-current rounded-full"></span>
-              <span className="text-sm font-medium">PO</span>
-            </button>
+          {/* Sort Options - Premium Pills with Icons */}
+          <div className="flex items-center space-x-2 overflow-x-auto pb-2">
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide flex-shrink-0">
+              Urutkan
+            </span>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setSortBy('terbaru')}
+                className={`
+                  flex-shrink-0 px-4 py-2 
+                  rounded-xl 
+                  text-sm font-medium 
+                  transition-all duration-300
+                  ${sortBy === 'terbaru'
+                    ? 'bg-gradient-to-r from-brand-accent to-amber-500 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }
+                `}
+              >
+                🆕 Terbaru
+              </button>
+              <button
+                onClick={() => setSortBy('termurah')}
+                className={`
+                  flex-shrink-0 px-4 py-2 
+                  rounded-xl 
+                  text-sm font-medium 
+                  transition-all duration-300
+                  ${sortBy === 'termurah'
+                    ? 'bg-gradient-to-r from-brand-accent to-amber-500 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }
+                `}
+              >
+                💰 Termurah
+              </button>
+            </div>
+          </div>
+          
+          {/* Status Filter - Icon Pills with Pulse Dots */}
+          <div className="flex items-center space-x-2 overflow-x-auto pb-2">
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide flex-shrink-0">
+              Status
+            </span>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setStatusFilter('all')}
+                className={`
+                  flex-shrink-0 px-4 py-2 
+                  rounded-xl 
+                  text-sm font-medium 
+                  transition-all duration-300
+                  ${statusFilter === 'all'
+                    ? 'bg-gray-900 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }
+                `}
+              >
+                Semua
+              </button>
+              
+              <button
+                onClick={() => setStatusFilter('ready')}
+                className={`
+                  flex-shrink-0 flex items-center space-x-1.5
+                  px-4 py-2 
+                  rounded-xl 
+                  text-sm font-medium 
+                  transition-all duration-300
+                  ${statusFilter === 'ready'
+                    ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md'
+                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                  }
+                `}
+              >
+                <div className={`w-2 h-2 rounded-full ${
+                  statusFilter === 'ready' ? 'bg-white' : 'bg-emerald-500'
+                } animate-pulse`} />
+                <span>Ready Stock</span>
+              </button>
+              
+              <button
+                onClick={() => setStatusFilter('po')}
+                className={`
+                  flex-shrink-0 flex items-center space-x-1.5
+                  px-4 py-2 
+                  rounded-xl 
+                  text-sm font-medium 
+                  transition-all duration-300
+                  ${statusFilter === 'po'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md'
+                    : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
+                  }
+                `}
+              >
+                <div className={`w-2 h-2 rounded-full ${
+                  statusFilter === 'po' ? 'bg-white' : 'bg-amber-500'
+                } animate-pulse`} />
+                <span>Pre Order</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* All Products */}
+      {/* All Products - Premium Header */}
       <div className="px-1 sm:px-3 md:px-4">
-        <div className="flex flex-col space-y-2 mb-2 sm:mb-3">
-          <div className="flex items-center justify-between px-1 sm:px-0">
-            <h2 className="text-lg font-bold text-gray-800">
+        <div className="flex flex-col space-y-2 mb-3 sm:mb-4">
+          <div className="flex items-center justify-between px-1 sm:px-0 flex-wrap gap-2">
+            <h2 className="text-xl font-bold text-gray-900">
               {selectedCategory === 'all' ? 'Semua Produk' : categories.find(c => c.id === selectedCategory)?.name}
             </h2>
-            <div className="flex items-center text-sm text-gray-600">
-              <Filter className="w-4 h-4 mr-1" />
-              {filteredProducts.length} produk
+            
+            {/* Premium Product Count Badge */}
+            <div className="flex items-center space-x-2 px-3 py-1.5 bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 rounded-xl border border-brand-accent/20">
+              <div className="w-2 h-2 bg-brand-accent rounded-full animate-pulse" />
+              <span className="text-sm font-semibold text-brand-primary">
+                {filteredProducts.length} produk tersedia
+              </span>
             </div>
           </div>
 

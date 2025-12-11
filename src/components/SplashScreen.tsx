@@ -8,15 +8,15 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
-    // Start fade out after 1.5 seconds
+    // Start fade out after 2.5 seconds
     const fadeTimer = setTimeout(() => {
       setFadeOut(true);
-    }, 1500);
+    }, 2500);
 
-    // Complete and unmount after fade animation (2 seconds total)
+    // Complete and unmount after fade animation (3 seconds total)
     const completeTimer = setTimeout(() => {
       onComplete();
-    }, 2000);
+    }, 3000);
 
     return () => {
       clearTimeout(fadeTimer);
