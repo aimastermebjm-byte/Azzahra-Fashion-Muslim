@@ -169,6 +169,30 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
     }
   };
 
+  // ✨ NEW: Create test detection from order
+  const handleCreateTestDetection = async (order: any) => {
+    try {
+      showToast('🔄 Membuat test detection...', 'info');
+
+      const amount = order.exactPaymentAmount || order.finalTotal;
+      const senderName = order.shippingInfo?.name || order.userName || 'Test User';
+      
+      await paymentDetectionService.addMockDetection({
+        amount,
+        senderName,
+        bank: 'BRI',
+        timestamp: new Date().toISOString(),
+        rawText: `Test Detection - Transfer Rp ${amount.toLocaleString('id-ID')} dari ${senderName}`
+      });
+
+      showToast('✅ Test detection berhasil dibuat!', 'success');
+      await loadData();
+    } catch (error) {
+      console.error('Error creating test detection:', error);
+      showToast('Gagal membuat test detection', 'error');
+    }
+  };
+
   const handleInitializeSystem = async () => {
     try {
       setInitializing(true);
@@ -338,6 +362,47 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
           />
         </div>
       </div>
+
+      {/* ✨ NEW: Test Helper - Pending Orders with Auto Verification */}
+      {pendingOrders.filter(o => o.verificationMode === 'auto' && o.status === 'pending').length > 0 && (
+        <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-blue-200">
+          <div className="mb-2 flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-semibold text-blue-900">🧪 Test Helper - Orders Menunggu Pembayaran</h4>
+              <p className="text-xs text-blue-600">Klik "Test Match" untuk simulate transfer dari order ini</p>
+            </div>
+          </div>
+          <div className="space-y-2 mt-3">
+            {pendingOrders
+              .filter(o => o.verificationMode === 'auto' && o.status === 'pending')
+              .slice(0, 3)
+              .map(order => (
+                <div key={order.id} className="bg-white rounded-lg p-3 shadow-sm border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">#{order.id}</p>
+                      <p className="text-xs text-gray-600">{order.shippingInfo?.name || order.userName}</p>
+                      <p className="text-lg font-bold text-blue-600 mt-1">
+                        Rp {(order.exactPaymentAmount || order.finalTotal).toLocaleString('id-ID')}
+                      </p>
+                      {order.uniquePaymentCode && (
+                        <p className="text-xs text-green-600 mt-0.5">
+                          ✨ Kode Unik: {order.uniquePaymentCode}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleCreateTestDetection(order)}
+                      className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all whitespace-nowrap"
+                    >
+                      🧪 Test Match
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Detections List */}
       <div className="px-4 py-4 space-y-4">
