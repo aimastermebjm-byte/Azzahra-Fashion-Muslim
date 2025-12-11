@@ -4,6 +4,7 @@ import { AdminProvider } from './contexts/AdminContext';
 import { GlobalProductsProvider } from './hooks/useGlobalProducts';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './components/ToastProvider';
+import SplashScreen from './components/SplashScreen';
 
 // Cache busting version - force browser refresh
 const APP_VERSION = '2.1.0';
@@ -643,6 +644,30 @@ function AppContent() {
 }
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  // Check if splash already shown in this session
+  useEffect(() => {
+    const splashShown = sessionStorage.getItem('azzahra-splash-shown');
+    
+    if (splashShown === 'true') {
+      // Skip splash if already shown in this session
+      setShowSplash(false);
+    }
+  }, []);
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+    // Mark splash as shown for this session
+    sessionStorage.setItem('azzahra-splash-shown', 'true');
+  };
+
+  // Show splash screen
+  if (showSplash) {
+    return <SplashScreen onComplete={handleSplashComplete} />;
+  }
+
+  // Show main app after splash
   return (
     <AdminProvider>
       <GlobalProductsProvider>
