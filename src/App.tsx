@@ -345,6 +345,17 @@ function AppContent() {
       const calculatedShippingCost = orderData.shippingCost || 0;
       const calculatedFinalTotal = calculatedSubtotal + calculatedShippingCost;
 
+      // ✅ CRITICAL FIX: Use orderData.finalTotal if provided (includes unique code)
+      const finalTotalToUse = orderData.finalTotal || calculatedFinalTotal;
+
+      console.log('💰 FINAL TOTAL DEBUG:', {
+        calculatedFinalTotal,
+        orderDataFinalTotal: orderData.finalTotal,
+        finalTotalToUse,
+        hasUniqueCode: !!orderData.uniquePaymentCode,
+        uniqueCode: orderData.uniquePaymentCode
+      });
+
       // Clear cart from backend (after successful stock reduction)
       await cartServiceOptimized.clearCart();
 
@@ -374,9 +385,15 @@ function AppContent() {
         status: 'pending' as const,
         totalAmount: calculatedSubtotal,
         shippingCost: calculatedShippingCost,
-        finalTotal: calculatedFinalTotal,
+        // ✅ CRITICAL: Use finalTotal from CheckoutPage (includes unique code if auto mode)
+        finalTotal: finalTotalToUse,
         notes: orderData.notes || '',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        // ✨ NEW: Pass through unique payment code fields
+        verificationMode: orderData.verificationMode,
+        uniquePaymentCode: orderData.uniquePaymentCode,
+        exactPaymentAmount: orderData.exactPaymentAmount,
+        originalAmount: orderData.originalAmount
       };
 
       // Save to Firebase only - single source of truth
