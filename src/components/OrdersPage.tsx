@@ -50,10 +50,52 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   };
 
   // ✨ NEW: Handle "Bayar Sekarang" button
-  const handleBayarSekarang = () => {
+  const handleBayarSekarang = async () => {
     const selected = orders.filter(o => selectedOrderIds.includes(o.id));
     const subtotal = selected.reduce((sum, o) => sum + o.finalTotal, 0);
     
+    // ✅ CHECK: Apakah order pertama sudah punya paymentGroupId?
+    const firstOrder = selected[0];
+    let existingPaymentGroup = null;
+    
+    if (firstOrder?.paymentGroupId) {
+      try {
+        console.log('🔍 Checking existing payment group:', firstOrder.paymentGroupId);
+        
+        // Load existing payment group
+        existingPaymentGroup = await paymentGroupService.getPaymentGroup(firstOrder.paymentGroupId);
+        
+        if (existingPaymentGroup && existingPaymentGroup.status === 'pending') {
+          console.log('✅ Found existing payment group! Using existing code:', existingPaymentGroup.uniquePaymentCode);
+          showToast('💡 Menggunakan kode pembayaran yang sudah dibuat', 'info');
+          
+          // Go directly to instructions with existing payment group
+          setPaymentData({
+            orderIds: selectedOrderIds,
+            subtotal,
+            orders: selected,
+            paymentGroup: existingPaymentGroup
+          });
+          
+          if (existingPaymentGroup.verificationMode === 'auto') {
+            setShowInstructionsModal(true);
+          } else if (existingPaymentGroup.verificationMode === 'manual') {
+            setShowUploadModal(true);
+          } else {
+            // No mode selected yet, show method modal
+            setShowMethodModal(true);
+          }
+          
+          return; // Exit early - don't show method modal
+        } else {
+          console.log('⚠️ Payment group not found or already paid/cancelled');
+        }
+      } catch (error) {
+        console.error('❌ Error loading existing payment group:', error);
+      }
+    }
+    
+    // No existing payment group, show method selection
     setPaymentData({
       orderIds: selectedOrderIds,
       subtotal,
