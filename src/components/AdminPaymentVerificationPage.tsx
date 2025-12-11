@@ -84,9 +84,11 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
   const loadSettings = async () => {
     try {
       const loadedSettings = await paymentDetectionService.getSettings();
+      console.log('🔧 Settings loaded:', loadedSettings);
       setSettings(loadedSettings);
     } catch (error) {
       console.error('Error loading settings:', error);
+      setSettings(null);
     }
   };
 
@@ -349,30 +351,31 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
               Pembayaran yang terdeteksi akan muncul di sini
             </p>
             
-            {/* Initialize System Button */}
-            {settings === null && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 max-w-md mx-auto">
-                <div className="text-sm text-blue-700 mb-3">
-                  💡 System belum diinisialisasi. Klik tombol di bawah untuk setup awal & add mock data untuk testing.
-                </div>
-                <button
-                  onClick={handleInitializeSystem}
-                  disabled={initializing}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 mx-auto"
-                >
-                  {initializing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>Menginisialisasi...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>🚀 Initialize System</span>
-                    </>
-                  )}
-                </button>
+            {/* Initialize System Button - Always show in empty state for now */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 max-w-md mx-auto mt-4">
+              <div className="text-sm text-blue-700 mb-3">
+                💡 System belum diinisialisasi atau belum ada data. Klik tombol di bawah untuk setup awal & add mock data untuk testing.
               </div>
-            )}
+              <div className="text-xs text-gray-500 mb-2">
+                Debug: settings = {settings === null ? 'null' : JSON.stringify(settings)}
+              </div>
+              <button
+                onClick={handleInitializeSystem}
+                disabled={initializing}
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 mx-auto"
+              >
+                {initializing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>Menginisialisasi...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>🚀 Initialize System</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         ) : (
           filteredDetections.map((detection) => {
