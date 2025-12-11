@@ -42,11 +42,40 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg}'],
+        globPatterns: ['**/*.{js,css,ico,png,svg,jpg,jpeg}'], // 🔥 EXCLUDE HTML from precaching
         skipWaiting: true, // Force new SW to activate immediately
         clientsClaim: true, // Take control of all clients immediately
         cleanupOutdatedCaches: true, // Clean old caches
+        navigateFallback: 'index.html', // Fallback for navigation requests
+        navigateFallbackDenylist: [/^\/api/, /^\/clear-cache/], // Don't cache API and utility pages
         runtimeCaching: [
+          // 🔥 CRITICAL: Navigation requests must use NetworkFirst for auth to work
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages-cache',
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 5 // 5 minutes only
+              }
+            }
+          },
+          // 🔥 NEVER cache Firebase Auth API
+          {
+            urlPattern: /^https:\/\/.*\.firebaseapp\.com\/.*/i,
+            handler: 'NetworkOnly'
+          },
+          {
+            urlPattern: /^https:\/\/.*\.googleapis\.com\/identitytoolkit\/.*/i,
+            handler: 'NetworkOnly'
+          },
+          {
+            urlPattern: /^https:\/\/securetoken\.googleapis\.com\/.*/i,
+            handler: 'NetworkOnly'
+          },
+          // Firebase Storage images can be cached aggressively
           {
             urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',

@@ -447,11 +447,41 @@ function AppContent() {
   
   
   const renderCurrentPage = () => {
+    // Show loading while checking authentication
+    if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-brand-surface">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Memuat...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Force login if user is not authenticated (except for ongkir-test page)
+    if (!user && currentPage !== 'ongkir-test') {
+      return (
+        <LoginFormSimple
+          onSuccess={handleLoginWithUser}
+          onClose={() => {}} // Prevent closing without login
+          onShowRegister={() => {
+            setShowLogin(false);
+            setShowRegistration(true);
+          }}
+        />
+      );
+    }
+
     if (showLogin) {
       return (
         <LoginFormSimple
           onSuccess={handleLoginWithUser}
           onClose={() => setShowLogin(false)}
+          onShowRegister={() => {
+            setShowLogin(false);
+            setShowRegistration(true);
+          }}
         />
       );
     }
