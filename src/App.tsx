@@ -360,7 +360,7 @@ function AppContent() {
       await cartServiceOptimized.clearCart();
 
       // Create single order record for both admin system and Firebase sync
-      const orderRecord = {
+      const orderRecord: any = {
         id: orderId,
         userId: user.uid,
         userName: user.displayName || 'User',
@@ -388,13 +388,28 @@ function AppContent() {
         // ✅ CRITICAL: Use finalTotal from CheckoutPage (includes unique code if auto mode)
         finalTotal: finalTotalToUse,
         notes: orderData.notes || '',
-        timestamp: Date.now(),
-        // ✨ NEW: Pass through unique payment code fields
-        verificationMode: orderData.verificationMode,
-        uniquePaymentCode: orderData.uniquePaymentCode,
-        exactPaymentAmount: orderData.exactPaymentAmount,
-        originalAmount: orderData.originalAmount
+        timestamp: Date.now()
       };
+
+      // ✅ FIXED: Only add unique payment code fields if they exist (Firebase doesn't accept undefined)
+      if (orderData.verificationMode) {
+        orderRecord.verificationMode = orderData.verificationMode;
+      }
+      if (orderData.uniquePaymentCode !== undefined) {
+        orderRecord.uniquePaymentCode = orderData.uniquePaymentCode;
+      }
+      if (orderData.exactPaymentAmount !== undefined) {
+        orderRecord.exactPaymentAmount = orderData.exactPaymentAmount;
+      }
+      if (orderData.originalAmount !== undefined) {
+        orderRecord.originalAmount = orderData.originalAmount;
+      }
+      if (orderData.paymentGroupId) {
+        orderRecord.paymentGroupId = orderData.paymentGroupId;
+      }
+      if (orderData.groupPaymentAmount !== undefined) {
+        orderRecord.groupPaymentAmount = orderData.groupPaymentAmount;
+      }
 
       // Save to Firebase only - single source of truth
       const savedOrder = await ordersService.createOrder(orderRecord);
