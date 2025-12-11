@@ -112,12 +112,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
     const isReady = displayStatus === 'ready';
 
     return (
-      <div className={`flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg backdrop-blur-md shadow-md text-[10px] sm:text-xs font-semibold ${
+      <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 backdrop-blur-md shadow-sm text-[10px] sm:text-xs font-bold ${
         isReady 
           ? 'bg-emerald-500/95 text-white border border-emerald-400/50' 
           : 'bg-amber-500/95 text-white border border-amber-400/50'
       }`}>
-        {isReady ? '✓' : '⏱'} {isReady ? 'Ready' : 'PO'} · {totalStock}
+        {isReady ? 'Ready' : 'PO'} · {totalStock}
       </div>
     );
   };
