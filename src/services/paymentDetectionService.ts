@@ -174,7 +174,7 @@ class PaymentDetectionService {
   }
 
   // Get settings
-  async getSettings(): Promise<PaymentDetectionSettings> {
+  async getSettings(): Promise<PaymentDetectionSettings | null> {
     try {
       const settingsRef = doc(db, 'paymentDetectionSettings', 'config');
       const settingsDoc = await getDoc(settingsRef);
@@ -183,30 +183,12 @@ class PaymentDetectionService {
         return settingsDoc.data() as PaymentDetectionSettings;
       }
 
-      // Return default settings
-      return {
-        mode: 'semi-auto',
-        enabled: true,
-        autoConfirmThreshold: 90,
-        autoConfirmRules: {
-          exactAmountMatch: true,
-          nameSimilarity: 80,
-          maxOrderAge: 7200 // 2 hours
-        }
-      };
+      // Return null if settings don't exist yet (need initialization)
+      return null;
     } catch (error) {
       console.error('Error getting settings:', error);
-      // Return default settings on error
-      return {
-        mode: 'semi-auto',
-        enabled: true,
-        autoConfirmThreshold: 90,
-        autoConfirmRules: {
-          exactAmountMatch: true,
-          nameSimilarity: 80,
-          maxOrderAge: 7200
-        }
-      };
+      // Return null on error (will trigger initialize button)
+      return null;
     }
   }
 

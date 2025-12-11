@@ -172,20 +172,18 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
       setInitializing(true);
       showToast('🔄 Menginisialisasi system...', 'info');
 
-      // 1. Create default settings if not exists
-      if (!settings || !settings.mode) {
-        await paymentDetectionService.updateSettings({
-          mode: 'semi-auto',
-          enabled: true,
-          autoConfirmThreshold: 90,
-          autoConfirmRules: {
-            exactAmountMatch: true,
-            nameSimilarity: 80,
-            maxOrderAge: 7200
-          }
-        });
-        showToast('✅ Settings created', 'success');
-      }
+      // 1. Create default settings
+      await paymentDetectionService.updateSettings({
+        mode: 'semi-auto',
+        enabled: true,
+        autoConfirmThreshold: 90,
+        autoConfirmRules: {
+          exactAmountMatch: true,
+          nameSimilarity: 80,
+          maxOrderAge: 7200
+        }
+      });
+      showToast('✅ Settings created', 'success');
 
       // 2. Add mock payment detections
       const mockDetections = [
@@ -352,7 +350,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
             </p>
             
             {/* Initialize System Button */}
-            {!settings?.mode && (
+            {settings === null && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 max-w-md mx-auto">
                 <div className="text-sm text-blue-700 mb-3">
                   💡 System belum diinisialisasi. Klik tombol di bawah untuk setup awal & add mock data untuk testing.
