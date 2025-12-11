@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Search, ShoppingCart, User, Filter, Star, ArrowUpDown, RefreshCw } from 'lucide-react';
+import { Search, ShoppingCart, User, Filter, Star, ArrowUpDown, MessageCircle } from 'lucide-react';
 import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
@@ -403,13 +403,13 @@ const HomePage: React.FC<HomePageProps> = ({
               className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white/90 text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-accent"
             />
           </div>
-          {/* Tombol Refresh untuk force update cross-device sync */}
+          {/* Tombol WhatsApp untuk hubungi admin */}
           <button
-            onClick={onRefreshProducts}
-            className="p-3 bg-white/20 backdrop-blur-md rounded-2xl shadow-md hover:shadow-lg transition-shadow"
-            title="Refresh produk"
+            onClick={() => window.open('https://wa.me/6281952989904?text=Halo%20Admin%20Azzahra%20Fashion%2C%20saya%20ingin%20bertanya', '_blank')}
+            className="p-3 bg-green-500/90 backdrop-blur-md rounded-2xl shadow-md hover:shadow-lg hover:bg-green-600/90 transition-all"
+            title="Hubungi Admin via WhatsApp"
           >
-            <RefreshCw className="w-5 h-5 text-white" />
+            <MessageCircle className="w-5 h-5 text-white" />
           </button>
           <button
             onClick={onCartClick}
