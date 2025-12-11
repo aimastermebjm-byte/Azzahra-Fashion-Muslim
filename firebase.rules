@@ -137,5 +137,19 @@ service cloud.firestore {
     match /paymentDetectionSettings/{settingId} {
       allow read, write: if isAdminOrOwner();
     }
+
+    // Payment Groups - Users can create/read their own, Admin can read/write all
+    match /paymentGroups/{groupId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.userId || 
+        isAdminOrOwner()
+      );
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+      allow update: if isSignedIn() && (
+        request.auth.uid == resource.data.userId || 
+        isAdminOrOwner()
+      );
+      allow delete: if isAdminOrOwner();
+    }
   }
 }
