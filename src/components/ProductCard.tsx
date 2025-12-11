@@ -188,15 +188,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <>
       <div
-        className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 ${
+        className={`bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 ${
           isFeatured ? 'ring-2 ring-yellow-400' : ''
         }`}
       >
-        <div className="relative aspect-[4/5] bg-gray-50 overflow-hidden">
+        <div className="relative aspect-square bg-white overflow-hidden">
           <img
             src={product.image || product.images?.[0] || '/placeholder-product.jpg'}
             alt={product.name}
-            className="w-full h-full object-contain mix-blend-multiply hover:scale-105 transition-transform duration-500 ease-out p-2"
+            className="w-full h-full object-cover hover:scale-110 transition-transform duration-500 ease-out"
             onClick={handleImageClick}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
@@ -211,48 +211,48 @@ const ProductCard: React.FC<ProductCardProps> = ({
           />
 
           {/* Status Badge - Back to Top Left */}
-          <div className="absolute top-2 left-2">
+          <div className="absolute top-1 left-1 sm:top-1.5 sm:left-1.5">
             {getStatusBadge()}
           </div>
 
         {/* Zoom Button */}
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={handleImageZoom}
               type="button"
-              className="bg-black bg-opacity-60 text-white p-1.5 rounded-full hover:bg-opacity-80 transition-all shadow-lg"
+              className="bg-black bg-opacity-60 text-white p-1 sm:p-1.5 rounded-full hover:bg-opacity-80 transition-all shadow-lg"
               title="Klik untuk zoom (Shift+Klik gambar)"
               aria-label="Zoom gambar"
             >
-              <ZoomIn className="w-4 h-4" />
+              <ZoomIn className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
           </div>
 
           {/* Featured Product Star - Moved to Top Right */}
           {isFeatured && (
-            <div className="absolute top-12 right-2 bg-yellow-400 text-white p-1.5 rounded-full shadow-lg">
-              <Star className="w-4 h-4 fill-current" />
+            <div className="absolute top-8 right-1 sm:top-10 sm:right-1.5 bg-yellow-400 text-white p-1 sm:p-1.5 rounded-full shadow-lg">
+              <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
             </div>
           )}
-          <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute bottom-1 right-1 sm:bottom-1.5 sm:right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={handleAddToCart}
-              className="bg-pink-500 text-white p-2 rounded-full hover:bg-pink-600 transition-colors shadow-lg"
+              className="bg-pink-500 text-white p-1.5 sm:p-2 rounded-full hover:bg-pink-600 transition-colors shadow-lg"
               type="button"
               aria-label="Tambah ke keranjang"
               title="Tambah ke keranjang"
             >
-              <ShoppingCart className="w-4 h-4" />
+              <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
           </div>
 
-          {/* Zoom Hint */}
-          <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Zoom Hint - Hide on mobile */}
+          <div className="absolute bottom-1 left-1 sm:bottom-1.5 sm:left-1.5 bg-black bg-opacity-60 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block">
             Shift+Klik untuk zoom
           </div>
         </div>
 
-        <div className="p-2.5 sm:p-3 md:p-4">
+        <div className="p-2 sm:p-2.5 md:p-3">
           <h3 className="font-semibold text-sm sm:text-base text-gray-800 mb-2 sm:mb-3 line-clamp-2 group-hover:text-pink-600 transition-colors">
             {product.name}
           </h3>
