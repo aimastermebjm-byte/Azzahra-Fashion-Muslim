@@ -28,11 +28,14 @@ export interface PaymentGroup {
   originalTotal: number;           // Sum of all order finalTotals
   uniquePaymentCode: number;       // 2-digit unique code (10-99)
   exactPaymentAmount: number;      // originalTotal + uniquePaymentCode
-  verificationMode: 'auto' | 'manual';
-  status: 'pending' | 'paid' | 'cancelled' | 'expired';
+  verificationMode: 'auto' | 'manual' | null;  // null = pending_selection
+  originalMode?: 'auto' | 'manual'; // Track original choice (for mode switching)
+  status: 'pending_selection' | 'pending' | 'paid' | 'cancelled' | 'expired';
   createdAt: any;                  // Firestore Timestamp
+  updatedAt?: any;                 // Firestore Timestamp
   paidAt?: any;                    // Firestore Timestamp
   expiresAt: any;                  // Firestore Timestamp (48 hours from creation)
+  modeSwitchedAt?: any;            // Track when mode was switched
 }
 
 class PaymentGroupService {
@@ -184,6 +187,24 @@ class PaymentGroupService {
       console.log('✅ Payment group marked as paid:', groupId);
     } catch (error) {
       console.error('❌ Error marking payment group as paid:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update payment group (for mode switching, status changes, etc.)
+   */
+  async updatePaymentGroup(groupId: string, updates: Partial<PaymentGroup>): Promise<void> {
+    try {
+      const docRef = doc(db, this.COLLECTION, groupId);
+      await updateDoc(docRef, {
+        ...updates,
+        updatedAt: serverTimestamp()
+      });
+
+      console.log('✅ Payment group updated:', groupId, updates);
+    } catch (error) {
+      console.error('❌ Error updating payment group:', error);
       throw error;
     }
   }
