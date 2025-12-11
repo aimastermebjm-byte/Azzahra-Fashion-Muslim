@@ -112,7 +112,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     const isReady = displayStatus === 'ready';
 
     return (
-      <div className={`flex items-center gap-1 px-2.5 py-1 rounded-lg backdrop-blur-md shadow-md text-xs font-semibold ${
+      <div className={`flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg backdrop-blur-md shadow-md text-[10px] sm:text-xs font-semibold ${
         isReady 
           ? 'bg-emerald-500/95 text-white border border-emerald-400/50' 
           : 'bg-amber-500/95 text-white border border-amber-400/50'
@@ -131,14 +131,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
       return (
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
-            <span className="text-lg font-bold text-red-600">
+            <span className="text-base sm:text-lg font-bold text-red-600">
               Rp {product.flashSalePrice.toLocaleString('id-ID')}
             </span>
-            <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded">
+            <span className="bg-red-100 text-red-600 text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
               -{Math.round((1 - product.flashSalePrice / (product.originalRetailPrice || product.retailPrice)) * 100)}%
             </span>
           </div>
-          <div className="text-sm text-gray-500 line-through">
+          <div className="text-xs sm:text-sm text-gray-500 line-through">
             Rp {(product.originalRetailPrice || product.retailPrice).toLocaleString('id-ID')}
           </div>
         </div>
@@ -147,18 +147,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
     
     return (
       <div className="space-y-1 relative">
-        <div className="text-lg font-bold text-pink-600">
+        <div className="text-base sm:text-lg font-bold text-pink-600">
           Rp {product.retailPrice.toLocaleString('id-ID')}
         </div>
         <div className="relative">
           {user?.role === 'reseller' ? (
-            <div className="text-sm text-pink-600">
+            <div className="text-xs sm:text-sm text-pink-600">
               Reseller: Rp {product.resellerPrice.toLocaleString('id-ID')}
             </div>
           ) : (
             <button
               onClick={handleResellerClick}
-              className="text-sm text-pink-600 hover:text-pink-700 font-medium transition-colors flex items-center space-x-1"
+              className="text-xs sm:text-sm text-pink-600 hover:text-pink-700 font-medium transition-colors flex items-center space-x-1"
             >
               <span>Reseller: Rp {product.resellerPrice.toLocaleString('id-ID')}</span>
               <ChevronUp className={`w-3 h-3 transition-transform ${showResellerMenu ? 'rotate-180' : ''}`} />
@@ -252,8 +252,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         </div>
 
-        <div className="p-4">
-          <h3 className="font-semibold text-gray-800 mb-3 line-clamp-2 group-hover:text-pink-600 transition-colors">
+        <div className="p-2.5 sm:p-3 md:p-4">
+          <h3 className="font-semibold text-sm sm:text-base text-gray-800 mb-2 sm:mb-3 line-clamp-2 group-hover:text-pink-600 transition-colors">
             {product.name}
           </h3>
 
