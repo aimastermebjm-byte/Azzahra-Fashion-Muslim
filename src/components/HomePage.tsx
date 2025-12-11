@@ -431,7 +431,7 @@ const HomePage: React.FC<HomePageProps> = ({
       </div>
 
       {/* Flash Sale Section */}
-      <div className="px-2 sm:px-3 md:px-4 mb-4 sm:mb-6">
+      <div className="px-1 sm:px-3 md:px-4 mb-3 sm:mb-6">
         <div className="bg-brand-gradient rounded-2xl p-5 text-white shadow-brand-card relative overflow-hidden">
           {/* Premium animated background pattern */}
           <div className="absolute inset-0 opacity-10">
@@ -524,15 +524,15 @@ const HomePage: React.FC<HomePageProps> = ({
           {/* Flash Sale Countdown Display removed - using top section only */}
 
       {/* Featured Products */}
-      <div className="px-2 sm:px-3 md:px-4 mb-4 sm:mb-6">
-        <div className="flex items-center space-x-2 mb-2 sm:mb-3">
+      <div className="px-1 sm:px-3 md:px-4 mb-3 sm:mb-6">
+        <div className="flex items-center space-x-2 mb-2 px-1 sm:px-0">
           <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500 fill-current" />
           <h2 className="text-base sm:text-lg font-bold text-gray-800">Produk Unggulan</h2>
         </div>
 
         {/* Loading skeleton for featured products */}
         {loading ? (
-          <div className="grid grid-cols-2 gap-1 sm:gap-2 md:gap-3">
+          <div className="grid grid-cols-2 gap-0.5 sm:gap-2 md:gap-3">
             {[...Array(2)].map((_, index) => (
               <div key={`skeleton-${index}`} className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="w-full h-48 bg-gray-200 animate-pulse"></div>
@@ -545,7 +545,7 @@ const HomePage: React.FC<HomePageProps> = ({
             ))}
           </div>
         ) : featuredProducts.length > 0 ? (
-          <div className="grid grid-cols-2 gap-1 sm:gap-2 md:gap-3">
+          <div className="grid grid-cols-2 gap-0.5 sm:gap-2 md:gap-3">
             {featuredProducts.map((product) => (
               <ProductCard
                 key={`featured-${product.id}`}
@@ -567,7 +567,7 @@ const HomePage: React.FC<HomePageProps> = ({
       </div>
 
       {/* Categories */}
-      <div className="px-2 sm:px-3 md:px-4">
+      <div className="px-1 sm:px-3 md:px-4">
         <div className="flex flex-col space-y-2">
           {/* Product Categories */}
           <div className="flex space-x-3 overflow-x-auto pb-2">
@@ -652,9 +652,9 @@ const HomePage: React.FC<HomePageProps> = ({
       </div>
 
       {/* All Products */}
-      <div className="px-2 sm:px-3 md:px-4">
+      <div className="px-1 sm:px-3 md:px-4">
         <div className="flex flex-col space-y-2 mb-2 sm:mb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between px-1 sm:px-0">
             <h2 className="text-lg font-bold text-gray-800">
               {selectedCategory === 'all' ? 'Semua Produk' : categories.find(c => c.id === selectedCategory)?.name}
             </h2>
@@ -689,7 +689,7 @@ const HomePage: React.FC<HomePageProps> = ({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-1 sm:gap-2 md:grid-cols-3 md:gap-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-0.5 sm:gap-2 md:grid-cols-3 md:gap-3 lg:grid-cols-4">
               {currentProducts.map((product) => (
                 <ProductCard
                   key={product.id}
