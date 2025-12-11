@@ -30,6 +30,10 @@ export interface Order {
   uniquePaymentCode?: number;          // 2-digit code (10-99) for auto verification
   exactPaymentAmount?: number;         // finalTotal + uniquePaymentCode
   originalAmount?: number;             // Store original finalTotal for reference
+  
+  // ✨ NEW: Payment Group System (for batch payments)
+  paymentGroupId?: string;             // Reference to payment group (if part of batch payment)
+  groupPaymentAmount?: number;         // Total amount for the payment group
 }
 
 class OrdersService {

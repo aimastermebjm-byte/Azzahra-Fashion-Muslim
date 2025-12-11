@@ -9,7 +9,8 @@ import EmptyState from './ui/EmptyState';
 import { CardSkeleton, ListSkeleton } from './ui/Skeleton';
 import { useToast } from './ToastProvider';
 import { financialService, PaymentMethod } from '../services/financialService';
-import { generateUniquePaymentCode, calculateExactAmount } from '../utils/uniqueCodeGenerator';
+// ✅ SIMPLIFIED: No longer needed at checkout
+// Unique code generation moved to OrdersPage when customer is ready to pay
 
 interface CheckoutPageProps {
   user: any;
@@ -380,12 +381,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     shippingCost: 0,
     shippingService: '',
     shippingETD: '',
-    notes: '',
-    verificationMode: 'auto' as 'auto' | 'manual' // ✨ NEW: Default to auto
+    notes: ''
   });
-
-  // ✨ NEW: Generate unique code once for preview (will be regenerated on submit)
-  const [previewUniqueCode] = useState(() => generateUniquePaymentCode());
 
   const shippingOptions = [
     { id: 'jnt', name: 'J&T Express', code: 'jnt', price: 0 }, // RajaOngkir supported
@@ -652,26 +649,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       return;
     }
 
-    // ✨ Check if payment method supports auto verification (only Transfer Bank)
-    const isTransferBank = selectedPaymentMethod.name.toLowerCase().includes('transfer') || 
-                          selectedPaymentMethod.name.toLowerCase().includes('bank');
-    
-    // ✨ Use the SAME unique code shown in preview (not generate new one!)
-    const shouldUseUniqueCode = formData.verificationMode === 'auto' && isTransferBank;
-    const uniqueCode = shouldUseUniqueCode ? previewUniqueCode : undefined;
-    const exactAmount = uniqueCode ? calculateExactAmount(finalTotal, uniqueCode) : undefined;
-
-    // ✅ DEBUG: Log values before order creation
-    console.log('🔍 ORDER CREATION DEBUG:', {
-      shouldUseUniqueCode,
-      isTransferBank,
-      verificationMode: formData.verificationMode,
-      paymentMethod: selectedPaymentMethod.name,
-      finalTotal,
-      uniqueCode,
-      exactAmount,
-      willUseAmount: exactAmount || finalTotal
-    });
+    // ✅ SIMPLIFIED: No unique code at checkout
+    // Unique code will be generated when customer decides to pay
 
     const orderData = {
       items: cartItems.map(item => ({
@@ -702,17 +681,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       paymentMethodName: selectedPaymentMethod.name,
       totalAmount: totalPrice,
       shippingCost: shippingFee,
-      // ✅ CRITICAL FIX: finalTotal MUST be exactAmount for auto mode
-      finalTotal: exactAmount || finalTotal,
-      // ✨ NEW: Unique payment code fields (only if auto mode + transfer bank)
-      verificationMode: shouldUseUniqueCode ? 'auto' : 'manual',
-      uniquePaymentCode: uniqueCode,
-      exactPaymentAmount: exactAmount,
-      originalAmount: finalTotal
+      finalTotal: finalTotal
+      // ✅ SIMPLIFIED: No unique code fields
+      // These will be added when customer generates payment in OrdersPage
     };
-
-    // ✅ DEBUG: Log final orderData
-    console.log('📦 ORDER DATA:', orderData);
 
     // Create order and get order ID (pass cartItems to eliminate duplicate read)
     const newOrderId = clearCart(orderData, cartItems);
@@ -733,12 +705,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const finalTotal = totalPrice + shippingFee;
   const cartCount = cartItems?.length || 0;
 
-  // ✨ Calculate display total (includes unique code if auto mode + transfer bank)
-  const isTransferBankSelected = selectedPaymentMethod && 
-    (selectedPaymentMethod.name.toLowerCase().includes('transfer') || 
-     selectedPaymentMethod.name.toLowerCase().includes('bank'));
-  const shouldShowUniqueCode = formData.verificationMode === 'auto' && isTransferBankSelected;
-  const displayTotal = shouldShowUniqueCode ? finalTotal + previewUniqueCode : finalTotal;
+  // ✅ SIMPLIFIED: Just show finalTotal (no unique code)
+  const displayTotal = finalTotal;
 
   // Check if selected courier supports automatic shipping calculation
   const selectedCourierOption = shippingOptions.find(opt => opt.id === formData.shippingCourier);
@@ -1085,86 +1053,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           )}
         </div>
 
-        {/* ✨ NEW: Payment Verification Mode - Only show if payment method is Transfer Bank */}
-        {selectedPaymentMethod && (selectedPaymentMethod.name.toLowerCase().includes('transfer') || selectedPaymentMethod.name.toLowerCase().includes('bank')) && (
-          <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
-            <h3 className="text-lg font-semibold text-slate-900 mb-3">Metode Verifikasi Pembayaran</h3>
-            
-            <div className="space-y-3">
-              {/* Auto Verification (Default for Transfer Bank) */}
-              <label className={`flex gap-3 rounded-xl border-2 p-4 transition cursor-pointer ${formData.verificationMode === 'auto' ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-white hover:border-green-300'}`}>
-                <input
-                  type="radio"
-                  name="verificationMode"
-                  value="auto"
-                  checked={formData.verificationMode === 'auto'}
-                  onChange={handleInputChange}
-                  className="mt-1 h-4 w-4 border-slate-300 text-green-600 focus:ring-green-500"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-bold text-slate-900">✨ Verifikasi Otomatis</span>
-                    <span className="px-2 py-0.5 bg-green-600 text-white text-xs font-semibold rounded-full">Rekomendasi</span>
-                  </div>
-                  <ul className="text-xs text-slate-600 space-y-0.5 mb-2">
-                    <li>✓ Pembayaran langsung terverifikasi (1-2 menit)</li>
-                    <li>✓ Tidak perlu upload bukti transfer</li>
-                  <li>✓ Proses pesanan lebih cepat</li>
-                </ul>
-                
-                {formData.verificationMode === 'auto' && (
-                  <div className="mt-3 pt-3 border-t border-green-200">
-                    <p className="text-xs font-semibold text-green-800 mb-2">💰 Total yang harus ditransfer (contoh):</p>
-                    <div className="mb-1">
-                      <span className="text-3xl font-bold text-green-900">
-                        Rp {(finalTotal + previewUniqueCode).toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 mb-2">
-                      = Rp {finalTotal.toLocaleString('id-ID')} + kode unik {previewUniqueCode}
-                    </p>
-                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2">
-                      ⚠️ <strong>PENTING:</strong> Transfer PERSIS angka lengkap di atas (contoh: 428036, bukan 428.000). Kode unik final akan dibuat saat checkout!
-                    </p>
-                  </div>
-                )}
-              </div>
-            </label>
-
-            {/* Manual Verification */}
-            <label className={`flex gap-3 rounded-xl border p-4 transition cursor-pointer ${formData.verificationMode === 'manual' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
-              <input
-                type="radio"
-                name="verificationMode"
-                value="manual"
-                checked={formData.verificationMode === 'manual'}
-                onChange={handleInputChange}
-                className="mt-1 h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-semibold text-slate-900">📸 Verifikasi Manual</span>
-                </div>
-                <ul className="text-xs text-slate-600 space-y-0.5">
-                  <li>• Upload bukti transfer setelah bayar</li>
-                  <li>• Verifikasi dalam 1-2 jam (saat jam kerja)</li>
-                  <li>• Transfer nominal bisa dibulatkan</li>
-                </ul>
-                
-                {formData.verificationMode === 'manual' && (
-                  <div className="mt-3 pt-3 border-t border-blue-200">
-                    <p className="text-xs font-semibold text-blue-800 mb-1">💰 Total pembayaran:</p>
-                    <span className="text-2xl font-bold text-blue-900">
-                      Rp {finalTotal.toLocaleString('id-ID')}
-                    </span>
-                    <p className="text-xs text-slate-600 mt-1">(Boleh dibulatkan)</p>
-                  </div>
-                )}
-              </div>
-            </label>
-          </div>
-        </div>
-        )}
+        {/* ✅ SIMPLIFIED: No verification mode selection at checkout */}
+        {/* Customers will choose auto/manual when ready to pay in OrdersPage */}
 
         {/* Additional Options */}
         <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
