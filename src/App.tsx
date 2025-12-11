@@ -446,6 +446,10 @@ function AppContent() {
     setCurrentPage('admin-master');
   };
 
+  const handleNavigateToAdminPaymentVerification = () => {
+    setCurrentPage('admin-payment-verification');
+  };
+
   
   
   const renderCurrentPage = () => {
