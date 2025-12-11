@@ -652,13 +652,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       return;
     }
 
-    // ✨ Generate unique payment code if auto verification mode
-    const uniqueCode = formData.verificationMode === 'auto' 
-      ? generateUniquePaymentCode() 
-      : undefined;
-    const exactAmount = uniqueCode 
-      ? calculateExactAmount(finalTotal, uniqueCode) 
-      : undefined;
+    // ✨ Check if payment method supports auto verification (only Transfer Bank)
+    const isTransferBank = selectedPaymentMethod.name.toLowerCase().includes('transfer') || 
+                          selectedPaymentMethod.name.toLowerCase().includes('bank');
+    
+    // ✨ Generate unique payment code if auto verification mode AND payment method is transfer bank
+    const shouldUseUniqueCode = formData.verificationMode === 'auto' && isTransferBank;
+    const uniqueCode = shouldUseUniqueCode ? generateUniquePaymentCode() : undefined;
+    const exactAmount = uniqueCode ? calculateExactAmount(finalTotal, uniqueCode) : undefined;
 
     const orderData = {
       items: cartItems.map(item => ({
@@ -689,9 +690,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       paymentMethodName: selectedPaymentMethod.name,
       totalAmount: totalPrice,
       shippingCost: shippingFee,
-      finalTotal: finalTotal,
-      // ✨ NEW: Unique payment code fields (only if auto mode)
-      verificationMode: formData.verificationMode,
+      // ✅ FIX: finalTotal should be exactAmount for auto mode with unique code
+      finalTotal: exactAmount || finalTotal,
+      // ✨ NEW: Unique payment code fields (only if auto mode + transfer bank)
+      verificationMode: shouldUseUniqueCode ? 'auto' : 'manual',
       uniquePaymentCode: uniqueCode,
       exactPaymentAmount: exactAmount,
       originalAmount: finalTotal
@@ -1061,45 +1063,46 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           )}
         </div>
 
-        {/* ✨ NEW: Payment Verification Mode */}
-        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-900 mb-3">Metode Verifikasi Pembayaran</h3>
-          
-          <div className="space-y-3">
-            {/* Auto Verification (Default) */}
-            <label className={`flex gap-3 rounded-xl border-2 p-4 transition cursor-pointer ${formData.verificationMode === 'auto' ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-white hover:border-green-300'}`}>
-              <input
-                type="radio"
-                name="verificationMode"
-                value="auto"
-                checked={formData.verificationMode === 'auto'}
-                onChange={handleInputChange}
-                className="mt-1 h-4 w-4 border-slate-300 text-green-600 focus:ring-green-500"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-bold text-slate-900">✨ Verifikasi Otomatis</span>
-                  <span className="px-2 py-0.5 bg-green-600 text-white text-xs font-semibold rounded-full">Rekomendasi</span>
-                </div>
-                <ul className="text-xs text-slate-600 space-y-0.5 mb-2">
-                  <li>✓ Pembayaran langsung terverifikasi (1-2 menit)</li>
-                  <li>✓ Tidak perlu upload bukti transfer</li>
+        {/* ✨ NEW: Payment Verification Mode - Only show if payment method is Transfer Bank */}
+        {selectedPaymentMethod && (selectedPaymentMethod.name.toLowerCase().includes('transfer') || selectedPaymentMethod.name.toLowerCase().includes('bank')) && (
+          <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+            <h3 className="text-lg font-semibold text-slate-900 mb-3">Metode Verifikasi Pembayaran</h3>
+            
+            <div className="space-y-3">
+              {/* Auto Verification (Default for Transfer Bank) */}
+              <label className={`flex gap-3 rounded-xl border-2 p-4 transition cursor-pointer ${formData.verificationMode === 'auto' ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-white hover:border-green-300'}`}>
+                <input
+                  type="radio"
+                  name="verificationMode"
+                  value="auto"
+                  checked={formData.verificationMode === 'auto'}
+                  onChange={handleInputChange}
+                  className="mt-1 h-4 w-4 border-slate-300 text-green-600 focus:ring-green-500"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-bold text-slate-900">✨ Verifikasi Otomatis</span>
+                    <span className="px-2 py-0.5 bg-green-600 text-white text-xs font-semibold rounded-full">Rekomendasi</span>
+                  </div>
+                  <ul className="text-xs text-slate-600 space-y-0.5 mb-2">
+                    <li>✓ Pembayaran langsung terverifikasi (1-2 menit)</li>
+                    <li>✓ Tidak perlu upload bukti transfer</li>
                   <li>✓ Proses pesanan lebih cepat</li>
                 </ul>
                 
                 {formData.verificationMode === 'auto' && (
                   <div className="mt-3 pt-3 border-t border-green-200">
                     <p className="text-xs font-semibold text-green-800 mb-2">💰 Total yang harus ditransfer (contoh):</p>
-                    <div className="flex items-baseline gap-1 mb-1">
-                      <span className="text-2xl font-bold text-green-900">
-                        Rp {Math.floor(finalTotal).toLocaleString('id-ID')}
-                      </span>
-                      <span className="text-2xl font-bold text-green-600">
-                        .{String(previewUniqueCode).padStart(2, '0')}
+                    <div className="mb-1">
+                      <span className="text-3xl font-bold text-green-900">
+                        Rp {(finalTotal + previewUniqueCode).toLocaleString('id-ID')}
                       </span>
                     </div>
+                    <p className="text-xs text-slate-600 mb-2">
+                      = Rp {finalTotal.toLocaleString('id-ID')} + kode unik {previewUniqueCode}
+                    </p>
                     <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2">
-                      ⚠️ <strong>PENTING:</strong> Transfer PERSIS dengan 2 angka di belakang titik. Angka unik akan dibuat saat checkout & ditampilkan di halaman konfirmasi!
+                      ⚠️ <strong>PENTING:</strong> Transfer PERSIS angka lengkap di atas (contoh: 428036, bukan 428.000). Kode unik final akan dibuat saat checkout!
                     </p>
                   </div>
                 )}
@@ -1139,6 +1142,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
             </label>
           </div>
         </div>
+        )}
 
         {/* Additional Options */}
         <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
