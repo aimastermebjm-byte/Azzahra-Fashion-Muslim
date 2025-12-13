@@ -629,6 +629,7 @@ class ReportsService {
     endDate?: string;
     page?: number;
     limit?: number;
+    searchQuery?: string; // New parameter for searching by name or phone
   } = {}): Promise<{
     buyers: ProductBuyerReport[];
     totalCount: number;
@@ -678,10 +679,20 @@ class ReportsService {
         purchaseDate: transaction.date
       }));
 
+      // Apply search filter if provided
+      let filteredBuyers = allBuyers;
+      if (filters.searchQuery && filters.searchQuery.trim()) {
+        const query = filters.searchQuery.toLowerCase().trim();
+        filteredBuyers = allBuyers.filter(buyer => 
+          buyer.customerName.toLowerCase().includes(query) ||
+          buyer.customerPhone.includes(query)
+        );
+      }
+
       // Apply pagination
-      const totalCount = allBuyers.length;
+      const totalCount = filteredBuyers.length;
       const totalPages = Math.ceil(totalCount / limit);
-      const buyers = allBuyers.slice(offset, offset + limit);
+      const buyers = filteredBuyers.slice(offset, offset + limit);
 
       return {
         buyers,

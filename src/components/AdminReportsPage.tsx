@@ -104,6 +104,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [buyersTotalPages, setBuyersTotalPages] = useState(1);
   const [buyersTotalCount, setBuyersTotalCount] = useState(0);
   const [showBuyersModal, setShowBuyersModal] = useState(false);
+  const [buyerSearchQuery, setBuyerSearchQuery] = useState('');
+  const [searchTimeoutId, setSearchTimeoutId] = useState<NodeJS.Timeout | null>(null);
 
   // Calculate date range based on filter
   const getDateRange = useMemo(() => {
@@ -418,7 +420,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   }, [reportType]); // OPTIMIZED: Only reload when reportType changes, not filters
 
   // Load product buyers with pagination
-  const loadProductBuyers = async (product: ProductReport, page: number = 1) => {
+  const loadProductBuyers = async (product: ProductReport, page: number = 1, searchQuery?: string) => {
     setLoadingBuyers(true);
     try {
       const { start, end } = getDateRange;
@@ -426,7 +428,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
         startDate: start,
         endDate: end,
         page,
-        limit: 20
+        limit: 20,
+        searchQuery
       });
       
       setProductBuyers(result.buyers);
@@ -457,12 +460,38 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     setBuyersPage(1);
     setBuyersTotalPages(1);
     setBuyersTotalCount(0);
+    setBuyerSearchQuery(''); // Reset search query when modal closes
+    // Clear any pending search timeout
+    if (searchTimeoutId) {
+      clearTimeout(searchTimeoutId);
+      setSearchTimeoutId(null);
+    }
+  };
+
+  // Handle search query change with debouncing
+  const handleBuyerSearchChange = (query: string) => {
+    setBuyerSearchQuery(query);
+    
+    // Clear previous timeout
+    if (searchTimeoutId) {
+      clearTimeout(searchTimeoutId);
+    }
+    
+    // Set new timeout for debounced search
+    const timeoutId = setTimeout(() => {
+      if (selectedProduct) {
+        setBuyersPage(1); // Reset to first page when searching
+        loadProductBuyers(selectedProduct, 1, query);
+      }
+    }, 300); // 300ms debounce
+    
+    setSearchTimeoutId(timeoutId);
   };
 
   // Handle pagination for buyers
   const handleBuyersPageChange = (newPage: number) => {
     if (selectedProduct) {
-      loadProductBuyers(selectedProduct, newPage);
+      loadProductBuyers(selectedProduct, newPage, buyerSearchQuery);
     }
   };
 
@@ -1450,13 +1479,16 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-4xl max-h-[80vh] overflow-hidden">
             <div className="p-6 border-b">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
                     Pembeli Produk: {selectedProduct.name}
                   </h3>
                   <p className="text-sm text-gray-500">
-                    Total Pembeli: {buyersTotalCount} orang
+                    {buyerSearchQuery ? 
+                      `Ditemukan: ${buyersTotalCount} pembeli (filter: "${buyerSearchQuery}")` : 
+                      `Total Pembeli: ${buyersTotalCount} orang`
+                    }
                   </p>
                 </div>
                 <button
@@ -1465,6 +1497,28 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 >
                   <XCircle className="w-6 h-6" />
                 </button>
+              </div>
+              
+              {/* Search input */}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  value={buyerSearchQuery}
+                  onChange={(e) => handleBuyerSearchChange(e.target.value)}
+                  placeholder="Cari berdasarkan nama atau nomor telepon..."
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+                {buyerSearchQuery && (
+                  <button
+                    onClick={() => handleBuyerSearchChange('')}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    <XCircle className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1476,7 +1530,20 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 </div>
               ) : productBuyers.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Tidak ada pembeli untuk produk ini</p>
+                  <p className="text-gray-500">
+                    {buyerSearchQuery ? 
+                      `Tidak ada pembeli yang cocok dengan "${buyerSearchQuery}"` : 
+                      'Tidak ada pembeli untuk produk ini'
+                    }
+                  </p>
+                  {buyerSearchQuery && (
+                    <button
+                      onClick={() => handleBuyerSearchChange('')}
+                      className="mt-2 text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      Hapus filter
+                    </button>
+                  )}
                 </div>
               ) : (
                 <>
@@ -1523,7 +1590,10 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   {buyersTotalPages > 1 && (
                     <div className="flex justify-between items-center mt-4">
                       <div className="text-sm text-gray-700">
-                        Menampilkan {productBuyers.length} dari {buyersTotalCount} pembeli
+                        {buyerSearchQuery ? 
+                          `Menampilkan ${productBuyers.length} dari ${buyersTotalCount} pembeli (filter: "${buyerSearchQuery}")` :
+                          `Menampilkan ${productBuyers.length} dari ${buyersTotalCount} pembeli`
+                        }
                       </div>
                       <div className="flex gap-2">
                         <button
