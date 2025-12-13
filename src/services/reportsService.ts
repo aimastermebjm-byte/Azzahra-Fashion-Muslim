@@ -277,7 +277,9 @@ class ReportsService {
 
       transactions.forEach(transaction => {
         transaction.items.forEach(item => {
+          // Use consistent key for both maps - prioritize productId when available
           const key = item.productId || item.name;
+          
           if (!key) {
             return;
           }
@@ -308,7 +310,7 @@ class ReportsService {
             }
           } else {
             aggregatedProducts.set(key, {
-              id: key,
+              id: key, // Use same key for lookup
               name: item.name || key,
               category: 'other',
               totalSold: item.quantity,
@@ -340,13 +342,13 @@ class ReportsService {
         const inventory = inventoryById.get(product.id) || (normalizedName ? inventoryByName.get(normalizedName) : undefined);
 
         // For the buyer count, we need to look up using the product id itself
-        // since the aggregatedProducts map uses the product.id as key
-        // This should match the key used in productBuyers map
-        const buyerCount = productBuyers.get(product.id)?.size || 0;
+        // Since we changed the key strategy, we need to match the new format
+        const lookupKey = product.id.startsWith('id_') ? product.id : `name_${product.name}`;
+        const buyerCount = productBuyers.get(lookupKey)?.size || 0;
         
         // Debug log for specific products
         if (product.name && product.name.toLowerCase().includes('test')) {
-          console.log('Debug - Final product:', product.name, 'ID:', product.id, 'Buyer count:', buyerCount);
+          console.log('Debug - Final product:', product.name, 'ID:', product.id, 'LookupKey:', lookupKey, 'Buyer count:', buyerCount);
         }
         
         return {
