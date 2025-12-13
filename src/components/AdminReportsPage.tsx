@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
-import ReportsService, { ProductBuyerSummary } from '../services/reportsService';
+import ReportsService from '../services/reportsService';
 import { financialService, PaymentMethod } from '../services/financialService';
 import { productCategoryService, ProductCategory } from '../services/productCategoryService';
 import {
@@ -107,15 +107,6 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [buyerSearchQuery, setBuyerSearchQuery] = useState('');
   const [searchTimeoutId, setSearchTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [isFilterActive, setIsFilterActive] = useState(false);
-  
-  // Modal rekap pembeli states
-  const [showRekapModal, setShowRekapModal] = useState(false);
-  const [selectedRekapProduct, setSelectedRekapProduct] = useState<ProductReport | null>(null);
-  const [rekapData, setRekapData] = useState<ProductBuyerSummary | null>(null);
-  const [loadingRekap, setLoadingRekap] = useState(false);
-  
-  // Filter status untuk laporan produk
-  const [productStatusFilter, setProductStatusFilter] = useState<'all' | 'lunas' | 'belum_lunas'>('all');
 
   // Calculate date range based on filter
   const getDateRange = useMemo(() => {
@@ -460,45 +451,6 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     setBuyersPage(1); // Reset to first page
     setShowBuyersModal(true);
     loadProductBuyers(product, 1);
-  };
-
-  // Open rekap modal
-  const openRekapModal = async (product: ProductReport) => {
-    setSelectedRekapProduct(product);
-    setLoadingRekap(true);
-    setShowRekapModal(true);
-    
-    try {
-      const { start, end } = getDateRange;
-      const summaryData = await ReportsService.getProductBuyersSummary(product.id, {
-        startDate: start,
-        endDate: end,
-        status: productStatusFilter
-      });
-      
-      setRekapData(summaryData);
-    } catch (error) {
-      console.error('Error loading rekap data:', error);
-      // Tampilkan data kosong jika error
-      setRekapData({
-        productId: product.id,
-        productName: product.name,
-        buyers: [],
-        totalBuyers: 0,
-        totalQuantity: 0,
-        totalAmount: 0
-      });
-    } finally {
-      setLoadingRekap(false);
-    }
-  };
-
-  // Close rekap modal
-  const closeRekapModal = () => {
-    setShowRekapModal(false);
-    setSelectedRekapProduct(null);
-    setRekapData(null);
-    setLoadingRekap(false);
   };
 
   // Close buyers modal
@@ -916,17 +868,6 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   <option key={cat.id} value={cat.name}>{cat.name}</option>
                 ))}
               </select>
-
-              <label className="text-xs uppercase tracking-wide text-white/70 mb-2 mt-3 block">Status Penjualan</label>
-              <select
-                value={productStatusFilter}
-                onChange={(e) => setProductStatusFilter(e.target.value as any)}
-                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-white/50"
-              >
-                <option value="all">Semua Status</option>
-                <option value="lunas">Lunas</option>
-                <option value="belum_lunas">Belum Lunas</option>
-              </select>
             </div>
           )}
 
@@ -1161,16 +1102,9 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                           <td className="px-4 py-3 text-sm text-gray-900">
                             <button
                               onClick={() => openBuyersModal(product)}
-                              className="text-blue-600 hover:text-blue-800 font-medium text-sm mr-2"
+                              className="text-blue-600 hover:text-blue-800 font-medium text-sm"
                             >
                               Lihat Pembeli
-                            </button>
-                            <button
-                              onClick={() => openRekapModal(product)}
-                              className="text-green-600 hover:text-green-800 font-medium text-sm"
-                              title="Lihat rekap semua pembeli"
-                            >
-                              Rekap
                             </button>
                           </td>
                         </tr>
@@ -1703,106 +1637,6 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
         </div>
       )}
     </div>
-
-    {/* Rekap Pembeli Modal */}
-    {showRekapModal && selectedRekapProduct && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg w-full max-w-5xl max-h-[80vh] overflow-hidden">
-          <div className="p-6 border-b">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Rekap Pembeli: {selectedRekapProduct.name}
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Total Pembeli: {rekapData?.totalBuyers || 0} orang | Total Qty: {rekapData?.totalQuantity || 0} pcs
-                </p>
-              </div>
-              <button
-                onClick={closeRekapModal}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <XCircle className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-
-          <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 200px)' }}>
-            {loadingRekap ? (
-              <div className="flex justify-center items-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-blue-600 mb-4"></div>
-                <p className="text-gray-600 font-medium">Memuat data rekap...</p>
-              </div>
-            ) : !rekapData || rekapData.buyers.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">Tidak ada pembeli untuk produk ini</p>
-              </div>
-            ) : (
-              <>
-                <div className="overflow-x-auto">
-                  <table className="w-full table-auto">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Pembeli</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">No. HP</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Qty</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Belanja</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jumlah Beli</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terakhir Beli</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {rekapData.buyers.map((buyer, index) => (
-                        <tr key={`${buyer.customerName}-${buyer.customerPhone}`} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm text-gray-500">
-                            {index + 1}
-                          </td>
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                            {buyer.customerName}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-500">
-                            {buyer.customerPhone}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {buyer.totalQuantity} pcs
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {formatCurrency(buyer.totalAmount)}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {buyer.purchaseCount} kali
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-500">
-                            {buyer.lastPurchaseDate}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Summary Info */}
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="card-elevated p-4 text-center">
-                    <p className="text-sm text-gray-500">Total Pembeli</p>
-                    <p className="text-lg font-bold text-brand-primary">{rekapData.totalBuyers} orang</p>
-                  </div>
-                  <div className="card-elevated p-4 text-center">
-                    <p className="text-sm text-gray-500">Total Terjual</p>
-                    <p className="text-lg font-bold text-brand-success">{rekapData.totalQuantity} pcs</p>
-                  </div>
-                  <div className="card-elevated p-4 text-center">
-                    <p className="text-sm text-gray-500">Total Penjualan</p>
-                    <p className="text-lg font-bold text-gray-900">{formatCurrency(rekapData.totalAmount)}</p>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    )}
   );
 };
 
