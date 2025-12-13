@@ -4,7 +4,7 @@ import {
   Download, Calendar, BarChart3, PieChart, TrendingUp, TrendingDown, Package, Users,
   FileText, DollarSign, Truck, Filter, Eye, CheckCircle, XCircle,
   ShoppingCart, ArrowUpRight, ArrowDownRight, Box, Wallet, PiggyBank,
-  CreditCard, Search, ChevronDown
+  CreditCard, Search, ChevronDown, User
 } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
