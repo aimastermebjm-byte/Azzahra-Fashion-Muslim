@@ -288,6 +288,11 @@ class ReportsService {
           }
           const buyerKey = `${transaction.customer}_${transaction.phone}`;
           productBuyers.get(key)!.add(buyerKey);
+          
+          // Debug log for specific products
+          if (item.name && item.name.toLowerCase().includes('test')) {
+            console.log('Debug - Processing item:', item.name, 'Key:', key, 'Buyer:', transaction.customer, 'Buyers for this key:', productBuyers.get(key)?.size);
+          }
 
           const profitContribution = (item.total || 0) - (item.modalTotal ?? ((item.modal || 0) * (item.quantity || 0)));
           const existing = aggregatedProducts.get(key);
@@ -338,6 +343,11 @@ class ReportsService {
         // since the aggregatedProducts map uses the product.id as key
         // This should match the key used in productBuyers map
         const buyerCount = productBuyers.get(product.id)?.size || 0;
+        
+        // Debug log for specific products
+        if (product.name && product.name.toLowerCase().includes('test')) {
+          console.log('Debug - Final product:', product.name, 'ID:', product.id, 'Buyer count:', buyerCount);
+        }
         
         return {
           ...product,
