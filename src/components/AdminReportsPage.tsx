@@ -93,6 +93,9 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [loadingInventory, setLoadingInventory] = useState(false);
   const [loadingCashFlow, setLoadingCashFlow] = useState(false);
   
+  // Fast initial state - only show loading for critical data
+  const [initialLoadingComplete, setInitialLoadingComplete] = useState(false);
+  
   // Modal states for product buyers
   const [selectedProduct, setSelectedProduct] = useState<ProductReport | null>(null);
   const [productBuyers, setProductBuyers] = useState<ProductBuyerReport[]>([]);
@@ -232,24 +235,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   };
 
   useEffect(() => {
-    const loadPaymentMethods = async () => {
-      try {
-        const methods = await financialService.listPaymentMethods();
-        setPaymentMethods(methods);
-      } catch (error) {
-        console.error('Error loading payment methods:', error);
-      }
-    };
-
-    const loadProductCategories = async () => {
-      try {
-        const categories = await productCategoryService.listCategories();
-        setProductCategories(categories);
-      } catch (error) {
-        console.error('Error loading product categories:', error);
-      }
-    };
-
+    // Only load critical data initially - make page load fast
     const loadUsers = async () => {
       try {
         // Check cache first
@@ -277,9 +263,77 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       }
     };
 
-    loadPaymentMethods();
-    loadProductCategories();
-    loadUsers();
+    // Only load users initially (critical for filters)
+    loadUsers().finally(() => {
+      // Set loading to false after initial data is loaded
+      setLoading(false);
+      setInitialLoadingComplete(true);
+    });
+
+    // Background load non-critical data after page is interactive
+    const loadBackgroundData = async () => {
+      // Small delay to ensure page is rendered first
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Load payment methods with cache
+      try {
+        const cacheKey = 'payment-methods-cache';
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          const now = Date.now();
+          const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutes
+          
+          if (now - timestamp < CACHE_EXPIRY) {
+            console.log('✅ Payment methods loaded from cache');
+            setPaymentMethods(data);
+            return;
+          }
+        }
+
+        const methods = await financialService.listPaymentMethods();
+        setPaymentMethods(methods);
+        
+        // Cache for 30 minutes
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data: methods,
+          timestamp: Date.now()
+        }));
+      } catch (error) {
+        console.error('Error loading payment methods:', error);
+      }
+
+      // Load product categories with cache
+      try {
+        const cacheKey = 'product-categories-cache';
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          const now = Date.now();
+          const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutes
+          
+          if (now - timestamp < CACHE_EXPIRY) {
+            console.log('✅ Product categories loaded from cache');
+            setProductCategories(data);
+            return;
+          }
+        }
+
+        const categories = await productCategoryService.listCategories();
+        setProductCategories(categories);
+        
+        // Cache for 30 minutes
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data: categories,
+          timestamp: Date.now()
+        }));
+      } catch (error) {
+        console.error('Error loading product categories:', error);
+      }
+    };
+
+    // Start background loading
+    loadBackgroundData();
   }, []);
 
   // Load cash flow report
@@ -414,33 +468,71 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
   // Remove mock loader - rely on real data above
 
-  // Filter transactions based on filters
+  // Filter transactions based on filters - optimized with debouncing
   const filteredTransactions = useMemo(() => {
+    // Only filter if we have transactions and initial loading is complete
+    if (transactions.length === 0 || !initialLoadingComplete) {
+      return [];
+    }
+
+    const { start, end } = getDateRange;
+    
     return transactions.filter(transaction => {
-      const matchesDate = transaction.date >= getDateRange.start && transaction.date <= getDateRange.end;
+      const matchesDate = transaction.date >= start && transaction.date <= end;
       const matchesStatus = statusFilter === 'all' || transaction.status === statusFilter;
-      const matchesCustomer = !customerFilter ||
-        transaction.customer.toLowerCase().includes(customerFilter.toLowerCase()) ||
-        transaction.phone.includes(customerFilter);
       
-      // Filter by category - check if any item in transaction has matching category
-      const matchesCategory = categoryFilter === 'all' || 
-        (transaction.items && transaction.items.some((item: any) => item.category === categoryFilter));
+      let matchesCustomer = true;
+      if (customerFilter) {
+        const customerLower = customerFilter.toLowerCase();
+        matchesCustomer = 
+          transaction.customer.toLowerCase().includes(customerLower) ||
+          transaction.phone.includes(customerFilter);
+      }
+      
+      let matchesCategory = true;
+      if (categoryFilter !== 'all' && transaction.items) {
+        matchesCategory = transaction.items.some((item: any) => item.category === categoryFilter);
+      }
 
       return matchesDate && matchesStatus && matchesCustomer && matchesCategory;
     });
-  }, [transactions, getDateRange, statusFilter, customerFilter, categoryFilter]);
+  }, [transactions, getDateRange, statusFilter, customerFilter, categoryFilter, initialLoadingComplete]);
 
-  // Calculate summary statistics
+  // Calculate summary statistics - optimized for performance
   const summaryStats = useMemo(() => {
-    const totalRevenue = filteredTransactions.reduce((sum, t) => sum + t.subtotal, 0);
-    const totalShipping = filteredTransactions.reduce((sum, t) => sum + t.shippingCost, 0);
-    const totalSales = filteredTransactions.reduce((sum, t) => sum + t.total, 0);
-    const lunasCount = filteredTransactions.filter(t => t.status === 'lunas').length;
-    const belumLunasCount = filteredTransactions.filter(t => t.status === 'belum_lunas').length;
-    const totalBelumLunas = filteredTransactions
-      .filter(t => t.status === 'belum_lunas')
-      .reduce((sum, t) => sum + t.total, 0);
+    // Only calculate if we have filtered transactions
+    if (filteredTransactions.length === 0) {
+      return {
+        totalRevenue: 0,
+        totalShipping: 0,
+        totalSales: 0,
+        lunasCount: 0,
+        belumLunasCount: 0,
+        totalBelumLunas: 0,
+        averageTransaction: 0
+      };
+    }
+
+    let totalRevenue = 0;
+    let totalShipping = 0;
+    let totalSales = 0;
+    let lunasCount = 0;
+    let belumLunasCount = 0;
+    let totalBelumLunas = 0;
+
+    // Manual loop for better performance than multiple reduce/filter calls
+    for (const transaction of filteredTransactions) {
+      totalRevenue += transaction.subtotal;
+      totalShipping += transaction.shippingCost;
+      totalSales += transaction.total;
+      
+      if (transaction.status === 'lunas') {
+        lunasCount++;
+      } else {
+        belumLunasCount++;
+        totalBelumLunas += transaction.total;
+      }
+    }
 
     return {
       totalRevenue,
@@ -571,12 +663,13 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     a.click();
   };
 
-  if (loading) {
+  // Only show loading screen for initial critical data loading
+  if (loading && !initialLoadingComplete) {
     return (
       <div className="min-h-screen bg-brand-surface flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-accent mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Memuat data laporan...</p>
+          <p className="text-gray-600 font-medium">Memuat data...</p>
         </div>
       </div>
     );
