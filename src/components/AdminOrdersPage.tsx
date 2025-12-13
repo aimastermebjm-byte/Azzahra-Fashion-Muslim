@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Clock, CheckCircle, Truck, XCircle, Eye, Search, Filter, Calendar, Download, X, Upload, CreditCard, MapPin, Phone, Mail, Edit2, Check, User, AlertTriangle, Info, Trash2 } from 'lucide-react';
+import { Package, Clock, CheckCircle, Truck, XCircle, Eye, Search, Filter, Calendar, Download, X, Upload, CreditCard, MapPin, Phone, Mail, Edit2, Check, User, AlertTriangle, Info, Trash2, Copy, ArrowLeft } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { useFirebaseAdminOrders } from '../hooks/useFirebaseAdminOrders';
 import { ordersService } from '../services/ordersService';
+import { paymentGroupService } from '../services/paymentGroupService';
 
 interface AdminOrdersPageProps {
   onBack: () => void;
@@ -31,6 +32,14 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState<any>(null);
+
+  // ✨ NEW: Payment assistance state (for Owner to help customer)
+  const [showPaymentAssistModal, setShowPaymentAssistModal] = useState(false);
+  const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
+  const [showAutoInstructionsModal, setShowAutoInstructionsModal] = useState(false);
+  const [showManualUploadModal, setShowManualUploadModal] = useState(false);
+  const [assistPaymentData, setAssistPaymentData] = useState<any>(null);
+  const [assistPaymentProof, setAssistPaymentProof] = useState<File | null>(null);
 
   // Modern confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -331,6 +340,119 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   const handleUploadPaymentProof = (order: any) => {
     setSelectedOrderForUpload(order);
     setShowUploadModal(true);
+  };
+
+  // ✨ NEW: Payment Assistance Handlers (Owner helps customer)
+  const handlePaymentAssist = async (order: any) => {
+    // Check if order already has payment group
+    if (order.paymentGroupId) {
+      try {
+        const existingGroup = await paymentGroupService.getPaymentGroup(order.paymentGroupId);
+        
+        if (existingGroup && existingGroup.status === 'pending') {
+          // Reuse existing payment group
+          setAssistPaymentData({
+            order,
+            paymentGroup: existingGroup
+          });
+          
+          if (existingGroup.verificationMode === 'auto') {
+            setShowAutoInstructionsModal(true);
+          } else if (existingGroup.verificationMode === 'manual') {
+            setShowManualUploadModal(true);
+          } else {
+            setShowPaymentMethodModal(true);
+          }
+          return;
+        }
+      } catch (error) {
+        console.error('Error loading existing payment group:', error);
+      }
+    }
+    
+    // No existing payment group, show method selection
+    setAssistPaymentData({ order, paymentGroup: null });
+    setShowPaymentMethodModal(true);
+  };
+
+  const handleAssistChooseMethod = async (mode: 'auto' | 'manual') => {
+    try {
+      if (mode === 'auto') {
+        // Create payment group for this single order
+        const paymentGroup = await paymentGroupService.createPaymentGroup({
+          userId: assistPaymentData.order.userId,
+          userName: assistPaymentData.order.userName,
+          userEmail: assistPaymentData.order.userEmail,
+          orderIds: [assistPaymentData.order.id],
+          originalTotal: assistPaymentData.order.finalTotal,
+          verificationMode: 'auto'
+        });
+        
+        // Update order with payment group
+        await ordersService.updateOrder(assistPaymentData.order.id, {
+          paymentGroupId: paymentGroup.id,
+          groupPaymentAmount: paymentGroup.exactPaymentAmount,
+          verificationMode: 'auto'
+        });
+        
+        setAssistPaymentData({
+          ...assistPaymentData,
+          paymentGroup
+        });
+        
+        setShowPaymentMethodModal(false);
+        setShowAutoInstructionsModal(true);
+        showModernAlert('Berhasil', 'Instruksi pembayaran otomatis telah dibuat', 'success');
+      } else {
+        // Manual mode - go to upload
+        setAssistPaymentData({
+          ...assistPaymentData,
+          verificationMode: 'manual'
+        });
+        
+        setShowPaymentMethodModal(false);
+        setShowManualUploadModal(true);
+      }
+    } catch (error) {
+      console.error('Error creating payment assistance:', error);
+      showModernAlert('Error', 'Gagal membuat bantuan pembayaran', 'error');
+    }
+  };
+
+  const handleAssistCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    showModernAlert('Tersalin', `${label} berhasil disalin!`, 'success');
+  };
+
+  const handleAssistFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setAssistPaymentProof(e.target.files[0]);
+    }
+  };
+
+  const handleAssistSubmitManualPayment = async () => {
+    if (!assistPaymentProof) {
+      showModernAlert('Error', 'Pilih bukti transfer terlebih dahulu', 'error');
+      return;
+    }
+
+    try {
+      // Upload payment proof for the order
+      await ordersService.updateOrderPayment(
+        assistPaymentData.order.id,
+        assistPaymentProof,
+        'awaiting_verification'
+      );
+
+      setShowManualUploadModal(false);
+      setAssistPaymentData(null);
+      setAssistPaymentProof(null);
+      
+      showModernAlert('Berhasil', 'Bukti pembayaran berhasil diupload untuk customer', 'success');
+    } catch (error) {
+      console.error('Error submitting manual payment:', error);
+      showModernAlert('Error', 'Gagal mengupload bukti pembayaran', 'error');
+    }
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -979,6 +1101,19 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                 >
                   Tutup
                 </button>
+                {/* ✨ NEW: Payment Assistance Button (Owner only, pending orders) */}
+                {selectedOrder.status === 'pending' && user?.role === 'owner' && (
+                  <button
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      handlePaymentAssist(selectedOrder);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors flex items-center space-x-2"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span>Bantu Pembayaran</span>
+                  </button>
+                )}
                 {(selectedOrder.status === 'pending' || selectedOrder.status === 'awaiting_verification') && user?.role === 'owner' && (
                   <button
                     onClick={() => {
@@ -1334,6 +1469,328 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                 className="px-5 py-2.5 bg-brand-primary text-white rounded-xl font-medium hover:bg-brand-primary/90 transition-all hover:shadow-lg"
               >
                 Simpan Perubahan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✨ NEW: Payment Assistance - Method Selection Modal */}
+      {showPaymentMethodModal && assistPaymentData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="bg-gradient-to-r from-pink-500 to-pink-600 p-4 rounded-t-2xl">
+              <h2 className="text-xl font-bold text-white text-center">
+                💳 Pilih Metode Pembayaran
+              </h2>
+              <p className="text-sm text-white/90 text-center mt-1">
+                Pesanan #{assistPaymentData.order.id} - Rp {assistPaymentData.order.finalTotal.toLocaleString('id-ID')}
+              </p>
+            </div>
+
+            <div className="p-4 space-y-3">
+              <button
+                onClick={() => handleAssistChooseMethod('auto')}
+                className="w-full text-left border-2 border-green-500 rounded-xl p-4 hover:shadow-lg transition-all bg-gradient-to-br from-green-50 to-emerald-50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Check className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base font-bold text-gray-900">✨ Verifikasi Otomatis</h3>
+                    <p className="text-sm text-gray-700 mt-0.5">
+                      Generate kode unik untuk customer
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => handleAssistChooseMethod('manual')}
+                className="w-full text-left border-2 border-gray-300 rounded-xl p-4 hover:border-blue-500 hover:shadow-lg transition-all bg-white"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Upload className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base font-bold text-gray-900">📸 Verifikasi Manual</h3>
+                    <p className="text-sm text-gray-700 mt-0.5">
+                      Upload bukti transfer untuk customer
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowPaymentMethodModal(false);
+                  setAssistPaymentData(null);
+                }}
+                className="w-full px-4 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✨ NEW: Payment Assistance - Auto Instructions Modal */}
+      {showAutoInstructionsModal && assistPaymentData?.paymentGroup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => {
+                    setShowAutoInstructionsModal(false);
+                    setShowPaymentMethodModal(true);
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-full transition-all"
+                >
+                  <ArrowLeft className="w-5 h-5 text-white" />
+                </button>
+                <h2 className="text-lg font-bold text-white flex-1 text-center">
+                  ✨ Kode Pembayaran Otomatis
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowAutoInstructionsModal(false);
+                    setAssistPaymentData(null);
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-full transition-all"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div className="bg-amber-50 border border-amber-300 rounded-lg p-3">
+                <p className="text-xs font-bold text-amber-900">
+                  ⚠️ Beritahu customer untuk transfer PERSIS sesuai nominal
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border-2 border-green-300 text-center">
+                <p className="text-xs font-semibold text-green-800 mb-2">Total Transfer:</p>
+                <p className="text-4xl font-bold text-green-900 mb-2">
+                  Rp {assistPaymentData.paymentGroup.exactPaymentAmount.toLocaleString('id-ID')}
+                </p>
+                <p className="text-xs text-green-700 mb-3">
+                  Rp {assistPaymentData.paymentGroup.originalTotal.toLocaleString('id-ID')} + <span className="font-mono font-bold">{assistPaymentData.paymentGroup.uniquePaymentCode}</span> (kode unik)
+                </p>
+                <button
+                  onClick={() => handleAssistCopy(assistPaymentData.paymentGroup.exactPaymentAmount.toString(), 'Nominal')}
+                  className="w-full px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <Copy className="w-4 h-4" />
+                  Copy Nominal
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
+                
+                <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-blue-700 font-medium">🏦 BCA - Fahrin</p>
+                    <p className="text-base font-bold text-blue-900 font-mono">0511456494</p>
+                  </div>
+                  <button
+                    onClick={() => handleAssistCopy('0511456494', 'Nomor rekening BCA')}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="border border-cyan-200 rounded-lg p-3 bg-cyan-50 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-cyan-700 font-medium">🏦 BRI - Fahrin</p>
+                    <p className="text-base font-bold text-cyan-900 font-mono">066301000115566</p>
+                  </div>
+                  <button
+                    onClick={() => handleAssistCopy('066301000115566', 'Nomor rekening BRI')}
+                    className="px-3 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-all"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="border border-yellow-200 rounded-lg p-3 bg-yellow-50 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-yellow-700 font-medium">🏦 Mandiri - Fahrin</p>
+                    <p className="text-base font-bold text-yellow-900 font-mono">310011008896</p>
+                  </div>
+                  <button
+                    onClick={() => handleAssistCopy('310011008896', 'Nomor rekening Mandiri')}
+                    className="px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-all"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                <p className="text-xs text-blue-900">
+                  Beritahu customer untuk transfer sesuai nominal + kode unik, verifikasi otomatis dalam 1-5 menit
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowAutoInstructionsModal(false);
+                  setAssistPaymentData(null);
+                }}
+                className="w-full px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all"
+              >
+                Selesai
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✨ NEW: Payment Assistance - Manual Upload Modal */}
+      {showManualUploadModal && assistPaymentData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => {
+                    setShowManualUploadModal(false);
+                    setShowPaymentMethodModal(true);
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-full transition-all"
+                >
+                  <ArrowLeft className="w-5 h-5 text-white" />
+                </button>
+                <h2 className="text-lg font-bold text-white flex-1 text-center">
+                  📸 Upload untuk Customer
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowManualUploadModal(false);
+                    setAssistPaymentData(null);
+                    setAssistPaymentProof(null);
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-full transition-all"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200 text-center">
+                <p className="text-xs font-semibold text-blue-800 mb-2">Total Transfer:</p>
+                <p className="text-3xl font-bold text-blue-900 mb-3">
+                  Rp {assistPaymentData.order.finalTotal.toLocaleString('id-ID')}
+                </p>
+                <button
+                  onClick={() => handleAssistCopy(assistPaymentData.order.finalTotal.toString(), 'Nominal')}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 mx-auto"
+                >
+                  <Copy className="w-4 h-4" />
+                  Copy Nominal
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
+                
+                <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-blue-700 font-medium">🏦 BCA - Fahrin</p>
+                    <p className="text-base font-bold text-blue-900 font-mono">0511456494</p>
+                  </div>
+                  <button
+                    onClick={() => handleAssistCopy('0511456494', 'Nomor rekening BCA')}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="border border-cyan-200 rounded-lg p-3 bg-cyan-50 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-cyan-700 font-medium">🏦 BRI - Fahrin</p>
+                    <p className="text-base font-bold text-cyan-900 font-mono">066301000115566</p>
+                  </div>
+                  <button
+                    onClick={() => handleAssistCopy('066301000115566', 'Nomor rekening BRI')}
+                    className="px-3 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-all"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="border border-yellow-200 rounded-lg p-3 bg-yellow-50 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-yellow-700 font-medium">🏦 Mandiri - Fahrin</p>
+                    <p className="text-base font-bold text-yellow-900 font-mono">310011008896</p>
+                  </div>
+                  <button
+                    onClick={() => handleAssistCopy('310011008896', 'Nomor rekening Mandiri')}
+                    className="px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-all"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block">
+                  <span className="text-xs font-semibold text-gray-900 mb-2 block">
+                    Upload Bukti Transfer (dari Customer):
+                  </span>
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-pink-500 transition-all cursor-pointer bg-gray-50">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAssistFileChange}
+                      className="hidden"
+                      id="assist-payment-proof-upload"
+                    />
+                    <label htmlFor="assist-payment-proof-upload" className="cursor-pointer block text-center">
+                      <Upload className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm font-medium text-gray-700">
+                        {assistPaymentProof ? assistPaymentProof.name : 'Klik untuk pilih gambar'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        PNG, JPG, atau JPEG (max 5MB)
+                      </p>
+                    </label>
+                  </div>
+                </label>
+
+                {assistPaymentProof && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-2 mt-2">
+                    <p className="text-xs text-green-700 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Siap upload: {assistPaymentProof.name}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                <p className="text-xs text-blue-900">
+                  Upload bukti transfer dari customer, verifikasi dalam 1-24 jam
+                </p>
+              </div>
+
+              <button
+                onClick={handleAssistSubmitManualPayment}
+                disabled={!assistPaymentProof}
+                className="w-full px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Upload className="w-5 h-5" />
+                Kirim Bukti Transfer
               </button>
             </div>
           </div>
