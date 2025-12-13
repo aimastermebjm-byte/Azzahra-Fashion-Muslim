@@ -519,85 +519,35 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         </div>
       )}
 
-      {/* ✨ Phase 2: Beautiful Payment Method Modal */}
+      {/* ✨ Simplified Payment Method Modal */}
       {showMethodModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full">
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
-              <h2 className="text-2xl font-bold text-gray-900 text-center">
+            <div className="bg-gradient-to-r from-pink-500 to-pink-600 p-4 rounded-t-2xl">
+              <h2 className="text-xl font-bold text-white text-center">
                 💳 Pilih Metode Pembayaran
               </h2>
-              <p className="text-sm text-gray-600 text-center mt-2">
-                Pilih cara verifikasi pembayaran Anda
+              <p className="text-sm text-white/90 text-center mt-1">
+                Total: Rp {paymentData?.subtotal.toLocaleString('id-ID')}
               </p>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* Orders Summary */}
-              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200">
-                <p className="text-sm font-semibold text-blue-900 mb-3">
-                  📦 Pesanan Yang Akan Dibayar:
-                </p>
-                <div className="space-y-2 mb-3 max-h-32 overflow-y-auto">
-                  {paymentData?.orders.map((order: any) => (
-                    <div key={order.id} className="flex justify-between items-center text-sm">
-                      <span className="text-blue-700">#{order.id.substring(0, 12)}...</span>
-                      <span className="font-semibold text-blue-900">
-                        Rp {order.finalTotal.toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="pt-3 border-t border-blue-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-blue-900">Total:</span>
-                    <span className="text-xl font-bold text-blue-900">
-                      Rp {paymentData?.subtotal.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
+            <div className="p-4 space-y-3">
               {/* Auto Verification Option */}
               <button
                 onClick={() => handleChooseMethod('auto')}
-                className="w-full text-left border-2 border-green-500 rounded-xl p-5 hover:shadow-lg transition-all bg-gradient-to-br from-green-50 to-emerald-50"
+                className="w-full text-left border-2 border-green-500 rounded-xl p-4 hover:shadow-lg transition-all bg-gradient-to-br from-green-50 to-emerald-50"
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
                     <Check className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-lg font-bold text-gray-900">✨ Verifikasi Otomatis</h3>
-                      <span className="px-2 py-0.5 bg-green-600 text-white text-xs font-semibold rounded-full">
-                        RECOMMENDED
-                      </span>
-                    </div>
-                    <ul className="space-y-1.5 mb-3">
-                      <li className="text-sm text-gray-700 flex items-start gap-2">
-                        <span className="text-green-600 font-bold">✓</span>
-                        <span>Cepat (1-5 menit otomatis terverifikasi)</span>
-                      </li>
-                      <li className="text-sm text-gray-700 flex items-start gap-2">
-                        <span className="text-green-600 font-bold">✓</span>
-                        <span>Tidak perlu upload bukti transfer</span>
-                      </li>
-                      <li className="text-sm text-gray-700 flex items-start gap-2">
-                        <span className="text-green-600 font-bold">✓</span>
-                        <span>Pesanan langsung diproses</span>
-                      </li>
-                    </ul>
-                    <div className="bg-white rounded-lg p-3 border border-green-200">
-                      <p className="text-xs text-green-700 mb-1">Transfer dengan kode unik:</p>
-                      <p className="text-lg font-bold text-green-900">
-                        Rp {paymentData?.subtotal.toLocaleString('id-ID')}.XX
-                      </p>
-                      <p className="text-xs text-gray-600 mt-1">
-                        (Kode unik akan dibuat otomatis)
-                      </p>
-                    </div>
+                    <h3 className="text-base font-bold text-gray-900">✨ Verifikasi Otomatis</h3>
+                    <p className="text-sm text-gray-700 mt-0.5">
+                      Cepat (1-5 menit), bayar sesuai angka + kode unik
+                    </p>
                   </div>
                 </div>
               </button>
@@ -605,37 +555,17 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
               {/* Manual Verification Option */}
               <button
                 onClick={() => handleChooseMethod('manual')}
-                className="w-full text-left border-2 border-gray-300 rounded-xl p-5 hover:border-blue-500 hover:shadow-lg transition-all bg-white"
+                className="w-full text-left border-2 border-gray-300 rounded-xl p-4 hover:border-blue-500 hover:shadow-lg transition-all bg-white"
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
                     <Upload className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">📸 Verifikasi Manual</h3>
-                    <ul className="space-y-1.5 mb-3">
-                      <li className="text-sm text-gray-700 flex items-start gap-2">
-                        <span className="text-blue-600 font-bold">•</span>
-                        <span>Upload bukti transfer setelah bayar</span>
-                      </li>
-                      <li className="text-sm text-gray-700 flex items-start gap-2">
-                        <span className="text-blue-600 font-bold">•</span>
-                        <span>Verifikasi dalam 1-24 jam (saat jam kerja)</span>
-                      </li>
-                      <li className="text-sm text-gray-700 flex items-start gap-2">
-                        <span className="text-blue-600 font-bold">•</span>
-                        <span>Nominal transfer bisa dibulatkan</span>
-                      </li>
-                    </ul>
-                    <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                      <p className="text-xs text-blue-700 mb-1">Transfer:</p>
-                      <p className="text-lg font-bold text-blue-900">
-                        Rp {paymentData?.subtotal.toLocaleString('id-ID')}
-                      </p>
-                      <p className="text-xs text-gray-600 mt-1">
-                        (Tanpa kode unik)
-                      </p>
-                    </div>
+                    <h3 className="text-base font-bold text-gray-900">📸 Verifikasi Manual</h3>
+                    <p className="text-sm text-gray-700 mt-0.5">
+                      Upload bukti transfer, verifikasi 1-24 jam
+                    </p>
                   </div>
                 </div>
               </button>
@@ -647,7 +577,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                   setPaymentData(null);
                   setSelectedOrderIds([]);
                 }}
-                className="w-full px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+                className="w-full px-4 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
               >
                 Batal
               </button>
@@ -656,12 +586,12 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         </div>
       )}
 
-      {/* ✨ Phase 2: Beautiful Payment Instructions Modal (Auto Mode) */}
+      {/* ✨ Simplified Auto Payment Instructions Modal */}
       {showInstructionsModal && paymentData?.paymentGroup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             {/* Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-t-2xl">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <button
                   onClick={handleBackFromInstructions}
@@ -669,8 +599,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                 >
                   <ArrowLeft className="w-5 h-5 text-white" />
                 </button>
-                <h2 className="text-xl font-bold text-white flex-1 text-center">
-                  💳 Instruksi Pembayaran
+                <h2 className="text-lg font-bold text-white flex-1 text-center">
+                  ✨ Verifikasi Otomatis
                 </h2>
                 <button
                   onClick={handleCloseInstructions}
@@ -681,31 +611,23 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* PENTING Warning */}
-              <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4">
-                <p className="text-sm font-bold text-amber-900 mb-2">
-                  ⚠️ PENTING: Transfer PERSIS sesuai nominal!
-                </p>
-                <p className="text-xs text-amber-700">
-                  Jangan dibulatkan! 2 angka terakhir adalah kode unik untuk verifikasi otomatis.
+            <div className="p-4 space-y-4">
+              {/* Warning - Compact */}
+              <div className="bg-amber-50 border border-amber-300 rounded-lg p-3">
+                <p className="text-xs font-bold text-amber-900">
+                  ⚠️ Transfer PERSIS sesuai nominal (jangan dibulatkan)
                 </p>
               </div>
 
-              {/* Exact Amount */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-300">
-                <p className="text-sm font-semibold text-green-800 mb-2">Total Transfer:</p>
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="text-4xl font-bold text-green-900">
-                      Rp {paymentData.paymentGroup.exactPaymentAmount.toLocaleString('id-ID')}
-                    </p>
-                    <p className="text-sm text-green-700 mt-1">
-                      = Rp {paymentData.paymentGroup.originalTotal.toLocaleString('id-ID')} 
-                      <span className="font-mono font-bold text-green-900"> + {paymentData.paymentGroup.uniquePaymentCode}</span>
-                    </p>
-                  </div>
-                </div>
+              {/* Exact Amount - BIG */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border-2 border-green-300 text-center">
+                <p className="text-xs font-semibold text-green-800 mb-2">Total Transfer:</p>
+                <p className="text-4xl font-bold text-green-900 mb-2">
+                  Rp {paymentData.paymentGroup.exactPaymentAmount.toLocaleString('id-ID')}
+                </p>
+                <p className="text-xs text-green-700 mb-3">
+                  Rp {paymentData.paymentGroup.originalTotal.toLocaleString('id-ID')} + <span className="font-mono font-bold">{paymentData.paymentGroup.uniquePaymentCode}</span> (kode unik)
+                </p>
                 <button
                   onClick={() => handleCopy(paymentData.paymentGroup.exactPaymentAmount.toString(), 'Nominal')}
                   className="w-full px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
@@ -715,89 +637,58 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                 </button>
               </div>
 
-              {/* Bank Accounts */}
-              <div className="space-y-3">
-                <p className="text-sm font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
+              {/* Bank Accounts - Compact */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
                 
                 {/* BCA */}
-                <div className="border-2 border-blue-200 rounded-xl p-4 bg-blue-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-xs text-blue-700 font-medium mb-1">🏦 Bank BCA</p>
-                      <p className="text-lg font-bold text-blue-900 font-mono">0511456494</p>
-                      <p className="text-xs text-blue-700 mt-0.5">a.n. Fahrin</p>
-                    </div>
-                    <button
-                      onClick={() => handleCopy('0511456494', 'Nomor rekening BCA')}
-                      className="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-all flex-shrink-0"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
+                <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-blue-700 font-medium">🏦 BCA - Fahrin</p>
+                    <p className="text-base font-bold text-blue-900 font-mono">0511456494</p>
                   </div>
+                  <button
+                    onClick={() => handleCopy('0511456494', 'Nomor rekening BCA')}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
                 </div>
 
                 {/* BRI */}
-                <div className="border-2 border-cyan-200 rounded-xl p-4 bg-cyan-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-xs text-cyan-700 font-medium mb-1">🏦 Bank BRI</p>
-                      <p className="text-lg font-bold text-cyan-900 font-mono">066301000115566</p>
-                      <p className="text-xs text-cyan-700 mt-0.5">a.n. Fahrin</p>
-                    </div>
-                    <button
-                      onClick={() => handleCopy('066301000115566', 'Nomor rekening BRI')}
-                      className="px-3 py-2 bg-cyan-600 text-white rounded-lg text-xs font-semibold hover:bg-cyan-700 transition-all flex-shrink-0"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
+                <div className="border border-cyan-200 rounded-lg p-3 bg-cyan-50 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-cyan-700 font-medium">🏦 BRI - Fahrin</p>
+                    <p className="text-base font-bold text-cyan-900 font-mono">066301000115566</p>
                   </div>
+                  <button
+                    onClick={() => handleCopy('066301000115566', 'Nomor rekening BRI')}
+                    className="px-3 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-all"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
                 </div>
 
                 {/* Mandiri */}
-                <div className="border-2 border-yellow-200 rounded-xl p-4 bg-yellow-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-xs text-yellow-700 font-medium mb-1">🏦 Bank Mandiri</p>
-                      <p className="text-lg font-bold text-yellow-900 font-mono">310011008896</p>
-                      <p className="text-xs text-yellow-700 mt-0.5">a.n. Fahrin</p>
-                    </div>
-                    <button
-                      onClick={() => handleCopy('310011008896', 'Nomor rekening Mandiri')}
-                      className="px-3 py-2 bg-yellow-600 text-white rounded-lg text-xs font-semibold hover:bg-yellow-700 transition-all flex-shrink-0"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
+                <div className="border border-yellow-200 rounded-lg p-3 bg-yellow-50 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-yellow-700 font-medium">🏦 Mandiri - Fahrin</p>
+                    <p className="text-base font-bold text-yellow-900 font-mono">310011008896</p>
                   </div>
+                  <button
+                    onClick={() => handleCopy('310011008896', 'Nomor rekening Mandiri')}
+                    className="px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-all"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
-              {/* Orders Being Paid */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-sm font-semibold text-gray-900 mb-2">
-                  📦 Pesanan Yang Dibayar ({paymentData.orders.length}):
+              {/* Simple Info */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                <p className="text-xs text-blue-900">
+                  Transfer sesuai nominal + kode unik, verifikasi otomatis dalam 1-5 menit
                 </p>
-                <div className="space-y-1.5">
-                  {paymentData.orders.map((order: any) => (
-                    <div key={order.id} className="flex justify-between text-xs">
-                      <span className="text-gray-600">#{order.id}</span>
-                      <span className="font-semibold text-gray-900">
-                        Rp {order.finalTotal.toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Instructions */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <p className="text-sm font-semibold text-blue-900 mb-2">📋 Cara Pembayaran:</p>
-                <ol className="text-xs text-blue-800 space-y-1.5 list-decimal list-inside">
-                  <li>Copy nominal transfer di atas</li>
-                  <li>Copy nomor rekening (BCA atau Mandiri)</li>
-                  <li>Buka aplikasi mobile banking Anda</li>
-                  <li>Transfer PERSIS Rp {paymentData.paymentGroup.exactPaymentAmount.toLocaleString('id-ID')}</li>
-                  <li>Selesai! Pembayaran akan terverifikasi otomatis dalam 1-5 menit</li>
-                </ol>
               </div>
 
               {/* Confirm Button */}
@@ -808,21 +699,21 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                   setSelectedOrderIds([]);
                   showToast('✅ Silakan lakukan transfer sesuai instruksi', 'success');
                 }}
-                className="w-full px-6 py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all text-lg"
+                className="w-full px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all"
               >
-                Saya Mengerti, Akan Transfer Sekarang
+                Mengerti, Transfer Sekarang
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ✨ Phase 2: Beautiful Upload Bukti Modal (Manual Mode) */}
+      {/* ✨ Simplified Manual Upload Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             {/* Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-t-2xl">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => {
@@ -833,8 +724,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                 >
                   <ArrowLeft className="w-5 h-5 text-white" />
                 </button>
-                <h2 className="text-xl font-bold text-white flex-1 text-center">
-                  📸 Upload Bukti Transfer
+                <h2 className="text-lg font-bold text-white flex-1 text-center">
+                  📸 Verifikasi Manual
                 </h2>
                 <button
                   onClick={() => {
@@ -850,89 +741,63 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* Orders Summary */}
-              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200">
-                <p className="text-sm font-semibold text-blue-900 mb-3">
-                  📦 Pesanan Yang Akan Dibayar ({paymentData?.orders.length}):
+            <div className="p-4 space-y-4">
+              {/* Total Amount - Centered */}
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200 text-center">
+                <p className="text-xs font-semibold text-blue-800 mb-2">Total Transfer:</p>
+                <p className="text-3xl font-bold text-blue-900">
+                  Rp {paymentData?.subtotal.toLocaleString('id-ID')}
                 </p>
-                <div className="space-y-2 mb-3 max-h-32 overflow-y-auto">
-                  {paymentData?.orders.map((order: any) => (
-                    <div key={order.id} className="flex justify-between text-sm">
-                      <span className="text-blue-700">#{order.id.substring(0, 12)}...</span>
-                      <span className="font-semibold text-blue-900">
-                        Rp {order.finalTotal.toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="pt-3 border-t border-blue-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-blue-900">Total:</span>
-                    <span className="text-xl font-bold text-blue-900">
-                      Rp {paymentData?.subtotal.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                </div>
               </div>
 
-              {/* Bank Accounts */}
-              <div className="space-y-3">
-                <p className="text-sm font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
+              {/* Bank Accounts - Compact */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
                 
-                <div className="border border-blue-200 rounded-xl p-3 bg-blue-50">
-                  <p className="text-xs text-blue-700 font-medium mb-1">🏦 Bank BCA</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-base font-bold text-blue-900 font-mono">0511456494</p>
-                      <p className="text-xs text-blue-700 mt-0.5">a.n. Fahrin</p>
-                    </div>
-                    <button
-                      onClick={() => handleCopy('0511456494', 'Nomor rekening BCA')}
-                      className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 flex-shrink-0"
-                    >
-                      <Copy className="w-3 h-3" />
-                    </button>
+                <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-blue-700 font-medium">🏦 BCA - Fahrin</p>
+                    <p className="text-base font-bold text-blue-900 font-mono">0511456494</p>
                   </div>
+                  <button
+                    onClick={() => handleCopy('0511456494', 'Nomor rekening BCA')}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
                 </div>
 
-                <div className="border border-cyan-200 rounded-xl p-3 bg-cyan-50">
-                  <p className="text-xs text-cyan-700 font-medium mb-1">🏦 Bank BRI</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-base font-bold text-cyan-900 font-mono">066301000115566</p>
-                      <p className="text-xs text-cyan-700 mt-0.5">a.n. Fahrin</p>
-                    </div>
-                    <button
-                      onClick={() => handleCopy('066301000115566', 'Nomor rekening BRI')}
-                      className="px-3 py-1.5 bg-cyan-600 text-white rounded-lg text-xs font-semibold hover:bg-cyan-700 flex-shrink-0"
-                    >
-                      <Copy className="w-3 h-3" />
-                    </button>
+                <div className="border border-cyan-200 rounded-lg p-3 bg-cyan-50 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-cyan-700 font-medium">🏦 BRI - Fahrin</p>
+                    <p className="text-base font-bold text-cyan-900 font-mono">066301000115566</p>
                   </div>
+                  <button
+                    onClick={() => handleCopy('066301000115566', 'Nomor rekening BRI')}
+                    className="px-3 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-all"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
                 </div>
 
-                <div className="border border-yellow-200 rounded-xl p-3 bg-yellow-50">
-                  <p className="text-xs text-yellow-700 font-medium mb-1">🏦 Bank Mandiri</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-base font-bold text-yellow-900 font-mono">310011008896</p>
-                      <p className="text-xs text-yellow-700 mt-0.5">a.n. Fahrin</p>
-                    </div>
-                    <button
-                      onClick={() => handleCopy('310011008896', 'Nomor rekening Mandiri')}
-                      className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg text-xs font-semibold hover:bg-yellow-700 flex-shrink-0"
-                    >
-                      <Copy className="w-3 h-3" />
-                    </button>
+                <div className="border border-yellow-200 rounded-lg p-3 bg-yellow-50 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-yellow-700 font-medium">🏦 Mandiri - Fahrin</p>
+                    <p className="text-base font-bold text-yellow-900 font-mono">310011008896</p>
                   </div>
+                  <button
+                    onClick={() => handleCopy('310011008896', 'Nomor rekening Mandiri')}
+                    className="px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-all"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
               {/* Upload Section */}
-              <div className="space-y-3">
+              <div>
                 <label className="block">
-                  <span className="text-sm font-semibold text-gray-900 mb-2 block">
+                  <span className="text-xs font-semibold text-gray-900 mb-2 block">
                     Upload Bukti Transfer:
                   </span>
                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-pink-500 transition-all cursor-pointer bg-gray-50">
@@ -956,32 +821,27 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                 </label>
 
                 {paymentProof && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-2 mt-2">
                     <p className="text-xs text-green-700 flex items-center gap-2">
                       <CheckCircle className="w-4 h-4" />
-                      Gambar siap diupload: {paymentProof.name}
+                      Siap upload: {paymentProof.name}
                     </p>
                   </div>
                 )}
               </div>
 
-              {/* Instructions */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <p className="text-sm font-semibold text-blue-900 mb-2">📋 Instruksi:</p>
-                <ol className="text-xs text-blue-800 space-y-1.5 list-decimal list-inside">
-                  <li>Transfer total di atas ke salah satu rekening</li>
-                  <li>Screenshot/foto bukti transfer</li>
-                  <li>Upload bukti di atas</li>
-                  <li>Klik "Kirim Bukti Transfer"</li>
-                  <li>Admin akan verifikasi dalam 1-24 jam</li>
-                </ol>
+              {/* Simple Info */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                <p className="text-xs text-blue-900">
+                  Upload bukti transfer, verifikasi dalam 1-24 jam
+                </p>
               </div>
 
               {/* Submit Button */}
               <button
                 onClick={handleSubmitManualPayment}
                 disabled={!paymentProof || uploadingProof}
-                className="w-full px-6 py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {uploadingProof ? (
                   <>
