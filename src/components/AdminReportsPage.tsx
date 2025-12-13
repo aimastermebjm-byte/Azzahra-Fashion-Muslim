@@ -16,7 +16,8 @@ import {
   ProductReport,
   InventoryReport,
   CashFlowReport,
-  ProductBuyerReport
+  ProductBuyerReport,
+  ProductBuyerSummary
 } from '../services/reportsService';
 
 interface AdminReportsPageProps {
@@ -468,6 +469,45 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       clearTimeout(searchTimeoutId);
       setSearchTimeoutId(null);
     }
+  };
+
+  // Open rekap modal
+  const openRekapModal = async (product: ProductReport) => {
+    setSelectedRekapProduct(product);
+    setLoadingRekap(true);
+    setShowRekapModal(true);
+    
+    try {
+      const { start, end } = getDateRange;
+      const summaryData = await ReportsService.getProductBuyersSummary(product.id, {
+        startDate: start,
+        endDate: end,
+        status: productStatusFilter
+      });
+      
+      setRekapData(summaryData);
+    } catch (error) {
+      console.error('Error loading rekap data:', error);
+      // Tampilkan data kosong jika error
+      setRekapData({
+        productId: product.id,
+        productName: product.name,
+        buyers: [],
+        totalBuyers: 0,
+        totalQuantity: 0,
+        totalAmount: 0
+      });
+    } finally {
+      setLoadingRekap(false);
+    }
+  };
+
+  // Close rekap modal
+  const closeRekapModal = () => {
+    setShowRekapModal(false);
+    setSelectedRekapProduct(null);
+    setRekapData(null);
+    setLoadingRekap(false);
   };
 
   // Handle search query change with debouncing
@@ -1102,9 +1142,16 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                           <td className="px-4 py-3 text-sm text-gray-900">
                             <button
                               onClick={() => openBuyersModal(product)}
-                              className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                              className="text-blue-600 hover:text-blue-800 font-medium text-sm mr-2"
                             >
                               Lihat Pembeli
+                            </button>
+                            <button
+                              onClick={() => openRekapModal(product)}
+                              className="text-green-600 hover:text-green-800 font-medium text-sm"
+                              title="Lihat rekap semua pembeli"
+                            >
+                              Rekap
                             </button>
                           </td>
                         </tr>
