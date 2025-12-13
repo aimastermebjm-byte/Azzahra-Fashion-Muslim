@@ -143,7 +143,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
         endDate: end,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         customerQuery: customerFilter || undefined,
-        limit: 50 // Limit untuk performance
+        limit: 100 // Increase limit slightly
       });
       setTransactions(transactionData);
     } catch (error) {
@@ -282,7 +282,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     }
   }
 
-  // Load data based on active report type
+  // Load data based on active report type - OPTIMIZED: Only on reportType change
   useEffect(() => {
     const loadData = async () => {
       switch (reportType) {
@@ -304,13 +304,16 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           await loadCashFlowReport();
           await loadSummaryStats();
           break;
+        case 'summary':
+          // Don't load anything for summary initially - let it be fast
+          break;
         default:
           await loadTransactions();
       }
     };
 
     loadData();
-  }, [reportType, statusFilter, customerFilter, paymentMethodFilter, getDateRange.start, getDateRange.end]);
+  }, [reportType]); // OPTIMIZED: Only reload when reportType changes, not filters
 
   // Remove mock loader - rely on real data above
 
@@ -352,6 +355,14 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       averageTransaction: filteredTransactions.length > 0 ? totalSales / filteredTransactions.length : 0
     };
   }, [filteredTransactions]);
+
+  // Memoized product buyers list (for performance)
+  const productBuyers = useMemo(() => {
+    if (productFilter === 'all') return [];
+    return filteredTransactions.filter(t => 
+      t.items && t.items.some(item => item.name === productFilter)
+    );
+  }, [productFilter, filteredTransactions]);
 
   // Calculate profit/loss
   const profitLossStats = useMemo(() => {
@@ -885,61 +896,60 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
               {/* Buyers List - Show when specific product is selected */}
               {productFilter !== 'all' && (
-                <div className="mt-6 bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <User className="w-5 h-5 text-green-600" />
-                    Daftar Pembeli: {productFilter}
-                  </h4>
-                  <div className="overflow-x-auto">
-                    <table className="w-full table-auto bg-white rounded-lg">
-                      <thead>
-                        <tr className="bg-green-100">
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Nama Pelanggan</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Invoice</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Tanggal</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Qty</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {filteredTransactions
-                          .filter(t => t.items.some(item => item.name === productFilter))
-                          .map((transaction) => {
-                            const item = transaction.items.find(i => i.name === productFilter);
-                            return (
-                              <tr key={transaction.id} className="hover:bg-green-50">
-                                <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                                  <div>
-                                    <div>{transaction.customer}</div>
-                                    <div className="text-xs text-gray-500">{transaction.phone}</div>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3 text-sm text-blue-600">
-                                  {transaction.invoice}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-600">
-                                  {transaction.date}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-900">
-                                  {item?.quantity || 0} pcs
-                                </td>
-                                <td className="px-4 py-3 text-sm">
-                                  <span className={transaction.status === 'lunas' ? 'badge-brand-success' : 'badge-brand-warning'}>
-                                    {transaction.status === 'lunas' ? 'Lunas' : 'Belum Lunas'}
-                                  </span>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      </tbody>
-                    </table>
-                    {filteredTransactions.filter(t => t.items.some(item => item.name === productFilter)).length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
+                  <div className="mt-6 bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                      <User className="w-5 h-5 text-green-600" />
+                      Daftar Pembeli: {productFilter} ({productBuyers.length} transaksi)
+                    </h4>
+                    {productBuyers.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500 bg-white rounded-lg">
                         Belum ada pembeli untuk produk ini
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full table-auto bg-white rounded-lg">
+                          <thead>
+                            <tr className="bg-green-100">
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Nama Pelanggan</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Invoice</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Tanggal</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Qty</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {productBuyers.map((transaction) => {
+                              const item = transaction.items.find(i => i.name === productFilter);
+                              return (
+                                <tr key={transaction.id} className="hover:bg-green-50">
+                                  <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                    <div>
+                                      <div>{transaction.customer}</div>
+                                      <div className="text-xs text-gray-500">{transaction.phone}</div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-blue-600">
+                                    {transaction.invoice}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {transaction.date}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-900">
+                                    {item?.quantity || 0} pcs
+                                  </td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <span className={transaction.status === 'lunas' ? 'badge-brand-success' : 'badge-brand-warning'}>
+                                      {transaction.status === 'lunas' ? 'Lunas' : 'Belum Lunas'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     )}
                   </div>
-                </div>
               )}
             </div>
           )}
