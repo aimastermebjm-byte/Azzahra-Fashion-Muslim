@@ -288,8 +288,16 @@ class ReportsService {
           if (!productBuyers.has(key)) {
             productBuyers.set(key, new Set());
           }
+          
+          // Use a more reliable way to identify unique buyers
+          // Check if buyer already exists in the set to avoid duplicates
           const buyerKey = `${transaction.customer}_${transaction.phone}`;
-          productBuyers.get(key)!.add(buyerKey);
+          const buyerSet = productBuyers.get(key)!;
+          
+          // Only add if not already present (handles edge cases)
+          if (!Array.from(buyerSet).some(existingBuyer => existingBuyer === buyerKey)) {
+            buyerSet.add(buyerKey);
+          }
           
 
 
