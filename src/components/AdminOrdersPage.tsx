@@ -343,6 +343,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   };
 
   // ✨ NEW: Payment Assistance Handlers (Owner helps customer)
+  // Single order assistance
   const handlePaymentAssist = async (order: any) => {
     // Check if order already has payment group
     if (order.paymentGroupId) {
@@ -353,6 +354,8 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           // Reuse existing payment group
           setAssistPaymentData({
             order,
+            orders: [order],
+            subtotal: order.finalTotal,
             paymentGroup: existingGroup
           });
           
@@ -371,29 +374,131 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     }
     
     // No existing payment group, show method selection
-    setAssistPaymentData({ order, paymentGroup: null });
+    setAssistPaymentData({ 
+      order, 
+      orders: [order],
+      subtotal: order.finalTotal,
+      paymentGroup: null 
+    });
+    setShowPaymentMethodModal(true);
+  };
+
+  // ✨ NEW: Bulk payment assistance (multiple orders)
+  const handleBulkPaymentAssist = async () => {
+    if (selectedOrderIds.length === 0) {
+      showModernAlert('Peringatan', 'Pilih minimal 1 pesanan untuk dibantu pembayaran', 'warning');
+      return;
+    }
+
+    // Filter only pending orders
+    const selected = orders.filter(o => selectedOrderIds.includes(o.id) && o.status === 'pending');
+    
+    if (selected.length === 0) {
+      showModernAlert('Peringatan', 'Hanya pesanan pending yang bisa dibantu pembayaran', 'warning');
+      return;
+    }
+
+    if (selected.length !== selectedOrderIds.length) {
+      showModernAlert('Info', `Hanya ${selected.length} pesanan pending yang akan diproses (dari ${selectedOrderIds.length} terpilih)`, 'info');
+    }
+
+    const subtotal = selected.reduce((sum, o) => sum + o.finalTotal, 0);
+    
+    // Check if first order has payment group
+    const firstOrder = selected[0];
+    let existingPaymentGroup = null;
+    
+    if (firstOrder?.paymentGroupId) {
+      try {
+        existingPaymentGroup = await paymentGroupService.getPaymentGroup(firstOrder.paymentGroupId);
+        
+        if (existingPaymentGroup && existingPaymentGroup.status === 'pending') {
+          // Validate if matches current selection
+          const isSameOrders = 
+            existingPaymentGroup.orderIds.length === selected.length &&
+            existingPaymentGroup.orderIds.every(id => selected.find(o => o.id === id));
+          
+          const isSameTotal = existingPaymentGroup.originalTotal === subtotal;
+          
+          if (isSameOrders && isSameTotal) {
+            // Reuse existing
+            setAssistPaymentData({
+              orders: selected,
+              subtotal,
+              paymentGroup: existingPaymentGroup
+            });
+            
+            if (existingPaymentGroup.verificationMode === 'auto') {
+              setShowAutoInstructionsModal(true);
+            } else {
+              setShowPaymentMethodModal(true);
+            }
+            return;
+          } else {
+            // Different selection - ask to cancel old
+            const shouldCancel = window.confirm(
+              `Pesanan pertama sudah punya payment group:\n\n` +
+              `Group lama: ${existingPaymentGroup.orderIds.length} pesanan (Rp ${existingPaymentGroup.originalTotal.toLocaleString('id-ID')})\n` +
+              `Selection baru: ${selected.length} pesanan (Rp ${subtotal.toLocaleString('id-ID')})\n\n` +
+              `Batalkan payment group lama dan buat baru?`
+            );
+            
+            if (shouldCancel) {
+              await paymentGroupService.cancelPaymentGroup(existingPaymentGroup.id);
+              for (const orderId of existingPaymentGroup.orderIds) {
+                await ordersService.updateOrder(orderId, {
+                  paymentGroupId: null,
+                  groupPaymentAmount: null,
+                  verificationMode: undefined
+                });
+              }
+              showModernAlert('Berhasil', 'Payment group lama dibatalkan', 'success');
+            } else {
+              return;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading existing payment group:', error);
+      }
+    }
+    
+    // No existing payment group (or cancelled), show method selection
+    setAssistPaymentData({
+      orders: selected,
+      subtotal,
+      paymentGroup: null
+    });
+    
     setShowPaymentMethodModal(true);
   };
 
   const handleAssistChooseMethod = async (mode: 'auto' | 'manual') => {
     try {
       if (mode === 'auto') {
-        // Create payment group for this single order
+        // Support both single order (backward compatible) and multiple orders
+        const targetOrders = assistPaymentData.orders || [assistPaymentData.order];
+        const firstOrder = targetOrders[0];
+        const totalAmount = assistPaymentData.subtotal || assistPaymentData.order.finalTotal;
+        
+        // Create payment group for selected order(s)
         const paymentGroup = await paymentGroupService.createPaymentGroup({
-          userId: assistPaymentData.order.userId,
-          userName: assistPaymentData.order.userName,
-          userEmail: assistPaymentData.order.userEmail,
-          orderIds: [assistPaymentData.order.id],
-          originalTotal: assistPaymentData.order.finalTotal,
+          userId: firstOrder.userId,
+          userName: firstOrder.userName,
+          userEmail: firstOrder.userEmail,
+          orderIds: targetOrders.map((o: any) => o.id),
+          originalTotal: totalAmount,
           verificationMode: 'auto'
         });
         
-        // Update order with payment group
-        await ordersService.updateOrder(assistPaymentData.order.id, {
-          paymentGroupId: paymentGroup.id,
-          groupPaymentAmount: paymentGroup.exactPaymentAmount,
-          verificationMode: 'auto'
-        });
+        // Update all orders with payment group
+        for (const order of targetOrders) {
+          await ordersService.updateOrder(order.id, {
+            paymentGroupId: paymentGroup.id,
+            groupPaymentAmount: paymentGroup.exactPaymentAmount,
+            verificationMode: 'auto'
+          });
+        }
         
         setAssistPaymentData({
           ...assistPaymentData,
@@ -402,6 +507,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         
         setShowPaymentMethodModal(false);
         setShowAutoInstructionsModal(true);
+        setSelectedOrderIds([]); // Clear bulk selection
         showModernAlert('Berhasil', 'Instruksi pembayaran otomatis telah dibuat', 'success');
       } else {
         // Manual mode - go to upload
@@ -437,18 +543,28 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     }
 
     try {
-      // Upload payment proof for the order
-      await ordersService.updateOrderPayment(
-        assistPaymentData.order.id,
-        assistPaymentProof,
-        'awaiting_verification'
-      );
+      // Support both single and multiple orders
+      const targetOrders = assistPaymentData.orders || [assistPaymentData.order];
+      
+      // Upload payment proof for all selected orders
+      for (const order of targetOrders) {
+        await ordersService.updateOrderPayment(
+          order.id,
+          assistPaymentProof,
+          'awaiting_verification'
+        );
+      }
 
       setShowManualUploadModal(false);
       setAssistPaymentData(null);
       setAssistPaymentProof(null);
+      setSelectedOrderIds([]); // Clear bulk selection
       
-      showModernAlert('Berhasil', 'Bukti pembayaran berhasil diupload untuk customer', 'success');
+      showModernAlert(
+        'Berhasil', 
+        `Bukti pembayaran berhasil diupload untuk ${targetOrders.length} pesanan`, 
+        'success'
+      );
     } catch (error) {
       console.error('Error submitting manual payment:', error);
       showModernAlert('Error', 'Gagal mengupload bukti pembayaran', 'error');
@@ -694,13 +810,24 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
               </div>
               
               {selectedOrderIds.length > 0 && (
-                <button
-                  onClick={handleBulkDelete}
-                  className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Hapus {selectedOrderIds.length} Pesanan</span>
-                </button>
+                <div className="flex items-center space-x-3">
+                  {/* ✨ NEW: Bulk Payment Assistance Button */}
+                  <button
+                    onClick={handleBulkPaymentAssist}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span>Bantu Pembayaran ({selectedOrderIds.length})</span>
+                  </button>
+                  
+                  <button
+                    onClick={handleBulkDelete}
+                    className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Hapus {selectedOrderIds.length} Pesanan</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -1484,7 +1611,11 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                 💳 Pilih Metode Pembayaran
               </h2>
               <p className="text-sm text-white/90 text-center mt-1">
-                Pesanan #{assistPaymentData.order.id} - Rp {assistPaymentData.order.finalTotal.toLocaleString('id-ID')}
+                {assistPaymentData.orders ? (
+                  `${assistPaymentData.orders.length} Pesanan - Rp ${assistPaymentData.subtotal.toLocaleString('id-ID')}`
+                ) : (
+                  `Pesanan #{assistPaymentData.order.id} - Rp ${assistPaymentData.order.finalTotal.toLocaleString('id-ID')}`
+                )}
               </p>
             </div>
 
@@ -1689,10 +1820,15 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
               <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200 text-center">
                 <p className="text-xs font-semibold text-blue-800 mb-2">Total Transfer:</p>
                 <p className="text-3xl font-bold text-blue-900 mb-3">
-                  Rp {assistPaymentData.order.finalTotal.toLocaleString('id-ID')}
+                  Rp {(assistPaymentData.subtotal || assistPaymentData.order.finalTotal).toLocaleString('id-ID')}
                 </p>
+                {assistPaymentData.orders && assistPaymentData.orders.length > 1 && (
+                  <p className="text-xs text-blue-700 mb-2">
+                    {assistPaymentData.orders.length} pesanan digabung
+                  </p>
+                )}
                 <button
-                  onClick={() => handleAssistCopy(assistPaymentData.order.finalTotal.toString(), 'Nominal')}
+                  onClick={() => handleAssistCopy((assistPaymentData.subtotal || assistPaymentData.order.finalTotal).toString(), 'Nominal')}
                   className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 mx-auto"
                 >
                   <Copy className="w-4 h-4" />
