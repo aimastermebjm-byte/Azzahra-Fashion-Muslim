@@ -1005,17 +1005,19 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 <p className="text-sm opacity-90">Tambah produk baru</p>
               </div>
             </button>
-            {/* AI Auto Upload */}
-            <button
-              onClick={() => setShowAIUploadModal(true)}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg flex items-center space-x-3"
-            >
-              <Sparkles className="w-6 h-6" />
-              <div className="text-left">
-                <p className="font-semibold">🤖 AI Auto Upload</p>
-                <p className="text-sm opacity-90">Upload produk dengan AI</p>
-              </div>
-            </button>
+            {/* AI Auto Upload - Owner Only */}
+            {user?.role === 'owner' && (
+              <button
+                onClick={() => setShowAIUploadModal(true)}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg flex items-center space-x-3"
+              >
+                <Sparkles className="w-6 h-6" />
+                <div className="text-left">
+                  <p className="font-semibold">🤖 AI Auto Upload</p>
+                  <p className="text-sm opacity-90">Upload produk dengan AI</p>
+                </div>
+              </button>
+            )}
 
             {/* Produk Unggulan - REMOVED (Now via Table Bulk Action) */}
             {/* 
@@ -1174,13 +1176,15 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     <span>Varian {selectedProducts.length} Produk</span>
                   </button>
 
-                  <button
-                    onClick={handleBulkDelete}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span>Hapus {selectedProducts.length} Produk</span>
-                  </button>
+                  {user?.role === 'owner' && (
+                    <button
+                      onClick={handleBulkDelete}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Hapus {selectedProducts.length} Produk</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1322,12 +1326,14 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                             >
                               <Edit className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => handleDeleteProduct(product.id)}
-                              className="p-1 text-red-600 hover:bg-red-100 rounded"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {user?.role === 'owner' && (
+                              <button
+                                onClick={() => handleDeleteProduct(product.id)}
+                                className="p-1 text-red-600 hover:bg-red-100 rounded"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

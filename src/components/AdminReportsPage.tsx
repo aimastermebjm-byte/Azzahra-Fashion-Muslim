@@ -61,6 +61,8 @@ const writeUsersCache = (users: any[]) => {
 };
 
 const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => {
+  const isOwner = user?.role === 'owner';
+  
   // Report type untuk tab navigation
   const [reportType, setReportType] = useState<'summary' | 'sales' | 'products' | 'invoice' | 'inventory' | 'cashflow' | 'profitloss' | 'detail'>('summary');
 
@@ -529,8 +531,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <option value="products">📦 Laporan Produk Terjual</option>
                 <option value="invoice">📄 Laporan Invoice</option>
                 <option value="inventory">📦 Laporan Persediaan</option>
-                <option value="cashflow">💰 Laporan Arus Kas</option>
-                <option value="profitloss">📈 Laporan Rugi Laba</option>
+                {isOwner && <option value="cashflow">💰 Laporan Arus Kas</option>}
+                {isOwner && <option value="profitloss">📈 Laporan Rugi Laba</option>}
                 <option value="detail">👁 Laporan Detail</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-primary pointer-events-none" />
@@ -772,8 +774,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     <tr className="bg-gray-50">
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subtotal</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Laba</th>
+                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>}
+                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Laba</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -789,12 +791,16 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                           <td className="px-4 py-3 text-sm text-gray-900">
                             {formatCurrency(transaction.subtotal)}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {formatCurrency(modal)}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-green-600">
-                            {formatCurrency(laba)}
-                          </td>
+                          {isOwner && (
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {formatCurrency(modal)}
+                            </td>
+                          )}
+                          {isOwner && (
+                            <td className="px-4 py-3 text-sm text-green-600">
+                              {formatCurrency(laba)}
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -907,8 +913,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     <tr className="bg-gray-50">
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stok</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Modal</th>
+                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>}
+                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Modal</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -927,12 +933,16 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                           <td className="px-4 py-3 text-sm text-gray-900">
                             {stock}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {formatCurrency(modalPerUnit)}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {formatCurrency(totalModal)}
-                          </td>
+                          {isOwner && (
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {formatCurrency(modalPerUnit)}
+                            </td>
+                          )}
+                          {isOwner && (
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {formatCurrency(totalModal)}
+                            </td>
+                          )}
                         </tr>
                       );
                     })}

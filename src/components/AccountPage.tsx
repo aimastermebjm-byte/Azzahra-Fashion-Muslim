@@ -485,13 +485,15 @@ const AccountPage: React.FC<AccountPageProps> = ({
                   <Package className="w-6 h-6 mx-auto mb-2" />
                   <p className="text-sm">Kelola Pesanan</p>
                 </button>
-                <button
-                  onClick={onNavigateToAdminPaymentVerification}
-                  className="p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  <CreditCard className="w-6 h-6 mx-auto mb-2" />
-                  <p className="text-sm">Verifikasi Pembayaran</p>
-                </button>
+                {user?.role === 'owner' && (
+                  <button
+                    onClick={onNavigateToAdminPaymentVerification}
+                    className="p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    <CreditCard className="w-6 h-6 mx-auto mb-2" />
+                    <p className="text-sm">Verifikasi Pembayaran</p>
+                  </button>
+                )}
                 <button
                   onClick={onNavigateToAdminReports}
                   className="p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"

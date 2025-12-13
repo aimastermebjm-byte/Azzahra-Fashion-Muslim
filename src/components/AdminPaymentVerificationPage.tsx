@@ -26,6 +26,20 @@ interface AdminPaymentVerificationPageProps {
 }
 
 const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> = ({ onBack, user }) => {
+  const { showToast } = useToast();
+  const isOwner = user?.role === 'owner';
+
+  // Access control - Owner only
+  if (!isOwner) {
+    showToast({
+      title: 'Akses Ditolak',
+      description: 'Hanya Owner yang bisa mengakses halaman Verifikasi Pembayaran',
+      variant: 'destructive'
+    });
+    onBack();
+    return null;
+  }
+
   const [pendingDetections, setPendingDetections] = useState<PaymentDetection[]>([]);
   const [verifiedDetections, setVerifiedDetections] = useState<PaymentDetection[]>([]);
   const [pendingOrders, setPendingOrders] = useState<any[]>([]);
@@ -36,7 +50,6 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
   const [selectedDetection, setSelectedDetection] = useState<PaymentDetection | null>(null);
   const [showScreenshot, setShowScreenshot] = useState(false);
   const [initializing, setInitializing] = useState(false);
-  const { showToast } = useToast();
 
   // Load data on mount
   useEffect(() => {
