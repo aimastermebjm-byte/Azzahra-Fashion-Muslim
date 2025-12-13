@@ -291,10 +291,7 @@ class ReportsService {
           const buyerKey = `${transaction.customer}_${transaction.phone}`;
           productBuyers.get(key)!.add(buyerKey);
           
-          // Debug log for specific products
-          if (item.name && item.name.toLowerCase().includes('test')) {
-            console.log('Debug - Processing item:', item.name, 'Key:', key, 'Buyer:', transaction.customer, 'Buyers for this key:', productBuyers.get(key)?.size);
-          }
+
 
           const profitContribution = (item.total || 0) - (item.modalTotal ?? ((item.modal || 0) * (item.quantity || 0)));
           const existing = aggregatedProducts.get(key);
@@ -346,10 +343,7 @@ class ReportsService {
         const lookupKey = product.id.startsWith('id_') ? product.id : `name_${product.name}`;
         const buyerCount = productBuyers.get(lookupKey)?.size || 0;
         
-        // Debug log for specific products
-        if (product.name && product.name.toLowerCase().includes('test')) {
-          console.log('Debug - Final product:', product.name, 'ID:', product.id, 'LookupKey:', lookupKey, 'Buyer count:', buyerCount);
-        }
+
         
         return {
           ...product,
