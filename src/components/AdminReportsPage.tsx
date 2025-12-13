@@ -76,6 +76,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [customerFilter, setCustomerFilter] = useState<string>('');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<'all' | string>('all');
   const [categoryFilter, setCategoryFilter] = useState<'all' | string>('all');
+  const [productFilter, setProductFilter] = useState<string>('all');
 
   // Data states
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -817,6 +818,25 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <h3 className="text-lg font-semibold text-gray-800">Produk Terlaris</h3>
               </div>
 
+              {/* Filter by Product Name - NEW */}
+              <div className="mb-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                  📦 Filter Pembeli Produk (untuk cek siapa saja yang beli)
+                </label>
+                <select
+                  value={productFilter}
+                  onChange={(e) => setProductFilter(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">Semua Produk</option>
+                  {products.map((product) => (
+                    <option key={product.id} value={product.name}>
+                      {product.name} ({product.totalSold} terjual)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="overflow-x-auto">
                 <table className="w-full table-auto">
                   <thead>
@@ -824,8 +844,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terjual</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Laba</th>
+                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>}
+                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Laba</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -846,18 +866,81 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                           <td className="px-4 py-3 text-sm text-gray-900">
                             {formatCurrency(averagePrice)}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {formatCurrency(modal)}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-brand-success">
-                            {formatCurrency(product.profit)}
-                          </td>
+                          {isOwner && (
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {formatCurrency(modal)}
+                            </td>
+                          )}
+                          {isOwner && (
+                            <td className="px-4 py-3 text-sm text-brand-success">
+                              {formatCurrency(product.profit)}
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
+
+              {/* Buyers List - Show when specific product is selected */}
+              {productFilter !== 'all' && (
+                <div className="mt-6 bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <User className="w-5 h-5 text-green-600" />
+                    Daftar Pembeli: {productFilter}
+                  </h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full table-auto bg-white rounded-lg">
+                      <thead>
+                        <tr className="bg-green-100">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Nama Pelanggan</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Invoice</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Tanggal</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Qty</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {filteredTransactions
+                          .filter(t => t.items.some(item => item.name === productFilter))
+                          .map((transaction) => {
+                            const item = transaction.items.find(i => i.name === productFilter);
+                            return (
+                              <tr key={transaction.id} className="hover:bg-green-50">
+                                <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                  <div>
+                                    <div>{transaction.customer}</div>
+                                    <div className="text-xs text-gray-500">{transaction.phone}</div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-blue-600">
+                                  {transaction.invoice}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {transaction.date}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-900">
+                                  {item?.quantity || 0} pcs
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  <span className={transaction.status === 'lunas' ? 'badge-brand-success' : 'badge-brand-warning'}>
+                                    {transaction.status === 'lunas' ? 'Lunas' : 'Belum Lunas'}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                    {filteredTransactions.filter(t => t.items.some(item => item.name === productFilter)).length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        Belum ada pembeli untuk produk ini
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1152,10 +1235,10 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pelanggan</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>
+                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>}
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Laba</th>
+                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Laba</th>}
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     </tr>
                   </thead>
@@ -1187,18 +1270,22 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                           <td className="px-4 py-3 text-sm text-gray-900">
                             {item.quantity}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">
-                            {formatCurrency(item.modal || 0)}
-                          </td>
+                          {isOwner && (
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {formatCurrency(item.modal || 0)}
+                            </td>
+                          )}
                           <td className="px-4 py-3 text-sm text-gray-900">
                             {formatCurrency(item.price)}
                           </td>
                           <td className="px-4 py-3 text-sm font-medium text-gray-900">
                             {formatCurrency(item.total)}
                           </td>
-                          <td className="px-4 py-3 text-sm text-green-600">
-                            {formatCurrency(item.total - (item.modal || 0) * item.quantity)}
-                          </td>
+                          {isOwner && (
+                            <td className="px-4 py-3 text-sm text-green-600">
+                              {formatCurrency(item.total - (item.modal || 0) * item.quantity)}
+                            </td>
+                          )}
                           {index === 0 && (
                             <td className="px-4 py-3 text-sm" rowSpan={transaction.items.length}>
                               <span className={transaction.status === 'lunas' ? 'badge-brand-success' : 'badge-brand-warning'}>
