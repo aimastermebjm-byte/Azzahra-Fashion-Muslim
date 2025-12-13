@@ -672,8 +672,9 @@ class ReportsService {
 
       transactions.forEach(transaction => {
         transaction.items.forEach(item => {
-          const key = item.productId || item.name;
-          if (key === productId) {
+          const itemKey = item.productId || item.name;
+          // Match using the same logic as in getProductsReport
+          if (itemKey === productId) {
             productTransactions.push({ transaction, item });
           }
         });
