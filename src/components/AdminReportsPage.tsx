@@ -106,6 +106,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [showBuyersModal, setShowBuyersModal] = useState(false);
   const [buyerSearchQuery, setBuyerSearchQuery] = useState('');
   const [searchTimeoutId, setSearchTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [isFilterActive, setIsFilterActive] = useState(false);
 
   // Calculate date range based on filter
   const getDateRange = useMemo(() => {
@@ -461,6 +462,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     setBuyersTotalPages(1);
     setBuyersTotalCount(0);
     setBuyerSearchQuery(''); // Reset search query when modal closes
+    setIsFilterActive(false); // Reset filter active state
     // Clear any pending search timeout
     if (searchTimeoutId) {
       clearTimeout(searchTimeoutId);
@@ -471,6 +473,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   // Handle search query change with debouncing
   const handleBuyerSearchChange = (query: string) => {
     setBuyerSearchQuery(query);
+    setIsFilterActive(query.trim() !== ''); // Update filter active state
     
     // Clear previous timeout
     if (searchTimeoutId) {
@@ -1509,16 +1512,27 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   value={buyerSearchQuery}
                   onChange={(e) => handleBuyerSearchChange(e.target.value)}
                   placeholder="Cari berdasarkan nama atau nomor telepon..."
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pl-10 pr-20 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
                 {buyerSearchQuery && (
                   <button
                     onClick={() => handleBuyerSearchChange('')}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    className="absolute inset-y-0 right-10 pr-3 flex items-center"
                   >
                     <XCircle className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                   </button>
                 )}
+                <button
+                  onClick={() => handleBuyerSearchChange('')}
+                  className={`absolute inset-y-0 right-0 px-3 flex items-center transition-colors ${
+                    isFilterActive
+                      ? 'text-blue-600 hover:text-blue-700 bg-blue-50 rounded-r-md border-l-4 border-l-blue-500' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                  title={isFilterActive ? "Hapus Filter" : "Filter"}
+                >
+                  {isFilterActive ? 'Hapus' : 'Filter'}
+                </button>
               </div>
             </div>
 
