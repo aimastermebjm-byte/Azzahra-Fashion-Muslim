@@ -74,6 +74,22 @@ export interface ProductBuyerReport {
   purchaseDate: string;
 }
 
+export interface ProductBuyerSummary {
+  productId: string;
+  productName: string;
+  buyers: Array<{
+    customerName: string;
+    customerPhone: string;
+    totalQuantity: number;
+    totalAmount: number;
+    purchaseCount: number;
+    lastPurchaseDate: string;
+  }>;
+  totalBuyers: number;
+  totalQuantity: number;
+  totalAmount: number;
+}
+
 export interface CustomerReport {
   id: string;
   name: string;
@@ -805,6 +821,89 @@ class ReportsService {
       };
     } catch (error) {
       console.error('Error getting summary stats:', error);
+      throw error;
+    }
+  }
+
+  // Get product buyers summary for rekap pembeli
+  static async getProductBuyersSummary(productId: string, filters: {
+    startDate?: string;
+    endDate?: string;
+    status?: 'all' | 'lunas' | 'belum_lunas';
+  } = {}): Promise<ProductBuyerSummary> {
+    try {
+      const transactions = await this.getTransactions({
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        limit: 1000
+      });
+
+      // Filter transactions by status if specified
+      let filteredTransactions = transactions;
+      if (filters.status && filters.status !== 'all') {
+        const statusFilter = filters.status === 'lunas' ? 'lunas' : 'belum_lunas';
+        filteredTransactions = transactions.filter(transaction => transaction.status === statusFilter);
+      }
+
+      // Aggregate buyers for this product
+      const buyerMap = new Map<string, {
+        customerName: string;
+        customerPhone: string;
+        totalQuantity: number;
+        totalAmount: number;
+        purchaseCount: number;
+        lastPurchaseDate: string;
+      }>();
+
+      filteredTransactions.forEach(transaction => {
+        transaction.items.forEach(item => {
+          const itemProductId = item.productId || item.name;
+          if (itemProductId === productId) {
+            const buyerKey = `${transaction.customer}_${transaction.phone}`;
+            
+            if (!buyerMap.has(buyerKey)) {
+              buyerMap.set(buyerKey, {
+                customerName: transaction.customer,
+                customerPhone: transaction.phone,
+                totalQuantity: 0,
+                totalAmount: 0,
+                purchaseCount: 0,
+                lastPurchaseDate: transaction.date
+              });
+            }
+            
+            const buyer = buyerMap.get(buyerKey)!;
+            buyer.totalQuantity += item.quantity;
+            buyer.totalAmount += item.total;
+            buyer.purchaseCount += 1;
+            
+            // Update last purchase date if this transaction is more recent
+            if (new Date(transaction.date) > new Date(buyer.lastPurchaseDate)) {
+              buyer.lastPurchaseDate = transaction.date;
+            }
+          }
+        });
+      });
+
+      const buyers = Array.from(buyerMap.values())
+        .sort((a, b) => b.totalQuantity - a.totalQuantity); // Sort by quantity descending
+
+      const totalBuyers = buyers.length;
+      const totalQuantity = buyers.reduce((sum, buyer) => sum + buyer.totalQuantity, 0);
+      const totalAmount = buyers.reduce((sum, buyer) => sum + buyer.totalAmount, 0);
+
+      return {
+        productId,
+        productName: filteredTransactions.length > 0 ? 
+          (filteredTransactions[0].items.find(item => (item.productId || item.name) === productId)?.name || `Produk ${productId}`) : 
+          `Produk ${productId}`,
+        buyers,
+        totalBuyers,
+        totalQuantity,
+        totalAmount
+      };
+    } catch (error) {
+      console.error('Error getting product buyers summary:', error);
       throw error;
     }
   }
