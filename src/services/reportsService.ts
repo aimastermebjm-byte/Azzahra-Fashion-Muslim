@@ -60,6 +60,18 @@ export interface ProductReport {
   stock: number;
   profit: number;
   lastSoldDate?: Date;
+  buyerCount?: number; // Total number of unique buyers
+}
+
+export interface ProductBuyerReport {
+  id: string;
+  productName: string;
+  customerName: string;
+  customerPhone: string;
+  quantity: number;
+  totalAmount: number;
+  invoice: string;
+  purchaseDate: string;
 }
 
 export interface CustomerReport {
@@ -261,6 +273,7 @@ class ReportsService {
 
       // Process products from transactions (prefer productId when available)
       const aggregatedProducts = new Map<string, ProductReport>();
+      const productBuyers = new Map<string, Set<string>>(); // Track unique buyers per product
 
       transactions.forEach(transaction => {
         transaction.items.forEach(item => {
@@ -268,6 +281,13 @@ class ReportsService {
           if (!key) {
             return;
           }
+
+          // Track unique buyers
+          if (!productBuyers.has(key)) {
+            productBuyers.set(key, new Set());
+          }
+          const buyerKey = `${transaction.customer}_${transaction.phone}`;
+          productBuyers.get(key)!.add(buyerKey);
 
           const profitContribution = (item.total || 0) - (item.modalTotal ?? ((item.modal || 0) * (item.quantity || 0)));
           const existing = aggregatedProducts.get(key);
@@ -319,7 +339,8 @@ class ReportsService {
           category: inventory?.category || product.category,
           stock: inventory?.stock ?? product.stock,
           profit: product.profit,
-          lastSoldDate: product.lastSoldDate
+          lastSoldDate: product.lastSoldDate,
+          buyerCount: productBuyers.get(product.id)?.size || 0
         };
       });
     } catch (error) {
@@ -598,6 +619,78 @@ class ReportsService {
       return cashFlowData;
     } catch (error) {
       console.error('Error getting cash flow reports:', error);
+      throw error;
+    }
+  }
+
+  // Get product buyers with pagination
+  static async getProductBuyers(productId: string, filters: {
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  } = {}): Promise<{
+    buyers: ProductBuyerReport[];
+    totalCount: number;
+    currentPage: number;
+    totalPages: number;
+  }> {
+    try {
+      const page = filters.page || 1;
+      const limit = filters.limit || 20;
+      const offset = (page - 1) * limit;
+
+      const transactions = await this.getTransactions({
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        limit: 1000 // Get all transactions for accurate pagination
+      });
+
+      // Filter transactions that contain the specific product
+      const productTransactions: Array<{
+        transaction: Transaction;
+        item: any;
+      }> = [];
+
+      transactions.forEach(transaction => {
+        transaction.items.forEach(item => {
+          const key = item.productId || item.name;
+          if (key === productId) {
+            productTransactions.push({ transaction, item });
+          }
+        });
+      });
+
+      // Sort by date (newest first)
+      productTransactions.sort((a, b) => 
+        new Date(b.transaction.createdAt).getTime() - new Date(a.transaction.createdAt).getTime()
+      );
+
+      // Map to buyer reports
+      const allBuyers = productTransactions.map(({ transaction, item }) => ({
+        id: `${transaction.id}_${item.productId || item.name}`,
+        productName: item.name,
+        customerName: transaction.customer,
+        customerPhone: transaction.phone,
+        quantity: item.quantity,
+        totalAmount: item.total,
+        invoice: transaction.invoice,
+        purchaseDate: transaction.date
+      }));
+
+      // Apply pagination
+      const totalCount = allBuyers.length;
+      const totalPages = Math.ceil(totalCount / limit);
+      const buyers = allBuyers.slice(offset, offset + limit);
+
+      return {
+        buyers,
+        totalCount,
+        currentPage: page,
+        totalPages
+      };
+    } catch (error) {
+      console.error('Error getting product buyers:', error);
       throw error;
     }
   }

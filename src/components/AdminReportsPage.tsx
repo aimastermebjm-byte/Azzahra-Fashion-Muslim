@@ -15,7 +15,8 @@ import {
   Transaction,
   ProductReport,
   InventoryReport,
-  CashFlowReport
+  CashFlowReport,
+  ProductBuyerReport
 } from '../services/reportsService';
 
 interface AdminReportsPageProps {
@@ -76,7 +77,6 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [customerFilter, setCustomerFilter] = useState<string>('');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<'all' | string>('all');
   const [categoryFilter, setCategoryFilter] = useState<'all' | string>('all');
-  const [productFilter, setProductFilter] = useState<string>('all');
 
   // Data states
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -87,6 +87,20 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Separate loading states for lazy loading
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [loadingInventory, setLoadingInventory] = useState(false);
+  const [loadingCashFlow, setLoadingCashFlow] = useState(false);
+  
+  // Modal states for product buyers
+  const [selectedProduct, setSelectedProduct] = useState<ProductReport | null>(null);
+  const [productBuyers, setProductBuyers] = useState<ProductBuyerReport[]>([]);
+  const [loadingBuyers, setLoadingBuyers] = useState(false);
+  const [buyersPage, setBuyersPage] = useState(1);
+  const [buyersTotalPages, setBuyersTotalPages] = useState(1);
+  const [buyersTotalCount, setBuyersTotalCount] = useState(0);
+  const [showBuyersModal, setShowBuyersModal] = useState(false);
 
   // Calculate date range based on filter
   const getDateRange = useMemo(() => {
@@ -154,28 +168,58 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     }
   };
 
-  // Load products report
+  // Load products report - with caching
   const loadProductsReport = async () => {
-    setLoading(true);
+    const { start, end } = getDateRange;
+    const cacheKey = `products-cache-${start}-${end}`;
+    
+    // Check cache first
     try {
-      const { start, end } = getDateRange;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        const now = Date.now();
+        const CACHE_EXPIRY = 60 * 60 * 1000; // 1 hour
+        
+        if (now - timestamp < CACHE_EXPIRY) {
+          console.log('✅ Products loaded from cache');
+          setProducts(data);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Cache read error:', err);
+    }
+
+    setLoadingProducts(true);
+    try {
       const productData = await ReportsService.getProductsReport({
         startDate: start,
         endDate: end,
-        limit: 100 // Limit untuk performance
+        limit: 1000 // Increased limit for better data
       });
       setProducts(productData);
+      
+      // Cache the result
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data: productData,
+          timestamp: Date.now()
+        }));
+      } catch (err) {
+        console.error('Cache write error:', err);
+      }
     } catch (error) {
       console.error('Error loading products report:', error);
       setProducts([]);
     } finally {
-      setLoading(false);
+      setLoadingProducts(false);
     }
   };
 
   // Load inventory report
   const loadInventoryReport = async () => {
-    setLoading(true);
+    setLoadingInventory(true);
     try {
       const inventoryData = await ReportsService.getInventoryReports();
       setInventory(inventoryData);
@@ -183,7 +227,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       console.error('Error loading inventory report:', error);
       setInventory([]);
     } finally {
-      setLoading(false);
+      setLoadingInventory(false);
     }
   };
 
@@ -240,7 +284,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
   // Load cash flow report
   const loadCashFlowReport = async () => {
-    setLoading(true);
+    setLoadingCashFlow(true);
     try {
       const { start, end } = getDateRange;
       const cashFlowData = await ReportsService.getCashFlowReports({
@@ -254,7 +298,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       console.error('Error loading cash flow report:', error);
       setCashFlow([]);
     } finally {
-      setLoading(false);
+      setLoadingCashFlow(false);
     }
   };
 
@@ -282,7 +326,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     }
   }
 
-  // Load data based on active report type - OPTIMIZED: Only on reportType change
+  // Load data based on active report type - OPTIMIZED: Lazy loading for tabs
   useEffect(() => {
     const loadData = async () => {
       switch (reportType) {
@@ -292,15 +336,19 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           await loadTransactions();
           break;
         case 'products':
+          // Lazy load - only when tab is clicked
           await loadProductsReport();
           break;
         case 'inventory':
+          // Lazy load - only when tab is clicked
           await loadInventoryReport();
           break;
         case 'cashflow':
+          // Lazy load - only when tab is clicked
           await loadCashFlowReport();
           break;
         case 'profitloss':
+          // Lazy load - only when tab is clicked
           await loadCashFlowReport();
           await loadSummaryStats();
           break;
@@ -314,6 +362,55 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
     loadData();
   }, [reportType]); // OPTIMIZED: Only reload when reportType changes, not filters
+
+  // Load product buyers with pagination
+  const loadProductBuyers = async (product: ProductReport, page: number = 1) => {
+    setLoadingBuyers(true);
+    try {
+      const { start, end } = getDateRange;
+      const result = await ReportsService.getProductBuyers(product.id, {
+        startDate: start,
+        endDate: end,
+        page,
+        limit: 20
+      });
+      
+      setProductBuyers(result.buyers);
+      setBuyersPage(result.currentPage);
+      setBuyersTotalPages(result.totalPages);
+      setBuyersTotalCount(result.totalCount);
+    } catch (error) {
+      console.error('Error loading product buyers:', error);
+      setProductBuyers([]);
+    } finally {
+      setLoadingBuyers(false);
+    }
+  };
+
+  // Open buyers modal
+  const openBuyersModal = (product: ProductReport) => {
+    setSelectedProduct(product);
+    setBuyersPage(1); // Reset to first page
+    setShowBuyersModal(true);
+    loadProductBuyers(product, 1);
+  };
+
+  // Close buyers modal
+  const closeBuyersModal = () => {
+    setShowBuyersModal(false);
+    setSelectedProduct(null);
+    setProductBuyers([]);
+    setBuyersPage(1);
+    setBuyersTotalPages(1);
+    setBuyersTotalCount(0);
+  };
+
+  // Handle pagination for buyers
+  const handleBuyersPageChange = (newPage: number) => {
+    if (selectedProduct) {
+      loadProductBuyers(selectedProduct, newPage);
+    }
+  };
 
   // Remove mock loader - rely on real data above
 
@@ -355,14 +452,6 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       averageTransaction: filteredTransactions.length > 0 ? totalSales / filteredTransactions.length : 0
     };
   }, [filteredTransactions]);
-
-  // Memoized product buyers list (for performance)
-  const productBuyers = useMemo(() => {
-    if (productFilter === 'all') return [];
-    return filteredTransactions.filter(t => 
-      t.items && t.items.some(item => item.name === productFilter)
-    );
-  }, [productFilter, filteredTransactions]);
 
   // Calculate profit/loss
   const profitLossStats = useMemo(() => {
@@ -827,36 +916,31 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">Produk Terlaris</h3>
+                {loadingProducts && (
+                  <div className="flex items-center text-sm text-gray-500">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    Loading...
+                  </div>
+                )}
               </div>
 
-              {/* Filter by Product Name - NEW */}
-              <div className="mb-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                  📦 Filter Pembeli Produk (untuk cek siapa saja yang beli)
-                </label>
-                <select
-                  value={productFilter}
-                  onChange={(e) => setProductFilter(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">Semua Produk</option>
-                  {products.map((product) => (
-                    <option key={product.id} value={product.name}>
-                      {product.name} ({product.totalSold} terjual)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full table-auto">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terjual</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga</th>
+              {loadingProducts && products.length === 0 ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-blue-600 mb-4"></div>
+                  <p className="text-gray-600 font-medium">Memuat data produk...</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full table-auto">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terjual</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga</th>
                       {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>}
                       {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Laba</th>}
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pembeli</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -887,69 +971,23 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                               {formatCurrency(product.profit)}
                             </td>
                           )}
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {product.buyerCount || 0} orang
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            <button
+                              onClick={() => openBuyersModal(product)}
+                              className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                            >
+                              Lihat Pembeli
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
-              </div>
-
-              {/* Buyers List - Show when specific product is selected */}
-              {productFilter !== 'all' && (
-                  <div className="mt-6 bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
-                    <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                      <User className="w-5 h-5 text-green-600" />
-                      Daftar Pembeli: {productFilter} ({productBuyers.length} transaksi)
-                    </h4>
-                    {productBuyers.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500 bg-white rounded-lg">
-                        Belum ada pembeli untuk produk ini
-                      </div>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full table-auto bg-white rounded-lg">
-                          <thead>
-                            <tr className="bg-green-100">
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Nama Pelanggan</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Invoice</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Tanggal</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Qty</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {productBuyers.map((transaction) => {
-                              const item = transaction.items.find(i => i.name === productFilter);
-                              return (
-                                <tr key={transaction.id} className="hover:bg-green-50">
-                                  <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                                    <div>
-                                      <div>{transaction.customer}</div>
-                                      <div className="text-xs text-gray-500">{transaction.phone}</div>
-                                    </div>
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-blue-600">
-                                    {transaction.invoice}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-gray-600">
-                                    {transaction.date}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-gray-900">
-                                    {item?.quantity || 0} pcs
-                                  </td>
-                                  <td className="px-4 py-3 text-sm">
-                                    <span className={transaction.status === 'lunas' ? 'badge-brand-success' : 'badge-brand-warning'}>
-                                      {transaction.status === 'lunas' ? 'Lunas' : 'Belum Lunas'}
-                                    </span>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
+                </div>
               )}
             </div>
           )}
@@ -1313,6 +1351,114 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           )}
         </div>
       </div>
+
+      {/* Product Buyers Modal */}
+      {showBuyersModal && selectedProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[80vh] overflow-hidden">
+            <div className="p-6 border-b">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Pembeli Produk: {selectedProduct.name}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Total Pembeli: {buyersTotalCount} orang
+                  </p>
+                </div>
+                <button
+                  onClick={closeBuyersModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 200px)' }}>
+              {loadingBuyers ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-blue-600 mb-4"></div>
+                  <p className="text-gray-600 font-medium">Memuat data pembeli...</p>
+                </div>
+              ) : productBuyers.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Tidak ada pembeli untuk produk ini</p>
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full table-auto">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">No. HP</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jumlah</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {productBuyers.map((buyer) => (
+                          <tr key={buyer.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                              {buyer.customerName}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-500">
+                              {buyer.customerPhone}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {buyer.quantity} pcs
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {formatCurrency(buyer.totalAmount)}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {buyer.invoice}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-500">
+                              {buyer.purchaseDate}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination */}
+                  {buyersTotalPages > 1 && (
+                    <div className="flex justify-between items-center mt-4">
+                      <div className="text-sm text-gray-700">
+                        Menampilkan {productBuyers.length} dari {buyersTotalCount} pembeli
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleBuyersPageChange(buyersPage - 1)}
+                          disabled={buyersPage === 1}
+                          className="px-3 py-1 text-sm border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Previous
+                        </button>
+                        <span className="px-3 py-1 text-sm">
+                          Halaman {buyersPage} dari {buyersTotalPages}
+                        </span>
+                        <button
+                          onClick={() => handleBuyersPageChange(buyersPage + 1)}
+                          disabled={buyersPage === buyersTotalPages}
+                          className="px-3 py-1 text-sm border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
