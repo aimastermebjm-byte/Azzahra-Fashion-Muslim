@@ -66,27 +66,66 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         existingPaymentGroup = await paymentGroupService.getPaymentGroup(firstOrder.paymentGroupId);
         
         if (existingPaymentGroup && existingPaymentGroup.status === 'pending') {
-          console.log('✅ Found existing payment group! Using existing code:', existingPaymentGroup.uniquePaymentCode);
-          showToast('💡 Menggunakan kode pembayaran yang sudah dibuat', 'info');
+          // ✅ VALIDATE: Check if existing payment group matches current selection
+          const isSameOrders = 
+            existingPaymentGroup.orderIds.length === selectedOrderIds.length &&
+            existingPaymentGroup.orderIds.every(id => selectedOrderIds.includes(id));
           
-          // Go directly to instructions with existing payment group
-          setPaymentData({
-            orderIds: selectedOrderIds,
-            subtotal,
-            orders: selected,
-            paymentGroup: existingPaymentGroup
-          });
+          const isSameTotal = existingPaymentGroup.originalTotal === subtotal;
           
-          if (existingPaymentGroup.verificationMode === 'auto') {
-            setShowInstructionsModal(true);
-          } else if (existingPaymentGroup.verificationMode === 'manual') {
-            setShowUploadModal(true);
+          if (isSameOrders && isSameTotal) {
+            // Same orders, same total - reuse existing payment group
+            console.log('✅ Found matching payment group! Using existing code:', existingPaymentGroup.uniquePaymentCode);
+            showToast('💡 Menggunakan kode pembayaran yang sudah dibuat', 'info');
+            
+            // Go directly to instructions with existing payment group
+            setPaymentData({
+              orderIds: selectedOrderIds,
+              subtotal,
+              orders: selected,
+              paymentGroup: existingPaymentGroup
+            });
+            
+            if (existingPaymentGroup.verificationMode === 'auto') {
+              setShowInstructionsModal(true);
+            } else if (existingPaymentGroup.verificationMode === 'manual') {
+              setShowUploadModal(true);
+            } else {
+              // No mode selected yet, show method modal
+              setShowMethodModal(true);
+            }
+            
+            return; // Exit early - don't show method modal
           } else {
-            // No mode selected yet, show method modal
-            setShowMethodModal(true);
+            // Different orders/total - ask user if they want to cancel old one
+            const shouldCancelOld = window.confirm(
+              `Anda sudah punya pembayaran dengan kode unik yang belum selesai.\n\n` +
+              `Pesanan lama: ${existingPaymentGroup.orderIds.length} pesanan (Rp ${existingPaymentGroup.originalTotal.toLocaleString('id-ID')})\n` +
+              `Pesanan baru: ${selectedOrderIds.length} pesanan (Rp ${subtotal.toLocaleString('id-ID')})\n\n` +
+              `Batalkan pembayaran lama dan buat yang baru?`
+            );
+            
+            if (shouldCancelOld) {
+              // Cancel old payment group
+              await paymentGroupService.cancelPaymentGroup(existingPaymentGroup.id);
+              
+              // Remove payment group links from OLD orders
+              for (const orderId of existingPaymentGroup.orderIds) {
+                await ordersService.updateOrder(orderId, {
+                  paymentGroupId: null,
+                  groupPaymentAmount: null,
+                  verificationMode: undefined
+                });
+              }
+              
+              showToast('✅ Pembayaran lama dibatalkan', 'success');
+              
+              // Continue to create new payment group
+            } else {
+              // User cancelled - don't proceed
+              return;
+            }
           }
-          
-          return; // Exit early - don't show method modal
         } else {
           console.log('⚠️ Payment group not found or already paid/cancelled');
         }
@@ -95,7 +134,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       }
     }
     
-    // No existing payment group, show method selection
+    // No existing payment group (or cancelled), show method selection
     setPaymentData({
       orderIds: selectedOrderIds,
       subtotal,
@@ -745,9 +784,16 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
               {/* Total Amount - Centered */}
               <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200 text-center">
                 <p className="text-xs font-semibold text-blue-800 mb-2">Total Transfer:</p>
-                <p className="text-3xl font-bold text-blue-900">
+                <p className="text-3xl font-bold text-blue-900 mb-3">
                   Rp {paymentData?.subtotal.toLocaleString('id-ID')}
                 </p>
+                <button
+                  onClick={() => handleCopy(paymentData?.subtotal.toString() || '', 'Nominal')}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 mx-auto"
+                >
+                  <Copy className="w-4 h-4" />
+                  Copy Nominal
+                </button>
               </div>
 
               {/* Bank Accounts - Compact */}
