@@ -334,13 +334,18 @@ class ReportsService {
         const normalizedName = product.name ? product.name.toLowerCase() : '';
         const inventory = inventoryById.get(product.id) || (normalizedName ? inventoryByName.get(normalizedName) : undefined);
 
+        // For the buyer count, we need to look up using the product id itself
+        // since the aggregatedProducts map uses the product.id as key
+        // This should match the key used in productBuyers map
+        const buyerCount = productBuyers.get(product.id)?.size || 0;
+        
         return {
           ...product,
           category: inventory?.category || product.category,
           stock: inventory?.stock ?? product.stock,
           profit: product.profit,
           lastSoldDate: product.lastSoldDate,
-          buyerCount: productBuyers.get(product.id)?.size || 0
+          buyerCount: buyerCount
         };
       });
     } catch (error) {
