@@ -352,13 +352,13 @@ Return ONLY valid JSON (no markdown, no backticks):
       existingAnalysis.embellishments || {}
     );
 
-    // Apply weights
+    // Apply weights - Focus on model and pattern only
     const overallScore = (
-      modelTypeScore * 0.30 + // 30%
-      patternScore * 0.25 +   // 25%
-      colorsScore * 0.20 +    // 20%
-      detailsScore * 0.15 +   // 15%
-      embellishmentsScore * 0.10 // 10%
+      modelTypeScore * 0.50 + // 50% - Model type (most important)
+      patternScore * 0.50 +   // 50% - Pattern (most important)
+      colorsScore * 0.00 +    // 0% - Colors (ignore)
+      detailsScore * 0.00 +   // 0% - Details (ignore)
+      embellishmentsScore * 0.00 // 0% - Embellishments (ignore)
     );
 
     console.log('🎯 Enhanced Similarity Calculation:', {
@@ -431,11 +431,32 @@ Return ONLY valid JSON (no markdown, no backticks):
     // Normalize to lowercase for comparison
     const uploadedType = uploaded.main_type?.toString().toLowerCase() || 'other';
     const existingType = existing.main_type?.toString().toLowerCase() || 'other';
+    
+    const uploadedSilhouette = uploaded.silhouette?.toString().toLowerCase() || 'loose';
+    const existingSilhouette = existing.silhouette?.toString().toLowerCase() || 'loose';
+    const uploadedLength = uploaded.length?.toString().toLowerCase() || 'maxi';
+    const existingLength = existing.length?.toString().toLowerCase() || 'maxi';
+
+    console.log('👗 Model type comparison:', {
+      uploadedType,
+      existingType,
+      uploadedSilhouette,
+      existingSilhouette,
+      uploadedLength,
+      existingLength
+    });
 
     if (uploadedType === existingType) {
       // Same main type, check silhouette
-      if (uploaded.silhouette === existing.silhouette) return 100;
-      if (uploaded.length === existing.length) return 85;
+      if (uploadedSilhouette === existingSilhouette) {
+        console.log('👗 Exact model type match: 100%');
+        return 100;
+      }
+      if (uploadedLength === existingLength) {
+        console.log('👗 Same type and length: 85%');
+        return 85;
+      }
+      console.log('👗 Same type only: 70%');
       return 70;
     }
     
@@ -467,18 +488,37 @@ Return ONLY valid JSON (no markdown, no backticks):
     }
 
     // Normalize to lowercase for comparison
-    const uploadedPattern = uploaded.pattern?.toString().toLowerCase() || 'solid';
-    const existingPattern = existing.pattern?.toString().toLowerCase() || 'solid';
+    const uploadedPattern = uploaded.pattern?.toString().toLowerCase().trim() || 'solid';
+    const existingPattern = existing.pattern?.toString().toLowerCase().trim() || 'solid';
+
+    console.log('🎨 Pattern comparison:', {
+      uploadedPattern,
+      existingPattern,
+      uploadedComplexity: uploaded.complexity,
+      existingComplexity: existing.complexity
+    });
 
     // Check for exact match
     if (uploadedPattern === existingPattern) {
       // Same pattern, check complexity
+      console.log('🎨 Exact pattern match');
       if (uploaded.complexity === existing.complexity) return 100;
       return 80;
     }
     
     // Check if one pattern includes the other (e.g., "geometric" vs "geometric_grid_with_logo")
-    if (uploadedPattern.includes(existingPattern) || existingPattern.includes(uploadedPattern)) {
+    const uploadedIncludesExisting = uploadedPattern.includes(existingPattern);
+    const existingIncludesUploaded = existingPattern.includes(uploadedPattern);
+    
+    console.log('🎨 Pattern includes check:', {
+      uploadedIncludesExisting,
+      existingIncludesUploaded,
+      uploadedPattern,
+      existingPattern
+    });
+    
+    if (uploadedIncludesExisting || existingIncludesUploaded) {
+      console.log('🎨 Pattern includes match: 75%');
       return 75; // High similarity for related patterns
     }
     
@@ -503,76 +543,12 @@ Return ONLY valid JSON (no markdown, no backticks):
     uploadedColors: string[],
     existingColors: string[]
   ): number {
-    if (!uploadedColors.length || !existingColors.length) {
-      console.log('🎨 Colors similarity: Missing colors data', { uploadedColors, existingColors });
-      return 50;
-    }
-    
-    // Normalize colors to lowercase
-    const normalizedUploaded = uploadedColors.map(c => c.toLowerCase().trim());
-    const normalizedExisting = existingColors.map(c => c.toLowerCase().trim());
-    
-    console.log('🎨 Colors comparison:', {
-      uploaded: normalizedUploaded,
-      existing: normalizedExisting
+    // Colors are ignored in similarity calculation (weight: 0%)
+    console.log('🎨 Colors similarity: Ignored (weight: 0%)', { 
+      uploaded: uploadedColors,
+      existing: existingColors 
     });
-    
-    // Color families for fuzzy matching
-    const colorFamilies: Record<string, string[]> = {
-      'blue': ['blue', 'navy', 'cobalt', 'azure', 'cyan', 'teal', 'turquoise'],
-      'grey': ['grey', 'gray', 'slate', 'charcoal', 'ash', 'smoke'],
-      'beige': ['beige', 'tan', 'khaki', 'sand', 'cream', 'ivory'],
-      'black': ['black', 'ebony', 'onyx', 'jet'],
-      'white': ['white', 'snow', 'pearl', 'ivory'],
-      'brown': ['brown', 'chocolate', 'coffee', 'hazel', 'caramel'],
-      'red': ['red', 'crimson', 'scarlet', 'ruby', 'burgundy'],
-      'pink': ['pink', 'rose', 'blush', 'magenta', 'fuchsia'],
-      'purple': ['purple', 'violet', 'lavender', 'lilac', 'mauve'],
-      'green': ['green', 'emerald', 'olive', 'lime', 'mint'],
-      'yellow': ['yellow', 'gold', 'lemon', 'mustard', 'amber']
-    };
-    
-    // Count matching colors with fuzzy matching
-    const matchingColors = normalizedUploaded.filter(uploadedColor => {
-      // Check for exact or partial match
-      if (normalizedExisting.some(existingColor => 
-        existingColor === uploadedColor ||
-        existingColor.includes(uploadedColor) ||
-        uploadedColor.includes(existingColor)
-      )) {
-        return true;
-      }
-      
-      // Check color families
-      for (const [family, familyColors] of Object.entries(colorFamilies)) {
-        const uploadedInFamily = familyColors.some(fc => uploadedColor.includes(fc));
-        const existingInFamily = normalizedExisting.some(ec => 
-          familyColors.some(fc => ec.includes(fc))
-        );
-        
-        if (uploadedInFamily && existingInFamily) {
-          console.log(`🎨 Colors match in family ${family}: ${uploadedColor} ↔ ${normalizedExisting}`);
-          return true;
-        }
-      }
-      
-      return false;
-    });
-    
-    const matchPercentage = (matchingColors.length / Math.max(normalizedUploaded.length, normalizedExisting.length)) * 100;
-    
-    console.log(`🎨 Colors match: ${matchingColors.length}/${Math.max(normalizedUploaded.length, normalizedExisting.length)} = ${matchPercentage}%`);
-    
-    // Boost score if primary colors match
-    const primaryMatch = normalizedUploaded[0] && normalizedExisting[0] &&
-      (normalizedUploaded[0] === normalizedExisting[0] ||
-       normalizedUploaded[0].includes(normalizedExisting[0]) ||
-       normalizedExisting[0].includes(normalizedUploaded[0]));
-    
-    const finalScore = primaryMatch ? Math.min(100, matchPercentage + 20) : matchPercentage;
-    console.log(`🎨 Final colors score: ${finalScore}%`);
-    
-    return finalScore;
+    return 100; // Return 100% since colors are ignored
   }
 
   /**
@@ -582,41 +558,12 @@ Return ONLY valid JSON (no markdown, no backticks):
     uploaded: any,
     existing: any
   ): number {
-    let score = 0;
-    let count = 0;
-
-    // Lace details
-    if (uploaded.lace_details.has_lace === existing.lace_details.has_lace) {
-      score += 40;
-      if (uploaded.lace_details.has_lace) {
-        // Both have lace, compare locations
-        const uploadedLocs = uploaded.lace_details.locations.map((l: any) => l.position);
-        const existingLocs = existing.lace_details.locations.map((l: any) => l.position);
-        const matchingLocs = uploadedLocs.filter((loc: string) => existingLocs.includes(loc));
-        score += (matchingLocs.length / Math.max(uploadedLocs.length, existingLocs.length)) * 30;
-      }
-    }
-    count++;
-
-    // Hem pleats
-    if (uploaded.hem_pleats.has_pleats === existing.hem_pleats.has_pleats) {
-      score += 30;
-      if (uploaded.hem_pleats.has_pleats && uploaded.hem_pleats.pleat_type === existing.hem_pleats.pleat_type) {
-        score += 20;
-      }
-    }
-    count++;
-
-    // Sleeve details
-    if (uploaded.sleeve_details.sleeve_type === existing.sleeve_details.sleeve_type) {
-      score += 30;
-      if (uploaded.sleeve_details.has_pleats === existing.sleeve_details.has_pleats) {
-        score += 20;
-      }
-    }
-    count++;
-
-    return score / count;
+    // Details are ignored in similarity calculation (weight: 0%)
+    console.log('🔧 Details similarity: Ignored (weight: 0%)', { 
+      uploadedHasLace: uploaded.lace_details?.has_lace,
+      existingHasLace: existing.lace_details?.has_lace
+    });
+    return 100; // Return 100% since details are ignored
   }
 
   /**
@@ -626,40 +573,12 @@ Return ONLY valid JSON (no markdown, no backticks):
     uploaded: any,
     existing: any
   ): number {
-    let score = 0;
-    let count = 0;
-
-    // Beads
-    if (uploaded.beads.has === existing.beads.has) {
-      score += 40;
-      if (uploaded.beads.has) {
-        const beadMatch = uploaded.beads.locations.some((loc: string) =>
-          existing.beads.locations.includes(loc)
-        );
-        if (beadMatch) score += 30;
-      }
-    }
-    count++;
-
-    // Embroidery
-    if (uploaded.embroidery.has === existing.embroidery.has) {
-      score += 30;
-    }
-    count++;
-
-    // Sequins
-    if (uploaded.sequins.has === existing.sequins.has) {
-      score += 20;
-    }
-    count++;
-
-    // Gold thread
-    if (uploaded.gold_thread.has === existing.gold_thread.has) {
-      score += 10;
-    }
-    count++;
-
-    return score / count;
+    // Embellishments are ignored in similarity calculation (weight: 0%)
+    console.log('✨ Embellishments similarity: Ignored (weight: 0%)', { 
+      uploadedHasBeads: uploaded.beads?.has,
+      existingHasBeads: existing.beads?.has
+    });
+    return 100; // Return 100% since embellishments are ignored
   }
 
   /**
