@@ -339,6 +339,20 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
       const enhancedSimilarities: EnhancedSimilarityResultUI[] = [];
       
       for (const item of validProductsWithAnalysis) {
+        console.log('🔍 Comparing with product:', item.product.name);
+        console.log('📊 Uploaded analysis:', {
+          type: uploadedAnalysis?.clothing_type?.main_type,
+          pattern: uploadedAnalysis?.pattern_type?.pattern,
+          colors: uploadedAnalysis?.colors,
+          hasLace: uploadedAnalysis?.lace_details?.has_lace
+        });
+        console.log('📊 Existing analysis:', {
+          type: item.analysis?.clothing_type?.main_type,
+          pattern: item.analysis?.pattern_type?.pattern,
+          colors: item.analysis?.colors,
+          hasLace: item.analysis?.lace_details?.has_lace
+        });
+        
         const enhancedResult = imageComparisonService.calculateEnhancedSimilarity(
           uploadedAnalysis,
           item.analysis,

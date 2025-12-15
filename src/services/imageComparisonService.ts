@@ -333,6 +333,25 @@ Return ONLY valid JSON (no markdown, no backticks):
       embellishmentsScore * 0.10 // 10%
     );
 
+    console.log('🎯 Enhanced Similarity Calculation:', {
+      productName: salesData.productName,
+      scores: {
+        modelType: modelTypeScore,
+        pattern: patternScore,
+        colors: colorsScore,
+        details: detailsScore,
+        embellishments: embellishmentsScore
+      },
+      weighted: {
+        modelType: modelTypeScore * 0.30,
+        pattern: patternScore * 0.25,
+        colors: colorsScore * 0.20,
+        details: detailsScore * 0.15,
+        embellishments: embellishmentsScore * 0.10
+      },
+      overallScore
+    });
+
     // Determine recommendation
     const { recommendation, label, reason } = this.getRecommendation(
       overallScore,

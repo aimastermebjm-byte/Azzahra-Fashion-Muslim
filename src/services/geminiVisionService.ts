@@ -121,10 +121,10 @@ export class GeminiVisionService {
       throw new Error('Gemini not initialized. Please set API key first.');
     }
     
-    // Use Gemini 2.5 Flash (latest stable model for Free Tier)
+    // Use Gemini models optimized for Free Tier & Stability
     const modelNames = [
-      "gemini-2.5-flash",         // Latest 2.5 (per docs)
-      "gemini-1.5-flash",         // Fallback 1.5
+      "gemini-2.0-flash",         // Latest 2.0 Flash
+      "gemini-1.5-flash-latest",  // Latest 1.5 Flash
       "gemini-pro-vision"         // Legacy fallback
     ];
     
@@ -169,8 +169,8 @@ export class GeminiVisionService {
     
     // Model names optimized for Free Tier & Stability
     const modelNames = [
-      "gemini-2.5-flash",          // Latest 2.5 (per docs)
-      "gemini-1.5-flash",          // Fallback 1.5
+      "gemini-2.0-flash",          // Latest 2.0 Flash
+      "gemini-1.5-flash-latest",   // Latest 1.5 Flash
       "gemini-pro-vision"          // Legacy fallback
     ];
     
@@ -400,8 +400,8 @@ Valid values:
     
     // Model names optimized for Free Tier & Stability
     const modelNames = [
-      "gemini-2.5-flash",          // Latest 2.5 (per docs)
-      "gemini-1.5-flash",          // Fallback 1.5
+      "gemini-2.0-flash",          // Latest 2.0 Flash
+      "gemini-1.5-flash-latest",   // Latest 1.5 Flash
       "gemini-pro-vision"          // Legacy fallback
     ];
     
@@ -545,7 +545,7 @@ Return JSON format:
 }`;
 
       const model = this.genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-1.5-flash-latest",
         generationConfig: {
           responseMimeType: "application/json",
           temperature: 0.1,
