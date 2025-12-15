@@ -298,20 +298,48 @@ Return ONLY valid JSON (no markdown, no backticks):
     existingAnalysis: any, // GeminiClothingAnalysis from existing product
     salesData: { totalQuantity: number; productName: string }
   ): EnhancedSimilarityResult {
-    // Calculate weighted scores
+    // Validate analyses
+    if (!uploadedAnalysis || !existingAnalysis) {
+      console.error('❌ Invalid analysis data:', { uploadedAnalysis, existingAnalysis });
+      return this.createDefaultResult(salesData, 'Invalid analysis data');
+    }
+
+    // Log analysis structures for debugging
+    console.log('🔍 Analysis structures:', {
+      uploaded: {
+        clothing_type: uploadedAnalysis.clothing_type,
+        pattern_type: uploadedAnalysis.pattern_type,
+        colors: uploadedAnalysis.colors,
+        lace_details: uploadedAnalysis.lace_details,
+        hem_pleats: uploadedAnalysis.hem_pleats,
+        sleeve_details: uploadedAnalysis.sleeve_details,
+        embellishments: uploadedAnalysis.embellishments
+      },
+      existing: {
+        clothing_type: existingAnalysis.clothing_type,
+        pattern_type: existingAnalysis.pattern_type,
+        colors: existingAnalysis.colors,
+        lace_details: existingAnalysis.lace_details,
+        hem_pleats: existingAnalysis.hem_pleats,
+        sleeve_details: existingAnalysis.sleeve_details,
+        embellishments: existingAnalysis.embellishments
+      }
+    });
+
+    // Calculate weighted scores with fallbacks
     const modelTypeScore = this.calculateModelTypeSimilarity(
-      uploadedAnalysis.clothing_type,
-      existingAnalysis.clothing_type
+      uploadedAnalysis.clothing_type || {},
+      existingAnalysis.clothing_type || {}
     );
     
     const patternScore = this.calculatePatternSimilarity(
-      uploadedAnalysis.pattern_type,
-      existingAnalysis.pattern_type
+      uploadedAnalysis.pattern_type || {},
+      existingAnalysis.pattern_type || {}
     );
     
     const colorsScore = this.calculateColorsSimilarity(
-      uploadedAnalysis.colors,
-      existingAnalysis.colors
+      uploadedAnalysis.colors || [],
+      existingAnalysis.colors || []
     );
     
     const detailsScore = this.calculateDetailsSimilarity(
@@ -320,8 +348,8 @@ Return ONLY valid JSON (no markdown, no backticks):
     );
     
     const embellishmentsScore = this.calculateEmbellishmentsSimilarity(
-      uploadedAnalysis.embellishments,
-      existingAnalysis.embellishments
+      uploadedAnalysis.embellishments || {},
+      existingAnalysis.embellishments || {}
     );
 
     // Apply weights
@@ -394,6 +422,12 @@ Return ONLY valid JSON (no markdown, no backticks):
     uploaded: any,
     existing: any
   ): number {
+    // Handle missing data
+    if (!uploaded.main_type || !existing.main_type) {
+      console.warn('⚠️ Missing model type data:', { uploaded, existing });
+      return 50; // Neutral score for missing data
+    }
+
     if (uploaded.main_type === existing.main_type) {
       // Same main type, check silhouette
       if (uploaded.silhouette === existing.silhouette) return 100;
@@ -422,6 +456,12 @@ Return ONLY valid JSON (no markdown, no backticks):
     uploaded: any,
     existing: any
   ): number {
+    // Handle missing data
+    if (!uploaded.pattern || !existing.pattern) {
+      console.warn('⚠️ Missing pattern data:', { uploaded, existing });
+      return 50; // Neutral score for missing data
+    }
+
     if (uploaded.pattern === existing.pattern) {
       // Same pattern, check complexity
       if (uploaded.complexity === existing.complexity) return 100;
@@ -633,6 +673,34 @@ Return ONLY valid JSON (no markdown, no backticks):
     }
 
     return reasons.join(' ');
+  }
+
+  /**
+   * Create default result for invalid/missing analysis
+   */
+  private createDefaultResult(
+    salesData: { totalQuantity: number; productName: string },
+    errorReason: string
+  ): EnhancedSimilarityResult {
+    console.warn('⚠️ Using default result due to:', errorReason);
+    
+    return {
+      productId: '',
+      productName: salesData.productName,
+      overallScore: 0,
+      breakdown: {
+        modelType: 0,
+        pattern: 0,
+        colors: 0,
+        details: 0,
+        embellishments: 0
+      },
+      salesLast3Months: salesData.totalQuantity,
+      aiReasoning: `Analisis tidak lengkap: ${errorReason}`,
+      recommendation: 'not_recommended',
+      recommendationLabel: 'Not Recommended',
+      recommendationReason: 'Data analisis tidak lengkap atau tidak valid.'
+    };
   }
 }
 
