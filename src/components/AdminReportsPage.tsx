@@ -461,31 +461,6 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     }
   };
 
-  // Open buyers modal
-  const openBuyersModal = (product: ProductReport) => {
-    setSelectedProduct(product);
-    setBuyersPage(1); // Reset to first page
-    setShowBuyersModal(true);
-    loadProductBuyers(product, 1);
-  };
-
-  // Close buyers modal
-  const closeBuyersModal = () => {
-    setShowBuyersModal(false);
-    setSelectedProduct(null);
-    setProductBuyers([]);
-    setBuyersPage(1);
-    setBuyersTotalPages(1);
-    setBuyersTotalCount(0);
-    setBuyerSearchQuery(''); // Reset search query when modal closes
-    setIsFilterActive(false); // Reset filter active state
-    // Clear any pending search timeout
-    if (searchTimeoutId) {
-      clearTimeout(searchTimeoutId);
-      setSearchTimeoutId(null);
-    }
-  };
-
   // Open rekap modal
   const openRekapModal = async (product: ProductReport) => {
     setSelectedRekapProduct(product);
@@ -1201,8 +1176,6 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga</th>
                       {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>}
                       {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Laba</th>}
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pembeli</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -1241,24 +1214,6 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                               {formatCurrency(product.profit)}
                             </td>
                           )}
-                          <td className="px-4 py-3 text-sm text-gray-600">
-                            {product.buyerCount || 0} orang
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            <button
-                              onClick={() => openBuyersModal(product)}
-                              className="text-blue-600 hover:text-blue-800 font-medium text-sm mr-2"
-                            >
-                              Lihat Pembeli
-                            </button>
-                            <button
-                              onClick={() => openRekapModal(product)}
-                              className="text-green-600 hover:text-green-800 font-medium text-sm"
-                              title="Lihat rekap semua pembeli"
-                            >
-                              Rekap
-                            </button>
-                          </td>
                         </tr>
                       );
                     })}
@@ -1629,9 +1584,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
         </div>
       </div>
 
-      {/* Product Buyers Modal */}
-      {showBuyersModal && selectedProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+
           <div className="bg-white rounded-lg w-full max-w-4xl max-h-[80vh] overflow-hidden">
             <div className="p-6 border-b">
               <div className="flex justify-between items-start mb-4">
