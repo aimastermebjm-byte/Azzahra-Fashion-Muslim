@@ -371,13 +371,14 @@ Return ONLY valid JSON (no markdown, no backticks):
         embellishments: embellishmentsScore
       },
       weighted: {
-        modelType: modelTypeScore * 0.30,
-        pattern: patternScore * 0.25,
-        colors: colorsScore * 0.20,
-        details: detailsScore * 0.15,
-        embellishments: embellishmentsScore * 0.10
+        modelType: modelTypeScore * 0.50,
+        pattern: patternScore * 0.50,
+        colors: colorsScore * 0.00,
+        details: detailsScore * 0.00,
+        embellishments: embellishmentsScore * 0.00
       },
-      overallScore
+      overallScore,
+      weightsUsed: 'Model: 50%, Pattern: 50%, Colors: 0%, Details: 0%, Embellishments: 0%'
     });
 
     // Determine recommendation

@@ -422,6 +422,14 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
         let aiReasoning = '';
         let modelComparison = '';
         let motifComparison = '';
+        // Default breakdown for direct comparison
+        let breakdown = {
+          modelType: 0,
+          pattern: 0,
+          colors: 100,      // Colors ignored (weight: 0%)
+          details: 100,     // Details ignored (weight: 0%)
+          embellishments: 100 // Embellishments ignored (weight: 0%)
+        };
         
         // Try direct comparison first (Gemini's recommended approach)
         try {
@@ -450,6 +458,15 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
             modelComparison = directResult.modelComparison;
             motifComparison = directResult.motifComparison;
             
+            // Update breakdown for direct comparison
+            breakdown = {
+              modelType: similarityScore, // Model similarity score
+              pattern: similarityScore,   // Pattern similarity score  
+              colors: 100,               // Colors ignored (weight: 0%)
+              details: 100,              // Details ignored (weight: 0%)
+              embellishments: 100        // Embellishments ignored (weight: 0%)
+            };
+            
             console.log(`🎯 Direct comparison for ${item.product.name}: ${similarityScore}%`);
           } else {
             throw new Error('Missing base64 images for comparison');
@@ -470,16 +487,41 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
           
           similarityScore = enhancedResult.overallScore;
           aiReasoning = enhancedResult.reasoning || '';
+          // Use breakdown from enhancedResult for fallback
+          breakdown = enhancedResult.breakdown || breakdown;
         }
         
+
+        
+        // Determine recommendation details
+        const recommendationLevel = similarityScore >= 80 ? 'highly_recommended' : 
+                                   similarityScore >= 70 ? 'recommended' : 
+                                   similarityScore >= 50 ? 'consider' : 'not_recommended';
+        
+        const recommendationLabels = {
+          highly_recommended: 'Highly Recommended - Strong market fit',
+          recommended: 'Recommended - Good potential',
+          consider: 'Consider - Niche market opportunity',
+          not_recommended: 'Not Recommended - Low similarity'
+        };
+        
+        const recommendationReasons = {
+          highly_recommended: `Very high similarity (${similarityScore}%) with best-selling product`,
+          recommended: `Good similarity (${similarityScore}%) with existing products`,
+          consider: `Moderate similarity (${similarityScore}%) - niche opportunity`,
+          not_recommended: `Low similarity (${similarityScore}%) with existing products`
+        };
+        
         enhancedSimilarities.push({
-          overallScore: similarityScore,
-          reasoning: aiReasoning,
-          recommendation: similarityScore >= 80 ? 'highly_recommended' : 
-                         similarityScore >= 70 ? 'recommended' : 
-                         similarityScore >= 50 ? 'consider' : 'not_recommended',
-          keySimilarities: [modelComparison, motifComparison].filter(Boolean),
           productId: item.product.id,
+          productName: item.product.name,
+          overallScore: similarityScore,
+          breakdown,
+          salesLast3Months: item.salesData.totalQuantity,
+          aiReasoning: aiReasoning,
+          recommendation: recommendationLevel,
+          recommendationLabel: recommendationLabels[recommendationLevel],
+          recommendationReason: recommendationReasons[recommendationLevel],
           product: item.product,
           modelComparison,
           motifComparison
