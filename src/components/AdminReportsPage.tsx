@@ -461,6 +461,31 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     }
   };
 
+  // Open buyers modal
+  const openBuyersModal = (product: ProductReport) => {
+    setSelectedProduct(product);
+    setBuyersPage(1); // Reset to first page
+    setShowBuyersModal(true);
+    loadProductBuyers(product, 1);
+  };
+
+  // Close buyers modal
+  const closeBuyersModal = () => {
+    setShowBuyersModal(false);
+    setSelectedProduct(null);
+    setProductBuyers([]);
+    setBuyersPage(1);
+    setBuyersTotalPages(1);
+    setBuyersTotalCount(0);
+    setBuyerSearchQuery(''); // Reset search query when modal closes
+    setIsFilterActive(false); // Reset filter active state
+    // Clear any pending search timeout
+    if (searchTimeoutId) {
+      clearTimeout(searchTimeoutId);
+      setSearchTimeoutId(null);
+    }
+  };
+
   // Open rekap modal
   const openRekapModal = async (product: ProductReport) => {
     setSelectedRekapProduct(product);
@@ -1584,7 +1609,9 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
         </div>
       </div>
 
-
+      {/* Product Buyers Modal */}
+      {showBuyersModal && selectedProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-4xl max-h-[80vh] overflow-hidden">
             <div className="p-6 border-b">
               <div className="flex justify-between items-start mb-4">
