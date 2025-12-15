@@ -4,7 +4,7 @@ import {
   Download, Calendar, BarChart3, PieChart, TrendingUp, TrendingDown, Package, Users,
   FileText, DollarSign, Truck, Filter, Eye, CheckCircle, XCircle,
   ShoppingCart, ArrowUpRight, ArrowDownRight, Box, Wallet, PiggyBank,
-  CreditCard, Search, ChevronDown, User, XCircle
+  CreditCard, Search, ChevronDown, User
 } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
@@ -25,21 +25,13 @@ interface AdminReportsPageProps {
   user: any;
 }
 
-// Combined buyer summary for multiple products
 interface CombinedBuyerSummary {
-  customerName: string;
-  customerPhone: string;
-  purchases: Array<{
-    productId: string;
-    productName: string;
-    quantity: number;
-    totalAmount: number;
-    purchaseCount: number;
-    lastPurchaseDate: string;
-  }>;
+  productId: string;
+  productName: string;
+  buyers: ProductBuyerSummary[];
+  totalBuyers: number;
   totalQuantity: number;
   totalAmount: number;
-  purchaseCount: number;
 }
 
 // Cache keys
@@ -125,21 +117,12 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [buyerSearchQuery, setBuyerSearchQuery] = useState('');
   const [searchTimeoutId, setSearchTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [isFilterActive, setIsFilterActive] = useState(false);
-  
-  // Filter status untuk laporan produk
-  const [productStatusFilter, setProductStatusFilter] = useState<'all' | 'lunas' | 'belum_lunas'>('all');
-  
-  // Multi-product selection for combined report
+
+  // State for product selection and combined rekap
   const [selectedProducts, setSelectedProducts] = useState<ProductReport[]>([]);
   const [showCombinedRekapModal, setShowCombinedRekapModal] = useState(false);
   const [combinedRekapData, setCombinedRekapData] = useState<CombinedBuyerSummary[]>([]);
   const [loadingCombinedRekap, setLoadingCombinedRekap] = useState(false);
-  
-  // Modal rekap pembeli states
-  const [showRekapModal, setShowRekapModal] = useState(false);
-  const [selectedRekapProduct, setSelectedRekapProduct] = useState<ProductReport | null>(null);
-  const [rekapData, setRekapData] = useState<ProductBuyerSummary | null>(null);
-  const [loadingRekap, setLoadingRekap] = useState(false);
 
   // Calculate date range based on filter
   const getDateRange = useMemo(() => {
@@ -542,106 +525,6 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     setLoadingRekap(false);
   };
 
-  // Toggle product selection for combined report
-  const toggleProductSelection = (product: ProductReport) => {
-    setSelectedProducts(prev => {
-      const isSelected = prev.some(p => p.id === product.id);
-      if (isSelected) {
-        return prev.filter(p => p.id !== product.id);
-      } else {
-        return [...prev, product];
-      }
-    });
-  };
-
-  // Select all visible products
-  const selectAllProducts = () => {
-    const filtered = products.filter(p => categoryFilter === 'all' || p.category === categoryFilter);
-    setSelectedProducts(filtered);
-  };
-
-  // Clear all selections
-  const clearAllSelections = () => {
-    setSelectedProducts([]);
-  };
-
-  // Open combined rekap modal for selected products
-  const openCombinedRekapModal = async () => {
-    if (selectedProducts.length === 0) return;
-    
-    setLoadingCombinedRekap(true);
-    setShowCombinedRekapModal(true);
-    
-    try {
-      const { start, end } = getDateRange;
-      const allBuyersMap = new Map<string, CombinedBuyerSummary>();
-      
-      // Load data for each selected product
-      for (const product of selectedProducts) {
-        const summaryData = await ReportsService.getProductBuyersSummary(product.id, {
-          startDate: start,
-          endDate: end,
-          status: productStatusFilter
-        });
-        
-        // Merge buyers data
-        summaryData.buyers.forEach(buyer => {
-          const key = `${buyer.customerName}_${buyer.customerPhone}`;
-          const existing = allBuyersMap.get(key);
-          
-          if (existing) {
-            // Add purchase for this product
-            existing.purchases.push({
-              productId: product.id,
-              productName: product.name,
-              quantity: buyer.totalQuantity,
-              totalAmount: buyer.totalAmount,
-              purchaseCount: buyer.purchaseCount,
-              lastPurchaseDate: buyer.lastPurchaseDate
-            });
-            existing.totalQuantity += buyer.totalQuantity;
-            existing.totalAmount += buyer.totalAmount;
-            existing.purchaseCount += buyer.purchaseCount;
-          } else {
-            allBuyersMap.set(key, {
-              customerName: buyer.customerName,
-              customerPhone: buyer.customerPhone,
-              purchases: [{
-                productId: product.id,
-                productName: product.name,
-                quantity: buyer.totalQuantity,
-                totalAmount: buyer.totalAmount,
-                purchaseCount: buyer.purchaseCount,
-                lastPurchaseDate: buyer.lastPurchaseDate
-              }],
-              totalQuantity: buyer.totalQuantity,
-              totalAmount: buyer.totalAmount,
-              purchaseCount: buyer.purchaseCount
-            });
-          }
-        });
-      }
-      
-      // Convert map to array and sort by total quantity descending
-      const combinedData = Array.from(allBuyersMap.values())
-        .sort((a, b) => b.totalQuantity - a.totalQuantity);
-      
-      setCombinedRekapData(combinedData);
-    } catch (error) {
-      console.error('Error loading combined rekap data:', error);
-      setCombinedRekapData([]);
-    } finally {
-      setLoadingCombinedRekap(false);
-    }
-  };
-
-  // Close combined rekap modal
-  const closeCombinedRekapModal = () => {
-    setShowCombinedRekapModal(false);
-    setCombinedRekapData([]);
-    setLoadingCombinedRekap(false);
-  };
-
   // Handle search query change with debouncing
   const handleBuyerSearchChange = (query: string) => {
     setBuyerSearchQuery(query);
@@ -668,6 +551,63 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     if (selectedProduct) {
       loadProductBuyers(selectedProduct, newPage, buyerSearchQuery);
     }
+  };
+
+  // Product selection handlers
+  const toggleProductSelection = (product: ProductReport) => {
+    setSelectedProducts(prev => {
+      const isSelected = prev.some(p => p.id === product.id);
+      if (isSelected) {
+        return prev.filter(p => p.id !== product.id);
+      } else {
+        return [...prev, product];
+      }
+    });
+  };
+
+  const selectAllProducts = () => {
+    const filteredProducts = products.filter(p => categoryFilter === 'all' || p.category === categoryFilter);
+    setSelectedProducts(filteredProducts);
+  };
+
+  const clearAllSelections = () => {
+    setSelectedProducts([]);
+  };
+
+  const openCombinedRekapModal = async () => {
+    if (selectedProducts.length === 0) return;
+
+    setLoadingCombinedRekap(true);
+    setShowCombinedRekapModal(true);
+    setCombinedRekapData([]);
+
+    try {
+      const combinedData: CombinedBuyerSummary[] = [];
+
+      for (const product of selectedProducts) {
+        const buyersSummary = await ReportsService.getProductBuyersSummary(product.id);
+        
+        combinedData.push({
+          productId: product.id,
+          productName: product.name,
+          buyers: buyersSummary.buyers,
+          totalBuyers: buyersSummary.totalBuyers,
+          totalQuantity: buyersSummary.totalQuantity,
+          totalAmount: buyersSummary.totalAmount
+        });
+      }
+
+      setCombinedRekapData(combinedData);
+    } catch (error) {
+      console.error('Error loading combined rekap data:', error);
+    } finally {
+      setLoadingCombinedRekap(false);
+    }
+  };
+
+  const closeCombinedRekapModal = () => {
+    setShowCombinedRekapModal(false);
+    setCombinedRekapData([]);
   };
 
   // Remove mock loader - rely on real data above
@@ -1213,24 +1153,22 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">Produk Terlaris</h3>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center space-x-2">
+                  {selectedProducts.length > 0 && (
+                    <button
+                      onClick={openCombinedRekapModal}
+                      className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary-dark transition-colors flex items-center"
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      Lihat Rekap Pembeli Terpilih ({selectedProducts.length})
+                    </button>
+                  )}
                   {loadingProducts && (
                     <div className="flex items-center text-sm text-gray-500">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
                       Loading...
                     </div>
                   )}
-                  <button
-                    onClick={openCombinedRekapModal}
-                    disabled={selectedProducts.length === 0}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
-                      selectedProducts.length === 0
-                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                        : 'bg-brand-primary text-white hover:bg-brand-primary/90'
-                    }`}
-                  >
-                    Lihat Rekap Pembeli Terpilih ({selectedProducts.length})
-                  </button>
                 </div>
               </div>
 
@@ -1245,20 +1183,18 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     <thead>
                       <tr className="bg-gray-50">
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-12">
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={selectedProducts.length > 0 && selectedProducts.length === products.filter(p => categoryFilter === 'all' || p.category === categoryFilter).length}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  selectAllProducts();
-                                } else {
-                                  clearAllSelections();
-                                }
-                              }}
-                              className="h-4 w-4 text-brand-primary rounded focus:ring-brand-primary border-gray-300"
-                            />
-                          </div>
+                          <input
+                            type="checkbox"
+                            checked={selectedProducts.length > 0 && selectedProducts.length === products.filter(p => categoryFilter === 'all' || p.category === categoryFilter).length}
+                            onChange={() => {
+                              if (selectedProducts.length > 0 && selectedProducts.length === products.filter(p => categoryFilter === 'all' || p.category === categoryFilter).length) {
+                                clearAllSelections();
+                              } else {
+                                selectAllProducts();
+                              }
+                            }}
+                            className="h-4 w-4 text-brand-primary rounded focus:ring-brand-primary border-gray-300"
+                          />
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terjual</th>
@@ -1849,7 +1785,109 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 </>
               )}
             </div>
-          )}
+          </div>
+        </div>
+      )}
+
+      {/* Combined Rekap Pembeli Modal */}
+      {showCombinedRekapModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Rekap Pembeli untuk {selectedProducts.length} Produk Terpilih
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Total: {combinedRekapData.reduce((sum, item) => sum + item.totalBuyers, 0)} pembeli | 
+                    Total Qty: {combinedRekapData.reduce((sum, item) => sum + item.totalQuantity, 0)} pcs
+                  </p>
+                </div>
+                <button
+                  onClick={closeCombinedRekapModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+              {loadingCombinedRekap ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-blue-600 mb-4"></div>
+                  <p className="text-gray-600 font-medium">Memuat data rekap gabungan...</p>
+                </div>
+              ) : combinedRekapData.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Tidak ada data pembeli untuk produk terpilih</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {combinedRekapData.map((productData) => (
+                    <div key={productData.productId} className="border rounded-lg overflow-hidden">
+                      <div className="bg-gray-50 px-4 py-3 border-b">
+                        <h4 className="font-medium text-gray-900">{productData.productName}</h4>
+                        <p className="text-sm text-gray-500">
+                          {productData.totalBuyers} pembeli | {productData.totalQuantity} pcs | {formatCurrency(productData.totalAmount)}
+                        </p>
+                      </div>
+                      
+                      {productData.buyers.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full table-auto">
+                            <thead>
+                              <tr className="bg-gray-50">
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Pembeli</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">No. HP</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Qty</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Belanja</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jumlah Beli</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terakhir Beli</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                              {productData.buyers.map((buyer, index) => (
+                                <tr key={`${productData.productId}-${buyer.customerName}-${buyer.customerPhone}`} className="hover:bg-gray-50">
+                                  <td className="px-4 py-3 text-sm text-gray-500">
+                                    {index + 1}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                    {buyer.customerName}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-500">
+                                    {buyer.customerPhone}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-900">
+                                    {buyer.totalQuantity} pcs
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-900">
+                                    {formatCurrency(buyer.totalAmount)}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-900">
+                                    {buyer.purchaseCount} kali
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-500">
+                                    {buyer.lastPurchaseDate}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="px-4 py-3 text-center text-gray-500">
+                          Tidak ada pembeli untuk produk ini
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
