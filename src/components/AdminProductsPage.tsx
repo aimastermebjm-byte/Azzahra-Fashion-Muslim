@@ -2616,7 +2616,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               
               const collageUrl = uploadedImages[0];
               
-              // Create product with collage image
+              // Create product with collage image and AI analysis
               const newProduct = {
                 name: productData.name,
                 description: `${productData.variantCount} varian: ${productData.variantLabels.join(', ')}`,
@@ -2639,7 +2639,12 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 status: 'ready' as 'ready' | 'po',
                 isFeatured: false,
                 isFlashSale: false,
-                flashSaleDiscount: 0
+                flashSaleDiscount: 0,
+                // Save AI analysis for future comparisons
+                aiAnalysis: productData.analysisResults?.[0]?.analysis ? {
+                  ...productData.analysisResults[0].analysis,
+                  analyzedAt: new Date().toISOString()
+                } : null
               };
               
               await addProduct(newProduct);

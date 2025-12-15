@@ -9,7 +9,7 @@ export interface GeminiClothingAnalysis {
   };
   
   pattern_type: {
-    pattern: 'floral' | 'geometric' | 'solid' | 'batik' | 'striped' | 'polkadot' | 'mixed';
+    pattern: 'floral' | 'geometric' | 'solid' | 'batik' | 'striped' | 'polkadot' | 'mixed' | string; // string allows custom patterns like "geometric_grid_with_logo"
     complexity: 'simple' | 'detailed' | 'ornate';
     confidence: number;
   };
@@ -230,7 +230,7 @@ export class GeminiVisionService {
   
   private buildAnalysisPrompt(): string {
     return `
-Analyze this clothing/fashion item image in EXTREME detail. Return ONLY valid JSON matching this exact structure:
+Analyze this clothing/fashion item image. Focus on the OVERALL MODEL and MAIN PATTERN/MOTIF. Return ONLY valid JSON matching this exact structure:
 
 {
   "clothing_type": {
@@ -244,68 +244,133 @@ Analyze this clothing/fashion item image in EXTREME detail. Return ONLY valid JS
     "complexity": "detailed",
     "confidence": 90
   },
-  "lace_details": {
-    "has_lace": true,
-    "locations": [
-      {
-        "position": "hem",
-        "coverage": "moderate",
-        "lace_type": "floral_lace"
-      }
-    ],
-    "confidence": 80
-  },
-  "hem_pleats": {
-    "has_pleats": true,
-    "pleat_type": "accordion",
-    "depth": "medium",
-    "fullness": 75,
-    "confidence": 70
-  },
-  "sleeve_details": {
-    "has_pleats": true,
-    "sleeve_type": "bishop",
-    "pleat_position": "wrist",
-    "ruffle_count": 2,
-    "cuff_style": "elastic",
-    "confidence": 85
-  },
-  "embellishments": {
-    "beads": {"has": true, "locations": ["collar"], "density": 30},
-    "embroidery": {"has": false, "pattern": ""},
-    "sequins": {"has": false, "locations": []},
-    "gold_thread": {"has": false, "coverage": 0}
-  },
   "colors": ["pink", "white"],
   "fabric_texture": "smooth"
 }
 
 CRITICAL INSTRUCTIONS:
-1. Look for LACE/RENDA carefully - check collar, hem, sleeves, chest, back areas
-2. Look for PLEATS/LIPATAN at hem (bottom) - check if fabric has folds/gathering
-3. Look for SLEEVE DETAILS - check for pleats, ruffles, puffed sleeves, elastic cuffs
-4. Look for EMBELLISHMENTS - beads (manik-manik), embroidery (bordir), sequins (payet), gold thread (benang emas)
-5. Be VERY specific about locations and coverage
-6. Return ONLY the JSON, no markdown formatting, no backticks, no explanation
-7. All confidence values should be 0-100 numbers
-8. If you cannot see something clearly, set has: false or confidence: low
+1. Focus on the OVERALL MODEL of the clothing (main type, silhouette, length)
+2. Focus on the MAIN PATTERN/MOTIF (geometric, floral, striped, etc.) - include logos/brands if visible (e.g., "YDZ")
+3. Describe pattern in detail if complex (e.g., "geometric_grid_with_logo", "floral_with_brand_name")
+4. Return ONLY the JSON, no markdown formatting, no backticks, no explanation
+5. All confidence values should be 0-100 numbers
+6. If you cannot see something clearly, use your best judgment
+
+IMPORTANT: For pattern field, be descriptive if there are logos, text, or specific designs:
+- "geometric" for general geometric patterns
+- "geometric_grid_with_logo" if there's a grid pattern with brand logo
+- "floral_with_brand" if floral pattern includes brand text
+- "striped_with_text" if stripes include text/logo
 
 Valid values:
 - main_type: "gamis", "tunik", "dress", "blouse", "kaftan", "other"
 - silhouette: "a-line", "bodycon", "loose", "fitted", "empire"
 - length: "maxi", "midi", "mini", "hip-length"
-- pattern: "floral", "geometric", "solid", "batik", "striped", "polkadot", "mixed"
+- pattern: "floral", "geometric", "solid", "batik", "striped", "polkadot", "mixed" (or custom descriptive string)
 - complexity: "simple", "detailed", "ornate"
-- position: "collar", "hem", "sleeves", "chest", "back", "full"
-- coverage: "minimal", "moderate", "extensive"
-- lace_type: "floral_lace", "geometric_lace", "eyelet", "guipure"
-- pleat_type: "accordion", "box", "knife", "sunray", "none"
-- depth: "shallow", "medium", "deep"
-- sleeve_type: "straight", "puffed", "bell", "bishop", "lantern", "pleated"
-- pleat_position: "shoulder", "elbow", "wrist", "full"
-- cuff_style: "plain", "pleated", "ruffled", "elastic"
 - fabric_texture: "smooth", "textured", "glossy", "matte"
     `.trim();
+  }
+
+  /**
+   * Build prompt for direct comparison of two images (recommended by Gemini)
+   */
+  private buildComparisonPrompt(): string {
+    return `
+You are a fashion AI analyst. Your task is to compare two images of Muslim women's clothing and provide a total similarity score.
+
+Focus your assessment EXCLUSIVELY on the following two aspects:
+1. **Model Baju:** Potongan, siluet (A-line, lurus, etc.), dan panjang (gamis, abaya, etc.).
+2. **Motif Baju:** Pola, cetakan (printing), dan detail tekstur (bordir, renda, garis).
+
+Scoring scale is 0% to 100%, where 100% means model and motif of Garment 1 are exactly the same as Garment 2.
+
+Return ONLY valid JSON matching this exact structure:
+
+{
+  "penjelasan": "Berikan penjelasan singkat (max 3 kalimat) mengenai dasar pemberian skor, menyebutkan kemiripan model dan motif yang ditemukan.",
+  "skor_kemiripan_persen": [SKOR ANGKA DARI 0 SAMPAI 100],
+  "fokus_perbandingan": {
+    "model_baju": [PENJELASAN KEMIRIPAN MODEL],
+    "motif_baju": [PENJELASAN KEMIRIPAN MOTIF]
+  }
+}
+
+CRITICAL INSTRUCTIONS:
+1. Compare only the MODEL (cut, silhouette, length) and MOTIF/PATTERN
+2. Ignore colors, lighting, background, poses, and minor details
+3. If images are identical (same photo), return 100% score
+4. Focus on visual and conceptual similarity, not pixel-level differences
+5. If patterns include logos/text (like "YDZ"), check if they match
+6. Return ONLY the JSON, no markdown formatting, no backticks, no explanation
+7. Write "penjelasan" and "fokus_perbandingan" in Indonesian (Bahasa Indonesia)
+8. Score should reflect true visual similarity (100% for identical images)
+
+Scoring guidelines:
+- 100%: Identical model and motif (same photo or visually indistinguishable)
+- 90-99%: Very similar model and motif, minor differences
+- 80-89%: Similar model, similar motif with some variations
+- 70-79%: Similar model, different motif or vice versa
+- Below 70%: Different model or motif
+    `.trim();
+  }
+
+  /**
+   * Direct comparison of two clothing images using Gemini's recommended approach
+   * Sends both images in one prompt for visual comparison
+   * @param image1Base64 - Base64 encoded first image (uploaded product)
+   * @param image2Base64 - Base64 encoded second image (existing product)
+   * @returns Direct comparison result with similarity score and explanations
+   */
+  async directCompareImages(
+    image1Base64: string,
+    image2Base64: string
+  ): Promise<{
+    similarityScore: number;
+    explanation: string;
+    modelComparison: string;
+    motifComparison: string;
+  }> {
+    try {
+      console.log('🔍 Starting direct image comparison using Gemini API...');
+      
+      const result = await this.compareClothingImages(
+        image1Base64,
+        image2Base64,
+        this.buildComparisonPrompt()
+      );
+
+      console.log('🔍 Raw direct comparison result:', JSON.stringify(result, null, 2));
+
+      // Parse the result according to our expected format
+      const similarityScore = Number(result.skor_kemiripan_persen) || 0;
+      const explanation = result.penjelasan || 'No explanation provided';
+      const modelComparison = result.fokus_perbandingan?.model_baju || 'No model comparison';
+      const motifComparison = result.fokus_perbandingan?.motif_baju || 'No motif comparison';
+
+      console.log('🔍 Parsed direct comparison:', {
+        similarityScore,
+        explanation: explanation.substring(0, 100) + '...',
+        modelComparison: modelComparison.substring(0, 50) + '...',
+        motifComparison: motifComparison.substring(0, 50) + '...'
+      });
+
+      return {
+        similarityScore,
+        explanation,
+        modelComparison,
+        motifComparison
+      };
+    } catch (error) {
+      console.error('❌ Error in direct image comparison:', error);
+      // Fallback to 0% if comparison fails
+      return {
+        similarityScore: 0,
+        explanation: 'Error comparing images: ' + (error as Error).message,
+        modelComparison: 'Comparison failed',
+        motifComparison: 'Comparison failed'
+      };
+    }
   }
   
   private validateAndCleanAnalysis(analysis: any): GeminiClothingAnalysis {
@@ -313,6 +378,8 @@ Valid values:
     console.log('🔍 Raw Gemini analysis:', JSON.stringify(analysis, null, 2));
     
     // Basic validation and defaults with case normalization
+    // Note: New prompt only returns clothing_type, pattern_type, colors, fabric_texture
+    // Other fields get default values
     const validated: GeminiClothingAnalysis = {
       clothing_type: {
         main_type: (analysis.clothing_type?.main_type || 'other').toLowerCase(),
@@ -325,35 +392,32 @@ Valid values:
         complexity: (analysis.pattern_type?.complexity || 'simple').toLowerCase(),
         confidence: analysis.pattern_type?.confidence || 50
       },
+      // Default values for fields not in new prompt
       lace_details: {
-        has_lace: analysis.lace_details?.has_lace || false,
-        locations: (analysis.lace_details?.locations || []).map((loc: any) => ({
-          position: (loc.position || 'collar').toLowerCase(),
-          coverage: (loc.coverage || 'minimal').toLowerCase(),
-          lace_type: (loc.lace_type || 'floral_lace').toLowerCase()
-        })),
-        confidence: analysis.lace_details?.confidence || 50
+        has_lace: false,
+        locations: [],
+        confidence: 50
       },
       hem_pleats: {
-        has_pleats: analysis.hem_pleats?.has_pleats || false,
-        pleat_type: (analysis.hem_pleats?.pleat_type || 'none').toLowerCase(),
-        depth: (analysis.hem_pleats?.depth || 'shallow').toLowerCase(),
-        fullness: analysis.hem_pleats?.fullness || 0,
-        confidence: analysis.hem_pleats?.confidence || 50
+        has_pleats: false,
+        pleat_type: 'none',
+        depth: 'shallow',
+        fullness: 0,
+        confidence: 50
       },
       sleeve_details: {
-        has_pleats: analysis.sleeve_details?.has_pleats || false,
-        sleeve_type: (analysis.sleeve_details?.sleeve_type || 'straight').toLowerCase(),
-        pleat_position: (analysis.sleeve_details?.pleat_position || 'wrist').toLowerCase(),
-        ruffle_count: analysis.sleeve_details?.ruffle_count || 0,
-        cuff_style: (analysis.sleeve_details?.cuff_style || 'plain').toLowerCase(),
-        confidence: analysis.sleeve_details?.confidence || 50
+        has_pleats: false,
+        sleeve_type: 'straight',
+        pleat_position: 'wrist',
+        ruffle_count: 0,
+        cuff_style: 'plain',
+        confidence: 50
       },
       embellishments: {
-        beads: analysis.embellishments?.beads || { has: false, locations: [], density: 0 },
-        embroidery: analysis.embellishments?.embroidery || { has: false, pattern: '' },
-        sequins: analysis.embellishments?.sequins || { has: false, locations: [] },
-        gold_thread: analysis.embellishments?.gold_thread || { has: false, coverage: 0 }
+        beads: { has: false, locations: [], density: 0 },
+        embroidery: { has: false, pattern: '' },
+        sequins: { has: false, locations: [] },
+        gold_thread: { has: false, coverage: 0 }
       },
       colors: (analysis.colors || ['unknown']).map((c: string) => c.toLowerCase()),
       fabric_texture: (analysis.fabric_texture || 'smooth').toLowerCase()

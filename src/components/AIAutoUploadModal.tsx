@@ -21,6 +21,7 @@ interface AnalysisResult {
   imageIndex: number;
   fileName: string;
   analysis: GeminiClothingAnalysis;
+  imageBase64: string; // Store base64 for direct comparison
   processingTime: number;
 }
 
@@ -34,6 +35,8 @@ interface SimilarityResult {
 interface EnhancedSimilarityResultUI extends EnhancedSimilarityResult {
   product: Product;
   sourceImageIndex?: number;
+  modelComparison?: string;
+  motifComparison?: string;
 }
 
 export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
@@ -216,6 +219,7 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
             imageIndex: i,
             fileName: images[i].name,
             analysis,
+            imageBase64: base64Images[i], // Store base64 for direct comparison
             processingTime: endTime - startTime
           });
           
@@ -354,6 +358,7 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
             return {
               product,
               analysis,
+              imageBase64: base64, // Store base64 for direct comparison
               salesData: productsWithGoodSalesData.find(s => s.productId === product.id)!
             };
           } catch (error) {
@@ -413,22 +418,74 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
           hasLace: item.analysis?.lace_details?.has_lace
         });
         
-        const enhancedResult = imageComparisonService.calculateEnhancedSimilarity(
-          uploadedAnalysis,
-          item.analysis,
-          {
-            totalQuantity: item.salesData.totalQuantity,
-            productName: item.product.name
+        let similarityScore = 0;
+        let aiReasoning = '';
+        let modelComparison = '';
+        let motifComparison = '';
+        
+        // Try direct comparison first (Gemini's recommended approach)
+        try {
+          const uploadedImageBase64 = analysisResults[0]?.imageBase64;
+          let existingImageBase64 = item.imageBase64;
+          
+          // If no stored base64 for existing product, fetch it
+          if (!existingImageBase64) {
+            const mainImageUrl = item.product.images[0] || item.product.image;
+            if (mainImageUrl) {
+              const response = await fetch(mainImageUrl);
+              const blob = await response.blob();
+              existingImageBase64 = await collageService.fileToBase64(new File([blob], 'product.jpg'));
+            }
           }
-        );
+          
+          if (uploadedImageBase64 && existingImageBase64) {
+            console.log('🔍 Performing direct image comparison with Gemini API...');
+            const directResult = await geminiService.directCompareImages(
+              uploadedImageBase64,
+              existingImageBase64
+            );
+            
+            similarityScore = directResult.similarityScore;
+            aiReasoning = directResult.explanation;
+            modelComparison = directResult.modelComparison;
+            motifComparison = directResult.motifComparison;
+            
+            console.log(`🎯 Direct comparison for ${item.product.name}: ${similarityScore}%`);
+          } else {
+            throw new Error('Missing base64 images for comparison');
+          }
+        } catch (error) {
+          console.warn(`Direct comparison failed for ${item.product.name}:`, error);
+          console.log('🔄 Falling back to enhanced similarity algorithm...');
+          
+          // Fallback to enhanced similarity
+          const enhancedResult = imageComparisonService.calculateEnhancedSimilarity(
+            uploadedAnalysis,
+            item.analysis,
+            {
+              totalQuantity: item.salesData.totalQuantity,
+              productName: item.product.name
+            }
+          );
+          
+          similarityScore = enhancedResult.overallScore;
+          aiReasoning = enhancedResult.reasoning || '';
+        }
         
         enhancedSimilarities.push({
-          ...enhancedResult,
+          overallScore: similarityScore,
+          reasoning: aiReasoning,
+          recommendation: similarityScore >= 80 ? 'highly_recommended' : 
+                         similarityScore >= 70 ? 'recommended' : 
+                         similarityScore >= 50 ? 'consider' : 'not_recommended',
+          keySimilarities: [modelComparison, motifComparison].filter(Boolean),
           productId: item.product.id,
-          product: item.product
+          product: item.product,
+          modelComparison,
+          motifComparison
         });
         
-        console.log(`🎯 Similarity for ${item.product.name}: ${enhancedResult.overallScore}%`);
+        console.log(`🎯 Similarity for ${item.product.name}: ${similarityScore}% (${aiReasoning.substring(0, 50)}...)`);
       }
       
       // Sort by overall score (descending)
