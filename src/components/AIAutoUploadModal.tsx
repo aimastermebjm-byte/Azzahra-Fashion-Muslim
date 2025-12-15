@@ -33,6 +33,7 @@ interface SimilarityResult {
 
 interface EnhancedSimilarityResultUI extends EnhancedSimilarityResult {
   product: Product;
+  sourceImageIndex?: number;
 }
 
 export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
@@ -278,6 +279,7 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
           try {
             // Try to get existing analysis from product data
             if (product.aiAnalysis) {
+              console.log('📁 Using cached AI analysis for:', product.name, product.aiAnalysis);
               return {
                 product,
                 analysis: product.aiAnalysis as GeminiClothingAnalysis,
@@ -331,8 +333,7 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
       // STEP 2: Calculate enhanced similarity for each product
       console.log('🔍 Step 2: Calculating enhanced similarity scores...');
       
-      const uploadedAnalysis = analysisResults[0]?.analysis; // Use first uploaded image analysis
-      if (!uploadedAnalysis) {
+      if (analysisResults.length === 0) {
         throw new Error('No analysis results available for uploaded images');
       }
       
@@ -340,33 +341,50 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
       
       for (const item of validProductsWithAnalysis) {
         console.log('🔍 Comparing with product:', item.product.name);
-        console.log('📊 Uploaded analysis:', {
-          type: uploadedAnalysis?.clothing_type?.main_type,
-          pattern: uploadedAnalysis?.pattern_type?.pattern,
-          colors: uploadedAnalysis?.colors,
-          hasLace: uploadedAnalysis?.lace_details?.has_lace
-        });
-        console.log('📊 Existing analysis:', {
-          type: item.analysis?.clothing_type?.main_type,
-          pattern: item.analysis?.pattern_type?.pattern,
-          colors: item.analysis?.colors,
-          hasLace: item.analysis?.lace_details?.has_lace
-        });
         
-        const enhancedResult = imageComparisonService.calculateEnhancedSimilarity(
-          uploadedAnalysis,
-          item.analysis,
-          {
-            totalQuantity: item.salesData.totalQuantity,
-            productName: item.product.name
+        let bestSimilarity: EnhancedSimilarityResultUI | null = null;
+        
+        // Try each uploaded image to find the best match
+        for (const analysisResult of analysisResults) {
+          const uploadedAnalysis = analysisResult.analysis;
+          
+          console.log(`📊 Image ${analysisResult.imageIndex + 1} analysis:`, {
+            type: uploadedAnalysis?.clothing_type?.main_type,
+            pattern: uploadedAnalysis?.pattern_type?.pattern,
+            colors: uploadedAnalysis?.colors,
+            hasLace: uploadedAnalysis?.lace_details?.has_lace
+          });
+          console.log('📊 Existing analysis:', {
+            type: item.analysis?.clothing_type?.main_type,
+            pattern: item.analysis?.pattern_type?.pattern,
+            colors: item.analysis?.colors,
+            hasLace: item.analysis?.lace_details?.has_lace
+          });
+          
+          const enhancedResult = imageComparisonService.calculateEnhancedSimilarity(
+            uploadedAnalysis,
+            item.analysis,
+            {
+              totalQuantity: item.salesData.totalQuantity,
+              productName: item.product.name
+            }
+          );
+          
+          // Keep the best similarity score across all images
+          if (!bestSimilarity || enhancedResult.overallScore > bestSimilarity.overallScore) {
+            bestSimilarity = {
+              ...enhancedResult,
+              productId: item.product.id,
+              product: item.product,
+              sourceImageIndex: analysisResult.imageIndex
+            };
           }
-        );
+        }
         
-        enhancedSimilarities.push({
-          ...enhancedResult,
-          productId: item.product.id,
-          product: item.product
-        });
+        if (bestSimilarity) {
+          enhancedSimilarities.push(bestSimilarity);
+          console.log(`🎯 Best similarity for ${item.product.name}: ${bestSimilarity.overallScore}% (from image ${(bestSimilarity as any).sourceImageIndex + 1})`);
+        }
       }
       
       // Sort by overall score (descending)
@@ -379,8 +397,14 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
       console.log('🤖 Step 3: Generating comparative analysis...');
       
       try {
+        // Use first image analysis for comparative analysis
+        const comparativeAnalysisUploaded = analysisResults[0]?.analysis;
+        if (!comparativeAnalysisUploaded) {
+          throw new Error('No analysis available for comparative analysis');
+        }
+        
         const comparativeAnalysis = await geminiService.generateComparativeAnalysis(
-          uploadedAnalysis,
+          comparativeAnalysisUploaded,
           validProductsWithAnalysis.map(item => ({
             product: item.product,
             analysis: item.analysis,

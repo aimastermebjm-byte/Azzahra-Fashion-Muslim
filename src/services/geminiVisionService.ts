@@ -309,37 +309,44 @@ Valid values:
   }
   
   private validateAndCleanAnalysis(analysis: any): GeminiClothingAnalysis {
-    // Basic validation and defaults
+    // Log raw analysis for debugging
+    console.log('🔍 Raw Gemini analysis:', JSON.stringify(analysis, null, 2));
+    
+    // Basic validation and defaults with case normalization
     const validated: GeminiClothingAnalysis = {
       clothing_type: {
-        main_type: analysis.clothing_type?.main_type || 'other',
-        silhouette: analysis.clothing_type?.silhouette || 'loose',
-        length: analysis.clothing_type?.length || 'maxi',
+        main_type: (analysis.clothing_type?.main_type || 'other').toLowerCase(),
+        silhouette: (analysis.clothing_type?.silhouette || 'loose').toLowerCase(),
+        length: (analysis.clothing_type?.length || 'maxi').toLowerCase(),
         confidence: analysis.clothing_type?.confidence || 50
       },
       pattern_type: {
-        pattern: analysis.pattern_type?.pattern || 'solid',
-        complexity: analysis.pattern_type?.complexity || 'simple',
+        pattern: (analysis.pattern_type?.pattern || 'solid').toLowerCase(),
+        complexity: (analysis.pattern_type?.complexity || 'simple').toLowerCase(),
         confidence: analysis.pattern_type?.confidence || 50
       },
       lace_details: {
         has_lace: analysis.lace_details?.has_lace || false,
-        locations: analysis.lace_details?.locations || [],
+        locations: (analysis.lace_details?.locations || []).map((loc: any) => ({
+          position: (loc.position || 'collar').toLowerCase(),
+          coverage: (loc.coverage || 'minimal').toLowerCase(),
+          lace_type: (loc.lace_type || 'floral_lace').toLowerCase()
+        })),
         confidence: analysis.lace_details?.confidence || 50
       },
       hem_pleats: {
         has_pleats: analysis.hem_pleats?.has_pleats || false,
-        pleat_type: analysis.hem_pleats?.pleat_type || 'none',
-        depth: analysis.hem_pleats?.depth || 'shallow',
+        pleat_type: (analysis.hem_pleats?.pleat_type || 'none').toLowerCase(),
+        depth: (analysis.hem_pleats?.depth || 'shallow').toLowerCase(),
         fullness: analysis.hem_pleats?.fullness || 0,
         confidence: analysis.hem_pleats?.confidence || 50
       },
       sleeve_details: {
         has_pleats: analysis.sleeve_details?.has_pleats || false,
-        sleeve_type: analysis.sleeve_details?.sleeve_type || 'straight',
-        pleat_position: analysis.sleeve_details?.pleat_position || 'wrist',
+        sleeve_type: (analysis.sleeve_details?.sleeve_type || 'straight').toLowerCase(),
+        pleat_position: (analysis.sleeve_details?.pleat_position || 'wrist').toLowerCase(),
         ruffle_count: analysis.sleeve_details?.ruffle_count || 0,
-        cuff_style: analysis.sleeve_details?.cuff_style || 'plain',
+        cuff_style: (analysis.sleeve_details?.cuff_style || 'plain').toLowerCase(),
         confidence: analysis.sleeve_details?.confidence || 50
       },
       embellishments: {
@@ -348,8 +355,8 @@ Valid values:
         sequins: analysis.embellishments?.sequins || { has: false, locations: [] },
         gold_thread: analysis.embellishments?.gold_thread || { has: false, coverage: 0 }
       },
-      colors: analysis.colors || ['unknown'],
-      fabric_texture: analysis.fabric_texture || 'smooth'
+      colors: (analysis.colors || ['unknown']).map((c: string) => c.toLowerCase()),
+      fabric_texture: (analysis.fabric_texture || 'smooth').toLowerCase()
     };
     
     return validated;

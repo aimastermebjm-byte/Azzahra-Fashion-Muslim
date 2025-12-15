@@ -428,7 +428,11 @@ Return ONLY valid JSON (no markdown, no backticks):
       return 50; // Neutral score for missing data
     }
 
-    if (uploaded.main_type === existing.main_type) {
+    // Normalize to lowercase for comparison
+    const uploadedType = uploaded.main_type?.toString().toLowerCase() || 'other';
+    const existingType = existing.main_type?.toString().toLowerCase() || 'other';
+
+    if (uploadedType === existingType) {
       // Same main type, check silhouette
       if (uploaded.silhouette === existing.silhouette) return 100;
       if (uploaded.length === existing.length) return 85;
@@ -443,7 +447,7 @@ Return ONLY valid JSON (no markdown, no backticks):
     ];
     
     const isSimilar = similarTypes.some(group =>
-      group.includes(uploaded.main_type) && group.includes(existing.main_type)
+      group.includes(uploadedType) && group.includes(existingType)
     );
     
     return isSimilar ? 60 : 30;
@@ -462,7 +466,11 @@ Return ONLY valid JSON (no markdown, no backticks):
       return 50; // Neutral score for missing data
     }
 
-    if (uploaded.pattern === existing.pattern) {
+    // Normalize to lowercase for comparison
+    const uploadedPattern = uploaded.pattern?.toString().toLowerCase() || 'solid';
+    const existingPattern = existing.pattern?.toString().toLowerCase() || 'solid';
+
+    if (uploadedPattern === existingPattern) {
       // Same pattern, check complexity
       if (uploaded.complexity === existing.complexity) return 100;
       return 80;
@@ -476,7 +484,7 @@ Return ONLY valid JSON (no markdown, no backticks):
     ];
     
     const isSimilar = similarPatterns.some(group =>
-      group.includes(uploaded.pattern) && group.includes(existing.pattern)
+      group.includes(uploadedPattern) && group.includes(existingPattern)
     );
     
     return isSimilar ? 65 : 40;
