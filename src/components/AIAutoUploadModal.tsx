@@ -181,8 +181,8 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
   
   // Start analysis
   const startAnalysis = async () => {
-    if (images.length < 3) {
-      alert('Please upload at least 3 images');
+    if (images.length < 1) {
+      alert('Please upload at least 1 image');
       return;
     }
     
@@ -339,52 +339,45 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
       
       const enhancedSimilarities: EnhancedSimilarityResultUI[] = [];
       
+      // Use only the first uploaded image for similarity calculation
+      const uploadedAnalysis = analysisResults[0]?.analysis;
+      if (!uploadedAnalysis) {
+        throw new Error('No analysis available for the first image');
+      }
+      
+      console.log('📊 First image analysis:', {
+        type: uploadedAnalysis?.clothing_type?.main_type,
+        pattern: uploadedAnalysis?.pattern_type?.pattern,
+        colors: uploadedAnalysis?.colors,
+        hasLace: uploadedAnalysis?.lace_details?.has_lace
+      });
+      
       for (const item of validProductsWithAnalysis) {
         console.log('🔍 Comparing with product:', item.product.name);
         
-        let bestSimilarity: EnhancedSimilarityResultUI | null = null;
+        console.log('📊 Existing analysis:', {
+          type: item.analysis?.clothing_type?.main_type,
+          pattern: item.analysis?.pattern_type?.pattern,
+          colors: item.analysis?.colors,
+          hasLace: item.analysis?.lace_details?.has_lace
+        });
         
-        // Try each uploaded image to find the best match
-        for (const analysisResult of analysisResults) {
-          const uploadedAnalysis = analysisResult.analysis;
-          
-          console.log(`📊 Image ${analysisResult.imageIndex + 1} analysis:`, {
-            type: uploadedAnalysis?.clothing_type?.main_type,
-            pattern: uploadedAnalysis?.pattern_type?.pattern,
-            colors: uploadedAnalysis?.colors,
-            hasLace: uploadedAnalysis?.lace_details?.has_lace
-          });
-          console.log('📊 Existing analysis:', {
-            type: item.analysis?.clothing_type?.main_type,
-            pattern: item.analysis?.pattern_type?.pattern,
-            colors: item.analysis?.colors,
-            hasLace: item.analysis?.lace_details?.has_lace
-          });
-          
-          const enhancedResult = imageComparisonService.calculateEnhancedSimilarity(
-            uploadedAnalysis,
-            item.analysis,
-            {
-              totalQuantity: item.salesData.totalQuantity,
-              productName: item.product.name
-            }
-          );
-          
-          // Keep the best similarity score across all images
-          if (!bestSimilarity || enhancedResult.overallScore > bestSimilarity.overallScore) {
-            bestSimilarity = {
-              ...enhancedResult,
-              productId: item.product.id,
-              product: item.product,
-              sourceImageIndex: analysisResult.imageIndex
-            };
+        const enhancedResult = imageComparisonService.calculateEnhancedSimilarity(
+          uploadedAnalysis,
+          item.analysis,
+          {
+            totalQuantity: item.salesData.totalQuantity,
+            productName: item.product.name
           }
-        }
+        );
         
-        if (bestSimilarity) {
-          enhancedSimilarities.push(bestSimilarity);
-          console.log(`🎯 Best similarity for ${item.product.name}: ${bestSimilarity.overallScore}% (from image ${(bestSimilarity as any).sourceImageIndex + 1})`);
-        }
+        enhancedSimilarities.push({
+          ...enhancedResult,
+          productId: item.product.id,
+          product: item.product
+        });
+        
+        console.log(`🎯 Similarity for ${item.product.name}: ${enhancedResult.overallScore}%`);
       }
       
       // Sort by overall score (descending)
@@ -734,7 +727,7 @@ const UploadStep: React.FC<UploadStepProps> = ({
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Variant Images</h3>
         <p className="text-sm text-gray-600">
-          Upload 3-9 images of different variants. AI will analyze patterns, lace details, pleats, and more.
+          Upload 1 or more images. AI will analyze patterns, lace details, pleats, and more.
         </p>
       </div>
       
@@ -778,8 +771,8 @@ const UploadStep: React.FC<UploadStepProps> = ({
               {images.length} image{images.length !== 1 ? 's' : ''} selected
             </p>
             <p className="text-xs text-gray-500">
-              {images.length < 3 && `Need ${3 - images.length} more`}
-              {images.length >= 3 && images.length < 9 && `Can add ${9 - images.length} more`}
+              {images.length < 1 && `Need ${1 - images.length} more`}
+              {images.length >= 1 && images.length < 9 && `Can add ${9 - images.length} more`}
               {images.length === 9 && 'Maximum reached'}
             </p>
           </div>
@@ -819,10 +812,10 @@ const UploadStep: React.FC<UploadStepProps> = ({
         </button>
         <button
           onClick={onNext}
-          disabled={images.length < 3}
+          disabled={images.length < 1}
           className={`
             px-6 py-2 rounded-lg font-medium transition-all flex items-center gap-2
-            ${images.length >= 3
+            ${images.length >= 1
               ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-lg'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }
