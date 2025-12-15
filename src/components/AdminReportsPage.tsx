@@ -25,6 +25,23 @@ interface AdminReportsPageProps {
   user: any;
 }
 
+// Combined buyer summary for multiple products
+interface CombinedBuyerSummary {
+  customerName: string;
+  customerPhone: string;
+  purchases: Array<{
+    productId: string;
+    productName: string;
+    quantity: number;
+    totalAmount: number;
+    purchaseCount: number;
+    lastPurchaseDate: string;
+  }>;
+  totalQuantity: number;
+  totalAmount: number;
+  purchaseCount: number;
+}
+
 // Cache keys
 const USERS_CACHE_KEY = 'reports-users-cache';
 const USERS_CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
@@ -111,6 +128,12 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   
   // Filter status untuk laporan produk
   const [productStatusFilter, setProductStatusFilter] = useState<'all' | 'lunas' | 'belum_lunas'>('all');
+  
+  // Multi-product selection for combined report
+  const [selectedProducts, setSelectedProducts] = useState<ProductReport[]>([]);
+  const [showCombinedRekapModal, setShowCombinedRekapModal] = useState(false);
+  const [combinedRekapData, setCombinedRekapData] = useState<CombinedBuyerSummary[]>([]);
+  const [loadingCombinedRekap, setLoadingCombinedRekap] = useState(false);
   
   // Modal rekap pembeli states
   const [showRekapModal, setShowRekapModal] = useState(false);
@@ -517,6 +540,106 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     setSelectedRekapProduct(null);
     setRekapData(null);
     setLoadingRekap(false);
+  };
+
+  // Toggle product selection for combined report
+  const toggleProductSelection = (product: ProductReport) => {
+    setSelectedProducts(prev => {
+      const isSelected = prev.some(p => p.id === product.id);
+      if (isSelected) {
+        return prev.filter(p => p.id !== product.id);
+      } else {
+        return [...prev, product];
+      }
+    });
+  };
+
+  // Select all visible products
+  const selectAllProducts = () => {
+    const filtered = products.filter(p => categoryFilter === 'all' || p.category === categoryFilter);
+    setSelectedProducts(filtered);
+  };
+
+  // Clear all selections
+  const clearAllSelections = () => {
+    setSelectedProducts([]);
+  };
+
+  // Open combined rekap modal for selected products
+  const openCombinedRekapModal = async () => {
+    if (selectedProducts.length === 0) return;
+    
+    setLoadingCombinedRekap(true);
+    setShowCombinedRekapModal(true);
+    
+    try {
+      const { start, end } = getDateRange;
+      const allBuyersMap = new Map<string, CombinedBuyerSummary>();
+      
+      // Load data for each selected product
+      for (const product of selectedProducts) {
+        const summaryData = await ReportsService.getProductBuyersSummary(product.id, {
+          startDate: start,
+          endDate: end,
+          status: productStatusFilter
+        });
+        
+        // Merge buyers data
+        summaryData.buyers.forEach(buyer => {
+          const key = `${buyer.customerName}_${buyer.customerPhone}`;
+          const existing = allBuyersMap.get(key);
+          
+          if (existing) {
+            // Add purchase for this product
+            existing.purchases.push({
+              productId: product.id,
+              productName: product.name,
+              quantity: buyer.totalQuantity,
+              totalAmount: buyer.totalAmount,
+              purchaseCount: buyer.purchaseCount,
+              lastPurchaseDate: buyer.lastPurchaseDate
+            });
+            existing.totalQuantity += buyer.totalQuantity;
+            existing.totalAmount += buyer.totalAmount;
+            existing.purchaseCount += buyer.purchaseCount;
+          } else {
+            allBuyersMap.set(key, {
+              customerName: buyer.customerName,
+              customerPhone: buyer.customerPhone,
+              purchases: [{
+                productId: product.id,
+                productName: product.name,
+                quantity: buyer.totalQuantity,
+                totalAmount: buyer.totalAmount,
+                purchaseCount: buyer.purchaseCount,
+                lastPurchaseDate: buyer.lastPurchaseDate
+              }],
+              totalQuantity: buyer.totalQuantity,
+              totalAmount: buyer.totalAmount,
+              purchaseCount: buyer.purchaseCount
+            });
+          }
+        });
+      }
+      
+      // Convert map to array and sort by total quantity descending
+      const combinedData = Array.from(allBuyersMap.values())
+        .sort((a, b) => b.totalQuantity - a.totalQuantity);
+      
+      setCombinedRekapData(combinedData);
+    } catch (error) {
+      console.error('Error loading combined rekap data:', error);
+      setCombinedRekapData([]);
+    } finally {
+      setLoadingCombinedRekap(false);
+    }
+  };
+
+  // Close combined rekap modal
+  const closeCombinedRekapModal = () => {
+    setShowCombinedRekapModal(false);
+    setCombinedRekapData([]);
+    setLoadingCombinedRekap(false);
   };
 
   // Handle search query change with debouncing
@@ -1090,12 +1213,25 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">Produk Terlaris</h3>
-                {loadingProducts && (
-                  <div className="flex items-center text-sm text-gray-500">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                    Loading...
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  {loadingProducts && (
+                    <div className="flex items-center text-sm text-gray-500">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                      Loading...
+                    </div>
+                  )}
+                  <button
+                    onClick={openCombinedRekapModal}
+                    disabled={selectedProducts.length === 0}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
+                      selectedProducts.length === 0
+                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        : 'bg-brand-primary text-white hover:bg-brand-primary/90'
+                    }`}
+                  >
+                    Lihat Rekap Pembeli Terpilih ({selectedProducts.length})
+                  </button>
+                </div>
               </div>
 
               {loadingProducts && products.length === 0 ? (
@@ -1108,6 +1244,22 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   <table className="w-full table-auto">
                     <thead>
                       <tr className="bg-gray-50">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-12">
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedProducts.length > 0 && selectedProducts.length === products.filter(p => categoryFilter === 'all' || p.category === categoryFilter).length}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  selectAllProducts();
+                                } else {
+                                  clearAllSelections();
+                                }
+                              }}
+                              className="h-4 w-4 text-brand-primary rounded focus:ring-brand-primary border-gray-300"
+                            />
+                          </div>
+                        </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terjual</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga</th>
@@ -1126,6 +1278,14 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
                       return (
                         <tr key={product.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900 w-12">
+                            <input
+                              type="checkbox"
+                              checked={selectedProducts.some(p => p.id === product.id)}
+                              onChange={() => toggleProductSelection(product)}
+                              className="h-4 w-4 text-brand-primary rounded focus:ring-brand-primary border-gray-300"
+                            />
+                          </td>
                           <td className="px-4 py-3 text-sm font-medium text-gray-900">
                             {product.name}
                           </td>
@@ -1689,7 +1849,6 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 </>
               )}
             </div>
-          )}
 
           {/* Rekap Pembeli Modal */}
           {showRekapModal && selectedRekapProduct && (
@@ -1790,8 +1949,9 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
               </div>
             </div>
           )}
-        </div>
       )}
+
+        </div>
     </div>
   );
 };
