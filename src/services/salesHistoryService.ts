@@ -345,6 +345,80 @@ export class SalesHistoryService {
 
     return isInSameGroup ? 70 : 30;
   }
+
+  /**
+   * Get products with sales > minSales in last monthsBack months
+   */
+  async getProductsWithMinSales(
+    minSales: number = 4,
+    monthsBack: number = 3,
+    limit: number = 50
+  ): Promise<ProductSalesData[]> {
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - monthsBack);
+
+      const ordersRef = collection(db, 'orders');
+      const q = query(
+        ordersRef,
+        where('createdAt', '>=', Timestamp.fromDate(startDate)),
+        where('createdAt', '<=', Timestamp.fromDate(endDate)),
+        where('status', 'in', ['paid', 'delivered', 'processing'])
+      );
+
+      const snapshot = await getDocs(q);
+      
+      // Aggregate sales by product
+      const salesByProduct = new Map<string, ProductSalesData>();
+
+      snapshot.docs.forEach(doc => {
+        const order = doc.data();
+        const items = order.items || [];
+
+        items.forEach((item: any) => {
+          const productId = item.productId;
+          if (!productId) return;
+
+          const quantity = item.quantity || 0;
+          const price = item.price || 0;
+
+          const existing = salesByProduct.get(productId);
+          if (existing) {
+            existing.totalQuantity += quantity;
+            existing.totalRevenue += price * quantity;
+            existing.orderCount++;
+          } else {
+            salesByProduct.set(productId, {
+              productId,
+              productName: item.productName || '',
+              category: item.category || '',
+              totalQuantity: quantity,
+              totalRevenue: price * quantity,
+              orderCount: 1,
+              lastOrderDate: order.createdAt?.toDate() || null
+            });
+          }
+        });
+      });
+
+      // Filter by min sales and convert to array
+      const filteredProducts = Array.from(salesByProduct.values())
+        .filter(product => product.totalQuantity > minSales)
+        .sort((a, b) => b.totalQuantity - a.totalQuantity);
+
+      return filteredProducts.slice(0, limit);
+    } catch (error: any) {
+      if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+        console.error('❌ MISSING FIRESTORE INDEX for orders collection!');
+        console.error('📋 Query requires composite index: createdAt + status');
+        console.error('🔧 Run: firebase deploy --only firestore:indexes');
+        console.error('⏳ Wait 5-10 minutes for index to build, then retry');
+      }
+      console.error('Error fetching products with min sales:', error);
+      return [];
+    }
+  }
 }
 
 export const salesHistoryService = new SalesHistoryService();

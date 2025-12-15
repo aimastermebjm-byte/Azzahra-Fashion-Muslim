@@ -468,6 +468,212 @@ Valid values:
       throw new Error('Invalid response format from Gemini API');
     }
   }
+
+  /**
+   * Generate comparative analysis between uploaded product and bestseller products
+   */
+  async generateComparativeAnalysis(
+    uploadedAnalysis: GeminiClothingAnalysis,
+    existingProducts: Array<{
+      product: any;
+      analysis: GeminiClothingAnalysis;
+      salesData: { totalQuantity: number; productName: string };
+    }>,
+    topN: number = 3
+  ): Promise<{
+    topSimilarities: Array<{
+      productName: string;
+      similarityScore: number;
+      keySimilarities: string[];
+      recommendation: string;
+      reasoning: string;
+    }>;
+    overallRecommendation: string;
+    marketInsights: string[];
+  }> {
+    try {
+      const prompt = `You are a fashion market analyst for Muslim clothing. Compare this new product with existing bestsellers and provide insights.
+
+NEW PRODUCT ANALYSIS:
+- Type: ${uploadedAnalysis.clothing_type.main_type} (${uploadedAnalysis.clothing_type.silhouette}, ${uploadedAnalysis.clothing_type.length})
+- Pattern: ${uploadedAnalysis.pattern_type.pattern} (${uploadedAnalysis.pattern_type.complexity})
+- Colors: ${uploadedAnalysis.colors.join(', ')}
+- Lace: ${uploadedAnalysis.lace_details.has_lace ? 'Yes' : 'No'} ${uploadedAnalysis.lace_details.has_lace ? `(${uploadedAnalysis.lace_details.locations.map((l: any) => l.position).join(', ')})` : ''}
+- Hem Pleats: ${uploadedAnalysis.hem_pleats.has_pleats ? 'Yes' : 'No'} ${uploadedAnalysis.hem_pleats.has_pleats ? `(${uploadedAnalysis.hem_pleats.pleat_type})` : ''}
+- Sleeves: ${uploadedAnalysis.sleeve_details.sleeve_type} ${uploadedAnalysis.sleeve_details.has_pleats ? 'with pleats' : ''}
+
+EXISTING BESTSELLERS (last 3 months):
+${existingProducts.slice(0, topN).map((item, index) => `
+${index + 1}. ${item.productName} - ${item.salesData.totalQuantity} pcs sold
+   - Type: ${item.analysis.clothing_type.main_type}
+   - Pattern: ${item.analysis.pattern_type.pattern}
+   - Colors: ${item.analysis.colors.join(', ')}
+`).join('')}
+
+ANALYSIS REQUEST:
+1. For each existing product (1-${Math.min(topN, existingProducts.length)}), calculate similarity score 0-100% based on:
+   - Model type similarity (30% weight)
+   - Pattern similarity (25% weight)  
+   - Color similarity (20% weight)
+   - Details similarity (15% weight: lace, pleats, sleeves)
+   - Embellishments similarity (10% weight: beads, embroidery, sequins)
+
+2. For each product, provide:
+   - Similarity score (0-100%)
+   - 2-3 key similarities (most important matching features)
+   - Recommendation: "Highly Recommended" (>90%), "Recommended" (80-89%), "Consider" (70-79%), "Not Recommended" (<70%)
+   - Brief reasoning (1 sentence)
+
+3. Overall market insights:
+   - What type of products are selling well?
+   - What patterns/colors are trending?
+   - Any gaps in the market this new product could fill?
+
+Return JSON format:
+{
+  "topSimilarities": [
+    {
+      "productName": "string",
+      "similarityScore": number,
+      "keySimilarities": ["string", "string"],
+      "recommendation": "string",
+      "reasoning": "string"
+    }
+  ],
+  "overallRecommendation": "string",
+  "marketInsights": ["string", "string", "string"]
+}`;
+
+      const model = this.genAI.getGenerativeModel({
+        model: "gemini-1.5-flash",
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.1,
+          topK: 1
+        }
+      });
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      try {
+        const parsed = JSON.parse(text);
+        return parsed;
+      } catch (e) {
+        console.error('Failed to parse comparative analysis response:', text);
+        throw new Error('Gemini returned invalid JSON format for comparative analysis');
+      }
+    } catch (error: any) {
+      console.error('Error generating comparative analysis:', error);
+      
+      // Fallback: Generate basic analysis without Gemini
+      return this.generateFallbackComparativeAnalysis(uploadedAnalysis, existingProducts, topN);
+    }
+  }
+
+  /**
+   * Fallback analysis when Gemini fails
+   */
+  private generateFallbackComparativeAnalysis(
+    uploadedAnalysis: GeminiClothingAnalysis,
+    existingProducts: Array<{
+      product: any;
+      analysis: GeminiClothingAnalysis;
+      salesData: { totalQuantity: number; productName: string };
+    }>,
+    topN: number
+  ): {
+    topSimilarities: Array<{
+      productName: string;
+      similarityScore: number;
+      keySimilarities: string[];
+      recommendation: string;
+      reasoning: string;
+    }>;
+    overallRecommendation: string;
+    marketInsights: string[];
+  } {
+    // Simple fallback based on type and pattern matching
+    const topSimilarities = existingProducts.slice(0, topN).map(item => {
+      let similarityScore = 0;
+      const keySimilarities: string[] = [];
+
+      // Check model type
+      if (uploadedAnalysis.clothing_type.main_type === item.analysis.clothing_type.main_type) {
+        similarityScore += 40;
+        keySimilarities.push(`Same model type: ${uploadedAnalysis.clothing_type.main_type}`);
+      }
+
+      // Check pattern
+      if (uploadedAnalysis.pattern_type.pattern === item.analysis.pattern_type.pattern) {
+        similarityScore += 30;
+        keySimilarities.push(`Same pattern: ${uploadedAnalysis.pattern_type.pattern}`);
+      }
+
+      // Check colors (simple match)
+      const colorMatch = uploadedAnalysis.colors.some(color =>
+        item.analysis.colors.some(c => c.toLowerCase().includes(color.toLowerCase()))
+      );
+      if (colorMatch) {
+        similarityScore += 20;
+        keySimilarities.push('Similar color palette');
+      }
+
+      // Determine recommendation
+      let recommendation = 'Not Recommended';
+      let reasoning = '';
+
+      if (similarityScore >= 70) {
+        recommendation = 'Highly Recommended';
+        reasoning = `High similarity with bestseller that sold ${item.salesData.totalQuantity} pcs`;
+      } else if (similarityScore >= 50) {
+        recommendation = 'Recommended';
+        reasoning = `Moderate similarity with popular product`;
+      } else if (similarityScore >= 30) {
+        recommendation = 'Consider';
+        reasoning = 'Some similarities but different market segment';
+      } else {
+        reasoning = 'Limited similarity with existing products';
+      }
+
+      return {
+        productName: item.salesData.productName,
+        similarityScore,
+        keySimilarities,
+        recommendation,
+        reasoning
+      };
+    });
+
+    // Sort by similarity score
+    topSimilarities.sort((a, b) => b.similarityScore - a.similarityScore);
+
+    // Generate overall recommendation
+    const avgScore = topSimilarities.reduce((sum, item) => sum + item.similarityScore, 0) / topSimilarities.length;
+    let overallRecommendation = 'Not Recommended';
+    
+    if (avgScore >= 70) {
+      overallRecommendation = 'Highly Recommended - Strong market fit';
+    } else if (avgScore >= 50) {
+      overallRecommendation = 'Recommended - Good potential';
+    } else if (avgScore >= 30) {
+      overallRecommendation = 'Consider - Niche market opportunity';
+    }
+
+    // Basic market insights
+    const marketInsights = [
+      `Top sellers are ${existingProducts.slice(0, 3).map(p => p.analysis.clothing_type.main_type).join(', ')}`,
+      `Popular patterns: ${existingProducts.slice(0, 3).map(p => p.analysis.pattern_type.pattern).join(', ')}`,
+      `Color trends: ${existingProducts.slice(0, 3).map(p => p.analysis.colors[0] || 'Various').join(', ')}`
+    ];
+
+    return {
+      topSimilarities,
+      overallRecommendation,
+      marketInsights
+    };
+  }
 }
 
 export const geminiService = new GeminiVisionService();

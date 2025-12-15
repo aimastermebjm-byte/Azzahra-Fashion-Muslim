@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, Sparkles, TrendingUp, Image as ImageIcon, CheckCircle, AlertCircle, Loader2, Settings } from 'lucide-react';
+import { X, Upload, Sparkles, TrendingUp, Image as ImageIcon, CheckCircle, AlertCircle, Loader2, Settings, ThumbsUp, ThumbsDown, AlertTriangle, Info } from 'lucide-react';
 import { geminiService, GeminiClothingAnalysis } from '../services/geminiVisionService';
-import { imageComparisonService, ComparisonResult } from '../services/imageComparisonService';
+import { imageComparisonService, ComparisonResult, EnhancedSimilarityResult } from '../services/imageComparisonService';
 import { collageService } from '../services/collageService';
 import { salesHistoryService, ProductSalesData } from '../services/salesHistoryService';
 import { hasGeminiAPIKey, loadGeminiAPIKey } from '../utils/encryption';
@@ -31,6 +31,10 @@ interface SimilarityResult {
   aiReasoning?: string;
 }
 
+interface EnhancedSimilarityResultUI extends EnhancedSimilarityResult {
+  product: Product;
+}
+
 export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
   isOpen,
   onClose,
@@ -53,7 +57,19 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
   
   // Results step
   const [similarityResults, setSimilarityResults] = useState<SimilarityResult[]>([]);
+  const [enhancedSimilarityResults, setEnhancedSimilarityResults] = useState<EnhancedSimilarityResultUI[]>([]);
   const [recommendation, setRecommendation] = useState<'auto' | 'manual' | 'not_recommended'>('manual');
+  const [comparativeAnalysis, setComparativeAnalysis] = useState<{
+    topSimilarities: Array<{
+      productName: string;
+      similarityScore: number;
+      keySimilarities: string[];
+      recommendation: string;
+      reasoning: string;
+    }>;
+    overallRecommendation: string;
+    marketInsights: string[];
+  } | null>(null);
   
   // Collage step
   const [collageBlob, setCollageBlob] = useState<Blob | null>(null);
@@ -223,130 +239,209 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
     }
   };
   
-  // Calculate similarity with existing products using Image Understanding
+  // Calculate similarity with existing products using Enhanced Algorithm
   const calculateSimilarity = async (analysisResults: AnalysisResult[]) => {
     setAnalysisProgress(60);
     
     if (existingProducts.length === 0) {
       setRecommendation('manual');
       setSimilarityResults([]);
+      setEnhancedSimilarityResults([]);
       return;
     }
     
     try {
       console.log('📊 Step 1: Filtering products by sales...');
       
-      // STEP 1: Get sales data and filter products with sales > 4pcs (3 months)
-      const productIds = existingProducts.map(p => p.id);
-      const salesData = await salesHistoryService.getBatchProductSales(productIds, 3);
+      // STEP 1: Get products with sales > 4pcs (3 months) using new method
+      const productsWithGoodSalesData = await salesHistoryService.getProductsWithMinSales(4, 3);
       
-      const productsWithGoodSales = existingProducts.filter(p => {
-        const sales = salesData.get(p.id);
-        return sales && sales.totalQuantity > 4; // FILTER: > 4pcs
-      });
+      console.log(`✓ Found ${productsWithGoodSalesData.length} products with >4pcs sales (last 3 months)`);
       
-      console.log(`✓ Found ${productsWithGoodSales.length} products with >4pcs sales (last 3 months)`);
-      
-      if (productsWithGoodSales.length === 0) {
+      if (productsWithGoodSalesData.length === 0) {
         console.log('⚠️ No products with sufficient sales history');
         setRecommendation('not_recommended');
         setSimilarityResults([]);
+        setEnhancedSimilarityResults([]);
+        setAnalysisProgress(100);
+        return;
+      }
+      
+      // Map sales data to existing products
+      const productsWithGoodSales = existingProducts.filter(p =>
+        productsWithGoodSalesData.some(sales => sales.productId === p.id)
+      );
+      
+      // Get AI analysis for existing products (or use cached)
+      const existingProductsWithAnalysis = await Promise.all(
+        productsWithGoodSales.map(async (product) => {
+          try {
+            // Try to get existing analysis from product data
+            if (product.aiAnalysis) {
+              return {
+                product,
+                analysis: product.aiAnalysis as GeminiClothingAnalysis,
+                salesData: productsWithGoodSalesData.find(s => s.productId === product.id)!
+              };
+            }
+            
+            // If no analysis, analyze main image
+            const mainImageUrl = product.images[0] || product.image;
+            if (!mainImageUrl) {
+              throw new Error(`No image for product ${product.name}`);
+            }
+            
+            // Fetch and analyze image
+            const response = await fetch(mainImageUrl);
+            const blob = await response.blob();
+            const base64 = await collageService.fileToBase64(new File([blob], 'product.jpg'));
+            
+            const analysis = await geminiService.analyzeClothingImage(base64);
+            
+            return {
+              product,
+              analysis,
+              salesData: productsWithGoodSalesData.find(s => s.productId === product.id)!
+            };
+          } catch (error) {
+            console.error(`Failed to analyze product ${product.name}:`, error);
+            return null;
+          }
+        })
+      );
+      
+      // Filter out failed analyses
+      const validProductsWithAnalysis = existingProductsWithAnalysis.filter(
+        (item): item is NonNullable<typeof item> => item !== null
+      );
+      
+      console.log(`✓ Analyzed ${validProductsWithAnalysis.length} existing products`);
+      
+      if (validProductsWithAnalysis.length === 0) {
+        console.log('⚠️ No valid product analyses available');
+        setRecommendation('not_recommended');
+        setSimilarityResults([]);
+        setEnhancedSimilarityResults([]);
         setAnalysisProgress(100);
         return;
       }
       
       setAnalysisProgress(70);
       
-      // STEP 2: Compare uploaded image with existing products using Image Understanding
-      console.log('🔍 Step 2: Comparing images using AI...');
+      // STEP 2: Calculate enhanced similarity for each product
+      console.log('🔍 Step 2: Calculating enhanced similarity scores...');
       
-      const similarities: SimilarityResult[] = [];
-      const referenceImage = images[0]; // Use first uploaded image as reference
-      
-      for (let i = 0; i < productsWithGoodSales.length; i++) {
-        const product = productsWithGoodSales[i];
-        
-        setAnalysisProgress(70 + (i / productsWithGoodSales.length) * 20); // 70-90%
-        
-        try {
-          const productImageUrl = product.images?.[0] || product.image;
-          if (!productImageUrl || productImageUrl.includes('/undefined/') || productImageUrl.includes('undefined%2F')) {
-            console.log(`⏭️ Skipping ${product.name} - invalid image URL`);
-            continue;
-          }
-          
-          // Compare using imageComparisonService (with cache + AI)
-          const comparisonResult = await imageComparisonService.compareWithExistingProduct(
-            referenceImage,
-            productImageUrl,
-            product.name
-          );
-          
-          console.log(`✓ ${product.name}: ${comparisonResult.overall_similarity}% (Model: ${comparisonResult.breakdown.model_type}%, Motif: ${comparisonResult.breakdown.motif_pattern}%)`);
-          
-          similarities.push({
-            product,
-            score: comparisonResult,
-            salesLast3Months: salesData.get(product.id)?.totalQuantity || 0,
-            aiReasoning: comparisonResult.recommendation
-          });
-          
-          // Small delay to avoid rate limit
-          await new Promise(resolve => setTimeout(resolve, 300));
-          
-        } catch (error: any) {
-          console.error(`❌ Error comparing with ${product.name}:`, error.message);
-          
-          // If CORS error, show warning but continue
-          if (error.message.includes('CORS')) {
-            console.warn(`⚠️ CORS error for ${product.name} - Firebase Storage CORS needs to be configured`);
-            console.warn('📝 See: https://firebase.google.com/docs/storage/web/download-files#cors_configuration');
-          }
-          
-          // Continue to next product (don't stop entire process)
-          continue;
-        }
+      const uploadedAnalysis = analysisResults[0]?.analysis; // Use first uploaded image analysis
+      if (!uploadedAnalysis) {
+        throw new Error('No analysis results available for uploaded images');
       }
       
-      // Sort by similarity score
-      similarities.sort((a, b) => b.score.overall_similarity - a.score.overall_similarity);
-      setSimilarityResults(similarities);
+      const enhancedSimilarities: EnhancedSimilarityResultUI[] = [];
       
-      setAnalysisProgress(95);
-      
-      // STEP 3: Check similarity > 80% and calculate recommendation
-      const highSimilarityProducts = similarities.filter(s => s.score.overall_similarity > 80);
-      
-      console.log(`📊 Products with >80% similarity: ${highSimilarityProducts.length}`);
-      
-      if (highSimilarityProducts.length > 0) {
-        const totalSales = highSimilarityProducts.reduce((sum, s) => sum + s.salesLast3Months, 0);
-        const avgSimilarity = highSimilarityProducts.reduce((sum, s) => sum + s.score.overall_similarity, 0) / highSimilarityProducts.length;
+      for (const item of validProductsWithAnalysis) {
+        const enhancedResult = imageComparisonService.calculateEnhancedSimilarity(
+          uploadedAnalysis,
+          item.analysis,
+          {
+            totalQuantity: item.salesData.totalQuantity,
+            productName: item.product.name
+          }
+        );
         
-        console.log('✅ RECOMMENDATION: UPLOAD');
-        console.log(`   - ${highSimilarityProducts.length} similar products found`);
-        console.log(`   - Avg similarity: ${avgSimilarity.toFixed(1)}%`);
-        console.log(`   - Total sales: ${totalSales} pcs`);
+        enhancedSimilarities.push({
+          ...enhancedResult,
+          productId: item.product.id,
+          product: item.product
+        });
+      }
+      
+      // Sort by overall score (descending)
+      enhancedSimilarities.sort((a, b) => b.overallScore - a.overallScore);
+      
+      setEnhancedSimilarityResults(enhancedSimilarities);
+      setAnalysisProgress(80);
+      
+      // STEP 3: Generate comparative analysis with Gemini
+      console.log('🤖 Step 3: Generating comparative analysis...');
+      
+      try {
+        const comparativeAnalysis = await geminiService.generateComparativeAnalysis(
+          uploadedAnalysis,
+          validProductsWithAnalysis.map(item => ({
+            product: item.product,
+            analysis: item.analysis,
+            salesData: {
+              totalQuantity: item.salesData.totalQuantity,
+              productName: item.product.name
+            }
+          })),
+          3 // Top 3 products
+        );
         
-        setRecommendation('auto');
+        setComparativeAnalysis(comparativeAnalysis);
+        console.log('✓ Comparative analysis generated');
+      } catch (error) {
+        console.warn('Failed to generate comparative analysis:', error);
+        // Continue without comparative analysis
+      }
+      
+      setAnalysisProgress(90);
+      
+      // STEP 4: Determine overall recommendation
+      console.log('📈 Step 4: Determining overall recommendation...');
+      
+      if (enhancedSimilarities.length === 0) {
+        setRecommendation('not_recommended');
       } else {
-        const moderateSimilarityProducts = similarities.filter(s => s.score.overall_similarity >= 60);
+        const topScore = enhancedSimilarities[0]?.overallScore || 0;
         
-        if (moderateSimilarityProducts.length > 0) {
-          console.log('⚠️ RECOMMENDATION: MANUAL REVIEW');
-          console.log(`   - Found ${moderateSimilarityProducts.length} products with 60-80% similarity`);
-          setRecommendation('manual');
+        if (topScore >= 80) {
+          setRecommendation('auto'); // Highly recommended
+        } else if (topScore >= 70) {
+          setRecommendation('manual'); // Consider
         } else {
-          console.log('❌ RECOMMENDATION: NOT RECOMMENDED');
-          console.log('   - No similar products found (all <60%)');
           setRecommendation('not_recommended');
         }
       }
+      
+      // Keep old similarity results for backward compatibility
+      const oldSimilarities: SimilarityResult[] = enhancedSimilarities.map(item => ({
+        product: item.product,
+        score: {
+          overall_similarity: item.overallScore,
+          breakdown: {
+            model_type: item.breakdown.modelType,
+            motif_pattern: item.breakdown.pattern,
+            lace_details: 0,
+            hem_pleats: 0,
+            sleeve_details: 0
+          },
+          visual_analysis: {
+            image1_description: '',
+            image2_description: '',
+            key_similarities: [],
+            key_differences: []
+          },
+          recommendation: item.recommendationLabel,
+          confidence: 0,
+          hash_similarity: 0
+        },
+        salesLast3Months: item.salesLast3Months,
+        aiReasoning: item.aiReasoning
+      }));
+      
+      setSimilarityResults(oldSimilarities);
+      setAnalysisProgress(100);
+      
+      console.log('✅ Enhanced similarity analysis complete');
+      console.log(`📊 Top similarity: ${enhancedSimilarities[0]?.overallScore || 0}%`);
+      console.log(`🏷️ Recommendation: ${recommendation}`);
       
     } catch (error: any) {
       console.error('Error calculating similarity:', error);
       setRecommendation('manual');
       setSimilarityResults([]);
+      setEnhancedSimilarityResults([]);
     }
   };
   
@@ -541,6 +636,8 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
             <ResultsStep
               analysisResults={analysisResults}
               similarityResults={similarityResults}
+              enhancedSimilarityResults={enhancedSimilarityResults}
+              comparativeAnalysis={comparativeAnalysis}
               recommendation={recommendation}
               onBack={() => setStep('upload')}
               onNext={generateCollagePreview}
@@ -792,6 +889,18 @@ const AnalyzingStep: React.FC<AnalyzingStepProps> = ({
 interface ResultsStepProps {
   analysisResults: AnalysisResult[];
   similarityResults: SimilarityResult[];
+  enhancedSimilarityResults?: EnhancedSimilarityResultUI[];
+  comparativeAnalysis?: {
+    topSimilarities: Array<{
+      productName: string;
+      similarityScore: number;
+      keySimilarities: string[];
+      recommendation: string;
+      reasoning: string;
+    }>;
+    overallRecommendation: string;
+    marketInsights: string[];
+  };
   recommendation: 'auto' | 'manual' | 'not_recommended';
   onBack: () => void;
   onNext: () => void;
@@ -800,6 +909,8 @@ interface ResultsStepProps {
 const ResultsStep: React.FC<ResultsStepProps> = ({
   analysisResults,
   similarityResults,
+  enhancedSimilarityResults = [],
+  comparativeAnalysis,
   recommendation,
   onBack,
   onNext
@@ -868,56 +979,159 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
         </div>
       </div>
       
-      {/* Similarity Results */}
-      {similarityResults.length > 0 && (
+      {/* Enhanced Similarity Results */}
+      {enhancedSimilarityResults.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Similar Products (Last 3 Months)</h3>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {similarityResults.slice(0, 5).map((result, index) => (
-              <div key={result.product.id} className="p-3 border border-gray-200 rounded-lg bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">
-                      {index + 1}. {result.product.name}
-                    </p>
-                    <div className="flex items-center gap-4 mt-1">
-                      <span className="text-xs text-gray-600">
-                        Similarity: {result.score.overall_similarity}%
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        Model: {result.score.breakdown.model_type}%
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        Motif: {result.score.breakdown.motif_pattern}%
-                      </span>
-                      <span className="text-xs font-semibold text-green-600">
-                        Sales: {result.salesLast3Months} pcs
-                      </span>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" />
+            AI Similarity Analysis (vs Bestsellers &gt;4pcs)
+          </h3>
+          
+          {/* Overall Recommendation */}
+          {comparativeAnalysis?.overallRecommendation && (
+            <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Sparkles className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-blue-900 mb-1">AI Market Analysis</p>
+                  <p className="text-sm text-blue-800">{comparativeAnalysis.overallRecommendation}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Top Similar Products */}
+          <div className="space-y-3">
+            {enhancedSimilarityResults.slice(0, 3).map((result, index) => {
+              // Determine badge color based on recommendation
+              let badgeColor = 'bg-gray-100 text-gray-800';
+              let badgeIcon = <Info className="w-4 h-4" />;
+              
+              if (result.recommendation === 'highly_recommended') {
+                badgeColor = 'bg-green-100 text-green-800';
+                badgeIcon = <ThumbsUp className="w-4 h-4" />;
+              } else if (result.recommendation === 'recommended') {
+                badgeColor = 'bg-blue-100 text-blue-800';
+                badgeIcon = <ThumbsUp className="w-4 h-4" />;
+              } else if (result.recommendation === 'consider') {
+                badgeColor = 'bg-yellow-100 text-yellow-800';
+                badgeIcon = <AlertTriangle className="w-4 h-4" />;
+              } else {
+                badgeColor = 'bg-red-100 text-red-800';
+                badgeIcon = <ThumbsDown className="w-4 h-4" />;
+              }
+              
+              return (
+                <div key={result.productId} className="border border-gray-200 rounded-lg overflow-hidden">
+                  {/* Header with score and badge */}
+                  <div className="p-4 bg-gray-50 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`px-3 py-1 rounded-full text-xs font-bold ${badgeColor} flex items-center gap-1`}>
+                          {badgeIcon}
+                          {result.recommendationLabel}
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">
+                          {index + 1}. {result.productName}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-gray-900">{result.overallScore}%</div>
+                        <div className="text-xs text-gray-500">Similarity Score</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Breakdown and Details */}
+                  <div className="p-4">
+                    {/* Score Breakdown */}
+                    <div className="mb-3">
+                      <p className="text-xs font-medium text-gray-500 mb-2">Score Breakdown:</p>
+                      <div className="grid grid-cols-5 gap-2">
+                        <div className="text-center">
+                          <div className="text-sm font-bold text-gray-900">{result.breakdown.modelType}%</div>
+                          <div className="text-xs text-gray-500">Model</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm font-bold text-gray-900">{result.breakdown.pattern}%</div>
+                          <div className="text-xs text-gray-500">Pattern</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm font-bold text-gray-900">{result.breakdown.colors}%</div>
+                          <div className="text-xs text-gray-500">Colors</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm font-bold text-gray-900">{result.breakdown.details}%</div>
+                          <div className="text-xs text-gray-500">Details</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm font-bold text-gray-900">{result.breakdown.embellishments}%</div>
+                          <div className="text-xs text-gray-500">Embellish</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Sales and Reasoning */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-gray-500 mb-1">AI Reasoning:</p>
+                        <p className="text-sm text-gray-700">{result.aiReasoning}</p>
+                      </div>
+                      <div className="ml-4 text-right">
+                        <div className="text-lg font-bold text-green-600">{result.salesLast3Months}</div>
+                        <div className="text-xs text-gray-500">Sales (3 months)</div>
+                      </div>
+                    </div>
+                    
+                    {/* Recommendation Reason */}
+                    <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs font-medium text-gray-500 mb-1">Recommendation:</p>
+                      <p className="text-sm text-gray-700">{result.recommendationReason}</p>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+          
+          {/* Market Insights */}
+          {comparativeAnalysis?.marketInsights && comparativeAnalysis.marketInsights.length > 0 && (
+            <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
+              <h4 className="text-sm font-semibold text-purple-900 mb-2 flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Market Insights
+              </h4>
+              <ul className="space-y-1">
+                {comparativeAnalysis.marketInsights.map((insight, index) => (
+                  <li key={index} className="text-sm text-purple-800 flex items-start gap-2">
+                    <span className="text-purple-500 mt-1">•</span>
+                    {insight}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           
           {/* Summary Stats */}
           <div className="mt-4 grid grid-cols-3 gap-4">
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-xs text-blue-600 mb-1">Products Checked</p>
-              <p className="text-2xl font-bold text-blue-900">{similarityResults.length}</p>
+              <p className="text-2xl font-bold text-blue-900">{enhancedSimilarityResults.length}</p>
               <p className="text-xs text-gray-500 mt-1">sales &gt;4pcs</p>
             </div>
             <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
               <p className="text-xs text-purple-600 mb-1">High Match (&gt;80%)</p>
               <p className="text-2xl font-bold text-purple-900">
-                {similarityResults.filter(s => s.score.overall_similarity > 80).length}
+                {enhancedSimilarityResults.filter(s => s.overallScore > 80).length}
               </p>
               <p className="text-xs text-gray-500 mt-1">strong similarity</p>
             </div>
             <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-xs text-green-600 mb-1">Total Sales (3mo)</p>
               <p className="text-2xl font-bold text-green-900">
-                {similarityResults.reduce((sum, s) => sum + s.salesLast3Months, 0)} pcs
+                {enhancedSimilarityResults.reduce((sum, s) => sum + s.salesLast3Months, 0)} pcs
               </p>
               <p className="text-xs text-gray-500 mt-1">from similar items</p>
             </div>

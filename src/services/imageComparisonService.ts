@@ -22,6 +22,24 @@ export interface ComparisonResult {
   hash_similarity?: number;
 }
 
+export interface EnhancedSimilarityResult {
+  productId: string;
+  productName: string;
+  overallScore: number; // 0-100%
+  breakdown: {
+    modelType: number;    // weight: 30%
+    pattern: number;      // weight: 25%
+    colors: number;       // weight: 20%
+    details: number;      // weight: 15% (lace, pleats, sleeves)
+    embellishments: number; // weight: 10%
+  };
+  salesLast3Months: number;
+  aiReasoning: string;
+  recommendation: 'highly_recommended' | 'recommended' | 'consider' | 'not_recommended';
+  recommendationLabel: string;
+  recommendationReason: string;
+}
+
 export class ImageComparisonService {
   /**
    * Compare two product images using hybrid approach (hash + AI)
@@ -270,6 +288,332 @@ Return ONLY valid JSON (no markdown, no backticks):
       
       throw new Error(`Failed to compare with existing product: ${error.message}`);
     }
+  }
+
+  /**
+   * Calculate enhanced similarity with weighted scoring and sales context
+   */
+  calculateEnhancedSimilarity(
+    uploadedAnalysis: any, // GeminiClothingAnalysis
+    existingAnalysis: any, // GeminiClothingAnalysis from existing product
+    salesData: { totalQuantity: number; productName: string }
+  ): EnhancedSimilarityResult {
+    // Calculate weighted scores
+    const modelTypeScore = this.calculateModelTypeSimilarity(
+      uploadedAnalysis.clothing_type,
+      existingAnalysis.clothing_type
+    );
+    
+    const patternScore = this.calculatePatternSimilarity(
+      uploadedAnalysis.pattern_type,
+      existingAnalysis.pattern_type
+    );
+    
+    const colorsScore = this.calculateColorsSimilarity(
+      uploadedAnalysis.colors,
+      existingAnalysis.colors
+    );
+    
+    const detailsScore = this.calculateDetailsSimilarity(
+      uploadedAnalysis,
+      existingAnalysis
+    );
+    
+    const embellishmentsScore = this.calculateEmbellishmentsSimilarity(
+      uploadedAnalysis.embellishments,
+      existingAnalysis.embellishments
+    );
+
+    // Apply weights
+    const overallScore = (
+      modelTypeScore * 0.30 + // 30%
+      patternScore * 0.25 +   // 25%
+      colorsScore * 0.20 +    // 20%
+      detailsScore * 0.15 +   // 15%
+      embellishmentsScore * 0.10 // 10%
+    );
+
+    // Determine recommendation
+    const { recommendation, label, reason } = this.getRecommendation(
+      overallScore,
+      salesData.totalQuantity,
+      existingAnalysis.clothing_type.main_type
+    );
+
+    // Generate AI reasoning
+    const aiReasoning = this.generateAIReasoning(
+      overallScore,
+      modelTypeScore,
+      patternScore,
+      colorsScore,
+      salesData
+    );
+
+    return {
+      productId: '', // Will be filled by caller
+      productName: salesData.productName,
+      overallScore: Math.round(overallScore),
+      breakdown: {
+        modelType: Math.round(modelTypeScore),
+        pattern: Math.round(patternScore),
+        colors: Math.round(colorsScore),
+        details: Math.round(detailsScore),
+        embellishments: Math.round(embellishmentsScore)
+      },
+      salesLast3Months: salesData.totalQuantity,
+      aiReasoning,
+      recommendation,
+      recommendationLabel: label,
+      recommendationReason: reason
+    };
+  }
+
+  /**
+   * Calculate model type similarity
+   */
+  private calculateModelTypeSimilarity(
+    uploaded: any,
+    existing: any
+  ): number {
+    if (uploaded.main_type === existing.main_type) {
+      // Same main type, check silhouette
+      if (uploaded.silhouette === existing.silhouette) return 100;
+      if (uploaded.length === existing.length) return 85;
+      return 70;
+    }
+    
+    // Different main types
+    const similarTypes = [
+      ['gamis', 'dress'],
+      ['tunik', 'blouse'],
+      ['kaftan', 'gamis']
+    ];
+    
+    const isSimilar = similarTypes.some(group =>
+      group.includes(uploaded.main_type) && group.includes(existing.main_type)
+    );
+    
+    return isSimilar ? 60 : 30;
+  }
+
+  /**
+   * Calculate pattern similarity
+   */
+  private calculatePatternSimilarity(
+    uploaded: any,
+    existing: any
+  ): number {
+    if (uploaded.pattern === existing.pattern) {
+      // Same pattern, check complexity
+      if (uploaded.complexity === existing.complexity) return 100;
+      return 80;
+    }
+    
+    // Similar pattern groups
+    const similarPatterns = [
+      ['floral', 'batik'],
+      ['geometric', 'striped'],
+      ['solid', 'polkadot']
+    ];
+    
+    const isSimilar = similarPatterns.some(group =>
+      group.includes(uploaded.pattern) && group.includes(existing.pattern)
+    );
+    
+    return isSimilar ? 65 : 40;
+  }
+
+  /**
+   * Calculate colors similarity
+   */
+  private calculateColorsSimilarity(
+    uploadedColors: string[],
+    existingColors: string[]
+  ): number {
+    if (!uploadedColors.length || !existingColors.length) return 50;
+    
+    // Count matching colors
+    const matchingColors = uploadedColors.filter(color =>
+      existingColors.some(existingColor =>
+        existingColor.toLowerCase().includes(color.toLowerCase()) ||
+        color.toLowerCase().includes(existingColor.toLowerCase())
+      )
+    );
+    
+    const matchPercentage = (matchingColors.length / Math.max(uploadedColors.length, existingColors.length)) * 100;
+    
+    // Boost score if primary colors match
+    const primaryMatch = uploadedColors[0] && existingColors[0] &&
+      uploadedColors[0].toLowerCase() === existingColors[0].toLowerCase();
+    
+    return primaryMatch ? Math.min(100, matchPercentage + 20) : matchPercentage;
+  }
+
+  /**
+   * Calculate details similarity (lace, pleats, sleeves)
+   */
+  private calculateDetailsSimilarity(
+    uploaded: any,
+    existing: any
+  ): number {
+    let score = 0;
+    let count = 0;
+
+    // Lace details
+    if (uploaded.lace_details.has_lace === existing.lace_details.has_lace) {
+      score += 40;
+      if (uploaded.lace_details.has_lace) {
+        // Both have lace, compare locations
+        const uploadedLocs = uploaded.lace_details.locations.map((l: any) => l.position);
+        const existingLocs = existing.lace_details.locations.map((l: any) => l.position);
+        const matchingLocs = uploadedLocs.filter((loc: string) => existingLocs.includes(loc));
+        score += (matchingLocs.length / Math.max(uploadedLocs.length, existingLocs.length)) * 30;
+      }
+    }
+    count++;
+
+    // Hem pleats
+    if (uploaded.hem_pleats.has_pleats === existing.hem_pleats.has_pleats) {
+      score += 30;
+      if (uploaded.hem_pleats.has_pleats && uploaded.hem_pleats.pleat_type === existing.hem_pleats.pleat_type) {
+        score += 20;
+      }
+    }
+    count++;
+
+    // Sleeve details
+    if (uploaded.sleeve_details.sleeve_type === existing.sleeve_details.sleeve_type) {
+      score += 30;
+      if (uploaded.sleeve_details.has_pleats === existing.sleeve_details.has_pleats) {
+        score += 20;
+      }
+    }
+    count++;
+
+    return score / count;
+  }
+
+  /**
+   * Calculate embellishments similarity
+   */
+  private calculateEmbellishmentsSimilarity(
+    uploaded: any,
+    existing: any
+  ): number {
+    let score = 0;
+    let count = 0;
+
+    // Beads
+    if (uploaded.beads.has === existing.beads.has) {
+      score += 40;
+      if (uploaded.beads.has) {
+        const beadMatch = uploaded.beads.locations.some((loc: string) =>
+          existing.beads.locations.includes(loc)
+        );
+        if (beadMatch) score += 30;
+      }
+    }
+    count++;
+
+    // Embroidery
+    if (uploaded.embroidery.has === existing.embroidery.has) {
+      score += 30;
+    }
+    count++;
+
+    // Sequins
+    if (uploaded.sequins.has === existing.sequins.has) {
+      score += 20;
+    }
+    count++;
+
+    // Gold thread
+    if (uploaded.gold_thread.has === existing.gold_thread.has) {
+      score += 10;
+    }
+    count++;
+
+    return score / count;
+  }
+
+  /**
+   * Get recommendation based on score and sales
+   */
+  private getRecommendation(
+    score: number,
+    salesQuantity: number,
+    productType: string
+  ): {
+    recommendation: 'highly_recommended' | 'recommended' | 'consider' | 'not_recommended';
+    label: string;
+    reason: string;
+  } {
+    if (score >= 90) {
+      return {
+        recommendation: 'highly_recommended',
+        label: 'Highly Recommended',
+        reason: `Sangat mirip (${score}%) dengan ${productType} bestseller yang terjual ${salesQuantity} pcs dalam 3 bulan terakhir.`
+      };
+    } else if (score >= 80) {
+      return {
+        recommendation: 'recommended',
+        label: 'Recommended',
+        reason: `Mirip (${score}%) dengan ${productType} yang laris (${salesQuantity} pcs). Potensi pasar tinggi.`
+      };
+    } else if (score >= 70) {
+      return {
+        recommendation: 'consider',
+        label: 'Consider',
+        reason: `Ada kemiripan (${score}%) tapi segment berbeda. ${salesQuantity > 10 ? 'Market ada, tapi perlu positioning berbeda.' : 'Sales masih rendah, perlu evaluasi.'}`
+      };
+    } else {
+      return {
+        recommendation: 'not_recommended',
+        label: 'Not Recommended',
+        reason: `Terlalu berbeda (${score}%) dengan produk yang ada. Risiko tinggi untuk pasar saat ini.`
+      };
+    }
+  }
+
+  /**
+   * Generate AI reasoning for the similarity score
+   */
+  private generateAIReasoning(
+    overallScore: number,
+    modelScore: number,
+    patternScore: number,
+    colorsScore: number,
+    salesData: { totalQuantity: number; productName: string }
+  ): string {
+    const reasons: string[] = [];
+
+    if (modelScore >= 80) {
+      reasons.push(`Model sangat mirip (${modelScore}%) dengan produk bestseller.`);
+    } else if (modelScore >= 60) {
+      reasons.push(`Model cukup mirip (${modelScore}%) dengan produk yang ada.`);
+    }
+
+    if (patternScore >= 80) {
+      reasons.push(`Motif/pattern hampir identik (${patternScore}%).`);
+    } else if (patternScore >= 60) {
+      reasons.push(`Motif memiliki kemiripan (${patternScore}%).`);
+    }
+
+    if (colorsScore >= 80) {
+      reasons.push(`Warna dominan sangat cocok (${colorsScore}%).`);
+    }
+
+    if (salesData.totalQuantity >= 10) {
+      reasons.push(`Produk referensi sangat laris (${salesData.totalQuantity} pcs dalam 3 bulan).`);
+    } else if (salesData.totalQuantity >= 5) {
+      reasons.push(`Produk referensi cukup laris (${salesData.totalQuantity} pcs).`);
+    }
+
+    if (reasons.length === 0) {
+      return `Skor kemiripan ${overallScore}% berdasarkan analisis AI.`;
+    }
+
+    return reasons.join(' ');
   }
 }
 
