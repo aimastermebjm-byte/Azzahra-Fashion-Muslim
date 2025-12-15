@@ -280,9 +280,60 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
             // Try to get existing analysis from product data
             if (product.aiAnalysis) {
               console.log('📁 Using cached AI analysis for:', product.name, product.aiAnalysis);
+              
+              // Normalize cached analysis to ensure consistent format
+              const cachedAnalysis = product.aiAnalysis as any;
+              const normalizedAnalysis: GeminiClothingAnalysis = {
+                clothing_type: {
+                  main_type: (cachedAnalysis.clothing_type?.main_type || 'other').toLowerCase(),
+                  silhouette: (cachedAnalysis.clothing_type?.silhouette || 'loose').toLowerCase(),
+                  length: (cachedAnalysis.clothing_type?.length || 'maxi').toLowerCase(),
+                  confidence: cachedAnalysis.clothing_type?.confidence || 50
+                },
+                pattern_type: {
+                  pattern: (cachedAnalysis.pattern_type?.pattern || 'solid').toLowerCase(),
+                  complexity: (cachedAnalysis.pattern_type?.complexity || 'simple').toLowerCase(),
+                  confidence: cachedAnalysis.pattern_type?.confidence || 50
+                },
+                lace_details: {
+                  has_lace: cachedAnalysis.lace_details?.has_lace || false,
+                  locations: (cachedAnalysis.lace_details?.locations || []).map((loc: any) => ({
+                    position: (loc.position || 'collar').toLowerCase(),
+                    coverage: (loc.coverage || 'minimal').toLowerCase(),
+                    lace_type: (loc.lace_type || 'floral_lace').toLowerCase()
+                  })),
+                  confidence: cachedAnalysis.lace_details?.confidence || 50
+                },
+                hem_pleats: {
+                  has_pleats: cachedAnalysis.hem_pleats?.has_pleats || false,
+                  pleat_type: (cachedAnalysis.hem_pleats?.pleat_type || 'none').toLowerCase(),
+                  depth: (cachedAnalysis.hem_pleats?.depth || 'shallow').toLowerCase(),
+                  fullness: cachedAnalysis.hem_pleats?.fullness || 0,
+                  confidence: cachedAnalysis.hem_pleats?.confidence || 50
+                },
+                sleeve_details: {
+                  has_pleats: cachedAnalysis.sleeve_details?.has_pleats || false,
+                  sleeve_type: (cachedAnalysis.sleeve_details?.sleeve_type || 'straight').toLowerCase(),
+                  pleat_position: (cachedAnalysis.sleeve_details?.pleat_position || 'wrist').toLowerCase(),
+                  ruffle_count: cachedAnalysis.sleeve_details?.ruffle_count || 0,
+                  cuff_style: (cachedAnalysis.sleeve_details?.cuff_style || 'plain').toLowerCase(),
+                  confidence: cachedAnalysis.sleeve_details?.confidence || 50
+                },
+                embellishments: {
+                  beads: cachedAnalysis.embellishments?.beads || { has: false, locations: [], density: 0 },
+                  embroidery: cachedAnalysis.embellishments?.embroidery || { has: false, pattern: '' },
+                  sequins: cachedAnalysis.embellishments?.sequins || { has: false, locations: [] },
+                  gold_thread: cachedAnalysis.embellishments?.gold_thread || { has: false, coverage: 0 }
+                },
+                colors: (cachedAnalysis.colors || ['unknown']).map((c: string) => c.toLowerCase()),
+                fabric_texture: (cachedAnalysis.fabric_texture || 'smooth').toLowerCase()
+              };
+              
+              console.log('🔄 Normalized cached analysis:', normalizedAnalysis);
+              
               return {
                 product,
-                analysis: product.aiAnalysis as GeminiClothingAnalysis,
+                analysis: normalizedAnalysis,
                 salesData: productsWithGoodSalesData.find(s => s.productId === product.id)!
               };
             }

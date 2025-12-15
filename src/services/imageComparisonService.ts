@@ -470,10 +470,16 @@ Return ONLY valid JSON (no markdown, no backticks):
     const uploadedPattern = uploaded.pattern?.toString().toLowerCase() || 'solid';
     const existingPattern = existing.pattern?.toString().toLowerCase() || 'solid';
 
+    // Check for exact match
     if (uploadedPattern === existingPattern) {
       // Same pattern, check complexity
       if (uploaded.complexity === existing.complexity) return 100;
       return 80;
+    }
+    
+    // Check if one pattern includes the other (e.g., "geometric" vs "geometric_grid_with_logo")
+    if (uploadedPattern.includes(existingPattern) || existingPattern.includes(uploadedPattern)) {
+      return 75; // High similarity for related patterns
     }
     
     // Similar pattern groups
@@ -497,23 +503,76 @@ Return ONLY valid JSON (no markdown, no backticks):
     uploadedColors: string[],
     existingColors: string[]
   ): number {
-    if (!uploadedColors.length || !existingColors.length) return 50;
+    if (!uploadedColors.length || !existingColors.length) {
+      console.log('🎨 Colors similarity: Missing colors data', { uploadedColors, existingColors });
+      return 50;
+    }
     
-    // Count matching colors
-    const matchingColors = uploadedColors.filter(color =>
-      existingColors.some(existingColor =>
-        existingColor.toLowerCase().includes(color.toLowerCase()) ||
-        color.toLowerCase().includes(existingColor.toLowerCase())
-      )
-    );
+    // Normalize colors to lowercase
+    const normalizedUploaded = uploadedColors.map(c => c.toLowerCase().trim());
+    const normalizedExisting = existingColors.map(c => c.toLowerCase().trim());
     
-    const matchPercentage = (matchingColors.length / Math.max(uploadedColors.length, existingColors.length)) * 100;
+    console.log('🎨 Colors comparison:', {
+      uploaded: normalizedUploaded,
+      existing: normalizedExisting
+    });
+    
+    // Color families for fuzzy matching
+    const colorFamilies: Record<string, string[]> = {
+      'blue': ['blue', 'navy', 'cobalt', 'azure', 'cyan', 'teal', 'turquoise'],
+      'grey': ['grey', 'gray', 'slate', 'charcoal', 'ash', 'smoke'],
+      'beige': ['beige', 'tan', 'khaki', 'sand', 'cream', 'ivory'],
+      'black': ['black', 'ebony', 'onyx', 'jet'],
+      'white': ['white', 'snow', 'pearl', 'ivory'],
+      'brown': ['brown', 'chocolate', 'coffee', 'hazel', 'caramel'],
+      'red': ['red', 'crimson', 'scarlet', 'ruby', 'burgundy'],
+      'pink': ['pink', 'rose', 'blush', 'magenta', 'fuchsia'],
+      'purple': ['purple', 'violet', 'lavender', 'lilac', 'mauve'],
+      'green': ['green', 'emerald', 'olive', 'lime', 'mint'],
+      'yellow': ['yellow', 'gold', 'lemon', 'mustard', 'amber']
+    };
+    
+    // Count matching colors with fuzzy matching
+    const matchingColors = normalizedUploaded.filter(uploadedColor => {
+      // Check for exact or partial match
+      if (normalizedExisting.some(existingColor => 
+        existingColor === uploadedColor ||
+        existingColor.includes(uploadedColor) ||
+        uploadedColor.includes(existingColor)
+      )) {
+        return true;
+      }
+      
+      // Check color families
+      for (const [family, familyColors] of Object.entries(colorFamilies)) {
+        const uploadedInFamily = familyColors.some(fc => uploadedColor.includes(fc));
+        const existingInFamily = normalizedExisting.some(ec => 
+          familyColors.some(fc => ec.includes(fc))
+        );
+        
+        if (uploadedInFamily && existingInFamily) {
+          console.log(`🎨 Colors match in family ${family}: ${uploadedColor} ↔ ${normalizedExisting}`);
+          return true;
+        }
+      }
+      
+      return false;
+    });
+    
+    const matchPercentage = (matchingColors.length / Math.max(normalizedUploaded.length, normalizedExisting.length)) * 100;
+    
+    console.log(`🎨 Colors match: ${matchingColors.length}/${Math.max(normalizedUploaded.length, normalizedExisting.length)} = ${matchPercentage}%`);
     
     // Boost score if primary colors match
-    const primaryMatch = uploadedColors[0] && existingColors[0] &&
-      uploadedColors[0].toLowerCase() === existingColors[0].toLowerCase();
+    const primaryMatch = normalizedUploaded[0] && normalizedExisting[0] &&
+      (normalizedUploaded[0] === normalizedExisting[0] ||
+       normalizedUploaded[0].includes(normalizedExisting[0]) ||
+       normalizedExisting[0].includes(normalizedUploaded[0]));
     
-    return primaryMatch ? Math.min(100, matchPercentage + 20) : matchPercentage;
+    const finalScore = primaryMatch ? Math.min(100, matchPercentage + 20) : matchPercentage;
+    console.log(`🎨 Final colors score: ${finalScore}%`);
+    
+    return finalScore;
   }
 
   /**
