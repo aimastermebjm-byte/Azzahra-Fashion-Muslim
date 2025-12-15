@@ -4,7 +4,7 @@ import { geminiService, GeminiClothingAnalysis } from '../services/geminiVisionS
 import { imageComparisonService, ComparisonResult, EnhancedSimilarityResult } from '../services/imageComparisonService';
 import { collageService } from '../services/collageService';
 import { salesHistoryService, ProductSalesData } from '../services/salesHistoryService';
-import { hasGeminiAPIKey, loadGeminiAPIKey } from '../utils/encryption';
+import { hasGeminiAPIKey, loadGeminiAPIKey, loadGLMAPIKey } from '../utils/encryption';
 import GeminiAPISettings from './GeminiAPISettings';
 import { Product } from '../types';
 
@@ -99,11 +99,12 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
       if (apiKeyExists) {
         // Initialize Gemini service
         const apiKey = loadGeminiAPIKey();
-        if (apiKey) {
+        const glmApiKey = loadGLMAPIKey();
+        if (apiKey || glmApiKey) {
           try {
-            geminiService.initialize(apiKey);
+            geminiService.initialize(apiKey || '', glmApiKey || '');
           } catch (error) {
-            console.error('Failed to initialize Gemini:', error);
+            console.error('Failed to initialize AI service:', error);
           }
         }
       } else {

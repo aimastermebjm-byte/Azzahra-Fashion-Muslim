@@ -103,20 +103,53 @@ class RateLimiter {
 
 export class GeminiVisionService {
   private genAI: GoogleGenerativeAI | null = null;
+  private glmApiKey: string | null = null;
+  private geminiApiKey: string | null = null;
   private rateLimiter = new RateLimiter();
   
-  initialize(apiKey: string) {
-    if (!apiKey || apiKey.trim() === '') {
-      throw new Error('API key is required');
+  /**
+   * Initialize with both Gemini and GLM API keys
+   * @param geminiApiKey Google Gemini API key (optional if GLM key provided)
+   * @param glmApiKey GLM-4.6 API key (optional)
+   */
+  initialize(geminiApiKey: string = '', glmApiKey: string = '') {
+    if (!geminiApiKey && !glmApiKey) {
+      throw new Error('At least one API key (Gemini or GLM) is required');
     }
-    this.genAI = new GoogleGenerativeAI(apiKey);
+    
+    if (geminiApiKey && geminiApiKey.trim() !== '') {
+      this.genAI = new GoogleGenerativeAI(geminiApiKey);
+      this.geminiApiKey = geminiApiKey;
+    } else {
+      this.genAI = null;
+      this.geminiApiKey = null;
+    }
+    
+    if (glmApiKey && glmApiKey.trim() !== '') {
+      this.glmApiKey = glmApiKey;
+    }
+  }
+  
+  /**
+   * Check if GLM API is available
+   */
+  hasGLMAPI(): boolean {
+    return this.glmApiKey !== null && this.glmApiKey.trim() !== '';
   }
   
   isInitialized(): boolean {
     return this.genAI !== null;
   }
   
-  async testConnection(): Promise<boolean> {
+  async testConnection(provider: 'gemini' | 'glm' = 'gemini'): Promise<boolean> {
+    if (provider === 'gemini') {
+      return this.testGeminiConnection();
+    } else {
+      return this.testGLMConnection();
+    }
+  }
+
+  private async testGeminiConnection(): Promise<boolean> {
     if (!this.genAI) {
       throw new Error('Gemini not initialized. Please set API key first.');
     }
@@ -141,12 +174,12 @@ export class GeminiVisionService {
         const response = result.response.text();
         
         if (response.toLowerCase().includes('ok')) {
-          console.log(`✓ Connected with model: ${modelName}`);
+          console.log(`✓ Gemini connected with model: ${modelName}`);
           return true;
         }
       } catch (error: any) {
         lastError = error;
-        console.warn(`Model ${modelName} failed:`, error.message);
+        console.warn(`Gemini model ${modelName} failed:`, error.message);
         // Continue to next model
       }
     }
@@ -157,10 +190,92 @@ export class GeminiVisionService {
       throw new Error('API_KEY_INVALID: Invalid API key. Please check your key.');
     }
     
-    throw lastError || new Error('Connection test failed for all models');
+    throw lastError || new Error('Gemini connection test failed for all models');
+  }
+
+  private async testGLMConnection(): Promise<boolean> {
+    if (!this.glmApiKey) {
+      throw new Error('GLM API key not set. Please configure GLM API key first.');
+    }
+
+    try {
+      const response = await fetch('https://api.z.ai/api/paas/v4/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.glmApiKey}`
+        },
+        body: JSON.stringify({
+          model: 'glm-4.6',
+          messages: [
+            {
+              role: 'user',
+              content: 'Say "OK" if you can read this.'
+            }
+          ],
+          max_tokens: 10,
+          temperature: 0.1
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`GLM API error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || '';
+      
+      if (content.toLowerCase().includes('ok')) {
+        console.log('✓ GLM-4.6 connection successful');
+        return true;
+      } else {
+        throw new Error(`Unexpected response: ${content}`);
+      }
+    } catch (error: any) {
+      console.error('GLM test connection failed:', error);
+      
+      if (error.message?.includes('401') || error.message?.includes('API_KEY_INVALID') || error.message?.includes('Invalid authentication')) {
+        throw new Error('API_KEY_INVALID: Invalid GLM API key. Please check your key.');
+      }
+      
+      if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+        throw new Error('RATE_LIMIT: GLM rate limit exceeded. Please wait and try again.');
+      }
+      
+      throw new Error(`GLM connection failed: ${error.message || 'Unknown error'}`);
+    }
   }
   
   async analyzeClothingImage(imageBase64: string): Promise<GeminiClothingAnalysis> {
+    try {
+      return await this._analyzeWithGemini(imageBase64);
+    } catch (error: any) {
+      console.warn('Gemini analysis failed, checking for GLM fallback...', error);
+      
+      // Check if error is rate limit, quota exceeded, or API key issue
+      const shouldFallback = error.message?.includes('RATE_LIMIT') || 
+                           error.message?.includes('API_KEY_INVALID') ||
+                           error.message?.includes('RESOURCE_EXHAUSTED') ||
+                           error.message?.includes('429') ||
+                           error.message?.includes('401');
+      
+      if (shouldFallback && this.hasGLMAPI()) {
+        console.log('🔄 Falling back to GLM-4.6 for analysis...');
+        try {
+          return await this._analyzeWithGLM(imageBase64);
+        } catch (glmError: any) {
+          console.error('GLM analysis also failed:', glmError);
+          throw new Error(`Both Gemini and GLM failed: ${error.message}, GLM: ${glmError.message}`);
+        }
+      }
+      
+      // Re-throw original error if no fallback or fallback not applicable
+      throw error;
+    }
+  }
+
+  private async _analyzeWithGemini(imageBase64: string): Promise<GeminiClothingAnalysis> {
     if (!this.genAI) {
       throw new Error('Gemini not initialized. Please set API key first.');
     }
@@ -226,6 +341,168 @@ export class GeminiVisionService {
     const analysis = JSON.parse(responseText);
     
     return this.validateAndCleanAnalysis(analysis);
+  }
+
+  private async _analyzeWithGLM(imageBase64: string): Promise<GeminiClothingAnalysis> {
+    if (!this.glmApiKey) {
+      throw new Error('GLM API key not configured.');
+    }
+
+    const prompt = this.buildAnalysisPrompt();
+    
+    try {
+      const response = await fetch('https://api.z.ai/api/paas/v4/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.glmApiKey}`
+        },
+        body: JSON.stringify({
+          model: 'glm-4.6',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: prompt
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:image/jpeg;base64,${imageBase64}`
+                  }
+                }
+              ]
+            }
+          ],
+          response_format: { type: 'json_object' },
+          max_tokens: 2000,
+          temperature: 0.2
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`GLM API error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || '';
+      
+      if (!content) {
+        throw new Error('GLM returned empty response');
+      }
+
+      // Try to parse JSON - sometimes it might be wrapped in markdown code blocks
+      let jsonStr = content;
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[1] || jsonMatch[0];
+      }
+
+      const analysis = JSON.parse(jsonStr);
+      console.log('✓ GLM analysis successful');
+      
+      return this.validateAndCleanAnalysis(analysis);
+    } catch (error: any) {
+      console.error('GLM analysis failed:', error);
+      
+      if (error.message?.includes('401') || error.message?.includes('Invalid authentication')) {
+        throw new Error('API_KEY_INVALID: Invalid GLM API key.');
+      }
+      
+      if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+        throw new Error('RATE_LIMIT: GLM rate limit exceeded.');
+      }
+      
+      throw new Error(`GLM analysis failed: ${error.message || 'Unknown error'}`);
+    }
+  }
+
+  private async _compareWithGLM(
+    image1Base64: string,
+    image2Base64: string,
+    prompt: string
+  ): Promise<any> {
+    if (!this.glmApiKey) {
+      throw new Error('GLM API key not configured.');
+    }
+
+    try {
+      const response = await fetch('https://api.z.ai/api/paas/v4/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.glmApiKey}`
+        },
+        body: JSON.stringify({
+          model: 'glm-4.6',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: prompt
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:image/jpeg;base64,${image1Base64}`
+                  }
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:image/jpeg;base64,${image2Base64}`
+                  }
+                }
+              ]
+            }
+          ],
+          response_format: { type: 'json_object' },
+          max_tokens: 2000,
+          temperature: 0.05
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`GLM API error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || '';
+      
+      if (!content) {
+        throw new Error('GLM returned empty response');
+      }
+
+      // Try to parse JSON - sometimes it might be wrapped in markdown code blocks
+      let jsonStr = content;
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[1] || jsonMatch[0];
+      }
+
+      const parsedResult = JSON.parse(jsonStr);
+      console.log('✓ GLM comparison successful');
+      
+      return parsedResult;
+    } catch (error: any) {
+      console.error('GLM comparison failed:', error);
+      
+      if (error.message?.includes('401') || error.message?.includes('Invalid authentication')) {
+        throw new Error('API_KEY_INVALID: Invalid GLM API key.');
+      }
+      
+      if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+        throw new Error('RATE_LIMIT: GLM rate limit exceeded.');
+      }
+      
+      throw new Error(`GLM comparison failed: ${error.message || 'Unknown error'}`);
+    }
   }
   
   private buildAnalysisPrompt(): string {
@@ -331,13 +608,16 @@ Scoring guidelines:
     modelComparison: string;
     motifComparison: string;
   }> {
+    const prompt = this.buildComparisonPrompt();
+    
+    // Try Gemini first
     try {
       console.log('🔍 Starting direct image comparison using Gemini API...');
       
       const result = await this.compareClothingImages(
         image1Base64,
         image2Base64,
-        this.buildComparisonPrompt()
+        prompt
       );
 
       console.log('🔍 Raw direct comparison result:', JSON.stringify(result, null, 2));
@@ -361,12 +641,58 @@ Scoring guidelines:
         modelComparison,
         motifComparison
       };
-    } catch (error) {
-      console.error('❌ Error in direct image comparison:', error);
-      // Fallback to 0% if comparison fails
+    } catch (geminiError: any) {
+      console.warn('Gemini direct comparison failed, checking for GLM fallback...', geminiError);
+      
+      // Check if error is rate limit, quota exceeded, or API key issue
+      const shouldFallback = geminiError.message?.includes('RATE_LIMIT') || 
+                           geminiError.message?.includes('API_KEY_INVALID') ||
+                           geminiError.message?.includes('RESOURCE_EXHAUSTED') ||
+                           geminiError.message?.includes('429') ||
+                           geminiError.message?.includes('401');
+      
+      if (shouldFallback && this.hasGLMAPI()) {
+        console.log('🔄 Falling back to GLM-4.6 for direct comparison...');
+        try {
+          const glmResult = await this._compareWithGLM(image1Base64, image2Base64, prompt);
+          
+          console.log('🔍 Raw GLM comparison result:', JSON.stringify(glmResult, null, 2));
+
+          const similarityScore = Number(glmResult.skor_kemiripan_persen) || 0;
+          const explanation = glmResult.penjelasan || 'No explanation provided';
+          const modelComparison = glmResult.fokus_perbandingan?.model_baju || 'No model comparison';
+          const motifComparison = glmResult.fokus_perbandingan?.motif_baju || 'No motif comparison';
+
+          console.log('🔍 Parsed GLM comparison:', {
+            similarityScore,
+            explanation: explanation.substring(0, 100) + '...',
+            modelComparison: modelComparison.substring(0, 50) + '...',
+            motifComparison: motifComparison.substring(0, 50) + '...'
+          });
+
+          return {
+            similarityScore,
+            explanation,
+            modelComparison,
+            motifComparison
+          };
+        } catch (glmError: any) {
+          console.error('❌ GLM direct comparison also failed:', glmError);
+          // Fallback to 0% if both fail
+          return {
+            similarityScore: 0,
+            explanation: `Both Gemini and GLM failed: ${geminiError.message}, GLM: ${glmError.message}`,
+            modelComparison: 'Comparison failed',
+            motifComparison: 'Comparison failed'
+          };
+        }
+      }
+      
+      // No fallback or fallback not applicable, return Gemini error
+      console.error('❌ Error in direct image comparison:', geminiError);
       return {
         similarityScore: 0,
-        explanation: 'Error comparing images: ' + (error as Error).message,
+        explanation: 'Error comparing images: ' + geminiError.message,
         modelComparison: 'Comparison failed',
         motifComparison: 'Comparison failed'
       };

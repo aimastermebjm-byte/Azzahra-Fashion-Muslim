@@ -70,6 +70,30 @@ export class EncryptionService {
   }
   
   /**
+   * Save GLM API key to localStorage (encrypted)
+   */
+  static saveGLMAPIKey(apiKey: string): void {
+    const encrypted = this.encryptAPIKey(apiKey);
+    localStorage.setItem('glm_api_key_encrypted', encrypted);
+    
+    // Also save timestamp
+    localStorage.setItem('glm_api_key_saved_at', Date.now().toString());
+  }
+  
+  /**
+   * Load GLM API key from localStorage (decrypt)
+   */
+  static loadGLMAPIKey(): string | null {
+    const encrypted = localStorage.getItem('glm_api_key_encrypted');
+    
+    if (!encrypted) {
+      return null;
+    }
+    
+    return this.decryptAPIKey(encrypted);
+  }
+  
+  /**
    * Remove API key from localStorage
    */
   static removeGeminiAPIKey(): void {
@@ -78,10 +102,25 @@ export class EncryptionService {
   }
   
   /**
+   * Remove GLM API key from localStorage
+   */
+  static removeGLMAPIKey(): void {
+    localStorage.removeItem('glm_api_key_encrypted');
+    localStorage.removeItem('glm_api_key_saved_at');
+  }
+  
+  /**
    * Check if API key exists
    */
   static hasGeminiAPIKey(): boolean {
     return localStorage.getItem('gemini_api_key_encrypted') !== null;
+  }
+  
+  /**
+   * Check if GLM API key exists
+   */
+  static hasGLMAPIKey(): boolean {
+    return localStorage.getItem('glm_api_key_encrypted') !== null;
   }
   
   /**
@@ -103,3 +142,8 @@ export const saveGeminiAPIKey = EncryptionService.saveGeminiAPIKey.bind(Encrypti
 export const loadGeminiAPIKey = EncryptionService.loadGeminiAPIKey.bind(EncryptionService);
 export const removeGeminiAPIKey = EncryptionService.removeGeminiAPIKey.bind(EncryptionService);
 export const hasGeminiAPIKey = EncryptionService.hasGeminiAPIKey.bind(EncryptionService);
+
+export const saveGLMAPIKey = EncryptionService.saveGLMAPIKey.bind(EncryptionService);
+export const loadGLMAPIKey = EncryptionService.loadGLMAPIKey.bind(EncryptionService);
+export const removeGLMAPIKey = EncryptionService.removeGLMAPIKey.bind(EncryptionService);
+export const hasGLMAPIKey = EncryptionService.hasGLMAPIKey.bind(EncryptionService);
