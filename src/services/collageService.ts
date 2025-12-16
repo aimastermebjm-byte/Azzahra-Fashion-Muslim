@@ -8,26 +8,41 @@ export class CollageService {
     images: File[],
     variantLabels: string[]
   ): Promise<Blob> {
-    const cols = images.length === 5 ? 5 : this.getOptimalLayout(images.length).cols;
-    const rows = images.length === 5 ? 1 : this.getOptimalLayout(images.length).rows;
+    const count = images.length;
+    const canvasSize = 2000; // High-Res Square
 
-    const imageWidth = 2000 / cols; // Dynamic width
-    const imageHeight = 2000 / rows;
-
-    const canvasSize = 2000; // Fixed High-Res Square
+    // Determine layout configuration (items per row)
+    let rowsConfig: number[] = [];
+    if (count <= 5) {
+      rowsConfig = [count]; // Single row
+    } else if (count === 6) {
+      rowsConfig = [3, 3];
+    } else if (count === 7) {
+      rowsConfig = [4, 3];
+    } else if (count === 8) {
+      rowsConfig = [4, 4];
+    } else if (count === 9) {
+      rowsConfig = [5, 4];
+    } else if (count === 10) {
+      rowsConfig = [5, 5];
+    } else {
+      // Fallback for > 10 (or standard grid logic)
+      const cols = Math.ceil(Math.sqrt(count));
+      const rows = Math.ceil(count / cols);
+      rowsConfig = Array(rows).fill(cols);
+      // Adjust last row
+      const remainder = count % cols;
+      if (remainder > 0) rowsConfig[rows - 1] = remainder;
+    }
 
     const canvas = document.createElement('canvas');
     canvas.width = canvasSize;
-    canvas.height = canvasSize; // Square Canvas 1:1
+    canvas.height = canvasSize;
     const ctx = canvas.getContext('2d');
 
     if (!ctx) {
       throw new Error('Failed to get canvas context');
     }
-
-    // No offsets needed if we fill the canvas
-    const offsetX = 0;
-    const offsetY = 0;
 
     // White background
     ctx.fillStyle = '#ffffff';
@@ -38,81 +53,64 @@ export class CollageService {
       images.map(file => this.loadImageFromFile(file))
     );
 
-    // Draw images
-    if (images.length === 5) {
-      // 1x5 Full Height Slices Layout
-      const colWidth = canvasSize / 5;
-      const colHeight = canvasSize;
+    // Draw based on rowsConfig
+    let currentImageIndex = 0;
+    const rowHeight = canvasSize / rowsConfig.length;
 
-      for (let i = 0; i < images.length; i++) {
-        const x = i * colWidth;
-        const y = 0;
+    for (let rowIndex = 0; rowIndex < rowsConfig.length; rowIndex++) {
+      const itemsInRow = rowsConfig[rowIndex];
+      const colWidth = canvasSize / itemsInRow;
+      const y = rowIndex * rowHeight;
+
+      for (let colIndex = 0; colIndex < itemsInRow; colIndex++) {
+        if (currentImageIndex >= loadedImages.length) break;
+
+        const img = loadedImages[currentImageIndex];
+        const label = variantLabels[currentImageIndex];
+        const x = colIndex * colWidth;
 
         // Save context for clipping
         ctx.save();
 
-        // Define clipping region for this slice
+        // Define clipping region for this cell
         ctx.beginPath();
-        ctx.rect(x, y, colWidth, colHeight);
+        ctx.rect(x, y, colWidth, rowHeight);
         ctx.clip();
 
-        const img = loadedImages[i];
+        // Smart SCALING: Fill the cell (Cover)
+        // Scale to match the dimension that ensures coverage
+        // Try filling Height first
+        let scale = rowHeight / img.height;
+        let scaledWidth = img.width * scale;
+        let scaledHeight = rowHeight;
 
-        // Calculate scale to Fill Height (Cover Vertical)
-        // We want the image to match the canvas height (2000px)
-        const scale = colHeight / img.height;
-        const scaledWidth = img.width * scale;
-        const scaledHeight = colHeight;
+        // If scaled width is still too small to cover the cell, scale by Width instead
+        if (scaledWidth < colWidth) {
+          scale = colWidth / img.width;
+          scaledWidth = colWidth;
+          scaledHeight = img.height * scale;
+        }
 
-        // Center horizontally within the strip
+        // Centering
         const drawX = x + (colWidth - scaledWidth) / 2;
-        const drawY = 0; // Align top
+        const drawY = y + (rowHeight - scaledHeight) / 2;
 
         ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, scaledWidth, scaledHeight);
 
-        // Restore context (remove clipping)
+        // Restore context
         ctx.restore();
 
         // Add border
         ctx.strokeStyle = '#e5e7eb';
         ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, colWidth, colHeight);
+        ctx.strokeRect(x, y, colWidth, rowHeight);
 
-        // Add variant label
-        if (variantLabels[i]) {
-          // Draw label slightly offset to ensure visibility inside the narrow slice
-          this.drawLabel(ctx, variantLabels[i], x, y);
+        // Add Label (CENTERED)
+        if (label) {
+          this.drawLabelCentered(ctx, label, x, y, colWidth, rowHeight);
         }
-      }
-    } else {
-      // Standard Grid Layout
-      for (let i = 0; i < images.length; i++) {
-        // Calculate grid position
-        const row = Math.floor(i / cols);
-        const col = i % cols;
 
-        // For standard grid, stick to square logic or adapt? 
-        // We only letterbox for 1x5. Revert others to simple grid on canvasSize
-        // Or just keep the logic consistent. 
-        // For now, let's keep the standard loop operating on provided offsets.
-        // But offsets were calculated for "strip". 
-        // If images.length != 5, we might need standard behavior.
-
-        const x = offsetX + (col * imageWidth);
-        const y = offsetY + (row * imageHeight);
-
-        // Draw image (CONTAIN / FIT CENTER)
-        this.drawImageContain(ctx, loadedImages[i], x, y, imageWidth, imageHeight);
-
-        // Add border
-        ctx.strokeStyle = '#e5e7eb';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, imageWidth, imageHeight);
-
-        // Add variant label
-        if (variantLabels[i]) {
-          this.drawLabel(ctx, variantLabels[i], x, y);
-        }
+        currentImageIndex++;
       }
     }
 
@@ -127,76 +125,34 @@ export class CollageService {
     });
   }
 
-  getOptimalLayout(count: number): CollageLayout {
-    const layouts: Record<number, CollageLayout> = {
-      1: { rows: 1, cols: 1 },
-      2: { rows: 1, cols: 2 },
-      3: { rows: 1, cols: 3 },
-      4: { rows: 2, cols: 2 },
-      5: { rows: 1, cols: 5 }, // FIXED: 1 row, 5 columns (Horizontal)
-      6: { rows: 2, cols: 3 },
-      7: { rows: 2, cols: 4 },
-      8: { rows: 2, cols: 4 },
-      9: { rows: 3, cols: 3 }
-    };
-
-    return layouts[count] || { rows: 2, cols: 2 };
-  }
-
-  // CHANGED: Use CONTAIN logic instead of COVER to show full image
-  private drawImageContain(
-    ctx: CanvasRenderingContext2D,
-    img: HTMLImageElement,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) {
-    // Calculate aspect ratios
-    const imgRatio = img.width / img.height;
-    const boxRatio = width / height;
-
-    let drawWidth = width;
-    let drawHeight = height;
-    let drawX = x;
-    let drawY = y;
-
-    // Contain logic: Fit image inside the box preserving aspect ratio
-    if (imgRatio > boxRatio) {
-      // Image is wider than box -> fit to width
-      drawHeight = width / imgRatio;
-      drawY = y + (height - drawHeight) / 2; // Center vertically
-    } else {
-      // Image is taller than box -> fit to height
-      drawWidth = height * imgRatio;
-      drawX = x + (width - drawWidth) / 2; // Center horizontally
-    }
-
-    ctx.drawImage(
-      img,
-      0, 0, img.width, img.height, // Source full image
-      drawX, drawY, drawWidth, drawHeight // Destination scaled
-    );
-  }
-
-  private drawLabel(
+  // Helper for centered label
+  private drawLabelCentered(
     ctx: CanvasRenderingContext2D,
     label: string,
-    x: number,
-    y: number
+    cellX: number,
+    cellY: number,
+    cellW: number,
+    cellH: number
   ) {
-    const padding = 10;
     const labelSize = 80;
 
+    // Calculate center of cell
+    const centerX = cellX + cellW / 2;
+    // Calculate center Y
+    const centerY = cellY + cellH / 2;
+
+    const x = centerX - (labelSize / 2);
+    const y = centerY - (labelSize / 2);
+
     // Background with shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
     ctx.shadowBlur = 10;
     ctx.shadowOffsetX = 2;
     ctx.shadowOffsetY = 2;
 
-    // Dark background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-    ctx.fillRect(x + padding, y + padding, labelSize, labelSize);
+    // Dark background box
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(x, y, labelSize, labelSize);
 
     // Reset shadow
     ctx.shadowColor = 'transparent';
@@ -209,12 +165,12 @@ export class CollageService {
     ctx.fillStyle = 'white';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, x + padding + labelSize / 2, y + padding + labelSize / 2);
+    ctx.fillText(label, centerX, centerY);
 
-    // Optional: Add a small border to label background
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    // Border
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.lineWidth = 2;
-    ctx.strokeRect(x + padding, y + padding, labelSize, labelSize);
+    ctx.strokeRect(x, y, labelSize, labelSize);
   }
 
   private loadImageFromFile(file: File): Promise<HTMLImageElement> {
@@ -316,12 +272,10 @@ export class CollageService {
 
   // Helper: Preview collage dimensions
   getCollageDimensions(imageCount: number): { width: number; height: number } {
-    const layout = this.getOptimalLayout(imageCount);
-    const imageSize = 600;
-
+    // We now standardize on a high-res square canvas
     return {
-      width: layout.cols * imageSize,
-      height: layout.rows * imageSize
+      width: 2000,
+      height: 2000
     };
   }
 }
