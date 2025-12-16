@@ -45,14 +45,14 @@ const readUsersCache = (): { data: any[], timestamp: number } | null => {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed.data || !Array.isArray(parsed.data)) return null;
-    
+
     // Check if cache expired (7 days)
     const now = Date.now();
     if (parsed.timestamp && (now - parsed.timestamp) > USERS_CACHE_EXPIRY) {
       localStorage.removeItem(USERS_CACHE_KEY);
       return null;
     }
-    
+
     return parsed;
   } catch (err) {
     console.error('⚠️ Failed to read users cache', err);
@@ -73,7 +73,7 @@ const writeUsersCache = (users: any[]) => {
 
 const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => {
   const isOwner = user?.role === 'owner';
-  
+
   // Report type untuk tab navigation
   const [reportType, setReportType] = useState<'summary' | 'sales' | 'products' | 'invoice' | 'inventory' | 'cashflow' | 'profitloss' | 'detail'>('summary');
 
@@ -97,15 +97,15 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Separate loading states for lazy loading
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [loadingInventory, setLoadingInventory] = useState(false);
   const [loadingCashFlow, setLoadingCashFlow] = useState(false);
-  
+
   // Fast initial state - only show loading for critical data
   const [initialLoadingComplete, setInitialLoadingComplete] = useState(false);
-  
+
   // Modal states for product buyers
   const [selectedProduct, setSelectedProduct] = useState<ProductReport | null>(null);
   const [productBuyers, setProductBuyers] = useState<ProductBuyerReport[]>([]);
@@ -194,7 +194,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const loadProductsReport = async () => {
     const { start, end } = getDateRange;
     const cacheKey = `products-cache-${start}-${end}`;
-    
+
     // Check cache first
     try {
       const cached = localStorage.getItem(cacheKey);
@@ -202,7 +202,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
         const { data, timestamp } = JSON.parse(cached);
         const now = Date.now();
         const CACHE_EXPIRY = 60 * 60 * 1000; // 1 hour
-        
+
         if (now - timestamp < CACHE_EXPIRY) {
           console.log('✅ Products loaded from cache');
           setProducts(data);
@@ -221,7 +221,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
         limit: 1000 // Increased limit for better data
       });
       setProducts(productData);
-      
+
       // Cache the result
       try {
         localStorage.setItem(cacheKey, JSON.stringify({
@@ -272,7 +272,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           id: doc.id,
           ...doc.data()
         }));
-        
+
         // Write to cache
         writeUsersCache(usersData);
         setUsers(usersData);
@@ -293,7 +293,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     const loadBackgroundData = async () => {
       // Small delay to ensure page is rendered first
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       // Load payment methods with cache
       try {
         const cacheKey = 'payment-methods-cache';
@@ -302,7 +302,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           const { data, timestamp } = JSON.parse(cached);
           const now = Date.now();
           const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutes
-          
+
           if (now - timestamp < CACHE_EXPIRY) {
             console.log('✅ Payment methods loaded from cache');
             setPaymentMethods(data);
@@ -312,7 +312,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
         const methods = await financialService.listPaymentMethods();
         setPaymentMethods(methods);
-        
+
         // Cache for 30 minutes
         localStorage.setItem(cacheKey, JSON.stringify({
           data: methods,
@@ -330,7 +330,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           const { data, timestamp } = JSON.parse(cached);
           const now = Date.now();
           const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutes
-          
+
           if (now - timestamp < CACHE_EXPIRY) {
             console.log('✅ Product categories loaded from cache');
             setProductCategories(data);
@@ -340,7 +340,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
         const categories = await productCategoryService.listCategories();
         setProductCategories(categories);
-        
+
         // Cache for 30 minutes
         localStorage.setItem(cacheKey, JSON.stringify({
           data: categories,
@@ -426,7 +426,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           await loadSummaryStats();
           break;
         case 'summary':
-          // Don't load anything for summary initially - let it be fast
+          // Fix: Load transactions immediately for summary stats
+          await loadTransactions();
           break;
         default:
           await loadTransactions();
@@ -448,7 +449,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
         limit: 20,
         searchQuery
       });
-      
+
       setProductBuyers(result.buyers);
       setBuyersPage(result.currentPage);
       setBuyersTotalPages(result.totalPages);
@@ -486,55 +487,18 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     }
   };
 
-  // Open rekap modal
-  const openRekapModal = async (product: ProductReport) => {
-    setSelectedRekapProduct(product);
-    setLoadingRekap(true);
-    setShowRekapModal(true);
-    
-    try {
-      const { start, end } = getDateRange;
-      const summaryData = await ReportsService.getProductBuyersSummary(product.id, {
-        startDate: start,
-        endDate: end,
-        status: productStatusFilter
-      });
-      
-      setRekapData(summaryData);
-    } catch (error) {
-      console.error('Error loading rekap data:', error);
-      // Tampilkan data kosong jika error
-      setRekapData({
-        productId: product.id,
-        productName: product.name,
-        buyers: [],
-        totalBuyers: 0,
-        totalQuantity: 0,
-        totalAmount: 0
-      });
-    } finally {
-      setLoadingRekap(false);
-    }
-  };
 
-  // Close rekap modal
-  const closeRekapModal = () => {
-    setShowRekapModal(false);
-    setSelectedRekapProduct(null);
-    setRekapData(null);
-    setLoadingRekap(false);
-  };
 
   // Handle search query change with debouncing
   const handleBuyerSearchChange = (query: string) => {
     setBuyerSearchQuery(query);
     setIsFilterActive(query.trim() !== ''); // Update filter active state
-    
+
     // Clear previous timeout
     if (searchTimeoutId) {
       clearTimeout(searchTimeoutId);
     }
-    
+
     // Set new timeout for debounced search
     const timeoutId = setTimeout(() => {
       if (selectedProduct) {
@@ -542,7 +506,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
         loadProductBuyers(selectedProduct, 1, query);
       }
     }, 300); // 300ms debounce
-    
+
     setSearchTimeoutId(timeoutId);
   };
 
@@ -586,11 +550,11 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
       for (const product of selectedProducts) {
         const buyersSummary = await ReportsService.getProductBuyersSummary(product.id);
-        
+
         combinedData.push({
           productId: product.id,
           productName: product.name,
-          buyers: buyersSummary.buyers,
+          buyers: buyersSummary.buyers as any,
           totalBuyers: buyersSummary.totalBuyers,
           totalQuantity: buyersSummary.totalQuantity,
           totalAmount: buyersSummary.totalAmount
@@ -620,19 +584,19 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     }
 
     const { start, end } = getDateRange;
-    
+
     return transactions.filter(transaction => {
       const matchesDate = transaction.date >= start && transaction.date <= end;
       const matchesStatus = statusFilter === 'all' || transaction.status === statusFilter;
-      
+
       let matchesCustomer = true;
       if (customerFilter) {
         const customerLower = customerFilter.toLowerCase();
-        matchesCustomer = 
+        matchesCustomer =
           transaction.customer.toLowerCase().includes(customerLower) ||
           transaction.phone.includes(customerFilter);
       }
-      
+
       let matchesCategory = true;
       if (categoryFilter !== 'all' && transaction.items) {
         matchesCategory = transaction.items.some((item: any) => item.category === categoryFilter);
@@ -669,7 +633,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       totalRevenue += transaction.subtotal;
       totalShipping += transaction.shippingCost;
       totalSales += transaction.total;
-      
+
       if (transaction.status === 'lunas') {
         lunasCount++;
       } else {
@@ -751,7 +715,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
   const cashflowRecap = useMemo(() => {
     const saldoSebelum = 0;
-    
+
     // Group by category for dynamic breakdown
     const incomeByCategory = cashFlow
       .filter(flow => flow.type === 'income')
@@ -760,7 +724,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
         acc[key] = (acc[key] || 0) + flow.amount;
         return acc;
       }, {});
-    
+
     const expenseByCategory = cashFlow
       .filter(flow => flow.type === 'expense')
       .reduce<Record<string, number>>((acc, flow) => {
@@ -768,7 +732,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
         acc[key] = (acc[key] || 0) + flow.amount;
         return acc;
       }, {});
-    
+
     const totalIncome = Object.values(incomeByCategory).reduce((sum, amount) => sum + amount, 0);
     const totalExpense = Object.values(expenseByCategory).reduce((sum, amount) => sum + amount, 0);
     const total = totalIncome - totalExpense;
@@ -1015,7 +979,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           {reportType === 'summary' && (
             <div className="p-4">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Ringkasan Performa Bisnis</h3>
-              
+
               {/* Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="card-elevated p-5">
@@ -1106,7 +1070,46 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <h3 className="text-lg font-semibold text-gray-800">Transaksi Penjualan</h3>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* Mobile Card View */}
+              <div className="block md:hidden space-y-4">
+                {filteredTransactions.map((transaction) => {
+                  const modal = transaction.totalModal || (transaction.subtotal * 0.6);
+                  const laba = transaction.subtotal - modal;
+                  return (
+                    <div key={transaction.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-bold text-gray-800">{transaction.invoice}</p>
+                          <p className="text-xs text-gray-500">{transaction.date}</p>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${transaction.status === 'lunas' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                          {transaction.status === 'lunas' ? 'Lunas' : 'Belum'}
+                        </span>
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Pelanggan</span>
+                          <span className="font-medium text-gray-900">{transaction.customer}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Total</span>
+                          <span className="font-bold text-gray-900">{formatCurrency(transaction.subtotal)}</span>
+                        </div>
+                        {isOwner && (
+                          <div className="flex justify-between border-t pt-1 mt-1">
+                            <span className="text-xs text-gray-500">Laba</span>
+                            <span className="font-bold text-green-600">{formatCurrency(laba)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full table-auto">
                   <thead>
                     <tr className="bg-gray-50">
@@ -1172,79 +1175,127 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 </div>
               </div>
 
+              {/* Mobile Card View */}
               {loadingProducts && products.length === 0 ? (
                 <div className="flex justify-center items-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-blue-600 mb-4"></div>
                   <p className="text-gray-600 font-medium">Memuat data produk...</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full table-auto">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-12">
-                          <input
-                            type="checkbox"
-                            checked={selectedProducts.length > 0 && selectedProducts.length === products.filter(p => categoryFilter === 'all' || p.category === categoryFilter).length}
-                            onChange={() => {
-                              if (selectedProducts.length > 0 && selectedProducts.length === products.filter(p => categoryFilter === 'all' || p.category === categoryFilter).length) {
-                                clearAllSelections();
-                              } else {
-                                selectAllProducts();
-                              }
-                            }}
-                            className="h-4 w-4 text-brand-primary rounded focus:ring-brand-primary border-gray-300"
-                          />
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terjual</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga</th>
-                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>}
-                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Laba</th>}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
+                <>
+                  <div className="block md:hidden space-y-4">
                     {products
                       .filter(p => categoryFilter === 'all' || p.category === categoryFilter)
                       .map((product) => {
-                      const averagePrice = product.totalSold > 0 ? product.totalRevenue / product.totalSold : 0;
-                      const modal = product.totalRevenue - product.profit;
+                        const averagePrice = product.totalSold > 0 ? product.totalRevenue / product.totalSold : 0;
+                        const modal = product.totalRevenue - product.profit;
 
-                      return (
-                        <tr key={product.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900 w-12">
+                        return (
+                          <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                            <div className="flex items-start gap-3 mb-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedProducts.some(p => p.id === product.id)}
+                                onChange={() => toggleProductSelection(product)}
+                                className="mt-1 h-5 w-5 text-brand-primary rounded focus:ring-brand-primary border-gray-300"
+                              />
+                              <div className="flex-1">
+                                <p className="font-bold text-gray-800 line-clamp-2">{product.name}</p>
+                                <p className="text-xs text-brand-primary mt-1">{product.totalSold} terjual</p>
+                              </div>
+                            </div>
+
+                            <div className="pl-8 space-y-1 text-sm border-t pt-2 mt-2">
+                              <div className="flex justify-between">
+                                <span className="text-gray-500">Harga Rata2</span>
+                                <span className="font-medium text-gray-900">{formatCurrency(averagePrice)}</span>
+                              </div>
+                              {isOwner && (
+                                <>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500">Total Modal</span>
+                                    <span className="text-gray-900">{formatCurrency(modal)}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500 font-medium">Profit</span>
+                                    <span className="font-bold text-green-600">{formatCurrency(product.profit)}</span>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full table-auto">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-12">
                             <input
                               type="checkbox"
-                              checked={selectedProducts.some(p => p.id === product.id)}
-                              onChange={() => toggleProductSelection(product)}
+                              checked={selectedProducts.length > 0 && selectedProducts.length === products.filter(p => categoryFilter === 'all' || p.category === categoryFilter).length}
+                              onChange={() => {
+                                if (selectedProducts.length > 0 && selectedProducts.length === products.filter(p => categoryFilter === 'all' || p.category === categoryFilter).length) {
+                                  clearAllSelections();
+                                } else {
+                                  selectAllProducts();
+                                }
+                              }}
                               className="h-4 w-4 text-brand-primary rounded focus:ring-brand-primary border-gray-300"
                             />
-                          </td>
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                            {product.name}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {product.totalSold}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {formatCurrency(averagePrice)}
-                          </td>
-                          {isOwner && (
-                            <td className="px-4 py-3 text-sm text-gray-900">
-                              {formatCurrency(modal)}
-                            </td>
-                          )}
-                          {isOwner && (
-                            <td className="px-4 py-3 text-sm text-brand-success">
-                              {formatCurrency(product.profit)}
-                            </td>
-                          )}
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terjual</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga</th>
+                          {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>}
+                          {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Laba</th>}
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {products
+                          .filter(p => categoryFilter === 'all' || p.category === categoryFilter)
+                          .map((product) => {
+                            const averagePrice = product.totalSold > 0 ? product.totalRevenue / product.totalSold : 0;
+                            const modal = product.totalRevenue - product.profit;
+
+                            return (
+                              <tr key={product.id} className="hover:bg-gray-50">
+                                <td className="px-4 py-3 text-sm font-medium text-gray-900 w-12">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedProducts.some(p => p.id === product.id)}
+                                    onChange={() => toggleProductSelection(product)}
+                                    className="h-4 w-4 text-brand-primary rounded focus:ring-brand-primary border-gray-300"
+                                  />
+                                </td>
+                                <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                  {product.name}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-900">
+                                  {product.totalSold}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-900">
+                                  {formatCurrency(averagePrice)}
+                                </td>
+                                {isOwner && (
+                                  <td className="px-4 py-3 text-sm text-gray-900">
+                                    {formatCurrency(modal)}
+                                  </td>
+                                )}
+                                {isOwner && (
+                                  <td className="px-4 py-3 text-sm text-brand-success">
+                                    {formatCurrency(product.profit)}
+                                  </td>
+                                )}
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -1256,7 +1307,33 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <h3 className="text-lg font-semibold text-gray-800">Daftar Invoice</h3>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* Mobile Card View */}
+              <div className="block md:hidden space-y-4">
+                {filteredTransactions.map((transaction) => (
+                  <div key={transaction.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-bold text-gray-800">{transaction.invoice}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Pelanggan</span>
+                        <span className="font-medium text-gray-900">
+                          {transaction.customer}
+                          <span className="text-xs text-gray-400 block">{transaction.phone}</span>
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-t pt-2 mt-2">
+                        <span className="text-gray-500">Total Tagihan</span>
+                        <span className="font-bold text-gray-900">{formatCurrency(transaction.total)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full table-auto">
                   <thead>
                     <tr className="bg-gray-50">
@@ -1295,7 +1372,41 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <h3 className="text-lg font-semibold text-gray-800">Stok Persediaan</h3>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* Mobile Card View */}
+              <div className="block md:hidden space-y-4">
+                {inventory
+                  .filter(i => categoryFilter === 'all' || i.category === categoryFilter)
+                  .map((item) => {
+                    const stock = Number(item.stock) || 0;
+                    const modalPerUnit = stock > 0 ? (Number(item.value) || 0) / stock : 0;
+                    const totalModal = modalPerUnit * stock;
+
+                    return (
+                      <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-bold text-gray-800 line-clamp-2">{item.name}</h4>
+                          <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded whitespace-nowrap ml-2">
+                            Stok: {stock}
+                          </span>
+                        </div>
+                        {isOwner && (
+                          <div className="space-y-1 text-sm border-t pt-2 mt-2">
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">Modal/Unit</span>
+                              <span className="text-gray-900">{formatCurrency(modalPerUnit)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-500 font-medium">Total Modal</span>
+                              <span className="font-bold text-gray-900">{formatCurrency(totalModal)}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full table-auto">
                   <thead>
                     <tr className="bg-gray-50">
@@ -1309,31 +1420,31 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     {inventory
                       .filter(i => categoryFilter === 'all' || i.category === categoryFilter)
                       .map((item) => {
-                      const stock = Number(item.stock) || 0;
-                      const modalPerUnit = stock > 0 ? (Number(item.value) || 0) / stock : 0;
-                      const totalModal = modalPerUnit * stock;
+                        const stock = Number(item.stock) || 0;
+                        const modalPerUnit = stock > 0 ? (Number(item.value) || 0) / stock : 0;
+                        const totalModal = modalPerUnit * stock;
 
-                      return (
-                        <tr key={item.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                            {item.name}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {stock}
-                          </td>
-                          {isOwner && (
-                            <td className="px-4 py-3 text-sm text-gray-900">
-                              {formatCurrency(modalPerUnit)}
+                        return (
+                          <tr key={item.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                              {item.name}
                             </td>
-                          )}
-                          {isOwner && (
                             <td className="px-4 py-3 text-sm text-gray-900">
-                              {formatCurrency(totalModal)}
+                              {stock}
                             </td>
-                          )}
-                        </tr>
-                      );
-                    })}
+                            {isOwner && (
+                              <td className="px-4 py-3 text-sm text-gray-900">
+                                {formatCurrency(modalPerUnit)}
+                              </td>
+                            )}
+                            {isOwner && (
+                              <td className="px-4 py-3 text-sm text-gray-900">
+                                {formatCurrency(totalModal)}
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>
@@ -1354,7 +1465,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     <span className="text-gray-600">Saldo Sebelum</span>
                     <span className="font-semibold text-gray-900">{formatCurrency(cashflowRecap.saldoSebelum)}</span>
                   </div>
-                  
+
                   {/* Pendapatan per kategori */}
                   {cashflowRecap.incomeByCategory.length > 0 && (
                     <>
@@ -1369,7 +1480,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                       ))}
                     </>
                   )}
-                  
+
                   {/* Biaya per kategori */}
                   {cashflowRecap.expenseByCategory.length > 0 && (
                     <>
@@ -1384,7 +1495,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                       ))}
                     </>
                   )}
-                  
+
                   <div className="flex items-center justify-between border-t pt-3">
                     <span className="text-gray-600 font-semibold">Total Arus Kas</span>
                     <span className={`font-bold ${cashflowRecap.total >= 0 ? 'text-brand-success' : 'text-brand-warning'}`}>
@@ -1420,9 +1531,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                         <td className="px-4 py-3 text-sm text-gray-500">
                           {flow.paymentMethodName || '—'}
                         </td>
-                        <td className={`px-4 py-3 text-sm font-medium ${
-                          flow.type === 'income' ? 'text-brand-success' : 'text-brand-warning'
-                        }`}>
+                        <td className={`px-4 py-3 text-sm font-medium ${flow.type === 'income' ? 'text-brand-success' : 'text-brand-warning'
+                          }`}>
                           {flow.type === 'income' ? '+' : '-'}{formatCurrency(flow.amount)}
                         </td>
                       </tr>
@@ -1502,9 +1612,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   </div>
                 </div>
 
-                <div className={`card-elevated p-6 border ${
-                  financialBreakdown.labaRugi >= 0 ? 'border-brand-success/40' : 'border-brand-warning/40'
-                }`}>
+                <div className={`card-elevated p-6 border ${financialBreakdown.labaRugi >= 0 ? 'border-brand-success/40' : 'border-brand-warning/40'
+                  }`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600">Laba / Rugi</p>
@@ -1531,7 +1640,48 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <h3 className="text-lg font-semibold text-gray-800">Detail Lengkap Transaksi</h3>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* Mobile Card View */}
+              <div className="block md:hidden space-y-4">
+                {filteredTransactions.map((transaction) => (
+                  <div key={transaction.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-bold text-gray-800">{transaction.invoice}</p>
+                        <p className="text-xs text-gray-500">{transaction.date}</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${transaction.status === 'lunas' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                        {transaction.status === 'lunas' ? 'Lunas' : 'Belum'}
+                      </span>
+                    </div>
+
+                    <div className="mb-3">
+                      <p className="text-sm font-medium text-gray-900">{transaction.customer}</p>
+                      <p className="text-xs text-gray-500">{transaction.phone}</p>
+                    </div>
+
+                    <div className="space-y-2 border-t border-b py-2 my-2">
+                      {transaction.items.map((item, idx) => (
+                        <div key={idx} className="flex justify-between text-sm">
+                          <span className="text-gray-600 truncate flex-1 pr-2">
+                            {item.name} <span className="text-xs text-gray-400">x{item.quantity}</span>
+                          </span>
+                          <span className="text-gray-900 font-medium">
+                            {formatCurrency(item.price * item.quantity)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-gray-700">Total</span>
+                      <span className="font-bold text-brand-primary text-lg">{formatCurrency(transaction.total)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full table-auto">
                   <thead>
                     <tr className="bg-gray-50">
@@ -1620,8 +1770,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     Pembeli Produk: {selectedProduct.name}
                   </h3>
                   <p className="text-sm text-gray-500">
-                    {buyerSearchQuery ? 
-                      `Ditemukan: ${buyersTotalCount} pembeli (filter: "${buyerSearchQuery}")` : 
+                    {buyerSearchQuery ?
+                      `Ditemukan: ${buyersTotalCount} pembeli (filter: "${buyerSearchQuery}")` :
                       `Total Pembeli: ${buyersTotalCount} orang`
                     }
                   </p>
@@ -1633,7 +1783,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   <XCircle className="w-6 h-6" />
                 </button>
               </div>
-              
+
               {/* Search input */}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1656,11 +1806,10 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 )}
                 <button
                   onClick={() => handleBuyerSearchChange('')}
-                  className={`absolute inset-y-0 right-0 px-3 flex items-center transition-colors ${
-                    isFilterActive
-                      ? 'text-blue-600 hover:text-blue-700 bg-blue-50 rounded-r-md border-l-4 border-l-blue-500' 
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`absolute inset-y-0 right-0 px-3 flex items-center transition-colors ${isFilterActive
+                    ? 'text-blue-600 hover:text-blue-700 bg-blue-50 rounded-r-md border-l-4 border-l-blue-500'
+                    : 'text-gray-500 hover:text-gray-700'
+                    }`}
                   title={isFilterActive ? "Hapus Filter" : "Filter"}
                 >
                   {isFilterActive ? 'Hapus' : 'Filter'}
@@ -1677,8 +1826,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
               ) : productBuyers.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500">
-                    {buyerSearchQuery ? 
-                      `Tidak ada pembeli yang cocok dengan "${buyerSearchQuery}"` : 
+                    {buyerSearchQuery ?
+                      `Tidak ada pembeli yang cocok dengan "${buyerSearchQuery}"` :
                       'Tidak ada pembeli untuk produk ini'
                     }
                   </p>
@@ -1736,7 +1885,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   {buyersTotalPages > 1 && (
                     <div className="flex justify-between items-center mt-4">
                       <div className="text-sm text-gray-700">
-                        {buyerSearchQuery ? 
+                        {buyerSearchQuery ?
                           `Menampilkan ${productBuyers.length} dari ${buyersTotalCount} pembeli (filter: "${buyerSearchQuery}")` :
                           `Menampilkan ${productBuyers.length} dari ${buyersTotalCount} pembeli`
                         }
@@ -1780,7 +1929,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     Rekap Pembeli untuk {selectedProducts.length} Produk Terpilih
                   </h3>
                   <p className="text-sm text-gray-500">
-                    Total: {combinedRekapData.reduce((sum, item) => sum + item.totalBuyers, 0)} pembeli | 
+                    Total: {combinedRekapData.reduce((sum, item) => sum + item.totalBuyers, 0)} pembeli |
                     Total Qty: {combinedRekapData.reduce((sum, item) => sum + item.totalQuantity, 0)} pcs
                   </p>
                 </div>
@@ -1813,7 +1962,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                           {productData.totalBuyers} pembeli | {productData.totalQuantity} pcs | {formatCurrency(productData.totalAmount)}
                         </p>
                       </div>
-                      
+
                       {productData.buyers.length > 0 ? (
                         <div className="overflow-x-auto">
                           <table className="w-full table-auto">
@@ -1829,7 +1978,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                              {productData.buyers.map((buyer, index) => (
+                              {productData.buyers.map((buyer: any, index) => (
                                 <tr key={`${productData.productId}-${buyer.customerName}-${buyer.customerPhone}`} className="hover:bg-gray-50">
                                   <td className="px-4 py-3 text-sm text-gray-500">
                                     {index + 1}
