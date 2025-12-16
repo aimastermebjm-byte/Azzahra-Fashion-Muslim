@@ -107,27 +107,44 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
 
   // Auto Upload Settings (Global)
 
+  // State for Settings with Persistence
   const [autoUploadSettings, setAutoUploadSettings] = useState<{
     stock: number;
     costPrice: number;
     resellerDiscount: number;
     enableCustomLogic: boolean;
     pricingRules: PricingRule[];
-  }>({
-    stock: 5,
-    costPrice: 100000,
-    resellerDiscount: 20000,
-    enableCustomLogic: true,
-    pricingRules: [
-      { id: '1', minCost: 0, maxCost: 100000, retailMarkup: 20000 },
-      { id: '2', minCost: 100001, maxCost: 200000, retailMarkup: 30000 },
-      { id: '3', minCost: 200001, maxCost: 500000, retailMarkup: 50000 },
-    ]
+  }>(() => {
+    // Try to load from localStorage on init
+    const saved = localStorage.getItem('autoUploadSettings');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved settings', e);
+      }
+    }
+    // Default values if no saved settings
+    return {
+      stock: 5,
+      costPrice: 100000,
+      resellerDiscount: 20000,
+      enableCustomLogic: true,
+      pricingRules: [
+        { id: '1', minCost: 0, maxCost: 100000, retailMarkup: 20000 },
+        { id: '2', minCost: 100001, maxCost: 200000, retailMarkup: 30000 },
+        { id: '3', minCost: 200001, maxCost: 500000, retailMarkup: 50000 },
+      ]
+    };
   });
+
+  // Save settings on change
+  useEffect(() => {
+    localStorage.setItem('autoUploadSettings', JSON.stringify(autoUploadSettings));
+  }, [autoUploadSettings]);
+
   const [showSettings, setShowSettings] = useState(false);
   const submittingRef = useRef(false);
-
-  // Check API key on mount
   const [hasAPIKey, setHasAPIKey] = useState(false);
   const [showAPISettings, setShowAPISettings] = useState(false);
 

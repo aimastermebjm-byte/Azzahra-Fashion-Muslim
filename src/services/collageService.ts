@@ -12,7 +12,6 @@ export class CollageService {
     const canvasSize = 2000; // High-Res Square
 
     // Determine layout configuration (items per row)
-    // Determine layout configuration (items per row)
     // Optimized for Fashion Products (Portrait/Square Aspect Ratio)
     let rowsConfig: number[] = [];
 
@@ -88,21 +87,22 @@ export class CollageService {
         ctx.rect(x, y, colWidth, rowHeight);
         ctx.clip();
 
-        // Smart SCALING: Fill the cell (Cover)
-        // Scale to match the dimension that ensures coverage
-        // Try filling Height first
-        let scale = rowHeight / img.height;
-        let scaledWidth = img.width * scale;
-        let scaledHeight = rowHeight;
+        // FIT / CONTAIN LOGIC (UPDATED):
+        // User Requirement: "pastikan suluh tubah model ada di dalam frame gambar jangan terpotong"
+        // This ensures the entire image fits inside the cell (no cropping).
 
-        // If scaled width is still too small to cover the cell, scale by Width instead
-        if (scaledWidth < colWidth) {
-          scale = colWidth / img.width;
-          scaledWidth = colWidth;
-          scaledHeight = img.height * scale;
-        }
+        // 1. Calculate scales required to fit width and height
+        const scaleX = colWidth / img.width;
+        const scaleY = rowHeight / img.height;
 
-        // Centering
+        // 2. Choose the SMALLER scale to prevent cropping (this is Contain logic)
+        const scale = Math.min(scaleX, scaleY);
+
+        const scaledWidth = img.width * scale;
+        const scaledHeight = img.height * scale;
+
+        // 3. Center the image within the cell (both vertically and horizontally)
+        // Since we are using "Contain", drawing in center ensures even borders.
         const drawX = x + (colWidth - scaledWidth) / 2;
         const drawY = y + (rowHeight - scaledHeight) / 2;
 
@@ -289,7 +289,6 @@ export class CollageService {
       height: 2000
     };
   }
-  // Restored for UI compatibility (AIAutoUploadModal uses it)
   // Restored for UI compatibility (AIAutoUploadModal uses it)
   getOptimalLayout(count: number): { rows: number; cols: number } {
     if (count <= 3) return { rows: 1, cols: count };
