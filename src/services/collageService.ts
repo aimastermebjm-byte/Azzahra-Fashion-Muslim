@@ -12,27 +12,38 @@ export class CollageService {
     const canvasSize = 2000; // High-Res Square
 
     // Determine layout configuration (items per row)
+    // Determine layout configuration (items per row)
+    // Optimized for Fashion Products (Portrait/Square Aspect Ratio)
     let rowsConfig: number[] = [];
-    if (count <= 5) {
-      rowsConfig = [count]; // Single row
+
+    if (count === 1) {
+      rowsConfig = [1];
+    } else if (count === 2) {
+      rowsConfig = [2]; // 2 side by side (Portrait cells)
+    } else if (count === 3) {
+      rowsConfig = [3]; // 3 side by side (Tall Portrait cells)
+    } else if (count === 4) {
+      rowsConfig = [2, 2]; // 2x2 Grid (Square cells - Perfect)
+    } else if (count === 5) {
+      rowsConfig = [3, 2]; // 3 top, 2 bottom (Balanced aspect ratios)
     } else if (count === 6) {
-      rowsConfig = [3, 3];
+      rowsConfig = [3, 3]; // 3x2 Grid (Portrait cells - Good)
     } else if (count === 7) {
-      rowsConfig = [4, 3];
+      rowsConfig = [4, 3]; // 4 top, 3 bottom
     } else if (count === 8) {
-      rowsConfig = [4, 4];
+      rowsConfig = [4, 4]; // 4x2 Grid
     } else if (count === 9) {
-      rowsConfig = [5, 4];
+      rowsConfig = [3, 3, 3]; // 3x3 Grid (Square cells - Perfect)
     } else if (count === 10) {
-      rowsConfig = [5, 5];
+      rowsConfig = [4, 3, 3]; // Spread out
     } else {
-      // Fallback for > 10 (or standard grid logic)
+      // Fallback for > 10 (Standard grid logic trying to keep aspect ratio balanced)
       const cols = Math.ceil(Math.sqrt(count));
       const rows = Math.ceil(count / cols);
+      // Distribute remainder roughly evenly if possible, but simplest is standard grid
       rowsConfig = Array(rows).fill(cols);
-      // Adjust last row
       const remainder = count % cols;
-      if (remainder > 0) rowsConfig[rows - 1] = remainder;
+      if (remainder > 0) rowsConfig[rows - 1] = remainder; // Last row has fewer
     }
 
     const canvas = document.createElement('canvas');
@@ -271,7 +282,7 @@ export class CollageService {
   }
 
   // Helper: Preview collage dimensions
-  getCollageDimensions(imageCount: number): { width: number; height: number } {
+  getCollageDimensions(_imageCount: number): { width: number; height: number } {
     // We now standardize on a high-res square canvas
     return {
       width: 2000,
@@ -279,13 +290,16 @@ export class CollageService {
     };
   }
   // Restored for UI compatibility (AIAutoUploadModal uses it)
+  // Restored for UI compatibility (AIAutoUploadModal uses it)
   getOptimalLayout(count: number): { rows: number; cols: number } {
-    if (count <= 5) return { rows: 1, cols: count };
+    if (count <= 3) return { rows: 1, cols: count };
+    if (count === 4) return { rows: 2, cols: 2 };
+    if (count === 5) return { rows: 2, cols: 3 }; // Upper bound cols
     if (count === 6) return { rows: 2, cols: 3 };
-    if (count === 7) return { rows: 2, cols: 4 }; // Approximate max cols
+    if (count === 7) return { rows: 2, cols: 4 };
     if (count === 8) return { rows: 2, cols: 4 };
-    if (count === 9) return { rows: 2, cols: 5 };
-    if (count === 10) return { rows: 2, cols: 5 };
+    if (count === 9) return { rows: 3, cols: 3 };
+    if (count === 10) return { rows: 3, cols: 4 };
 
     // Fallback
     const cols = Math.ceil(Math.sqrt(count));
