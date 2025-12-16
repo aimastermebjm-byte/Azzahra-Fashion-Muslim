@@ -1333,8 +1333,8 @@ Return JSON format:
   ): Promise<{ title: string; description: string }> {
     try {
       console.log('📝 Generating marketing content with Gemini...');
-      // Use flash model for text generation (fast & cheap)
-      const model = this.genAI!.getGenerativeModel({ model: "gemini-1.5-flash" });
+      // Use gemini-pro model for text generation (more stable availability)
+      const model = this.genAI!.getGenerativeModel({ model: "gemini-pro" });
 
       const prompt = `
         You are a professional fashion copywriter for Azzahra Fashion Muslim.

@@ -278,6 +278,20 @@ export class CollageService {
       height: 2000
     };
   }
+  // Restored for UI compatibility (AIAutoUploadModal uses it)
+  getOptimalLayout(count: number): { rows: number; cols: number } {
+    if (count <= 5) return { rows: 1, cols: count };
+    if (count === 6) return { rows: 2, cols: 3 };
+    if (count === 7) return { rows: 2, cols: 4 }; // Approximate max cols
+    if (count === 8) return { rows: 2, cols: 4 };
+    if (count === 9) return { rows: 2, cols: 5 };
+    if (count === 10) return { rows: 2, cols: 5 };
+
+    // Fallback
+    const cols = Math.ceil(Math.sqrt(count));
+    const rows = Math.ceil(count / cols);
+    return { rows, cols };
+  }
 }
 
 export const collageService = new CollageService();
