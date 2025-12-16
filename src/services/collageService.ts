@@ -9,11 +9,12 @@ export class CollageService {
     variantLabels: string[]
   ): Promise<Blob> {
     const { rows, cols } = this.getOptimalLayout(images.length);
-    const imageSize = 600; // Each image is 600x600px
+    const imageWidth = 600;
+    const imageHeight = 800; // FIXED: Use Portrait aspect ratio (3:4) for fashion photos
 
     const canvas = document.createElement('canvas');
-    canvas.width = cols * imageSize;
-    canvas.height = rows * imageSize;
+    canvas.width = cols * imageWidth;
+    canvas.height = rows * imageHeight;
     const ctx = canvas.getContext('2d');
 
     if (!ctx) {
@@ -32,8 +33,8 @@ export class CollageService {
     // Draw images
     if (images.length === 5) {
       // Custom layout for 5 images: 3 top, 2 bottom (wider)
-      const topWidth = imageSize; // 600px
-      const bottomWidth = (cols * imageSize) / 2; // 900px
+      const topWidth = imageWidth; // 600px
+      const bottomWidth = (cols * imageWidth) / 2; // 900px
 
       for (let i = 0; i < images.length; i++) {
         let x, y, w, h;
@@ -43,17 +44,17 @@ export class CollageService {
           x = i * topWidth;
           y = 0;
           w = topWidth;
-          h = imageSize;
+          h = imageHeight;
         } else {
           // Bottom row (2 images)
           x = (i - 3) * bottomWidth;
-          y = imageSize;
+          y = imageHeight;
           w = bottomWidth;
-          h = imageSize;
+          h = imageHeight;
         }
 
-        // Draw image
-        this.drawImageCover(ctx, loadedImages[i], x, y, w, h);
+        // Draw image (CONTAIN / FIT CENTER)
+        this.drawImageContain(ctx, loadedImages[i], x, y, w, h);
 
         // Add border
         ctx.strokeStyle = '#e5e7eb';
@@ -70,16 +71,16 @@ export class CollageService {
       for (let i = 0; i < images.length; i++) {
         const row = Math.floor(i / cols);
         const col = i % cols;
-        const x = col * imageSize;
-        const y = row * imageSize;
+        const x = col * imageWidth;
+        const y = row * imageHeight;
 
-        // Draw image (cover fit - maintain aspect ratio)
-        this.drawImageCover(ctx, loadedImages[i], x, y, imageSize, imageSize);
+        // Draw image (CONTAIN / FIT CENTER)
+        this.drawImageContain(ctx, loadedImages[i], x, y, imageWidth, imageHeight);
 
         // Add border
         ctx.strokeStyle = '#e5e7eb';
         ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, imageSize, imageSize);
+        ctx.strokeRect(x, y, imageWidth, imageHeight);
 
         // Add variant label
         if (variantLabels[i]) {
@@ -115,7 +116,8 @@ export class CollageService {
     return layouts[count] || { rows: 2, cols: 2 };
   }
 
-  private drawImageCover(
+  // CHANGED: Use CONTAIN logic instead of COVER to show full image
+  private drawImageContain(
     ctx: CanvasRenderingContext2D,
     img: HTMLImageElement,
     x: number,
@@ -127,26 +129,26 @@ export class CollageService {
     const imgRatio = img.width / img.height;
     const boxRatio = width / height;
 
-    let sourceX = 0;
-    let sourceY = 0;
-    let sourceWidth = img.width;
-    let sourceHeight = img.height;
+    let drawWidth = width;
+    let drawHeight = height;
+    let drawX = x;
+    let drawY = y;
 
-    // Cover fit: crop to fill the box
+    // Contain logic: Fit image inside the box preserving aspect ratio
     if (imgRatio > boxRatio) {
-      // Image is wider than box
-      sourceWidth = img.height * boxRatio;
-      sourceX = (img.width - sourceWidth) / 2;
+      // Image is wider than box -> fit to width
+      drawHeight = width / imgRatio;
+      drawY = y + (height - drawHeight) / 2; // Center vertically
     } else {
-      // Image is taller than box
-      sourceHeight = img.width / boxRatio;
-      sourceY = 0; // FIXED: Align to TOP for fashion/model photos (prevents cutting off heads)
+      // Image is taller than box -> fit to height
+      drawWidth = height * imgRatio;
+      drawX = x + (width - drawWidth) / 2; // Center horizontally
     }
 
     ctx.drawImage(
       img,
-      sourceX, sourceY, sourceWidth, sourceHeight,
-      x, y, width, height
+      0, 0, img.width, img.height, // Source full image
+      drawX, drawY, drawWidth, drawHeight // Destination scaled
     );
   }
 
