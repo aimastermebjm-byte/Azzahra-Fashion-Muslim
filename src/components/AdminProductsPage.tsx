@@ -2606,6 +2606,21 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
             try {
               console.log('AI Upload product data:', productData);
               
+              // Auto-generate caption if direct upload mode
+              if (productData.uploadMode === 'direct') {
+                const aiCaption = productData.description || `${productData.variantCount} varian premium dengan motif unik`;
+                const enhancedProductData = {
+                  ...productData,
+                  name: productData.name || `Gamis Premium ${productData.variantLabels.join('-')}`,
+                  description: aiCaption,
+                  retailPrice: productData.retailPrice || '150000',
+                  resellerPrice: productData.resellerPrice || '135000',
+                  costPrice: productData.costPrice || '100000'
+                };
+                console.log('🚀 Direct Upload Mode - Auto-enhancing with AI data');
+                productData = enhancedProductData;
+              }
+              
               // Upload collage image to Firebase Storage
               const collageFile = productData.collageFile;
               const uploadedImages = await uploadMultipleImages([collageFile]);
@@ -2616,41 +2631,71 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               
               const collageUrl = uploadedImages[0];
               
-              // Create product with collage image and AI analysis
+              // Calculate total stock from variants
+              const totalStock = productData.totalStock || Object.values(productData.stockPerVariant).reduce((sum: number, stock) => sum + parseInt(stock || '0'), 0);
+              
+              // Create product with all new fields
               const newProduct = {
                 name: productData.name,
-                description: `${productData.variantCount} varian: ${productData.variantLabels.join(', ')}`,
+                description: productData.description,
                 category: productData.category,
                 retailPrice: parseInt(productData.retailPrice),
                 resellerPrice: parseInt(productData.resellerPrice),
-                costPrice: 0,
+                costPrice: parseInt(productData.costPrice) || 0,
+                purchasePrice: parseInt(productData.costPrice) || 0, // Required field
+                price: parseInt(productData.retailPrice), // Required field (same as retailPrice)
+                originalRetailPrice: parseInt(productData.retailPrice), // Required field
+                originalResellerPrice: parseInt(productData.resellerPrice), // Required field
                 weight: 1000,
+                stock: totalStock,
+                unit: 'pcs', // Required field - default to pcs
                 images: [collageUrl],
+                image: collageUrl, // Required field - main image
                 variants: {
                   sizes: ['Ukuran 1'],
                   colors: productData.variantLabels,
                   stock: {
-                    'Ukuran 1': productData.variantLabels.reduce((acc: any, label: string) => {
-                      acc[label] = parseInt(productData.stockPerVariant) || 0;
-                      return acc;
-                    }, {})
+                    'Ukuran 1': productData.stockPerVariant || {} as any
                   }
                 },
                 status: 'ready' as 'ready' | 'po',
+                createdAt: new Date(),
+                salesCount: 0,
                 isFeatured: false,
                 isFlashSale: false,
-                flashSaleDiscount: 0,
+                flashSalePrice: parseInt(productData.retailPrice) || 0,
+                // Optional fields with defaults
+                condition: 'baru',
+                featured: false,
+                discount: 0,
+                reviews: 0,
+                rating: 0,
                 // Save AI analysis for future comparisons
                 aiAnalysis: productData.analysisResults?.[0]?.analysis ? {
                   ...productData.analysisResults[0].analysis,
                   analyzedAt: new Date().toISOString()
-                } : null
+                } : null,
+                // Save profit margin data
+                profitMargin: productData.profitMargin || 0,
+                // Save upload mode info
+                uploadMode: productData.uploadMode || 'review'
               };
+              
+              console.log('💾 Saving AI-generated product:', {
+                name: newProduct.name,
+                description: newProduct.description,
+                totalStock: newProduct.stock,
+                costPrice: newProduct.costPrice,
+                retailPrice: newProduct.retailPrice,
+                profitMargin: newProduct.profitMargin,
+                variants: newProduct.variants,
+                uploadMode: newProduct.uploadMode
+              });
               
               await addProduct(newProduct);
               
               setShowAIUploadModal(false);
-              alert('✅ Produk berhasil di-upload dengan AI!');
+              alert(`✅ Produk berhasil di-upload dengan AI! Mode: ${productData.uploadMode === 'direct' ? 'Langsung Upload' : 'Review Upload'}`);
             } catch (error: any) {
               console.error('Failed to create AI product:', error);
               alert(`❌ Gagal upload produk: ${error.message}`);

@@ -571,7 +571,7 @@ Analyze this clothing/fashion item image. Focus on the OVERALL MODEL and MAIN PA
 
 CRITICAL INSTRUCTIONS:
 1. Focus on the OVERALL MODEL of the clothing (main type, silhouette, length)
-2. Focus on the MAIN PATTERN/MOTIF (geometric, floral, striped, etc.) - include logos/brands if visible (e.g., "YDZ")
+2. Focus on the MAIN PATTERN/MOTIF (geometric, floral, striped, etc.) - include logos/brands ONLY if actually visible
 3. Describe pattern in detail if complex (e.g., "geometric_grid_with_logo", "floral_with_brand_name")
 4. Return ONLY the JSON, no markdown formatting, no backticks, no explanation
 5. All confidence values should be 0-100 numbers
@@ -622,7 +622,7 @@ CRITICAL INSTRUCTIONS:
 2. Ignore colors, lighting, background, poses, and minor details
 3. If images are identical (same photo), return 100% score
 4. Focus on visual and conceptual similarity, not pixel-level differences
-5. If patterns include logos/text (like "YDZ"), check if they match
+5. If patterns include logos/text, check if they match between images
 6. Return ONLY the JSON, no markdown formatting, no backticks, no explanation
 7. Write "penjelasan" and "fokus_perbandingan" in Indonesian (Bahasa Indonesia)
 8. Score should reflect true visual similarity (100% for identical images)

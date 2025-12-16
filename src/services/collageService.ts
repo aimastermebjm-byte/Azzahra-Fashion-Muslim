@@ -50,6 +50,31 @@ export class CollageService {
       }
     }
     
+    // SPECIAL HANDLING for 5 images: Add visual indicator for empty space
+    if (images.length === 5 && cols === 3 && rows === 2) {
+      // The empty slot would be at position (2, 1) - third column, second row
+      const emptyX = 2 * imageSize; // Third column
+      const emptyY = 1 * imageSize; // Second row
+      
+      // Draw a placeholder for the empty space
+      ctx.fillStyle = '#f9fafb';
+      ctx.fillRect(emptyX, emptyY, imageSize, imageSize);
+      
+      // Add border for empty slot
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.strokeRect(emptyX, emptyY, imageSize, imageSize);
+      ctx.setLineDash([]);
+      
+      // Add text placeholder
+      ctx.font = '24px Arial, sans-serif';
+      ctx.fillStyle = '#9ca3af';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Empty', emptyX + imageSize / 2, emptyY + imageSize / 2);
+    }
+    
     return new Promise((resolve, reject) => {
       canvas.toBlob((blob) => {
         if (blob) {
@@ -63,9 +88,11 @@ export class CollageService {
   
   getOptimalLayout(count: number): CollageLayout {
     const layouts: Record<number, CollageLayout> = {
+      1: { rows: 1, cols: 1 },
+      2: { rows: 1, cols: 2 },
       3: { rows: 1, cols: 3 },
       4: { rows: 2, cols: 2 },
-      5: { rows: 2, cols: 3 },
+      5: { rows: 2, cols: 3 }, // FIXED: Layout for 5 images
       6: { rows: 2, cols: 3 },
       7: { rows: 2, cols: 4 },
       8: { rows: 2, cols: 4 },
