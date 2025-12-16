@@ -8,18 +8,33 @@ export class CollageService {
     images: File[],
     variantLabels: string[]
   ): Promise<Blob> {
-    const { rows, cols } = this.getOptimalLayout(images.length);
+    const cols = images.length === 5 ? 5 : this.getOptimalLayout(images.length).cols;
+    const rows = images.length === 5 ? 1 : this.getOptimalLayout(images.length).rows;
+
     const imageWidth = 600;
-    const imageHeight = 800; // FIXED: Use Portrait aspect ratio (3:4) for fashion photos
+    const imageHeight = 800; // Portrait 3:4
+
+    // WIDTH-BASED CALCULATION
+    // Total strip width
+    const stripWidth = cols * imageWidth;
+    const stripHeight = rows * imageHeight;
+
+    // Create Square Canvas based on width (to fit horizontal strip completely)
+    // Or based on max dimension logic
+    const canvasSize = Math.max(stripWidth, stripHeight);
 
     const canvas = document.createElement('canvas');
-    canvas.width = cols * imageWidth;
-    canvas.height = rows * imageHeight;
+    canvas.width = canvasSize;
+    canvas.height = canvasSize; // Square Canvas 1:1
     const ctx = canvas.getContext('2d');
 
     if (!ctx) {
       throw new Error('Failed to get canvas context');
     }
+
+    // Vertical/Horizontal Centering Offsets
+    const offsetX = (canvasSize - stripWidth) / 2;
+    const offsetY = (canvasSize - stripHeight) / 2;
 
     // White background
     ctx.fillStyle = '#ffffff';
@@ -33,10 +48,13 @@ export class CollageService {
     // Draw images
     // Standard Grid Layout (works for 1x5 too)
     for (let i = 0; i < images.length; i++) {
+      // Calculate grid position
       const row = Math.floor(i / cols);
       const col = i % cols;
-      const x = col * imageWidth;
-      const y = row * imageHeight;
+
+      // Calculate canvas coordinates with offset (centering)
+      const x = offsetX + (col * imageWidth);
+      const y = offsetY + (row * imageHeight);
 
       // Draw image (CONTAIN / FIT CENTER)
       this.drawImageContain(ctx, loadedImages[i], x, y, imageWidth, imageHeight);
