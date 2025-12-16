@@ -31,61 +31,24 @@ export class CollageService {
     );
 
     // Draw images
-    if (images.length === 5) {
-      // Custom layout for 5 images: 3 top, 2 bottom (wider)
-      const topWidth = imageWidth; // 600px
-      const bottomWidth = (cols * imageWidth) / 2; // 900px
+    // Standard Grid Layout (works for 1x5 too)
+    for (let i = 0; i < images.length; i++) {
+      const row = Math.floor(i / cols);
+      const col = i % cols;
+      const x = col * imageWidth;
+      const y = row * imageHeight;
 
-      for (let i = 0; i < images.length; i++) {
-        let x, y, w, h;
+      // Draw image (CONTAIN / FIT CENTER)
+      this.drawImageContain(ctx, loadedImages[i], x, y, imageWidth, imageHeight);
 
-        if (i < 3) {
-          // Top row (3 images)
-          x = i * topWidth;
-          y = 0;
-          w = topWidth;
-          h = imageHeight;
-        } else {
-          // Bottom row (2 images)
-          x = (i - 3) * bottomWidth;
-          y = imageHeight;
-          w = bottomWidth;
-          h = imageHeight;
-        }
+      // Add border
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, imageWidth, imageHeight);
 
-        // Draw image (CONTAIN / FIT CENTER)
-        this.drawImageContain(ctx, loadedImages[i], x, y, w, h);
-
-        // Add border
-        ctx.strokeStyle = '#e5e7eb';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, w, h);
-
-        // Add variant label
-        if (variantLabels[i]) {
-          this.drawLabel(ctx, variantLabels[i], x, y);
-        }
-      }
-    } else {
-      // Standard Grid Layout
-      for (let i = 0; i < images.length; i++) {
-        const row = Math.floor(i / cols);
-        const col = i % cols;
-        const x = col * imageWidth;
-        const y = row * imageHeight;
-
-        // Draw image (CONTAIN / FIT CENTER)
-        this.drawImageContain(ctx, loadedImages[i], x, y, imageWidth, imageHeight);
-
-        // Add border
-        ctx.strokeStyle = '#e5e7eb';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, imageWidth, imageHeight);
-
-        // Add variant label
-        if (variantLabels[i]) {
-          this.drawLabel(ctx, variantLabels[i], x, y);
-        }
+      // Add variant label
+      if (variantLabels[i]) {
+        this.drawLabel(ctx, variantLabels[i], x, y);
       }
     }
 
@@ -106,7 +69,7 @@ export class CollageService {
       2: { rows: 1, cols: 2 },
       3: { rows: 1, cols: 3 },
       4: { rows: 2, cols: 2 },
-      5: { rows: 2, cols: 3 }, // FIXED: Layout for 5 images
+      5: { rows: 1, cols: 5 }, // FIXED: 1 row, 5 columns (Horizontal)
       6: { rows: 2, cols: 3 },
       7: { rows: 2, cols: 4 },
       8: { rows: 2, cols: 4 },
