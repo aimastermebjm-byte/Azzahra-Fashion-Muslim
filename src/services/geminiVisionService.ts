@@ -7,13 +7,13 @@ export interface GeminiClothingAnalysis {
     length: 'maxi' | 'midi' | 'mini' | 'hip-length';
     confidence: number;
   };
-  
+
   pattern_type: {
     pattern: 'floral' | 'geometric' | 'solid' | 'batik' | 'striped' | 'polkadot' | 'mixed' | string; // string allows custom patterns like "geometric_grid_with_logo"
     complexity: 'simple' | 'detailed' | 'ornate';
     confidence: number;
   };
-  
+
   lace_details: {
     has_lace: boolean;
     locations: Array<{
@@ -23,7 +23,7 @@ export interface GeminiClothingAnalysis {
     }>;
     confidence: number;
   };
-  
+
   hem_pleats: {
     has_pleats: boolean;
     pleat_type: 'accordion' | 'box' | 'knife' | 'sunray' | 'none';
@@ -31,7 +31,7 @@ export interface GeminiClothingAnalysis {
     fullness: number; // 0-100
     confidence: number;
   };
-  
+
   sleeve_details: {
     has_pleats: boolean;
     sleeve_type: 'straight' | 'puffed' | 'bell' | 'bishop' | 'lantern' | 'pleated';
@@ -40,14 +40,14 @@ export interface GeminiClothingAnalysis {
     cuff_style: 'plain' | 'pleated' | 'ruffled' | 'elastic';
     confidence: number;
   };
-  
+
   embellishments: {
     beads: { has: boolean; locations: string[]; density: number };
     embroidery: { has: boolean; pattern: string };
     sequins: { has: boolean; locations: string[] };
     gold_thread: { has: boolean; coverage: number };
   };
-  
+
   colors: string[];
   fabric_texture: 'smooth' | 'textured' | 'glossy' | 'matte';
 }
@@ -56,48 +56,81 @@ interface RateLimitState {
   requests: number[];
 }
 
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
+
 class RateLimiter {
   private state: RateLimitState = { requests: [] };
   private readonly maxPerMinute = 15;
   private readonly maxPerDay = 1500;
-  
+  private cache: Map<string, CacheEntry> = new Map();
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+
   canMakeRequest(): boolean {
     const now = Date.now();
     const oneMinuteAgo = now - 60 * 1000;
     const oneDayAgo = now - 24 * 60 * 60 * 1000;
-    
+
     // Clean old requests
     this.state.requests = this.state.requests.filter(t => t > oneDayAgo);
-    
+
     const lastMinute = this.state.requests.filter(t => t > oneMinuteAgo).length;
     const lastDay = this.state.requests.length;
-    
+
     if (lastMinute >= this.maxPerMinute) {
-      throw new Error('RATE_LIMIT: Max 15 requests per minute. Please wait.');
+      const waitTime = Math.ceil((this.state.requests.find(t => t > oneMinuteAgo)! + 60000 - now) / 1000);
+      throw new Error(`RATE_LIMIT: Terlalu banyak request (max 15/menit). Tunggu ${waitTime} detik.`);
     }
-    
+
     if (lastDay >= this.maxPerDay) {
-      throw new Error('RATE_LIMIT: Max 1,500 requests per day (FREE tier).');
+      throw new Error('RATE_LIMIT: Kuota harian habis (max 1,500/hari). Coba lagi besok atau upgrade ke API berbayar.');
     }
-    
+
     this.state.requests.push(now);
     return true;
   }
-  
+
   getRemainingRequests(): { perMinute: number; perDay: number } {
     const now = Date.now();
     const oneMinuteAgo = now - 60 * 1000;
     const oneDayAgo = now - 24 * 60 * 60 * 1000;
-    
+
     this.state.requests = this.state.requests.filter(t => t > oneDayAgo);
-    
+
     const lastMinute = this.state.requests.filter(t => t > oneMinuteAgo).length;
     const lastDay = this.state.requests.length;
-    
+
     return {
       perMinute: this.maxPerMinute - lastMinute,
       perDay: this.maxPerDay - lastDay
     };
+  }
+
+  // Cache methods
+  getCached(key: string): any | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+
+    const now = Date.now();
+    if (now - entry.timestamp > this.CACHE_TTL) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return entry.data;
+  }
+
+  setCache(key: string, data: any): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
+  }
+
+  clearCache(): void {
+    this.cache.clear();
   }
 }
 
@@ -106,7 +139,7 @@ export class GeminiVisionService {
   private glmApiKey: string | null = null;
   private geminiApiKey: string | null = null;
   private rateLimiter = new RateLimiter();
-  
+
   /**
    * Initialize with both Gemini and GLM API keys
    * @param geminiApiKey Google Gemini API key (optional if GLM key provided)
@@ -116,7 +149,7 @@ export class GeminiVisionService {
     if (!geminiApiKey && !glmApiKey) {
       throw new Error('At least one API key (Gemini or GLM) is required');
     }
-    
+
     if (geminiApiKey && geminiApiKey.trim() !== '') {
       this.genAI = new GoogleGenerativeAI(geminiApiKey);
       this.geminiApiKey = geminiApiKey;
@@ -124,23 +157,23 @@ export class GeminiVisionService {
       this.genAI = null;
       this.geminiApiKey = null;
     }
-    
+
     if (glmApiKey && glmApiKey.trim() !== '') {
       this.glmApiKey = glmApiKey;
     }
   }
-  
+
   /**
    * Check if GLM API is available
    */
   hasGLMAPI(): boolean {
     return this.glmApiKey !== null && this.glmApiKey.trim() !== '';
   }
-  
+
   isInitialized(): boolean {
     return this.genAI !== null;
   }
-  
+
   async testConnection(provider: 'gemini' | 'glm' = 'gemini'): Promise<boolean> {
     if (provider === 'gemini') {
       return this.testGeminiConnection();
@@ -153,7 +186,7 @@ export class GeminiVisionService {
     if (!this.genAI) {
       throw new Error('Gemini not initialized. Please set API key first.');
     }
-    
+
     // Use latest valid Gemini models for image understanding
     const modelNames = [
       "gemini-3-pro-preview",      // Highest priority - most advanced multimodal
@@ -161,18 +194,18 @@ export class GeminiVisionService {
       "gemini-2.5-flash",          // Best price-performance (stable)
       "gemini-2.5-flash-lite"      // Fastest fallback
     ];
-    
+
     let lastError = null;
-    
+
     for (const modelName of modelNames) {
       try {
-        const model = this.genAI.getGenerativeModel({ 
+        const model = this.genAI.getGenerativeModel({
           model: modelName
         });
-        
+
         const result = await model.generateContent("Say 'OK' if you can read this.");
         const response = result.response.text();
-        
+
         if (response.toLowerCase().includes('ok')) {
           console.log(`✓ Gemini connected with model: ${modelName}`);
           return true;
@@ -183,13 +216,13 @@ export class GeminiVisionService {
         // Continue to next model
       }
     }
-    
+
     console.error('Gemini test connection failed:', lastError);
-    
+
     if (lastError?.message?.includes('API_KEY_INVALID') || lastError?.message?.includes('401')) {
       throw new Error('API_KEY_INVALID: Invalid API key. Please check your key.');
     }
-    
+
     throw lastError || new Error('Gemini connection test failed for all models');
   }
 
@@ -226,10 +259,10 @@ export class GeminiVisionService {
 
       const data = await response.json();
       console.log('🔍 GLM test connection response:', data);
-      
+
       const content = this._extractGLMContent(data);
       console.log('🔍 Extracted GLM content:', content);
-      
+
       // Check for SUCCESS response (case-insensitive, trimmed)
       const trimmedContent = content.trim().toLowerCase();
       if (trimmedContent.includes('success')) {
@@ -248,15 +281,15 @@ export class GeminiVisionService {
       }
     } catch (error: any) {
       console.error('GLM test connection failed:', error);
-      
+
       if (error.message?.includes('401') || error.message?.includes('API_KEY_INVALID') || error.message?.includes('Invalid authentication')) {
         throw new Error('API_KEY_INVALID: Invalid GLM API key. Please check your key.');
       }
-      
+
       if (error.message?.includes('rate limit') || error.message?.includes('429')) {
         throw new Error('RATE_LIMIT: GLM rate limit exceeded. Please wait and try again.');
       }
-      
+
       throw new Error(`GLM connection failed: ${error.message || 'Unknown error'}`);
     }
   }
@@ -284,22 +317,22 @@ export class GeminiVisionService {
     // Fallback to empty string
     return '';
   }
-  
+
   async analyzeClothingImage(imageBase64: string): Promise<GeminiClothingAnalysis> {
     try {
       return await this._analyzeWithGemini(imageBase64);
     } catch (error: any) {
       console.warn('Gemini analysis failed, checking for GLM fallback...', error);
-      
+
       // Check if error is rate limit, quota exceeded, or API key issue
-      const shouldFallback = error.message?.includes('RATE_LIMIT') || 
-                           error.message?.includes('API_KEY_INVALID') ||
-                           error.message?.includes('RESOURCE_EXHAUSTED') ||
-                           error.message?.includes('429') ||
-                           error.message?.includes('401') ||
-                           error.message?.includes('404') ||
-                           error.message?.includes('NOT_FOUND');
-      
+      const shouldFallback = error.message?.includes('RATE_LIMIT') ||
+        error.message?.includes('API_KEY_INVALID') ||
+        error.message?.includes('RESOURCE_EXHAUSTED') ||
+        error.message?.includes('429') ||
+        error.message?.includes('401') ||
+        error.message?.includes('404') ||
+        error.message?.includes('NOT_FOUND');
+
       if (shouldFallback && this.hasGLMAPI()) {
         console.log('🔄 Falling back to GLM-4.6 for analysis...');
         try {
@@ -309,20 +342,27 @@ export class GeminiVisionService {
           throw new Error(`Both Gemini and GLM failed: ${error.message}, GLM: ${glmError.message}`);
         }
       }
-      
+
       // Re-throw original error if no fallback or fallback not applicable
       throw error;
     }
   }
-
   private async _analyzeWithGemini(imageBase64: string): Promise<GeminiClothingAnalysis> {
     if (!this.genAI) {
       throw new Error('Gemini not initialized. Please set API key first.');
     }
-    
+
+    // Check cache first
+    const cacheKey = `analyze_${imageBase64.substring(0, 50)}`;
+    const cached = this.rateLimiter.getCached(cacheKey);
+    if (cached) {
+      console.log('✓ Using cached analysis result');
+      return cached;
+    }
+
     // Check rate limit
     this.rateLimiter.canMakeRequest();
-    
+
     // Use latest valid Gemini models for image understanding
     const modelNames = [
       "gemini-3-pro-preview",       // Highest priority - most advanced multimodal
@@ -330,12 +370,12 @@ export class GeminiVisionService {
       "gemini-2.5-flash",           // Best price-performance (stable)
       "gemini-2.5-flash-lite"       // Fastest fallback
     ];
-    
+
     let result = null;
-    let lastError = null;
-    
+    let lastError: any = null;
+
     const prompt = this.buildAnalysisPrompt();
-    
+
     for (const modelName of modelNames) {
       try {
         const model = this.genAI.getGenerativeModel({
@@ -345,7 +385,7 @@ export class GeminiVisionService {
             temperature: 0.2
           }
         });
-        
+
         result = await model.generateContent([
           prompt,
           {
@@ -355,32 +395,51 @@ export class GeminiVisionService {
             }
           }
         ]);
-        
-        if (result) break; // Success
-      } catch (e) {
+
+        if (result) {
+          console.log(`✓ Gemini analysis successful with model: ${modelName}`);
+          break; // Success
+        }
+      } catch (e: any) {
         lastError = e;
-        console.warn(`Gemini model ${modelName} failed, trying next...`);
+        console.warn(`Gemini model ${modelName} failed, trying next...`, e.message);
+
+        // CRITICAL: If quota exceeded or rate limit, don't try other models
+        // Immediately throw to trigger GLM fallback
+        const isQuotaError = e.message?.includes('429') ||
+          e.message?.includes('quota') ||
+          e.message?.includes('RESOURCE_EXHAUSTED') ||
+          e.message?.includes('Quota exceeded');
+
+        if (isQuotaError) {
+          console.error('🚨 Gemini quota exceeded, stopping model attempts and triggering GLM fallback...');
+          throw new Error('RATE_LIMIT: Gemini quota exceeded. Falling back to GLM.');
+        }
       }
     }
-    
+
     if (!result) {
       console.error('Gemini analysis failed:', lastError);
-      
+
       if (lastError?.message?.includes('API_KEY_INVALID') || lastError?.message?.includes('401')) {
         throw new Error('API_KEY_INVALID: Invalid API key.');
       }
-      
+
       if (lastError?.message?.includes('RATE_LIMIT') || lastError?.message?.includes('429')) {
         throw new Error('RATE_LIMIT: Too many requests. Please wait.');
       }
-      
+
       throw new Error('Failed to analyze image. Please try again.');
     }
-    
+
     const responseText = result.response.text();
     const analysis = JSON.parse(responseText);
-    
-    return this.validateAndCleanAnalysis(analysis);
+    const validated = this.validateAndCleanAnalysis(analysis);
+
+    // Cache the result
+    this.rateLimiter.setCache(cacheKey, validated);
+
+    return validated;
   }
 
   private async _analyzeWithGLM(imageBase64: string): Promise<GeminiClothingAnalysis> {
@@ -389,7 +448,7 @@ export class GeminiVisionService {
     }
 
     const prompt = this.buildAnalysisPrompt();
-    
+
     try {
       const response = await fetch('https://api.z.ai/api/paas/v4/chat/completions', {
         method: 'POST',
@@ -429,10 +488,10 @@ export class GeminiVisionService {
 
       const data = await response.json();
       console.log('🔍 GLM analysis response:', data);
-      
+
       const content = this._extractGLMContent(data);
       console.log('🔍 Extracted GLM content:', content);
-      
+
       if (!content) {
         throw new Error('GLM returned empty response');
       }
@@ -446,19 +505,19 @@ export class GeminiVisionService {
 
       const analysis = JSON.parse(jsonStr);
       console.log('✓ GLM analysis successful');
-      
+
       return this.validateAndCleanAnalysis(analysis);
     } catch (error: any) {
       console.error('GLM analysis failed:', error);
-      
+
       if (error.message?.includes('401') || error.message?.includes('Invalid authentication')) {
         throw new Error('API_KEY_INVALID: Invalid GLM API key.');
       }
-      
+
       if (error.message?.includes('rate limit') || error.message?.includes('429')) {
         throw new Error('RATE_LIMIT: GLM rate limit exceeded.');
       }
-      
+
       throw new Error(`GLM analysis failed: ${error.message || 'Unknown error'}`);
     }
   }
@@ -517,10 +576,10 @@ export class GeminiVisionService {
 
       const data = await response.json();
       console.log('🔍 GLM comparison response:', data);
-      
+
       const content = this._extractGLMContent(data);
       console.log('🔍 Extracted GLM content:', content);
-      
+
       if (!content) {
         throw new Error('GLM returned empty response');
       }
@@ -534,23 +593,23 @@ export class GeminiVisionService {
 
       const parsedResult = JSON.parse(jsonStr);
       console.log('✓ GLM comparison successful');
-      
+
       return parsedResult;
     } catch (error: any) {
       console.error('GLM comparison failed:', error);
-      
+
       if (error.message?.includes('401') || error.message?.includes('Invalid authentication')) {
         throw new Error('API_KEY_INVALID: Invalid GLM API key.');
       }
-      
+
       if (error.message?.includes('rate limit') || error.message?.includes('429')) {
         throw new Error('RATE_LIMIT: GLM rate limit exceeded.');
       }
-      
+
       throw new Error(`GLM comparison failed: ${error.message || 'Unknown error'}`);
     }
   }
-  
+
   private buildAnalysisPrompt(): string {
     return `
 Analyze this clothing/fashion item image. Focus on the OVERALL MODEL and MAIN PATTERN/MOTIF. Return ONLY valid JSON matching this exact structure:
@@ -639,7 +698,7 @@ Scoring guidelines:
   }
 
   /**
-   * Direct comparison of two clothing images using Gemini's recommended approach
+   * Direct comparison of two images (recommended by Gemini)
    * Sends both images in one prompt for visual comparison
    * @param image1Base64 - Base64 encoded first image (uploaded product)
    * @param image2Base64 - Base64 encoded second image (existing product)
@@ -655,11 +714,11 @@ Scoring guidelines:
     motifComparison: string;
   }> {
     const prompt = this.buildComparisonPrompt();
-    
+
     // Try Gemini first
     try {
       console.log('🔍 Starting direct image comparison using Gemini API...');
-      
+
       const result = await this.compareClothingImages(
         image1Base64,
         image2Base64,
@@ -689,21 +748,21 @@ Scoring guidelines:
       };
     } catch (geminiError: any) {
       console.warn('Gemini direct comparison failed, checking for GLM fallback...', geminiError);
-      
+
       // Check if error is rate limit, quota exceeded, or API key issue
-      const shouldFallback = geminiError.message?.includes('RATE_LIMIT') || 
-                           geminiError.message?.includes('API_KEY_INVALID') ||
-                           geminiError.message?.includes('RESOURCE_EXHAUSTED') ||
-                           geminiError.message?.includes('429') ||
-                           geminiError.message?.includes('401') ||
-                           geminiError.message?.includes('404') ||
-                           geminiError.message?.includes('NOT_FOUND');
-      
+      const shouldFallback = geminiError.message?.includes('RATE_LIMIT') ||
+        geminiError.message?.includes('API_KEY_INVALID') ||
+        geminiError.message?.includes('RESOURCE_EXHAUSTED') ||
+        geminiError.message?.includes('429') ||
+        geminiError.message?.includes('401') ||
+        geminiError.message?.includes('404') ||
+        geminiError.message?.includes('NOT_FOUND');
+
       if (shouldFallback && this.hasGLMAPI()) {
         console.log('🔄 Falling back to GLM-4.6 for direct comparison...');
         try {
           const glmResult = await this._compareWithGLM(image1Base64, image2Base64, prompt);
-          
+
           console.log('🔍 Raw GLM comparison result:', JSON.stringify(glmResult, null, 2));
 
           const similarityScore = Number(glmResult.skor_kemiripan_persen) || 0;
@@ -735,7 +794,7 @@ Scoring guidelines:
           };
         }
       }
-      
+
       // No fallback or fallback not applicable, return Gemini error
       console.error('❌ Error in direct image comparison:', geminiError);
       return {
@@ -746,11 +805,11 @@ Scoring guidelines:
       };
     }
   }
-  
+
   private validateAndCleanAnalysis(analysis: any): GeminiClothingAnalysis {
     // Log raw analysis for debugging
     console.log('🔍 Raw Gemini analysis:', JSON.stringify(analysis, null, 2));
-    
+
     // Basic validation and defaults with case normalization
     // Note: New prompt only returns clothing_type, pattern_type, colors, fabric_texture
     // Other fields get default values
@@ -796,35 +855,49 @@ Scoring guidelines:
       colors: (analysis.colors || ['unknown']).map((c: string) => c.toLowerCase()),
       fabric_texture: (analysis.fabric_texture || 'smooth').toLowerCase()
     };
-    
+
     return validated;
   }
-  
+
   async batchAnalyze(images: string[], onProgress?: (index: number, total: number) => void): Promise<GeminiClothingAnalysis[]> {
     const results: GeminiClothingAnalysis[] = [];
-    
+
     // Analyze sequentially to respect rate limits
     for (let i = 0; i < images.length; i++) {
-      const analysis = await this.analyzeClothingImage(images[i]);
-      results.push(analysis);
-      
-      if (onProgress) {
-        onProgress(i + 1, images.length);
-      }
-      
-      // Small delay between requests to avoid rate limiting
-      if (i < images.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 200));
+      try {
+        const analysis = await this.analyzeClothingImage(images[i]);
+        results.push(analysis);
+
+        if (onProgress) {
+          onProgress(i + 1, images.length);
+        }
+
+        // Delay between requests to avoid rate limiting (1 second)
+        if (i < images.length - 1) {
+          console.log(`⏳ Waiting 1 second before next request (${i + 1}/${images.length})...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (error: any) {
+        console.error(`❌ Failed to analyze image ${i + 1}:`, error.message);
+
+        // If quota exceeded, stop batch processing
+        if (error.message?.includes('RATE_LIMIT') || error.message?.includes('quota')) {
+          console.error('🚨 Quota exceeded, stopping batch analysis');
+          throw error;
+        }
+
+        // For other errors, continue with next image
+        console.warn(`⚠️ Skipping image ${i + 1}, continuing with next...`);
       }
     }
-    
+
     return results;
   }
-  
+
   getRateLimitStatus() {
     return this.rateLimiter.getRemainingRequests();
   }
-  
+
   /**
    * Compare two clothing images using Gemini Vision API
    * Sends both images in one prompt for direct visual comparison
@@ -841,10 +914,18 @@ Scoring guidelines:
     if (!this.genAI) {
       throw new Error('Gemini not initialized. Please set API key first.');
     }
-    
+
+    // Check cache first
+    const cacheKey = `compare_${image1Base64.substring(0, 30)}_${image2Base64.substring(0, 30)}`;
+    const cached = this.rateLimiter.getCached(cacheKey);
+    if (cached) {
+      console.log('✓ Using cached comparison result');
+      return cached;
+    }
+
     // Check rate limit
     this.rateLimiter.canMakeRequest();
-    
+
     // Use latest valid Gemini models for image understanding
     const modelNames = [
       "gemini-3-pro-preview",       // Highest priority - most advanced multimodal
@@ -852,10 +933,10 @@ Scoring guidelines:
       "gemini-2.5-flash",           // Best price-performance (stable)
       "gemini-2.5-flash-lite"       // Fastest fallback
     ];
-    
+
     let result = null;
-    let lastError = null;
-    
+    let lastError: any = null;
+
     for (const modelName of modelNames) {
       try {
         const model = this.genAI.getGenerativeModel({
@@ -867,7 +948,7 @@ Scoring guidelines:
             topP: 0.1           // Very deterministic
           }
         });
-        
+
         // Send both images + prompt in one request
         result = await model.generateContent([
           prompt,
@@ -884,32 +965,51 @@ Scoring guidelines:
             }
           }
         ]);
-        
-        if (result) break; // Success, exit loop
+
+        if (result) {
+          console.log(`✓ Gemini comparison successful with model: ${modelName}`);
+          break; // Success, exit loop
+        }
       } catch (e: any) {
         lastError = e;
         console.warn(`Gemini model ${modelName} failed, trying next...`, e.message);
+
+        // CRITICAL: If quota exceeded or rate limit, don't try other models
+        // Immediately throw to trigger GLM fallback
+        const isQuotaError = e.message?.includes('429') ||
+          e.message?.includes('quota') ||
+          e.message?.includes('RESOURCE_EXHAUSTED') ||
+          e.message?.includes('Quota exceeded');
+
+        if (isQuotaError) {
+          console.error('🚨 Gemini quota exceeded, stopping model attempts and triggering GLM fallback...');
+          throw new Error('RATE_LIMIT: Gemini quota exceeded. Falling back to GLM.');
+        }
       }
     }
-    
+
     if (!result) {
       console.error('Gemini comparison failed:', lastError);
-      
+
       if (lastError?.message?.includes('API_KEY_INVALID') || lastError?.message?.includes('401')) {
         throw new Error('API_KEY_INVALID: Invalid API key.');
       }
-      
+
       if (lastError?.message?.includes('RATE_LIMIT') || lastError?.message?.includes('429')) {
         throw new Error('RATE_LIMIT: Too many requests. Please wait.');
       }
-      
+
       throw new Error('Failed to compare images. Please try again.');
     }
-    
+
     const responseText = result.response.text();
-    
+
     try {
       const parsedResult = JSON.parse(responseText);
+
+      // Cache the result
+      this.rateLimiter.setCache(cacheKey, parsedResult);
+
       return parsedResult;
     } catch (parseError) {
       console.error('Failed to parse Gemini response:', responseText);
@@ -1014,7 +1114,7 @@ Return JSON format:
       }
     } catch (error: any) {
       console.error('Error generating comparative analysis:', error);
-      
+
       // Fallback: Generate basic analysis without Gemini
       return this.generateFallbackComparativeAnalysis(uploadedAnalysis, existingProducts, topN);
     }
@@ -1100,7 +1200,7 @@ Return JSON format:
     // Generate overall recommendation
     const avgScore = topSimilarities.reduce((sum, item) => sum + item.similarityScore, 0) / topSimilarities.length;
     let overallRecommendation = 'Not Recommended';
-    
+
     if (avgScore >= 70) {
       overallRecommendation = 'Highly Recommended - Strong market fit';
     } else if (avgScore >= 50) {
