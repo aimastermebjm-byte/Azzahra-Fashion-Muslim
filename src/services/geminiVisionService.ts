@@ -1326,53 +1326,124 @@ Return JSON format:
 
   /**
    * Generate marketing title and description based on analysis
+   * Priority: GLM (subscribed, no limit) -> Gemini -> Fallback
    */
   async generateMarketingContent(
     analysis: GeminiClothingAnalysis,
     similarProductName?: string
   ): Promise<{ title: string; description: string }> {
-    try {
-      console.log('📝 Generating marketing content with Gemini...');
-      // Use gemini-pro model for text generation (more stable availability)
-      const model = this.genAI!.getGenerativeModel({ model: "gemini-pro" });
+    const prompt = `
+You are a professional fashion copywriter for Azzahra Fashion Muslim.
+Create an SEO-friendly product title and marketing description based on this clothing analysis:
 
-      const prompt = `
-        You are a professional fashion copywriter for Azzahra Fashion Muslim.
-        Create an SEO-friendly product title and marketing description based on this clothing analysis:
+DATA:
+${JSON.stringify(analysis, null, 2)}
+${similarProductName ? `Similar to bestseller: "${similarProductName}"` : ''}
 
-        DATA:
-        ${JSON.stringify(analysis, null, 2)}
-        ${similarProductName ? `Similar to bestseller: "${similarProductName}"` : ''}
+RULES:
+1. TITLE: Catchy, SEO friendly, Indonesian Language. Format: "Type + Motif + Key Feature". Max 6 words. Example: "Gamis Silk Motif Bunga Premium". Do NOT use product codes like "Baju 6" or generic numbers.
+2. DESCRIPTION: 3-5 sentences in Indonesian. Engaging, highlights fabric texture, pattern, and suitable occasions. Mention specific details found in analysis (e.g. lace, pleats).
+3. BRAND TONE: Elegant, modest, premium.
 
-        RULES:
-        1. TITLE: Catchy, SEO friendly, Indonesian Language. Format: "Type + Motif + Key Feature". Max 6 words. Example: "Gamis Silk Motif Bunga Premium". Do NOT use product codes like "Baju 6" or generic numbers.
-        2. DESCRIPTION: 3-5 sentences in Indonesian. Engaging, highlights fabric texture, pattern, and suitable occasions. Mention specific details found in analysis (e.g. lace, pleats).
-        3. BRAND TONE: Elegant, modest, premium.
+Return ONLY valid JSON:
+{
+  "title": "string",
+  "description": "string"
+}
+    `.trim();
 
-        Return ONLY valid JSON:
-        {
-          "title": "string",
-          "description": "string"
-        }
-      `;
-
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      const cleanedText = text.replace(/```json\n?|\n?```/g, '').trim();
-      return JSON.parse(cleanedText);
-
-    } catch (error) {
-      console.error('Error generating marketing content:', error);
-      // Fallback
-      const title = `${analysis.clothing_type.main_type} ${analysis.pattern_type.pattern} Premium`.replace(/_/g, ' ');
-      const description = `Produk ${analysis.clothing_type.main_type} terbaru dari Azzahra Fashion Muslim. Hadir dengan motif ${analysis.pattern_type.pattern} yang elegan dan potongan ${analysis.clothing_type.silhouette} yang nyaman. Cocok untuk acara formal maupun kasual.`;
-      return {
-        title: title.charAt(0).toUpperCase() + title.slice(1),
-        description
-      };
+    // Priority 1: Use GLM API (subscribed, no rate limit)
+    if (this.hasGLMAPI()) {
+      try {
+        console.log('📝 Generating marketing content with GLM (priority)...');
+        const result = await this._generateMarketingWithGLM(prompt);
+        console.log('✓ GLM marketing content generated successfully');
+        return result;
+      } catch (glmError: any) {
+        console.warn('GLM marketing content failed, trying Gemini...', glmError.message);
+      }
     }
+
+    // Priority 2: Use Gemini API (may hit rate limit)
+    if (this.genAI && !this.isGeminiQuotaExceeded()) {
+      try {
+        console.log('📝 Generating marketing content with Gemini...');
+        const model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        const cleanedText = text.replace(/```json\n?|\n?```/g, '').trim();
+        console.log('✓ Gemini marketing content generated successfully');
+        return JSON.parse(cleanedText);
+      } catch (geminiError: any) {
+        console.warn('Gemini marketing content failed:', geminiError.message);
+
+        // Mark quota exceeded if applicable
+        if (geminiError.message?.includes('429') || geminiError.message?.includes('quota')) {
+          this.markGeminiQuotaExceeded();
+        }
+      }
+    }
+
+    // Priority 3: Fallback to template-based generation
+    console.log('📝 Using fallback template for marketing content...');
+    const title = `${analysis.clothing_type.main_type} ${analysis.pattern_type.pattern} Premium`.replace(/_/g, ' ');
+    const description = `Produk ${analysis.clothing_type.main_type} terbaru dari Azzahra Fashion Muslim. Hadir dengan motif ${analysis.pattern_type.pattern} yang elegan dan potongan ${analysis.clothing_type.silhouette} yang nyaman. Cocok untuk acara formal maupun kasual.`;
+    return {
+      title: title.charAt(0).toUpperCase() + title.slice(1),
+      description
+    };
+  }
+
+  /**
+   * Generate marketing content using GLM API
+   */
+  private async _generateMarketingWithGLM(prompt: string): Promise<{ title: string; description: string }> {
+    if (!this.glmApiKey) {
+      throw new Error('GLM API key not configured.');
+    }
+
+    const response = await fetch('https://api.z.ai/api/paas/v4/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.glmApiKey}`
+      },
+      body: JSON.stringify({
+        model: 'glm-4.6v-flash',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.3
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`GLM API error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    const content = this._extractGLMContent(data);
+
+    if (!content) {
+      throw new Error('GLM returned empty response for marketing content');
+    }
+
+    // Parse JSON from response
+    let jsonStr = content;
+    const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1] || jsonMatch[0];
+    }
+
+    return JSON.parse(jsonStr);
   }
 }
 

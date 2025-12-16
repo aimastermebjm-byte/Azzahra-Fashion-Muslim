@@ -67,7 +67,7 @@ if (!self.define) {
     });
   };
 }
-define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
+define(['./workbox-ed373263'], (function (workbox) { 'use strict';
 
   self.skipWaiting();
   workbox.clientsClaim();
@@ -79,12 +79,26 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
    */
   workbox.precacheAndRoute([{
     "url": "index.html",
-    "revision": "0.so5ln1a28dg"
+    "revision": "0.fseev9s4ih8"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
-    allowlist: [/^\/$/]
+    allowlist: [/^\/$/],
+    denylist: [/^\/api/, /^\/clear-cache/]
   }));
+  workbox.registerRoute(({
+    request
+  }) => request.mode === "navigate", new workbox.NetworkFirst({
+    "cacheName": "pages-cache",
+    "networkTimeoutSeconds": 3,
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 10,
+      maxAgeSeconds: 300
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^https:\/\/.*\.firebaseapp\.com\/.*/i, new workbox.NetworkOnly(), 'GET');
+  workbox.registerRoute(/^https:\/\/.*\.googleapis\.com\/identitytoolkit\/.*/i, new workbox.NetworkOnly(), 'GET');
+  workbox.registerRoute(/^https:\/\/securetoken\.googleapis\.com\/.*/i, new workbox.NetworkOnly(), 'GET');
   workbox.registerRoute(/^https:\/\/firebasestorage\.googleapis\.com\/.*/i, new workbox.CacheFirst({
     "cacheName": "firebase-storage-images",
     plugins: [new workbox.ExpirationPlugin({

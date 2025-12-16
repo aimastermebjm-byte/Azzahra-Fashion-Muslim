@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bulk Analyze Products</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #00ff00;
+    }
+    #log {
+      background: #000;
+      padding: 20px;
+      border-radius: 8px;
+      min-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    button {
+      background: #00ff00;
+      color: #000;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    button:hover {
+      background: #00cc00;
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚀 Bulk Analyze Products with Gemini AI</h1>
+  <button id="startBtn" onclick="startAnalysis()">START ANALYSIS</button>
+  <div id="log"></div>
+
+  <!-- CryptoJS for decrypting API key from localStorage -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getFirestore, collection, getDocs, doc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import { GoogleGenerativeAI } from 'https://esm.run/@google/generative-ai';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBGPl6P_LpMWPtNAqKCjDiCxp1-zFNjBWE",
+      authDomain: "azzahra-fashion-muslim-ab416.firebaseapp.com",
+      projectId: "azzahra-fashion-muslim-ab416",
+      storageBucket: "azzahra-fashion-muslim-ab416.firebasestorage.app",
+      messagingSenderId: "389566093532",
+      appId: "1:389566093532:web:9e3ceb1d73bdda62b93a36",
+      measurementId: "G-DL37HR4KT1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Load API key from localStorage (same as app)
+    let GEMINI_API_KEY = null;
+    
+    function loadAPIKey() {
+      const encrypted = localStorage.getItem('gemini_api_key_encrypted');
+      if (!encrypted) {
+        alert('❌ Gemini API Key not found!\n\nPlease configure API key in Settings first.');
+        return null;
+      }
+      
+      // Decrypt (using same secret as app)
+      const CryptoJS = window.CryptoJS;
+      const SECRET_KEY = 'azzahra-fashion-ai-secret-2025';
+      
+      try {
+        const decrypted = CryptoJS.AES.decrypt(encrypted, SECRET_KEY);
+        const plainText = decrypted.toString(CryptoJS.enc.Utf8);
+        return plainText;
+      } catch (error) {
+        console.error('Failed to decrypt API key:', error);
+        return null;
+      }
+    }
+
+    function log(message) {
+      const logDiv = document.getElementById('log');
+      logDiv.textContent += message + '\n';
+      logDiv.scrollTop = logDiv.scrollHeight;
+      console.log(message);
+    }
+
+    async function analyzeImage(base64Image) {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.2
+        }
+      });
+
+      const prompt = `Analyze this clothing/fashion item image. Return ONLY valid JSON:
+{
+  "clothing_type": {"main_type": "gamis", "silhouette": "a-line", "length": "maxi", "confidence": 85},
+  "pattern_type": {"pattern": "floral", "complexity": "detailed", "confidence": 90},
+  "lace_details": {"has_lace": true, "locations": [{"position": "hem", "coverage": "moderate", "lace_type": "floral_lace"}], "confidence": 80},
+  "hem_pleats": {"has_pleats": true, "pleat_type": "accordion", "depth": "medium", "fullness": 75, "confidence": 70},
+  "sleeve_details": {"has_pleats": true, "sleeve_type": "bishop", "pleat_position": "wrist", "ruffle_count": 2, "cuff_style": "elastic", "confidence": 85},
+  "embellishments": {"beads": {"has": true, "locations": ["collar"], "density": 30}, "embroidery": {"has": false, "pattern": ""}, "sequins": {"has": false, "locations": []}, "gold_thread": {"has": false, "coverage": 0}},
+  "colors": ["pink", "white"],
+  "fabric_texture": "smooth"
+}`;
+
+      const result = await model.generateContent([
+        prompt,
+        { inlineData: { data: base64Image, mimeType: "image/jpeg" } }
+      ]);
+
+      return JSON.parse(result.response.text());
+    }
+
+    async function imageUrlToBase64(url) {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    window.startAnalysis = async function() {
+      const btn = document.getElementById('startBtn');
+      btn.disabled = true;
+      btn.textContent = 'ANALYZING...';
+
+      log('🚀 Starting bulk analysis...\n');
+      
+      // Load API key
+      GEMINI_API_KEY = loadAPIKey();
+      if (!GEMINI_API_KEY) {
+        btn.disabled = false;
+        btn.textContent = 'START ANALYSIS';
+        return;
+      }
+      
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+      try {
+        // Get products
+        log('📦 Fetching products from Firestore...');
+        const snapshot = await getDocs(collection(db, 'products'));
+        log(`✅ Found ${snapshot.size} products\n`);
+
+        // Filter products needing analysis
+        const productsToAnalyze = [];
+        snapshot.docs.forEach(docSnap => {
+          const product = { id: docSnap.id, ...docSnap.data() };
+          
+          if (product.aiAnalysis?.analyzedAt) {
+            log(`✓ ${product.name} - already analyzed`);
+            return;
+          }
+
+          if (!product.images?.length && !product.image) {
+            log(`⚠️ ${product.name} - no images`);
+            return;
+          }
+
+          productsToAnalyze.push(product);
+        });
+
+        log(`\n🎯 ${productsToAnalyze.length} products need analysis\n`);
+
+        if (productsToAnalyze.length === 0) {
+          log('✅ All products already analyzed!');
+          btn.disabled = false;
+          btn.textContent = 'START ANALYSIS';
+          return;
+        }
+
+        // Analyze each
+        let success = 0;
+        let failed = 0;
+
+        for (let i = 0; i < productsToAnalyze.length; i++) {
+          const product = productsToAnalyze[i];
+          log(`\n[${i + 1}/${productsToAnalyze.length}] ${product.name}`);
+
+          try {
+            const imageUrl = product.images?.[0] || product.image;
+            log(`  📸 Fetching image...`);
+            
+            const base64 = await imageUrlToBase64(imageUrl);
+            log(`  🤖 Analyzing with Gemini...`);
+            
+            const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+            const analysis = await analyzeImage(base64);
+            log(`  ✅ Analysis complete!`);
+            log(`     - Type: ${analysis.clothing_type.main_type}`);
+            log(`     - Pattern: ${analysis.pattern_type.pattern}`);
+            
+            // Save to Firestore
+            await updateDoc(doc(db, 'products', product.id), {
+              aiAnalysis: { ...analysis, analyzedAt: new Date() }
+            });
+            log(`  💾 Saved to Firestore`);
+            
+            success++;
+
+            // Wait 1s to avoid rate limits
+            if (i < productsToAnalyze.length - 1) {
+              log(`  ⏳ Waiting 1s...`);
+              await new Promise(r => setTimeout(r, 1000));
+            }
+
+          } catch (error) {
+            log(`  ❌ Error: ${error.message}`);
+            failed++;
+          }
+        }
+
+        log(`\n\n📊 Summary:`);
+        log(`  ✅ Success: ${success}`);
+        log(`  ❌ Failed: ${failed}`);
+        log(`  📦 Total: ${productsToAnalyze.length}`);
+        log(`\n✅ Bulk analysis complete!`);
+
+      } catch (error) {
+        log(`\n❌ Fatal error: ${error.message}`);
+        console.error(error);
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'START ANALYSIS';
+    };
+  </script>
+</body>
+</html>
