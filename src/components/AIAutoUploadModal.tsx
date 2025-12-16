@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Upload, Sparkles, TrendingUp, Image as ImageIcon, CheckCircle, AlertCircle, Loader2, Settings, ThumbsUp, ThumbsDown, AlertTriangle, Info } from 'lucide-react';
 import { geminiService, GeminiClothingAnalysis } from '../services/geminiVisionService';
 import { imageComparisonService, ComparisonResult, EnhancedSimilarityResult } from '../services/imageComparisonService';
@@ -1254,9 +1254,12 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
 }) => {
   // Auto Upload Logic
   const [autoCheckStatus, setAutoCheckStatus] = useState<'checking' | 'qualified' | 'failed' | null>(null);
+  const autoUploadTriggered = useRef(false);
 
   useEffect(() => {
     if (uploadMode === 'direct') {
+      if (autoUploadTriggered.current) return; // Prevent double trigger
+
       setAutoCheckStatus('checking');
 
       // Check criteria: Sales > 4 AND Similarity > 80% (top match)
@@ -1267,6 +1270,7 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
       if (qualifiedProduct) {
         console.log('✅ Auto Upload Qualified:', qualifiedProduct.product.name);
         setAutoCheckStatus('qualified');
+        autoUploadTriggered.current = true;
 
         // Auto fill data with AI generation
         if (qualifiedProduct) {
@@ -1649,8 +1653,13 @@ const CollageStep: React.FC<CollageStepProps> = ({
   const dimensions = collageService.getCollageDimensions(variantCount);
 
   // Auto Submit for Direct Upload Mode
+  const autoSubmitTriggered = useRef(false);
+
   useEffect(() => {
     if (uploadMode === 'direct') {
+      if (autoSubmitTriggered.current) return; // Prevent double submit
+      autoSubmitTriggered.current = true;
+
       const timer = setTimeout(() => {
         onDirectUpload();
       }, 1000);
