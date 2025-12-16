@@ -11,17 +11,10 @@ export class CollageService {
     const cols = images.length === 5 ? 5 : this.getOptimalLayout(images.length).cols;
     const rows = images.length === 5 ? 1 : this.getOptimalLayout(images.length).rows;
 
-    const imageWidth = 600;
-    const imageHeight = 800; // Portrait 3:4
+    const imageWidth = 2000 / cols; // Dynamic width
+    const imageHeight = 2000 / rows;
 
-    // WIDTH-BASED CALCULATION
-    // Total strip width
-    const stripWidth = cols * imageWidth;
-    const stripHeight = rows * imageHeight;
-
-    // Create Square Canvas based on width (to fit horizontal strip completely)
-    // Or based on max dimension logic
-    const canvasSize = Math.max(stripWidth, stripHeight);
+    const canvasSize = 2000; // Fixed High-Res Square
 
     const canvas = document.createElement('canvas');
     canvas.width = canvasSize;
@@ -32,9 +25,9 @@ export class CollageService {
       throw new Error('Failed to get canvas context');
     }
 
-    // Vertical/Horizontal Centering Offsets
-    const offsetX = (canvasSize - stripWidth) / 2;
-    const offsetY = (canvasSize - stripHeight) / 2;
+    // No offsets needed if we fill the canvas
+    const offsetX = 0;
+    const offsetY = 0;
 
     // White background
     ctx.fillStyle = '#ffffff';
@@ -46,27 +39,80 @@ export class CollageService {
     );
 
     // Draw images
-    // Standard Grid Layout (works for 1x5 too)
-    for (let i = 0; i < images.length; i++) {
-      // Calculate grid position
-      const row = Math.floor(i / cols);
-      const col = i % cols;
+    if (images.length === 5) {
+      // 1x5 Full Height Slices Layout
+      const colWidth = canvasSize / 5;
+      const colHeight = canvasSize;
 
-      // Calculate canvas coordinates with offset (centering)
-      const x = offsetX + (col * imageWidth);
-      const y = offsetY + (row * imageHeight);
+      for (let i = 0; i < images.length; i++) {
+        const x = i * colWidth;
+        const y = 0;
 
-      // Draw image (CONTAIN / FIT CENTER)
-      this.drawImageContain(ctx, loadedImages[i], x, y, imageWidth, imageHeight);
+        // Save context for clipping
+        ctx.save();
 
-      // Add border
-      ctx.strokeStyle = '#e5e7eb';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, imageWidth, imageHeight);
+        // Define clipping region for this slice
+        ctx.beginPath();
+        ctx.rect(x, y, colWidth, colHeight);
+        ctx.clip();
 
-      // Add variant label
-      if (variantLabels[i]) {
-        this.drawLabel(ctx, variantLabels[i], x, y);
+        const img = loadedImages[i];
+
+        // Calculate scale to Fill Height (Cover Vertical)
+        // We want the image to match the canvas height (2000px)
+        const scale = colHeight / img.height;
+        const scaledWidth = img.width * scale;
+        const scaledHeight = colHeight;
+
+        // Center horizontally within the strip
+        const drawX = x + (colWidth - scaledWidth) / 2;
+        const drawY = 0; // Align top
+
+        ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, scaledWidth, scaledHeight);
+
+        // Restore context (remove clipping)
+        ctx.restore();
+
+        // Add border
+        ctx.strokeStyle = '#e5e7eb';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, colWidth, colHeight);
+
+        // Add variant label
+        if (variantLabels[i]) {
+          // Draw label slightly offset to ensure visibility inside the narrow slice
+          this.drawLabel(ctx, variantLabels[i], x, y);
+        }
+      }
+    } else {
+      // Standard Grid Layout
+      for (let i = 0; i < images.length; i++) {
+        // Calculate grid position
+        const row = Math.floor(i / cols);
+        const col = i % cols;
+
+        // For standard grid, stick to square logic or adapt? 
+        // We only letterbox for 1x5. Revert others to simple grid on canvasSize
+        // Or just keep the logic consistent. 
+        // For now, let's keep the standard loop operating on provided offsets.
+        // But offsets were calculated for "strip". 
+        // If images.length != 5, we might need standard behavior.
+
+        const x = offsetX + (col * imageWidth);
+        const y = offsetY + (row * imageHeight);
+
+        // Draw image (CONTAIN / FIT CENTER)
+        this.drawImageContain(ctx, loadedImages[i], x, y, imageWidth, imageHeight);
+
+        // Add border
+        ctx.strokeStyle = '#e5e7eb';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, imageWidth, imageHeight);
+
+        // Add variant label
+        if (variantLabels[i]) {
+          this.drawLabel(ctx, variantLabels[i], x, y);
+        }
       }
     }
 
