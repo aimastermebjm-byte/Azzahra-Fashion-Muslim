@@ -797,6 +797,19 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
     );
   }
 
+  // Auto fill form data from existing product
+  const handleAutoFillData = (product: Product) => {
+    setProductFormData(prev => ({
+      ...prev,
+      name: product.name,
+      retailPrice: product.retailPrice.toString(),
+      category: product.category || 'Gamis',
+      // Estimate cost at 60% if unknown, set description
+      costPrice: product.costPrice ? product.costPrice.toString() : Math.round(product.retailPrice * 0.6).toString(),
+      description: `Produk terbaru dengan desain mirip ${product.name}. Terbuat dari bahan berkualitas...`
+    }));
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -897,6 +910,8 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
               onRemoveImage={removeImage}
               onNext={startAnalysis}
               onCancel={onClose}
+              uploadMode={uploadMode}
+              setUploadMode={setUploadMode}
             />
           )}
 
@@ -916,12 +931,13 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
               analysisResults={analysisResults}
               similarityResults={similarityResults}
               enhancedSimilarityResults={enhancedSimilarityResults}
-              comparativeAnalysis={comparativeAnalysis}
+              comparativeAnalysis={comparativeAnalysis || undefined} // Fix type mismatch
               recommendation={recommendation}
               onBack={() => setStep('upload')}
               onNext={generateCollagePreview}
               uploadMode={uploadMode}
               setUploadMode={setUploadMode}
+              onAutoFillData={handleAutoFillData}
             />
           )}
 
@@ -959,6 +975,8 @@ interface UploadStepProps {
   onRemoveImage: (index: number) => void;
   onNext: () => void;
   onCancel: () => void;
+  uploadMode: 'direct' | 'review';
+  setUploadMode: (mode: 'direct' | 'review') => void;
 }
 
 const UploadStep: React.FC<UploadStepProps> = ({
@@ -972,7 +990,9 @@ const UploadStep: React.FC<UploadStepProps> = ({
   onDragLeave,
   onRemoveImage,
   onNext,
-  onCancel
+  onCancel,
+  uploadMode,
+  setUploadMode
 }) => {
   return (
     <div className="space-y-6">
@@ -982,16 +1002,35 @@ const UploadStep: React.FC<UploadStepProps> = ({
           Upload 1 or more images. AI will analyze the FIRST image for patterns, lace details, pleats, and more.
           All images will be included in the final collage.
         </p>
-        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-xs text-green-700">
-            ⚡ <strong>Fast Mode:</strong> Only first image is analyzed for faster processing.
-            All images will be included in the final collage.
-          </p>
-          <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs text-blue-700">
-              📋 <strong>Mode Options:</strong> Choose "Langsung Upload" for instant AI generation
-              or "Review Dulu" to edit data before upload.
-            </p>
+        <div className="mt-2 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Pilih Mode Upload:</label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setUploadMode('review')}
+              className={`p-3 rounded-lg border-2 text-left transition-all ${uploadMode === 'review'
+                ? 'border-blue-500 bg-blue-50 text-blue-900'
+                : 'border-gray-200 hover:border-blue-300'
+                }`}
+            >
+              <div className="flex items-center gap-2 font-medium mb-1">
+                <CheckCircle className="w-4 h-4" />
+                Review Dulu
+              </div>
+              <p className="text-xs opacity-75">Cek hasil analisa & edit sebelum upload.</p>
+            </button>
+            <button
+              onClick={() => setUploadMode('direct')}
+              className={`p-3 rounded-lg border-2 text-left transition-all ${uploadMode === 'direct'
+                ? 'border-green-500 bg-green-50 text-green-900'
+                : 'border-gray-200 hover:border-green-300'
+                }`}
+            >
+              <div className="flex items-center gap-2 font-medium mb-1">
+                <Sparkles className="w-4 h-4" />
+                Auto Upload
+              </div>
+              <p className="text-xs opacity-75">Upload OTOMATIS jika Sales &gt; 4 & Mirip &gt; 80%.</p>
+            </button>
           </div>
         </div>
       </div>
@@ -1193,6 +1232,7 @@ interface ResultsStepProps {
   onNext: () => void;
   uploadMode: 'direct' | 'review';
   setUploadMode: (mode: 'direct' | 'review') => void;
+  onAutoFillData: (product: Product) => void;
 }
 
 const ResultsStep: React.FC<ResultsStepProps> = ({
@@ -1204,8 +1244,47 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
   onBack,
   onNext,
   uploadMode,
-  setUploadMode
+  setUploadMode,
+  onAutoFillData
 }) => {
+  // Auto Upload Logic
+  const [autoCheckStatus, setAutoCheckStatus] = useState<'checking' | 'qualified' | 'failed' | null>(null);
+
+  useEffect(() => {
+    if (uploadMode === 'direct') {
+      setAutoCheckStatus('checking');
+
+      // Check criteria: Sales > 4 AND Similarity > 80% (top match)
+      const qualifiedProduct = enhancedSimilarityResults.find(p =>
+        (p.overallScore || 0) >= 80 && (p.salesLast3Months || 0) > 4
+      );
+
+      if (qualifiedProduct) {
+        console.log('✅ Auto Upload Qualified:', qualifiedProduct.product.name);
+        setAutoCheckStatus('qualified');
+
+        // Auto fill data
+        onAutoFillData(qualifiedProduct.product);
+
+        // Auto proceed after delay
+        const timer = setTimeout(() => {
+          onNext();
+        }, 1500);
+        return () => clearTimeout(timer);
+      } else {
+        console.log('❌ Auto Upload Failed: Criteria not met');
+        setAutoCheckStatus('failed');
+
+        // Switch to manual review after delay
+        const timer = setTimeout(() => {
+          setUploadMode('review');
+          // Optional: we can keep the 'failed' status visible for a bit longer via local state logic if needed
+        }, 2000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [uploadMode, enhancedSimilarityResults, onNext, setUploadMode]);
+
   // Calculate totals
   const totalSales = similarityResults.reduce((sum, s) => sum + s.salesLast3Months, 0);
   const avgSimilarity = similarityResults.length > 0
@@ -1214,6 +1293,33 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Auto Upload Status */}
+      {uploadMode === 'direct' && (
+        <div className={`p-4 rounded-lg border-2 mb-4 transition-all ${autoCheckStatus === 'qualified' ? 'bg-green-50 border-green-500 text-green-800' :
+          autoCheckStatus === 'failed' ? 'bg-yellow-50 border-yellow-500 text-yellow-800' :
+            'bg-blue-50 border-blue-200 text-blue-800'
+          }`}>
+          <div className="flex items-center gap-3">
+            {autoCheckStatus === 'checking' && <Loader2 className="w-5 h-5 animate-spin" />}
+            {autoCheckStatus === 'qualified' && <CheckCircle className="w-5 h-5" />}
+            {autoCheckStatus === 'failed' && <AlertTriangle className="w-5 h-5" />}
+
+            <div>
+              <p className="font-bold">
+                {autoCheckStatus === 'checking' && 'Mengecek syarat Auto Upload...'}
+                {autoCheckStatus === 'qualified' && '✅ Syarat Terpenuhi!'}
+                {autoCheckStatus === 'failed' && '⚠️ Syarat Tidak Terpenuhi'}
+              </p>
+              <p className="text-sm mt-1">
+                {autoCheckStatus === 'checking' && 'Syarat: Sales > 4 pcs & Mirip > 80%'}
+                {autoCheckStatus === 'qualified' && 'Lanjut ke proses upload otomatis...'}
+                {autoCheckStatus === 'failed' && 'Sales atau tingkat kemiripan tidak mencukupi. Beralih ke Manual Review.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Success Message */}
       <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
         <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
@@ -1486,51 +1592,7 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
         </div>
       )}
 
-      {/* Upload Mode Selection */}
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
-        <h4 className="text-sm font-semibold text-blue-900 mb-3">Pilih Mode Upload:</h4>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => {
-              setUploadMode('review');
-              onNext();
-            }}
-            className={`
-              p-3 rounded-lg border-2 transition-all
-              ${uploadMode === 'review'
-                ? 'border-blue-500 bg-blue-100 text-blue-900'
-                : 'border-gray-300 bg-white text-gray-700 hover:border-blue-300'
-              }
-            `}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="w-5 h-5" />
-              <span className="font-medium">Review Dulu</span>
-            </div>
-            <p className="text-xs text-left">Lihat preview produk, edit data, lalu upload</p>
-          </button>
 
-          <button
-            onClick={() => {
-              setUploadMode('direct');
-              onNext();
-            }}
-            className={`
-              p-3 rounded-lg border-2 transition-all
-              ${uploadMode === 'direct'
-                ? 'border-green-500 bg-green-100 text-green-900'
-                : 'border-gray-300 bg-white text-gray-700 hover:border-green-300'
-              }
-            `}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-5 h-5" />
-              <span className="font-medium">Langsung Upload</span>
-            </div>
-            <p className="text-xs text-left">AI generate caption & upload langsung</p>
-          </button>
-        </div>
-      </div>
 
       {/* Actions */}
       <div className="flex gap-3 justify-end">
@@ -1577,6 +1639,16 @@ const CollageStep: React.FC<CollageStepProps> = ({
 }) => {
   const layout = collageService.getOptimalLayout(variantCount);
   const dimensions = collageService.getCollageDimensions(variantCount);
+
+  // Auto Submit for Direct Upload Mode
+  useEffect(() => {
+    if (uploadMode === 'direct') {
+      const timer = setTimeout(() => {
+        onDirectUpload();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [uploadMode, onDirectUpload]);
 
   return (
     <div className="space-y-6">
