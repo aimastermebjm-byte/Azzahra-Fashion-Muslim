@@ -156,10 +156,10 @@ export class GeminiVisionService {
     
     // Use Gemini models optimized for image understanding
     const modelNames = [
+      "gemini-2.0-flash-exp",      // Prioritize newest flash (image)
       "gemini-1.5-flash-latest",   // Stable image-capable model
       "gemini-1.5-flash-8b",       // Smaller/cheaper fallback
-      "gemini-1.5-pro-latest",     // Higher quality fallback
-      "gemini-1.0-pro-vision-latest" // Legacy vision fallback
+      "gemini-1.5-pro-latest"      // Higher quality fallback
     ];
     
     let lastError = null;
@@ -325,10 +325,10 @@ export class GeminiVisionService {
     
     // Model names optimized for image understanding
     const modelNames = [
+      "gemini-2.0-flash-exp",       // Prioritize newest flash (image)
       "gemini-1.5-flash-latest",    // Stable image-capable model
       "gemini-1.5-flash-8b",        // Smaller/cheaper fallback
-      "gemini-1.5-pro-latest",      // Higher quality fallback
-      "gemini-1.0-pro-vision-latest" // Legacy vision fallback
+      "gemini-1.5-pro-latest"       // Higher quality fallback
     ];
     
     let result = null;
@@ -847,10 +847,10 @@ Scoring guidelines:
     
     // Model names optimized for image understanding
     const modelNames = [
+      "gemini-2.0-flash-exp",       // Prioritize newest flash (image)
       "gemini-1.5-flash-latest",    // Stable image-capable model
       "gemini-1.5-flash-8b",        // Smaller/cheaper fallback
-      "gemini-1.5-pro-latest",      // Higher quality fallback
-      "gemini-1.0-pro-vision-latest" // Legacy vision fallback
+      "gemini-1.5-pro-latest"       // Higher quality fallback
     ];
     
     let result = null;
