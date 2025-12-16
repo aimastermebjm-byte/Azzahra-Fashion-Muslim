@@ -3,7 +3,8 @@ import { Key, Check, X, AlertCircle, Info, ExternalLink, Eye, EyeOff, Cpu, Zap }
 import { geminiService } from '../services/geminiVisionService';
 import { 
   saveGeminiAPIKey, loadGeminiAPIKey, hasGeminiAPIKey, removeGeminiAPIKey,
-  saveGLMAPIKey, loadGLMAPIKey, hasGLMAPIKey, removeGLMAPIKey 
+  saveGLMAPIKey, loadGLMAPIKey, hasGLMAPIKey, removeGLMAPIKey,
+  saveAPIKey, loadAPIKeyWithFallback, hasAPIKeyWithFallback, removeAPIKey
 } from '../utils/encryption';
 
 type AIProvider = 'gemini' | 'glm';
@@ -24,30 +25,53 @@ export const GeminiAPISettings: React.FC<GeminiAPISettingsProps> = ({ onSave, on
   const [testMessage, setTestMessage] = useState('');
   const [hasExistingGeminiKey, setHasExistingGeminiKey] = useState(false);
   const [hasExistingGlmKey, setHasExistingGlmKey] = useState(false);
+  const [saveGlobally, setSaveGlobally] = useState(true); // Default: save globally for cross-device sync
 
   useEffect(() => {
-    // Check if API keys exist and load them
-    const geminiKey = hasGeminiAPIKey() ? loadGeminiAPIKey() : null;
-    const glmKey = hasGLMAPIKey() ? loadGLMAPIKey() : null;
-    
-    if (geminiKey) {
-      setHasExistingGeminiKey(true);
-      setGeminiApiKey(geminiKey);
-    }
-    
-    if (glmKey) {
-      setHasExistingGlmKey(true);
-      setGlmApiKey(glmKey);
-    }
-    
-    // Initialize service with both keys if available
-    if (geminiKey || glmKey) {
+    // Check if API keys exist and load them (with global storage fallback)
+    const loadKeys = async () => {
       try {
-        geminiService.initialize(geminiKey || '', glmKey || '');
+        // Try to load from localStorage first, then global storage
+        const geminiKey = await loadAPIKeyWithFallback('gemini');
+        const glmKey = await loadAPIKeyWithFallback('glm');
+        
+        if (geminiKey) {
+          setHasExistingGeminiKey(true);
+          setGeminiApiKey(geminiKey);
+        }
+        
+        if (glmKey) {
+          setHasExistingGlmKey(true);
+          setGlmApiKey(glmKey);
+        }
+        
+        // Initialize service with both keys if available
+        if (geminiKey || glmKey) {
+          try {
+            geminiService.initialize(geminiKey || '', glmKey || '');
+          } catch (error) {
+            console.error('Failed to initialize AI service with existing keys:', error);
+          }
+        }
       } catch (error) {
-        console.error('Failed to initialize AI service with existing keys:', error);
+        console.error('Failed to load API keys:', error);
+        // Fallback to localStorage-only check
+        const geminiKeyLocal = hasGeminiAPIKey() ? loadGeminiAPIKey() : null;
+        const glmKeyLocal = hasGLMAPIKey() ? loadGLMAPIKey() : null;
+        
+        if (geminiKeyLocal) {
+          setHasExistingGeminiKey(true);
+          setGeminiApiKey(geminiKeyLocal);
+        }
+        
+        if (glmKeyLocal) {
+          setHasExistingGlmKey(true);
+          setGlmApiKey(glmKeyLocal);
+        }
       }
-    }
+    };
+    
+    loadKeys();
   }, []);
 
   const handleTestConnection = async () => {
@@ -73,8 +97,8 @@ export const GeminiAPISettings: React.FC<GeminiAPISettingsProps> = ({ onSave, on
           setTestResult('success');
           setTestMessage('✅ Gemini connection successful! API key is valid.');
           
-          // Save API key (encrypted)
-          saveGeminiAPIKey(geminiApiKey);
+          // Save API key (encrypted) with global storage option
+          await saveAPIKey('gemini', geminiApiKey, { saveGlobal: saveGlobally });
           setHasExistingGeminiKey(true);
         } else {
           throw new Error('Connection test failed');
@@ -116,8 +140,8 @@ export const GeminiAPISettings: React.FC<GeminiAPISettingsProps> = ({ onSave, on
           setTestResult('success');
           setTestMessage('✅ GLM-4.6 connection successful! API key is valid.');
           
-          // Save API key (encrypted)
-          saveGLMAPIKey(glmApiKey);
+          // Save API key (encrypted) with global storage option
+          await saveAPIKey('glm', glmApiKey, { saveGlobal: saveGlobally });
           setHasExistingGlmKey(true);
         } else {
           throw new Error('GLM connection test failed');
@@ -139,13 +163,9 @@ export const GeminiAPISettings: React.FC<GeminiAPISettingsProps> = ({ onSave, on
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (testResult === 'success') {
-      if (activeTab === 'gemini') {
-        saveGeminiAPIKey(geminiApiKey);
-      } else {
-        saveGLMAPIKey(glmApiKey);
-      }
+      // API key already saved during test connection, just trigger callbacks
       if (onSave) {
         onSave();
       }
@@ -157,23 +177,25 @@ export const GeminiAPISettings: React.FC<GeminiAPISettingsProps> = ({ onSave, on
     }
   };
 
-  const handleRemove = () => {
-    if (activeTab === 'gemini') {
-      if (confirm('Are you sure you want to remove the Gemini API key?')) {
-        removeGeminiAPIKey();
+  const handleRemove = async () => {
+    const message = activeTab === 'gemini' 
+      ? 'Are you sure you want to remove the Gemini API key from this device?\n\nNote: The key will still be available on other devices if saved globally.'
+      : 'Are you sure you want to remove the GLM API key from this device?\n\nNote: The key will still be available on other devices if saved globally.';
+    
+    if (confirm(message)) {
+      // Remove from localStorage only (keep in global storage)
+      await removeAPIKey(activeTab, false);
+      
+      if (activeTab === 'gemini') {
         setGeminiApiKey('');
         setHasExistingGeminiKey(false);
-        setTestResult(null);
-        setTestMessage('');
-      }
-    } else {
-      if (confirm('Are you sure you want to remove the GLM API key?')) {
-        removeGLMAPIKey();
+      } else {
         setGlmApiKey('');
         setHasExistingGlmKey(false);
-        setTestResult(null);
-        setTestMessage('');
       }
+      
+      setTestResult(null);
+      setTestMessage('');
     }
   };
 
@@ -276,6 +298,23 @@ export const GeminiAPISettings: React.FC<GeminiAPISettingsProps> = ({ onSave, on
               <p className="text-xs text-gray-500 mt-1">
                 Your API key will be encrypted and stored securely in your browser.
               </p>
+              
+              {/* Global Storage Option */}
+              <div className="mt-3 flex items-center">
+                <input
+                  type="checkbox"
+                  id="save-globally-gemini"
+                  checked={saveGlobally}
+                  onChange={(e) => setSaveGlobally(e.target.checked)}
+                  className="h-4 w-4 text-purple-600 rounded focus:ring-purple-500 border-gray-300"
+                />
+                <label htmlFor="save-globally-gemini" className="ml-2 text-sm text-gray-700">
+                  <span className="font-medium">Simpan untuk semua device</span>
+                  <span className="text-gray-500 block text-xs mt-0.5">
+                    API key akan disinkronisasi ke cloud sehingga bisa digunakan di HP, laptop, dll.
+                  </span>
+                </label>
+              </div>
             </div>
 
             {/* Test Connection Button */}
@@ -417,6 +456,23 @@ export const GeminiAPISettings: React.FC<GeminiAPISettingsProps> = ({ onSave, on
               <p className="text-xs text-gray-500 mt-1">
                 Your API key will be encrypted and stored securely in your browser.
               </p>
+              
+              {/* Global Storage Option */}
+              <div className="mt-3 flex items-center">
+                <input
+                  type="checkbox"
+                  id="save-globally-glm"
+                  checked={saveGlobally}
+                  onChange={(e) => setSaveGlobally(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
+                />
+                <label htmlFor="save-globally-glm" className="ml-2 text-sm text-gray-700">
+                  <span className="font-medium">Simpan untuk semua device</span>
+                  <span className="text-gray-500 block text-xs mt-0.5">
+                    API key akan disinkronisasi ke cloud sehingga bisa digunakan di HP, laptop, dll.
+                  </span>
+                </label>
+              </div>
             </div>
 
             {/* Test Connection Button */}

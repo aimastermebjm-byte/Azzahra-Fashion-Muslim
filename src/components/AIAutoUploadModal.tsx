@@ -4,7 +4,7 @@ import { geminiService, GeminiClothingAnalysis } from '../services/geminiVisionS
 import { imageComparisonService, ComparisonResult, EnhancedSimilarityResult } from '../services/imageComparisonService';
 import { collageService } from '../services/collageService';
 import { salesHistoryService, ProductSalesData } from '../services/salesHistoryService';
-import { hasGeminiAPIKey, loadGeminiAPIKey, loadGLMAPIKey } from '../utils/encryption';
+import { hasGeminiAPIKey, loadGeminiAPIKey, loadGLMAPIKey, hasAPIKeyWithFallback, loadAPIKeyWithFallback } from '../utils/encryption';
 import GeminiAPISettings from './GeminiAPISettings';
 import { Product } from '../types';
 
@@ -93,23 +93,29 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
   
   useEffect(() => {
     if (isOpen) {
-      const apiKeyExists = hasGeminiAPIKey();
-      setHasAPIKey(apiKeyExists);
-      
-      if (apiKeyExists) {
-        // Initialize Gemini service
-        const apiKey = loadGeminiAPIKey();
-        const glmApiKey = loadGLMAPIKey();
-        if (apiKey || glmApiKey) {
+      const checkAPIKey = async () => {
+        // Check API key with global storage fallback
+        const apiKeyExists = await hasAPIKeyWithFallback('gemini') || await hasAPIKeyWithFallback('glm');
+        setHasAPIKey(apiKeyExists);
+        
+        if (apiKeyExists) {
           try {
-            geminiService.initialize(apiKey || '', glmApiKey || '');
+            // Load keys with global storage fallback
+            const apiKey = await loadAPIKeyWithFallback('gemini');
+            const glmApiKey = await loadAPIKeyWithFallback('glm');
+            
+            if (apiKey || glmApiKey) {
+              geminiService.initialize(apiKey || '', glmApiKey || '');
+            }
           } catch (error) {
             console.error('Failed to initialize AI service:', error);
           }
+        } else {
+          setShowAPISettings(true);
         }
-      } else {
-        setShowAPISettings(true);
-      }
+      };
+      
+      checkAPIKey();
     }
   }, [isOpen]);
   

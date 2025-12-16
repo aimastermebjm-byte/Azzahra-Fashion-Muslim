@@ -151,5 +151,11 @@ service cloud.firestore {
       );
       allow delete: if isAdminOrOwner();
     }
+
+    // AI API Keys - Encrypted API keys for Gemini/GLM AI services
+    // Only owner can read/write their own keys
+    match /aiApiKeys/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId && isOwner();
+    }
   }
 }
