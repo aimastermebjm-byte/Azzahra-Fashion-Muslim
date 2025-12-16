@@ -276,7 +276,7 @@ export class GeminiVisionService {
           'Authorization': `Bearer ${this.glmApiKey}`
         },
         body: JSON.stringify({
-          model: 'glm-4.6v',
+          model: 'glm-4.6v-flash',
           messages: [
             {
               role: 'user',
@@ -507,7 +507,7 @@ export class GeminiVisionService {
           'Authorization': `Bearer ${this.glmApiKey}`
         },
         body: JSON.stringify({
-          model: 'glm-4.6v',
+          model: 'glm-4.6v-flash',
           messages: [
             {
               role: 'user',
@@ -588,7 +588,7 @@ export class GeminiVisionService {
           'Authorization': `Bearer ${this.glmApiKey}`
         },
         body: JSON.stringify({
-          model: 'glm-4.6v',
+          model: 'glm-4.6v-flash',
           messages: [
             {
               role: 'user',
