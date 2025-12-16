@@ -798,15 +798,17 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
   }
 
   // Auto fill form data from existing product
-  const handleAutoFillData = (product: Product) => {
+  const handleAutoFillData = async (product: Product, analysis: GeminiClothingAnalysis) => {
+    // Generate AI Marketing content
+    const marketingContent = await geminiService.generateMarketingContent(analysis, product.name);
+
     setProductFormData(prev => ({
       ...prev,
-      name: product.name,
+      name: marketingContent.title, // AI Generated Title
       retailPrice: product.retailPrice.toString(),
-      category: product.category || 'Gamis',
-      // Estimate cost at 60% if unknown, set description
+      category: analysis.clothing_type.main_type || product.category || 'Gamis',
       costPrice: product.costPrice ? product.costPrice.toString() : Math.round(product.retailPrice * 0.6).toString(),
-      description: `Produk terbaru dengan desain mirip ${product.name}. Terbuat dari bahan berkualitas...`
+      description: marketingContent.description // AI Generated Caption
     }));
   };
 
@@ -938,6 +940,7 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
               uploadMode={uploadMode}
               setUploadMode={setUploadMode}
               onAutoFillData={handleAutoFillData}
+              analysisData={analysisResults[0]?.analysis} // Pass the first analysis result
             />
           )}
 
@@ -1232,7 +1235,8 @@ interface ResultsStepProps {
   onNext: () => void;
   uploadMode: 'direct' | 'review';
   setUploadMode: (mode: 'direct' | 'review') => void;
-  onAutoFillData: (product: Product) => void;
+  onAutoFillData: (product: Product, analysis: GeminiClothingAnalysis) => Promise<void>;
+  analysisData: GeminiClothingAnalysis;
 }
 
 const ResultsStep: React.FC<ResultsStepProps> = ({
@@ -1245,7 +1249,8 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
   onNext,
   uploadMode,
   setUploadMode,
-  onAutoFillData
+  onAutoFillData,
+  analysisData
 }) => {
   // Auto Upload Logic
   const [autoCheckStatus, setAutoCheckStatus] = useState<'checking' | 'qualified' | 'failed' | null>(null);
@@ -1263,14 +1268,17 @@ const ResultsStep: React.FC<ResultsStepProps> = ({
         console.log('✅ Auto Upload Qualified:', qualifiedProduct.product.name);
         setAutoCheckStatus('qualified');
 
-        // Auto fill data
-        onAutoFillData(qualifiedProduct.product);
+        // Auto fill data with AI generation
+        if (qualifiedProduct) {
+          onAutoFillData(qualifiedProduct.product, analysisData).then(() => {
+            // Auto proceed after delay (give time to see the checkmark)
+            setTimeout(() => {
+              onNext();
+            }, 1000);
+          });
+        }
 
-        // Auto proceed after delay
-        const timer = setTimeout(() => {
-          onNext();
-        }, 1500);
-        return () => clearTimeout(timer);
+        return; // Wait for async operations
       } else {
         console.log('❌ Auto Upload Failed: Criteria not met');
         setAutoCheckStatus('failed');

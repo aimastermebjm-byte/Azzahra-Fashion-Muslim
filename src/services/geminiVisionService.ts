@@ -1322,6 +1322,58 @@ Return JSON format:
       marketInsights
     };
   }
+
+
+  /**
+   * Generate marketing title and description based on analysis
+   */
+  async generateMarketingContent(
+    analysis: GeminiClothingAnalysis,
+    similarProductName?: string
+  ): Promise<{ title: string; description: string }> {
+    try {
+      console.log('📝 Generating marketing content with Gemini...');
+      // Use flash model for text generation (fast & cheap)
+      const model = this.genAI!.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      const prompt = `
+        You are a professional fashion copywriter for Azzahra Fashion Muslim.
+        Create an SEO-friendly product title and marketing description based on this clothing analysis:
+
+        DATA:
+        ${JSON.stringify(analysis, null, 2)}
+        ${similarProductName ? `Similar to bestseller: "${similarProductName}"` : ''}
+
+        RULES:
+        1. TITLE: Catchy, SEO friendly, Indonesian Language. Format: "Type + Motif + Key Feature". Max 6 words. Example: "Gamis Silk Motif Bunga Premium". Do NOT use product codes like "Baju 6" or generic numbers.
+        2. DESCRIPTION: 3-5 sentences in Indonesian. Engaging, highlights fabric texture, pattern, and suitable occasions. Mention specific details found in analysis (e.g. lace, pleats).
+        3. BRAND TONE: Elegant, modest, premium.
+
+        Return ONLY valid JSON:
+        {
+          "title": "string",
+          "description": "string"
+        }
+      `;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      const cleanedText = text.replace(/```json\n?|\n?```/g, '').trim();
+      return JSON.parse(cleanedText);
+
+    } catch (error) {
+      console.error('Error generating marketing content:', error);
+      // Fallback
+      const title = `${analysis.clothing_type.main_type} ${analysis.pattern_type.pattern} Premium`.replace(/_/g, ' ');
+      const description = `Produk ${analysis.clothing_type.main_type} terbaru dari Azzahra Fashion Muslim. Hadir dengan motif ${analysis.pattern_type.pattern} yang elegan dan potongan ${analysis.clothing_type.silhouette} yang nyaman. Cocok untuk acara formal maupun kasual.`;
+      return {
+        title: title.charAt(0).toUpperCase() + title.slice(1),
+        description
+      };
+    }
+  }
 }
 
 export const geminiService = new GeminiVisionService();
