@@ -139,6 +139,8 @@ export class GeminiVisionService {
   private glmApiKey: string | null = null;
   private geminiApiKey: string | null = null;
   private rateLimiter = new RateLimiter();
+  private geminiQuotaExceeded: boolean = false; // Track if Gemini quota is exceeded
+  private geminiQuotaExceededAt: number = 0; // Timestamp when quota was exceeded
 
   /**
    * Initialize with both Gemini and GLM API keys
@@ -172,6 +174,41 @@ export class GeminiVisionService {
 
   isInitialized(): boolean {
     return this.genAI !== null;
+  }
+
+  /**
+   * Check if Gemini quota is currently exceeded
+   * Quota resets after 60 seconds
+   */
+  isGeminiQuotaExceeded(): boolean {
+    if (!this.geminiQuotaExceeded) return false;
+
+    // Reset quota flag after 60 seconds
+    const now = Date.now();
+    if (now - this.geminiQuotaExceededAt > 60000) {
+      this.geminiQuotaExceeded = false;
+      this.geminiQuotaExceededAt = 0;
+      console.log('🔄 Gemini quota reset - will try Gemini again');
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Mark Gemini as quota exceeded
+   */
+  private markGeminiQuotaExceeded(): void {
+    this.geminiQuotaExceeded = true;
+    this.geminiQuotaExceededAt = Date.now();
+    console.log('⚠️ Gemini quota exceeded - will use GLM for subsequent calls');
+  }
+
+  /**
+   * Check if we should use GLM directly (skip Gemini)
+   */
+  shouldUseGLMDirectly(): boolean {
+    return this.isGeminiQuotaExceeded() && this.hasGLMAPI();
   }
 
   async testConnection(provider: 'gemini' | 'glm' = 'gemini'): Promise<boolean> {
@@ -318,22 +355,36 @@ export class GeminiVisionService {
   }
 
   async analyzeClothingImage(imageBase64: string): Promise<GeminiClothingAnalysis> {
+    // Check if we should skip Gemini due to quota exceeded
+    if (this.shouldUseGLMDirectly()) {
+      console.log('🔄 Gemini quota exceeded - using GLM directly for analysis');
+      return await this._analyzeWithGLM(imageBase64);
+    }
+
     try {
       return await this._analyzeWithGemini(imageBase64);
     } catch (error: any) {
       console.warn('Gemini analysis failed, checking for GLM fallback...', error);
 
       // Check if error is rate limit, quota exceeded, or API key issue
-      const shouldFallback = error.message?.includes('RATE_LIMIT') ||
-        error.message?.includes('API_KEY_INVALID') ||
+      const isQuotaError = error.message?.includes('RATE_LIMIT') ||
         error.message?.includes('RESOURCE_EXHAUSTED') ||
         error.message?.includes('429') ||
+        error.message?.includes('quota');
+
+      const shouldFallback = isQuotaError ||
+        error.message?.includes('API_KEY_INVALID') ||
         error.message?.includes('401') ||
         error.message?.includes('404') ||
         error.message?.includes('NOT_FOUND');
 
+      // Mark quota exceeded for future calls
+      if (isQuotaError) {
+        this.markGeminiQuotaExceeded();
+      }
+
       if (shouldFallback && this.hasGLMAPI()) {
-        console.log('🔄 Falling back to GLM-4.6 for analysis...');
+        console.log('🔄 Falling back to GLM-4.6v for analysis...');
         try {
           return await this._analyzeWithGLM(imageBase64);
         } catch (glmError: any) {
@@ -712,6 +763,29 @@ Scoring guidelines:
   }> {
     const prompt = this.buildComparisonPrompt();
 
+    // Check if we should skip Gemini due to quota exceeded
+    if (this.shouldUseGLMDirectly()) {
+      console.log('🔄 Gemini quota exceeded - using GLM directly for comparison');
+      try {
+        const glmResult = await this._compareWithGLM(image1Base64, image2Base64, prompt);
+
+        const similarityScore = Number(glmResult.skor_kemiripan_persen) || 0;
+        const explanation = glmResult.penjelasan || 'No explanation provided';
+        const modelComparison = glmResult.fokus_perbandingan?.model_baju || 'No model comparison';
+        const motifComparison = glmResult.fokus_perbandingan?.motif_baju || 'No motif comparison';
+
+        return { similarityScore, explanation, modelComparison, motifComparison };
+      } catch (glmError: any) {
+        console.error('❌ GLM comparison failed:', glmError);
+        return {
+          similarityScore: 0,
+          explanation: `GLM failed: ${glmError.message}`,
+          modelComparison: 'Comparison failed',
+          motifComparison: 'Comparison failed'
+        };
+      }
+    }
+
     // Try Gemini first
     try {
       console.log('🔍 Starting direct image comparison using Gemini API...');
@@ -746,17 +820,25 @@ Scoring guidelines:
     } catch (geminiError: any) {
       console.warn('Gemini direct comparison failed, checking for GLM fallback...', geminiError);
 
-      // Check if error is rate limit, quota exceeded, or API key issue
-      const shouldFallback = geminiError.message?.includes('RATE_LIMIT') ||
-        geminiError.message?.includes('API_KEY_INVALID') ||
+      // Check if error is rate limit or quota exceeded
+      const isQuotaError = geminiError.message?.includes('RATE_LIMIT') ||
         geminiError.message?.includes('RESOURCE_EXHAUSTED') ||
         geminiError.message?.includes('429') ||
+        geminiError.message?.includes('quota');
+
+      const shouldFallback = isQuotaError ||
+        geminiError.message?.includes('API_KEY_INVALID') ||
         geminiError.message?.includes('401') ||
         geminiError.message?.includes('404') ||
         geminiError.message?.includes('NOT_FOUND');
 
+      // Mark quota exceeded for future calls
+      if (isQuotaError) {
+        this.markGeminiQuotaExceeded();
+      }
+
       if (shouldFallback && this.hasGLMAPI()) {
-        console.log('🔄 Falling back to GLM-4.6 for direct comparison...');
+        console.log('🔄 Falling back to GLM-4.6v for direct comparison...');
         try {
           const glmResult = await this._compareWithGLM(image1Base64, image2Base64, prompt);
 
@@ -1036,6 +1118,12 @@ Scoring guidelines:
     overallRecommendation: string;
     marketInsights: string[];
   }> {
+    // If Gemini quota is exceeded, skip to fallback directly
+    if (this.isGeminiQuotaExceeded()) {
+      console.log('🔄 Gemini quota exceeded - using fallback for comparative analysis');
+      return this.generateFallbackComparativeAnalysis(uploadedAnalysis, existingProducts, topN);
+    }
+
     try {
       const prompt = `You are a fashion market analyst for Muslim clothing. Compare this new product with existing bestsellers and provide insights.
 
@@ -1049,7 +1137,7 @@ NEW PRODUCT ANALYSIS:
 
 EXISTING BESTSELLERS (last 3 months):
 ${existingProducts.slice(0, topN).map((item, index) => `
-${index + 1}. ${item.productName} - ${item.salesData.totalQuantity} pcs sold
+${index + 1}. ${item.salesData.productName} - ${item.salesData.totalQuantity} pcs sold
    - Type: ${item.analysis.clothing_type.main_type}
    - Pattern: ${item.analysis.pattern_type.pattern}
    - Colors: ${item.analysis.colors.join(', ')}
@@ -1089,6 +1177,11 @@ Return JSON format:
   "marketInsights": ["string", "string", "string"]
 }`;
 
+      if (!this.genAI) {
+        console.log('⚠️ Gemini not initialized - using fallback');
+        return this.generateFallbackComparativeAnalysis(uploadedAnalysis, existingProducts, topN);
+      }
+
       const model = this.genAI.getGenerativeModel({
         model: "gemini-2.5-flash",
         generationConfig: {
@@ -1111,6 +1204,16 @@ Return JSON format:
       }
     } catch (error: any) {
       console.error('Error generating comparative analysis:', error);
+
+      // Mark quota exceeded if it's a quota error
+      const isQuotaError = error.message?.includes('429') ||
+        error.message?.includes('quota') ||
+        error.message?.includes('RESOURCE_EXHAUSTED') ||
+        error.message?.includes('RATE_LIMIT');
+
+      if (isQuotaError) {
+        this.markGeminiQuotaExceeded();
+      }
 
       // Fallback: Generate basic analysis without Gemini
       return this.generateFallbackComparativeAnalysis(uploadedAnalysis, existingProducts, topN);
