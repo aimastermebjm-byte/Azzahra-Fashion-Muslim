@@ -140,7 +140,7 @@ export class CollageService {
     } else {
       // Image is taller than box
       sourceHeight = img.width / boxRatio;
-      sourceY = (img.height - sourceHeight) / 2;
+      sourceY = 0; // FIXED: Align to TOP for fashion/model photos (prevents cutting off heads)
     }
 
     ctx.drawImage(

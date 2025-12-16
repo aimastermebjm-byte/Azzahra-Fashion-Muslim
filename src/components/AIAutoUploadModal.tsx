@@ -712,8 +712,11 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
   }, [productFormData.retailPrice, productFormData.costPrice]);
 
   // Submit product
-  const handleSubmit = () => {
-    if (!productFormData.name || !productFormData.retailPrice || !productFormData.resellerPrice) {
+  const handleSubmit = (overrideData?: any) => {
+    // Use override data if provided (for direct upload), otherwise use state
+    const data = overrideData || productFormData;
+
+    if (!data.name || !data.retailPrice || !data.resellerPrice) {
       alert('Please fill in all required fields');
       return;
     }
@@ -724,7 +727,7 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
     }
 
     // Calculate total stock
-    const totalStock = Object.values(productFormData.stockPerVariant).reduce((sum, stock) => sum + parseInt(stock || '0'), 0);
+    const totalStock = Object.values(data.stockPerVariant).reduce((sum: number, stock: any) => sum + parseInt(stock || '0'), 0);
 
     if (totalStock === 0) {
       alert('Please set stock for at least one variant');
@@ -733,7 +736,7 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
 
     // Create product data with collage
     const productData = {
-      ...productFormData,
+      ...data,
       collageBlob,
       collageFile: new File([collageBlob], `collage-${Date.now()}.jpg`, { type: 'image/jpeg' }),
       variantLabels,
@@ -752,18 +755,21 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
     // Auto-generate AI caption if not provided
     const aiCaption = productFormData.description || `${images.length} varian premium dengan motif unik`;
 
-    // Update form with AI-generated data
-    setProductFormData(prev => ({
-      ...prev,
-      description: prev.description || aiCaption,
-      name: prev.name || `Gamis Premium ${variantLabels.join('-')}`,
-      retailPrice: prev.retailPrice || '150000',
-      resellerPrice: prev.resellerPrice || '135000',
-      costPrice: prev.costPrice || '100000'
-    }));
+    // Prepare final data synchronously to avoid state race conditions
+    const finalData = {
+      ...productFormData,
+      description: productFormData.description || aiCaption,
+      name: productFormData.name || `Gamis Premium ${variantLabels.join('-')}`,
+      retailPrice: productFormData.retailPrice || '150000',
+      resellerPrice: productFormData.resellerPrice || '135000',
+      costPrice: productFormData.costPrice || '100000'
+    };
 
-    // Then submit
-    handleSubmit();
+    // Update form state (for UI consistency in case of error)
+    setProductFormData(finalData);
+
+    // Submit immediately with the data
+    handleSubmit(finalData);
   };
 
   if (!isOpen) return null;
@@ -806,6 +812,7 @@ export const AIAutoUploadModal: React.FC<AIAutoUploadModalProps> = ({
       ...prev,
       name: marketingContent.title, // AI Generated Title
       retailPrice: product.retailPrice.toString(),
+      resellerPrice: product.resellerPrice ? product.resellerPrice.toString() : Math.round(product.retailPrice * 0.9).toString(),
       category: analysis.clothing_type.main_type || product.category || 'Gamis',
       costPrice: product.costPrice ? product.costPrice.toString() : Math.round(product.retailPrice * 0.6).toString(),
       description: marketingContent.description // AI Generated Caption
