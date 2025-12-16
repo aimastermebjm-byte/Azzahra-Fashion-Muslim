@@ -239,7 +239,7 @@ export class GeminiVisionService {
           'Authorization': `Bearer ${this.glmApiKey}`
         },
         body: JSON.stringify({
-          model: 'glm-4.6',
+          model: 'glm-4.6v',
           messages: [
             {
               role: 'user',
@@ -247,8 +247,7 @@ export class GeminiVisionService {
             }
           ],
           max_tokens: 10,
-          temperature: 0,
-          stop: ['\n', '.', ',']
+          temperature: 0
         })
       });
 
@@ -457,7 +456,7 @@ export class GeminiVisionService {
           'Authorization': `Bearer ${this.glmApiKey}`
         },
         body: JSON.stringify({
-          model: 'glm-4.6',
+          model: 'glm-4.6v',
           messages: [
             {
               role: 'user',
@@ -475,7 +474,6 @@ export class GeminiVisionService {
               ]
             }
           ],
-          response_format: { type: 'json_object' },
           max_tokens: 2000,
           temperature: 0.2
         })
@@ -539,7 +537,7 @@ export class GeminiVisionService {
           'Authorization': `Bearer ${this.glmApiKey}`
         },
         body: JSON.stringify({
-          model: 'glm-4.6',
+          model: 'glm-4.6v',
           messages: [
             {
               role: 'user',
@@ -563,7 +561,6 @@ export class GeminiVisionService {
               ]
             }
           ],
-          response_format: { type: 'json_object' },
           max_tokens: 2000,
           temperature: 0.05
         })
