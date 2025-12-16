@@ -156,10 +156,10 @@ export class GeminiVisionService {
     
     // Use Gemini models optimized for image understanding
     const modelNames = [
-      "gemini-2.5-flash",         // Latest 2.5 Flash (image understanding)
-      "gemini-2.0-flash",         // 2.0 Flash fallback
-      "gemini-1.5-flash-exp",     // Experimental 1.5 Flash
-      "gemini-pro-vision"         // Legacy fallback
+      "gemini-1.5-flash-latest",   // Stable image-capable model
+      "gemini-1.5-flash-8b",       // Smaller/cheaper fallback
+      "gemini-1.5-pro-latest",     // Higher quality fallback
+      "gemini-1.0-pro-vision-latest" // Legacy vision fallback
     ];
     
     let lastError = null;
@@ -296,7 +296,9 @@ export class GeminiVisionService {
                            error.message?.includes('API_KEY_INVALID') ||
                            error.message?.includes('RESOURCE_EXHAUSTED') ||
                            error.message?.includes('429') ||
-                           error.message?.includes('401');
+                           error.message?.includes('401') ||
+                           error.message?.includes('404') ||
+                           error.message?.includes('NOT_FOUND');
       
       if (shouldFallback && this.hasGLMAPI()) {
         console.log('🔄 Falling back to GLM-4.6 for analysis...');
@@ -323,10 +325,10 @@ export class GeminiVisionService {
     
     // Model names optimized for image understanding
     const modelNames = [
-      "gemini-2.5-flash",          // Latest 2.5 Flash (image understanding)
-      "gemini-2.0-flash",          // 2.0 Flash fallback
-      "gemini-1.5-flash-exp",      // Experimental 1.5 Flash
-      "gemini-pro-vision"          // Legacy fallback
+      "gemini-1.5-flash-latest",    // Stable image-capable model
+      "gemini-1.5-flash-8b",        // Smaller/cheaper fallback
+      "gemini-1.5-pro-latest",      // Higher quality fallback
+      "gemini-1.0-pro-vision-latest" // Legacy vision fallback
     ];
     
     let result = null;
@@ -693,7 +695,9 @@ Scoring guidelines:
                            geminiError.message?.includes('API_KEY_INVALID') ||
                            geminiError.message?.includes('RESOURCE_EXHAUSTED') ||
                            geminiError.message?.includes('429') ||
-                           geminiError.message?.includes('401');
+                           geminiError.message?.includes('401') ||
+                           geminiError.message?.includes('404') ||
+                           geminiError.message?.includes('NOT_FOUND');
       
       if (shouldFallback && this.hasGLMAPI()) {
         console.log('🔄 Falling back to GLM-4.6 for direct comparison...');
@@ -843,10 +847,10 @@ Scoring guidelines:
     
     // Model names optimized for image understanding
     const modelNames = [
-      "gemini-2.5-flash",          // Latest 2.5 Flash (image understanding)
-      "gemini-2.0-flash",          // 2.0 Flash fallback
-      "gemini-1.5-flash-exp",      // Experimental 1.5 Flash
-      "gemini-pro-vision"          // Legacy fallback
+      "gemini-1.5-flash-latest",    // Stable image-capable model
+      "gemini-1.5-flash-8b",        // Smaller/cheaper fallback
+      "gemini-1.5-pro-latest",      // Higher quality fallback
+      "gemini-1.0-pro-vision-latest" // Legacy vision fallback
     ];
     
     let result = null;
