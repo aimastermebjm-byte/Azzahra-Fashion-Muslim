@@ -154,12 +154,12 @@ export class GeminiVisionService {
       throw new Error('Gemini not initialized. Please set API key first.');
     }
     
-    // Use Gemini models optimized for image understanding
+    // Use latest valid Gemini models for image understanding
     const modelNames = [
-      "gemini-2.0-flash-exp",      // Prioritize newest flash (image)
-      "gemini-1.5-flash-latest",   // Stable image-capable model
-      "gemini-1.5-flash-8b",       // Smaller/cheaper fallback
-      "gemini-1.5-pro-latest"      // Higher quality fallback
+      "gemini-3-pro-preview",      // Highest priority - most advanced multimodal
+      "gemini-2.5-pro",            // Advanced thinking model
+      "gemini-2.5-flash",          // Best price-performance (stable)
+      "gemini-2.5-flash-lite"      // Fastest fallback
     ];
     
     let lastError = null;
@@ -323,12 +323,12 @@ export class GeminiVisionService {
     // Check rate limit
     this.rateLimiter.canMakeRequest();
     
-    // Model names optimized for image understanding
+    // Use latest valid Gemini models for image understanding
     const modelNames = [
-      "gemini-2.0-flash-exp",       // Prioritize newest flash (image)
-      "gemini-1.5-flash-latest",    // Stable image-capable model
-      "gemini-1.5-flash-8b",        // Smaller/cheaper fallback
-      "gemini-1.5-pro-latest"       // Higher quality fallback
+      "gemini-3-pro-preview",       // Highest priority - most advanced multimodal
+      "gemini-2.5-pro",             // Advanced thinking model
+      "gemini-2.5-flash",           // Best price-performance (stable)
+      "gemini-2.5-flash-lite"       // Fastest fallback
     ];
     
     let result = null;
@@ -845,12 +845,12 @@ Scoring guidelines:
     // Check rate limit
     this.rateLimiter.canMakeRequest();
     
-    // Model names optimized for image understanding
+    // Use latest valid Gemini models for image understanding
     const modelNames = [
-      "gemini-2.0-flash-exp",       // Prioritize newest flash (image)
-      "gemini-1.5-flash-latest",    // Stable image-capable model
-      "gemini-1.5-flash-8b",        // Smaller/cheaper fallback
-      "gemini-1.5-pro-latest"       // Higher quality fallback
+      "gemini-3-pro-preview",       // Highest priority - most advanced multimodal
+      "gemini-2.5-pro",             // Advanced thinking model
+      "gemini-2.5-flash",           // Best price-performance (stable)
+      "gemini-2.5-flash-lite"       // Fastest fallback
     ];
     
     let result = null;
