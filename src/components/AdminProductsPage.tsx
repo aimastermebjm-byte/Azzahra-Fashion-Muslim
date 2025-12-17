@@ -62,7 +62,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     productIds: flashSaleProducts.map(p => p.id)
   };
 
-  
+
   // State management
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -123,7 +123,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
   // Categories - Load from master
   const [categories, setCategories] = useState<string[]>(['Hijab', 'Gamis', 'Khimar', 'Tunik', 'Aksesoris']);
-  
+
   // Load categories from master on mount
   useEffect(() => {
     const loadCategories = async () => {
@@ -789,8 +789,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
       // Calculate total stock
       const totalStock = variantBatchFormData.sizes.length *
-                       variantBatchFormData.colors.length *
-                       variantBatchFormData.stockPerVariant;
+        variantBatchFormData.colors.length *
+        variantBatchFormData.stockPerVariant;
 
       // Update each product
       for (const productId of selectedProducts) {
@@ -844,9 +844,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           <button
             onClick={handleForceSyncGlobalIndex}
             disabled={isForceSyncing}
-            className={`rounded-full px-4 py-2 text-sm font-semibold text-brand-primary transition ${
-              isForceSyncing ? 'bg-white/50 cursor-not-allowed' : 'bg-white text-brand-primary'
-            }`}
+            className={`rounded-full px-4 py-2 text-sm font-semibold text-brand-primary transition ${isForceSyncing ? 'bg-white/50 cursor-not-allowed' : 'bg-white text-brand-primary'
+              }`}
           >
             {isForceSyncing ? 'Syncing…' : 'Force Sync GlobalIndex'}
           </button>
@@ -889,9 +888,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
             </p>
             {forceSyncMessage && (
               <p
-                className={`text-xs mt-2 ${
-                  forceSyncMessage.includes('gagal') ? 'text-red-600' : 'text-green-700'
-                }`}
+                className={`text-xs mt-2 ${forceSyncMessage.includes('gagal') ? 'text-red-600' : 'text-green-700'
+                  }`}
               >
                 {forceSyncMessage}
               </p>
@@ -1299,22 +1297,20 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                           </div>
                         </td>
                         <td className="p-3">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            product.stock > 10
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.stock > 10
                               ? 'bg-green-100 text-green-800'
                               : product.stock > 0
                                 ? 'bg-yellow-100 text-yellow-800'
                                 : 'bg-red-100 text-red-800'
-                          }`}>
+                            }`}>
                             {product.stock} pcs
                           </span>
                         </td>
                         <td className="p-3">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            product.status === 'ready'
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.status === 'ready'
                               ? 'bg-green-100 text-green-800'
                               : 'bg-orange-100 text-orange-800'
-                          }`}>
+                            }`}>
                             {product.status === 'ready' ? '✅ Ready Stock' : '⏳ Pre-Order'}
                           </span>
                         </td>
@@ -1373,11 +1369,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                         <button
                           key={pageNum}
                           onClick={() => setCurrentPage(pageNum)}
-                          className={`px-3 py-1 border rounded-lg ${
-                            currentPage === pageNum
+                          className={`px-3 py-1 border rounded-lg ${currentPage === pageNum
                               ? 'bg-blue-600 text-white border-blue-600'
                               : 'border-gray-300 hover:bg-gray-50'
-                          }`}
+                            }`}
                         >
                           {pageNum}
                         </button>
@@ -2496,7 +2491,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   <Star className="w-4 h-4 text-blue-600" />
                   <span className="font-semibold">Konfirmasi Produk Terpilih: {flashSaleFormData.productIds.length} item</span>
                 </div>
-                
+
                 {/* List of selected products ONLY */}
                 <div className="max-h-40 overflow-y-auto pr-2 space-y-2">
                   {products
@@ -2605,7 +2600,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           onSuccess={async (productData) => {
             try {
               console.log('AI Upload product data:', productData);
-              
+
               // Auto-generate caption if direct upload mode
               if (productData.uploadMode === 'direct') {
                 const aiCaption = productData.description || `${productData.variantCount} varian premium dengan motif unik`;
@@ -2620,20 +2615,22 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 console.log('🚀 Direct Upload Mode - Auto-enhancing with AI data');
                 productData = enhancedProductData;
               }
-              
+
               // Upload collage image to Firebase Storage
+              // CRITICAL FIX: Generate unique productId BEFORE upload to prevent file overwriting
+              const tempProductId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
               const collageFile = productData.collageFile;
-              const uploadedImages = await uploadMultipleImages([collageFile]);
-              
+              const uploadedImages = await uploadMultipleImages([collageFile], tempProductId);
+
               if (uploadedImages.length === 0) {
                 throw new Error('Failed to upload collage image');
               }
-              
+
               const collageUrl = uploadedImages[0];
-              
+
               // Calculate total stock from variants
               const totalStock = productData.totalStock || Object.values(productData.stockPerVariant).reduce((sum: number, stock) => sum + parseInt(stock || '0'), 0);
-              
+
               // Create product with all new fields
               const newProduct = {
                 name: productData.name,
@@ -2680,7 +2677,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 // Save upload mode info
                 uploadMode: productData.uploadMode || 'review'
               };
-              
+
               console.log('💾 Saving AI-generated product:', {
                 name: newProduct.name,
                 description: newProduct.description,
@@ -2691,9 +2688,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 variants: newProduct.variants,
                 uploadMode: newProduct.uploadMode
               });
-              
+
               await addProduct(newProduct);
-              
+
               setShowAIUploadModal(false);
               alert(`✅ Produk berhasil di-upload dengan AI! Mode: ${productData.uploadMode === 'direct' ? 'Langsung Upload' : 'Review Upload'}`);
             } catch (error: any) {
