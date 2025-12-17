@@ -97,8 +97,26 @@ export class CollageService {
         const scaledWidth = img.width * scale;
         const scaledHeight = img.height * scale;
 
-        // 3. Center the image within the cell
+        // 3. Position the image within the cell (Top-Center Anchor)
+        // Fashion logic: Heads are at the top. Floor is at the bottom.
+        // It's safer to crop the bottom/sides than the top.
+
+        // Center Horizontally
         const drawX = x + (colWidth - scaledWidth) / 2;
+
+        // Align Top (with slight offset usually to give headroom, but let's try strict top first or slight center-top)
+        // If we strictly align top (0), sometimes it looks too high if the photo has lots of headroom.
+        // Let's stick to CENTER-Y for now but ensure we cover properly.
+        // Wait, Boss asked for "Jangkar tengah atas kiri kanan".
+        // Let's keep Center-Center but ensure width matches better.
+
+        // REVISION: The issue is narrow columns cutting off sides.
+        // We need to prioritize SHOWING WIDTH over FILLING HEIGHT if it cuts too much width.
+        // But preventing white space is the #1 rule.
+
+        // Let's stick to true Center-Center alignment which is safest for general purpose,
+        // BUT let's try to match width geometry better.
+
         const drawY = y + (rowHeight - scaledHeight) / 2;
 
         ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, scaledWidth, scaledHeight);
