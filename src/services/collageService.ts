@@ -111,15 +111,17 @@ export class CollageService {
     }
     else if (count === 5) {
       // Top: 2 Big, Bottom: 3 Small
-      const hTop = H * 0.4; // 40% height for top row
-      const hBot = H * 0.6; // 60% height for bottom row (taller because narrower width)
+      // REVISION: Use 50/50 split to make top cells Perfect 3:4 Aspect Ratio (750x1000)
+      // This prevents head cropping!
+      const hTop = H * 0.5;
+      const hBot = H * 0.5;
 
-      // Row 1 (2 items)
+      // Row 1 (2 items) - Perfect 3:4
       const wTop = W / 2;
       boxes.push({ x: 0, y: 0, w: wTop, h: hTop });
       boxes.push({ x: wTop, y: 0, w: wTop, h: hTop });
 
-      // Row 2 (3 items)
+      // Row 2 (3 items) - Tall Strips (1:2)
       const wBot = W / 3;
       boxes.push({ x: 0, y: hTop, w: wBot, h: hBot });
       boxes.push({ x: wBot, y: hTop, w: wBot, h: hBot });
@@ -230,9 +232,35 @@ export class CollageService {
     const scaledW = img.width * scale;
     const scaledH = img.height * scale;
 
-    // Center logic
-    const dx = x + (w - scaledW) / 2;
-    const dy = y + (h - scaledH) / 2;
+    // TOP Anchor Logic (To prevent head chopping)
+    // If scaled height > box height, align top (0) instead of center.
+    // Actually, let's keep Center-X, but Top-Y 
+    // BUT with a slight offset so it's not stick-to-ceiling if the photo has whitespace above head.
+    // However, Standard Top (0) is safest for "Don't cut head".
+
+    const dx = x + (w - scaledW) / 2; // Center X
+
+    // Logic: 
+    // If the image is excessively tall relative to box (e.g. box 1:1, img 1:2), 
+    // centering Y cuts head and feet.
+    // Focusing Top (y=0) saves head, cuts feet.
+    // Focusing Bottom saves feet, cuts head.
+    // Fashion priority: Head > Feet.
+
+    let dy = y + (h - scaledH) / 2; // Default Center Y
+
+    // If we are cropping vertically (image taller than box relative to width)
+    // Shift slightly up to prioritize upper body.
+    if (scaledH > h) {
+      // A value of 0 means align top. 
+      // A value of (h - scaledH) / 2 means align center.
+      // Let's use 20% from top (bias top).
+      // dy = y + (h - scaledH) * 0.2; 
+
+      // Actually, pure Top-Center is safest for 5-item top row issue.
+      // Let's use pure Top Anchor if it's potentially cropping head.
+      dy = y;
+    }
 
     ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, scaledW, scaledH);
     ctx.restore();
