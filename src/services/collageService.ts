@@ -74,37 +74,20 @@ export class CollageService {
         const label = variantLabels[currentImageIndex];
         const x = colIndex * colWidth;
 
-        // CINEMATIC BLUR FIT LOGIC:
+        // CLEAN COVER LOGIC (Reverted per user request):
+        // No blur background. Just pure image covering the cell.
 
-        // 1. Draw Blurred Background to cover everything (No white space)
         ctx.save();
         ctx.beginPath();
         ctx.rect(x, y, colWidth, rowHeight);
         ctx.clip();
 
-        // Calculate COVER scale for background to fill the cell
-        const scaleCover = Math.max(colWidth / img.width, rowHeight / img.height);
-        const wCover = img.width * scaleCover;
-        const hCover = img.height * scaleCover;
-        const xCover = x + (colWidth - wCover) / 2;
-        const yCover = y + (rowHeight - hCover) / 2;
-
-        ctx.filter = 'blur(40px)'; // Heavy blur to act as ambient background
-        // Draw slightly larger to avoid edge bleeding
-        ctx.drawImage(img, 0, 0, img.width, img.height, xCover - 20, yCover - 20, wCover + 40, hCover + 40);
-        ctx.filter = 'none'; // Reset filter
-        ctx.restore();
-
-        // 2. Draw Main Image (CONTAIN/FIT) - Ensure FULL BODY is visible
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(x, y, colWidth, rowHeight);
-        ctx.clip();
-
-        // Calculate CONTAIN scale to show mostly everything
-        // For fashion, we fit fully into the cell so nothing is cut.
-        const scaleContain = Math.min(colWidth / img.width, rowHeight / img.height);
-        const scale = scaleContain;
+        // Calculate COVER scale
+        // Use Math.max to ensure NO white space.
+        // This effectively zooms in to cover the entire cell.
+        const scaleX = colWidth / img.width;
+        const scaleY = rowHeight / img.height;
+        const scale = Math.max(scaleX, scaleY);
 
         const scaledWidth = img.width * scale;
         const scaledHeight = img.height * scale;
@@ -113,7 +96,6 @@ export class CollageService {
         const drawX = x + (colWidth - scaledWidth) / 2;
         const drawY = y + (rowHeight - scaledHeight) / 2;
 
-        // Draw main image sharp
         ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, scaledWidth, scaledHeight);
         ctx.restore();
 
