@@ -1184,6 +1184,7 @@ const UploadStep: React.FC<UploadStepProps> = ({
   onCancel,
   uploadMode,
   setUploadMode,
+  autoUploadSettings,
   setAutoUploadSettings,
   showSettings,
   setShowSettings,
