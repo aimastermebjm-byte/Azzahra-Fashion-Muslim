@@ -49,9 +49,9 @@ const HomePage: React.FC<HomePageProps> = ({
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
-  
+
   // Dynamic categories from master
-  const [categories, setCategories] = useState<Array<{id: string; name: string; icon: string}>>([
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; icon: string }>>([
     { id: 'all', name: 'Semua', icon: '🛍️' }
   ]);
 
@@ -187,14 +187,14 @@ const HomePage: React.FC<HomePageProps> = ({
     const loadCategories = async () => {
       try {
         console.log('🔄 Loading categories from master...');
-        
+
         // Initialize default categories first time
         await productCategoryService.initializeDefaultCategories();
-        
+
         // Load categories from master
         const masterCategories = await productCategoryService.listCategories();
         console.log('✅ Loaded categories:', masterCategories);
-        
+
         // Category icon mapping
         const getCategoryIcon = (name: string): string => {
           const icons: Record<string, string> = {
@@ -210,19 +210,19 @@ const HomePage: React.FC<HomePageProps> = ({
           };
           return icons[name.toLowerCase()] || icons['default'];
         };
-        
+
         // Map to HomePage format
         const mappedCategories = masterCategories.map(cat => ({
           id: cat.name.toLowerCase(),
           name: cat.name,
           icon: getCategoryIcon(cat.name)
         }));
-        
+
         setCategories([
           { id: 'all', name: 'Semua', icon: '🛍️' },
           ...mappedCategories
         ]);
-        
+
         console.log('✅ Categories set:', mappedCategories.length);
       } catch (error) {
         console.error('❌ Failed to load categories:', error);
@@ -272,10 +272,10 @@ const HomePage: React.FC<HomePageProps> = ({
     })) as Product[];
   }, [products]);
 
-  
+
   const filteredProducts = safeProducts.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchQuery.toLowerCase());
+      product.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     const matchesStatus = statusFilter === 'all' || product.status === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;
@@ -309,7 +309,7 @@ const HomePage: React.FC<HomePageProps> = ({
   // Show search results when searching, otherwise show regular products
   const currentProducts = showSearchResults ? searchResults : regularProducts;
 
-  
+
   // Listen for featured products updates from admin
   useEffect(() => {
     const handleFeaturedProductsUpdated = (event: any) => {
@@ -386,7 +386,7 @@ const HomePage: React.FC<HomePageProps> = ({
     );
   }
 
-  
+
   return (
     <div className="min-h-screen bg-brand-surface pb-20">
       {/* Header - Sticky - Premium Glassmorphism */}
@@ -397,13 +397,12 @@ const HomePage: React.FC<HomePageProps> = ({
             <div className="flex-1 relative group">
               {/* Animated Search Icon */}
               <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
-                <Search className={`w-5 h-5 transition-all duration-300 ${
-                  searchQuery 
-                    ? 'text-brand-accent scale-110' 
+                <Search className={`w-5 h-5 transition-all duration-300 ${searchQuery
+                    ? 'text-brand-accent scale-110'
                     : 'text-gray-400 group-focus-within:text-brand-accent group-focus-within:scale-110'
-                }`} />
+                  }`} />
               </div>
-              
+
               {/* Input Field */}
               <input
                 type="text"
@@ -422,14 +421,14 @@ const HomePage: React.FC<HomePageProps> = ({
                            transition-all duration-300
                            hover:shadow-xl"
               />
-              
+
               {/* Loading Indicator */}
               {isSearching && (
                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
                   <div className="w-5 h-5 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
-              
+
               {/* Clear Button */}
               {searchQuery && !isSearching && (
                 <button
@@ -442,7 +441,7 @@ const HomePage: React.FC<HomePageProps> = ({
                 </button>
               )}
             </div>
-            
+
             {/* WhatsApp Button - Enhanced with Gradient & Pulse */}
             <button
               onClick={() => window.open('https://wa.me/6281952989904?text=Halo%20Admin%20Azzahra%20Fashion%2C%20saya%20ingin%20bertanya', '_blank')}
@@ -459,7 +458,7 @@ const HomePage: React.FC<HomePageProps> = ({
               {/* Pulse animation ring */}
               <span className="absolute inset-0 rounded-2xl bg-green-400/50 animate-ping opacity-20" />
             </button>
-            
+
             {/* Cart Button - Premium Badge with Gradient */}
             <button
               onClick={onCartClick}
@@ -472,7 +471,7 @@ const HomePage: React.FC<HomePageProps> = ({
                          group"
             >
               <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:scale-110 transition-transform" />
-              
+
               {/* Premium Badge with Bounce */}
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 
@@ -559,7 +558,7 @@ const HomePage: React.FC<HomePageProps> = ({
                         <img
                           src={flashProduct.image || flashProduct.images?.[0] || '/placeholder-product.jpg'}
                           alt={flashProduct.name}
-                          className="w-full h-24 object-cover rounded mb-2"
+                          className="w-full aspect-[3/4] object-contain bg-white/10 rounded mb-2"
                         />
                         <div className="absolute top-1 right-1 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
                           -{discountPercentage}%
@@ -589,7 +588,7 @@ const HomePage: React.FC<HomePageProps> = ({
         </div>
       </div>
 
-          {/* Flash Sale Countdown Display removed - using top section only */}
+      {/* Flash Sale Countdown Display removed - using top section only */}
 
       {/* Featured Products */}
       <div className="px-1 sm:px-3 md:px-4 mb-3 sm:mb-6">
@@ -639,10 +638,10 @@ const HomePage: React.FC<HomePageProps> = ({
         <div className="bg-white rounded-2xl p-1.5 shadow-lg border border-gray-100">
           <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
             {categories.map((category) => {
-              const productCount = category.id === 'all' 
-                ? filteredProducts.length 
+              const productCount = category.id === 'all'
+                ? filteredProducts.length
                 : filteredProducts.filter(p => p.category === category.id).length;
-              
+
               return (
                 <button
                   key={category.id}
@@ -665,7 +664,7 @@ const HomePage: React.FC<HomePageProps> = ({
                 >
                   <span className="text-lg">{category.icon}</span>
                   <span>{category.name}</span>
-                  
+
                   {/* Product count badge on active */}
                   {selectedCategory === category.id && productCount > 0 && (
                     <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">
@@ -678,7 +677,7 @@ const HomePage: React.FC<HomePageProps> = ({
           </div>
         </div>
       </div>
-      
+
       {/* Filters & Sort - Grouped Premium Chips */}
       <div className="px-1 sm:px-3 md:px-4">
         <div className="space-y-3 mb-4">
@@ -721,7 +720,7 @@ const HomePage: React.FC<HomePageProps> = ({
               </button>
             </div>
           </div>
-          
+
           {/* Status Filter - Icon Pills with Pulse Dots */}
           <div className="flex items-center space-x-2 overflow-x-auto pb-2">
             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide flex-shrink-0">
@@ -743,7 +742,7 @@ const HomePage: React.FC<HomePageProps> = ({
               >
                 Semua
               </button>
-              
+
               <button
                 onClick={() => setStatusFilter('ready')}
                 className={`
@@ -758,12 +757,11 @@ const HomePage: React.FC<HomePageProps> = ({
                   }
                 `}
               >
-                <div className={`w-2 h-2 rounded-full ${
-                  statusFilter === 'ready' ? 'bg-white' : 'bg-emerald-500'
-                } animate-pulse`} />
+                <div className={`w-2 h-2 rounded-full ${statusFilter === 'ready' ? 'bg-white' : 'bg-emerald-500'
+                  } animate-pulse`} />
                 <span>Ready Stock</span>
               </button>
-              
+
               <button
                 onClick={() => setStatusFilter('po')}
                 className={`
@@ -778,9 +776,8 @@ const HomePage: React.FC<HomePageProps> = ({
                   }
                 `}
               >
-                <div className={`w-2 h-2 rounded-full ${
-                  statusFilter === 'po' ? 'bg-white' : 'bg-amber-500'
-                } animate-pulse`} />
+                <div className={`w-2 h-2 rounded-full ${statusFilter === 'po' ? 'bg-white' : 'bg-amber-500'
+                  } animate-pulse`} />
                 <span>Pre Order</span>
               </button>
             </div>
@@ -795,7 +792,7 @@ const HomePage: React.FC<HomePageProps> = ({
             <h2 className="text-xl font-bold text-gray-900">
               {selectedCategory === 'all' ? 'Semua Produk' : categories.find(c => c.id === selectedCategory)?.name}
             </h2>
-            
+
             {/* Premium Product Count Badge */}
             <div className="flex items-center space-x-2 px-3 py-1.5 bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 rounded-xl border border-brand-accent/20">
               <div className="w-2 h-2 bg-brand-accent rounded-full animate-pulse" />
@@ -805,7 +802,7 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
           </div>
 
-          </div>
+        </div>
 
         {isSearching ? (
           <div className="text-center py-12">
