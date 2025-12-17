@@ -9,45 +9,40 @@ export class CollageService {
     variantLabels: string[]
   ): Promise<Blob> {
     const count = images.length;
-    const canvasSize = 2000; // High-Res Square
+    // Changed to Portrait Aspect Ratio (3:4) for fashion
+    const canvasWidth = 1500;
+    const canvasHeight = 2000;
 
     // Determine layout configuration (items per row)
-    // Optimized for Fashion Products (Portrait/Square Aspect Ratio)
+    // Optimized for Fashion Products
     let rowsConfig: number[] = [];
 
     if (count === 1) {
       rowsConfig = [1];
     } else if (count === 2) {
-      rowsConfig = [2]; // 2 side by side (Portrait cells)
+      rowsConfig = [2]; // 2 side by side (Tall strips)
     } else if (count === 3) {
-      rowsConfig = [3]; // 3 side by side (Tall Portrait cells)
+      rowsConfig = [3]; // 3 side by side (Very tall strips - Trendy)
     } else if (count === 4) {
-      rowsConfig = [2, 2]; // 2x2 Grid (Square cells - Perfect)
+      rowsConfig = [2, 2]; // 2x2 Grid
     } else if (count === 5) {
-      rowsConfig = [3, 2]; // 3 top, 2 bottom (Balanced aspect ratios)
+      rowsConfig = [3, 2]; // 3 top, 2 bottom
     } else if (count === 6) {
-      rowsConfig = [3, 3]; // 3x2 Grid (Portrait cells - Good)
-    } else if (count === 7) {
-      rowsConfig = [4, 3]; // 4 top, 3 bottom
-    } else if (count === 8) {
-      rowsConfig = [4, 4]; // 4x2 Grid
-    } else if (count === 9) {
-      rowsConfig = [3, 3, 3]; // 3x3 Grid (Square cells - Perfect)
-    } else if (count === 10) {
-      rowsConfig = [4, 3, 3]; // Spread out
-    } else {
-      // Fallback for > 10 (Standard grid logic trying to keep aspect ratio balanced)
+      rowsConfig = [3, 3]; // 3x3 Grid
+    } else if (count <= 9) {
       const cols = Math.ceil(Math.sqrt(count));
       const rows = Math.ceil(count / cols);
-      // Distribute remainder roughly evenly if possible, but simplest is standard grid
       rowsConfig = Array(rows).fill(cols);
       const remainder = count % cols;
-      if (remainder > 0) rowsConfig[rows - 1] = remainder; // Last row has fewer
+      if (remainder > 0) rowsConfig[rows - 1] = remainder;
+    } else {
+      // Fallback
+      rowsConfig = [Math.ceil(count / 2), Math.floor(count / 2)];
     }
 
     const canvas = document.createElement('canvas');
-    canvas.width = canvasSize;
-    canvas.height = canvasSize;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
     const ctx = canvas.getContext('2d');
 
     if (!ctx) {
@@ -65,11 +60,11 @@ export class CollageService {
 
     // Draw based on rowsConfig
     let currentImageIndex = 0;
-    const rowHeight = canvasSize / rowsConfig.length;
+    const rowHeight = canvasHeight / rowsConfig.length;
 
     for (let rowIndex = 0; rowIndex < rowsConfig.length; rowIndex++) {
       const itemsInRow = rowsConfig[rowIndex];
-      const colWidth = canvasSize / itemsInRow;
+      const colWidth = canvasWidth / itemsInRow;
       const y = rowIndex * rowHeight;
 
       for (let colIndex = 0; colIndex < itemsInRow; colIndex++) {
@@ -87,22 +82,22 @@ export class CollageService {
         ctx.rect(x, y, colWidth, rowHeight);
         ctx.clip();
 
-        // FIT / CONTAIN LOGIC (UPDATED):
-        // User Requirement: "pastikan suluh tubah model ada di dalam frame gambar jangan terpotong"
-        // This ensures the entire image fits inside the cell (no cropping).
+        // FIT / CONTAIN / COVER LOGIC (CORRECTED):
+        // User Requirement: "menutupi seluruh area", "jangan ada putih", "kepala/kaki jangan hilang"
+        // Strategy: Use COVER logic (Math.max) to fill width/height, centering on the model.
+        // For standard fashion photos (3:4) in vertical strips, this works perfectly.
 
-        // 1. Calculate scales required to fit width and height
+        // 1. Calculate scales
         const scaleX = colWidth / img.width;
         const scaleY = rowHeight / img.height;
 
-        // 2. Choose the SMALLER scale to prevent cropping (this is Contain logic)
-        const scale = Math.min(scaleX, scaleY);
+        // 2. Choose LARGER scale (COVER logic) to fill the cell completely
+        const scale = Math.max(scaleX, scaleY);
 
         const scaledWidth = img.width * scale;
         const scaledHeight = img.height * scale;
 
-        // 3. Center the image within the cell (both vertically and horizontally)
-        // Since we are using "Contain", drawing in center ensures even borders.
+        // 3. Center the image within the cell
         const drawX = x + (colWidth - scaledWidth) / 2;
         const drawY = y + (rowHeight - scaledHeight) / 2;
 
@@ -111,12 +106,12 @@ export class CollageService {
         // Restore context
         ctx.restore();
 
-        // Add border
-        ctx.strokeStyle = '#e5e7eb';
-        ctx.lineWidth = 2;
+        // Add border (inner white border for clean look)
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 4;
         ctx.strokeRect(x, y, colWidth, rowHeight);
 
-        // Add Label (CENTERED)
+        // Add Label (CENTERED & BIGGER)
         if (label) {
           this.drawLabelCentered(ctx, label, x, y, colWidth, rowHeight);
         }
@@ -132,7 +127,7 @@ export class CollageService {
         } else {
           reject(new Error('Failed to create blob from canvas'));
         }
-      }, 'image/jpeg', 0.9);
+      }, 'image/jpeg', 0.95);
     });
   }
 
@@ -145,7 +140,8 @@ export class CollageService {
     cellW: number,
     cellH: number
   ) {
-    const labelSize = 80;
+    // Increased size for visibility
+    const labelSize = 100;
 
     // Calculate center of cell
     const centerX = cellX + cellW / 2;
@@ -157,12 +153,12 @@ export class CollageService {
 
     // Background with shadow
     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
+    ctx.shadowBlur = 15;
+    ctx.shadowOffsetX = 3;
+    ctx.shadowOffsetY = 3;
 
     // Dark background box
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'; // Semi-transparent black
     ctx.fillRect(x, y, labelSize, labelSize);
 
     // Reset shadow
@@ -172,15 +168,15 @@ export class CollageService {
     ctx.shadowOffsetY = 0;
 
     // Text
-    ctx.font = 'bold 48px Arial, sans-serif';
+    ctx.font = 'bold 64px Arial, sans-serif'; // Bigger font
     ctx.fillStyle = 'white';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, centerX, centerY);
+    ctx.fillText(label, centerX, centerY + 4); // +4 for visual centering
 
     // Border
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.lineWidth = 3;
     ctx.strokeRect(x, y, labelSize, labelSize);
   }
 
