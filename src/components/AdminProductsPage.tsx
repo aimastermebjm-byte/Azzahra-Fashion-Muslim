@@ -10,6 +10,7 @@ import { uploadMultipleImages, validateImageFile, generateImageName } from '../u
 import { forceSyncAllProducts } from '../services/globalIndexSync';
 import { productCategoryService, ProductCategory } from '../services/productCategoryService';
 import AIAutoUploadModal from './AIAutoUploadModal';
+import ManualUploadModal from './ManualUploadModal';
 
 interface AdminProductsPageProps {
   onBack: () => void;
@@ -70,6 +71,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   const [showVariantBatchModal, setShowVariantBatchModal] = useState(false);
   const [showFlashSaleModal, setShowFlashSaleModal] = useState(false);
   const [showAIUploadModal, setShowAIUploadModal] = useState(false);
+  const [showManualUploadModal, setShowManualUploadModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -994,13 +996,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Tambah Produk */}
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={() => setShowManualUploadModal(true)}
               className="bg-blue-600 text-white p-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-3"
             >
               <Plus className="w-6 h-6" />
               <div className="text-left">
                 <p className="font-semibold">Tambah Produk</p>
-                <p className="text-sm opacity-90">Tambah produk baru</p>
+                <p className="text-sm opacity-90">Collage + Parameter</p>
               </div>
             </button>
             {/* AI Auto Upload - Owner Only */}
@@ -2695,6 +2697,81 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               alert(`✅ Produk berhasil di-upload dengan AI! Mode: ${productData.uploadMode === 'direct' ? 'Langsung Upload' : 'Review Upload'}`);
             } catch (error: any) {
               console.error('Failed to create AI product:', error);
+              alert(`❌ Gagal upload produk: ${error.message}`);
+            }
+          }}
+        />
+      )}
+
+      {/* Manual Upload Modal (Collage + Parameter) */}
+      {showManualUploadModal && (
+        <ManualUploadModal
+          isOpen={showManualUploadModal}
+          onClose={() => setShowManualUploadModal(false)}
+          categories={categories}
+          onSuccess={async (productData) => {
+            try {
+              console.log('Manual Upload product data:', productData);
+
+              // Generate unique productId for storage path
+              const tempProductId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+              // Upload collage image to Firebase Storage
+              const collageFile = productData.collageFile;
+              const uploadedImages = await uploadMultipleImages([collageFile], tempProductId);
+
+              if (uploadedImages.length === 0) {
+                throw new Error('Failed to upload collage image');
+              }
+
+              const collageUrl = uploadedImages[0];
+
+              // Create product with all fields
+              const newProduct = {
+                name: productData.name,
+                description: productData.description || '',
+                category: productData.category,
+                retailPrice: parseInt(productData.retailPrice),
+                resellerPrice: parseInt(productData.resellerPrice),
+                costPrice: parseInt(productData.costPrice) || 0,
+                purchasePrice: parseInt(productData.costPrice) || 0,
+                price: parseInt(productData.retailPrice),
+                originalRetailPrice: parseInt(productData.retailPrice),
+                originalResellerPrice: parseInt(productData.resellerPrice),
+                weight: 1000,
+                stock: productData.totalStock,
+                unit: 'pcs',
+                images: [collageUrl],
+                image: collageUrl,
+                variants: {
+                  sizes: ['Ukuran 1'],
+                  colors: productData.variantLabels,
+                  stock: {
+                    'Ukuran 1': productData.stockPerVariant
+                  }
+                },
+                status: 'po' as 'ready' | 'po',
+                createdAt: new Date(),
+                salesCount: 0,
+                isFeatured: false,
+                isFlashSale: false,
+                flashSalePrice: parseInt(productData.retailPrice) || 0,
+                condition: 'baru',
+                featured: false,
+                discount: 0,
+                reviews: 0,
+                rating: 0,
+                uploadMode: 'manual'
+              };
+
+              console.log('💾 Saving Manual Upload product:', newProduct);
+
+              await addProduct(newProduct);
+
+              setShowManualUploadModal(false);
+              alert('✅ Produk berhasil di-upload!');
+            } catch (error: any) {
+              console.error('Failed to create manual product:', error);
               alert(`❌ Gagal upload produk: ${error.message}`);
             }
           }}
