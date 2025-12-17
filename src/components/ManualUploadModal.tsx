@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, Upload, Image as ImageIcon, Settings, Check } from 'lucide-react';
+import { X, Upload, Image as ImageIcon, Settings, Check, Plus, Trash2 } from 'lucide-react';
 import { collageService } from '../services/collageService';
 
 interface ManualUploadModalProps {
@@ -9,12 +9,28 @@ interface ManualUploadModalProps {
     categories: string[];
 }
 
+interface PricingRule {
+    id: string;
+    minCost: number;
+    maxCost: number;
+    retailMarkup: number; // In Rupiah (not %)
+}
+
 interface UploadSettings {
     stockPerVariant: number;
     costPrice: number;
-    retailMarkupPercent: number;
-    resellerMarkupPercent: number;
+    resellerDiscount: number; // Discount from retail, in Rupiah
+    pricingRules: PricingRule[];
 }
+
+// Default pricing rules (same as AI Auto Upload)
+const DEFAULT_PRICING_RULES: PricingRule[] = [
+    { id: '1', minCost: 0, maxCost: 50000, retailMarkup: 25000 },
+    { id: '2', minCost: 50001, maxCost: 100000, retailMarkup: 35000 },
+    { id: '3', minCost: 100001, maxCost: 150000, retailMarkup: 50000 },
+    { id: '4', minCost: 150001, maxCost: 200000, retailMarkup: 60000 },
+    { id: '5', minCost: 200001, maxCost: 999999, retailMarkup: 75000 },
+];
 
 const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     isOpen,
@@ -47,22 +63,74 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         stockPerVariant: {} as Record<string, string>
     });
 
-    // Settings (Parameter)
+    // Settings (Parameter) - with multiple pricing rules like AI Auto Upload
     const [uploadSettings, setUploadSettings] = useState<UploadSettings>({
         stockPerVariant: 5,
         costPrice: 100000,
-        retailMarkupPercent: 50,
-        resellerMarkupPercent: 35
+        resellerDiscount: 15000, // Discount from retail in Rupiah
+        pricingRules: DEFAULT_PRICING_RULES
     });
 
-    // Calculated prices
-    const retailPrice = useMemo(() => {
-        return Math.round(uploadSettings.costPrice * (1 + uploadSettings.retailMarkupPercent / 100));
-    }, [uploadSettings.costPrice, uploadSettings.retailMarkupPercent]);
+    // Show settings panel
+    const [showPricingRules, setShowPricingRules] = useState(false);
 
+    // Calculate retail price based on cost and pricing rules
+    const retailPrice = useMemo(() => {
+        const { costPrice, pricingRules } = uploadSettings;
+
+        // Find matching rule
+        const matchingRule = pricingRules.find(
+            rule => costPrice >= rule.minCost && costPrice <= rule.maxCost
+        );
+
+        if (matchingRule) {
+            return costPrice + matchingRule.retailMarkup;
+        }
+
+        // Fallback: use highest rule
+        const highestRule = pricingRules.reduce((prev, current) =>
+            (prev.maxCost > current.maxCost) ? prev : current
+        );
+        return costPrice + highestRule.retailMarkup;
+    }, [uploadSettings.costPrice, uploadSettings.pricingRules]);
+
+    // Calculate reseller price (retail - discount)
     const resellerPrice = useMemo(() => {
-        return Math.round(uploadSettings.costPrice * (1 + uploadSettings.resellerMarkupPercent / 100));
-    }, [uploadSettings.costPrice, uploadSettings.resellerMarkupPercent]);
+        return retailPrice - uploadSettings.resellerDiscount;
+    }, [retailPrice, uploadSettings.resellerDiscount]);
+
+    // Add pricing rule
+    const addPricingRule = () => {
+        const newRule: PricingRule = {
+            id: Date.now().toString(),
+            minCost: 0,
+            maxCost: 100000,
+            retailMarkup: 30000
+        };
+        setUploadSettings(prev => ({
+            ...prev,
+            pricingRules: [...prev.pricingRules, newRule]
+        }));
+    };
+
+    // Remove pricing rule
+    const removePricingRule = (id: string) => {
+        if (uploadSettings.pricingRules.length <= 1) return;
+        setUploadSettings(prev => ({
+            ...prev,
+            pricingRules: prev.pricingRules.filter(r => r.id !== id)
+        }));
+    };
+
+    // Update pricing rule
+    const updatePricingRule = (id: string, field: keyof PricingRule, value: number) => {
+        setUploadSettings(prev => ({
+            ...prev,
+            pricingRules: prev.pricingRules.map(r =>
+                r.id === id ? { ...r, [field]: value } : r
+            )
+        }));
+    };
 
     // Handle image upload
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,9 +295,17 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                         <div className="space-y-6">
                             {/* Settings Panel */}
                             <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <Settings className="w-5 h-5 text-purple-600" />
-                                    <h3 className="font-semibold text-purple-800">Parameter Produk</h3>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <Settings className="w-5 h-5 text-purple-600" />
+                                        <h3 className="font-semibold text-purple-800">Parameter Produk</h3>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowPricingRules(!showPricingRules)}
+                                        className="text-xs text-purple-600 hover:text-purple-800 underline"
+                                    >
+                                        {showPricingRules ? 'Sembunyikan Rules' : 'Lihat Pricing Rules'}
+                                    </button>
                                 </div>
 
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -255,31 +331,87 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-600 mb-1">Markup Retail (%)</label>
+                                        <label className="block text-xs text-gray-600 mb-1">Diskon Reseller (Rp)</label>
                                         <input
                                             type="number"
                                             min="0"
-                                            value={uploadSettings.retailMarkupPercent}
-                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, retailMarkupPercent: parseInt(e.target.value) || 0 }))}
+                                            step="1000"
+                                            value={uploadSettings.resellerDiscount}
+                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, resellerDiscount: parseInt(e.target.value) || 0 }))}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                         />
+                                        <p className="text-[10px] text-gray-400 mt-0.5">Potongan dari harga retail</p>
                                     </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-600 mb-1">Markup Reseller (%)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            value={uploadSettings.resellerMarkupPercent}
-                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, resellerMarkupPercent: parseInt(e.target.value) || 0 }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                                        />
+                                    <div className="bg-white rounded-lg p-2 border border-gray-200">
+                                        <p className="text-[10px] text-gray-500 mb-1">Preview Harga:</p>
+                                        <p className="text-xs">Retail: <strong className="text-green-600">Rp {retailPrice.toLocaleString('id-ID')}</strong></p>
+                                        <p className="text-xs">Reseller: <strong className="text-blue-600">Rp {resellerPrice.toLocaleString('id-ID')}</strong></p>
                                     </div>
                                 </div>
 
-                                <div className="mt-3 flex gap-4 text-sm">
-                                    <span className="text-gray-600">Harga Retail: <strong className="text-green-600">Rp {retailPrice.toLocaleString('id-ID')}</strong></span>
-                                    <span className="text-gray-600">Harga Reseller: <strong className="text-blue-600">Rp {resellerPrice.toLocaleString('id-ID')}</strong></span>
-                                </div>
+                                {/* Pricing Rules (Multiple Rules) */}
+                                {showPricingRules && (
+                                    <div className="mt-4 pt-4 border-t border-purple-200">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="text-sm font-medium text-purple-700">Pricing Rules (Markup dalam Rp)</h4>
+                                            <button
+                                                onClick={addPricingRule}
+                                                className="flex items-center gap-1 text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700"
+                                            >
+                                                <Plus className="w-3 h-3" />
+                                                Tambah Rule
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                            {uploadSettings.pricingRules.map((rule, index) => (
+                                                <div key={rule.id} className="flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200">
+                                                    <span className="text-xs text-gray-500 w-8">{index + 1}.</span>
+                                                    <div className="flex-1 grid grid-cols-3 gap-2">
+                                                        <div>
+                                                            <label className="text-[10px] text-gray-500">Min Modal</label>
+                                                            <input
+                                                                type="number"
+                                                                value={rule.minCost}
+                                                                onChange={(e) => updatePricingRule(rule.id, 'minCost', parseInt(e.target.value) || 0)}
+                                                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] text-gray-500">Max Modal</label>
+                                                            <input
+                                                                type="number"
+                                                                value={rule.maxCost}
+                                                                onChange={(e) => updatePricingRule(rule.id, 'maxCost', parseInt(e.target.value) || 0)}
+                                                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] text-gray-500">Markup (Rp)</label>
+                                                            <input
+                                                                type="number"
+                                                                value={rule.retailMarkup}
+                                                                onChange={(e) => updatePricingRule(rule.id, 'retailMarkup', parseInt(e.target.value) || 0)}
+                                                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => removePricingRule(rule.id)}
+                                                        className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                                        disabled={uploadSettings.pricingRules.length <= 1}
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <p className="text-[10px] text-gray-500 mt-2">
+                                            💡 Harga Retail = Harga Modal + Markup (sesuai range modal)
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Upload Area */}
