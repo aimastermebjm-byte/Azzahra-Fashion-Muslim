@@ -1298,18 +1298,18 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                         </td>
                         <td className="p-3">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.stock > 10
-                              ? 'bg-green-100 text-green-800'
-                              : product.stock > 0
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
+                            ? 'bg-green-100 text-green-800'
+                            : product.stock > 0
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
                             }`}>
                             {product.stock} pcs
                           </span>
                         </td>
                         <td className="p-3">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.status === 'ready'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-orange-100 text-orange-800'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-orange-100 text-orange-800'
                             }`}>
                             {product.status === 'ready' ? '✅ Ready Stock' : '⏳ Pre-Order'}
                           </span>
@@ -1370,8 +1370,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                           key={pageNum}
                           onClick={() => setCurrentPage(pageNum)}
                           className={`px-3 py-1 border rounded-lg ${currentPage === pageNum
-                              ? 'bg-blue-600 text-white border-blue-600'
-                              : 'border-gray-300 hover:bg-gray-50'
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'border-gray-300 hover:bg-gray-50'
                             }`}
                         >
                           {pageNum}
@@ -2655,7 +2655,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     'Ukuran 1': productData.stockPerVariant || {} as any
                   }
                 },
-                status: 'ready' as 'ready' | 'po',
+                status: 'po' as 'ready' | 'po', // Default to Pre Order for AI uploads
                 createdAt: new Date(),
                 salesCount: 0,
                 isFeatured: false,

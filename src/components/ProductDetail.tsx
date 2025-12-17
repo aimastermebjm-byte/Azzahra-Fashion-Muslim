@@ -214,12 +214,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       let total = 0;
       Object.values(currentProduct.variants.stock).forEach(sizeStock => {
         Object.values(sizeStock).forEach(colorStock => {
-          total += colorStock;
+          total += Number(colorStock) || 0; // FIX: Ensure numeric addition
         });
       });
       return total;
     }
-    return currentProduct.stock || 0;
+    return Number(currentProduct.stock) || 0;
   };
 
 
@@ -380,7 +380,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             <div className="text-sm">
               <span className="text-gray-600">Total Stok: </span>
               <span className={`font-semibold ${getTotalStock() > 10 ? 'text-green-600' :
-                  getTotalStock() > 0 ? 'text-yellow-600' : 'text-red-600'
+                getTotalStock() > 0 ? 'text-yellow-600' : 'text-red-600'
                 }`}>
                 {getTotalStock()}
               </span>
@@ -401,7 +401,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             <div className="text-sm">
               <span className="text-blue-600 font-medium">Stok {selectedSize} - {selectedColor}: </span>
               <span className={`font-bold ${getSelectedVariantStock() > 5 ? 'text-green-600' :
-                  getSelectedVariantStock() > 0 ? 'text-yellow-600' : 'text-red-600'
+                getSelectedVariantStock() > 0 ? 'text-yellow-600' : 'text-red-600'
                 }`}>
                 {getSelectedVariantStock()} pcs
               </span>
@@ -432,10 +432,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                     onClick={() => setSelectedSize(size)}
                     disabled={sizeTotalStock === 0}
                     className={`relative rounded-full px-4 py-2 text-sm font-semibold transition shadow-sm ${selectedSize === size
-                        ? 'bg-brand-primary text-white shadow-brand-card'
-                        : sizeTotalStock === 0
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-white text-gray-700 hover:text-brand-primary border border-gray-200'
+                      ? 'bg-brand-primary text-white shadow-brand-card'
+                      : sizeTotalStock === 0
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 hover:text-brand-primary border border-gray-200'
                       }`}
                   >
                     <span>{size}</span>
@@ -468,10 +468,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                     onClick={() => setSelectedColor(color)}
                     disabled={colorStock === 0}
                     className={`rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition ${selectedColor === color
-                        ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/40'
-                        : colorStock === 0
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-white text-gray-700 border border-gray-200 hover:text-brand-primary'
+                      ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/40'
+                      : colorStock === 0
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 border border-gray-200 hover:text-brand-primary'
                       }`}
                   >
                     <span>{color}</span>
@@ -514,8 +514,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                 }}
                 disabled={quantity >= getSelectedVariantStock()}
                 className={`w-10 h-10 flex items-center justify-center rounded-md transition-colors ${quantity >= getSelectedVariantStock()
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'hover:bg-gray-200'
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'hover:bg-gray-200'
                   }`}
               >
                 <Plus className="w-4 h-4" />
@@ -526,7 +526,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                 <>
                   Stok {selectedSize} - {selectedColor}:{' '}
                   <span className={`font-semibold ${getSelectedVariantStock() > 5 ? 'text-green-600' :
-                      getSelectedVariantStock() > 0 ? 'text-yellow-600' : 'text-red-600'
+                    getSelectedVariantStock() > 0 ? 'text-yellow-600' : 'text-red-600'
                     }`}>
                     {getSelectedVariantStock()} pcs
                   </span>
