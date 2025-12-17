@@ -74,54 +74,47 @@ export class CollageService {
         const label = variantLabels[currentImageIndex];
         const x = colIndex * colWidth;
 
-        // Save context for clipping
-        ctx.save();
+        // CINEMATIC BLUR FIT LOGIC:
 
-        // Define clipping region for this cell
+        // 1. Draw Blurred Background to cover everything (No white space)
+        ctx.save();
         ctx.beginPath();
         ctx.rect(x, y, colWidth, rowHeight);
         ctx.clip();
 
-        // FIT / CONTAIN / COVER LOGIC (CORRECTED):
-        // User Requirement: "menutupi seluruh area", "jangan ada putih", "kepala/kaki jangan hilang"
-        // Strategy: Use COVER logic (Math.max) to fill width/height, centering on the model.
-        // For standard fashion photos (3:4) in vertical strips, this works perfectly.
+        // Calculate COVER scale for background to fill the cell
+        const scaleCover = Math.max(colWidth / img.width, rowHeight / img.height);
+        const wCover = img.width * scaleCover;
+        const hCover = img.height * scaleCover;
+        const xCover = x + (colWidth - wCover) / 2;
+        const yCover = y + (rowHeight - hCover) / 2;
 
-        // 1. Calculate scales
-        const scaleX = colWidth / img.width;
-        const scaleY = rowHeight / img.height;
+        ctx.filter = 'blur(40px)'; // Heavy blur to act as ambient background
+        // Draw slightly larger to avoid edge bleeding
+        ctx.drawImage(img, 0, 0, img.width, img.height, xCover - 20, yCover - 20, wCover + 40, hCover + 40);
+        ctx.filter = 'none'; // Reset filter
+        ctx.restore();
 
-        // 2. Choose LARGER scale (COVER logic) to fill the cell completely
-        const scale = Math.max(scaleX, scaleY);
+        // 2. Draw Main Image (CONTAIN/FIT) - Ensure FULL BODY is visible
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, colWidth, rowHeight);
+        ctx.clip();
+
+        // Calculate CONTAIN scale to show mostly everything
+        // For fashion, we fit fully into the cell so nothing is cut.
+        const scaleContain = Math.min(colWidth / img.width, rowHeight / img.height);
+        const scale = scaleContain;
 
         const scaledWidth = img.width * scale;
         const scaledHeight = img.height * scale;
 
-        // 3. Position the image within the cell (Top-Center Anchor)
-        // Fashion logic: Heads are at the top. Floor is at the bottom.
-        // It's safer to crop the bottom/sides than the top.
-
-        // Center Horizontally
+        // Center the image within the cell
         const drawX = x + (colWidth - scaledWidth) / 2;
-
-        // Align Top (with slight offset usually to give headroom, but let's try strict top first or slight center-top)
-        // If we strictly align top (0), sometimes it looks too high if the photo has lots of headroom.
-        // Let's stick to CENTER-Y for now but ensure we cover properly.
-        // Wait, Boss asked for "Jangkar tengah atas kiri kanan".
-        // Let's keep Center-Center but ensure width matches better.
-
-        // REVISION: The issue is narrow columns cutting off sides.
-        // We need to prioritize SHOWING WIDTH over FILLING HEIGHT if it cuts too much width.
-        // But preventing white space is the #1 rule.
-
-        // Let's stick to true Center-Center alignment which is safest for general purpose,
-        // BUT let's try to match width geometry better.
-
         const drawY = y + (rowHeight - scaledHeight) / 2;
 
+        // Draw main image sharp
         ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, scaledWidth, scaledHeight);
-
-        // Restore context
         ctx.restore();
 
         // Add border (inner white border for clean look)
@@ -129,7 +122,7 @@ export class CollageService {
         ctx.lineWidth = 4;
         ctx.strokeRect(x, y, colWidth, rowHeight);
 
-        // Add Label (CENTERED & BIGGER)
+        // Add Label (CENTERED)
         if (label) {
           this.drawLabelCentered(ctx, label, x, y, colWidth, rowHeight);
         }
@@ -158,8 +151,8 @@ export class CollageService {
     cellW: number,
     cellH: number
   ) {
-    // Increased size for visibility
-    const labelSize = 100;
+    // JUMBO SIZE (2X Previous)
+    const labelSize = 200; // Was 100
 
     // Calculate center of cell
     const centerX = cellX + cellW / 2;
@@ -171,9 +164,9 @@ export class CollageService {
 
     // Background with shadow
     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-    ctx.shadowBlur = 15;
-    ctx.shadowOffsetX = 3;
-    ctx.shadowOffsetY = 3;
+    ctx.shadowBlur = 20;
+    ctx.shadowOffsetX = 5;
+    ctx.shadowOffsetY = 5;
 
     // Dark background box
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'; // Semi-transparent black
@@ -186,15 +179,15 @@ export class CollageService {
     ctx.shadowOffsetY = 0;
 
     // Text
-    ctx.font = 'bold 64px Arial, sans-serif'; // Bigger font
+    ctx.font = 'bold 130px Arial, sans-serif'; // Jumbo Font
     ctx.fillStyle = 'white';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, centerX, centerY + 4); // +4 for visual centering
+    ctx.fillText(label, centerX, centerY + 8); // +8 for visual centering
 
     // Border
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 6;
     ctx.strokeRect(x, y, labelSize, labelSize);
   }
 
@@ -297,9 +290,9 @@ export class CollageService {
 
   // Helper: Preview collage dimensions
   getCollageDimensions(_imageCount: number): { width: number; height: number } {
-    // We now standardize on a high-res square canvas
+    // We now standardize on a high-res portrait canvas
     return {
-      width: 2000,
+      width: 1500,
       height: 2000
     };
   }
