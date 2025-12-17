@@ -28,7 +28,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const imageRef = useRef<HTMLImageElement>(null);
 
-  
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     onAddToCart(product);
@@ -96,11 +96,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
           totalStock += Number(colorStock || 0);
         });
       });
-            return totalStock;
+      return totalStock;
     }
 
     // Fallback for non-variant products or missing variant data
-        return product.stock || 0;
+    return product.stock || 0;
   };
 
   const getStatusBadge = () => {
@@ -112,11 +112,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
     const isReady = displayStatus === 'ready';
 
     return (
-      <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 backdrop-blur-md shadow-sm text-[10px] sm:text-xs font-bold ${
-        isReady 
-          ? 'bg-emerald-500/95 text-white border border-emerald-400/50' 
+      <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 backdrop-blur-md shadow-sm text-[10px] sm:text-xs font-bold ${isReady
+          ? 'bg-emerald-500/95 text-white border border-emerald-400/50'
           : 'bg-amber-500/95 text-white border border-amber-400/50'
-      }`}>
+        }`}>
         {isReady ? 'Ready' : 'PO'} · {totalStock}
       </div>
     );
@@ -144,7 +143,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
       );
     }
-    
+
     return (
       <div className="space-y-1 relative">
         <div className="text-base sm:text-lg font-bold text-pink-600">
@@ -188,11 +187,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <>
       <div
-        className={`bg-white shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 ${
-          isFeatured ? 'ring-2 ring-yellow-400' : ''
-        }`}
+        className={`bg-white shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 ${isFeatured ? 'ring-2 ring-yellow-400' : ''
+          }`}
       >
-        <div className="relative aspect-square bg-white overflow-hidden">
+        <div className="relative aspect-[3/4] bg-white overflow-hidden">
           <img
             src={product.image || product.images?.[0] || '/placeholder-product.jpg'}
             alt={product.name}
@@ -215,7 +213,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             {getStatusBadge()}
           </div>
 
-        {/* Zoom Button */}
+          {/* Zoom Button */}
           <div className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={handleImageZoom}
@@ -287,9 +285,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 ref={imageRef}
                 src={product.image || product.images?.[0] || '/placeholder-product.jpg'}
                 alt={product.name}
-                className={`max-w-full max-h-full object-contain cursor-move transition-transform duration-200 ${
-                  isDragging ? 'cursor-grabbing' : 'cursor-grab'
-                }`}
+                className={`max-w-full max-h-full object-contain cursor-move transition-transform duration-200 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'
+                  }`}
                 style={{
                   transform: `translate(${zoomPosition.x}px, ${zoomPosition.y}px) scale(${zoomScale})`,
                   transformOrigin: 'center'
