@@ -41,7 +41,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     return getProductById(initialProduct.id) || initialProduct;
   }, [initialProduct.id, getProductById]);
 
-  
+
   const handleAddToCart = () => {
     if (!user) {
       onLoginRequired();
@@ -91,13 +91,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       : undefined;
 
     console.log('🔍 DEBUG: Final variant object:', variant);
-    
+
     // Pass product with correct price based on user role and flash sale
     const productWithPrice = {
       ...currentProduct,
       price: getPrice() // Use calculated price based on flash sale and user role
     };
-    
+
     onAddToCart(productWithPrice, variant, quantity);
     // No toast notification - silent add to cart
 
@@ -146,13 +146,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     const variant = (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0)
       ? { size: selectedSize, color: selectedColor }
       : null;
-    
+
     // Pass product with correct price based on user role and flash sale
     const productWithPrice = {
       ...currentProduct,
       price: getPrice() // Use calculated price based on flash sale and user role
     };
-    
+
     onBuyNow(productWithPrice, variant, quantity);
   };
 
@@ -187,12 +187,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     if (currentProduct.variants?.stock) {
       const variantStock = currentProduct.variants.stock[size]?.[color];
       const stock = Number(variantStock || 0);
-            return stock;
+      return stock;
     }
 
     // Fallback: Check if this is a non-variant product
     if (!currentProduct.variants?.sizes || currentProduct.variants.sizes.length === 0) {
-            return currentProduct.stock || 0;
+      return currentProduct.stock || 0;
     }
 
     // No stock data available
@@ -222,7 +222,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     return currentProduct.stock || 0;
   };
 
-  
+
   return (
     <div className="min-h-screen bg-gray-50 pb-40 sm:pb-32">
       {/* Sticky Header */}
@@ -248,7 +248,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               <Heart className="h-4 w-4" />
             </button>
             <button
-              onClick={onNavigateToCart || (() => {})}
+              onClick={onNavigateToCart || (() => { })}
               className="relative inline-flex items-center gap-1.5 rounded-full bg-brand-primary px-3 py-2 sm:px-4 text-sm font-semibold text-white transition hover:bg-brand-primary/90 whitespace-nowrap"
             >
               <ShoppingCart className="h-4 w-4 flex-shrink-0" />
@@ -263,166 +263,162 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         </div>
       </div>
 
-        {/* Product Images */}
-        <div className="bg-white">
-          <div className="relative">
-            <img
-              src={currentProduct.images?.[selectedImageIndex] || currentProduct.image || '/placeholder-currentProduct.jpg'}
-              alt={currentProduct.name}
-              className="w-full h-[420px] object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = '/placeholder-currentProduct.jpg';
-              }}
-            />
+      {/* Product Images */}
+      <div className="bg-white">
+        <div className="relative aspect-[3/4] bg-gray-100">
+          <img
+            src={currentProduct.images?.[selectedImageIndex] || currentProduct.image || '/placeholder-currentProduct.jpg'}
+            alt={currentProduct.name}
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = '/placeholder-currentProduct.jpg';
+            }}
+          />
 
-            {currentProduct.isFlashSale && (
-              <div className="absolute top-4 left-4 rounded-full bg-red-500 px-4 py-1 text-sm font-semibold text-white shadow-lg">
-                FLASH SALE
+          {currentProduct.isFlashSale && (
+            <div className="absolute top-4 left-4 rounded-full bg-red-500 px-4 py-1 text-sm font-semibold text-white shadow-lg">
+              FLASH SALE
+            </div>
+          )}
+
+          {currentProduct.status === 'po' && (
+            <div className="absolute top-4 right-4 rounded-full bg-orange-500 px-4 py-1 text-sm font-semibold text-white shadow-lg">
+              PRE ORDER
+            </div>
+          )}
+
+          <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2">
+            {currentProduct.tags?.map((tag: string) => (
+              <span key={tag} className="rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {currentProduct.images && currentProduct.images.length > 1 && (
+          <div className="flex space-x-2 p-4 overflow-x-auto">
+            {currentProduct.images.map((image, index) => (
+              <button
+                key={index}
+                onClick={() => setSelectedImageIndex(index)}
+                className={`flex-shrink-0 rounded-2xl border-2 p-1 transition ${selectedImageIndex === index ? 'border-brand-primary shadow' : 'border-transparent'
+                  }`}
+              >
+                <img
+                  src={image}
+                  alt={`${currentProduct.name} ${index + 1}`}
+                  className="h-16 w-16 rounded-xl object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/placeholder-currentProduct.jpg';
+                  }}
+                />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Product Info */}
+      <div className="bg-white mt-2 p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <h1 className="text-xl font-bold text-gray-800 mb-2">{currentProduct.name}</h1>
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="flex items-center">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
+                ))}
+                <span className="text-sm text-gray-600 ml-1">(4.8)</span>
               </div>
-            )}
-
-            {currentProduct.status === 'po' && (
-              <div className="absolute top-4 right-4 rounded-full bg-orange-500 px-4 py-1 text-sm font-semibold text-white shadow-lg">
-                PRE ORDER
-              </div>
-            )}
-
-            <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2">
-              {currentProduct.tags?.map((tag: string) => (
-                <span key={tag} className="rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white">
-                  {tag}
-                </span>
-              ))}
+              <span className="text-sm text-gray-500">• Terjual 150+</span>
             </div>
           </div>
+        </div>
 
-          {currentProduct.images && currentProduct.images.length > 1 && (
-            <div className="flex space-x-2 p-4 overflow-x-auto">
-              {currentProduct.images.map((image, index) => (
+        <div className="mb-4">
+          {currentProduct.isFlashSale && currentProduct.flashSalePrice > 0 ? (
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2">
+                <span className="text-2xl font-bold text-red-600">
+                  Rp {currentProduct.flashSalePrice.toLocaleString('id-ID')}
+                </span>
+                <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded">
+                  -{Math.round((1 - currentProduct.flashSalePrice / (currentProduct.originalRetailPrice || currentProduct.retailPrice)) * 100)}%
+                </span>
+              </div>
+              <div className="text-lg text-gray-500 line-through">
+                Rp {(currentProduct.originalRetailPrice || currentProduct.retailPrice).toLocaleString('id-ID')}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <div className="text-2xl font-bold text-pink-600">
+                Rp {getPrice().toLocaleString('id-ID')}
+              </div>
+              {user?.role === 'reseller' ? (
+                <div className="text-sm text-blue-600 font-medium">
+                  Harga Reseller (Retail: Rp {currentProduct.retailPrice.toLocaleString('id-ID')})
+                </div>
+              ) : (
                 <button
-                  key={index}
-                  onClick={() => setSelectedImageIndex(index)}
-                  className={`flex-shrink-0 rounded-2xl border-2 p-1 transition ${
-                    selectedImageIndex === index ? 'border-brand-primary shadow' : 'border-transparent'
-                  }`}
+                  onClick={handleResellerPriceClick}
+                  className="text-sm text-green-600 font-medium hover:text-green-700 underline transition-colors"
                 >
-                  <img
-                    src={image}
-                    alt={`${currentProduct.name} ${index + 1}`}
-                    className="h-16 w-16 rounded-xl object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/placeholder-currentProduct.jpg';
-                    }}
-                  />
+                  💬 Info Harga Reseller?
                 </button>
-              ))}
+              )}
             </div>
           )}
         </div>
 
-        {/* Product Info */}
-        <div className="bg-white mt-2 p-4">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex-1">
-              <h1 className="text-xl font-bold text-gray-800 mb-2">{currentProduct.name}</h1>
-              <div className="flex items-center space-x-2 mb-2">
-                <div className="flex items-center">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                  ))}
-                  <span className="text-sm text-gray-600 ml-1">(4.8)</span>
-                </div>
-                <span className="text-sm text-gray-500">• Terjual 150+</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-4">
-            {currentProduct.isFlashSale && currentProduct.flashSalePrice > 0 ? (
-              <div className="space-y-1">
-                <div className="flex items-center space-x-2">
-                  <span className="text-2xl font-bold text-red-600">
-                    Rp {currentProduct.flashSalePrice.toLocaleString('id-ID')}
-                  </span>
-                  <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded">
-                    -{Math.round((1 - currentProduct.flashSalePrice / (currentProduct.originalRetailPrice || currentProduct.retailPrice)) * 100)}%
-                  </span>
-                </div>
-                <div className="text-lg text-gray-500 line-through">
-                  Rp {(currentProduct.originalRetailPrice || currentProduct.retailPrice).toLocaleString('id-ID')}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                <div className="text-2xl font-bold text-pink-600">
-                  Rp {getPrice().toLocaleString('id-ID')}
-                </div>
-                {user?.role === 'reseller' ? (
-                  <div className="text-sm text-blue-600 font-medium">
-                    Harga Reseller (Retail: Rp {currentProduct.retailPrice.toLocaleString('id-ID')})
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleResellerPriceClick}
-                    className="text-sm text-green-600 font-medium hover:text-green-700 underline transition-colors"
-                  >
-                    💬 Info Harga Reseller?
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Stock and Status Info */}
-          <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center space-x-4">
-              <div className="text-sm">
-                <span className="text-gray-600">Total Stok: </span>
-                <span className={`font-semibold ${
-                  getTotalStock() > 10 ? 'text-green-600' :
+        {/* Stock and Status Info */}
+        <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center space-x-4">
+            <div className="text-sm">
+              <span className="text-gray-600">Total Stok: </span>
+              <span className={`font-semibold ${getTotalStock() > 10 ? 'text-green-600' :
                   getTotalStock() > 0 ? 'text-yellow-600' : 'text-red-600'
                 }`}>
-                  {getTotalStock()}
-                </span>
-              </div>
-              <div className="text-sm">
-                <span className="text-gray-600">Status: </span>
-                <span className={`font-semibold ${
-                  currentProduct.status === 'ready' ? 'text-green-600' : 'text-orange-600'
-                }`}>
-                  {currentProduct.status === 'ready' ? 'Ready Stock' : 'Pre Order'}
-                </span>
-              </div>
+                {getTotalStock()}
+              </span>
             </div>
-          </div>
-
-          {/* Variant Stock Display */}
-          {selectedSize && selectedColor && (
-            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="text-sm">
-                <span className="text-blue-600 font-medium">Stok {selectedSize} - {selectedColor}: </span>
-                <span className={`font-bold ${
-                  getSelectedVariantStock() > 5 ? 'text-green-600' :
-                  getSelectedVariantStock() > 0 ? 'text-yellow-600' : 'text-red-600'
+            <div className="text-sm">
+              <span className="text-gray-600">Status: </span>
+              <span className={`font-semibold ${currentProduct.status === 'ready' ? 'text-green-600' : 'text-orange-600'
                 }`}>
-                  {getSelectedVariantStock()} pcs
-                </span>
-              </div>
+                {currentProduct.status === 'ready' ? 'Ready Stock' : 'Pre Order'}
+              </span>
             </div>
-          )}
-          <div className="border-t pt-4">
-            <p className="text-gray-600 leading-relaxed">{currentProduct.description}</p>
           </div>
         </div>
 
-        {/* Variants Selection */}
-        {currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0 && (
-          <div className="bg-white mt-2 p-4">
-            {/* Size Selection */}
-            <div className="mb-6">
-              <h3 className="font-semibold text-gray-800 mb-3">Pilih Ukuran</h3>
+        {/* Variant Stock Display */}
+        {selectedSize && selectedColor && (
+          <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="text-sm">
+              <span className="text-blue-600 font-medium">Stok {selectedSize} - {selectedColor}: </span>
+              <span className={`font-bold ${getSelectedVariantStock() > 5 ? 'text-green-600' :
+                  getSelectedVariantStock() > 0 ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                {getSelectedVariantStock()} pcs
+              </span>
+            </div>
+          </div>
+        )}
+        <div className="border-t pt-4">
+          <p className="text-gray-600 leading-relaxed">{currentProduct.description}</p>
+        </div>
+      </div>
+
+      {/* Variants Selection */}
+      {currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0 && (
+        <div className="bg-white mt-2 p-4">
+          {/* Size Selection */}
+          <div className="mb-6">
+            <h3 className="font-semibold text-gray-800 mb-3">Pilih Ukuran</h3>
             <div className="flex flex-wrap gap-2">
               {(currentProduct.variants?.sizes || []).map((size) => {
                 // Calculate total stock for this size across all colors
@@ -435,13 +431,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                     key={size}
                     onClick={() => setSelectedSize(size)}
                     disabled={sizeTotalStock === 0}
-                    className={`relative rounded-full px-4 py-2 text-sm font-semibold transition shadow-sm ${
-                      selectedSize === size
+                    className={`relative rounded-full px-4 py-2 text-sm font-semibold transition shadow-sm ${selectedSize === size
                         ? 'bg-brand-primary text-white shadow-brand-card'
                         : sizeTotalStock === 0
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-700 hover:text-brand-primary border border-gray-200'
-                    }`}
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-white text-gray-700 hover:text-brand-primary border border-gray-200'
+                      }`}
                   >
                     <span>{size}</span>
                     {sizeTotalStock === 0 && (
@@ -472,13 +467,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                     key={color}
                     onClick={() => setSelectedColor(color)}
                     disabled={colorStock === 0}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition ${
-                      selectedColor === color
+                    className={`rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition ${selectedColor === color
                         ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/40'
                         : colorStock === 0
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-700 border border-gray-200 hover:text-brand-primary'
-                    }`}
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-white text-gray-700 border border-gray-200 hover:text-brand-primary'
+                      }`}
                   >
                     <span>{color}</span>
                     <span className="block text-xs font-normal text-gray-500">
@@ -496,68 +490,66 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             )}
           </div>
         </div>
-        )}
+      )}
 
-        {/* Quantity Selection */}
-        <div className="bg-white mt-2 p-4 mb-4">
-          <div className="mb-4">
-            <h3 className="font-semibold text-gray-800 mb-3">Jumlah</h3>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3 bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-10 h-10 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <span className="w-12 text-center font-semibold">{quantity}</span>
-                <button
-                  onClick={() => {
-                    const maxStock = getSelectedVariantStock();
-                    if (quantity < maxStock) {
-                      setQuantity(quantity + 1);
-                    }
-                  }}
-                  disabled={quantity >= getSelectedVariantStock()}
-                  className={`w-10 h-10 flex items-center justify-center rounded-md transition-colors ${
-                    quantity >= getSelectedVariantStock()
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'hover:bg-gray-200'
+      {/* Quantity Selection */}
+      <div className="bg-white mt-2 p-4 mb-4">
+        <div className="mb-4">
+          <h3 className="font-semibold text-gray-800 mb-3">Jumlah</h3>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3 bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                className="w-10 h-10 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <span className="w-12 text-center font-semibold">{quantity}</span>
+              <button
+                onClick={() => {
+                  const maxStock = getSelectedVariantStock();
+                  if (quantity < maxStock) {
+                    setQuantity(quantity + 1);
+                  }
+                }}
+                disabled={quantity >= getSelectedVariantStock()}
+                className={`w-10 h-10 flex items-center justify-center rounded-md transition-colors ${quantity >= getSelectedVariantStock()
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'hover:bg-gray-200'
                   }`}
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="text-sm text-gray-600">
-                {selectedSize && selectedColor ? (
-                  <>
-                    Stok {selectedSize} - {selectedColor}:{' '}
-                    <span className={`font-semibold ${
-                      getSelectedVariantStock() > 5 ? 'text-green-600' :
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="text-sm text-gray-600">
+              {selectedSize && selectedColor ? (
+                <>
+                  Stok {selectedSize} - {selectedColor}:{' '}
+                  <span className={`font-semibold ${getSelectedVariantStock() > 5 ? 'text-green-600' :
                       getSelectedVariantStock() > 0 ? 'text-yellow-600' : 'text-red-600'
                     }`}>
-                      {getSelectedVariantStock()} pcs
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    Stok tersedia:{' '}
-                    <span className="font-semibold">{getTotalStock()} pcs</span>
-                  </>
-                )}
-              </div>
+                    {getSelectedVariantStock()} pcs
+                  </span>
+                </>
+              ) : (
+                <>
+                  Stok tersedia:{' '}
+                  <span className="font-semibold">{getTotalStock()} pcs</span>
+                </>
+              )}
             </div>
-
-            {/* Stock Warning */}
-            {selectedSize && selectedColor && quantity >= getSelectedVariantStock() && (
-              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-xs text-yellow-700">
-                  ⚠️ Maksimal pembelian untuk {selectedSize} - {selectedColor} adalah {getSelectedVariantStock()} pcs
-                </p>
-              </div>
-            )}
           </div>
+
+          {/* Stock Warning */}
+          {selectedSize && selectedColor && quantity >= getSelectedVariantStock() && (
+            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-xs text-yellow-700">
+                ⚠️ Maksimal pembelian untuk {selectedSize} - {selectedColor} adalah {getSelectedVariantStock()} pcs
+              </p>
+            </div>
+          )}
         </div>
+      </div>
 
       {/* Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white shadow-lg safe-area-inset-bottom">
