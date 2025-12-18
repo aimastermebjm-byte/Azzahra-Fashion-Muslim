@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   CreditCard,
   CheckCircle,
@@ -121,6 +121,9 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
     await loadSettings();
   };
 
+  // Track detections currently being verified to prevent duplicate calls
+  const processingRef = useRef<Set<string>>(new Set());
+
   const matchDetectionsWithOrders = async (
     detections: PaymentDetection[],
     orders: any[]
@@ -128,6 +131,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
     try {
       // Use passed orders instead of refetching
       const pending = orders;
+      let hasUpdates = false;
 
       // Match each detection
       for (const detection of detections) {
@@ -138,22 +142,39 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
             // Update detection with best match
             detection.matchedOrderId = matches[0].orderId;
             detection.confidence = matches[0].confidence;
+            hasUpdates = true;
           }
         }
 
-        // 🤖 AUTO-VERIFICATION LOGIC (Run this even if matched previously)
+        // 🤖 AUTO-VERIFICATION LOGIC
         if (detection.matchedOrderId && settings?.mode === 'full-auto') {
           const threshold = settings.autoConfirmThreshold || 90;
 
-          if ((detection.confidence || 0) >= threshold) {
+          // Check if already processing this ID
+          if ((detection.confidence || 0) >= threshold && !processingRef.current.has(detection.id)) {
             console.log(`🤖 Auto-confirming detection ${detection.id} (Confidence: ${detection.confidence}%)`);
-            await handleMarkAsPaid(detection);
+
+            // Mark as processing
+            processingRef.current.add(detection.id);
+
+            // Execute verification
+            try {
+              await handleMarkAsPaid(detection);
+            } catch (err) {
+              console.error('Auto-verify failed', err);
+              // Remove from processing if failed so we can retry? 
+              // Or leave it to prevent infinite error loop?
+              // Let's remove it to allow manual retry if needed, but the loop might catch it again.
+              processingRef.current.delete(detection.id);
+            }
           }
         }
       }
 
-      // Force update state to reflect matches
-      setPendingDetections([...detections]);
+      // Only update state if we actually found new matches to avoid infinite render loop
+      if (hasUpdates) {
+        setPendingDetections([...detections]);
+      }
     } catch (error) {
       console.error('Error matching detections:', error);
     }
