@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
+import android.util.Log;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -46,12 +47,9 @@ public class NotificationService extends NotificationListenerService {
             CharSequence textChar = extras.getCharSequence(Notification.EXTRA_TEXT);
             String text = (textChar != null) ? textChar.toString() : "";
 
-            if (selected.contains(pkg)) {
-                updateUILog("MATCHED: [" + pkg + "] " + text);
+            // Jika aplikasi dipilih atau ini notifikasi diagnostic
+            if (selected.contains(pkg) || pkg.equals(getPackageName())) {
                 process(pkg, title + " " + text);
-            } else if (pkg.equals(getPackageName())) {
-                updateUILog("DIAGNOSTIC: " + text);
-                process(pkg, title + " " + text); // Allow diagnostic to send to Firebase for testing
             }
         } catch (Exception e) {}
     }
@@ -59,33 +57,35 @@ public class NotificationService extends NotificationListenerService {
     private void process(String pkg, String fullText) {
         String low = fullText.toLowerCase();
         
-        // Pemicu filter
-        boolean trigger = low.contains("idr") || low.contains("rp") || low.contains("pemasukan") || 
-                         low.contains("transfer") || low.contains("berhasil") || low.contains("terima") || 
-                         low.contains("masuk") || low.contains("kredit");
-
-        if (trigger) {
+        // FILTER KETAT: Hanya proses jika ada kata "masuk" atau ini Diagnostic
+        if (low.contains("masuk") || pkg.equals(getPackageName())) {
             long amt = extractAmount(low);
+            
             if (amt > 0) {
-                updateUILog("🚀 SENDING TO FIREBASE: " + amt);
+                // Tampilkan log di HP hanya jika lolos filter uang masuk
+                updateUILog("💰 DETECTED: [" + pkg + "] Rp " + amt);
+                updateUILog("Detail: " + fullText);
+                
+                // Kirim ke Firebase
                 send(pkg, amt, fullText);
-            } else {
-                updateUILog("⚠️ Keywords matched, but amount NOT found.");
+            } else if (pkg.equals(getPackageName())) {
+                // Khusus diagnostic tetap muncul biarpun nominal 0
+                updateUILog("DIAGNOSTIC: " + fullText);
             }
+        } else {
+            // Notifikasi lain dari aplikasi bank (seperti promo/info saldo) diabaikan total
+            Log.d("AzzahraLog", "Ignored notification from " + pkg + " (No 'masuk' keyword)");
         }
     }
 
     private long extractAmount(String text) {
         try {
-            // Regex lebih kuat: Cari angka setelah IDR/Rp atau angka yang mengandung titik/koma
-            // Pattern 1: Mencari angka setelah IDR atau Rp
             Pattern p1 = Pattern.compile("(idr|rp)\\s*([0-9.,]+)");
             Matcher m1 = p1.matcher(text);
             if (m1.find()) {
                 return parseCleanAmount(m1.group(2));
             }
 
-            // Pattern 2: Jika tidak ada Rp/IDR, cari angka besar (ribuan) yang punya titik
             Pattern p2 = Pattern.compile("([0-9]{1,3}(\\.[0-9]{3})+)");
             Matcher m2 = p2.matcher(text);
             if (m2.find()) {
@@ -96,11 +96,9 @@ public class NotificationService extends NotificationListenerService {
     }
 
     private long parseCleanAmount(String raw) {
-        // Buang desimal .00 atau ,00 di akhir
         if (raw.endsWith(".00") || raw.endsWith(",00")) {
             raw = raw.substring(0, raw.length() - 3);
         }
-        // Buang semua karakter kecuali angka
         String clean = raw.replaceAll("[^0-9]", "");
         return clean.isEmpty() ? 0 : Long.parseLong(clean);
     }
@@ -111,9 +109,6 @@ public class NotificationService extends NotificationListenerService {
         String entry = "[" + time + "] " + m;
         i.putExtra("log_message", entry);
         sendBroadcast(i);
-        
-        String history = prefs.getString("log_history", "");
-        prefs.edit().putString("log_history", entry + "\n---\n" + (history.length() > 5000 ? history.substring(0, 5000) : history)).apply();
     }
 
     private void send(String bank, long amt, String raw) {
@@ -123,7 +118,7 @@ public class NotificationService extends NotificationListenerService {
         d.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
         
         db.collection("paymentDetectionsPending").add(d)
-            .addOnSuccessListener(doc -> updateUILog("☁️ SUCCESS: Sent to Firebase!"))
-            .addOnFailureListener(e -> updateUILog("❌ FIREBASE ERROR: " + e.getMessage()));
+            .addOnSuccessListener(doc -> updateUILog("☁️ SUCCESS: Data saved to Cloud!"))
+            .addOnFailureListener(e -> updateUILog("❌ CLOUD ERROR: " + e.getMessage()));
     }
 }

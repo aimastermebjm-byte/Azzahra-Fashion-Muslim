@@ -142,7 +142,8 @@ export const usersService = {
       console.error('❌ Error fetching users from Firestore:', err);
       throw err;
     }
-  }
+  },
+
   async updateUser(userId: string, data: Partial<AdminUser>): Promise<void> {
     try {
       const { doc, updateDoc } = await import('firebase/firestore');
