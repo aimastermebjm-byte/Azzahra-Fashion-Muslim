@@ -269,9 +269,12 @@ class PaymentDetectionService {
   ): Promise<{ orderId: string; confidence: number; reason: string } | null> {
     console.log('🔍 Searching for exact amount match:', detectedAmount);
 
-    // Find orders with exact payment amount (unique code system)
+    // Find orders with exact payment amount OR group payment amount (unique code system)
     const exactMatches = pendingOrders.filter(order =>
-      order.exactPaymentAmount === detectedAmount &&
+      (
+        (order.exactPaymentAmount === detectedAmount) ||
+        (order.groupPaymentAmount === detectedAmount)
+      ) &&
       order.verificationMode === 'auto' &&
       order.status === 'pending'
     );

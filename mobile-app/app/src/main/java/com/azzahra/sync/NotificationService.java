@@ -13,6 +13,8 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 public class NotificationService extends NotificationListenerService {
@@ -38,37 +40,69 @@ public class NotificationService extends NotificationListenerService {
             String pkg = sbn.getPackageName();
             Set<String> selected = prefs.getStringSet("selected_packages", new HashSet<>());
 
-            if (selected.contains(pkg)) {
-                Notification notification = sbn.getNotification();
-                Bundle extras = notification.extras;
-                String title = extras.getString(Notification.EXTRA_TITLE, "");
-                CharSequence textChar = extras.getCharSequence(Notification.EXTRA_TEXT);
-                String text = (textChar != null) ? textChar.toString() : "";
+            Notification notification = sbn.getNotification();
+            Bundle extras = notification.extras;
+            String title = extras.getString(Notification.EXTRA_TITLE, "");
+            CharSequence textChar = extras.getCharSequence(Notification.EXTRA_TEXT);
+            String text = (textChar != null) ? textChar.toString() : "";
 
+            if (selected.contains(pkg)) {
                 updateUILog("MATCHED: [" + pkg + "] " + text);
                 process(pkg, title + " " + text);
             } else if (pkg.equals(getPackageName())) {
-                Bundle extras = sbn.getNotification().extras;
-                CharSequence textChar = extras.getCharSequence(Notification.EXTRA_TEXT);
-                updateUILog("DIAGNOSTIC: " + (textChar != null ? textChar.toString() : ""));
+                updateUILog("DIAGNOSTIC: " + text);
+                process(pkg, title + " " + text); // Allow diagnostic to send to Firebase for testing
             }
         } catch (Exception e) {}
     }
 
     private void process(String pkg, String fullText) {
         String low = fullText.toLowerCase();
-        if (low.contains("idr") || low.contains("rp") || low.contains("pemasukan") || 
-            low.contains("transfer") || low.contains("berhasil") || low.contains("terima") || low.contains("masuk")) {
-            
-            java.util.regex.Matcher m = java.util.regex.Pattern.compile("(rp|idr)\\s*([0-9.,]+)").matcher(low);
-            if (m.find()) {
-                long amt = Long.parseLong(m.group(2).replaceAll("[^0-9]", ""));
-                if (amt > 0) {
-                    updateUILog("🚀 SENDING TO FIREBASE: " + amt);
-                    send(pkg, amt, fullText);
-                }
+        
+        // Pemicu filter
+        boolean trigger = low.contains("idr") || low.contains("rp") || low.contains("pemasukan") || 
+                         low.contains("transfer") || low.contains("berhasil") || low.contains("terima") || 
+                         low.contains("masuk") || low.contains("kredit");
+
+        if (trigger) {
+            long amt = extractAmount(low);
+            if (amt > 0) {
+                updateUILog("🚀 SENDING TO FIREBASE: " + amt);
+                send(pkg, amt, fullText);
+            } else {
+                updateUILog("⚠️ Keywords matched, but amount NOT found.");
             }
         }
+    }
+
+    private long extractAmount(String text) {
+        try {
+            // Regex lebih kuat: Cari angka setelah IDR/Rp atau angka yang mengandung titik/koma
+            // Pattern 1: Mencari angka setelah IDR atau Rp
+            Pattern p1 = Pattern.compile("(idr|rp)\\s*([0-9.,]+)");
+            Matcher m1 = p1.matcher(text);
+            if (m1.find()) {
+                return parseCleanAmount(m1.group(2));
+            }
+
+            // Pattern 2: Jika tidak ada Rp/IDR, cari angka besar (ribuan) yang punya titik
+            Pattern p2 = Pattern.compile("([0-9]{1,3}(\\.[0-9]{3})+)");
+            Matcher m2 = p2.matcher(text);
+            if (m2.find()) {
+                return parseCleanAmount(m2.group(1));
+            }
+        } catch (Exception e) {}
+        return 0;
+    }
+
+    private long parseCleanAmount(String raw) {
+        // Buang desimal .00 atau ,00 di akhir
+        if (raw.endsWith(".00") || raw.endsWith(",00")) {
+            raw = raw.substring(0, raw.length() - 3);
+        }
+        // Buang semua karakter kecuali angka
+        String clean = raw.replaceAll("[^0-9]", "");
+        return clean.isEmpty() ? 0 : Long.parseLong(clean);
     }
 
     private void updateUILog(String m) {
@@ -89,7 +123,7 @@ public class NotificationService extends NotificationListenerService {
         d.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
         
         db.collection("paymentDetectionsPending").add(d)
-            .addOnSuccessListener(doc -> updateUILog("☁️ SUCCESS: Sent to Firebase! ID: " + doc.getId()))
+            .addOnSuccessListener(doc -> updateUILog("☁️ SUCCESS: Sent to Firebase!"))
             .addOnFailureListener(e -> updateUILog("❌ FIREBASE ERROR: " + e.getMessage()));
     }
 }

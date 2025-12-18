@@ -18,7 +18,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const { orders, loading, error } = useFirebaseOrders();
   const { showToast } = useToast();
-  
+
   // ✨ NEW: Multi-select state
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [showMethodModal, setShowMethodModal] = useState(false);
@@ -41,7 +41,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
     const pendingOrderIds = orders
       .filter(o => o.status === 'pending')
       .map(o => o.id);
-    
+
     if (selectedOrderIds.length === pendingOrderIds.length) {
       setSelectedOrderIds([]);
     } else {
@@ -53,31 +53,31 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   const handleBayarSekarang = async () => {
     const selected = orders.filter(o => selectedOrderIds.includes(o.id));
     const subtotal = selected.reduce((sum, o) => sum + o.finalTotal, 0);
-    
+
     // ✅ CHECK: Apakah order pertama sudah punya paymentGroupId?
     const firstOrder = selected[0];
     let existingPaymentGroup = null;
-    
+
     if (firstOrder?.paymentGroupId) {
       try {
         console.log('🔍 Checking existing payment group:', firstOrder.paymentGroupId);
-        
+
         // Load existing payment group
         existingPaymentGroup = await paymentGroupService.getPaymentGroup(firstOrder.paymentGroupId);
-        
+
         if (existingPaymentGroup && existingPaymentGroup.status === 'pending') {
           // ✅ VALIDATE: Check if existing payment group matches current selection
-          const isSameOrders = 
+          const isSameOrders =
             existingPaymentGroup.orderIds.length === selectedOrderIds.length &&
             existingPaymentGroup.orderIds.every(id => selectedOrderIds.includes(id));
-          
+
           const isSameTotal = existingPaymentGroup.originalTotal === subtotal;
-          
+
           if (isSameOrders && isSameTotal) {
             // Same orders, same total - reuse existing payment group
             console.log('✅ Found matching payment group! Using existing code:', existingPaymentGroup.uniquePaymentCode);
             showToast('💡 Menggunakan kode pembayaran yang sudah dibuat', 'info');
-            
+
             // Go directly to instructions with existing payment group
             setPaymentData({
               orderIds: selectedOrderIds,
@@ -85,7 +85,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
               orders: selected,
               paymentGroup: existingPaymentGroup
             });
-            
+
             if (existingPaymentGroup.verificationMode === 'auto') {
               setShowInstructionsModal(true);
             } else if (existingPaymentGroup.verificationMode === 'manual') {
@@ -94,7 +94,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
               // No mode selected yet, show method modal
               setShowMethodModal(true);
             }
-            
+
             return; // Exit early - don't show method modal
           } else {
             // Different orders/total - ask user if they want to cancel old one
@@ -104,11 +104,11 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
               `Pesanan baru: ${selectedOrderIds.length} pesanan (Rp ${subtotal.toLocaleString('id-ID')})\n\n` +
               `Batalkan pembayaran lama dan buat yang baru?`
             );
-            
+
             if (shouldCancelOld) {
               // Cancel old payment group
               await paymentGroupService.cancelPaymentGroup(existingPaymentGroup.id);
-              
+
               // Remove payment group links from OLD orders
               for (const orderId of existingPaymentGroup.orderIds) {
                 await ordersService.updateOrder(orderId, {
@@ -117,9 +117,9 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                   verificationMode: undefined
                 });
               }
-              
+
               showToast('✅ Pembayaran lama dibatalkan', 'success');
-              
+
               // Continue to create new payment group
             } else {
               // User cancelled - don't proceed
@@ -133,7 +133,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         console.error('❌ Error loading existing payment group:', error);
       }
     }
-    
+
     // No existing payment group (or cancelled), show method selection
     setPaymentData({
       orderIds: selectedOrderIds,
@@ -141,7 +141,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       orders: selected,
       paymentGroup: null
     });
-    
+
     setShowMethodModal(true);
   };
 
@@ -150,7 +150,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
     try {
       if (mode === 'auto') {
         showToast('🔄 Membuat pembayaran otomatis...', 'info');
-        
+
         // Create payment group with unique code
         const paymentGroup = await paymentGroupService.createPaymentGroup({
           userId: user.uid,
@@ -160,32 +160,42 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
           originalTotal: paymentData.subtotal,
           verificationMode: 'auto'
         });
-        
+
+        // Update orders with payment group ID
         // Update orders with payment group ID
         for (const orderId of paymentData.orderIds) {
-          await ordersService.updateOrder(orderId, {
+          const updateData: any = {
             paymentGroupId: paymentGroup.id,
             groupPaymentAmount: paymentGroup.exactPaymentAmount,
             verificationMode: 'auto'
-          });
+          };
+
+          // If single order, also update the order's own exact amount for display/matching
+          if (paymentData.orderIds.length === 1) {
+            updateData.exactPaymentAmount = paymentGroup.exactPaymentAmount;
+            updateData.uniquePaymentCode = paymentGroup.uniquePaymentCode;
+            updateData.finalTotal = paymentGroup.exactPaymentAmount; // Update final total to include unique code
+          }
+
+          await ordersService.updateOrder(orderId, updateData);
         }
-        
+
         setPaymentData({
           ...paymentData,
           paymentGroup
         });
-        
+
         setShowMethodModal(false);
         setShowInstructionsModal(true);
         showToast('✅ Instruksi pembayaran siap!', 'success');
-        
+
       } else {
         // Manual mode - no code generation needed
         setPaymentData({
           ...paymentData,
           verificationMode: 'manual'
         });
-        
+
         setShowMethodModal(false);
         setShowUploadModal(true);
       }
@@ -200,7 +210,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
     const confirmed = window.confirm(
       'Ubah metode pembayaran?\n\nKode unik sudah dibuat, tapi Anda bisa pilih metode lain.'
     );
-    
+
     if (confirmed && paymentData.paymentGroup) {
       try {
         // Update payment group to pending_selection
@@ -209,7 +219,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
           verificationMode: null,
           originalMode: 'auto'
         });
-        
+
         setShowInstructionsModal(false);
         setShowMethodModal(true);
         showToast('💡 Silakan pilih metode pembayaran lagi', 'info');
@@ -225,12 +235,12 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
     const confirmed = window.confirm(
       'Batalkan pembayaran ini?\n\nKode unik akan dibatalkan dan Anda kembali ke daftar pesanan.'
     );
-    
+
     if (confirmed && paymentData.paymentGroup) {
       try {
         // Cancel payment group
         await paymentGroupService.cancelPaymentGroup(paymentData.paymentGroup.id);
-        
+
         // Remove payment group links from orders
         for (const orderId of paymentData.orderIds) {
           await ordersService.updateOrder(orderId, {
@@ -239,7 +249,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
             verificationMode: undefined
           });
         }
-        
+
         setShowInstructionsModal(false);
         setPaymentData(null);
         setSelectedOrderIds([]);
@@ -260,7 +270,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
     try {
       setUploadingProof(true);
-      
+
       // Upload bukti for each selected order
       for (const orderId of paymentData.orderIds) {
         await ordersService.updateOrderPayment(
@@ -274,7 +284,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       setPaymentData(null);
       setSelectedOrderIds([]);
       setPaymentProof(null);
-      
+
       showToast(`✅ Bukti pembayaran berhasil dikirim untuk ${paymentData.orderIds.length} pesanan!`, 'success');
     } catch (error) {
       console.error('Error submitting payment:', error);
@@ -369,7 +379,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
           {onBack && <BackButton onClick={onBack} />}
           <h1 className="text-lg font-semibold flex-1 text-center">Pesanan Saya</h1>
         </div>
-        
+
         {/* Search */}
         <div className="px-4 pb-4">
           <div className="relative">
@@ -388,11 +398,10 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-shrink-0 px-4 py-2 mr-2 rounded-full text-sm font-medium transition-colors ${
-                activeTab === tab.id
+              className={`flex-shrink-0 px-4 py-2 mr-2 rounded-full text-sm font-medium transition-colors ${activeTab === tab.id
                   ? 'bg-pink-500 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+                }`}
             >
               {tab.label}
             </button>
@@ -441,9 +450,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
             return (
               <div
                 key={order.id}
-                className={`bg-white rounded-xl shadow-sm border-2 transition-all ${
-                  isSelected ? 'border-pink-500 ring-2 ring-pink-200' : 'border-gray-100'
-                }`}
+                className={`bg-white rounded-xl shadow-sm border-2 transition-all ${isSelected ? 'border-pink-500 ring-2 ring-pink-200' : 'border-gray-100'
+                  }`}
               >
                 {/* ✨ NEW: Checkbox for pending orders */}
                 {isPending && (
@@ -679,7 +687,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
               {/* Bank Accounts - Compact */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
-                
+
                 {/* BCA */}
                 <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 flex items-center justify-between">
                   <div>
@@ -799,7 +807,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
               {/* Bank Accounts - Compact */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
-                
+
                 <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 flex items-center justify-between">
                   <div>
                     <p className="text-xs text-blue-700 font-medium">🏦 BCA - Fahrin</p>
@@ -916,7 +924,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-4">
               <div className="mb-4">
                 <p className="text-sm text-gray-600 mb-2">Total Pembayaran</p>
