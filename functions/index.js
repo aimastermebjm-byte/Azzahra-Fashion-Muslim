@@ -3,7 +3,7 @@
  * "Robot Server" for Auto-Verification 24/7
  */
 
-const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 const { logger } = require("firebase-functions");
@@ -15,10 +15,13 @@ const db = getFirestore();
  * 🤖 Robot Eksekutor (Server Side)
  * Trigger: When a NEW payment detection is created in Firestore.
  */
-exports.checkPaymentDetection = onDocumentCreated("paymentDetectionsPending/{detectionId}", async (event) => {
-    const snapshot = event.data;
+exports.checkPaymentDetection = onDocumentWritten("paymentDetectionsPending/{detectionId}", async (event) => {
+    // Debug Log
+    logger.info(`🤖 Robot: Triggered! Event Type: ${event.type}`);
+
+    const snapshot = event.data.after; // For onDocumentWritten, use data.after
     if (!snapshot) {
-        logger.error("No data associated with the event");
+        // Document deleted
         return;
     }
 
@@ -100,17 +103,22 @@ exports.checkPaymentDetection = onDocumentCreated("paymentDetectionsPending/{det
         try {
             const batch = db.batch();
 
-            // Update Detection
-            const detectionRef = db.collection("paymentDetections").doc(detectionId);
-            batch.update(detectionRef, {
+            // Move to Verified
+            const verifiedRef = db.collection("paymentDetectionsVerified").doc(detectionId);
+            batch.set(verifiedRef, {
+                ...detection,
                 status: "verified",
                 matchedOrderId: bestMatch.orderId,
                 confidence: bestMatch.confidence,
                 verificationMode: "auto",
                 verifiedAt: new Date().toISOString(),
-                verifiedBy: "system_cloud_function", // Tanda tangan Robot Server
+                verifiedBy: "system_cloud_function",
                 notes: `Auto-verified by Cloud Function (Confidence: ${bestMatch.confidence}%)`
             });
+
+            // Delete from Pending
+            const pendingRef = db.collection("paymentDetectionsPending").doc(detectionId);
+            batch.delete(pendingRef);
 
             // Update Order
             const orderRef = db.collection("orders").doc(bestMatch.orderId);
