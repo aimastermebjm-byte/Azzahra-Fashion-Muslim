@@ -302,29 +302,19 @@ class PaymentDetectionService {
       similarity: nameSimilarity + '%'
     });
 
-    // If name similarity is high (>70%), confidence = 100%
-    if (nameSimilarity >= 70) {
-      return {
-        orderId: matchedOrder.id,
-        confidence: 100,
-        reason: `Exact amount match (${detectedAmount}) + Name match (${Math.round(nameSimilarity)}%)`
-      };
-    }
+    // ✨ NEW LOGIC: Trust Unique Code 100%
+    // Since we now enforce GLOBAL UNIQUENESS for pending payment amounts in paymentGroupService,
+    // an exact amount match is statistically guaranteed to be the correct order.
+    // We treat the Amount + Unique Code as the primary verification key.
 
-    // If name similarity is medium (50-69%), confidence = 85% (require admin review)
-    if (nameSimilarity >= 50) {
-      return {
-        orderId: matchedOrder.id,
-        confidence: 85,
-        reason: `Exact amount match but name partially matches (${Math.round(nameSimilarity)}%)`
-      };
-    }
+    // Log the name match status but don't let it block verification
+    const isNameMatch = nameSimilarity >= 50;
+    const nameStatus = isNameMatch ? 'Confirmed' : 'Ignored (Name missing or diff)';
 
-    // If name similarity is low (<50%), confidence = 60% (suspicious, require admin review)
     return {
       orderId: matchedOrder.id,
-      confidence: 60,
-      reason: `⚠️ Exact amount match but DIFFERENT sender name! Expected: "${customerName}", Got: "${senderName}"`
+      confidence: 100, // Trust the code explicitly
+      reason: `Exact amount match (${detectedAmount}) with Unique Code. Name Status: ${nameStatus}`
     };
   }
 

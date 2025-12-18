@@ -4,17 +4,17 @@
  * with a single unique payment code
  */
 
-import { 
-  collection, 
-  doc, 
+import {
+  collection,
+  doc,
   getDoc,
   getDocs,
-  setDoc, 
+  setDoc,
   updateDoc,
   query,
   where,
   serverTimestamp,
-  Timestamp 
+  Timestamp
 } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { generateUniquePaymentCode } from '../utils/uniqueCodeGenerator';
@@ -55,9 +55,32 @@ class PaymentGroupService {
     try {
       console.log('📦 Creating payment group...', data);
 
-      // Generate unique payment code
-      const uniqueCode = generateUniquePaymentCode();
-      const exactAmount = data.originalTotal + uniqueCode;
+      let uniqueCode = 0;
+      let exactAmount = 0;
+      let isUnique = false;
+      let attempts = 0;
+      const MAX_ATTEMPTS = 10;
+
+      // 🛡️ Collision Check Loop
+      // Ensure the generated exactAmount is not currently used by any other PENDING payment
+      while (!isUnique && attempts < MAX_ATTEMPTS) {
+        attempts++;
+        uniqueCode = generateUniquePaymentCode();
+        exactAmount = data.originalTotal + uniqueCode;
+
+        // Check if this amount is already taken
+        const existingGroup = await this.getPaymentGroupByAmount(exactAmount);
+
+        if (!existingGroup) {
+          isUnique = true;
+        } else {
+          console.warn(`⚠️ Collision detected for amount ${exactAmount}. Retrying (${attempts}/${MAX_ATTEMPTS})...`);
+        }
+      }
+
+      if (!isUnique) {
+        throw new Error('Gagal mendapatkan kode pembayaran unik. Silakan coba lagi.');
+      }
 
       // Generate group ID
       const groupId = `PG${Date.now()}`;
@@ -156,7 +179,7 @@ class PaymentGroupService {
       );
 
       const snapshot = await getDocs(q);
-      
+
       if (snapshot.empty) {
         return null;
       }
