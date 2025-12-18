@@ -95,10 +95,10 @@ export const usersService = {
               lastLoginAt: data.lastLoginAt || ''
             });
           });
-          
+
           // Update cache
           writeCache(users);
-          
+
           callback({ users, loading: false, error: null });
         },
         (err) => {
@@ -111,7 +111,7 @@ export const usersService = {
     } catch (err) {
       console.error('❌ Failed to setup users subscription:', err);
       callback({ users: [], loading: false, error: err as Error });
-      return () => {};
+      return () => { };
     }
   },
 
@@ -140,6 +140,22 @@ export const usersService = {
       return users;
     } catch (err) {
       console.error('❌ Error fetching users from Firestore:', err);
+      throw err;
+    }
+  }
+  async updateUser(userId: string, data: Partial<AdminUser>): Promise<void> {
+    try {
+      const { doc, updateDoc } = await import('firebase/firestore');
+      const userRef = doc(db, 'users', userId);
+
+      await updateDoc(userRef, {
+        ...data,
+        updatedAt: new Date().toISOString()
+      });
+
+      console.log('✅ User updated successfully:', userId);
+    } catch (err) {
+      console.error('❌ Error updating user:', err);
       throw err;
     }
   }

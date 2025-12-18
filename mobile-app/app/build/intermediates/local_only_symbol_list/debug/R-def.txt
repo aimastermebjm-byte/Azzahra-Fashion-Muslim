@@ -19,7 +19,7 @@ id btnClearLog
 id btnGrantNotif
 id btnRefresh
 id btnTestNotif
-id logText
+id logListView
 id searchApps
 id statusIndicator
 id statusText

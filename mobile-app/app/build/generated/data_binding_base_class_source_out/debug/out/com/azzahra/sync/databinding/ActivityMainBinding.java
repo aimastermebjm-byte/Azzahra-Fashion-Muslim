@@ -41,7 +41,7 @@ public final class ActivityMainBinding implements ViewBinding {
   public final Button btnTestNotif;
 
   @NonNull
-  public final TextView logText;
+  public final ListView logListView;
 
   @NonNull
   public final EditText searchApps;
@@ -54,7 +54,7 @@ public final class ActivityMainBinding implements ViewBinding {
 
   private ActivityMainBinding(@NonNull LinearLayout rootView, @NonNull ListView appList,
       @NonNull Button btnBatteryOpt, @NonNull Button btnClearLog, @NonNull Button btnGrantNotif,
-      @NonNull Button btnRefresh, @NonNull Button btnTestNotif, @NonNull TextView logText,
+      @NonNull Button btnRefresh, @NonNull Button btnTestNotif, @NonNull ListView logListView,
       @NonNull EditText searchApps, @NonNull View statusIndicator, @NonNull TextView statusText) {
     this.rootView = rootView;
     this.appList = appList;
@@ -63,7 +63,7 @@ public final class ActivityMainBinding implements ViewBinding {
     this.btnGrantNotif = btnGrantNotif;
     this.btnRefresh = btnRefresh;
     this.btnTestNotif = btnTestNotif;
-    this.logText = logText;
+    this.logListView = logListView;
     this.searchApps = searchApps;
     this.statusIndicator = statusIndicator;
     this.statusText = statusText;
@@ -132,9 +132,9 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
-      id = R.id.logText;
-      TextView logText = ViewBindings.findChildViewById(rootView, id);
-      if (logText == null) {
+      id = R.id.logListView;
+      ListView logListView = ViewBindings.findChildViewById(rootView, id);
+      if (logListView == null) {
         break missingId;
       }
 
@@ -157,7 +157,7 @@ public final class ActivityMainBinding implements ViewBinding {
       }
 
       return new ActivityMainBinding((LinearLayout) rootView, appList, btnBatteryOpt, btnClearLog,
-          btnGrantNotif, btnRefresh, btnTestNotif, logText, searchApps, statusIndicator,
+          btnGrantNotif, btnRefresh, btnTestNotif, logListView, searchApps, statusIndicator,
           statusText);
     }
     String missingId = rootView.getResources().getResourceName(id);

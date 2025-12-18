@@ -13,7 +13,7 @@
         android:layout_marginBottom="12dp">
         <View android:id="@+id/statusIndicator" android:layout_width="20dp" android:layout_height="20dp" android:background="@drawable/circle_red" android:layout_marginEnd="12dp"/>
         <TextView android:id="@+id/statusText" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Status: OFF" android:textSize="16sp" android:textStyle="bold"/>
-        <Button android:id="@+id/btnClearLog" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Clear" android:textSize="10sp" style="@style/Widget.MaterialComponents.Button.TextButton"/>
+        <Button android:id="@+id/btnClearLog" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Clear Log" android:textSize="10sp" style="@style/Widget.MaterialComponents.Button.TextButton"/>
     </LinearLayout>
 
     <Button android:id="@+id/btnGrantNotif" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="1. Setup Permissions" android:layout_marginBottom="4dp"/>
@@ -45,30 +45,23 @@
     <ListView
         android:id="@+id/appList"
         android:layout_width="match_parent"
-        android:layout_height="180dp"
+        android:layout_height="150dp"
         android:background="#F0F0F0"
         android:layout_marginBottom="12dp"/>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Console Output:"
+        android:text="Console Output (Click to Expand):"
         android:textStyle="bold"
         android:layout_marginBottom="4dp"/>
 
-    <ScrollView
+    <ListView
+        android:id="@+id/logListView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:background="#EEEEEE"
-        android:padding="8dp">
-        <TextView
-            android:id="@+id/logText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Waiting..."
-            android:fontFamily="monospace"
-            android:textSize="11sp"
-            android:textColor="#424242"/>
-    </ScrollView>
+        android:divider="#CCCCCC"
+        android:dividerHeight="1dp"/>
 </LinearLayout>

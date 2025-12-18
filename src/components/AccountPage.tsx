@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { User, Package, Heart, MapPin, LogOut, Crown, Star, User as UserIcon, Shield, Eye, EyeOff, RefreshCw, Award, BarChart3, Users, TrendingUp, Package as PackageIcon, Mail, Phone, Key, Layers, CreditCard } from 'lucide-react';
-// import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
-// import { useSupabaseAuthSimple } from '../hooks/useSupabaseAuthSimple';
+import { User, Package, Heart, MapPin, LogOut, Crown, Star, User as UserIcon, Shield, Eye, EyeOff, RefreshCw, Award, BarChart3, Users, TrendingUp, Package as PackageIcon, Mail, Phone, Key, Layers, CreditCard, Edit2, Check, X } from 'lucide-react';
+import { usersService } from '../services/usersService';
+import { auth, updateProfile } from '../utils/firebaseClient';
+import { useToast } from './ToastProvider';
 
 interface AccountPageProps {
   user: any;
@@ -15,7 +16,6 @@ interface AccountPageProps {
   onNavigateToAdminMaster?: () => void;
   onNavigateToAdminPaymentVerification?: () => void;
   onNavigateToAddressManagement?: () => void;
-  // Flash sale and featured products are now managed in AdminProductsPage
 }
 
 const AccountPage: React.FC<AccountPageProps> = ({
@@ -31,7 +31,8 @@ const AccountPage: React.FC<AccountPageProps> = ({
   onNavigateToAdminPaymentVerification,
   onNavigateToAddressManagement
 }) => {
-    const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const { showToast } = useToast();
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
@@ -40,12 +41,55 @@ const AccountPage: React.FC<AccountPageProps> = ({
     confirmPassword: ''
   });
 
-  // Use prop user if available, otherwise use hook user
+  // Username edit state
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [loadingName, setLoadingName] = useState(false);
+
+  // Use prop user if available
   const user = propUser;
 
-  
   const handleLogout = () => {
     onLogout();
+  };
+
+  const startEditingName = () => {
+    setNewName(user?.name || user?.displayName || '');
+    setIsEditingName(true);
+  };
+
+  const handleSaveName = async () => {
+    if (!newName.trim()) {
+      showToast('Nama tidak boleh kosong', 'error');
+      return;
+    }
+
+    try {
+      setLoadingName(true);
+
+      // 1. Update Firestore
+      await usersService.updateUser(user.uid, { name: newName });
+
+      // 2. Update Firebase Auth Profile (for immediate consistency)
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { displayName: newName });
+      }
+
+      showToast('✅ Username berhasil diperbarui!', 'success');
+      setIsEditingName(false);
+
+      // Reload page to reflect changes across app (simple way)
+      // Or we can assume parent hook updates automatically via auth listener
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+
+    } catch (error: any) {
+      console.error('Error updating name:', error);
+      showToast('Gagal mengubah nama: ' + error.message, 'error');
+    } finally {
+      setLoadingName(false);
+    }
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -61,14 +105,9 @@ const AccountPage: React.FC<AccountPageProps> = ({
       return;
     }
 
-    // TODO: Implement password change with Supabase
+    // TODO: Implement password change with Supabase/Firebase
     try {
-      // const { error } = await supabase.auth.updateUser({
-      //   password: passwordForm.newPassword
-      // });
-      // if (error) throw error;
-
-      alert('✅ Password berhasil diubah!');
+      alert('⚠️ Fitur ubah password belum terhubung ke backend dalam demo ini.');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setShowPasswordForm(false);
     } catch (error: any) {
@@ -76,9 +115,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
     }
   };
 
-  
   if (!user) {
-      // No localStorage fallback in Firebase-only mode
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
@@ -111,6 +148,80 @@ const AccountPage: React.FC<AccountPageProps> = ({
   const roleInfo = getRoleDisplay(user.role);
   const RoleIcon = roleInfo.icon;
 
+  // Reusable User Info Card
+  const renderUserInfo = (title: string = "Informasi Akun") => (
+    <div className="bg-white rounded-lg shadow-sm p-4">
+      <h3 className="font-semibold text-gray-800 mb-4">{title}</h3>
+      <div className="space-y-3">
+        <div className="flex items-center space-x-3">
+          <User className="w-5 h-5 text-gray-400" />
+          <div className="flex-1">
+            <p className="text-sm text-gray-500">Username</p>
+            {isEditingName ? (
+              <div className="flex items-center space-x-2 mt-1">
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="flex-1 p-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSaveName}
+                  disabled={loadingName}
+                  className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setIsEditingName(false)}
+                  disabled={loadingName}
+                  className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <p className="font-medium">{user.name || user.displayName}</p>
+                <button
+                  onClick={startEditingName}
+                  className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center space-x-3">
+          <Mail className="w-5 h-5 text-gray-400" />
+          <div>
+            <p className="text-sm text-gray-500">Email</p>
+            <p className="font-medium">{user.email}</p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-3">
+          <Phone className="w-5 h-5 text-gray-400" />
+          <div>
+            <p className="text-sm text-gray-500">Telepon</p>
+            <p className="font-medium">{user.phone || 'Belum diisi'}</p>
+          </div>
+        </div>
+        <button
+          onClick={onNavigateToAddressManagement}
+          className="flex items-center space-x-3 w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors"
+        >
+          <MapPin className="w-5 h-5 text-gray-400" />
+          <div className="flex-1">
+            <p className="font-medium">Alamat Saya</p>
+            <p className="text-sm text-gray-500">Kelola alamat pengiriman</p>
+          </div>
+        </button>
+      </div>
+    </div>
+  );
+
   // Role-based settings content
   const renderSettingsContent = () => {
     switch (user.role) {
@@ -118,42 +229,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
         return (
           <div className="space-y-4">
             {/* Basic Info */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <h3 className="font-semibold text-gray-800 mb-4">Informasi Akun</h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <User className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Username</p>
-                    <p className="font-medium">{user.name}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Mail className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium">{user.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Phone className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Telepon</p>
-                    <p className="font-medium">{user.phone || 'Belum diisi'}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={onNavigateToAddressManagement}
-                  className="flex items-center space-x-3 w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors"
-                >
-                  <MapPin className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                    <p className="font-medium">Alamat Saya</p>
-                    <p className="text-sm text-gray-500">Kelola alamat pengiriman</p>
-                  </div>
-                </button>
-              </div>
-            </div>
+            {renderUserInfo()}
 
             {/* Password Management */}
             <div className="bg-white rounded-lg shadow-sm p-4">
@@ -179,7 +255,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                       <input
                         type={showCurrentPassword ? "text" : "password"}
                         value={passwordForm.currentPassword}
-                        onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                         className="w-full p-3 border border-gray-300 rounded-lg pr-10"
                         required
                       />
@@ -198,7 +274,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                       <input
                         type={showNewPassword ? "text" : "password"}
                         value={passwordForm.newPassword}
-                        onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                         className="w-full p-3 border border-gray-300 rounded-lg pr-10"
                         required
                       />
@@ -216,7 +292,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     <input
                       type="password"
                       value={passwordForm.confirmPassword}
-                      onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                       className="w-full p-3 border border-gray-300 rounded-lg"
                       required
                     />
@@ -253,7 +329,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     </div>
                   </div>
                 </button>
-                              </div>
+              </div>
             </div>
           </div>
         );
@@ -262,42 +338,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
         return (
           <div className="space-y-4">
             {/* Basic Info */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <h3 className="font-semibold text-gray-800 mb-4">Informasi Akun</h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <User className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Username</p>
-                    <p className="font-medium">{user.name}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Mail className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium">{user.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Phone className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Telepon</p>
-                    <p className="font-medium">{user.phone || 'Belum diisi'}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={onNavigateToAddressManagement}
-                  className="flex items-center space-x-3 w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors"
-                >
-                  <MapPin className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                    <p className="font-medium">Alamat Saya</p>
-                    <p className="text-sm text-gray-500">Kelola alamat pengiriman</p>
-                  </div>
-                </button>
-              </div>
-            </div>
+            {renderUserInfo()}
 
             {/* Reseller Points */}
             <div className="bg-white rounded-lg shadow-sm p-4">
@@ -338,7 +379,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                       <input
                         type={showCurrentPassword ? "text" : "password"}
                         value={passwordForm.currentPassword}
-                        onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                         className="w-full p-3 border border-gray-300 rounded-lg pr-10"
                         required
                       />
@@ -357,7 +398,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                       <input
                         type={showNewPassword ? "text" : "password"}
                         value={passwordForm.newPassword}
-                        onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                         className="w-full p-3 border border-gray-300 rounded-lg pr-10"
                         required
                       />
@@ -375,7 +416,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     <input
                       type="password"
                       value={passwordForm.confirmPassword}
-                      onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                       className="w-full p-3 border border-gray-300 rounded-lg"
                       required
                     />
@@ -412,7 +453,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     </div>
                   </div>
                 </button>
-                                <button className="w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors">
+                <button className="w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors">
                   <div className="flex items-center space-x-3">
                     <Award className="w-5 h-5 text-gray-400" />
                     <div className="flex-1">
@@ -430,42 +471,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
         return (
           <div className="space-y-4">
             {/* Basic Info */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <h3 className="font-semibold text-gray-800 mb-4">Informasi Akun Admin</h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <User className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Username</p>
-                    <p className="font-medium">{user.name}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Mail className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium">{user.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Phone className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Telepon</p>
-                    <p className="font-medium">{user.phone || 'Belum diisi'}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={onNavigateToAddressManagement}
-                  className="flex items-center space-x-3 w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors"
-                >
-                  <MapPin className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                    <p className="font-medium">Alamat Saya</p>
-                    <p className="text-sm text-gray-500">Kelola alamat pengiriman</p>
-                  </div>
-                </button>
-              </div>
-            </div>
+            {renderUserInfo("Informasi Akun Admin")}
 
             {/* Admin Features */}
             <div className="bg-white rounded-lg shadow-sm p-4">
@@ -552,7 +558,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                       <input
                         type={showCurrentPassword ? "text" : "password"}
                         value={passwordForm.currentPassword}
-                        onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                         className="w-full p-3 border border-gray-300 rounded-lg pr-10"
                         required
                       />
@@ -571,7 +577,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                       <input
                         type={showNewPassword ? "text" : "password"}
                         value={passwordForm.newPassword}
-                        onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                         className="w-full p-3 border border-gray-300 rounded-lg pr-10"
                         required
                       />
@@ -589,7 +595,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     <input
                       type="password"
                       value={passwordForm.confirmPassword}
-                      onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                       className="w-full p-3 border border-gray-300 rounded-lg"
                       required
                     />
@@ -644,42 +650,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
         return (
           <div className="space-y-4">
             {/* Owner Info */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <h3 className="font-semibold text-gray-800 mb-4">Informasi Akun Owner</h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <User className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Username</p>
-                    <p className="font-medium">{user.name}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Mail className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium">{user.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Phone className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Telepon</p>
-                    <p className="font-medium">{user.phone || 'Belum diisi'}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={onNavigateToAddressManagement}
-                  className="flex items-center space-x-3 w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors"
-                >
-                  <MapPin className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                    <p className="font-medium">Alamat Saya</p>
-                    <p className="text-sm text-gray-500">Kelola alamat pengiriman</p>
-                  </div>
-                </button>
-              </div>
-            </div>
+            {renderUserInfo("Informasi Akun Owner")}
 
             {/* Owner Controls */}
             <div className="bg-white rounded-lg shadow-sm p-4">
@@ -754,7 +725,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                       </div>
                     </div>
                   </button>
-                  </div>
+                </div>
               )}
             </div>
 
@@ -799,7 +770,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                       <input
                         type={showCurrentPassword ? "text" : "password"}
                         value={passwordForm.currentPassword}
-                        onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                         className="w-full p-3 border border-gray-300 rounded-lg pr-10"
                         required
                       />
@@ -818,7 +789,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                       <input
                         type={showNewPassword ? "text" : "password"}
                         value={passwordForm.newPassword}
-                        onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                         className="w-full p-3 border border-gray-300 rounded-lg pr-10"
                         required
                       />
@@ -836,7 +807,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     <input
                       type="password"
                       value={passwordForm.confirmPassword}
-                      onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                       className="w-full p-3 border border-gray-300 rounded-lg"
                       required
                     />

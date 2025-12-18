@@ -3364,7 +3364,7 @@ int id line3 0x7f0800f9
 int id linear 0x7f0800fa
 int id listMode 0x7f0800fb
 int id list_item 0x7f0800fc
-int id logText 0x7f0800fd
+int id logListView 0x7f0800fd
 int id m3_side_sheet 0x7f0800fe
 int id marquee 0x7f0800ff
 int id masked 0x7f080100

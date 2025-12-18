@@ -1,5 +1,6 @@
 package com.azzahra.sync;
 
+import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
@@ -46,14 +47,16 @@ import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TextView statusText, logText;
-    private ListView appListView;
+    private TextView statusText;
+    private ListView appListView, logListView;
     private EditText searchApps;
     private View statusIndicator;
     private SharedPreferences prefs;
     private Set<String> selectedPackages;
     private List<AppInfo> allAppInfos = new ArrayList<>();
-    private AppAdapter adapter;
+    private List<String> logEntries = new ArrayList<>();
+    private ArrayAdapter<String> logAdapter;
+    private AppAdapter appAdapter;
 
     private final BroadcastReceiver logReceiver = new BroadcastReceiver() {
         @Override
@@ -61,8 +64,9 @@ public class MainActivity extends AppCompatActivity {
             String newLog = intent.getStringExtra("log_message");
             if (newLog != null) {
                 runOnUiThread(() -> {
-                    String current = logText.getText().toString();
-                    logText.setText(newLog + "\n---\n" + (current.length() > 5000 ? current.substring(0, 5000) : current));
+                    logEntries.add(0, newLog);
+                    if (logEntries.size() > 100) logEntries.remove(logEntries.size() - 1);
+                    logAdapter.notifyDataSetChanged();
                 });
             }
         }
@@ -80,40 +84,51 @@ public class MainActivity extends AppCompatActivity {
         selectedPackages = new HashSet<>(saved);
 
         statusText = findViewById(R.id.statusText);
-        logText = findViewById(R.id.logText);
         appListView = findViewById(R.id.appList);
+        logListView = findViewById(R.id.logListView);
         searchApps = findViewById(R.id.searchApps);
         statusIndicator = findViewById(R.id.statusIndicator);
 
-        logText.setText(prefs.getString("log_history", "Console ready..."));
+        // Setup Log List
+        logAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, logEntries) {
+            @NonNull
+            @Override
+            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                TextView tv = (TextView) super.getView(position, convertView, parent);
+                tv.setTextSize(11);
+                tv.setPadding(8, 8, 8, 8);
+                return tv;
+            }
+        };
+        logListView.setAdapter(logAdapter);
+        logListView.setOnItemClickListener((parent, view, position, id) -> {
+            new AlertDialog.Builder(this)
+                    .setTitle("Detail Log")
+                    .setMessage(logEntries.get(position))
+                    .setPositiveButton("Close", null)
+                    .show();
+        });
 
         findViewById(R.id.btnGrantNotif).setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)));
         findViewById(R.id.btnBatteryOpt).setOnClickListener(v -> requestBatteryOptimization());
-        
-        findViewById(R.id.btnTestNotif).setOnClickListener(v -> {
-            sendTestNotification();
-            Intent intent = new Intent(this, NotificationService.class);
-            intent.setAction("SCAN_NOW");
-            startService(intent);
-        });
+        findViewById(R.id.btnTestNotif).setOnClickListener(v -> sendTestNotification());
         
         findViewById(R.id.btnClearLog).setOnClickListener(v -> {
-            prefs.edit().putString("log_history", "").apply();
-            logText.setText("");
+            logEntries.clear();
+            logAdapter.notifyDataSetChanged();
+            prefs.edit().putString("log_history_list", "").apply();
         });
 
         findViewById(R.id.btnRefresh).setOnClickListener(v -> {
             NotificationListenerService.requestRebind(new ComponentName(this, NotificationService.class));
-            toggleNotificationListenerService();
-            Toast.makeText(this, "Deep Refreshing Listener...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Refreshing Connection...", Toast.LENGTH_SHORT).show();
         });
 
         loadAppList();
-
         searchApps.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (adapter != null) adapter.getFilter().filter(s);
+                if (appAdapter != null) appAdapter.getFilter().filter(s);
             }
             @Override public void afterTextChanged(Editable s) {}
         });
@@ -129,8 +144,8 @@ public class MainActivity extends AppCompatActivity {
             allAppInfos.add(new AppInfo(app.loadLabel(pm).toString(), app.packageName, app.loadIcon(pm), selectedPackages.contains(app.packageName)));
         }
         Collections.sort(allAppInfos, (a, b) -> a.name.compareToIgnoreCase(b.name));
-        adapter = new AppAdapter(this, allAppInfos);
-        appListView.setAdapter(adapter);
+        appAdapter = new AppAdapter(this, allAppInfos);
+        appListView.setAdapter(appAdapter);
     }
 
     private static class AppInfo {
@@ -159,11 +174,6 @@ public class MainActivity extends AppCompatActivity {
                 if (isChecked) selectedPackages.add(app.packageName);
                 else selectedPackages.remove(app.packageName);
                 prefs.edit().putStringSet("selected_packages", new HashSet<>(selectedPackages)).apply();
-                
-                // Beri tahu service secara paksa ada perubahan list
-                Intent i = new Intent(getContext(), NotificationService.class);
-                i.setAction("REFRESH_LIST");
-                startService(i);
             });
             convertView.setOnClickListener(v -> cb.performClick());
             return convertView;
@@ -185,12 +195,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void toggleNotificationListenerService() {
-        ComponentName cn = new ComponentName(this, NotificationService.class);
-        getPackageManager().setComponentEnabledSetting(cn, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
-        getPackageManager().setComponentEnabledSetting(cn, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
-    }
-
     private void requestBatteryOptimization() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
@@ -209,7 +213,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         checkPermissions();
-        logText.setText(prefs.getString("log_history", ""));
         IntentFilter f = new IntentFilter("com.azzahra.sync.NEW_LOG");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) registerReceiver(logReceiver, f, Context.RECEIVER_EXPORTED);
         else registerReceiver(logReceiver, f);
