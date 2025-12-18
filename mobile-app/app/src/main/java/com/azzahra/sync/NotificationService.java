@@ -1,8 +1,11 @@
 package com.azzahra.sync;
 
 import android.app.Notification;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
@@ -33,6 +36,18 @@ public class NotificationService extends NotificationListenerService {
     public void onListenerConnected() {
         super.onListenerConnected();
         updateUILog("✅ SERVICE ACTIVE");
+        
+        try {
+            StatusBarNotification[] activeNotifs = getActiveNotifications();
+            if (activeNotifs != null) {
+                updateUILog("Scanning " + activeNotifs.length + " notifications...");
+                for (StatusBarNotification sbn : activeNotifs) {
+                    onNotificationPosted(sbn);
+                }
+            }
+        } catch (Exception e) {
+            Log.e("AzzahraLog", "Initial scan error", e);
+        }
     }
 
     @Override
@@ -47,7 +62,6 @@ public class NotificationService extends NotificationListenerService {
             CharSequence textChar = extras.getCharSequence(Notification.EXTRA_TEXT);
             String text = (textChar != null) ? textChar.toString() : "";
 
-            // Jika aplikasi dipilih atau ini notifikasi diagnostic
             if (selected.contains(pkg) || pkg.equals(getPackageName())) {
                 process(pkg, title + " " + text);
             }
@@ -57,24 +71,15 @@ public class NotificationService extends NotificationListenerService {
     private void process(String pkg, String fullText) {
         String low = fullText.toLowerCase();
         
-        // FILTER KETAT: Hanya proses jika ada kata "masuk" atau ini Diagnostic
         if (low.contains("masuk") || pkg.equals(getPackageName())) {
             long amt = extractAmount(low);
             
             if (amt > 0) {
-                // Tampilkan log di HP hanya jika lolos filter uang masuk
                 updateUILog("💰 DETECTED: [" + pkg + "] Rp " + amt);
-                updateUILog("Detail: " + fullText);
-                
-                // Kirim ke Firebase
                 send(pkg, amt, fullText);
             } else if (pkg.equals(getPackageName())) {
-                // Khusus diagnostic tetap muncul biarpun nominal 0
                 updateUILog("DIAGNOSTIC: " + fullText);
             }
-        } else {
-            // Notifikasi lain dari aplikasi bank (seperti promo/info saldo) diabaikan total
-            Log.d("AzzahraLog", "Ignored notification from " + pkg + " (No 'masuk' keyword)");
         }
     }
 
@@ -82,23 +87,17 @@ public class NotificationService extends NotificationListenerService {
         try {
             Pattern p1 = Pattern.compile("(idr|rp)\\s*([0-9.,]+)");
             Matcher m1 = p1.matcher(text);
-            if (m1.find()) {
-                return parseCleanAmount(m1.group(2));
-            }
+            if (m1.find()) return parseCleanAmount(m1.group(2));
 
             Pattern p2 = Pattern.compile("([0-9]{1,3}(\\.[0-9]{3})+)");
             Matcher m2 = p2.matcher(text);
-            if (m2.find()) {
-                return parseCleanAmount(m2.group(1));
-            }
+            if (m2.find()) return parseCleanAmount(m2.group(1));
         } catch (Exception e) {}
         return 0;
     }
 
     private long parseCleanAmount(String raw) {
-        if (raw.endsWith(".00") || raw.endsWith(",00")) {
-            raw = raw.substring(0, raw.length() - 3);
-        }
+        if (raw.endsWith(".00") || raw.endsWith(",00")) raw = raw.substring(0, raw.length() - 3);
         String clean = raw.replaceAll("[^0-9]", "");
         return clean.isEmpty() ? 0 : Long.parseLong(clean);
     }
@@ -111,14 +110,26 @@ public class NotificationService extends NotificationListenerService {
         sendBroadcast(i);
     }
 
+    private boolean isNetworkAvailable() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo ani = cm.getActiveNetworkInfo();
+        return ani != null && ani.isConnected();
+    }
+
     private void send(String bank, long amt, String raw) {
         Map<String, Object> d = new HashMap<>();
         d.put("amount", amt); d.put("bank", bank); d.put("rawText", raw);
         d.put("timestamp", new Date().toString());
         d.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
         
+        if (!isNetworkAvailable()) {
+            updateUILog("🌐 OFFLINE: Data queued in phone (will sync later)");
+        } else {
+            updateUILog("🚀 SENDING TO CLOUD...");
+        }
+
         db.collection("paymentDetectionsPending").add(d)
-            .addOnSuccessListener(doc -> updateUILog("☁️ SUCCESS: Data saved to Cloud!"))
-            .addOnFailureListener(e -> updateUILog("❌ CLOUD ERROR: " + e.getMessage()));
+            .addOnSuccessListener(doc -> updateUILog("☁️ SUCCESS: Saved to Firebase!"))
+            .addOnFailureListener(e -> updateUILog("❌ FIREBASE ERROR: " + e.getMessage()));
     }
 }

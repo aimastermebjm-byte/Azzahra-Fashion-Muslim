@@ -28,6 +28,7 @@ import AdminCacheManagement from './components/AdminCacheManagement';
 import AdminPaymentVerificationPage from './components/AdminPaymentVerificationPage';
 import BottomNavigation from './components/BottomNavigation';
 import InstallPrompt from './components/InstallPrompt';
+import PaymentAutoVerifier from './components/PaymentAutoVerifier';
 import { OngkirTestPage } from './pages/OngkirTestPage';
 import { useUnifiedProducts } from './hooks/useUnifiedProducts';
 import { useFirebaseAuth } from './hooks/useFirebaseAuth';
@@ -55,11 +56,11 @@ function AppContent() {
 
   // Initialize Firebase-only app on app start
   useEffect(() => {
-    
+
     // No more AppStorage localStorage initialization
     // All data will be stored in Firebase Firestore only
 
-    
+
     // Handle URL routing for special pages
     const handleRouting = () => {
       const path = window.location.pathname;
@@ -81,7 +82,7 @@ function AppContent() {
       variantsData: product.variants
     });
 
-    
+
     setSelectedProduct(product);
     setCurrentPage('product-detail');
   };
@@ -97,14 +98,14 @@ function AppContent() {
 
   const handleLoginWithUser = (user: any) => {
     setShowLogin(false);
-      };
+  };
 
   const handleRegistrationSuccess = (user: any) => {
     setShowRegistration(false);
-      };
+  };
 
   const handleLogout = () => {
-    
+
     // Firebase logout
     logout();
     setCurrentPage('home');
@@ -113,11 +114,11 @@ function AppContent() {
     cartServiceOptimized.clearCart().catch(error => {
       console.error('❌ Error clearing cart on logout:', error);
     });
-      };
+  };
 
   const handleAddToCart = async (product: any, variant: any, quantity: number) => {
     if (!user?.uid) {
-            handleLoginRequired();
+      handleLoginRequired();
       return;
     }
 
@@ -166,7 +167,7 @@ function AppContent() {
     // Get cart to find the newly added item
     const cartItems = await cartServiceOptimized.getCart();
     const latestItem = cartItems[cartItems.length - 1]; // Last added item
-    
+
     if (latestItem) {
       // Set selected item for checkout (only the item just added)
       setSelectedCartItemIds([latestItem.id]);
@@ -175,7 +176,7 @@ function AppContent() {
     // Go directly to checkout
     setCurrentPage('checkout');
   };
-  
+
   const handleOrderComplete = async (orderData: any, cartItems?: any[]) => {
     if (!user?.uid) {
       console.error('❌ Cannot complete order: User not logged in');
@@ -311,26 +312,26 @@ function AppContent() {
           });
         }
 
-      // Update batch system with all stock changes in single atomic operation
-      transaction.update(batchRef, {
-        products: updatedBatchProducts,
-        lastModified: Date.now()
+        // Update batch system with all stock changes in single atomic operation
+        transaction.update(batchRef, {
+          products: updatedBatchProducts,
+          lastModified: Date.now()
+        });
+
+        console.log('✅ ATOMIC TRANSACTION: Batch system updated successfully!');
+        console.log(`📦 Updated ${validatedItems.length} items in batch`);
+        console.log('🔍 DEBUG: Updated batch products sample:', updatedBatchProducts.slice(0, 3).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          stock: p.stock,
+          variantsStock: p.variants?.stock
+        })));
+
+        return {
+          validatedItems,
+          cartTotal
+        };
       });
-
-      console.log('✅ ATOMIC TRANSACTION: Batch system updated successfully!');
-      console.log(`📦 Updated ${validatedItems.length} items in batch`);
-      console.log('🔍 DEBUG: Updated batch products sample:', updatedBatchProducts.slice(0, 3).map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        stock: p.stock,
-        variantsStock: p.variants?.stock
-      })));
-
-      return {
-        validatedItems,
-        cartTotal
-      };
-    });
 
       // Transaction completed successfully
       const { validatedItems, cartTotal } = transactionResult;
@@ -482,8 +483,8 @@ function AppContent() {
     setCurrentPage('admin-payment-verification');
   };
 
-  
-  
+
+
   const renderCurrentPage = () => {
     // Show loading while checking authentication
     if (loading) {
@@ -502,7 +503,7 @@ function AppContent() {
       return (
         <LoginFormSimple
           onSuccess={handleLoginWithUser}
-          onClose={() => {}} // Prevent closing without login
+          onClose={() => { }} // Prevent closing without login
           onShowRegister={() => {
             setShowLogin(false);
             setShowRegistration(true);
@@ -576,7 +577,7 @@ function AppContent() {
             onBack={() => setCurrentPage('account')}
           />
         );
-        case 'admin-products':
+      case 'admin-products':
         return <AdminProductsPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-orders':
         return (
@@ -604,9 +605,9 @@ function AppContent() {
         return <AdminFinancialPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-master':
         return <AdminMasterDataPage onBack={() => setCurrentPage('account')} user={user} />;
-        case 'ongkir-test':
+      case 'ongkir-test':
         return <OngkirTestPage onBack={() => setCurrentPage('home')} />;
-        case 'product-detail':
+      case 'product-detail':
         return (
           <ProductDetail
             currentProduct={selectedProduct!}
@@ -694,7 +695,7 @@ function App() {
   // Check if splash already shown in this session
   useEffect(() => {
     const splashShown = sessionStorage.getItem('azzahra-splash-shown');
-    
+
     if (splashShown === 'true') {
       // Skip splash if already shown in this session
       setShowSplash(false);
@@ -718,6 +719,7 @@ function App() {
       <GlobalProductsProvider>
         <ToastProvider>
           {/* <FlashSaleProvider> - DISABLED Emergency fix untuk infinite loop */}
+          {/* <PaymentAutoVerifier /> - DISABLED favored Cloud Functions */}
           <AppContent />
           {/* </FlashSaleProvider> */}
         </ToastProvider>

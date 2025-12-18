@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-55:12
-INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-55:12
-INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-55:12
-INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-55:12
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-59:12
+INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-59:12
+INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-59:12
+INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-59:12
 MERGED from [androidx.databinding:viewbinding:8.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\f4e745eaf3a9ceecbfb812c09588deb9\transformed\jetified-viewbinding-8.2.0\AndroidManifest.xml:2:1-7:12
 MERGED from [com.google.android.material:material:1.11.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\b579160086ec682670d6c9154b6f649d\transformed\material-1.11.0\AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\af4713e161ed4476cfe663d9d17b2b47\transformed\constraintlayout-2.1.4\AndroidManifest.xml:2:1-11:12
@@ -132,14 +132,14 @@ ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\
 	android:name
 		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:12:22-74
 uses-permission#android.permission.QUERY_ALL_PACKAGES
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:15:5-16:53
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:13:5-119
 	tools:ignore
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:16:9-50
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:13:75-116
 	android:name
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:15:22-74
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:13:22-74
 application
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:18:5-53:19
-INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:18:5-53:19
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:15:5-57:19
+INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:15:5-57:19
 MERGED from [com.google.android.material:material:1.11.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\b579160086ec682670d6c9154b6f649d\transformed\material-1.11.0\AndroidManifest.xml:22:5-20
 MERGED from [com.google.android.material:material:1.11.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\b579160086ec682670d6c9154b6f649d\transformed\material-1.11.0\AndroidManifest.xml:22:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\af4713e161ed4476cfe663d9d17b2b47\transformed\constraintlayout-2.1.4\AndroidManifest.xml:9:5-20
@@ -199,63 +199,79 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\LENOVO\.gradle\cac
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:28:18-86
 	android:supportsRtl
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:23:9-35
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:20:9-35
 	android:label
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:21:9-41
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:18:9-41
 	android:roundIcon
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:22:9-63
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:19:9-63
 	android:icon
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:20:9-58
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:17:9-58
 	android:allowBackup
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:19:9-35
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:16:9-35
 	android:theme
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:24:9-49
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:21:9-49
+receiver#com.azzahra.sync.BootReceiver
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:23:9-28:20
+	android:exported
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:23:48-71
+	android:name
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:23:19-47
+intent-filter#action:name:android.intent.action.BOOT_COMPLETED+category:name:android.intent.category.DEFAULT
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:24:13-27:29
+action#android.intent.action.BOOT_COMPLETED
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:25:17-79
+	android:name
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:25:25-76
+category#android.intent.category.DEFAULT
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:26:17-76
+	android:name
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:26:27-73
 activity#com.azzahra.sync.MainActivity
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:26:9-34:20
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:30:9-38:20
 	android:label
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:28:13-45
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:32:13-45
 	android:exported
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:29:13-36
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:33:13-36
 	android:name
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:27:13-41
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:31:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:30:13-33:29
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:34:13-37:29
 action#android.intent.action.MAIN
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:31:17-69
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:35:17-69
 	android:name
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:31:25-66
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:35:25-66
 category#android.intent.category.LAUNCHER
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:32:17-77
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:36:17-77
 	android:name
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:32:27-74
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:36:27-74
 service#com.azzahra.sync.NotificationService
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:36:9-44:19
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:40:9-48:19
 	android:label
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:38:13-50
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:42:13-50
 	android:exported
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:40:13-36
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:44:13-36
 	android:permission
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:39:13-87
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:43:13-87
 	android:name
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:37:13-48
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:41:13-48
 intent-filter#action:name:android.service.notification.NotificationListenerService
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:41:13-43:29
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:45:13-47:29
 action#android.service.notification.NotificationListenerService
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:42:17-99
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:46:17-99
 	android:name
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:42:25-96
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:46:25-96
 service#com.azzahra.sync.ForegroundService
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:46:9-51:56
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:50:9-55:56
 	android:enabled
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:49:13-35
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:53:13-35
 	android:label
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:48:13-47
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:52:13-47
 	android:exported
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:50:13-37
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:54:13-37
 	android:foregroundServiceType
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:51:13-53
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:55:13-53
 	android:name
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:47:13-46
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:51:13-46
 uses-sdk
 INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml
