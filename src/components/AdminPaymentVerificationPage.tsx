@@ -138,18 +138,16 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
             // Update detection with best match
             detection.matchedOrderId = matches[0].orderId;
             detection.confidence = matches[0].confidence;
+          }
+        }
 
-            // 🤖 AUTO-VERIFICATION LOGIC
-            // If mode is 'full-auto' and confidence is high enough, verify automatically!
-            if (settings?.mode === 'full-auto') {
-              const threshold = settings.autoConfirmThreshold || 90;
+        // 🤖 AUTO-VERIFICATION LOGIC (Run this even if matched previously)
+        if (detection.matchedOrderId && settings?.mode === 'full-auto') {
+          const threshold = settings.autoConfirmThreshold || 90;
 
-              if (detection.confidence >= threshold) {
-                console.log(`🤖 Auto-confirming detection ${detection.id} (Confidence: ${detection.confidence}%)`);
-                // We await this to ensure it completes
-                await handleMarkAsPaid(detection);
-              }
-            }
+          if ((detection.confidence || 0) >= threshold) {
+            console.log(`🤖 Auto-confirming detection ${detection.id} (Confidence: ${detection.confidence}%)`);
+            await handleMarkAsPaid(detection);
           }
         }
       }
