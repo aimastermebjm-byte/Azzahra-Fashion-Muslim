@@ -123,7 +123,8 @@ service cloud.firestore {
 
     // Payment Detection System - Admin/Owner only
     match /paymentDetectionsPending/{detectionId} {
-      allow read, write: if isAdminOrOwner();
+      allow create: if true;
+      allow read, update, delete: if isAdminOrOwner();
     }
 
     match /paymentDetectionsVerified/{detectionId} {

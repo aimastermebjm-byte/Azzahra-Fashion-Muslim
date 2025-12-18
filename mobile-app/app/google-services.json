@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "822661485961",
+    "firebase_url": "https://azzahra-fashion-muslim-ab416-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "azzahra-fashion-muslim-ab416",
+    "storage_bucket": "azzahra-fashion-muslim-ab416.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:822661485961:android:8a39efc6e6099ebaf3fd58",
+        "android_client_info": {
+          "package_name": "com.azzahra.sync"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxP_lXEcAHNQqwxXy6LSVy9pFnpPPjfec"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

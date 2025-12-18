@@ -1,107 +1,231 @@
 package com.azzahra.sync;
 
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.service.notification.NotificationListenerService;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.Button;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
 import com.google.firebase.FirebaseApp;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TextView statusText;
-    private Button btnGrantNotif;
-    private Button btnBatteryOpt;
+    private TextView statusText, logText;
+    private ListView appListView;
+    private EditText searchApps;
     private View statusIndicator;
+    private SharedPreferences prefs;
+    private Set<String> selectedPackages;
+    private List<AppInfo> allAppInfos = new ArrayList<>();
+    private AppAdapter adapter;
+
+    private final BroadcastReceiver logReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String newLog = intent.getStringExtra("log_message");
+            if (newLog != null) {
+                runOnUiThread(() -> {
+                    String current = logText.getText().toString();
+                    logText.setText(newLog + "\n---\n" + (current.length() > 5000 ? current.substring(0, 5000) : current));
+                });
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Initialize Firebase
         FirebaseApp.initializeApp(this);
+        prefs = getSharedPreferences("AzzahraPrefs", MODE_PRIVATE);
+        
+        Set<String> saved = prefs.getStringSet("selected_packages", new HashSet<>());
+        selectedPackages = new HashSet<>(saved);
 
         statusText = findViewById(R.id.statusText);
-        btnGrantNotif = findViewById(R.id.btnGrantNotif);
-        btnBatteryOpt = findViewById(R.id.btnBatteryOpt);
+        logText = findViewById(R.id.logText);
+        appListView = findViewById(R.id.appList);
+        searchApps = findViewById(R.id.searchApps);
         statusIndicator = findViewById(R.id.statusIndicator);
 
-        btnGrantNotif.setOnClickListener(v -> openNotificationSettings());
-        btnBatteryOpt.setOnClickListener(v -> requestBatteryOptimization());
+        logText.setText(prefs.getString("log_history", "Console ready..."));
 
-        // Start Foreground Service immediately
+        findViewById(R.id.btnGrantNotif).setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)));
+        findViewById(R.id.btnBatteryOpt).setOnClickListener(v -> requestBatteryOptimization());
+        
+        findViewById(R.id.btnTestNotif).setOnClickListener(v -> {
+            sendTestNotification();
+            Intent intent = new Intent(this, NotificationService.class);
+            intent.setAction("SCAN_NOW");
+            startService(intent);
+        });
+        
+        findViewById(R.id.btnClearLog).setOnClickListener(v -> {
+            prefs.edit().putString("log_history", "").apply();
+            logText.setText("");
+        });
+
+        findViewById(R.id.btnRefresh).setOnClickListener(v -> {
+            NotificationListenerService.requestRebind(new ComponentName(this, NotificationService.class));
+            toggleNotificationListenerService();
+            Toast.makeText(this, "Deep Refreshing Listener...", Toast.LENGTH_SHORT).show();
+        });
+
+        loadAppList();
+
+        searchApps.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (adapter != null) adapter.getFilter().filter(s);
+            }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+
         startService();
+    }
+
+    private void loadAppList() {
+        PackageManager pm = getPackageManager();
+        List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
+        allAppInfos.clear();
+        for (ApplicationInfo app : packages) {
+            allAppInfos.add(new AppInfo(app.loadLabel(pm).toString(), app.packageName, app.loadIcon(pm), selectedPackages.contains(app.packageName)));
+        }
+        Collections.sort(allAppInfos, (a, b) -> a.name.compareToIgnoreCase(b.name));
+        adapter = new AppAdapter(this, allAppInfos);
+        appListView.setAdapter(adapter);
+    }
+
+    private static class AppInfo {
+        String name, packageName;
+        Drawable icon;
+        boolean selected;
+        AppInfo(String name, String pkg, Drawable icon, boolean sel) { this.name = name; this.packageName = pkg; this.icon = icon; this.selected = sel; }
+    }
+
+    private class AppAdapter extends ArrayAdapter<AppInfo> {
+        private List<AppInfo> originalList;
+        private List<AppInfo> filteredList;
+        AppAdapter(Context context, List<AppInfo> apps) { super(context, 0, apps); this.originalList = new ArrayList<>(apps); this.filteredList = apps; }
+        @Override public int getCount() { return filteredList.size(); }
+        @Nullable @Override public AppInfo getItem(int position) { return filteredList.get(position); }
+        @NonNull @Override public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+            if (convertView == null) convertView = LayoutInflater.from(getContext()).inflate(R.layout.item_app, parent, false);
+            AppInfo app = filteredList.get(position);
+            ((TextView)convertView.findViewById(R.id.appName)).setText(app.name);
+            ((TextView)convertView.findViewById(R.id.appPkg)).setText(app.packageName);
+            ((ImageView)convertView.findViewById(R.id.appIcon)).setImageDrawable(app.icon);
+            CheckBox cb = convertView.findViewById(R.id.appCheck);
+            cb.setOnCheckedChangeListener(null);
+            cb.setChecked(selectedPackages.contains(app.packageName));
+            cb.setOnCheckedChangeListener((bv, isChecked) -> {
+                if (isChecked) selectedPackages.add(app.packageName);
+                else selectedPackages.remove(app.packageName);
+                prefs.edit().putStringSet("selected_packages", new HashSet<>(selectedPackages)).apply();
+                
+                // Beri tahu service secara paksa ada perubahan list
+                Intent i = new Intent(getContext(), NotificationService.class);
+                i.setAction("REFRESH_LIST");
+                startService(i);
+            });
+            convertView.setOnClickListener(v -> cb.performClick());
+            return convertView;
+        }
+        @NonNull @Override public android.widget.Filter getFilter() {
+            return new android.widget.Filter() {
+                @Override protected FilterResults performFiltering(CharSequence c) {
+                    FilterResults r = new FilterResults();
+                    List<AppInfo> f = new ArrayList<>();
+                    if (c == null || c.length() == 0) f.addAll(originalList);
+                    else {
+                        String p = c.toString().toLowerCase().trim();
+                        for (AppInfo i : originalList) if (i.name.toLowerCase().contains(p) || i.packageName.toLowerCase().contains(p)) f.add(i);
+                    }
+                    r.values = f; r.count = f.size(); return r;
+                }
+                @Override protected void publishResults(CharSequence c, FilterResults r) { filteredList = (List<AppInfo>) r.values; notifyDataSetChanged(); }
+            };
+        }
+    }
+
+    private void toggleNotificationListenerService() {
+        ComponentName cn = new ComponentName(this, NotificationService.class);
+        getPackageManager().setComponentEnabledSetting(cn, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+        getPackageManager().setComponentEnabledSetting(cn, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+    }
+
+    private void requestBatteryOptimization() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(Uri.parse("package:" + getPackageName()));
+            startActivity(intent);
+        }
+    }
+
+    private void sendTestNotification() {
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) nm.createNotificationChannel(new NotificationChannel("diag", "Diag", NotificationManager.IMPORTANCE_DEFAULT));
+        nm.notify(77, new NotificationCompat.Builder(this, "diag").setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("Diagnostic Test").setContentText("Pemasukan IDR 10.000").build());
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         checkPermissions();
+        logText.setText(prefs.getString("log_history", ""));
+        IntentFilter f = new IntentFilter("com.azzahra.sync.NEW_LOG");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) registerReceiver(logReceiver, f, Context.RECEIVER_EXPORTED);
+        else registerReceiver(logReceiver, f);
     }
+
+    @Override protected void onPause() { super.onPause(); unregisterReceiver(logReceiver); }
 
     private void checkPermissions() {
-        boolean isNotifGranted = isNotificationServiceEnabled();
-
-        if (isNotifGranted) {
-            statusText.setText("Status: ACTIVE (Listening...)");
-            statusIndicator.setBackgroundResource(R.drawable.circle_green);
-            btnGrantNotif.setEnabled(false);
-            btnGrantNotif.setText("Permission Granted ✅");
-        } else {
-            statusText.setText("Status: INACTIVE (Need Permission)");
-            statusIndicator.setBackgroundResource(R.drawable.circle_red);
-            btnGrantNotif.setEnabled(true);
-            btnGrantNotif.setText("Grant Permission");
-        }
-    }
-
-    private boolean isNotificationServiceEnabled() {
-        Set<String> packageNames = NotificationManagerCompat.getEnabledListenerPackages(this);
-        return packageNames.contains(getPackageName());
-    }
-
-    private void openNotificationSettings() {
-        Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
-        startActivity(intent);
-    }
-
-    private void requestBatteryOptimization() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Intent intent = new Intent();
-            String packageName = getPackageName();
-            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-                intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-                intent.setData(Uri.parse("package:" + packageName));
-                startActivity(intent);
-            } else {
-                Toast.makeText(this, "Battery optimization already ignored 👍", Toast.LENGTH_SHORT).show();
-            }
-        }
+        boolean ok = NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName());
+        statusText.setText(ok ? "Status: ACTIVE" : "Status: OFF");
+        statusIndicator.setBackgroundResource(ok ? R.drawable.circle_green : R.drawable.circle_red);
     }
 
     private void startService() {
-        Intent serviceIntent = new Intent(this, ForegroundService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(serviceIntent);
-        } else {
-            startService(serviceIntent);
-        }
+        Intent si = new Intent(this, ForegroundService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(si);
+        else startService(si);
     }
 }

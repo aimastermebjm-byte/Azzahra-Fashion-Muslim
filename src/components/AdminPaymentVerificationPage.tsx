@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  CreditCard, 
-  CheckCircle, 
-  XCircle, 
-  Eye, 
+import {
+  CreditCard,
+  CheckCircle,
+  XCircle,
+  Eye,
   Settings as SettingsIcon,
   Filter,
   Search,
@@ -68,7 +68,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       // Load pending detections
       const detections = await paymentDetectionService.getPendingDetections();
       setPendingDetections(detections);
@@ -79,7 +79,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
 
       // Load pending orders
       const orders = await ordersService.getAllOrders();
-      const pending = orders.filter(order => 
+      const pending = orders.filter(order =>
         order.status === 'pending' || order.status === 'waiting_payment'
       );
       setPendingOrders(pending);
@@ -108,7 +108,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
   const matchDetectionsWithOrders = async (detections: PaymentDetection[]) => {
     try {
       const orders = await ordersService.getAllOrders();
-      const pending = orders.filter(order => 
+      const pending = orders.filter(order =>
         order.status === 'pending' || order.status === 'waiting_payment'
       );
 
@@ -116,7 +116,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
       for (const detection of detections) {
         if (!detection.matchedOrderId) {
           const matches = await paymentDetectionService.matchDetectionWithOrders(detection, pending);
-          
+
           if (matches.length > 0) {
             // Update detection with best match
             detection.matchedOrderId = matches[0].orderId;
@@ -140,7 +140,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
     try {
       // Update order status to paid
       await ordersService.updateOrderStatus(detection.matchedOrderId, 'paid');
-      
+
       // Mark detection as verified
       await paymentDetectionService.markAsVerified(
         detection.id,
@@ -150,7 +150,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
       );
 
       showToast('✅ Pembayaran berhasil diverifikasi!', 'success');
-      
+
       // Reload data
       await loadData();
     } catch (error) {
@@ -189,7 +189,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
 
       const amount = order.exactPaymentAmount || order.finalTotal;
       const senderName = order.shippingInfo?.name || order.userName || 'Test User';
-      
+
       await paymentDetectionService.addMockDetection({
         amount,
         senderName,
@@ -255,7 +255,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
 
       showToast('✅ System berhasil diinisialisasi!', 'success');
       showToast('🔄 Memuat data...', 'info');
-      
+
       // Reload data
       await loadData();
       await loadSettings();
@@ -270,7 +270,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
   // Get confidence badge color
   const getConfidenceBadge = (confidence?: number) => {
     if (!confidence) return { color: 'bg-gray-500', text: 'No Match', icon: '❓' };
-    
+
     if (confidence >= 90) return { color: 'bg-green-500', text: `${confidence}% Match`, icon: '✨' };
     if (confidence >= 70) return { color: 'bg-yellow-500', text: `${confidence}% Match`, icon: '⚠️' };
     return { color: 'bg-orange-500', text: `${confidence}% Match`, icon: '🔍' };
@@ -285,10 +285,13 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
   // Filter detections by search
   const filteredDetections = pendingDetections.filter(detection => {
     const searchLower = searchQuery.toLowerCase();
+    const sender = detection.senderName || '';
+    const bank = detection.bank || '';
+
     return (
-      detection.senderName.toLowerCase().includes(searchLower) ||
+      sender.toLowerCase().includes(searchLower) ||
       detection.amount.toString().includes(searchLower) ||
-      detection.bank.toLowerCase().includes(searchLower)
+      bank.toLowerCase().includes(searchLower)
     );
   });
 
@@ -428,7 +431,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
             <p className="text-sm text-gray-500 mb-4">
               Pembayaran yang terdeteksi akan muncul di sini
             </p>
-            
+
             {/* Initialize System Button - Always show in empty state for now */}
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 max-w-md mx-auto mt-4">
               <div className="text-sm text-blue-700 mb-3">
@@ -466,11 +469,11 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
                 key={detection.id}
                 className={`
                   rounded-2xl border-2 p-4 shadow-md
-                  ${detection.confidence && detection.confidence >= 90 
-                    ? 'border-green-500 bg-green-50' 
+                  ${detection.confidence && detection.confidence >= 90
+                    ? 'border-green-500 bg-green-50'
                     : detection.confidence && detection.confidence >= 70
-                    ? 'border-yellow-500 bg-yellow-50'
-                    : 'border-gray-300 bg-white'
+                      ? 'border-yellow-500 bg-yellow-50'
+                      : 'border-gray-300 bg-white'
                   }
                 `}
               >
@@ -487,7 +490,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
                       Rp {detection.amount.toLocaleString('id-ID')}
                     </div>
                     <div className="text-sm text-gray-600">
-                      dari: <span className="font-semibold">{detection.senderName}</span>
+                      dari: <span className="font-semibold">{detection.senderName || 'Unknown Sender'}</span>
                     </div>
                     <div className="text-xs text-gray-500">
                       {detection.bank} • {new Date(detection.timestamp).toLocaleString('id-ID')}
@@ -611,14 +614,14 @@ function getTimeAgo(timestamp: any): string {
   const now = new Date().getTime();
   const time = timestamp?.toDate ? timestamp.toDate().getTime() : new Date(timestamp).getTime();
   const diff = now - time;
-  
+
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return 'Baru saja';
   if (minutes < 60) return `${minutes} menit lalu`;
-  
+
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours} jam lalu`;
-  
+
   const days = Math.floor(hours / 24);
   return `${days} hari lalu`;
 }
@@ -655,7 +658,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onSave, onClose
         <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">Mode Operasi:</label>
-            
+
             <div className="space-y-3">
               <label className="flex items-start space-x-3 p-4 border-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                 <input
@@ -750,11 +753,11 @@ const ScreenshotModal: React.FC<ScreenshotModalProps> = ({ detection, onClose })
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         {detection.screenshotUrl ? (
-          <img 
-            src={detection.screenshotUrl} 
-            alt="Payment notification" 
+          <img
+            src={detection.screenshotUrl}
+            alt="Payment notification"
             className="w-full rounded-lg"
           />
         ) : (

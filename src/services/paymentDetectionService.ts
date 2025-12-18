@@ -1,13 +1,13 @@
-import { 
-  collection, 
-  doc, 
-  getDocs, 
+import {
+  collection,
+  doc,
+  getDocs,
   getDoc,
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
   orderBy,
   serverTimestamp,
   Timestamp,
@@ -18,7 +18,7 @@ import { db } from '../utils/firebaseClient';
 export interface PaymentDetection {
   id: string;
   amount: number;
-  senderName: string;
+  senderName?: string;
   bank: string;
   timestamp: string;
   rawText: string;
@@ -54,7 +54,7 @@ class PaymentDetectionService {
       const pendingRef = collection(db, 'paymentDetectionsPending');
       const q = query(pendingRef, orderBy('createdAt', 'desc'));
       const snapshot = await getDocs(q);
-      
+
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -71,7 +71,7 @@ class PaymentDetectionService {
       const verifiedRef = collection(db, 'paymentDetectionsVerified');
       const q = query(verifiedRef, orderBy('verifiedAt', 'desc'));
       const snapshot = await getDocs(q);
-      
+
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -86,13 +86,13 @@ class PaymentDetectionService {
   onPendingDetectionsChange(callback: (detections: PaymentDetection[]) => void): () => void {
     const pendingRef = collection(db, 'paymentDetectionsPending');
     const q = query(pendingRef, orderBy('createdAt', 'desc'));
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const detections = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as PaymentDetection[];
-      
+
       callback(detections);
     }, (error) => {
       console.error('Error listening to pending detections:', error);
@@ -104,7 +104,7 @@ class PaymentDetectionService {
 
   // Mark detection as verified
   async markAsVerified(
-    detectionId: string, 
+    detectionId: string,
     orderId: string,
     verifiedBy: string,
     mode: 'semi-auto' | 'full-auto' = 'semi-auto'
@@ -113,7 +113,7 @@ class PaymentDetectionService {
       // Get detection from pending
       const pendingRef = doc(db, 'paymentDetectionsPending', detectionId);
       const pendingDoc = await getDoc(pendingRef);
-      
+
       if (!pendingDoc.exists()) {
         throw new Error('Detection not found in pending');
       }
@@ -147,7 +147,7 @@ class PaymentDetectionService {
       // Get detection from pending
       const pendingRef = doc(db, 'paymentDetectionsPending', detectionId);
       const pendingDoc = await getDoc(pendingRef);
-      
+
       if (!pendingDoc.exists()) {
         throw new Error('Detection not found in pending');
       }
@@ -178,7 +178,7 @@ class PaymentDetectionService {
     try {
       const settingsRef = doc(db, 'paymentDetectionSettings', 'config');
       const settingsDoc = await getDoc(settingsRef);
-      
+
       if (settingsDoc.exists()) {
         return settingsDoc.data() as PaymentDetectionSettings;
       }
@@ -209,7 +209,7 @@ class PaymentDetectionService {
     try {
       const pendingRef = collection(db, 'paymentDetectionsPending');
       const newDocRef = doc(pendingRef);
-      
+
       await setDoc(newDocRef, {
         ...detection,
         status: 'pending',
@@ -224,18 +224,18 @@ class PaymentDetectionService {
   }
 
   // Calculate string similarity (for name matching)
-  private calculateSimilarity(str1: string, str2: string): number {
-    const s1 = str1.toLowerCase().trim();
-    const s2 = str2.toLowerCase().trim();
-    
+  private calculateSimilarity(str1: string | undefined, str2: string | undefined): number {
+    const s1 = (str1 || '').toLowerCase().trim();
+    const s2 = (str2 || '').toLowerCase().trim();
+
     if (s1 === s2) return 100;
-    
+
     // Simple Levenshtein-like comparison
     const longer = s1.length > s2.length ? s1 : s2;
     const shorter = s1.length > s2.length ? s2 : s1;
-    
+
     if (longer.length === 0) return 100;
-    
+
     const editDistance = this.getEditDistance(longer, shorter);
     return ((longer.length - editDistance) / longer.length) * 100;
   }
@@ -264,14 +264,14 @@ class PaymentDetectionService {
   // ✨ NEW: Match detection by EXACT amount with unique code (100% confidence if name also matches)
   async matchByExactAmount(
     detectedAmount: number,
-    senderName: string,
+    senderName: string | undefined,
     pendingOrders: any[]
   ): Promise<{ orderId: string; confidence: number; reason: string } | null> {
     console.log('🔍 Searching for exact amount match:', detectedAmount);
-    
+
     // Find orders with exact payment amount (unique code system)
-    const exactMatches = pendingOrders.filter(order => 
-      order.exactPaymentAmount === detectedAmount && 
+    const exactMatches = pendingOrders.filter(order =>
+      order.exactPaymentAmount === detectedAmount &&
       order.verificationMode === 'auto' &&
       order.status === 'pending'
     );
@@ -291,7 +291,7 @@ class PaymentDetectionService {
 
     // ✅ SECURITY CHECK: Validate sender name matches order customer name
     const customerName = matchedOrder.shippingInfo?.name || matchedOrder.userName || '';
-    const nameSimilarity = this.calculateSimilarity(senderName, customerName);
+    const nameSimilarity = this.calculateSimilarity(senderName || '', customerName);
 
     console.log('🔐 Security check:', {
       senderName,
@@ -365,7 +365,7 @@ class PaymentDetectionService {
       // 2. Name matching (30 points)
       const customerName = order.customerName || order.userName || '';
       const nameSimilarity = this.calculateSimilarity(detection.senderName, customerName);
-      
+
       if (nameSimilarity >= 90) {
         confidence += 30;
       } else if (nameSimilarity >= 80) {
@@ -380,9 +380,9 @@ class PaymentDetectionService {
       const orderTimestamp = typeof orderTime === 'object' && 'seconds' in orderTime
         ? orderTime.seconds * 1000
         : new Date(orderTime).getTime();
-      
+
       const timeDiffMinutes = (detectionTime - orderTimestamp) / 60000;
-      
+
       if (timeDiffMinutes >= 0 && timeDiffMinutes <= 60) {
         confidence += 20;
       } else if (timeDiffMinutes >= 0 && timeDiffMinutes <= 1440) {

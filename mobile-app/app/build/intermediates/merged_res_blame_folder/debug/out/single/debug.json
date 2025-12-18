@@ -1,0 +1,22 @@
+[
+    {
+        "merged": "C:\\Users\\LENOVO\\.gradle\\daemon\\9.0-milestone-1\\com.azzahra.sync.app-merged_res-38:\\drawable_circle_green.xml.flat",
+        "source": "C:\\Users\\LENOVO\\.gradle\\daemon\\9.0-milestone-1\\com.azzahra.sync.app-main-40:\\drawable\\circle_green.xml"
+    },
+    {
+        "merged": "C:\\Users\\LENOVO\\.gradle\\daemon\\9.0-milestone-1\\com.azzahra.sync.app-merged_res-38:\\layout_activity_main.xml.flat",
+        "source": "C:\\Users\\LENOVO\\.gradle\\daemon\\9.0-milestone-1\\com.azzahra.sync.app-main-40:\\layout\\activity_main.xml"
+    },
+    {
+        "merged": "com.azzahra.sync.app-merged_res-38:/layout_activity_main.xml.flat",
+        "source": "com.azzahra.sync.app-main-40:/layout/activity_main.xml"
+    },
+    {
+        "merged": "C:\\Users\\LENOVO\\.gradle\\daemon\\9.0-milestone-1\\com.azzahra.sync.app-merged_res-38:\\layout_item_app.xml.flat",
+        "source": "C:\\Users\\LENOVO\\.gradle\\daemon\\9.0-milestone-1\\com.azzahra.sync.app-main-40:\\layout\\item_app.xml"
+    },
+    {
+        "merged": "C:\\Users\\LENOVO\\.gradle\\daemon\\9.0-milestone-1\\com.azzahra.sync.app-merged_res-38:\\drawable_circle_red.xml.flat",
+        "source": "C:\\Users\\LENOVO\\.gradle\\daemon\\9.0-milestone-1\\com.azzahra.sync.app-main-40:\\drawable\\circle_red.xml"
+    }
+]

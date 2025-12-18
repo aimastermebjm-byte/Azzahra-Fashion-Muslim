@@ -24,16 +24,15 @@ public class ForegroundService extends Service {
         createNotificationChannel();
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Azzahra Sync Active")
-                .setContentText("Monitoring payment notifications in background...")
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setPriority(NotificationCompat.PRIORITY_LOW) // Low priority so it doesn't disturb user
+                .setContentTitle("Azzahra Tools")
+                .setContentText("Service is running in background")
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
                 .build();
 
-        // Start as foreground service to prevent system kill
         startForeground(1, notification);
 
-        return START_STICKY; // Restart service if killed
+        return START_STICKY;
     }
 
     @Override
@@ -50,7 +49,7 @@ public class ForegroundService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel serviceChannel = new NotificationChannel(
                     CHANNEL_ID,
-                    "Azzahra Sync Service",
+                    "Azzahra Tools Service",
                     NotificationManager.IMPORTANCE_LOW);
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
