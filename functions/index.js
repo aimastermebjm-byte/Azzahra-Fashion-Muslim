@@ -120,14 +120,41 @@ exports.checkPaymentDetection = onDocumentWritten("paymentDetectionsPending/{det
             const pendingRef = db.collection("paymentDetectionsPending").doc(detectionId);
             batch.delete(pendingRef);
 
-            // Update Order
-            const orderRef = db.collection("orders").doc(bestMatch.orderId);
-            batch.update(orderRef, {
-                status: "paid",
-                paymentStatus: "paid", // Some apps use this too
-                paidAt: new Date().toISOString(),
-                paymentMethod: detection.serviceProvider || "Bank Transfer"
-            });
+            if (isGroupMatch) {
+                // --- HANDLE GROUP PAYMENT ---
+                const group = bestMatch.data;
+
+                // 1. Update Payment Group Status
+                const groupRef = db.collection("paymentGroups").doc(group.id);
+                batch.update(groupRef, {
+                    status: "paid",
+                    paidAt: new Date().toISOString(),
+                    paymentMethod: detection.serviceProvider || "Bank Transfer"
+                });
+
+                // 2. Update ALL Linked Orders
+                if (group.orderIds && Array.isArray(group.orderIds)) {
+                    for (const oid of group.orderIds) {
+                        const orderRef = db.collection("orders").doc(oid);
+                        batch.update(orderRef, {
+                            status: "paid",
+                            paymentStatus: "paid",
+                            paidAt: new Date().toISOString(),
+                            paymentMethod: detection.serviceProvider || "Bank Transfer",
+                            paymentGroupId: group.id
+                        });
+                    }
+                }
+            } else {
+                // --- HANDLE INDIVIDUAL ORDER ---
+                const orderRef = db.collection("orders").doc(bestMatch.orderId);
+                batch.update(orderRef, {
+                    status: "paid",
+                    paymentStatus: "paid", // Some apps use this too
+                    paidAt: new Date().toISOString(),
+                    paymentMethod: detection.serviceProvider || "Bank Transfer"
+                });
+            }
 
             // Commit Transaction
             await batch.commit();
