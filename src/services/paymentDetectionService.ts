@@ -346,9 +346,18 @@ class PaymentDetectionService {
       let confidence = 0;
 
       // 1. Amount matching (50 points)
+      // 1. Amount matching (50 points base)
       const amountDiff = Math.abs(detection.amount - order.finalTotal);
+
       if (amountDiff === 0) {
+        // Perfect match
         confidence += 50;
+      } else if (amountDiff > 0 && amountDiff < 100) {
+        // ⚠️ Potential "Forgot Unique Code" case
+        // User paid 50.000 instead of 50.045
+        // This is a very strong signal if the diff is exactly the unique code range
+        console.log(`⚠️ Potential missing unique code for order ${order.id}. Diff: ${amountDiff}`);
+        confidence += 45; // Almost as good as exact match, just human error
       } else if (amountDiff < 1000) {
         confidence += 40;
       } else if (amountDiff < 5000) {
