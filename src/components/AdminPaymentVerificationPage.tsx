@@ -40,8 +40,8 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
   if (!isOwner) {
     showToast({
       title: 'Akses Ditolak',
-      description: 'Hanya Owner yang bisa mengakses halaman Verifikasi Pembayaran',
-      variant: 'destructive'
+      message: 'Hanya Owner yang bisa mengakses halaman Verifikasi Pembayaran',
+      type: 'error'
     });
     onBack();
     return null;
@@ -91,12 +91,12 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
     };
   }, []);
 
-  // Trigger matching whenever detections or orders change
+  // Trigger matching whenever detections, orders, or settings change
   useEffect(() => {
     if (pendingDetections.length > 0 && pendingOrders.length > 0) {
       matchDetectionsWithOrders(pendingDetections, pendingOrders);
     }
-  }, [pendingDetections, pendingOrders]);
+  }, [pendingDetections, pendingOrders, settings]);
 
   const loadVerifiedDetections = async () => {
     const verified = await paymentDetectionService.getVerifiedDetections();
@@ -116,6 +116,11 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
     }
   };
 
+  const loadData = async () => {
+    await loadVerifiedDetections();
+    await loadSettings();
+  };
+
   const matchDetectionsWithOrders = async (
     detections: PaymentDetection[],
     orders: any[]
@@ -133,6 +138,18 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
             // Update detection with best match
             detection.matchedOrderId = matches[0].orderId;
             detection.confidence = matches[0].confidence;
+
+            // 🤖 AUTO-VERIFICATION LOGIC
+            // If mode is 'full-auto' and confidence is high enough, verify automatically!
+            if (settings?.mode === 'full-auto') {
+              const threshold = settings.autoConfirmThreshold || 90;
+
+              if (detection.confidence >= threshold) {
+                console.log(`🤖 Auto-confirming detection ${detection.id} (Confidence: ${detection.confidence}%)`);
+                // We await this to ensure it completes
+                await handleMarkAsPaid(detection);
+              }
+            }
           }
         }
       }
@@ -146,7 +163,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
 
   const handleMarkAsPaid = async (detection: PaymentDetection) => {
     if (!detection.matchedOrderId) {
-      showToast('Tidak ada order yang cocok', 'error');
+      showToast({ message: 'Tidak ada order yang cocok', type: 'error' });
       return;
     }
 
@@ -162,24 +179,24 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
         'semi-auto'
       );
 
-      showToast('✅ Pembayaran berhasil diverifikasi!', 'success');
+      showToast({ message: '✅ Pembayaran berhasil diverifikasi!', type: 'success' });
 
       // Reload data
       await loadData();
     } catch (error) {
       console.error('Error marking as paid:', error);
-      showToast('Gagal memverifikasi pembayaran', 'error');
+      showToast({ message: 'Gagal memverifikasi pembayaran', type: 'error' });
     }
   };
 
   const handleIgnore = async (detection: PaymentDetection, reason: string = 'Bukan customer') => {
     try {
       await paymentDetectionService.markAsIgnored(detection.id, reason);
-      showToast('Detection diabaikan', 'info');
+      showToast({ message: 'Detection diabaikan', type: 'info' });
       await loadData();
     } catch (error) {
       console.error('Error ignoring detection:', error);
-      showToast('Gagal mengabaikan detection', 'error');
+      showToast({ message: 'Gagal mengabaikan detection', type: 'error' });
     }
   };
 
@@ -188,17 +205,17 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
       await paymentDetectionService.updateSettings(newSettings);
       setSettings(newSettings);
       setShowSettings(false);
-      showToast('✅ Pengaturan berhasil disimpan', 'success');
+      showToast({ message: '✅ Pengaturan berhasil disimpan', type: 'success' });
     } catch (error) {
       console.error('Error updating settings:', error);
-      showToast('Gagal menyimpan pengaturan', 'error');
+      showToast({ message: 'Gagal menyimpan pengaturan', type: 'error' });
     }
   };
 
   // ✨ NEW: Create test detection from order
   const handleCreateTestDetection = async (order: any) => {
     try {
-      showToast('🔄 Membuat test detection...', 'info');
+      showToast({ message: '🔄 Membuat test detection...', type: 'info' });
 
       const amount = order.exactPaymentAmount || order.finalTotal;
       const senderName = order.shippingInfo?.name || order.userName || 'Test User';
@@ -211,18 +228,18 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
         rawText: `Test Detection - Transfer Rp ${amount.toLocaleString('id-ID')} dari ${senderName}`
       });
 
-      showToast('✅ Test detection berhasil dibuat!', 'success');
+      showToast({ message: '✅ Test detection berhasil dibuat!', type: 'success' });
       await loadData();
     } catch (error) {
       console.error('Error creating test detection:', error);
-      showToast('Gagal membuat test detection', 'error');
+      showToast({ message: 'Gagal membuat test detection', type: 'error' });
     }
   };
 
   const handleInitializeSystem = async () => {
     try {
       setInitializing(true);
-      showToast('🔄 Menginisialisasi system...', 'info');
+      showToast({ message: '🔄 Menginisialisasi system...', type: 'info' });
 
       // 1. Create default settings
       await paymentDetectionService.updateSettings({
@@ -235,7 +252,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
           maxOrderAge: 7200
         }
       });
-      showToast('✅ Settings created', 'success');
+      showToast({ message: '✅ Settings created', type: 'success' });
 
       // 2. Add mock payment detections
       const mockDetections = [
@@ -266,15 +283,15 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
         await paymentDetectionService.addMockDetection(detection);
       }
 
-      showToast('✅ System berhasil diinisialisasi!', 'success');
-      showToast('🔄 Memuat data...', 'info');
+      showToast({ message: '✅ System berhasil diinisialisasi!', type: 'success' });
+      showToast({ message: '🔄 Memuat data...', type: 'info' });
 
       // Reload data
       await loadData();
       await loadSettings();
     } catch (error) {
       console.error('Error initializing system:', error);
-      showToast('❌ Gagal menginisialisasi system', 'error');
+      showToast({ message: '❌ Gagal menginisialisasi system', type: 'error' });
     } finally {
       setInitializing(false);
     }
