@@ -15,7 +15,7 @@ const db = getFirestore();
  * 🤖 Robot Eksekutor (Server Side)
  * Trigger: When a NEW payment detection is created in Firestore.
  */
-exports.checkPaymentDetection = onDocumentCreated("paymentDetections/{detectionId}", async (event) => {
+exports.checkPaymentDetection = onDocumentCreated("paymentDetectionsPending/{detectionId}", async (event) => {
     const snapshot = event.data;
     if (!snapshot) {
         logger.error("No data associated with the event");
