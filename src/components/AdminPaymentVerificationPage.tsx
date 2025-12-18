@@ -15,6 +15,13 @@ import {
   TrendingUp,
   X
 } from 'lucide-react';
+import {
+  collection,
+  query,
+  where,
+  onSnapshot
+} from 'firebase/firestore';
+import { db } from '../utils/firebaseClient';
 import PageHeader from './PageHeader';
 import { paymentDetectionService, PaymentDetection, PaymentDetectionSettings } from '../services/paymentDetectionService';
 import { ordersService } from '../services/ordersService';
@@ -53,48 +60,52 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
 
   // Load data on mount
   useEffect(() => {
-    loadData();
+    loadVerifiedDetections();
     loadSettings();
 
     // Real-time listener for pending detections
-    const unsubscribe = paymentDetectionService.onPendingDetectionsChange((detections) => {
+    const unsubscribeDetections = paymentDetectionService.onPendingDetectionsChange((detections) => {
       setPendingDetections(detections);
-      matchDetectionsWithOrders(detections);
+      // Trigger match with current orders
+      // Note: matchDetectionsWithOrders will be triggered by useEffect below
     });
 
-    return () => unsubscribe();
+    // Real-time listener for pending orders
+    const ordersRef = collection(db, 'orders');
+    const qOrders = query(
+      ordersRef,
+      where('status', 'in', ['pending', 'waiting_payment'])
+    );
+
+    const unsubscribeOrders = onSnapshot(qOrders, (snapshot) => {
+      const loadedOrders = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setPendingOrders(loadedOrders);
+    });
+
+    return () => {
+      unsubscribeDetections();
+      unsubscribeOrders();
+    };
   }, []);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-
-      // Load pending detections
-      const detections = await paymentDetectionService.getPendingDetections();
-      setPendingDetections(detections);
-
-      // Load verified detections (for summary)
-      const verified = await paymentDetectionService.getVerifiedDetections();
-      setVerifiedDetections(verified);
-
-      // Load pending orders
-      const orders = await ordersService.getAllOrders();
-      const pending = orders.filter(order =>
-        order.status === 'pending' || order.status === 'waiting_payment'
-      );
-      setPendingOrders(pending);
-
-      // Match detections with orders
-      await matchDetectionsWithOrders(detections);
-    } catch (error) {
-      console.error('Error loading data:', error);
-      showToast('Gagal memuat data', 'error');
-    } finally {
-      setLoading(false);
+  // Trigger matching whenever detections or orders change
+  useEffect(() => {
+    if (pendingDetections.length > 0 && pendingOrders.length > 0) {
+      matchDetectionsWithOrders(pendingDetections, pendingOrders);
     }
+  }, [pendingDetections, pendingOrders]);
+
+  const loadVerifiedDetections = async () => {
+    const verified = await paymentDetectionService.getVerifiedDetections();
+    setVerifiedDetections(verified);
+    setLoading(false);
   };
 
   const loadSettings = async () => {
+    // ... existing loadSettings code ...
     try {
       const loadedSettings = await paymentDetectionService.getSettings();
       console.log('🔧 Settings loaded:', loadedSettings);
@@ -105,12 +116,13 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
     }
   };
 
-  const matchDetectionsWithOrders = async (detections: PaymentDetection[]) => {
+  const matchDetectionsWithOrders = async (
+    detections: PaymentDetection[],
+    orders: any[]
+  ) => {
     try {
-      const orders = await ordersService.getAllOrders();
-      const pending = orders.filter(order =>
-        order.status === 'pending' || order.status === 'waiting_payment'
-      );
+      // Use passed orders instead of refetching
+      const pending = orders;
 
       // Match each detection
       for (const detection of detections) {
@@ -125,6 +137,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
         }
       }
 
+      // Force update state to reflect matches
       setPendingDetections([...detections]);
     } catch (error) {
       console.error('Error matching detections:', error);
