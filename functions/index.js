@@ -70,29 +70,61 @@ exports.checkPaymentDetection = onDocumentWritten("paymentDetectionsPending/{det
     // 3. LOGIC MATCHING (Mirip client side)
     // Trust Unique Code: 100% Match kalau Exact Amount sama
 
-    logger.info(`🤖 Robot: Scanning ${pendingOrders.length} pending orders for amount ${detection.amount}...`);
+    // PRIORITAS: Cek Payment Groups DULU!
+    // Kenapa? Karena jika user bayar Group (Gabungan), amountnya pasti unik untuk group itu.
+    // Jika kita cek individual dulu, bisa jadi ada salah satu order yang "kebetulan" atau "terupdate"
+    // memiliki amount yang sama, sehingga system mengira ini bayar satuan.
+
+    logger.info(`🤖 Robot: Scanning for matches... Detection Amount: ${detection.amount}`);
 
     let bestMatch = null;
     const threshold = settings.autoConfirmThreshold || 90;
+    let isGroupMatch = false;
 
-    for (const order of pendingOrders) {
-        // Cek Exact Amount (Ini kunci utamanya)
-        // Ingat: createPaymentGroup sudah menjamin exactPaymentAmount itu UNIK global.
-        const isExactMatch =
-            (order.exactPaymentAmount === detection.amount) ||
-            (order.groupPaymentAmount === detection.amount) ||
-            (order.finalTotal === detection.amount); // Fallback
+    // A. Cek Payment Groups (PRIORITY)
+    const groupsSnapshot = await db.collection("paymentGroups")
+        .where("status", "in", ["pending", "pending_selection"])
+        .get();
 
-        if (isExactMatch) {
-            // 100% Confidence!
-            bestMatch = {
-                orderId: order.id,
-                confidence: 100,
-                reason: "Exact amount match (Unique Code)"
-            };
+    if (!groupsSnapshot.empty) {
+        const pendingGroups = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        logger.info(`🤖 Robot: Scanning ${pendingGroups.length} payment groups...`);
 
-            logger.info(`🤖 Robot: MATCH FOUND! Order ${order.id} matches amount ${detection.amount}`);
-            break; // Ketemu satu langsung stop, karena unique code guarantee
+        for (const group of pendingGroups) {
+            // Check Exact Amount (Unique Code di level Group)
+            if (group.exactPaymentAmount === detection.amount) {
+                bestMatch = {
+                    orderId: group.id,
+                    confidence: 100,
+                    reason: "Payment Group Match (Unique Code)",
+                    data: group
+                };
+                isGroupMatch = true;
+                logger.info(`🤖 Robot: GROUP MATCH FOUND! Group ${group.id}`);
+                break;
+            }
+        }
+    }
+
+    // B. Cek Individual Orders (Fallback)
+    if (!bestMatch) {
+        logger.info(`🤖 Robot: No group match. Scanning ${pendingOrders.length} pending orders...`);
+
+        for (const order of pendingOrders) {
+            const isExactMatch =
+                (order.exactPaymentAmount === detection.amount) ||
+                (order.groupPaymentAmount === detection.amount) ||
+                (order.finalTotal === detection.amount);
+
+            if (isExactMatch) {
+                bestMatch = {
+                    orderId: order.id,
+                    confidence: 100,
+                    reason: "Exact amount match (Unique Code)"
+                };
+                logger.info(`🤖 Robot: MATCH FOUND! Order ${order.id}`);
+                break;
+            }
         }
     }
 
