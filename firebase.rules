@@ -43,6 +43,11 @@ service cloud.firestore {
       allow read, write: if isSignedIn(); // Only authenticated users (dashboard admin/bridge script)
     }
 
+    // Allow read/write access to product_drafts (WhatsApp Draft Queue)
+    match /product_drafts/{draftId} {
+      allow read, write: if isSignedIn(); // Only authenticated users
+    }
+
     // Allow read access to orders for reporting (public read for production)
     // Allow write only for authenticated users
     match /orders/{orderId} {

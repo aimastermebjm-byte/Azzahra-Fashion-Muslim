@@ -769,75 +769,81 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   // WhatsApp Process Handler
   const handleWhatsAppProcess = async (data: any, originalImageFile: File) => {
     try {
+      // DRAFT QUEUE FLOW: productData already structured
+      if (data.productData) {
+        console.log('📦 Draft Queue Flow - Using pre-structured data');
+
+        // Store Draft ID for deletion after upload
+        if (data.draftId) {
+          console.log('📝 Processing Draft ID:', data.draftId);
+          setProcessingDraftId(data.draftId);
+        } else {
+          setProcessingDraftId(null);
+        }
+
+        // Set initial state directly from draft
+        setManualUploadInitialState({
+          step: 'details',
+          images: [], // No raw images in draft flow
+          collageBlob: null,
+          collageUrl: data.collageUrl,
+          productData: data.productData,
+          uploadSettings: data.uploadSettings || { stockPerVariant: 10 }
+        });
+
+        setShowManualUploadModal(true);
+        return;
+      }
+
+      // RAW WHATSAPP FLOW: Need to process images
+      console.log('📱 Raw WhatsApp Flow - Processing images');
+
       let collageBlob: Blob | null = null;
 
       // Handle Multiple Images -> Collage
       if (data.collageUrl) {
-        // DRAFT QUEUE FLOW: Collage already exists
-        console.log('✅ Using existing Draft Collage URL:', data.collageUrl);
-        // collageBlob remains null, we pass URL instead
+        console.log('✅ Using existing Collage URL:', data.collageUrl);
       } else if (data.images && Array.isArray(data.images) && data.images.length > 1) {
         console.log(`🖼️ Generating Collage from ${data.images.length} images...`);
-
-        // Generate labels (A, B, C...)
         const variantLabels = collageService.generateVariantLabels(data.images.length);
-
-        // Generate Collage Blob
         collageBlob = await collageService.generateCollage(data.images, variantLabels);
-
       } else if (data.images && data.images.length === 1) {
-        // Explicitly use the single selected image
-        collageBlob = data.images[0]; // Use single image as "collage" blob
+        collageBlob = data.images[0];
       }
 
       // Store Draft ID if present
       if (data.draftId) {
-        console.log('📝 Processing Draft ID:', data.draftId);
         setProcessingDraftId(data.draftId);
       } else {
         setProcessingDraftId(null);
       }
 
-      // Generate initial stock structure
-      // Note: ManualUploadModal handles stock independently via uploadSettings,
-      // but we prepare the data structure just in case.
-      // We don't really need stockMatrix here because ManualUploadModal manages it internally based on images.
-
       // Generate variants based on image count
+      const imageCount = data.images?.length || 1;
       const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      const variantColors = data.images.map((_: any, index: number) => alphabet[index]);
+      const variantColors = Array.from({ length: imageCount }, (_, i) => alphabet[i]);
       const defaultStock = data.defaultStock || 10;
 
-      const variantStock: Record<string, Record<string, number>> = {
-        'All Size': {}
-      };
-
+      const variantStock: Record<string, Record<string, number>> = { 'All Size': {} };
       variantColors.forEach((color: string) => {
         variantStock['All Size'][color] = defaultStock;
-      });
-
-      console.log('🔍 DEBUG Auto Variants:', {
-        imageCount: data.images.length,
-        colors: variantColors,
-        defaultStock: defaultStock,
-        variantStock: variantStock
       });
 
       // Prepare Initial State for ManualUploadModal
       setManualUploadInitialState({
         step: 'details',
-        images: data.images, // Pass original images
+        images: data.images || [],
         collageBlob: collageBlob,
-        collageUrl: data.collageUrl, // Pass URL if exists
+        collageUrl: data.collageUrl,
         productData: {
           name: data.name || '',
           description: data.description || '',
           category: data.category || 'Gamis',
           retailPrice: parseInt(data.retailPrice || 0),
           resellerPrice: parseInt(data.resellerPrice || 0),
-          costPrice: parseInt(data.costPrice || 0), // Receive calculated cost price
+          costPrice: parseInt(data.costPrice || 0),
           status: data.status || 'ready',
-          weight: 1000, // Default weight
+          weight: 1000,
           variants: {
             sizes: ['All Size'],
             colors: variantColors,
