@@ -302,6 +302,17 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         }
     };
 
+
+    // Auto-generate collage if images provided from WhatsApp (Bypass Step 1)
+    React.useEffect(() => {
+        // Only trigger if we have images from initialState (WA flow), not yet generated, and in upload step
+        if (isOpen && initialState?.images && images.length > 0 && step === 'upload' && !collageBlob && !isGeneratingCollage) {
+            console.log('⚡ Auto-generating collage for WhatsApp flow...');
+            handleGenerateCollage();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, images.length, step, collageBlob, isGeneratingCollage]);
+
     // Handle submit
     const handleSubmit = () => {
         if (!productFormData.name) {

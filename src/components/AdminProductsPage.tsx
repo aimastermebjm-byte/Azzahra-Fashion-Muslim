@@ -1103,7 +1103,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Tambah Produk */}
             <button
-              onClick={() => setShowManualUploadModal(true)}
+              onClick={() => {
+                setManualUploadInitialState(null); // Clear any previous auto-state
+                setShowManualUploadModal(true);
+              }}
               className="bg-blue-600 text-white p-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-3"
             >
               <Plus className="w-6 h-6" />
