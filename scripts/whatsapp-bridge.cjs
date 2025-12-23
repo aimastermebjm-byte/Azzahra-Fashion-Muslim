@@ -501,41 +501,114 @@ function drawBorder(canvas, box) {
 }
 
 // ============================================================
-// 5. WHATSAPP CLIENT
+// 5. WHATSAPP CLIENT WITH AUTO-RECONNECT
 // ============================================================
+let isConnected = false;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 10;
+let heartbeatInterval = null;
+
 const client = new Client({
   authStrategy: new LocalAuth(),
-  puppeteer: { args: ['--no-sandbox'] }
+  puppeteer: {
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    headless: true,
+    timeout: 60000 // 60 second timeout
+  },
+  qrMaxRetries: 5
 });
 
 client.on('qr', (qr) => {
-  console.log('📱 SCAN QR CODE INI DENGAN WHATSAPP ANDA:');
+  console.log('');
+  console.log('📱 =========================================');
+  console.log('   SCAN QR CODE INI DENGAN WHATSAPP ANDA:');
+  console.log('=========================================');
   qrcode.generate(qr, { small: true });
+  console.log('⚠️  QR akan expired dalam 60 detik');
+  console.log('');
 });
 
 client.on('loading_screen', (percent, message) => {
-  console.log('LOADING SCREEN', percent, message);
+  console.log(`⏳ Loading: ${percent}% - ${message}`);
 });
 
 client.on('authenticated', () => {
-  console.log('✅ AUTHENTICATED');
+  console.log('✅ AUTHENTICATED - Session tersimpan');
+  reconnectAttempts = 0; // Reset counter on successful auth
 });
 
 client.on('auth_failure', msg => {
-  console.error('❌ AUTHENTICATION FAILURE', msg);
+  console.error('❌ AUTHENTICATION FAILURE:', msg);
+  console.log('💡 Coba hapus folder .wwebjs_auth dan scan ulang QR');
 });
 
 client.on('ready', () => {
+  isConnected = true;
+  reconnectAttempts = 0;
+
   console.log('');
   console.log('🚀 =========================================');
   console.log('   WHATSAPP BRIDGE + AUTO-DRAFT PROCESSOR');
-  console.log('   Ready to receive messages!');
+  console.log('   ✅ CONNECTED - Ready to receive messages!');
   console.log('=========================================');
   console.log('');
   console.log('📱 Kirim gambar + caption ke Note to Self');
   console.log('⏱️  Bundle akan diproses 15 detik setelah pesan terakhir');
   console.log('📦 Draft akan otomatis muncul di Dashboard');
   console.log('');
+  console.log('💚 Heartbeat aktif - Log tiap 60 detik');
+  console.log('');
+
+  // Start heartbeat
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+  heartbeatInterval = setInterval(() => {
+    if (isConnected) {
+      const now = new Date().toLocaleTimeString('id-ID');
+      console.log(`🟢 [${now}] Connected - Waiting for messages...`);
+    }
+  }, 60000); // Every 60 seconds
+});
+
+client.on('disconnected', async (reason) => {
+  isConnected = false;
+  console.error('');
+  console.error('🔴 =========================================');
+  console.error(`   DISCONNECTED: ${reason}`);
+  console.error('=========================================');
+
+  // Stop heartbeat
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+  }
+
+  // Auto-reconnect
+  if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+    reconnectAttempts++;
+    const delay = Math.min(reconnectAttempts * 5000, 30000); // 5s, 10s, 15s... max 30s
+    console.log(`🔄 Auto-reconnect attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} in ${delay / 1000}s...`);
+
+    setTimeout(async () => {
+      try {
+        console.log('🔄 Reconnecting...');
+        await client.initialize();
+      } catch (err) {
+        console.error('❌ Reconnect failed:', err.message);
+      }
+    }, delay);
+  } else {
+    console.error('❌ Max reconnect attempts reached. Please restart manually.');
+    console.log('💡 Run: node scripts/whatsapp-bridge.cjs');
+  }
+});
+
+client.on('change_state', (state) => {
+  console.log(`📶 Connection state: ${state}`);
+  if (state === 'CONNECTED') {
+    isConnected = true;
+  } else if (state === 'UNPAIRED' || state === 'CONFLICT') {
+    isConnected = false;
+  }
 });
 
 // --- WHITELIST ---
@@ -545,6 +618,11 @@ const ALLOWED_NUMBERS = [
 ];
 
 client.on('message_create', async (msg) => {
+  if (!isConnected) {
+    console.log('⚠️ Not connected, ignoring message');
+    return;
+  }
+
   const isAllowed = msg.fromMe || ALLOWED_NUMBERS.includes(msg.from);
 
   if (!isAllowed) {
@@ -591,5 +669,27 @@ client.on('message_create', async (msg) => {
   }
 });
 
+// Handle process signals for graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('');
+  console.log('🛑 Shutting down gracefully...');
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+  await client.destroy();
+  process.exit(0);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+  // Don't exit - try to keep running
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection:', reason);
+  // Don't exit - try to keep running
+});
+
 console.log('🚀 Starting WhatsApp Bridge with Auto-Draft Processor...');
+console.log('⏳ Initializing (this may take 30-60 seconds first time)...');
+console.log('');
 client.initialize();
+
