@@ -206,20 +206,22 @@ client.on('ready', async () => {
 
             // 2. Cari Target Groups (Filter nama 'Reseller' atau 'Katalog' atau 'Gamis')
             // Note: Fetching chats might take a moment on startup
+            /*
+            DISABLED BY USER REQUEST - DO NOT SEND TO GROUPS YET
             const chats = await client.getChats();
             const targetGroups = chats.filter(chat =>
               chat.isGroup && (
-                chat.name.toLowerCase().includes('reseller') ||
-                chat.name.toLowerCase().includes('katalog') ||
-                chat.name.toLowerCase().includes('azzahra')
+                  chat.name.toLowerCase().includes('reseller') ||
+                  chat.name.toLowerCase().includes('katalog') ||
+                  chat.name.toLowerCase().includes('azzahra')
               )
             );
 
             console.log(`🎯 Ditemukan ${targetGroups.length} grup target:`, targetGroups.map(g => g.name));
 
             if (targetGroups.length === 0) {
-              console.log('⚠️ Tidak ada grup yang cocok dengan filter. Mengirim ke Note to Self saja.');
-              targetGroups.push({ id: { _serialized: client.info.wid._serialized }, name: 'Me (Self)' });
+               console.log('⚠️ Tidak ada grup yang cocok dengan filter. Mengirim ke Note to Self saja.');
+               targetGroups.push({ id: { _serialized: client.info.wid._serialized }, name: 'Me (Self)' });
             }
 
             // 3. Kirim ke setiap grup
@@ -229,15 +231,23 @@ client.on('ready', async () => {
               // Jeda 2 detik biar aman
               await new Promise(resolve => setTimeout(resolve, 2000));
             }
+            */
 
-            // 4. Update Status di Firestore
+            console.log('⚠️ Auto-Post ke Group DINONAKTIFKAN sementara (Safety Mode).');
+            // Kirim ke self only sebagai indikator sistem hidup (Optional, but better safe to disable all for now)
+            /*
+            await client.sendMessage(client.info.wid._serialized, "System Ready (Auto-Post Disabled)");
+            */
+
+            // 4. Update Status di Firestore (Skip updating to 'published' so it stays pending/processed?)
+            // Better to mark as 'skipped' so it doesn't retry infinitely if we re-enable
             await db.collection('pending_whatsapp_group_posts').doc(docId).update({
-              status: 'published',
+              status: 'skipped_safety_mode',
               publishedAt: admin.firestore.FieldValue.serverTimestamp(),
-              targetGroups: targetGroups.map(g => g.name)
+              note: 'User disabled auto-posting'
             });
 
-            console.log('✅ Post Berhasil & Status Updated!');
+            console.log('✅ Post SKIPPED (Safety Mode).');
 
           } catch (error) {
             console.error('❌ Gagal mengirim post:', error);
