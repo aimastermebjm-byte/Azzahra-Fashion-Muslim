@@ -661,20 +661,44 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     </div>
 
                                     {/* Price Summary */}
+                                    {/* Price Summary (Editable) */}
                                     <div className="bg-gray-50 rounded-lg p-4">
-                                        <h4 className="font-medium text-gray-700 mb-2">Ringkasan Harga</h4>
+                                        <h4 className="font-medium text-gray-700 mb-2">Editor Harga</h4>
                                         <div className="grid grid-cols-3 gap-4 text-sm">
                                             <div>
-                                                <span className="text-gray-500">Modal:</span>
-                                                <p className="font-semibold">Rp {uploadSettings.costPrice.toLocaleString('id-ID')}</p>
+                                                <label className="block text-gray-500 text-xs mb-1">Modal:</label>
+                                                <input
+                                                    type="number"
+                                                    value={uploadSettings.costPrice}
+                                                    onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseInt(e.target.value) || 0 }))}
+                                                    className="w-full px-2 py-1 border border-gray-300 rounded"
+                                                />
                                             </div>
                                             <div>
-                                                <span className="text-gray-500">Retail:</span>
-                                                <p className="font-semibold text-green-600">Rp {retailPrice.toLocaleString('id-ID')}</p>
+                                                <label className="block text-gray-500 text-xs mb-1">Retail:</label>
+                                                <input
+                                                    type="number"
+                                                    value={retailPrice}
+                                                    onChange={(e) => setFixedPrices(prev => ({
+                                                        ...prev,
+                                                        retail: parseInt(e.target.value) || 0,
+                                                        reseller: prev?.reseller
+                                                    }))}
+                                                    className="w-full px-2 py-1 border border-green-300 rounded text-green-700 font-bold"
+                                                />
                                             </div>
                                             <div>
-                                                <span className="text-gray-500">Reseller:</span>
-                                                <p className="font-semibold text-blue-600">Rp {resellerPrice.toLocaleString('id-ID')}</p>
+                                                <label className="block text-gray-500 text-xs mb-1">Reseller:</label>
+                                                <input
+                                                    type="number"
+                                                    value={resellerPrice}
+                                                    onChange={(e) => setFixedPrices(prev => ({
+                                                        ...prev,
+                                                        retail: prev?.retail,
+                                                        reseller: parseInt(e.target.value) || 0
+                                                    }))}
+                                                    className="w-full px-2 py-1 border border-blue-300 rounded text-blue-700 font-bold"
+                                                />
                                             </div>
                                         </div>
                                     </div>
