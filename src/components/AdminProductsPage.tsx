@@ -10,6 +10,8 @@ import { uploadMultipleImages, validateImageFile, generateImageName } from '../u
 import { forceSyncAllProducts } from '../services/globalIndexSync';
 import { productCategoryService, ProductCategory } from '../services/productCategoryService';
 import { collageService } from '../services/collageService';
+import { geminiService } from '../services/geminiVisionService';
+import { hasAPIKeyWithFallback, loadAPIKeyWithFallback } from '../utils/encryption';
 import AIAutoUploadModal from './AIAutoUploadModal';
 import ManualUploadModal from './ManualUploadModal';
 import WhatsAppInboxModal from './WhatsAppInboxModal';
@@ -144,6 +146,26 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       }
     };
     loadCategories();
+  }, []);
+
+  // Initialize Gemini AI Service on mount
+  useEffect(() => {
+    const initGemini = async () => {
+      try {
+        const apiKey = await loadAPIKeyWithFallback('gemini');
+        const glmApiKey = await loadAPIKeyWithFallback('glm');
+
+        if (apiKey || glmApiKey) {
+          geminiService.initialize(apiKey || '', glmApiKey || '');
+          console.log('✅ Gemini Service initialized in AdminProductsPage');
+        } else {
+          console.warn('⚠️ No AI API keys found. AI features may not work.');
+        }
+      } catch (error) {
+        console.error('❌ Failed to initialize Gemini Service:', error);
+      }
+    };
+    initGemini();
   }, []);
 
   // Variant management helpers
