@@ -1,20 +1,18 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const admin = require('firebase-admin');
 const fs = require('fs');
 const path = require('path');
+const Jimp = require('jimp');
 
-// 1. Initialize Firebase Admin
-// Pastikan service account key ada di lokasi yang benar atau set environment variable
-// Jika tidak ada service account, kita coba pakai default credentials jika di environment yang mendukung
-// Tapi untuk script lokal, service account json paling stabil.
-// Cek apakah ada file service account di root
+// ============================================================
+// 1. FIREBASE INITIALIZATION
+// ============================================================
 const serviceAccountPath = path.join(__dirname, '../service-account.json');
 
 if (!fs.existsSync(serviceAccountPath)) {
   console.error('❌ Service account key tidak ditemukan di:', serviceAccountPath);
-  console.error('Harap download service account key dari Firebase Console -> Project Settings -> Service Accounts -> Generate Private Key');
-  console.error('Dan simpan sebagai "service-account.json" di folder root project.');
+  console.error('Harap download dari Firebase Console -> Project Settings -> Service Accounts');
   process.exit(1);
 }
 
@@ -22,22 +20,396 @@ const serviceAccount = require(serviceAccountPath);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  storageBucket: 'azzahra-fashion-muslim-ab416.firebasestorage.app' // Correct bucket from .env.local
+  storageBucket: 'azzahra-fashion-muslim-ab416.firebasestorage.app'
 });
 
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
 
-// 2. Initialize WhatsApp Client
+console.log('✅ Firebase initialized');
+console.log('⏳ Starting WhatsApp client (this may take 30-60 seconds)...');
+console.log('   Puppeteer is loading headless Chrome...');
+
+// ============================================================
+// 2. SMART BUNDLER (15-second window)
+// ============================================================
+const PAIRING_WINDOW = 15000; // 15 seconds
+let messageBuffer = [];
+let processingTimeout = null;
+
+function addToBuffer(item) {
+  messageBuffer.push(item);
+  console.log(`📥 Buffer: ${messageBuffer.length} items (${item.type})`);
+
+  // Reset timer setiap ada pesan baru
+  clearTimeout(processingTimeout);
+
+  // Set timer: proses setelah 15 detik tidak ada pesan baru
+  processingTimeout = setTimeout(() => {
+    processBundle();
+  }, PAIRING_WINDOW);
+}
+
+async function processBundle() {
+  if (messageBuffer.length === 0) return;
+
+  console.log('⚙️ ===== PROCESSING BUNDLE =====');
+  console.log(`📦 Total items: ${messageBuffer.length}`);
+
+  const images = messageBuffer.filter(m => m.type === 'image');
+  const texts = messageBuffer.filter(m => m.type === 'text');
+
+  // Clear buffer immediately
+  const currentBuffer = [...messageBuffer];
+  messageBuffer = [];
+
+  // Combine captions
+  const combinedCaption = texts.map(t => t.content).join('\n');
+  const imageCaption = images.find(i => i.caption)?.caption || '';
+  const finalCaption = combinedCaption || imageCaption;
+
+  console.log(`🖼️ Images: ${images.length}`);
+  console.log(`📝 Caption: ${finalCaption.substring(0, 50)}...`);
+
+  if (images.length === 0) {
+    console.log('⚠️ No images in bundle, skipping...');
+    return;
+  }
+
+  try {
+    // 1. Parse Caption
+    const parsed = parseCaption(finalCaption);
+    console.log('📋 Parsed:', parsed);
+
+    // 2. Generate Collage
+    console.log('🎨 Generating collage...');
+    const collageBuffer = await generateCollage(images.map(i => i.imageBuffer));
+
+    // 3. Upload Collage to Storage
+    const filename = `collages/draft_${Date.now()}.jpg`;
+    const file = bucket.file(filename);
+    await file.save(collageBuffer, {
+      metadata: { contentType: 'image/jpeg' }
+    });
+    const [collageUrl] = await file.getSignedUrl({
+      action: 'read',
+      expires: '03-09-2491'
+    });
+    console.log('☁️ Collage uploaded:', filename);
+
+    // 4. Save to product_drafts
+    const draftData = {
+      name: parsed.name,
+      description: parsed.description,
+      category: parsed.category,
+      retailPrice: parsed.retailPrice,
+      resellerPrice: parsed.resellerPrice,
+      costPrice: parsed.costPrice,
+      collageUrl: collageUrl,
+      variantCount: images.length,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      rawImages: images.map(i => i.storageUrl).filter(Boolean)
+    };
+
+    const docRef = await db.collection('product_drafts').add(draftData);
+    console.log('✅ Draft SAVED! ID:', docRef.id);
+    console.log('📊 Draft:', JSON.stringify(draftData, null, 2));
+
+  } catch (error) {
+    console.error('❌ Bundle processing failed:', error);
+  }
+}
+
+// ============================================================
+// 3. CAPTION PARSER (No AI, Regex Only)
+// ============================================================
+function parseCaption(caption) {
+  if (!caption) {
+    return {
+      name: 'Produk Baru',
+      description: '',
+      category: 'Gamis',
+      retailPrice: 0,
+      resellerPrice: 0,
+      costPrice: 0
+    };
+  }
+
+  const lines = caption.split('\n').map(l => l.trim()).filter(Boolean);
+  const name = lines[0] || 'Produk Baru';
+  const description = lines.slice(1).join('\n');
+
+  // Extract price
+  let retailPrice = 0;
+  const cleanText = caption.toLowerCase();
+
+  // Pattern 1: "450k", "150rb", "1.5jt"
+  const suffixMatch = cleanText.match(/(\d+(?:[.,]\d+)?)\s*(rb|k|ribu|jt)/);
+  if (suffixMatch) {
+    const val = parseFloat(suffixMatch[1].replace(',', '.'));
+    retailPrice = suffixMatch[2] === 'jt' ? val * 1000000 : val * 1000;
+  }
+
+  // Pattern 2: "Rp 450.000" or "IDR 150,000"
+  if (retailPrice === 0) {
+    const currencyMatch = cleanText.match(/(?:rp|idr)\s*\.?\s*([\d,.]+)/);
+    if (currencyMatch) {
+      retailPrice = parseInt(currencyMatch[1].replace(/[^0-9]/g, ''), 10);
+    }
+  }
+
+  // Pattern 3: Fallback - numbers in price range
+  if (retailPrice === 0) {
+    const numberMatches = cleanText.match(/[\d,.]+/g);
+    if (numberMatches) {
+      const potentialPrices = numberMatches
+        .map(m => parseInt(m.replace(/[^0-9]/g, ''), 10))
+        .filter(n => n >= 25000 && n <= 600000);
+      if (potentialPrices.length > 0) retailPrice = Math.max(...potentialPrices);
+    }
+  }
+
+  // Calculate reseller & cost
+  const resellerPrice = Math.round(retailPrice * 0.9);
+  const costPrice = Math.max(0, retailPrice - 30000);
+
+  // Detect category
+  let category = 'Gamis';
+  if (/hijab/i.test(caption)) category = 'Hijab';
+  else if (/khimar/i.test(caption)) category = 'Khimar';
+  else if (/tunik/i.test(caption)) category = 'Tunik';
+  else if (/mukena/i.test(caption)) category = 'Mukena';
+
+  return { name, description, category, retailPrice, resellerPrice, costPrice };
+}
+
+// ============================================================
+// 4. COLLAGE GENERATOR (Using Jimp - Same Layout as Frontend)
+// ============================================================
+async function generateCollage(imageBuffers) {
+  const W = 1500;
+  const H = 2000;
+  const count = imageBuffers.length;
+
+  // Create white canvas
+  const canvas = new Jimp(W, H, 0xFFFFFFFF);
+
+  // Load all images
+  const loadedImages = await Promise.all(
+    imageBuffers.map(buf => Jimp.read(buf))
+  );
+
+  // Get layout
+  const layout = calculateLayout(count, W, H);
+
+  // Draw each image
+  for (let i = 0; i < Math.min(loadedImages.length, layout.length); i++) {
+    const img = loadedImages[i];
+    const box = layout[i];
+    const label = String.fromCharCode(65 + i); // A, B, C, ...
+
+    // Draw image with cover fit (top-anchor)
+    drawImageInBox(canvas, img, box);
+
+    // Draw label
+    await drawLabel(canvas, label, box);
+
+    // Draw white border
+    drawBorder(canvas, box);
+  }
+
+  // Export as JPEG buffer
+  return canvas.getBufferAsync(Jimp.MIME_JPEG);
+}
+
+function calculateLayout(count, W, H) {
+  const boxes = [];
+
+  if (count === 1) {
+    boxes.push({ x: 0, y: 0, w: W, h: H });
+  }
+  else if (count === 2) {
+    const w = W / 2;
+    boxes.push({ x: 0, y: 0, w: w, h: H });
+    boxes.push({ x: w, y: 0, w: w, h: H });
+  }
+  else if (count === 3) {
+    const wHalf = W / 2;
+    const hHalf = H / 2;
+    boxes.push({ x: 0, y: 0, w: wHalf, h: H });
+    boxes.push({ x: wHalf, y: 0, w: wHalf, h: hHalf });
+    boxes.push({ x: wHalf, y: hHalf, w: wHalf, h: hHalf });
+  }
+  else if (count === 4) {
+    const w = W / 2;
+    const h = H / 2;
+    boxes.push({ x: 0, y: 0, w: w, h: h });
+    boxes.push({ x: w, y: 0, w: w, h: h });
+    boxes.push({ x: 0, y: h, w: w, h: h });
+    boxes.push({ x: w, y: h, w: w, h: h });
+  }
+  else if (count === 5) {
+    const hTop = H * 0.5;
+    const hBot = H * 0.5;
+    const wTop = W / 2;
+    const wBot = W / 3;
+    boxes.push({ x: 0, y: 0, w: wTop, h: hTop });
+    boxes.push({ x: wTop, y: 0, w: wTop, h: hTop });
+    boxes.push({ x: 0, y: hTop, w: wBot, h: hBot });
+    boxes.push({ x: wBot, y: hTop, w: wBot, h: hBot });
+    boxes.push({ x: wBot * 2, y: hTop, w: wBot, h: hBot });
+  }
+  else if (count === 6) {
+    const w = W / 2;
+    const h = H / 3;
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 2; c++) {
+        boxes.push({ x: c * w, y: r * h, w: w, h: h });
+      }
+    }
+  }
+  else if (count === 7) {
+    const hHead = H * 0.4;
+    const hGrid = (H - hHead) / 2;
+    const wGrid = W / 3;
+    boxes.push({ x: 0, y: 0, w: W, h: hHead });
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 3; c++) {
+        boxes.push({ x: c * wGrid, y: hHead + (r * hGrid), w: wGrid, h: hGrid });
+      }
+    }
+  }
+  else if (count === 8) {
+    const w = W / 2;
+    const h = H / 4;
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 2; c++) {
+        boxes.push({ x: c * w, y: r * h, w: w, h: h });
+      }
+    }
+  }
+  else if (count === 9) {
+    const w = W / 3;
+    const h = H / 3;
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        boxes.push({ x: c * w, y: r * h, w: w, h: h });
+      }
+    }
+  }
+  else if (count === 10) {
+    const hRow1 = H * 0.4;
+    const hRowOther = (H - hRow1) / 2;
+    const wRow1 = W / 2;
+    const wRow2 = W / 4;
+    boxes.push({ x: 0, y: 0, w: wRow1, h: hRow1 });
+    boxes.push({ x: wRow1, y: 0, w: wRow1, h: hRow1 });
+    for (let c = 0; c < 4; c++) {
+      boxes.push({ x: c * wRow2, y: hRow1, w: wRow2, h: hRowOther });
+    }
+    for (let c = 0; c < 4; c++) {
+      boxes.push({ x: c * wRow2, y: hRow1 + hRowOther, w: wRow2, h: hRowOther });
+    }
+  }
+  else {
+    // Fallback grid
+    const cols = Math.ceil(Math.sqrt(count));
+    const rows = Math.ceil(count / cols);
+    const w = W / cols;
+    const h = H / rows;
+    for (let i = 0; i < count; i++) {
+      const r = Math.floor(i / cols);
+      const c = i % cols;
+      boxes.push({ x: c * w, y: r * h, w: w, h: h });
+    }
+  }
+
+  return boxes;
+}
+
+function drawImageInBox(canvas, img, box) {
+  // Object-fit: cover with top-anchor
+  const scale = Math.max(box.w / img.getWidth(), box.h / img.getHeight());
+  const scaledW = Math.round(img.getWidth() * scale);
+  const scaledH = Math.round(img.getHeight() * scale);
+
+  // Resize image
+  const resized = img.clone().resize(scaledW, scaledH);
+
+  // Center X, Top Y
+  const dx = Math.round(box.x + (box.w - scaledW) / 2);
+  const dy = box.y; // Top anchor
+
+  // Composite onto canvas
+  canvas.composite(resized, dx, dy);
+}
+
+async function drawLabel(canvas, label, box) {
+  const labelSize = 200;
+  const centerX = Math.round(box.x + box.w / 2);
+  const centerY = Math.round(box.y + box.h / 2);
+  const x = centerX - labelSize / 2;
+  const y = centerY - labelSize / 2;
+
+  // Draw black box
+  for (let px = x; px < x + labelSize; px++) {
+    for (let py = y; py < y + labelSize; py++) {
+      if (px >= 0 && px < canvas.getWidth() && py >= 0 && py < canvas.getHeight()) {
+        canvas.setPixelColor(0x000000AA, px, py);
+      }
+    }
+  }
+
+  // Load font and print label
+  try {
+    const font = await Jimp.loadFont(Jimp.FONT_SANS_128_WHITE);
+    canvas.print(
+      font,
+      x,
+      y + (labelSize - 128) / 2,
+      {
+        text: label,
+        alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+        alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
+      },
+      labelSize,
+      labelSize
+    );
+  } catch (e) {
+    console.warn('Font loading failed, label skipped');
+  }
+}
+
+function drawBorder(canvas, box) {
+  const borderWidth = 4;
+  const color = 0xFFFFFFFF; // White
+
+  // Top & Bottom borders
+  for (let px = box.x; px < box.x + box.w; px++) {
+    for (let i = 0; i < borderWidth; i++) {
+      if (box.y + i < canvas.getHeight()) canvas.setPixelColor(color, px, box.y + i);
+      if (box.y + box.h - 1 - i >= 0) canvas.setPixelColor(color, px, box.y + box.h - 1 - i);
+    }
+  }
+  // Left & Right borders
+  for (let py = box.y; py < box.y + box.h; py++) {
+    for (let i = 0; i < borderWidth; i++) {
+      if (box.x + i < canvas.getWidth()) canvas.setPixelColor(color, box.x + i, py);
+      if (box.x + box.w - 1 - i >= 0) canvas.setPixelColor(color, box.x + box.w - 1 - i, py);
+    }
+  }
+}
+
+// ============================================================
+// 5. WHATSAPP CLIENT
+// ============================================================
 const client = new Client({
   authStrategy: new LocalAuth(),
-  puppeteer: {
-    args: ['--no-sandbox']
-  }
+  puppeteer: { args: ['--no-sandbox'] }
 });
 
 client.on('qr', (qr) => {
-  console.log('SCAN QR CODE INI DENGAN WHATSAPP ANDA:');
+  console.log('📱 SCAN QR CODE INI DENGAN WHATSAPP ANDA:');
   qrcode.generate(qr, { small: true });
 });
 
@@ -46,222 +418,78 @@ client.on('loading_screen', (percent, message) => {
 });
 
 client.on('authenticated', () => {
-  console.log('AUTHENTICATED');
+  console.log('✅ AUTHENTICATED');
 });
 
 client.on('auth_failure', msg => {
-  console.error('AUTHENTICATION FAILURE', msg);
-});
-
-// Listener khusus debug untuk melihat SEMUA pesan yang masuk
-client.on('message', async (msg) => {
-  console.log('🔔 EVENT: message received from', msg.from);
+  console.error('❌ AUTHENTICATION FAILURE', msg);
 });
 
 client.on('ready', () => {
-  console.log('✅ WhatsApp Bridge SIAP! Menunggu pesan...');
-  console.log('👉 Kirim pesan ke nomor Anda sendiri (Note to Self) dengan gambar dan caption.');
+  console.log('');
+  console.log('🚀 =========================================');
+  console.log('   WHATSAPP BRIDGE + AUTO-DRAFT PROCESSOR');
+  console.log('   Ready to receive messages!');
+  console.log('=========================================');
+  console.log('');
+  console.log('📱 Kirim gambar + caption ke Note to Self');
+  console.log('⏱️  Bundle akan diproses 15 detik setelah pesan terakhir');
+  console.log('📦 Draft akan otomatis muncul di Dashboard');
+  console.log('');
 });
 
+// --- WHITELIST ---
+const ALLOWED_NUMBERS = [
+  '6287815990944@c.us',
+  // Add more numbers here
+];
+
 client.on('message_create', async (msg) => {
-  // Debug log sangat detail
-  console.log('------------------------------------------------');
-  console.log('📨 EVENT: message_create');
-  console.log('From:', msg.from);
-  console.log('To:', msg.to);
-  console.log('FromMe:', msg.fromMe);
-  console.log('HasMedia:', msg.hasMedia);
-  console.log('Body:', msg.body.substring(0, 50));
-  console.log('Type:', msg.type);
-  console.log('------------------------------------------------');
-
-  // --- KONFIGURASI WHITELIST ---
-  // Masukkan nomor HP staff/admin lain yang diizinkan (Format: 628xxx@c.us)
-  const ALLOWED_NUMBERS = [
-    '6287815990944@c.us', // Staff (087815990944)
-    // '62898765432@c.us', // Contoh: Staff B
-  ];
-
   const isAllowed = msg.fromMe || ALLOWED_NUMBERS.includes(msg.from);
 
   if (!isAllowed) {
-    console.log(`⛔ Diabaikan: Pesan dari ${msg.from} tidak diizinkan.`);
-    console.log(`ℹ️ Tips: Jika ingin mengizinkan nomor ini, tambahkan '${msg.from}' ke dalam array ALLOWED_NUMBERS di script.`);
-    return;
+    return; // Ignore
   }
 
-  // Cek pesan gambar
+  console.log(`📨 Message from ${msg.fromMe ? 'Me' : msg.from} | HasMedia: ${msg.hasMedia}`);
+
   if (msg.hasMedia) {
     try {
-      console.log('📥 Mencoba download media...');
       const media = await msg.downloadMedia();
-
-      if (!media) {
-        console.log('⚠️ Media gagal didownload (null returned).');
+      if (!media || !media.mimetype.startsWith('image/')) {
+        console.log('⚠️ Not an image, skipping');
         return;
       }
 
-      // Coba ambil caption dari berbagai sumber kemungkinan
-      const finalCaption = msg.body || msg.caption || (msg._data ? msg._data.caption : '') || '';
+      const caption = msg.body || msg.caption || '';
+      const imageBuffer = Buffer.from(media.data, 'base64');
 
-      console.log('📝 Caption ditemukan:', finalCaption);
+      // Upload to storage for backup
+      const filename = `pending_uploads/wa_${Date.now()}.${media.mimetype.split('/')[1]}`;
+      const file = bucket.file(filename);
+      await file.save(imageBuffer, { metadata: { contentType: media.mimetype } });
+      const [url] = await file.getSignedUrl({ action: 'read', expires: '03-09-2491' });
 
-      if (!media.mimetype.startsWith('image/')) {
-        console.log('⚠️ Pesan diterima tapi bukan gambar (Mimetype: ' + media.mimetype + ')');
-        return;
-      }
-
-      console.log('📩 Menerima gambar valid!');
-
-      // Upload ke Firebase Storage
-      const filename = `whatsapp_${Date.now()}.${media.mimetype.split('/')[1]}`;
-      const file = bucket.file(`pending_uploads/${filename}`);
-
-      console.log('☁️ Mengupload ke Storage:', filename);
-      await file.save(Buffer.from(media.data, 'base64'), {
-        metadata: {
-          contentType: media.mimetype
-        }
+      addToBuffer({
+        type: 'image',
+        imageBuffer: imageBuffer,
+        storageUrl: url,
+        caption: caption,
+        timestamp: Date.now()
       });
-      console.log('✅ Upload ke Firebase Storage BERHASIL.');
-
-      // Buat URL publik
-      const [url] = await file.getSignedUrl({
-        action: 'read',
-        expires: '03-09-2491'
-      });
-
-      console.log('🔗 URL Gambar:', url);
-
-      // Simpan ke Firestore collection 'pending_products'
-      console.log('💾 Menyimpan data ke Firestore...');
-      const docRef = await db.collection('pending_products').add({
-        imageUrl: url,
-        caption: finalCaption, // Gunakan caption yang sudah dilacak
-        status: 'pending',
-        source: 'whatsapp',
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        storagePath: `pending_uploads/${filename}`
-      });
-
-      console.log('✅ Data TERSEIMPAN di pending_products! ID:', docRef.id);
-      console.log('👉 SILAKAN CEK DASHBOARD ADMIN SEKARANG.');
 
     } catch (error) {
-      console.error('❌ ERROR FATAL saat memproses pesan:', error);
+      console.error('❌ Error processing image:', error);
     }
-  } else {
-    // Handling Text-Only
-    console.log('📝 INFO: Pesan Teks diterima.');
-    console.log('   Isi Pesan:', msg.body);
-
-    try {
-      // Simpan pesan teks ke Firestore juga agar bisa digabung di frontend
-      const docRef = await db.collection('pending_products').add({
-        imageUrl: null, // Tidak ada gambar
-        caption: msg.body,
-        status: 'pending',
-        source: 'whatsapp',
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        type: 'text' // Penanda tipe pesan
-      });
-      console.log('✅ Pesan Teks TERSIMPAN di pending_products! ID:', docRef.id);
-    } catch (error) {
-      console.error('❌ Gagal menyimpan pesan teks:', error);
-    }
+  } else if (msg.body && msg.body.trim()) {
+    // Text message
+    addToBuffer({
+      type: 'text',
+      content: msg.body,
+      timestamp: Date.now()
+    });
   }
 });
 
-console.log('🚀 Memulai WhatsApp Bridge...');
-const axios = require('axios');
-
-// ... (Existing code) ...
-
-client.on('ready', async () => {
-  console.log('✅ WhatsApp Bridge SIAP! Menunggu pesan...');
-  console.log('👉 Kirim pesan ke nomor Anda sendiri (Note to Self) dengan gambar dan caption.');
-
-  // --- FITUR AUTOMATIC POSTING ---
-  console.log('📡 Mengaktifkan listener untuk Auto-Post...');
-
-  // Listen to pending posts
-  db.collection('pending_whatsapp_group_posts')
-    .where('status', '==', 'pending')
-    .onSnapshot(snapshot => {
-      snapshot.docChanges().forEach(async (change) => {
-        if (change.type === 'added') {
-          const postData = change.doc.data();
-          const docId = change.doc.id;
-          console.log(`🆕 Mendeteksi Pending Post baru: ${docId}`);
-
-          try {
-            // 1. Download Gambar
-            console.log('⬇️ Mengunduh gambar dari URL...');
-            const response = await axios.get(postData.imageUrl, { responseType: 'arraybuffer' });
-            const media = new MessageMedia(
-              response.headers['content-type'],
-              Buffer.from(response.data).toString('base64'),
-              'image.jpg'
-            );
-
-            // 2. Cari Target Groups (Filter nama 'Reseller' atau 'Katalog' atau 'Gamis')
-            // Note: Fetching chats might take a moment on startup
-            /*
-            DISABLED BY USER REQUEST - DO NOT SEND TO GROUPS YET
-            const chats = await client.getChats();
-            const targetGroups = chats.filter(chat =>
-              chat.isGroup && (
-                  chat.name.toLowerCase().includes('reseller') ||
-                  chat.name.toLowerCase().includes('katalog') ||
-                  chat.name.toLowerCase().includes('azzahra')
-              )
-            );
-
-            console.log(`🎯 Ditemukan ${targetGroups.length} grup target:`, targetGroups.map(g => g.name));
-
-            if (targetGroups.length === 0) {
-               console.log('⚠️ Tidak ada grup yang cocok dengan filter. Mengirim ke Note to Self saja.');
-               targetGroups.push({ id: { _serialized: client.info.wid._serialized }, name: 'Me (Self)' });
-            }
-
-            // 3. Kirim ke setiap grup
-            for (const group of targetGroups) {
-              console.log(`🚀 Mengirim ke ${group.name}...`);
-              await client.sendMessage(group.id._serialized, media, { caption: postData.caption });
-              // Jeda 2 detik biar aman
-              await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-            */
-
-            console.log('⚠️ Auto-Post ke Group DINONAKTIFKAN sementara (Safety Mode).');
-            // Kirim ke self only sebagai indikator sistem hidup (Optional, but better safe to disable all for now)
-            /*
-            await client.sendMessage(client.info.wid._serialized, "System Ready (Auto-Post Disabled)");
-            */
-
-            // 4. Update Status di Firestore (Skip updating to 'published' so it stays pending/processed?)
-            // Better to mark as 'skipped' so it doesn't retry infinitely if we re-enable
-            await db.collection('pending_whatsapp_group_posts').doc(docId).update({
-              status: 'skipped_safety_mode',
-              publishedAt: admin.firestore.FieldValue.serverTimestamp(),
-              note: 'User disabled auto-posting'
-            });
-
-            console.log('✅ Post SKIPPED (Safety Mode).');
-
-          } catch (error) {
-            console.error('❌ Gagal mengirim post:', error);
-            await db.collection('pending_whatsapp_group_posts').doc(docId).update({
-              status: 'failed',
-              error: error.message
-            });
-          }
-        }
-      });
-    });
-});
-
-// Helper for cleanup
-const { MessageMedia } = require('whatsapp-web.js');
-
+console.log('🚀 Starting WhatsApp Bridge with Auto-Draft Processor...');
 client.initialize();

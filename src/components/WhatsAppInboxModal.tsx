@@ -1,27 +1,21 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { X, MessageCircle, ArrowRight, Trash2, Clock, CheckSquare, Square, Layers, Image as ImageIcon, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, ArrowRight, Trash2, Layers, Loader, CheckSquare, Package } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
-import { geminiService } from '../services/geminiVisionService';
 import { collageService } from '../services/collageService';
 
-interface PendingProduct {
+interface ProductDraft {
     id: string;
-    imageUrl?: string;
-    caption: string;
+    name: string;
+    description: string;
+    category: string;
+    retailPrice: number;
+    resellerPrice: number;
+    costPrice: number;
+    collageUrl: string;
+    variantCount: number;
     timestamp: any;
-    status: 'pending' | 'processed';
-    storagePath?: string;
-    type?: 'image' | 'text';
-}
-
-interface ProductBundle {
-    id: string;
-    items: PendingProduct[];
-    mainCaption: string;
-    images: PendingProduct[];
-    timestamp: any;
-    itemCount: number;
+    rawImages: string[];
 }
 
 interface WhatsAppInboxModalProps {
@@ -31,239 +25,70 @@ interface WhatsAppInboxModalProps {
 }
 
 const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose, onProcess }) => {
-    const [pendingItems, setPendingItems] = useState<PendingProduct[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [viewMode, setViewMode] = useState<'bundles' | 'list'>('bundles');
-    const [defaultStock, setDefaultStock] = useState<number>(10);
-    const [profitMargin, setProfitMargin] = useState<number>(30000);
+    const [drafts, setDrafts] = useState<ProductDraft[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [defaultStock] = useState<number>(10);
 
+    // Listen to Processed Drafts (Queue) - View Only
     useEffect(() => {
         if (!isOpen) return;
+        setLoading(true);
 
-        // Listen to pending_products
-        const q = query(collection(db, 'pending_products'), orderBy('timestamp', 'desc'));
+        const q = query(collection(db, 'product_drafts'), orderBy('timestamp', 'desc'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const items = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
-            })) as PendingProduct[];
-            setPendingItems(items);
+            })) as ProductDraft[];
+            setDrafts(items);
+            setLoading(false);
         });
 
         return () => unsubscribe();
     }, [isOpen]);
 
-    // Smart Grouping Logic
-    const bundles = useMemo(() => {
-        const groups: ProductBundle[] = [];
-        const processedIds = new Set<string>();
-        const TIME_WINDOW_MS = 5 * 60 * 1000; // 5 minutes window
+    // Handle Draft Click (Open Editor)
+    const handleOpenDraft = async (draft: ProductDraft) => {
+        // Generate variant structure
+        const variantLabels = collageService.generateVariantLabels(draft.variantCount);
+        const stockPerVariant: Record<string, number> = {};
+        variantLabels.forEach(label => stockPerVariant[label] = defaultStock);
 
-        // Sort items by time descending (newest first)
-        const sortedItems = [...pendingItems].sort((a, b) =>
-            (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)
-        );
-
-        sortedItems.forEach((item) => {
-            if (processedIds.has(item.id)) return;
-
-            const itemTime = (item.timestamp?.seconds || 0) * 1000;
-
-            // Find items close to this one
-            const cluster = sortedItems.filter(other => {
-                if (processedIds.has(other.id)) return false;
-                const otherTime = (other.timestamp?.seconds || 0) * 1000;
-                return Math.abs(itemTime - otherTime) <= TIME_WINDOW_MS;
-            });
-
-            // Mark as processed
-            cluster.forEach(c => processedIds.add(c.id));
-
-            // Extract content
-            const images = cluster.filter(c => c.imageUrl);
-
-            // Find best caption: Prefer text-only messages, then longest caption
-            const textOnlyItems = cluster.filter(c => c.type === 'text');
-            const imageItemsWithCaption = cluster.filter(c => c.type !== 'text' && c.caption);
-
-            let mainCaption = '';
-
-            if (textOnlyItems.length > 0) {
-                // Join multiple text messages if any
-                mainCaption = textOnlyItems.map(t => t.caption).join('\n\n');
-            } else if (imageItemsWithCaption.length > 0) {
-                // Fallback to longest image caption
-                const best = imageItemsWithCaption.reduce((prev, curr) =>
-                    (prev.caption?.length || 0) > (curr.caption?.length || 0) ? prev : curr
-                );
-                mainCaption = best.caption;
-            }
-
-            groups.push({
-                id: `bundle_${item.id}`,
-                items: cluster,
-                mainCaption,
-                images,
-                timestamp: item.timestamp,
-                itemCount: cluster.length
-            });
-        });
-
-        return groups;
-    }, [pendingItems]);
-
-    // AUTO-PROCESS: Trigger immediately if bundles exist
-    useEffect(() => {
-        if (isOpen && bundles.length > 0 && !loading) {
-            const timer = setTimeout(() => {
-                console.log('⚡ Auto-processing latest bundle...');
-                handleProcessBundle(bundles[0]);
-            }, 100); // Fast trigger
-            return () => clearTimeout(timer);
-        }
-    }, [isOpen, bundles, loading]);
-
-    // Helper: Extract price from text using robust Regex
-    const extractPriceFromText = (text: string): number => {
-        if (!text) return 0;
-
-        // Remove common separators and normalize
-        // Patterns: Rp 150.000, 150rb, 150k, 150.000 (if follows RP)
-        const cleanText = text.toLowerCase();
-
-        // 1. High Confidence: "150rb", "150k", "150 ribu"
-        const suffixMatch = cleanText.match(/(\d+(?:[.,]\d+)?)\s*(rb|k|ribu|jt)/);
-        if (suffixMatch) {
-            const rawVal = parseFloat(suffixMatch[1].replace(',', '.'));
-            const suffix = suffixMatch[2];
-            if (suffix === 'jt') return rawVal * 1000000;
-            return rawVal * 1000;
-        }
-
-        // 2. High Confidence: "Rp 150.000", "IDR 150.000"
-        const currencyMatch = cleanText.match(/(?:rp|idr)\s*\.?\s*([\d,.]+)/);
-        if (currencyMatch) {
-            const numStr = currencyMatch[1].replace(/[^0-9]/g, ''); // Keep only digits
-            return parseInt(numStr, 10);
-        }
-
-        // 3. Medium Confidence: Standalone number, BUT must be in plausible price range (e.g. 25000 - 10000000)
-        // Avoids picking up "Kode 123", "Hp 0812...", "4 Warna"
-        const numberMatches = cleanText.match(/[\d,.]+/g);
-        if (numberMatches) {
-            const potentialPrices = numberMatches.map(m => {
-                const clean = m.replace(/[^0-9]/g, '');
-                return parseInt(clean, 10);
-            }).filter(n => n >= 25000 && n <= 600000); // Limit bare numbers to 600k (Standard Gamis)
-
-            if (potentialPrices.length > 0) {
-                return Math.max(...potentialPrices);
-            }
-        }
-
-        return 0;
-    };
-
-    const handleProcessBundle = async (bundle: ProductBundle) => {
-        setLoading(true);
-
-        try {
-            console.log(`🔄 Processing Bundle ${bundle.id} with ${bundle.images.length} images...`);
-
-            if (bundle.images.length === 0) {
-                alert('Bundle ini tidak memiliki gambar!');
-                setLoading(false);
-                return;
-            }
-
-            const finalCaption = bundle.mainCaption || '';
-            console.log('📝 Using Bundled Caption:', finalCaption);
-
-            // Fetch ALL Images in Bundle
-            const imageFiles: File[] = [];
-            for (const item of bundle.images) {
-                if (!item.imageUrl) continue;
-                try {
-                    const response = await fetch(item.imageUrl);
-                    const blob = await response.blob();
-                    const file = new File([blob], `wa_${item.id}.jpg`, { type: blob.type });
-                    imageFiles.push(file);
-                } catch (e) {
-                    console.error('Failed to load image', item.id, e);
+        const productData = {
+            name: draft.name,
+            description: draft.description,
+            category: draft.category,
+            retailPrice: draft.retailPrice,
+            resellerPrice: draft.resellerPrice,
+            costPrice: draft.costPrice,
+            variants: {
+                colors: variantLabels,
+                sizes: ['All Size'],
+                stock: {
+                    'All Size': stockPerVariant
                 }
             }
+        };
 
-            if (imageFiles.length === 0) {
-                throw new Error('Gagal mendownload gambar dari bundle.');
+        // Pass to parent (AdminProductsPage)
+        onProcess({
+            productData,
+            collageUrl: draft.collageUrl,
+            draftId: draft.id,
+            uploadSettings: {
+                costPrice: draft.costPrice,
+                stockPerVariant: defaultStock
             }
+        }, new File([], 'placeholder'));
 
-            // Analyze with Gemini
-            console.log('🤖 Analyzing bundle...');
-            const firstImageBase64 = await collageService.fileToBase64(imageFiles[0]);
-
-            // Generate analysis but PRIORITIZE existing caption
-            const analysis = await geminiService.analyzeCaptionAndImage(firstImageBase64, finalCaption);
-
-            // Enhanced Price Logic
-            // Enhanced Price Logic
-            // User Feedback: Trust AI analysis first as description usually contains correct Retail/Reseller prices.
-            let retailPrice = analysis.price || 0;
-
-            // Fallback to regex ONLY if AI failed to find price
-            if (retailPrice === 0) {
-                const regexPrice = extractPriceFromText(finalCaption);
-                if (regexPrice > 0) {
-                    console.log('💰 Price Fallback via Regex:', regexPrice);
-                    retailPrice = regexPrice;
-                }
-            } else {
-                console.log('🤖 Using AI Detected Price:', retailPrice);
-            }
-
-            // Calculate Cost from Margin (Retail - Margin)
-            const costPrice = Math.max(0, retailPrice - profitMargin);
-
-            // Construct Data - FORCE use of existing caption
-            const productData = {
-                name: analysis.name || 'Produk Baru',
-                // Logika deskripsi: Jika ada caption asli, gunakan itu. 
-                // Jika user ingin AI melengkapi, bisa ditambahkan, tapi amannya kita pakai caption asli di depan.
-                description: finalCaption ? finalCaption : (analysis.description || ''),
-                category: analysis.category || 'Gamis',
-                retailPrice: retailPrice,
-                resellerPrice: analysis.resellerPrice || 0,
-                costPrice: costPrice, // Pass calculated cost price
-                colors: analysis.colors || [],
-                sizes: analysis.sizes || [],
-                material: analysis.material || '',
-                status: analysis.status || 'ready',
-                images: imageFiles, // Parent handles collage
-                defaultStock: defaultStock // Pass default stock setting
-            };
-
-            onProcess({
-                ...productData,
-                whatsappIds: bundle.items.map(i => i.id) // Mark all valid items as processed
-            }, imageFiles[0]);
-
-            onClose();
-
-        } catch (error) {
-            console.error('failed to process bundle', error);
-            alert('Gagal memproses bundle: ' + (error as any).message);
-        } finally {
-            setLoading(false);
-        }
+        onClose();
     };
 
-    const handleDeleteBundle = async (bundle: ProductBundle) => {
-        if (!confirm(`Hapus ${bundle.itemCount} pesan dalam bundle ini?`)) return;
-        try {
-            for (const item of bundle.items) {
-                await deleteDoc(doc(db, 'pending_products', item.id));
-            }
-        } catch (error) {
-            console.error('failed to delete bundle', error);
+    // Delete Draft
+    const handleDeleteDraft = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (confirm('Hapus draft ini?')) {
+            await deleteDoc(doc(db, 'product_drafts', id));
         }
     };
 
@@ -271,19 +96,21 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in-up">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in-up">
                 {/* Header */}
                 <div className="p-4 border-b flex justify-between items-center bg-green-50">
                     <div className="flex items-center gap-3">
                         <div className="bg-green-100 p-2 rounded-full">
-                            <MessageCircle className="w-6 h-6 text-green-600" />
+                            <Layers className="w-6 h-6 text-green-600" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-gray-800">WhatsApp Inbox</h2>
-                            <p className="text-sm text-gray-600">Pesan otomatis dikelompokkan (Bundle) agar siap proses.</p>
+                            <h2 className="text-xl font-bold text-gray-800">Antrian Draft WhatsApp</h2>
+                            <p className="text-sm text-gray-600">
+                                Draft otomatis diproses di background. Klik untuk review & upload.
+                            </p>
                         </div>
                         <span className="bg-green-200 text-green-800 px-3 py-1 rounded-full text-xs font-bold">
-                            {bundles.length} Bundle
+                            {drafts.length} Draft
                         </span>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
@@ -291,129 +118,85 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                     </button>
                 </div>
 
-                {/* Toolbar */}
-                <div className="px-4 py-3 border-b bg-white flex flex-col md:flex-row justify-between items-center gap-3">
-                    <button
-                        onClick={() => { }}
-                        className="flex items-center gap-2 text-sm text-gray-600 cursor-default"
-                        disabled
-                    >
-                        {/* Placeholder for future features */}
-                        <Layers className="w-4 h-4 text-green-600" />
-                        <span className="font-medium">Mode Otomatis</span>
-                    </button>
-
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border">
-                            <span className="text-xs text-gray-500 font-medium whitespace-nowrap">Stok / Varian:</span>
-                            <input
-                                type="number"
-                                min="1"
-                                value={defaultStock}
-                                onChange={(e) => setDefaultStock(parseInt(e.target.value) || 0)}
-                                className="w-16 text-sm bg-transparent outline-none font-bold text-gray-700 text-right"
-                            />
-                        </div>
-
-                        <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border">
-                            <span className="text-xs text-gray-500 font-medium whitespace-nowrap">Potongan Modal:</span>
-                            <span className="text-xs text-gray-400">Rp</span>
-                            <input
-                                type="number"
-                                min="0"
-                                step="1000"
-                                value={profitMargin}
-                                onChange={(e) => setProfitMargin(parseInt(e.target.value) || 0)}
-                                className="w-24 text-sm bg-transparent outline-none font-bold text-gray-700 text-right"
-                            />
-                        </div>
-                    </div>
-                </div>
-
                 {/* Content */}
                 <div className="overflow-y-auto flex-1 p-6 bg-gray-50">
-                    {bundles.length === 0 ? (
+                    {loading ? (
                         <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                            <MessageCircle className="w-16 h-16 mb-4 opacity-50" />
-                            <p className="text-lg font-medium">Inbox Kosong</p>
-                            <p className="text-sm">Belum ada pesan produk baru dari WhatsApp.</p>
+                            <Loader className="w-12 h-12 animate-spin mb-4" />
+                            <p>Memuat draft...</p>
+                        </div>
+                    ) : drafts.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                            <CheckSquare className="w-16 h-16 mb-4 opacity-50" />
+                            <p className="text-lg font-medium">Antrian Kosong</p>
+                            <p className="text-sm text-center mt-2">
+                                Kirim gambar + caption ke WhatsApp.<br />
+                                Draft akan otomatis muncul di sini setelah 15 detik.
+                            </p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 gap-4">
-                            {bundles.map((bundle) => (
-                                <div key={bundle.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all">
+                            {drafts.map((draft) => (
+                                <div
+                                    key={draft.id}
+                                    onClick={() => handleOpenDraft(draft)}
+                                    className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer group"
+                                >
                                     <div className="flex gap-4">
-                                        {/* Image Preview Grid */}
-                                        <div className="w-1/4 min-w-[120px] max-w-[200px]">
-                                            {bundle.images.length > 0 ? (
-                                                <div className={`grid gap-1 ${bundle.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} h-32 rounded-lg overflow-hidden`}>
-                                                    {bundle.images.slice(0, 4).map((img, idx) => (
-                                                        <img key={idx} src={img.imageUrl} className="w-full h-full object-cover" alt="" />
-                                                    ))}
-                                                    {bundle.images.length > 4 && (
-                                                        <div className="bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
-                                                            +{bundle.images.length - 4}
-                                                        </div>
-                                                    )}
-                                                </div>
+                                        {/* Collage Preview */}
+                                        <div className="w-24 h-32 flex-shrink-0">
+                                            {draft.collageUrl ? (
+                                                <img src={draft.collageUrl} alt="Collage" className="w-full h-full object-cover rounded-lg border" />
                                             ) : (
-                                                <div className="h-32 bg-gray-100 rounded-lg flex flex-col items-center justify-center text-gray-400">
-                                                    <FileText className="w-8 h-8 mb-2" />
-                                                    <span className="text-xs">Teks Only</span>
+                                                <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+                                                    <Package className="w-8 h-8 text-gray-300" />
                                                 </div>
                                             )}
                                         </div>
 
-                                        {/* Content */}
+                                        {/* Info */}
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div>
-                                                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                                                        <Clock className="w-3 h-3" />
-                                                        <span>{bundle.timestamp?.seconds ? new Date(bundle.timestamp.seconds * 1000).toLocaleString() : 'Baru saja'}</span>
-                                                        <span className="mx-1">•</span>
-                                                        <Layers className="w-3 h-3" />
-                                                        <span>{bundle.images.length} Gambar</span>
-                                                        {bundle.itemCount > bundle.images.length && (
-                                                            <span> + {bundle.itemCount - bundle.images.length} Teks</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <p className="text-sm text-gray-800 line-clamp-3 mb-4 whitespace-pre-wrap font-medium">
-                                                {bundle.mainCaption || <span className="italic text-gray-400">Tidak ada caption</span>}
-                                            </p>
-
-                                            <div className="flex items-center justify-between mt-auto">
+                                            <div className="flex justify-between items-start">
+                                                <h3 className="font-bold text-gray-800 mb-1 group-hover:text-green-600 transition-colors">
+                                                    {draft.name}
+                                                </h3>
                                                 <button
-                                                    onClick={() => handleDeleteBundle(bundle)}
-                                                    className="text-gray-400 hover:text-red-500 text-sm flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                                                    onClick={(e) => handleDeleteDraft(draft.id, e)}
+                                                    className="text-gray-400 hover:text-red-500 p-1"
                                                 >
-                                                    <Trash2 className="w-4 h-4" /> Hapus Bundle
-                                                </button>
-
-                                                <button
-                                                    onClick={() => handleProcessBundle(bundle)}
-                                                    disabled={loading}
-                                                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-lg shadow-green-200 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
-                                                >
-                                                    {loading ? (
-                                                        <span className="flex items-center gap-2">Processing...</span>
-                                                    ) : (
-                                                        <>
-                                                            Proses Jadi Produk
-                                                            <ArrowRight className="w-4 h-4" />
-                                                        </>
-                                                    )}
+                                                    <Trash2 className="w-4 h-4" />
                                                 </button>
                                             </div>
+
+                                            <p className="text-sm text-gray-500 line-clamp-2 mb-2">{draft.description}</p>
+
+                                            <div className="flex items-center gap-3 text-xs font-medium text-gray-600">
+                                                <span className="bg-gray-100 px-2 py-1 rounded">
+                                                    Retail: Rp {(draft.retailPrice || 0).toLocaleString()}
+                                                </span>
+                                                <span className="bg-gray-100 px-2 py-1 rounded">
+                                                    {draft.variantCount} Varian
+                                                </span>
+                                                <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded">
+                                                    {draft.category}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Icon */}
+                                        <div className="flex items-center justify-center px-4 border-l border-gray-100">
+                                            <ArrowRight className="w-6 h-6 text-gray-300 group-hover:text-green-600 transition-colors" />
                                         </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
+                </div>
+
+                {/* Footer */}
+                <div className="p-4 border-t bg-gray-50 text-center text-xs text-gray-500">
+                    💡 Draft diproses otomatis oleh WhatsApp Bridge. Pastikan script <code>node scripts/whatsapp-bridge.cjs</code> berjalan.
                 </div>
             </div>
         </div>

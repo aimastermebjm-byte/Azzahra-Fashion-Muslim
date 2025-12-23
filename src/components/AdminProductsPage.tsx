@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight, Sparkles, MessageCircle } from 'lucide-react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import PageHeader from './PageHeader';
 import { Product } from '../types';
@@ -80,6 +80,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   const [showManualUploadModal, setShowManualUploadModal] = useState(false);
   const [manualUploadInitialState, setManualUploadInitialState] = useState<any>(null);
   const [showWhatsAppInbox, setShowWhatsAppInbox] = useState(false);
+  const [processingDraftId, setProcessingDraftId] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -771,7 +772,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       let collageBlob: Blob | null = null;
 
       // Handle Multiple Images -> Collage
-      if (data.images && Array.isArray(data.images) && data.images.length > 1) {
+      if (data.collageUrl) {
+        // DRAFT QUEUE FLOW: Collage already exists
+        console.log('✅ Using existing Draft Collage URL:', data.collageUrl);
+        // collageBlob remains null, we pass URL instead
+      } else if (data.images && Array.isArray(data.images) && data.images.length > 1) {
         console.log(`🖼️ Generating Collage from ${data.images.length} images...`);
 
         // Generate labels (A, B, C...)
@@ -783,6 +788,14 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       } else if (data.images && data.images.length === 1) {
         // Explicitly use the single selected image
         collageBlob = data.images[0]; // Use single image as "collage" blob
+      }
+
+      // Store Draft ID if present
+      if (data.draftId) {
+        console.log('📝 Processing Draft ID:', data.draftId);
+        setProcessingDraftId(data.draftId);
+      } else {
+        setProcessingDraftId(null);
       }
 
       // Generate initial stock structure
@@ -815,6 +828,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         step: 'details',
         images: data.images, // Pass original images
         collageBlob: collageBlob,
+        collageUrl: data.collageUrl, // Pass URL if exists
         productData: {
           name: data.name || '',
           description: data.description || '',
@@ -2839,17 +2853,28 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               console.log('Manual Upload product data:', productData);
 
               // Generate unique productId for storage path
-              const tempProductId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)} `;
+              const tempProductId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
-              // Upload collage image to Firebase Storage
-              const collageFile = productData.collageFile;
-              const uploadedImages = await uploadMultipleImages([collageFile], tempProductId);
+              let collageUrl = '';
 
-              if (uploadedImages.length === 0) {
-                throw new Error('Failed to upload collage image');
+              // If collage already exists (from draft), use it. DO NOT RE-UPLOAD if it's already a URL string from firebase storage
+              if (manualUploadInitialState?.collageUrl) { // Check initial state for URL
+                collageUrl = manualUploadInitialState.collageUrl;
+                console.log('Using existing collage URL:', collageUrl);
+              } else if (productData.collageFile) {
+                // Upload collage image to Firebase Storage
+                const collageFile = productData.collageFile;
+                const uploadedImages = await uploadMultipleImages([collageFile], tempProductId);
+
+                if (uploadedImages.length === 0) {
+                  throw new Error('Failed to upload collage image');
+                }
+                collageUrl = uploadedImages[0];
+              } else {
+                throw new Error('No collage image provided');
               }
 
-              const collageUrl = uploadedImages[0];
+
 
               // Create product with all fields
               const newProduct = {
@@ -2930,6 +2955,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               // ---------------------------------------------------------
 
               await addProduct(newProduct);
+
+              // DELETE DRAFT FROM QUEUE IF EXISTS
+              if (processingDraftId) {
+                console.log(`🧹 Deleting processed draft: ${processingDraftId}`);
+                await deleteDoc(doc(db, 'product_drafts', processingDraftId));
+                setProcessingDraftId(null);
+              }
 
               setShowManualUploadModal(false);
               alert('✅ Produk berhasil di-upload!');
