@@ -173,4 +173,85 @@ client.on('message_create', async (msg) => {
 });
 
 console.log('🚀 Memulai WhatsApp Bridge...');
+const axios = require('axios');
+
+// ... (Existing code) ...
+
+client.on('ready', async () => {
+  console.log('✅ WhatsApp Bridge SIAP! Menunggu pesan...');
+  console.log('👉 Kirim pesan ke nomor Anda sendiri (Note to Self) dengan gambar dan caption.');
+
+  // --- FITUR AUTOMATIC POSTING ---
+  console.log('📡 Mengaktifkan listener untuk Auto-Post...');
+
+  // Listen to pending posts
+  db.collection('pending_whatsapp_group_posts')
+    .where('status', '==', 'pending')
+    .onSnapshot(snapshot => {
+      snapshot.docChanges().forEach(async (change) => {
+        if (change.type === 'added') {
+          const postData = change.doc.data();
+          const docId = change.doc.id;
+          console.log(`🆕 Mendeteksi Pending Post baru: ${docId}`);
+
+          try {
+            // 1. Download Gambar
+            console.log('⬇️ Mengunduh gambar dari URL...');
+            const response = await axios.get(postData.imageUrl, { responseType: 'arraybuffer' });
+            const media = new MessageMedia(
+              response.headers['content-type'],
+              Buffer.from(response.data).toString('base64'),
+              'image.jpg'
+            );
+
+            // 2. Cari Target Groups (Filter nama 'Reseller' atau 'Katalog' atau 'Gamis')
+            // Note: Fetching chats might take a moment on startup
+            const chats = await client.getChats();
+            const targetGroups = chats.filter(chat =>
+              chat.isGroup && (
+                chat.name.toLowerCase().includes('reseller') ||
+                chat.name.toLowerCase().includes('katalog') ||
+                chat.name.toLowerCase().includes('azzahra')
+              )
+            );
+
+            console.log(`🎯 Ditemukan ${targetGroups.length} grup target:`, targetGroups.map(g => g.name));
+
+            if (targetGroups.length === 0) {
+              console.log('⚠️ Tidak ada grup yang cocok dengan filter. Mengirim ke Note to Self saja.');
+              targetGroups.push({ id: { _serialized: client.info.wid._serialized }, name: 'Me (Self)' });
+            }
+
+            // 3. Kirim ke setiap grup
+            for (const group of targetGroups) {
+              console.log(`🚀 Mengirim ke ${group.name}...`);
+              await client.sendMessage(group.id._serialized, media, { caption: postData.caption });
+              // Jeda 2 detik biar aman
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+
+            // 4. Update Status di Firestore
+            await db.collection('pending_whatsapp_group_posts').doc(docId).update({
+              status: 'published',
+              publishedAt: admin.firestore.FieldValue.serverTimestamp(),
+              targetGroups: targetGroups.map(g => g.name)
+            });
+
+            console.log('✅ Post Berhasil & Status Updated!');
+
+          } catch (error) {
+            console.error('❌ Gagal mengirim post:', error);
+            await db.collection('pending_whatsapp_group_posts').doc(docId).update({
+              status: 'failed',
+              error: error.message
+            });
+          }
+        }
+      });
+    });
+});
+
+// Helper for cleanup
+const { MessageMedia } = require('whatsapp-web.js');
+
 client.initialize();
