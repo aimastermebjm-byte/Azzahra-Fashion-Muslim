@@ -345,16 +345,28 @@ function drawImageInBox(canvas, img, box) {
 }
 
 function drawLabel(canvas, label, box) {
-  const labelSize = 200;
+  // Label style like reference: white rounded box with black letter
+  const labelSize = 120; // Smaller, cleaner
   const centerX = Math.round(box.x + box.w / 2);
   const centerY = Math.round(box.y + box.h / 2);
   const x = Math.round(centerX - labelSize / 2);
   const y = Math.round(centerY - labelSize / 2);
+  const radius = 15; // Corner radius for rounded effect
 
-  // Draw black semi-transparent box
+  // Draw white rounded rectangle background
   for (let px = Math.max(0, x); px < Math.min(canvas.width, x + labelSize); px++) {
     for (let py = Math.max(0, y); py < Math.min(canvas.height, y + labelSize); py++) {
-      canvas.setPixelColor(0x00000099, px, py);
+      // Calculate distance from corners to create rounded effect
+      const dx = Math.min(px - x, x + labelSize - 1 - px);
+      const dy = Math.min(py - y, y + labelSize - 1 - py);
+
+      // Skip corner pixels to create rounded effect
+      if (dx < radius && dy < radius) {
+        const cornerDist = Math.sqrt(Math.pow(radius - dx, 2) + Math.pow(radius - dy, 2));
+        if (cornerDist > radius) continue;
+      }
+
+      canvas.setPixelColor(0xFFFFFFFF, px, py); // White background
     }
   }
 
@@ -453,13 +465,13 @@ function drawLabel(canvas, label, box) {
   };
 
   const pattern = letterPatterns[label] || letterPatterns['A'];
-  const pixelSize = 20; // Size of each "pixel" in the letter
+  const pixelSize = 12; // Size of each "pixel" in the letter (smaller for cleaner look)
   const letterWidth = 5 * pixelSize;
   const letterHeight = 7 * pixelSize;
   const letterX = x + (labelSize - letterWidth) / 2;
   const letterY = y + (labelSize - letterHeight) / 2;
 
-  // Draw each pixel of the letter
+  // Draw each pixel of the letter in BLACK
   for (let row = 0; row < 7; row++) {
     for (let col = 0; col < 5; col++) {
       if (pattern[row][col] === '#') {
@@ -469,7 +481,7 @@ function drawLabel(canvas, label, box) {
             const drawX = Math.round(letterX + col * pixelSize + px);
             const drawY = Math.round(letterY + row * pixelSize + py);
             if (drawX >= 0 && drawX < canvas.width && drawY >= 0 && drawY < canvas.height) {
-              canvas.setPixelColor(0xFFFFFFFF, drawX, drawY); // White color
+              canvas.setPixelColor(0x000000FF, drawX, drawY); // Black color
             }
           }
         }
