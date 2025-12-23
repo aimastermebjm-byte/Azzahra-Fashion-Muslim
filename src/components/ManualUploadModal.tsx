@@ -440,10 +440,31 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         />
                                         <p className="text-[10px] text-gray-400 mt-0.5">Potongan dari harga retail</p>
                                     </div>
-                                    <div className="bg-white rounded-lg p-2 border border-gray-200">
-                                        <p className="text-[10px] text-gray-500 mb-1">Preview Harga:</p>
-                                        <p className="text-xs">Retail: <strong className="text-green-600">Rp {retailPrice.toLocaleString('id-ID')}</strong></p>
-                                        <p className="text-xs">Reseller: <strong className="text-blue-600">Rp {resellerPrice.toLocaleString('id-ID')}</strong></p>
+                                    <div>
+                                        <label className="block text-xs text-gray-600 mb-1">Harga Retail (Rp)</label>
+                                        <input
+                                            type="number"
+                                            value={retailPrice}
+                                            onChange={(e) => setFixedPrices(prev => ({
+                                                ...prev,
+                                                retail: parseInt(e.target.value) || 0,
+                                                reseller: prev?.reseller // Keep existing reseller or undefined
+                                            }))}
+                                            className="w-full px-3 py-2 border border-green-200 bg-green-50 rounded-lg text-sm text-green-800 font-bold"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-600 mb-1">Harga Reseller (Rp)</label>
+                                        <input
+                                            type="number"
+                                            value={resellerPrice}
+                                            onChange={(e) => setFixedPrices(prev => ({
+                                                ...prev,
+                                                retail: prev?.retail,
+                                                reseller: parseInt(e.target.value) || 0
+                                            }))}
+                                            className="w-full px-3 py-2 border border-blue-200 bg-blue-50 rounded-lg text-sm text-blue-800 font-bold"
+                                        />
                                     </div>
                                 </div>
 
