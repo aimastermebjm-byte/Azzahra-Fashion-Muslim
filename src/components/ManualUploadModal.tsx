@@ -75,6 +75,9 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     const [collagePreview, setCollagePreview] = useState<string>('');
     const [isGeneratingCollage, setIsGeneratingCollage] = useState(false);
 
+    // Variant count from draft (when images array is empty)
+    const [draftVariantCount, setDraftVariantCount] = useState<number>(0);
+
     // Initialize from initialState when isOpen changes
     React.useEffect(() => {
         if (isOpen && initialState) {
@@ -98,6 +101,11 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                     .then(res => res.blob())
                     .then(blob => setCollageBlob(blob))
                     .catch(err => console.error('Failed to load collage blob:', err));
+            }
+
+            // Set variant count from draft productData
+            if (initialState.productData?.variants?.colors) {
+                setDraftVariantCount(initialState.productData.variants.colors.length);
             }
 
             if (initialState.productData) {
@@ -152,10 +160,11 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         }
     }, [isOpen, initialState]);
 
-    // Variant labels (A, B, C, ...)
+    // Variant labels (A, B, C, ...) - use draftVariantCount if images empty (draft flow)
     const variantLabels = useMemo(() => {
-        return collageService.generateVariantLabels(images.length);
-    }, [images.length]);
+        const count = images.length > 0 ? images.length : draftVariantCount;
+        return collageService.generateVariantLabels(count);
+    }, [images.length, draftVariantCount]);
 
     // Product form data
     const [productFormData, setProductFormData] = useState({
