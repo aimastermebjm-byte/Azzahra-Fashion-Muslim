@@ -151,11 +151,24 @@ client.on('message_create', async (msg) => {
       console.error('❌ ERROR FATAL saat memproses pesan:', error);
     }
   } else {
-    // Handling Text-Only (Mungkin user kirim caption terpisah?)
-    console.log('⚠️ INFO: Pesan Teks diterima tanpa gambar.');
+    // Handling Text-Only
+    console.log('📝 INFO: Pesan Teks diterima.');
     console.log('   Isi Pesan:', msg.body);
-    console.log('👉 Tips: Untuk saat ini, PASTIKAN caption ditulis BERSAMAAN saat mengirim gambar (di kolom "Add a caption" / "Tambah keterangan").');
-    console.log('   Sistem belum menggabungkan chat terpisah secara otomatis.');
+
+    try {
+      // Simpan pesan teks ke Firestore juga agar bisa digabung di frontend
+      const docRef = await db.collection('pending_products').add({
+        imageUrl: null, // Tidak ada gambar
+        caption: msg.body,
+        status: 'pending',
+        source: 'whatsapp',
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        type: 'text' // Penanda tipe pesan
+      });
+      console.log('✅ Pesan Teks TERSIMPAN di pending_products! ID:', docRef.id);
+    } catch (error) {
+      console.error('❌ Gagal menyimpan pesan teks:', error);
+    }
   }
 });
 

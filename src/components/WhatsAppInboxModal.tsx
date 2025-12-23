@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, MessageCircle, ArrowRight, Trash2, Clock, CheckSquare, Square } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, MessageCircle, ArrowRight, Trash2, Clock, CheckSquare, Square, Layers, Image as ImageIcon, FileText } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { geminiService } from '../services/geminiVisionService';
@@ -7,11 +7,21 @@ import { collageService } from '../services/collageService';
 
 interface PendingProduct {
     id: string;
-    imageUrl: string;
+    imageUrl?: string;
     caption: string;
     timestamp: any;
     status: 'pending' | 'processed';
     storagePath?: string;
+    type?: 'image' | 'text';
+}
+
+interface ProductBundle {
+    id: string;
+    items: PendingProduct[];
+    mainCaption: string;
+    images: PendingProduct[];
+    timestamp: any;
+    itemCount: number;
 }
 
 interface WhatsAppInboxModalProps {
@@ -22,8 +32,8 @@ interface WhatsAppInboxModalProps {
 
 const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose, onProcess }) => {
     const [pendingItems, setPendingItems] = useState<PendingProduct[]>([]);
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(false);
+    const [viewMode, setViewMode] = useState<'bundles' | 'list'>('bundles'); // Default to bundles
 
     useEffect(() => {
         if (!isOpen) return;
@@ -41,102 +51,144 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
         return () => unsubscribe();
     }, [isOpen]);
 
-    const toggleSelection = (id: string) => {
-        const newSelected = new Set(selectedIds);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
-        }
-        setSelectedIds(newSelected);
-    };
+    // Smart Grouping Logic
+    const bundles = useMemo(() => {
+        const groups: ProductBundle[] = [];
+        const processedIds = new Set<string>();
+        const TIME_WINDOW_MS = 5 * 60 * 1000; // 5 minutes window
 
-    const selectAll = () => {
-        if (selectedIds.size === pendingItems.length) {
-            setSelectedIds(new Set());
-        } else {
-            setSelectedIds(new Set(pendingItems.map(item => item.id)));
-        }
-    };
+        // Sort items by time descending (newest first)
+        const sortedItems = [...pendingItems].sort((a, b) =>
+            (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)
+        );
 
-    const handleProcessSelected = async () => {
-        if (selectedIds.size === 0) return;
+        sortedItems.forEach((item) => {
+            if (processedIds.has(item.id)) return;
+
+            const itemTime = (item.timestamp?.seconds || 0) * 1000;
+
+            // Find items close to this one
+            const cluster = sortedItems.filter(other => {
+                if (processedIds.has(other.id)) return false;
+                const otherTime = (other.timestamp?.seconds || 0) * 1000;
+                return Math.abs(itemTime - otherTime) <= TIME_WINDOW_MS;
+            });
+
+            // Mark as processed
+            cluster.forEach(c => processedIds.add(c.id));
+
+            // Extract content
+            const images = cluster.filter(c => c.imageUrl);
+
+            // Find best caption: Prefer text-only messages, then longest caption
+            const textOnlyItems = cluster.filter(c => c.type === 'text');
+            const imageItemsWithCaption = cluster.filter(c => c.type !== 'text' && c.caption);
+
+            let mainCaption = '';
+
+            if (textOnlyItems.length > 0) {
+                // Join multiple text messages if any
+                mainCaption = textOnlyItems.map(t => t.caption).join('\n\n');
+            } else if (imageItemsWithCaption.length > 0) {
+                // Fallback to longest image caption
+                const best = imageItemsWithCaption.reduce((prev, curr) =>
+                    (prev.caption?.length || 0) > (curr.caption?.length || 0) ? prev : curr
+                );
+                mainCaption = best.caption;
+            }
+
+            groups.push({
+                id: `bundle_${item.id}`,
+                items: cluster,
+                mainCaption,
+                images,
+                timestamp: item.timestamp,
+                itemCount: cluster.length
+            });
+        });
+
+        return groups;
+    }, [pendingItems]);
+
+    const handleProcessBundle = async (bundle: ProductBundle) => {
         setLoading(true);
 
         try {
-            console.log(`🔄 Processing ${selectedIds.size} WhatsApp Items...`);
+            console.log(`🔄 Processing Bundle ${bundle.id} with ${bundle.images.length} images...`);
 
-            // Get selected items
-            const selectedItems = pendingItems.filter(item => selectedIds.has(item.id));
-
-            // 1. Find the best caption (longest one usually contains the details)
-            const bestCaptionItem = selectedItems.reduce((prev, current) =>
-                (prev.caption?.length || 0) > (current.caption?.length || 0) ? prev : current
-            );
-            const finalCaption = bestCaptionItem.caption || '';
-            console.log('📝 Using Caption from ID:', bestCaptionItem.id);
-
-            // 2. Fetch ALL Images
-            const imageFiles: File[] = [];
-            for (const item of selectedItems) {
-                const response = await fetch(item.imageUrl);
-                const blob = await response.blob();
-                const file = new File([blob], `wa_${item.id}.jpg`, { type: blob.type });
-                imageFiles.push(file);
+            if (bundle.images.length === 0) {
+                alert('Bundle ini tidak memiliki gambar!');
+                setLoading(false);
+                return;
             }
 
-            // 3. Analyze with Gemini (using the first image + caption)
-            // We use the first image for analysis, but the caption is crucial
-            console.log('🤖 Analyzing caption and image...');
+            const finalCaption = bundle.mainCaption || '';
+            console.log('📝 Using Bundled Caption:', finalCaption);
+
+            // Fetch ALL Images in Bundle
+            const imageFiles: File[] = [];
+            for (const item of bundle.images) {
+                if (!item.imageUrl) continue;
+                try {
+                    const response = await fetch(item.imageUrl);
+                    const blob = await response.blob();
+                    const file = new File([blob], `wa_${item.id}.jpg`, { type: blob.type });
+                    imageFiles.push(file);
+                } catch (e) {
+                    console.error('Failed to load image', item.id, e);
+                }
+            }
+
+            if (imageFiles.length === 0) {
+                throw new Error('Gagal mendownload gambar dari bundle.');
+            }
+
+            // Analyze with Gemini
+            console.log('🤖 Analyzing bundle...');
             const firstImageBase64 = await collageService.fileToBase64(imageFiles[0]);
 
-            // NOTE: We rely heavily on the CAPTION for details, image provides visual context
+            // Generate analysis but PRIORITIZE existing caption
             const analysis = await geminiService.analyzeCaptionAndImage(firstImageBase64, finalCaption);
-            console.log('✅ Analysis result:', analysis);
 
-            // 4. Construct Product Data
+            // Construct Data - FORCE use of existing caption
             const productData = {
                 name: analysis.name || 'Produk Baru',
-                description: analysis.description || finalCaption,
+                // Logika deskripsi: Jika ada caption asli, gunakan itu. 
+                // Jika user ingin AI melengkapi, bisa ditambahkan, tapi amannya kita pakai caption asli di depan.
+                description: finalCaption ? finalCaption : (analysis.description || ''),
                 category: analysis.category || 'Gamis',
                 retailPrice: analysis.price || 0,
-                resellerPrice: analysis.resellerPrice || 0, // New field
+                resellerPrice: analysis.resellerPrice || 0,
                 colors: analysis.colors || [],
                 sizes: analysis.sizes || [],
                 material: analysis.material || '',
-                status: analysis.status || 'ready', // New field (PO/Ready)
-                images: imageFiles, // Pass ALL images array
-                // The parent component handles the collage logic if multiple images exist
+                status: analysis.status || 'ready',
+                images: imageFiles, // Parent handles collage
             };
 
-            // 5. Pass to Parent
-            // We pass the first file as "originalImage" for backward compatibility if needed,
-            // but we really want passing the whole array in logic.
-            // The `onProcess` signature might need slight adjustment effectively, 
-            // but we can attach extra data to the first argument.
             onProcess({
                 ...productData,
-                whatsappIds: Array.from(selectedIds) // To delete later
+                whatsappIds: bundle.items.map(i => i.id) // Mark all valid items as processed
             }, imageFiles[0]);
 
-            // Close inbox
             onClose();
-            setSelectedIds(new Set());
 
         } catch (error) {
-            console.error('failed to process items', error);
-            alert('Gagal memproses item: ' + (error as any).message);
+            console.error('failed to process bundle', error);
+            alert('Gagal memproses bundle: ' + (error as any).message);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Hapus pesan ini?')) return;
+    const handleDeleteBundle = async (bundle: ProductBundle) => {
+        if (!confirm(`Hapus ${bundle.itemCount} pesan dalam bundle ini?`)) return;
         try {
-            await deleteDoc(doc(db, 'pending_products', id));
+            for (const item of bundle.items) {
+                await deleteDoc(doc(db, 'pending_products', item.id));
+            }
         } catch (error) {
-            console.error('failed to delete', error);
+            console.error('failed to delete bundle', error);
         }
     };
 
@@ -144,19 +196,19 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden animate-fade-in-up">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in-up">
                 {/* Header */}
-                <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-                    <div className="flex items-center gap-2">
-                        <div className="bg-green-100 p-2 rounded-lg">
-                            <MessageCircle className="w-5 h-5 text-green-600" />
+                <div className="p-4 border-b flex justify-between items-center bg-green-50">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-green-100 p-2 rounded-full">
+                            <MessageCircle className="w-6 h-6 text-green-600" />
                         </div>
                         <div>
                             <h2 className="text-xl font-bold text-gray-800">WhatsApp Inbox</h2>
-                            <p className="text-xs text-gray-500">Pilih beberapa foto untuk dijadikan satu produk (Collage)</p>
+                            <p className="text-sm text-gray-600">Pesan otomatis dikelompokkan (Bundle) agar siap proses.</p>
                         </div>
-                        <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                            {pendingItems.length}
+                        <span className="bg-green-200 text-green-800 px-3 py-1 rounded-full text-xs font-bold">
+                            {bundles.length} Bundle
                         </span>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
@@ -164,90 +216,88 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                     </button>
                 </div>
 
-                {/* Toolbar */}
-                <div className="px-4 py-2 border-b bg-white flex justify-between items-center">
-                    <button
-                        onClick={selectAll}
-                        className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
-                    >
-                        {selectedIds.size === pendingItems.length && pendingItems.length > 0 ? (
-                            <CheckSquare className="w-4 h-4 text-green-600" />
-                        ) : (
-                            <Square className="w-4 h-4" />
-                        )}
-                        Pilih Semua
-                    </button>
-
-                    <button
-                        onClick={handleProcessSelected}
-                        disabled={loading || selectedIds.size === 0}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? 'Processing...' : `Proses ${selectedIds.size} Item Terpilih`}
-                        <ArrowRight className="w-4 h-4" />
-                    </button>
-                </div>
-
-                {/* List Grid */}
-                <div className="overflow-y-auto flex-1 p-4 bg-gray-50/50">
-                    {pendingItems.length === 0 ? (
-                        <div className="text-center py-12 text-gray-500">
-                            <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                            <p>Belum ada pesan produk dari WhatsApp.</p>
+                {/* Content */}
+                <div className="overflow-y-auto flex-1 p-6 bg-gray-50">
+                    {bundles.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                            <MessageCircle className="w-16 h-16 mb-4 opacity-50" />
+                            <p className="text-lg font-medium">Inbox Kosong</p>
+                            <p className="text-sm">Belum ada pesan produk baru dari WhatsApp.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {pendingItems.map((item) => {
-                                const isSelected = selectedIds.has(item.id);
-                                return (
-                                    <div
-                                        key={item.id}
-                                        className={`relative bg-white rounded-xl p-3 shadow-sm border transition-all cursor-pointer group
-                                            ${isSelected ? 'border-green-500 ring-2 ring-green-100' : 'border-gray-100 hover:shadow-md'}`}
-                                        onClick={() => toggleSelection(item.id)}
-                                    >
-                                        {/* Selection Checkbox */}
-                                        <div className="absolute top-3 right-3 z-10">
-                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors shadow-sm border
-                                                ${isSelected ? 'bg-green-500 border-green-500 text-white' : 'bg-white border-gray-300 text-transparent hover:border-gray-400'}`}>
-                                                <CheckSquare className="w-4 h-4" />
-                                            </div>
+                        <div className="grid grid-cols-1 gap-4">
+                            {bundles.map((bundle) => (
+                                <div key={bundle.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all">
+                                    <div className="flex gap-4">
+                                        {/* Image Preview Grid */}
+                                        <div className="w-1/4 min-w-[120px] max-w-[200px]">
+                                            {bundle.images.length > 0 ? (
+                                                <div className={`grid gap-1 ${bundle.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} h-32 rounded-lg overflow-hidden`}>
+                                                    {bundle.images.slice(0, 4).map((img, idx) => (
+                                                        <img key={idx} src={img.imageUrl} className="w-full h-full object-cover" alt="" />
+                                                    ))}
+                                                    {bundle.images.length > 4 && (
+                                                        <div className="bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+                                                            +{bundle.images.length - 4}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="h-32 bg-gray-100 rounded-lg flex flex-col items-center justify-center text-gray-400">
+                                                    <FileText className="w-8 h-8 mb-2" />
+                                                    <span className="text-xs">Teks Only</span>
+                                                </div>
+                                            )}
                                         </div>
 
-                                        <div className="flex gap-3">
-                                            {/* Image */}
-                                            <div className="w-20 h-28 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
-                                                <img src={item.imageUrl} alt="Product" className="w-full h-full object-cover" />
+                                        {/* Content */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                                                        <Clock className="w-3 h-3" />
+                                                        <span>{bundle.timestamp?.seconds ? new Date(bundle.timestamp.seconds * 1000).toLocaleString() : 'Baru saja'}</span>
+                                                        <span className="mx-1">•</span>
+                                                        <Layers className="w-3 h-3" />
+                                                        <span>{bundle.images.length} Gambar</span>
+                                                        {bundle.itemCount > bundle.images.length && (
+                                                            <span> + {bundle.itemCount - bundle.images.length} Teks</span>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
 
-                                            {/* Content */}
-                                            <div className="flex-1 min-w-0 flex flex-col justify-between">
-                                                <div>
-                                                    <div className="text-xs text-gray-400 flex items-center gap-1 mb-1">
-                                                        <Clock className="w-3 h-3" />
-                                                        {item.timestamp?.seconds ? new Date(item.timestamp.seconds * 1000).toLocaleString() : 'Baru saja'}
-                                                    </div>
-                                                    <p className={`text-sm line-clamp-3 whitespace-pre-wrap ${item.caption ? 'text-gray-800' : 'text-gray-400 italic'}`}>
-                                                        {item.caption || '(Tanpa Caption)'}
-                                                    </p>
-                                                </div>
+                                            <p className="text-sm text-gray-800 line-clamp-3 mb-4 whitespace-pre-wrap font-medium">
+                                                {bundle.mainCaption || <span className="italic text-gray-400">Tidak ada caption</span>}
+                                            </p>
 
-                                                <div className="flex justify-end pt-2">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleDelete(item.id);
-                                                        }}
-                                                        className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
+                                            <div className="flex items-center justify-between mt-auto">
+                                                <button
+                                                    onClick={() => handleDeleteBundle(bundle)}
+                                                    className="text-gray-400 hover:text-red-500 text-sm flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4" /> Hapus Bundle
+                                                </button>
+
+                                                <button
+                                                    onClick={() => handleProcessBundle(bundle)}
+                                                    disabled={loading}
+                                                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-lg shadow-green-200 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+                                                >
+                                                    {loading ? (
+                                                        <span className="flex items-center gap-2">Processing...</span>
+                                                    ) : (
+                                                        <>
+                                                            Proses Jadi Produk
+                                                            <ArrowRight className="w-4 h-4" />
+                                                        </>
+                                                    )}
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
-                                );
-                            })}
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
