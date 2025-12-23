@@ -348,18 +348,135 @@ function drawLabel(canvas, label, box) {
   const labelSize = 200;
   const centerX = Math.round(box.x + box.w / 2);
   const centerY = Math.round(box.y + box.h / 2);
-  const x = centerX - labelSize / 2;
-  const y = centerY - labelSize / 2;
+  const x = Math.round(centerX - labelSize / 2);
+  const y = Math.round(centerY - labelSize / 2);
 
-  // Draw black semi-transparent box (Jimp v1.x)
+  // Draw black semi-transparent box
   for (let px = Math.max(0, x); px < Math.min(canvas.width, x + labelSize); px++) {
     for (let py = Math.max(0, y); py < Math.min(canvas.height, y + labelSize); py++) {
-      canvas.setPixelColor(0x000000AA, px, py);
+      canvas.setPixelColor(0x00000099, px, py);
     }
   }
 
-  // Note: Font printing in Jimp v1.x is complex, we'll skip text for now
-  // Labels are visible from the black boxes positioned at each image
+  // Draw letter using simple pixel bitmap (5x7 grid scaled up)
+  const letterPatterns = {
+    'A': [
+      '  #  ',
+      ' # # ',
+      '#   #',
+      '#####',
+      '#   #',
+      '#   #',
+      '#   #',
+    ],
+    'B': [
+      '#### ',
+      '#   #',
+      '#### ',
+      '#   #',
+      '#   #',
+      '#   #',
+      '#### ',
+    ],
+    'C': [
+      ' ### ',
+      '#   #',
+      '#    ',
+      '#    ',
+      '#    ',
+      '#   #',
+      ' ### ',
+    ],
+    'D': [
+      '#### ',
+      '#   #',
+      '#   #',
+      '#   #',
+      '#   #',
+      '#   #',
+      '#### ',
+    ],
+    'E': [
+      '#####',
+      '#    ',
+      '#    ',
+      '#### ',
+      '#    ',
+      '#    ',
+      '#####',
+    ],
+    'F': [
+      '#####',
+      '#    ',
+      '#    ',
+      '#### ',
+      '#    ',
+      '#    ',
+      '#    ',
+    ],
+    'G': [
+      ' ### ',
+      '#   #',
+      '#    ',
+      '# ###',
+      '#   #',
+      '#   #',
+      ' ### ',
+    ],
+    'H': [
+      '#   #',
+      '#   #',
+      '#   #',
+      '#####',
+      '#   #',
+      '#   #',
+      '#   #',
+    ],
+    'I': [
+      '#####',
+      '  #  ',
+      '  #  ',
+      '  #  ',
+      '  #  ',
+      '  #  ',
+      '#####',
+    ],
+    'J': [
+      '#####',
+      '    #',
+      '    #',
+      '    #',
+      '#   #',
+      '#   #',
+      ' ### ',
+    ]
+  };
+
+  const pattern = letterPatterns[label] || letterPatterns['A'];
+  const pixelSize = 20; // Size of each "pixel" in the letter
+  const letterWidth = 5 * pixelSize;
+  const letterHeight = 7 * pixelSize;
+  const letterX = x + (labelSize - letterWidth) / 2;
+  const letterY = y + (labelSize - letterHeight) / 2;
+
+  // Draw each pixel of the letter
+  for (let row = 0; row < 7; row++) {
+    for (let col = 0; col < 5; col++) {
+      if (pattern[row][col] === '#') {
+        // Draw a filled square for this pixel
+        for (let px = 0; px < pixelSize; px++) {
+          for (let py = 0; py < pixelSize; py++) {
+            const drawX = Math.round(letterX + col * pixelSize + px);
+            const drawY = Math.round(letterY + row * pixelSize + py);
+            if (drawX >= 0 && drawX < canvas.width && drawY >= 0 && drawY < canvas.height) {
+              canvas.setPixelColor(0xFFFFFFFF, drawX, drawY); // White color
+            }
+          }
+        }
+      }
+    }
+  }
+
   console.log(`   Label ${label} drawn at (${centerX}, ${centerY})`);
 }
 
