@@ -7,6 +7,19 @@ interface ManualUploadModalProps {
     onClose: () => void;
     onSuccess: (productData: any) => void;
     categories: string[];
+    initialState?: {
+        step?: 'upload' | 'details';
+        images?: File[];
+        collageBlob?: Blob;
+        productData?: {
+            name: string;
+            description: string;
+            category: string;
+            retailPrice: number;
+            resellerPrice: number;
+            costPrice: number;
+        };
+    };
 }
 
 interface PricingRule {
@@ -36,7 +49,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     isOpen,
     onClose,
     onSuccess,
-    categories
+    categories,
+    initialState
 }) => {
     // Step management
     const [step, setStep] = useState<'upload' | 'details' | 'preview'>('upload');
@@ -49,6 +63,49 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     const [collageBlob, setCollageBlob] = useState<Blob | null>(null);
     const [collagePreview, setCollagePreview] = useState<string>('');
     const [isGeneratingCollage, setIsGeneratingCollage] = useState(false);
+
+    // Initialize from initialState when isOpen changes
+    React.useEffect(() => {
+        if (isOpen && initialState) {
+            if (initialState.step) setStep(initialState.step);
+
+            if (initialState.images && initialState.images.length > 0) {
+                setImages(initialState.images);
+                const previews = initialState.images.map(file => URL.createObjectURL(file));
+                setImagePreviews(previews);
+            }
+
+            if (initialState.collageBlob) {
+                setCollageBlob(initialState.collageBlob);
+                setCollagePreview(URL.createObjectURL(initialState.collageBlob));
+            }
+
+            if (initialState.productData) {
+                setProductFormData(prev => ({
+                    ...prev,
+                    name: initialState.productData?.name || '',
+                    description: initialState.productData?.description || '',
+                    category: initialState.productData?.category || categories[0] || 'gamis',
+                }));
+
+                const { costPrice } = initialState.productData;
+
+                // Update settings to match prices approximately
+                // Since pricing rules are dynamic, we just set the cost price and let logic handle it,
+                // OR we override the calculated values implies we might need to modify how retailPrice is derived if we want exact values.
+                // For now, let's set costPrice. 
+                // To force retailPrice, we might need a manual override mode, but let's stick to setting costPrice.
+
+                setUploadSettings(prev => ({
+                    ...prev,
+                    costPrice: costPrice || 100000,
+                    // If we want to match exact retail, we can't easily reverse engineer the rule, 
+                    // but we can set the markup rule to match.
+                    // For simplicity, we trust the cost price from AI for now.
+                }));
+            }
+        }
+    }, [isOpen, initialState]);
 
     // Variant labels (A, B, C, ...)
     const variantLabels = useMemo(() => {

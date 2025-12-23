@@ -74,6 +74,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   const [showFlashSaleModal, setShowFlashSaleModal] = useState(false);
   const [showAIUploadModal, setShowAIUploadModal] = useState(false);
   const [showManualUploadModal, setShowManualUploadModal] = useState(false);
+  const [manualUploadInitialState, setManualUploadInitialState] = useState<any>(null);
   const [showWhatsAppInbox, setShowWhatsAppInbox] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -743,92 +744,45 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   // WhatsApp Process Handler
   const handleWhatsAppProcess = async (data: any, originalImageFile: File) => {
     try {
-      let finalImageFile = originalImageFile;
-      let formImages = [{
-        file: originalImageFile,
-        preview: URL.createObjectURL(originalImageFile),
-        isUploading: false
-      }];
-      let colors = data.colors?.length > 0 ? data.colors : ['Putih'];
+      let collageBlob: Blob | null = null;
 
       // Handle Multiple Images -> Collage
       if (data.images && Array.isArray(data.images) && data.images.length > 1) {
         console.log(`🖼️ Generating Collage from ${data.images.length} images...`);
 
-        // Generate labels (A, B, C...) - Logika sama dengan ManualUploadModal
+        // Generate labels (A, B, C...)
         const variantLabels = collageService.generateVariantLabels(data.images.length);
 
         // Generate Collage Blob
-        const collageBlob = await collageService.generateCollage(data.images, variantLabels);
+        collageBlob = await collageService.generateCollage(data.images, variantLabels);
 
-        // Buat file kolase dengan format nama yang konsisten dengan ManualUploadModal
-        finalImageFile = new File([collageBlob], `collage-${Date.now()}.jpg`, { type: 'image/jpeg' });
-
-        // Update form images to show ONLY the collage
-        formImages = [{
-          file: finalImageFile,
-          preview: URL.createObjectURL(finalImageFile),
-          isUploading: false
-        }];
-
-        // If caption analysis didn't give specific colors, use A, B, C labels from collage
-        console.log('Using Collage Variant Labels as Colors:', variantLabels);
-        colors = variantLabels;
       } else if (data.images && data.images.length === 1) {
         // Explicitly use the single selected image
-        finalImageFile = data.images[0];
-        formImages = [{
-          file: finalImageFile,
-          preview: URL.createObjectURL(finalImageFile),
-          isUploading: false
-        }];
+        collageBlob = data.images[0]; // Use single image as "collage" blob
       }
 
       // Generate initial stock structure
-      const sizes = data.sizes?.length > 0 ? data.sizes : ['All Size'];
-      const stockMatrix: any = {};
+      // Note: ManualUploadModal handles stock independently via uploadSettings,
+      // but we prepare the data structure just in case.
+      // We don't really need stockMatrix here because ManualUploadModal manages it internally based on images.
 
-      // Default stock per variant disamakan dengan ManualUploadModal (5 pcs)
-      const DEFAULT_STOCK_PER_VARIANT = 5;
-
-      sizes.forEach((size: string) => {
-        stockMatrix[size] = {};
-        colors.forEach((color: string) => {
-          stockMatrix[size][color] = DEFAULT_STOCK_PER_VARIANT;
-        });
+      // Prepare Initial State for ManualUploadModal
+      setManualUploadInitialState({
+        step: 'details',
+        images: data.images, // Pass original images
+        collageBlob: collageBlob,
+        productData: {
+          name: data.name || '',
+          description: data.description || '',
+          category: data.category || 'Gamis',
+          retailPrice: parseInt(data.retailPrice || 0),
+          resellerPrice: parseInt(data.resellerPrice || 0),
+          costPrice: parseInt(data.retailPrice || 0) * 0.6 // Estimate 60% of retail
+        }
       });
 
-      setFormData({
-        name: data.name || '',
-        description: data.description || '',
-        category: data.category || 'Gamis',
-        retailPrice: String(data.retailPrice || 0),
-        resellerPrice: String(data.resellerPrice || Math.round((data.retailPrice || 0) * 0.8)),
-        costPrice: String(Math.round((data.retailPrice || 0) * 0.6)), // Estimate
-        weight: '500',
-        images: formImages,
-        variants: {
-          sizes: sizes,
-          colors: colors,
-          stock: stockMatrix
-        },
-        status: data.status === 'po' ? 'po' : 'ready'
-      });
-
-      // Auto delete processed messages
-      if (data.whatsappIds && Array.isArray(data.whatsappIds)) {
-        data.whatsappIds.forEach(async (id: string) => {
-          try {
-            // Dynamic import to avoid circular dependency if any, but standard import is fine usually
-            // Using db from closure/import
-            const { deleteDoc, doc } = await import('firebase/firestore');
-            const { db } = await import('../utils/firebaseClient');
-            await deleteDoc(doc(db, 'pending_products', id));
-          } catch (e) { console.error('Delete error', e) }
-        });
-      }
-
-      setShowAddModal(true);
+      setShowManualUploadModal(true);
+      // setShowAddModal(true); // Disable old modal
     } catch (error) {
       console.error('Error processing WhatsApp data:', error);
       alert('Gagal memproses data WhatsApp: ' + (error as any).message);
@@ -2818,6 +2772,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           isOpen={showManualUploadModal}
           onClose={() => setShowManualUploadModal(false)}
           categories={categories}
+          initialState={manualUploadInitialState}
           onSuccess={async (productData) => {
             try {
               console.log('Manual Upload product data:', productData);
