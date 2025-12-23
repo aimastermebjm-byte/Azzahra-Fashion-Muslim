@@ -4,9 +4,8 @@ import android.app.Notification;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
@@ -20,10 +19,13 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class NotificationService extends NotificationListenerService {
     private FirebaseFirestore db;
     private SharedPreferences prefs;
+    private static final Map<String, Long> processedHistory = new HashMap<>();
+    private static final long DUPLICATE_TIMEOUT = 10000;
 
     @Override
     public void onCreate() {
@@ -35,18 +37,27 @@ public class NotificationService extends NotificationListenerService {
     @Override
     public void onListenerConnected() {
         super.onListenerConnected();
-        updateUILog("✅ SERVICE ACTIVE");
-        
+        updateUILog("✅ SERVICE READY - VER: 1.0.9 (STABLE)");
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent != null && "SCAN_NOW".equals(intent.getAction())) {
+            performManualScan();
+        }
+        return START_STICKY;
+    }
+
+    private void performManualScan() {
         try {
-            StatusBarNotification[] activeNotifs = getActiveNotifications();
-            if (activeNotifs != null) {
-                updateUILog("Scanning " + activeNotifs.length + " notifications...");
-                for (StatusBarNotification sbn : activeNotifs) {
+            StatusBarNotification[] active = getActiveNotifications();
+            if (active != null) {
+                for (StatusBarNotification sbn : active) {
                     onNotificationPosted(sbn);
                 }
             }
         } catch (Exception e) {
-            Log.e("AzzahraLog", "Initial scan error", e);
+            Log.e("AzzahraLog", "Scan error", e);
         }
     }
 
@@ -55,43 +66,68 @@ public class NotificationService extends NotificationListenerService {
         try {
             String pkg = sbn.getPackageName();
             Set<String> selected = prefs.getStringSet("selected_packages", new HashSet<>());
+            boolean isDiag = pkg.equals(getPackageName());
 
-            Notification notification = sbn.getNotification();
-            Bundle extras = notification.extras;
-            String title = extras.getString(Notification.EXTRA_TITLE, "");
-            CharSequence textChar = extras.getCharSequence(Notification.EXTRA_TEXT);
-            String text = (textChar != null) ? textChar.toString() : "";
+            if (selected.contains(pkg) || isDiag) {
+                Notification n = sbn.getNotification();
+                Bundle e = n.extras;
+                String title = e.getString(Notification.EXTRA_TITLE, "");
+                CharSequence textChar = e.getCharSequence(Notification.EXTRA_TEXT);
+                String text = (textChar != null) ? textChar.toString() : "";
+                String fullContent = (title + " " + text).trim();
 
-            if (selected.contains(pkg) || pkg.equals(getPackageName())) {
-                process(pkg, title + " " + text);
+                String uniqueId = pkg + "_" + fullContent.replaceAll("[^a-zA-Z0-9]", "");
+                
+                if (!isDiag) {
+                    long now = System.currentTimeMillis();
+                    if (processedHistory.containsKey(uniqueId) && (now - processedHistory.get(uniqueId) < DUPLICATE_TIMEOUT)) return;
+                    processedHistory.put(uniqueId, now);
+                }
+
+                process(pkg, fullContent, isDiag, uniqueId);
             }
-        } catch (Exception e) {}
+        } catch (Exception err) {
+            Log.e("AzzahraLog", "Error", err);
+        }
     }
 
-    private void process(String pkg, String fullText) {
+    private void process(String pkg, String fullText, boolean isDiag, String docId) {
         String low = fullText.toLowerCase();
+        if (isDiag) {
+            updateUILog("DIAGNOSTIC OK: " + fullText);
+            return;
+        }
         
-        if (low.contains("masuk") || pkg.equals(getPackageName())) {
-            long amt = extractAmount(low);
+        if (low.contains("masuk")) {
+            long amt = extractAmount(fullText);
             
+            // FILTER KODE UNIK (% 500)
             if (amt > 0) {
-                updateUILog("💰 DETECTED: [" + pkg + "] Rp " + amt);
-                send(pkg, amt, fullText);
-            } else if (pkg.equals(getPackageName())) {
-                updateUILog("DIAGNOSTIC: " + fullText);
+                if (amt % 500 == 0) {
+                    updateUILog("ℹ️ Angka Bulat diabaikan: Rp " + amt);
+                    return;
+                }
+                vibrate();
+                updateUILog("💰 DETECTED UNIQUE: [" + pkg + "] Rp " + amt);
+                sendToFirebase(pkg, amt, fullText, docId);
             }
         }
     }
 
     private long extractAmount(String text) {
+        String low = text.toLowerCase();
         try {
-            Pattern p1 = Pattern.compile("(idr|rp)\\s*([0-9.,]+)");
-            Matcher m1 = p1.matcher(text);
+            Pattern p1 = Pattern.compile("(rp|idr)\\s*([0-9.,]+)");
+            Matcher m1 = p1.matcher(low);
             if (m1.find()) return parseCleanAmount(m1.group(2));
 
-            Pattern p2 = Pattern.compile("([0-9]{1,3}(\\.[0-9]{3})+)");
-            Matcher m2 = p2.matcher(text);
-            if (m2.find()) return parseCleanAmount(m2.group(1));
+            Pattern p2 = Pattern.compile("([0-9]{1,3}([.,][0-9]{3})+)");
+            Matcher m2 = p2.matcher(low);
+            if (m2.find()) return parseCleanAmount(m2.group());
+
+            Pattern p3 = Pattern.compile("\\b[0-9]{4,12}\\b");
+            Matcher m3 = p3.matcher(low);
+            if (m3.find()) return parseCleanAmount(m3.group());
         } catch (Exception e) {}
         return 0;
     }
@@ -102,34 +138,36 @@ public class NotificationService extends NotificationListenerService {
         return clean.isEmpty() ? 0 : Long.parseLong(clean);
     }
 
+    private void vibrate() {
+        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        if (v != null) v.vibrate(200);
+    }
+
     private void updateUILog(String m) {
-        Intent i = new Intent("com.azzahra.sync.NEW_LOG");
         String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
         String entry = "[" + time + "] " + m;
+        Intent i = new Intent("com.azzahra.sync.NEW_LOG");
+        i.setPackage(getPackageName());
         i.putExtra("log_message", entry);
         sendBroadcast(i);
+        
+        String history = prefs.getString("log_history_list", "");
+        prefs.edit().putString("log_history_list", entry + "|||" + (history.length() > 8000 ? history.substring(0, 8000) : history)).apply();
     }
 
-    private boolean isNetworkAvailable() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo ani = cm.getActiveNetworkInfo();
-        return ani != null && ani.isConnected();
-    }
-
-    private void send(String bank, long amt, String raw) {
+    private void sendToFirebase(String bank, long amt, String raw, String docId) {
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+            updateUILog("❌ FIREBASE ERROR: Belum Login");
+            return;
+        }
         Map<String, Object> d = new HashMap<>();
         d.put("amount", amt); d.put("bank", bank); d.put("rawText", raw);
         d.put("timestamp", new Date().toString());
         d.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
-        
-        if (!isNetworkAvailable()) {
-            updateUILog("🌐 OFFLINE: Data queued in phone (will sync later)");
-        } else {
-            updateUILog("🚀 SENDING TO CLOUD...");
-        }
+        d.put("ownerUid", FirebaseAuth.getInstance().getCurrentUser().getUid());
 
-        db.collection("paymentDetectionsPending").add(d)
-            .addOnSuccessListener(doc -> updateUILog("☁️ SUCCESS: Saved to Firebase!"))
-            .addOnFailureListener(e -> updateUILog("❌ FIREBASE ERROR: " + e.getMessage()));
+        db.collection("paymentDetectionsPending").document(docId).set(d)
+            .addOnSuccessListener(aVoid -> updateUILog("☁️ SUCCESS: Sent to Firestore!"))
+            .addOnFailureListener(e -> updateUILog("❌ REJECTED: " + e.getMessage()));
     }
 }

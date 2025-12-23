@@ -885,6 +885,118 @@ Scoring guidelines:
     }
   }
 
+
+  /**
+   * Analyze image AND caption to extract product details (for WhatsApp automation)
+   */
+  async analyzeCaptionAndImage(
+    imageBase64: string,
+    caption: string
+  ): Promise<{
+    name: string;
+    description: string;
+    category: string;
+    price: number;
+    colors: string[];
+    sizes: string[];
+    material: string;
+  }> {
+    const prompt = `
+    Analyze this product image and the accompanying caption/text.
+    Caption: "${caption}"
+    
+    Extract the following information into a valid JSON object:
+    1. "name": A concise product name (combine model + motif/material).
+    2. "description": A short, attractive description for a sales catalog.
+    3. "category": Best guess category (Gamis, Tunik, Setelan, Hijab, etc.).
+    4. "price": The retail price found in text (if multiple, take the highest/retail one). If none, return 0.
+    5. "colors": List of available colors found in text or image.
+    6. "sizes": List of sizes found in text (e.g., S, M, L, XL, All Size).
+    7. "material": Material mentioned (e.g. Rayon, Katun).
+    
+    Return ONLY JSON. No text.
+    Structure:
+    {
+      "name": "...",
+      "description": "...",
+      "category": "...",
+      "price": 0,
+      "colors": ["..."],
+      "sizes": ["..."],
+      "material": "..."
+    }
+    `.trim();
+
+    // Try Gemini first
+    try {
+      if (this.shouldUseGLMDirectly()) {
+        return await this._analyzeCaptionWithGLM(imageBase64, prompt);
+      }
+
+      if (!this.genAI) throw new Error('Gemini not initialized');
+
+      const model = this.genAI.getGenerativeModel({
+        model: "gemini-2.5-flash", // Fast and good enough for text extraction
+        generationConfig: { responseMimeType: "application/json" }
+      });
+
+      const result = await model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            data: imageBase64,
+            mimeType: "image/jpeg"
+          }
+        }
+      ]);
+
+      const start = Date.now();
+      const response = await result.response;
+      const text = response.text();
+      console.log(`Gemini Caption Analysis took ${Date.now() - start}ms`);
+
+      return JSON.parse(text);
+
+    } catch (error: any) {
+      console.warn('Gemini caption analysis failed, trying GLM...', error);
+      if (error.message?.includes('quota')) this.markGeminiQuotaExceeded();
+
+      if (this.hasGLMAPI()) {
+        return await this._analyzeCaptionWithGLM(imageBase64, prompt);
+      }
+      throw error;
+    }
+  }
+
+  private async _analyzeCaptionWithGLM(imageBase64: string, prompt: string): Promise<any> {
+    if (!this.glmApiKey) throw new Error('GLM API key missing');
+
+    const response = await fetch('https://api.z.ai/api/paas/v4/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.glmApiKey}`
+      },
+      body: JSON.stringify({
+        model: 'glm-4.6v-flash',
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const content = this._extractGLMContent(data);
+
+    // Clean markdown if present
+    const jsonStr = content.replace(/```json\n|\n```/g, '').trim();
+    return JSON.parse(jsonStr);
+  }
+
   private validateAndCleanAnalysis(analysis: any): GeminiClothingAnalysis {
     // Log raw analysis for debugging
     console.log('🔍 Raw Gemini analysis:', JSON.stringify(analysis, null, 2));

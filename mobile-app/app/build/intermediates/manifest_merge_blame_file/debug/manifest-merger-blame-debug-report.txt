@@ -32,80 +32,81 @@
 18    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 18-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:13:5-119
 18-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:13:22-74
-19
-20    <!-- Although the *SdkVersion is captured in gradle build files, this is required for non gradle builds -->
-21    <!-- <uses-sdk android:minSdkVersion="14" /> -->
-22    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-22-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:10:5-79
-22-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:10:22-76
-23    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
-23-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:25:5-79
-23-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:25:22-76
-24    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" />
-24-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:26:5-88
-24-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:26:22-85
-25    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" />
-25-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:27:5-82
-25-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:27:22-79
-26    <uses-permission android:name="com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE" />
-26-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:26:5-110
-26-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:26:22-107
-27
-28    <permission
-28-->[androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:22:5-24:47
-29        android:name="com.azzahra.sync.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-29-->[androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:23:9-81
-30        android:protectionLevel="signature" />
-30-->[androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:24:9-44
-31
-32    <uses-permission android:name="com.azzahra.sync.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-32-->[androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:26:5-97
-32-->[androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:26:22-94
-33
-34    <application
-34-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:15:5-57:19
-35        android:allowBackup="true"
-35-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:16:9-35
-36        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-36-->[androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:28:18-86
-37        android:debuggable="true"
-38        android:extractNativeLibs="false"
-39        android:icon="@android:drawable/sym_def_app_icon"
-39-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:17:9-58
-40        android:label="@string/app_name"
-40-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:18:9-41
-41        android:roundIcon="@android:drawable/sym_def_app_icon"
-41-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:19:9-63
-42        android:supportsRtl="true"
-42-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:20:9-35
-43        android:theme="@style/Theme.AzzahraSync" >
-43-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:21:9-49
-44        <receiver
-44-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:23:9-28:20
-45            android:name="com.azzahra.sync.BootReceiver"
-45-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:23:19-47
-46            android:exported="true" >
-46-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:23:48-71
-47            <intent-filter>
-47-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:24:13-27:29
-48                <action android:name="android.intent.action.BOOT_COMPLETED" />
-48-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:25:17-79
-48-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:25:25-76
-49
-50                <category android:name="android.intent.category.DEFAULT" />
-50-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:26:17-76
-50-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:26:27-73
-51            </intent-filter>
-52        </receiver>
-53
-54        <activity
-54-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:30:9-38:20
-55            android:name="com.azzahra.sync.MainActivity"
-55-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:31:13-41
-56            android:exported="true"
-56-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:33:13-36
-57            android:label="@string/app_name" >
-57-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:32:13-45
+19    <uses-permission android:name="android.permission.VIBRATE" />
+19-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:14:5-66
+19-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:14:22-63
+20
+21    <!-- Although the *SdkVersion is captured in gradle build files, this is required for non gradle builds -->
+22    <!-- <uses-sdk android:minSdkVersion="14" /> -->
+23    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+23-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:10:5-79
+23-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:10:22-76
+24    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+24-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:25:5-79
+24-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:25:22-76
+25    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" />
+25-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:26:5-88
+25-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:26:22-85
+26    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" />
+26-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:27:5-82
+26-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:27:22-79
+27    <uses-permission android:name="com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE" />
+27-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:26:5-110
+27-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:26:22-107
+28
+29    <permission
+29-->[androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:22:5-24:47
+30        android:name="com.azzahra.sync.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+30-->[androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:23:9-81
+31        android:protectionLevel="signature" />
+31-->[androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:24:9-44
+32
+33    <uses-permission android:name="com.azzahra.sync.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+33-->[androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:26:5-97
+33-->[androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:26:22-94
+34
+35    <application
+35-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:16:5-62:19
+36        android:allowBackup="true"
+36-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:17:9-35
+37        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+37-->[androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:28:18-86
+38        android:debuggable="true"
+39        android:extractNativeLibs="false"
+40        android:icon="@android:drawable/sym_def_app_icon"
+40-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:18:9-58
+41        android:label="@string/app_name"
+41-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:19:9-41
+42        android:roundIcon="@android:drawable/sym_def_app_icon"
+42-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:20:9-63
+43        android:supportsRtl="true"
+43-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:21:9-35
+44        android:theme="@style/Theme.AzzahraSync" >
+44-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:22:9-49
+45        <receiver
+45-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:24:9-29:20
+46            android:name="com.azzahra.sync.BootReceiver"
+46-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:24:19-47
+47            android:exported="true" >
+47-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:24:48-71
+48            <intent-filter>
+48-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:25:13-28:29
+49                <action android:name="android.intent.action.BOOT_COMPLETED" />
+49-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:26:17-79
+49-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:26:25-76
+50
+51                <category android:name="android.intent.category.DEFAULT" />
+51-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:27:17-76
+51-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:27:27-73
+52            </intent-filter>
+53        </receiver>
+54
+55        <activity
+55-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:31:9-38:20
+56            android:name="com.azzahra.sync.LoginActivity"
+56-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:32:13-42
+57            android:exported="true" >
+57-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:33:13-36
 58            <intent-filter>
 58-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:34:13-37:29
 59                <action android:name="android.intent.action.MAIN" />
@@ -117,224 +118,309 @@
 61-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:36:27-74
 62            </intent-filter>
 63        </activity>
-64
-65        <service
-65-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:40:9-48:19
-66            android:name="com.azzahra.sync.NotificationService"
-66-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:41:13-48
-67            android:exported="true"
-67-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:44:13-36
-68            android:label="System Tools Listener"
-68-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:42:13-50
-69            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" >
-69-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:43:13-87
-70            <intent-filter>
-70-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:45:13-47:29
-71                <action android:name="android.service.notification.NotificationListenerService" />
-71-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:46:17-99
-71-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:46:25-96
-72            </intent-filter>
-73        </service>
-74        <service
-74-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:50:9-55:56
-75            android:name="com.azzahra.sync.ForegroundService"
-75-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:51:13-46
-76            android:enabled="true"
-76-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:53:13-35
-77            android:exported="false"
-77-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:54:13-37
-78            android:foregroundServiceType="dataSync"
-78-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:55:13-53
-79            android:label="Background Service" />
-79-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:52:13-47
-80        <service
-80-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:14:9-23:19
-81            android:name="com.google.firebase.components.ComponentDiscoveryService"
-81-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:15:13-84
-82            android:directBootAware="true"
-82-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:32:13-43
-83            android:exported="false" >
-83-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:16:13-37
-84            <meta-data
-84-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:17:13-19:85
-85                android:name="com.google.firebase.components:com.google.firebase.firestore.FirebaseFirestoreKtxRegistrar"
-85-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:18:17-122
-86                android:value="com.google.firebase.components.ComponentRegistrar" />
-86-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:19:17-82
-87            <meta-data
-87-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:20:13-22:85
-88                android:name="com.google.firebase.components:com.google.firebase.firestore.FirestoreRegistrar"
-88-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:21:17-111
-89                android:value="com.google.firebase.components.ComponentRegistrar" />
-89-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:22:17-82
-90            <meta-data
-90-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:37:13-39:85
-91                android:name="com.google.firebase.components:com.google.firebase.analytics.connector.internal.AnalyticsConnectorRegistrar"
-91-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:38:17-139
-92                android:value="com.google.firebase.components.ComponentRegistrar" />
-92-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:39:17-82
-93            <meta-data
-93-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:15:13-17:85
-94                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsKtxRegistrar"
-94-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:16:17-130
-95                android:value="com.google.firebase.components.ComponentRegistrar" />
-95-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:17:17-82
-96            <meta-data
-96-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:18:13-20:85
-97                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsRegistrar"
-97-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:19:17-127
-98                android:value="com.google.firebase.components.ComponentRegistrar" />
-98-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:20:17-82
-99            <meta-data
-99-->[com.google.firebase:firebase-common-ktx:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4f8111b2f327910e446ce946980bd8ef\transformed\jetified-firebase-common-ktx-20.4.2\AndroidManifest.xml:12:13-14:85
-100                android:name="com.google.firebase.components:com.google.firebase.ktx.FirebaseCommonLegacyRegistrar"
-100-->[com.google.firebase:firebase-common-ktx:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4f8111b2f327910e446ce946980bd8ef\transformed\jetified-firebase-common-ktx-20.4.2\AndroidManifest.xml:13:17-116
-101                android:value="com.google.firebase.components.ComponentRegistrar" />
-101-->[com.google.firebase:firebase-common-ktx:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4f8111b2f327910e446ce946980bd8ef\transformed\jetified-firebase-common-ktx-20.4.2\AndroidManifest.xml:14:17-82
-102            <meta-data
-102-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:35:13-37:85
-103                android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar"
-103-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:36:17-109
-104                android:value="com.google.firebase.components.ComponentRegistrar" />
-104-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:37:17-82
-105        </service>
-106
-107        <property
-107-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:30:9-32:61
-108            android:name="android.adservices.AD_SERVICES_CONFIG"
-108-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:31:13-65
-109            android:resource="@xml/ga_ad_services_config" />
-109-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:32:13-58
-110
-111        <provider
-111-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:23:9-28:39
-112            android:name="com.google.firebase.provider.FirebaseInitProvider"
-112-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:24:13-77
-113            android:authorities="com.azzahra.sync.firebaseinitprovider"
-113-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:25:13-72
-114            android:directBootAware="true"
-114-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:26:13-43
-115            android:exported="false"
-115-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:27:13-37
-116            android:initOrder="100" />
-116-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:28:13-36
-117        <provider
-117-->[androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:24:9-32:20
-118            android:name="androidx.startup.InitializationProvider"
-118-->[androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:25:13-67
-119            android:authorities="com.azzahra.sync.androidx-startup"
-119-->[androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:26:13-68
-120            android:exported="false" >
-120-->[androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:27:13-37
-121            <meta-data
-121-->[androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:29:13-31:52
-122                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-122-->[androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:30:17-75
-123                android:value="androidx.startup" />
-123-->[androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:31:17-49
-124            <meta-data
-124-->[androidx.lifecycle:lifecycle-process:2.6.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\be4654b7af27e5dbd645656aebb3e45d\transformed\jetified-lifecycle-process-2.6.1\AndroidManifest.xml:29:13-31:52
-125                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-125-->[androidx.lifecycle:lifecycle-process:2.6.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\be4654b7af27e5dbd645656aebb3e45d\transformed\jetified-lifecycle-process-2.6.1\AndroidManifest.xml:30:17-78
-126                android:value="androidx.startup" />
-126-->[androidx.lifecycle:lifecycle-process:2.6.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\be4654b7af27e5dbd645656aebb3e45d\transformed\jetified-lifecycle-process-2.6.1\AndroidManifest.xml:31:17-49
-127            <meta-data
-127-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:29:13-31:52
-128                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-128-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:30:17-85
-129                android:value="androidx.startup" />
-129-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:31:17-49
-130        </provider>
-131
+64        <activity
+64-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:40:9-43:40
+65            android:name="com.azzahra.sync.MainActivity"
+65-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:41:13-41
+66            android:exported="false"
+66-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:43:13-37
+67            android:label="@string/app_name" />
+67-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:42:13-45
+68
+69        <service
+69-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:45:9-53:19
+70            android:name="com.azzahra.sync.NotificationService"
+70-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:46:13-48
+71            android:exported="true"
+71-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:49:13-36
+72            android:label="System Tools Listener"
+72-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:47:13-50
+73            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" >
+73-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:48:13-87
+74            <intent-filter>
+74-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:50:13-52:29
+75                <action android:name="android.service.notification.NotificationListenerService" />
+75-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:51:17-99
+75-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:51:25-96
+76            </intent-filter>
+77        </service>
+78        <service
+78-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:55:9-60:56
+79            android:name="com.azzahra.sync.ForegroundService"
+79-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:56:13-46
+80            android:enabled="true"
+80-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:58:13-35
+81            android:exported="false"
+81-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:59:13-37
+82            android:foregroundServiceType="dataSync"
+82-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:60:13-53
+83            android:label="Background Service" />
+83-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:57:13-47
+84        <service
+84-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:14:9-23:19
+85            android:name="com.google.firebase.components.ComponentDiscoveryService"
+85-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:15:13-84
+86            android:directBootAware="true"
+86-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:32:13-43
+87            android:exported="false" >
+87-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:16:13-37
+88            <meta-data
+88-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:17:13-19:85
+89                android:name="com.google.firebase.components:com.google.firebase.firestore.FirebaseFirestoreKtxRegistrar"
+89-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:18:17-122
+90                android:value="com.google.firebase.components.ComponentRegistrar" />
+90-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:19:17-82
+91            <meta-data
+91-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:20:13-22:85
+92                android:name="com.google.firebase.components:com.google.firebase.firestore.FirestoreRegistrar"
+92-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:21:17-111
+93                android:value="com.google.firebase.components.ComponentRegistrar" />
+93-->[com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:22:17-82
+94            <meta-data
+94-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:69:13-71:85
+95                android:name="com.google.firebase.components:com.google.firebase.auth.FirebaseAuthRegistrar"
+95-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:70:17-109
+96                android:value="com.google.firebase.components.ComponentRegistrar" />
+96-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:71:17-82
+97            <meta-data
+97-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:37:13-39:85
+98                android:name="com.google.firebase.components:com.google.firebase.analytics.connector.internal.AnalyticsConnectorRegistrar"
+98-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:38:17-139
+99                android:value="com.google.firebase.components.ComponentRegistrar" />
+99-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:39:17-82
+100            <meta-data
+100-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:15:13-17:85
+101                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsKtxRegistrar"
+101-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:16:17-130
+102                android:value="com.google.firebase.components.ComponentRegistrar" />
+102-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:17:17-82
+103            <meta-data
+103-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:18:13-20:85
+104                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsRegistrar"
+104-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:19:17-127
+105                android:value="com.google.firebase.components.ComponentRegistrar" />
+105-->[com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:20:17-82
+106            <meta-data
+106-->[com.google.firebase:firebase-common-ktx:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4f8111b2f327910e446ce946980bd8ef\transformed\jetified-firebase-common-ktx-20.4.2\AndroidManifest.xml:12:13-14:85
+107                android:name="com.google.firebase.components:com.google.firebase.ktx.FirebaseCommonLegacyRegistrar"
+107-->[com.google.firebase:firebase-common-ktx:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4f8111b2f327910e446ce946980bd8ef\transformed\jetified-firebase-common-ktx-20.4.2\AndroidManifest.xml:13:17-116
+108                android:value="com.google.firebase.components.ComponentRegistrar" />
+108-->[com.google.firebase:firebase-common-ktx:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4f8111b2f327910e446ce946980bd8ef\transformed\jetified-firebase-common-ktx-20.4.2\AndroidManifest.xml:14:17-82
+109            <meta-data
+109-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:35:13-37:85
+110                android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar"
+110-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:36:17-109
+111                android:value="com.google.firebase.components.ComponentRegistrar" />
+111-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:37:17-82
+112        </service>
+113
+114        <activity
+114-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:29:9-46:20
+115            android:name="com.google.firebase.auth.internal.GenericIdpActivity"
+115-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:30:13-80
+116            android:excludeFromRecents="true"
+116-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:31:13-46
+117            android:exported="true"
+117-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:32:13-36
+118            android:launchMode="singleTask"
+118-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:33:13-44
+119            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
+119-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:34:13-72
+120            <intent-filter>
+120-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:35:13-45:29
+121                <action android:name="android.intent.action.VIEW" />
+121-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:36:17-69
+121-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:36:25-66
+122
+123                <category android:name="android.intent.category.DEFAULT" />
+123-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:27:17-76
+123-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:27:27-73
+124                <category android:name="android.intent.category.BROWSABLE" />
+124-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:39:17-78
+124-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:39:27-75
+125
+126                <data
+126-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:41:17-44:51
+127                    android:host="firebase.auth"
+127-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:42:21-49
+128                    android:path="/"
+128-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:43:21-37
+129                    android:scheme="genericidp" />
+129-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:44:21-48
+130            </intent-filter>
+131        </activity>
 132        <activity
-132-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:20:9-22:45
-133            android:name="com.google.android.gms.common.api.GoogleApiActivity"
-133-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:20:19-85
-134            android:exported="false"
-134-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:22:19-43
-135            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-135-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:21:19-78
-136
-137        <receiver
-137-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:29:9-33:20
-138            android:name="com.google.android.gms.measurement.AppMeasurementReceiver"
-138-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:30:13-85
-139            android:enabled="true"
-139-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:31:13-35
-140            android:exported="false" >
-140-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:32:13-37
-141        </receiver>
-142
-143        <service
-143-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:35:9-38:40
-144            android:name="com.google.android.gms.measurement.AppMeasurementService"
-144-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:36:13-84
-145            android:enabled="true"
-145-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:37:13-35
-146            android:exported="false" />
-146-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:38:13-37
-147        <service
-147-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:39:9-43:72
-148            android:name="com.google.android.gms.measurement.AppMeasurementJobService"
-148-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:40:13-87
-149            android:enabled="true"
-149-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:41:13-35
-150            android:exported="false"
-150-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:42:13-37
-151            android:permission="android.permission.BIND_JOB_SERVICE" />
-151-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:43:13-69
-152
-153        <uses-library
-153-->[androidx.privacysandbox.ads:ads-adservices:1.0.0-beta05] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5508b205fa62ebb482ec7b099af91ebd\transformed\jetified-ads-adservices-1.0.0-beta05\AndroidManifest.xml:23:9-25:40
-154            android:name="android.ext.adservices"
-154-->[androidx.privacysandbox.ads:ads-adservices:1.0.0-beta05] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5508b205fa62ebb482ec7b099af91ebd\transformed\jetified-ads-adservices-1.0.0-beta05\AndroidManifest.xml:24:13-50
-155            android:required="false" />
-155-->[androidx.privacysandbox.ads:ads-adservices:1.0.0-beta05] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5508b205fa62ebb482ec7b099af91ebd\transformed\jetified-ads-adservices-1.0.0-beta05\AndroidManifest.xml:25:13-37
-156
-157        <meta-data
-157-->[com.google.android.gms:play-services-basement:18.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0e616f7ea1b0191f60876b550f3ba2f3\transformed\jetified-play-services-basement-18.1.0\AndroidManifest.xml:21:9-23:69
-158            android:name="com.google.android.gms.version"
-158-->[com.google.android.gms:play-services-basement:18.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0e616f7ea1b0191f60876b550f3ba2f3\transformed\jetified-play-services-basement-18.1.0\AndroidManifest.xml:22:13-58
-159            android:value="@integer/google_play_services_version" />
-159-->[com.google.android.gms:play-services-basement:18.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0e616f7ea1b0191f60876b550f3ba2f3\transformed\jetified-play-services-basement-18.1.0\AndroidManifest.xml:23:13-66
-160
-161        <receiver
-161-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:34:9-52:20
-162            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-162-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:35:13-76
-163            android:directBootAware="false"
-163-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:36:13-44
-164            android:enabled="true"
-164-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:37:13-35
-165            android:exported="true"
-165-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:38:13-36
-166            android:permission="android.permission.DUMP" >
-166-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:39:13-57
-167            <intent-filter>
-167-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:40:13-42:29
-168                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-168-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:41:17-91
-168-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:41:25-88
-169            </intent-filter>
-170            <intent-filter>
-170-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:43:13-45:29
-171                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-171-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:44:17-85
-171-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:44:25-82
-172            </intent-filter>
-173            <intent-filter>
-173-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:46:13-48:29
-174                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-174-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:47:17-88
-174-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:47:25-85
-175            </intent-filter>
-176            <intent-filter>
-176-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:49:13-51:29
-177                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-177-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:50:17-95
-177-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:50:25-92
-178            </intent-filter>
-179        </receiver>
-180    </application>
+132-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:47:9-64:20
+133            android:name="com.google.firebase.auth.internal.RecaptchaActivity"
+133-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:48:13-79
+134            android:excludeFromRecents="true"
+134-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:49:13-46
+135            android:exported="true"
+135-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:50:13-36
+136            android:launchMode="singleTask"
+136-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:51:13-44
+137            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
+137-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:52:13-72
+138            <intent-filter>
+138-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:53:13-63:29
+139                <action android:name="android.intent.action.VIEW" />
+139-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:36:17-69
+139-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:36:25-66
+140
+141                <category android:name="android.intent.category.DEFAULT" />
+141-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:27:17-76
+141-->D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:27:27-73
+142                <category android:name="android.intent.category.BROWSABLE" />
+142-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:39:17-78
+142-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:39:27-75
+143
+144                <data
+144-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:41:17-44:51
+145                    android:host="firebase.auth"
+145-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:42:21-49
+146                    android:path="/"
+146-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:43:21-37
+147                    android:scheme="recaptcha" />
+147-->[com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:44:21-48
+148            </intent-filter>
+149        </activity>
+150
+151        <property
+151-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:30:9-32:61
+152            android:name="android.adservices.AD_SERVICES_CONFIG"
+152-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:31:13-65
+153            android:resource="@xml/ga_ad_services_config" />
+153-->[com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:32:13-58
+154
+155        <provider
+155-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:23:9-28:39
+156            android:name="com.google.firebase.provider.FirebaseInitProvider"
+156-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:24:13-77
+157            android:authorities="com.azzahra.sync.firebaseinitprovider"
+157-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:25:13-72
+158            android:directBootAware="true"
+158-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:26:13-43
+159            android:exported="false"
+159-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:27:13-37
+160            android:initOrder="100" />
+160-->[com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:28:13-36
+161        <provider
+161-->[androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:24:9-32:20
+162            android:name="androidx.startup.InitializationProvider"
+162-->[androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:25:13-67
+163            android:authorities="com.azzahra.sync.androidx-startup"
+163-->[androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:26:13-68
+164            android:exported="false" >
+164-->[androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:27:13-37
+165            <meta-data
+165-->[androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:29:13-31:52
+166                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+166-->[androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:30:17-75
+167                android:value="androidx.startup" />
+167-->[androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:31:17-49
+168            <meta-data
+168-->[androidx.lifecycle:lifecycle-process:2.6.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\be4654b7af27e5dbd645656aebb3e45d\transformed\jetified-lifecycle-process-2.6.1\AndroidManifest.xml:29:13-31:52
+169                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+169-->[androidx.lifecycle:lifecycle-process:2.6.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\be4654b7af27e5dbd645656aebb3e45d\transformed\jetified-lifecycle-process-2.6.1\AndroidManifest.xml:30:17-78
+170                android:value="androidx.startup" />
+170-->[androidx.lifecycle:lifecycle-process:2.6.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\be4654b7af27e5dbd645656aebb3e45d\transformed\jetified-lifecycle-process-2.6.1\AndroidManifest.xml:31:17-49
+171            <meta-data
+171-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:29:13-31:52
+172                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+172-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:30:17-85
+173                android:value="androidx.startup" />
+173-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:31:17-49
+174        </provider>
+175
+176        <receiver
+176-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:29:9-33:20
+177            android:name="com.google.android.gms.measurement.AppMeasurementReceiver"
+177-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:30:13-85
+178            android:enabled="true"
+178-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:31:13-35
+179            android:exported="false" >
+179-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:32:13-37
+180        </receiver>
 181
-182</manifest>
+182        <service
+182-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:35:9-38:40
+183            android:name="com.google.android.gms.measurement.AppMeasurementService"
+183-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:36:13-84
+184            android:enabled="true"
+184-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:37:13-35
+185            android:exported="false" />
+185-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:38:13-37
+186        <service
+186-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:39:9-43:72
+187            android:name="com.google.android.gms.measurement.AppMeasurementJobService"
+187-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:40:13-87
+188            android:enabled="true"
+188-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:41:13-35
+189            android:exported="false"
+189-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:42:13-37
+190            android:permission="android.permission.BIND_JOB_SERVICE" />
+190-->[com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:43:13-69
+191
+192        <activity
+192-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:20:9-22:45
+193            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+193-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:20:19-85
+194            android:exported="false"
+194-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:22:19-43
+195            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+195-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:21:19-78
+196
+197        <uses-library
+197-->[androidx.privacysandbox.ads:ads-adservices:1.0.0-beta05] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5508b205fa62ebb482ec7b099af91ebd\transformed\jetified-ads-adservices-1.0.0-beta05\AndroidManifest.xml:23:9-25:40
+198            android:name="android.ext.adservices"
+198-->[androidx.privacysandbox.ads:ads-adservices:1.0.0-beta05] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5508b205fa62ebb482ec7b099af91ebd\transformed\jetified-ads-adservices-1.0.0-beta05\AndroidManifest.xml:24:13-50
+199            android:required="false" />
+199-->[androidx.privacysandbox.ads:ads-adservices:1.0.0-beta05] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5508b205fa62ebb482ec7b099af91ebd\transformed\jetified-ads-adservices-1.0.0-beta05\AndroidManifest.xml:25:13-37
+200
+201        <meta-data
+201-->[com.google.android.gms:play-services-basement:18.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0e616f7ea1b0191f60876b550f3ba2f3\transformed\jetified-play-services-basement-18.1.0\AndroidManifest.xml:21:9-23:69
+202            android:name="com.google.android.gms.version"
+202-->[com.google.android.gms:play-services-basement:18.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0e616f7ea1b0191f60876b550f3ba2f3\transformed\jetified-play-services-basement-18.1.0\AndroidManifest.xml:22:13-58
+203            android:value="@integer/google_play_services_version" />
+203-->[com.google.android.gms:play-services-basement:18.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0e616f7ea1b0191f60876b550f3ba2f3\transformed\jetified-play-services-basement-18.1.0\AndroidManifest.xml:23:13-66
+204
+205        <receiver
+205-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:34:9-52:20
+206            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+206-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:35:13-76
+207            android:directBootAware="false"
+207-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:36:13-44
+208            android:enabled="true"
+208-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:37:13-35
+209            android:exported="true"
+209-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:38:13-36
+210            android:permission="android.permission.DUMP" >
+210-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:39:13-57
+211            <intent-filter>
+211-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:40:13-42:29
+212                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+212-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:41:17-91
+212-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:41:25-88
+213            </intent-filter>
+214            <intent-filter>
+214-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:43:13-45:29
+215                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+215-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:44:17-85
+215-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:44:25-82
+216            </intent-filter>
+217            <intent-filter>
+217-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:46:13-48:29
+218                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+218-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:47:17-88
+218-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:47:25-85
+219            </intent-filter>
+220            <intent-filter>
+220-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:49:13-51:29
+221                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+221-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:50:17-95
+221-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:50:25-92
+222            </intent-filter>
+223        </receiver>
+224    </application>
+225
+226</manifest>

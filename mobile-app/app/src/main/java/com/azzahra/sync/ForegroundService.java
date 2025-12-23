@@ -12,7 +12,7 @@ import androidx.core.app.NotificationCompat;
 
 public class ForegroundService extends Service {
 
-    private static final String CHANNEL_ID = "AzzahraSyncChannel";
+    public static final String CHANNEL_ID = "AzzahraSyncChannelV2"; // Ganti ID agar sistem refresh
 
     @Override
     public void onCreate() {
@@ -25,11 +25,13 @@ public class ForegroundService extends Service {
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Azzahra Tools")
-                .setContentText("Service is running in background")
+                .setContentText("Monitoring system notifications...")
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setOngoing(true) // Agar tidak bisa dihapus user
                 .build();
 
+        // Start Foreground dengan ID 1
         startForeground(1, notification);
 
         return START_STICKY;
@@ -49,8 +51,9 @@ public class ForegroundService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel serviceChannel = new NotificationChannel(
                     CHANNEL_ID,
-                    "Azzahra Tools Service",
+                    "Azzahra Tools Monitoring",
                     NotificationManager.IMPORTANCE_LOW);
+            serviceChannel.setDescription("Layanan untuk sinkronisasi data");
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
                 manager.createNotificationChannel(serviceChannel);

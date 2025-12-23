@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.azzahra.sync.app-mergeDebugResources-36:/values-v23/values-v23.xml",
+            "outputFile": "com.azzahra.sync.app-mergeDebugResources-37:/values-v23/values-v23.xml",
             "map": [
                 {
                     "source": "C:\\Users\\LENOVO\\.gradle\\caches\\9.0-milestone-1\\transforms\\3812384f06434e1ad0051a5c204a5254\\transformed\\cardview-1.0.0\\res\\values-v23\\values-v23.xml",

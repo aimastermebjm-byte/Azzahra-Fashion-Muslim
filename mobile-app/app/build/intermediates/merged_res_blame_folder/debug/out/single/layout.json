@@ -1,14 +1,14 @@
 [
     {
-        "merged": "C:\\Users\\LENOVO\\.gradle\\daemon\\9.0-milestone-1\\com.azzahra.sync.app-mergeDebugResources-37:\\layout\\item_app.xml",
-        "source": "C:\\Users\\LENOVO\\.gradle\\daemon\\9.0-milestone-1\\com.azzahra.sync.app-main-40:\\layout\\item_app.xml"
+        "merged": "com.azzahra.sync.app-mergeDebugResources-38:/layout/activity_main.xml",
+        "source": "com.azzahra.sync.app-main-41:/layout/activity_main.xml"
     },
     {
-        "merged": "C:\\Users\\LENOVO\\.gradle\\daemon\\9.0-milestone-1\\com.azzahra.sync.app-mergeDebugResources-37:\\layout\\activity_main.xml",
-        "source": "C:\\Users\\LENOVO\\.gradle\\daemon\\9.0-milestone-1\\com.azzahra.sync.app-main-40:\\layout\\activity_main.xml"
+        "merged": "com.azzahra.sync.app-mergeDebugResources-38:/layout/activity_login.xml",
+        "source": "com.azzahra.sync.app-main-41:/layout/activity_login.xml"
     },
     {
-        "merged": "com.azzahra.sync.app-mergeDebugResources-37:/layout/activity_main.xml",
-        "source": "com.azzahra.sync.app-main-40:/layout/activity_main.xml"
+        "merged": "com.azzahra.sync.app-mergeDebugResources-38:/layout/item_app.xml",
+        "source": "com.azzahra.sync.app-main-41:/layout/item_app.xml"
     }
 ]

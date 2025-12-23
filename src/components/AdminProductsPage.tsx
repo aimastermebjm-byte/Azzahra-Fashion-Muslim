@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight, Sparkles, MessageCircle } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { Product } from '../types';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
@@ -11,6 +11,7 @@ import { forceSyncAllProducts } from '../services/globalIndexSync';
 import { productCategoryService, ProductCategory } from '../services/productCategoryService';
 import AIAutoUploadModal from './AIAutoUploadModal';
 import ManualUploadModal from './ManualUploadModal';
+import WhatsAppInboxModal from './WhatsAppInboxModal';
 
 interface AdminProductsPageProps {
   onBack: () => void;
@@ -72,6 +73,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   const [showFlashSaleModal, setShowFlashSaleModal] = useState(false);
   const [showAIUploadModal, setShowAIUploadModal] = useState(false);
   const [showManualUploadModal, setShowManualUploadModal] = useState(false);
+  const [showWhatsAppInbox, setShowWhatsAppInbox] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -541,7 +543,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       costPrice: String(product.costPrice || ''),
       weight: String(product.weight || ''),
       images: product.images || [],
-      variants: product.variants || { sizes: [], colors: [], stock: {} as any },
+      variants: (product.variants as any) || { sizes: [], colors: [], stock: {} },
       status: product.status || 'ready'
     });
     setShowEditModal(true);
@@ -726,7 +728,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       for (const product of flashSaleProducts) {
         await updateProduct(product.id, {
           isFlashSale: false,
-          flashSalePrice: null
+          flashSalePrice: 0
         });
       }
 
@@ -735,6 +737,44 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       console.error('Error ending flash sale:', error);
       alert('Gagal menghentikan flash sale');
     }
+  };
+
+  // WhatsApp Process Handler
+  const handleWhatsAppProcess = (data: any, originalImageFile: File) => {
+    // Generate initial stock structure
+    const sizes = data.sizes?.length > 0 ? data.sizes : ['All Size'];
+    const colors = data.colors?.length > 0 ? data.colors : ['Putih'];
+    const stockMatrix: any = {};
+
+    sizes.forEach((size: string) => {
+      stockMatrix[size] = {};
+      colors.forEach((color: string) => {
+        stockMatrix[size][color] = 10; // Default stock
+      });
+    });
+
+    setFormData({
+      name: data.name || '',
+      description: data.description || '',
+      category: data.category || 'Gamis',
+      retailPrice: String(data.retailPrice || 0),
+      resellerPrice: String(Math.round((data.retailPrice || 0) * 0.8)), // Auto 20% off
+      costPrice: String(Math.round((data.retailPrice || 0) * 0.6)), // Estimate
+      weight: '500',
+      images: [{
+        file: originalImageFile,
+        preview: URL.createObjectURL(originalImageFile),
+        isUploading: false
+      }],
+      variants: {
+        sizes: sizes,
+        colors: colors,
+        stock: stockMatrix
+      },
+      status: 'ready'
+    });
+
+    setShowAddModal(true);
   };
 
   // Bulk delete function
@@ -1003,6 +1043,17 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               <div className="text-left">
                 <p className="font-semibold">Tambah Produk</p>
                 <p className="text-sm opacity-90">Collage + Parameter</p>
+              </div>
+            </button>
+            {/* WhatsApp Inbox */}
+            <button
+              onClick={() => setShowWhatsAppInbox(true)}
+              className="bg-green-600 text-white p-4 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-3"
+            >
+              <MessageCircle className="w-6 h-6" />
+              <div className="text-left">
+                <p className="font-semibold">WhatsApp Inbox</p>
+                <p className="text-sm opacity-90">Kelola pesan masuk</p>
               </div>
             </button>
             {/* AI Auto Upload - Owner Only */}
@@ -2777,6 +2828,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           }}
         />
       )}
+      <WhatsAppInboxModal
+        isOpen={showWhatsAppInbox}
+        onClose={() => setShowWhatsAppInbox(false)}
+        onProcess={handleWhatsAppProcess}
+      />
     </div>
   );
 };

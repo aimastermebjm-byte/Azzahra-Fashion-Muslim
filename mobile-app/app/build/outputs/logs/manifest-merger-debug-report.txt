@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-59:12
-INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-59:12
-INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-59:12
-INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-59:12
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-64:12
+INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-64:12
+INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-64:12
+INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:2:1-64:12
 MERGED from [androidx.databinding:viewbinding:8.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\f4e745eaf3a9ceecbfb812c09588deb9\transformed\jetified-viewbinding-8.2.0\AndroidManifest.xml:2:1-7:12
 MERGED from [com.google.android.material:material:1.11.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\b579160086ec682670d6c9154b6f649d\transformed\material-1.11.0\AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\af4713e161ed4476cfe663d9d17b2b47\transformed\constraintlayout-2.1.4\AndroidManifest.xml:2:1-11:12
@@ -11,30 +11,30 @@ MERGED from [androidx.appcompat:appcompat-resources:1.6.1] C:\Users\LENOVO\.grad
 MERGED from [androidx.appcompat:appcompat:1.6.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\08f48d36a93b482a6a962d6e31da18f2\transformed\appcompat-1.6.1\AndroidManifest.xml:17:1-22:12
 MERGED from [com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:2:1-26:12
 MERGED from [com.google.firebase:firebase-analytics:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\134944db917b55382eec91e92dd48d73\transformed\jetified-firebase-analytics-21.5.0\AndroidManifest.xml:2:1-9:12
+MERGED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:17:1-75:12
 MERGED from [com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:17:1-43:12
 MERGED from [com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:2:1-24:12
 MERGED from [com.google.firebase:firebase-common-ktx:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4f8111b2f327910e446ce946980bd8ef\transformed\jetified-firebase-common-ktx-20.4.2\AndroidManifest.xml:2:1-18:12
+MERGED from [com.google.firebase:firebase-auth-interop:20.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\27c0a2379a50d3c5849c15394d0acf2f\transformed\jetified-firebase-auth-interop-20.0.0\AndroidManifest.xml:2:1-10:12
 MERGED from [com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:15:1-41:12
 MERGED from [androidx.emoji2:emoji2-views-helper:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\b02be1134860d1ca2ae559ad68346d23\transformed\jetified-emoji2-views-helper-1.2.0\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:17:1-35:12
 MERGED from [androidx.viewpager2:viewpager2:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e764e1a156fc578a678a625c3703a0e3\transformed\jetified-viewpager2-1.0.0\AndroidManifest.xml:17:1-24:12
+MERGED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:17:1-46:12
+MERGED from [com.google.android.gms:play-services-measurement-sdk:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\36a57f3ee02204a72498fdb2efc19931\transformed\jetified-play-services-measurement-sdk-21.5.0\AndroidManifest.xml:17:1-25:12
+MERGED from [com.google.android.gms:play-services-auth-api-phone:17.4.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\816cba20d848c326955e412396a0d693\transformed\jetified-play-services-auth-api-phone-17.4.0\AndroidManifest.xml:2:1-7:12
+MERGED from [com.google.android.recaptcha:recaptcha:18.1.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b416a820dab1240622f345cfc8e4fe5\transformed\jetified-recaptcha-18.1.2\AndroidManifest.xml:2:1-10:12
+MERGED from [com.google.android.play:integrity:1.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7478f75b6fd4a8d8abf6e67583a4b4da\transformed\jetified-integrity-1.1.0\AndroidManifest.xml:2:1-7:12
 MERGED from [com.google.firebase:firebase-appcheck-interop:17.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e0002b535a7bd2c65b48c56dc34e5435\transformed\jetified-firebase-appcheck-interop-17.0.0\AndroidManifest.xml:15:1-25:12
 MERGED from [com.google.firebase:firebase-database-collection:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\87511cf39c8e059439b2a1109bfe8b32\transformed\jetified-firebase-database-collection-18.0.1\AndroidManifest.xml:2:1-9:12
 MERGED from [com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:16:1-24:12
-MERGED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:17:1-46:12
-MERGED from [com.google.android.gms:play-services-measurement-sdk:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\36a57f3ee02204a72498fdb2efc19931\transformed\jetified-play-services-measurement-sdk-21.5.0\AndroidManifest.xml:17:1-25:12
-MERGED from [com.google.firebase:firebase-auth-interop:19.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\db00f80a8796aa46b56ae7496e4c6566\transformed\jetified-firebase-auth-interop-19.0.2\AndroidManifest.xml:2:1-10:12
-MERGED from [com.google.android.gms:play-services-measurement-impl:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\780fa669a9148db14093c7b1a34caa75\transformed\jetified-play-services-measurement-impl-21.5.0\AndroidManifest.xml:17:1-32:12
-MERGED from [com.google.android.gms:play-services-ads-identifier:18.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5a41828267b0c5c9ec6cfdc8bd16bdba\transformed\jetified-play-services-ads-identifier-18.0.0\AndroidManifest.xml:17:1-27:12
-MERGED from [com.google.android.gms:play-services-measurement-sdk-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\204bc04d14dee31f5acc254b6bc33ba4\transformed\jetified-play-services-measurement-sdk-api-21.5.0\AndroidManifest.xml:17:1-30:12
-MERGED from [com.google.android.gms:play-services-measurement-base:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7f402d8b0fbc80f0f45dc246326118f9\transformed\jetified-play-services-measurement-base-21.5.0\AndroidManifest.xml:2:1-9:12
-MERGED from [com.google.android.gms:play-services-stats:17.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\a6552421f4906703285f49855b4fb450\transformed\jetified-play-services-stats-17.0.2\AndroidManifest.xml:2:1-9:12
-MERGED from [com.google.firebase:firebase-measurement-connector:19.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e9c46a20f2bd6346e1154a086b3906b3\transformed\jetified-firebase-measurement-connector-19.0.0\AndroidManifest.xml:17:1-25:12
 MERGED from [com.google.firebase:firebase-installations-interop:17.1.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\c42229b3fee3dbc97fa99fea760e6db5\transformed\jetified-firebase-installations-interop-17.1.1\AndroidManifest.xml:15:1-19:12
+MERGED from [com.google.android.gms:play-services-measurement-impl:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\780fa669a9148db14093c7b1a34caa75\transformed\jetified-play-services-measurement-impl-21.5.0\AndroidManifest.xml:17:1-32:12
 MERGED from [androidx.privacysandbox.ads:ads-adservices-java:1.0.0-beta05] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\34a673c30a6d5fb438f1b69d11f52a46\transformed\jetified-ads-adservices-java-1.0.0-beta05\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.privacysandbox.ads:ads-adservices:1.0.0-beta05] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5508b205fa62ebb482ec7b099af91ebd\transformed\jetified-ads-adservices-1.0.0-beta05\AndroidManifest.xml:17:1-28:12
 MERGED from [androidx.activity:activity:1.8.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\b1a53546b436000b7d5bf54b7a61f8f8\transformed\jetified-activity-1.8.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.dynamicanimation:dynamicanimation:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\77bed0b3a161efe50a69ccaaadb741f4\transformed\dynamicanimation-1.0.0\AndroidManifest.xml:17:1-22:12
+MERGED from [com.google.android.gms:play-services-stats:17.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\a6552421f4906703285f49855b4fb450\transformed\jetified-play-services-stats-17.0.2\AndroidManifest.xml:2:1-9:12
 MERGED from [androidx.legacy:legacy-support-core-utils:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2f8fab34081cc1502ad47ef9a29d87a5\transformed\legacy-support-core-utils-1.0.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.loader:loader:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2961d9269963c90d62faff38c6e742ec\transformed\loader-1.0.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.savedstate:savedstate:1.2.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\68bd1b0085f43b498b04b50791071f9f\transformed\jetified-savedstate-1.2.1\AndroidManifest.xml:17:1-22:12
@@ -45,6 +45,10 @@ MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.6.1] C:\Users\LENOVO\.grad
 MERGED from [androidx.lifecycle:lifecycle-runtime:2.6.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\69244e59b794a7a2a8175279fab16c24\transformed\lifecycle-runtime-2.6.1\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\aec2870007929ed9d7ec17ec748d6505\transformed\jetified-lifecycle-viewmodel-savedstate-2.6.1\AndroidManifest.xml:17:1-22:12
 MERGED from [com.google.android.gms:play-services-tasks:18.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\725cea2c4fc6e66475f03e4f2aa0516d\transformed\jetified-play-services-tasks-18.0.2\AndroidManifest.xml:2:1-6:12
+MERGED from [com.google.android.gms:play-services-ads-identifier:18.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5a41828267b0c5c9ec6cfdc8bd16bdba\transformed\jetified-play-services-ads-identifier-18.0.0\AndroidManifest.xml:17:1-27:12
+MERGED from [com.google.android.gms:play-services-measurement-sdk-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\204bc04d14dee31f5acc254b6bc33ba4\transformed\jetified-play-services-measurement-sdk-api-21.5.0\AndroidManifest.xml:17:1-30:12
+MERGED from [com.google.android.gms:play-services-measurement-base:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7f402d8b0fbc80f0f45dc246326118f9\transformed\jetified-play-services-measurement-base-21.5.0\AndroidManifest.xml:2:1-9:12
+MERGED from [com.google.firebase:firebase-measurement-connector:19.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e9c46a20f2bd6346e1154a086b3906b3\transformed\jetified-firebase-measurement-connector-19.0.0\AndroidManifest.xml:17:1-25:12
 MERGED from [com.google.android.gms:play-services-basement:18.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0e616f7ea1b0191f60876b550f3ba2f3\transformed\jetified-play-services-basement-18.1.0\AndroidManifest.xml:16:1-26:12
 MERGED from [androidx.fragment:fragment:1.3.6] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\34237ea831fca8194d8b494d7b321c32\transformed\fragment-1.3.6\AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.drawerlayout:drawerlayout:1.1.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0a9e222ab06aebdd46238aa32fc72be8\transformed\drawerlayout-1.1.1\AndroidManifest.xml:17:1-24:12
@@ -52,6 +56,7 @@ MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.1.0] C:\Users\LENOVO
 MERGED from [androidx.transition:transition:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\3999019e7f43f48a6cb95864370ab457\transformed\transition-1.2.0\AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\113d140d1dc48ae621d6ac8967eec364\transformed\vectordrawable-animated-1.1.0\AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\86839e6d2d3d2b253f934f1e5d21b08d\transformed\vectordrawable-1.1.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.browser:browser:1.4.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7622cd3947301077700c8d9f272e1caf\transformed\browser-1.4.0\AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.core:core-ktx:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\f419ad9507e65451cd8ab7dba2edaed5\transformed\jetified-core-ktx-1.9.0\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.viewpager:viewpager:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\50e4e16ea60f4e8e8a3aff9d78dc38b6\transformed\viewpager-1.0.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.recyclerview:recyclerview:1.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\3a08ae2021cd9dc66c6f010788d61682\transformed\recyclerview-1.1.0\AndroidManifest.xml:17:1-24:12
@@ -59,6 +64,7 @@ MERGED from [androidx.customview:customview:1.1.0] C:\Users\LENOVO\.gradle\cache
 MERGED from [androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:17:1-30:12
 MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\8921759f2e1e37a3507af6d5866d6604\transformed\cursoradapter-1.0.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.cardview:cardview:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\3812384f06434e1ad0051a5c204a5254\transformed\cardview-1.0.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dac4cba38efafdc9e5d06eff6e1deba9\transformed\localbroadcastmanager-1.0.0\AndroidManifest.xml:17:1-22:12
 MERGED from [com.google.firebase:firebase-components:17.1.5] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\c2c9a2236dc8d7f7cb377cf1ca4ee25d\transformed\jetified-firebase-components-17.1.5\AndroidManifest.xml:15:1-20:12
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\71a9fe20cf52fe931e1bde7b10566155\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:17:1-27:12
 MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4ecb81be66e7fb88f7663f8a20a02d6e\transformed\jetified-profileinstaller-1.3.0\AndroidManifest.xml:17:1-55:12
@@ -67,7 +73,6 @@ MERGED from [androidx.tracing:tracing:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-
 MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\a504853e1c0ad185cb12397cded024fa\transformed\interpolator-1.0.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\50260a894bc6fc143b3e428088c80d7d\transformed\core-runtime-2.2.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.documentfile:documentfile:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\257dfa7e42b09652e9b17df361829c4a\transformed\documentfile-1.0.0\AndroidManifest.xml:17:1-22:12
-MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dac4cba38efafdc9e5d06eff6e1deba9\transformed\localbroadcastmanager-1.0.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.print:print:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9063ccb595734a2c61e1a576a81b0751\transformed\print-1.0.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.annotation:annotation-experimental:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e22cd913940d275bc8ffa54aa793cd91\transformed\jetified-annotation-experimental-1.3.0\AndroidManifest.xml:17:1-22:12
 MERGED from [io.grpc:grpc-android:1.52.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\72f78004f053d9fc8d3776a23f10daf9\transformed\jetified-grpc-android-1.52.1\AndroidManifest.xml:2:1-11:12
@@ -87,12 +92,16 @@ uses-permission#android.permission.INTERNET
 ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:6:5-67
 MERGED from [com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:11:5-67
 MERGED from [com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:11:5-67
+MERGED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:25:5-67
+MERGED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:25:5-67
 MERGED from [com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:22:5-67
 MERGED from [com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:22:5-67
 MERGED from [com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:8:5-67
 MERGED from [com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:8:5-67
 MERGED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:23:5-67
 MERGED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:23:5-67
+MERGED from [com.google.android.recaptcha:recaptcha:18.1.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b416a820dab1240622f345cfc8e4fe5\transformed\jetified-recaptcha-18.1.2\AndroidManifest.xml:7:5-67
+MERGED from [com.google.android.recaptcha:recaptcha:18.1.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b416a820dab1240622f345cfc8e4fe5\transformed\jetified-recaptcha-18.1.2\AndroidManifest.xml:7:5-67
 MERGED from [com.google.android.gms:play-services-measurement-impl:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\780fa669a9148db14093c7b1a34caa75\transformed\jetified-play-services-measurement-impl-21.5.0\AndroidManifest.xml:23:5-67
 MERGED from [com.google.android.gms:play-services-measurement-impl:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\780fa669a9148db14093c7b1a34caa75\transformed\jetified-play-services-measurement-impl-21.5.0\AndroidManifest.xml:23:5-67
 MERGED from [com.google.android.gms:play-services-measurement-sdk-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\204bc04d14dee31f5acc254b6bc33ba4\transformed\jetified-play-services-measurement-sdk-api-21.5.0\AndroidManifest.xml:23:5-67
@@ -137,9 +146,13 @@ ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\
 		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:13:75-116
 	android:name
 		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:13:22-74
+uses-permission#android.permission.VIBRATE
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:14:5-66
+	android:name
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:14:22-63
 application
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:15:5-57:19
-INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:15:5-57:19
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:16:5-62:19
+INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:16:5-62:19
 MERGED from [com.google.android.material:material:1.11.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\b579160086ec682670d6c9154b6f649d\transformed\material-1.11.0\AndroidManifest.xml:22:5-20
 MERGED from [com.google.android.material:material:1.11.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\b579160086ec682670d6c9154b6f649d\transformed\material-1.11.0\AndroidManifest.xml:22:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\af4713e161ed4476cfe663d9d17b2b47\transformed\constraintlayout-2.1.4\AndroidManifest.xml:9:5-20
@@ -148,42 +161,46 @@ MERGED from [com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gr
 MERGED from [com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:13:5-24:19
 MERGED from [com.google.firebase:firebase-analytics:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\134944db917b55382eec91e92dd48d73\transformed\jetified-firebase-analytics-21.5.0\AndroidManifest.xml:7:5-20
 MERGED from [com.google.firebase:firebase-analytics:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\134944db917b55382eec91e92dd48d73\transformed\jetified-firebase-analytics-21.5.0\AndroidManifest.xml:7:5-20
+MERGED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:28:5-73:19
+MERGED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:28:5-73:19
 MERGED from [com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:29:5-41:19
 MERGED from [com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:29:5-41:19
 MERGED from [com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:11:5-22:19
 MERGED from [com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:11:5-22:19
 MERGED from [com.google.firebase:firebase-common-ktx:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4f8111b2f327910e446ce946980bd8ef\transformed\jetified-firebase-common-ktx-20.4.2\AndroidManifest.xml:8:5-16:19
 MERGED from [com.google.firebase:firebase-common-ktx:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4f8111b2f327910e446ce946980bd8ef\transformed\jetified-firebase-common-ktx-20.4.2\AndroidManifest.xml:8:5-16:19
+MERGED from [com.google.firebase:firebase-auth-interop:20.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\27c0a2379a50d3c5849c15394d0acf2f\transformed\jetified-firebase-auth-interop-20.0.0\AndroidManifest.xml:7:5-8:19
+MERGED from [com.google.firebase:firebase-auth-interop:20.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\27c0a2379a50d3c5849c15394d0acf2f\transformed\jetified-firebase-auth-interop-20.0.0\AndroidManifest.xml:7:5-8:19
 MERGED from [com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:22:5-39:19
 MERGED from [com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:22:5-39:19
 MERGED from [androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:23:5-33:19
-MERGED from [com.google.firebase:firebase-appcheck-interop:17.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e0002b535a7bd2c65b48c56dc34e5435\transformed\jetified-firebase-appcheck-interop-17.0.0\AndroidManifest.xml:23:5-20
-MERGED from [com.google.firebase:firebase-appcheck-interop:17.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e0002b535a7bd2c65b48c56dc34e5435\transformed\jetified-firebase-appcheck-interop-17.0.0\AndroidManifest.xml:23:5-20
-MERGED from [com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:19:5-23:19
-MERGED from [com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:19:5-23:19
 MERGED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:28:5-44:19
 MERGED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:28:5-44:19
 MERGED from [com.google.android.gms:play-services-measurement-sdk:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\36a57f3ee02204a72498fdb2efc19931\transformed\jetified-play-services-measurement-sdk-21.5.0\AndroidManifest.xml:22:5-23:19
 MERGED from [com.google.android.gms:play-services-measurement-sdk:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\36a57f3ee02204a72498fdb2efc19931\transformed\jetified-play-services-measurement-sdk-21.5.0\AndroidManifest.xml:22:5-23:19
-MERGED from [com.google.firebase:firebase-auth-interop:19.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\db00f80a8796aa46b56ae7496e4c6566\transformed\jetified-firebase-auth-interop-19.0.2\AndroidManifest.xml:7:5-8:19
-MERGED from [com.google.firebase:firebase-auth-interop:19.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\db00f80a8796aa46b56ae7496e4c6566\transformed\jetified-firebase-auth-interop-19.0.2\AndroidManifest.xml:7:5-8:19
+MERGED from [com.google.android.play:integrity:1.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7478f75b6fd4a8d8abf6e67583a4b4da\transformed\jetified-integrity-1.1.0\AndroidManifest.xml:5:5-6:19
+MERGED from [com.google.android.play:integrity:1.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7478f75b6fd4a8d8abf6e67583a4b4da\transformed\jetified-integrity-1.1.0\AndroidManifest.xml:5:5-6:19
+MERGED from [com.google.firebase:firebase-appcheck-interop:17.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e0002b535a7bd2c65b48c56dc34e5435\transformed\jetified-firebase-appcheck-interop-17.0.0\AndroidManifest.xml:23:5-20
+MERGED from [com.google.firebase:firebase-appcheck-interop:17.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e0002b535a7bd2c65b48c56dc34e5435\transformed\jetified-firebase-appcheck-interop-17.0.0\AndroidManifest.xml:23:5-20
+MERGED from [com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:19:5-23:19
+MERGED from [com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:19:5-23:19
 MERGED from [com.google.android.gms:play-services-measurement-impl:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\780fa669a9148db14093c7b1a34caa75\transformed\jetified-play-services-measurement-impl-21.5.0\AndroidManifest.xml:29:5-30:19
 MERGED from [com.google.android.gms:play-services-measurement-impl:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\780fa669a9148db14093c7b1a34caa75\transformed\jetified-play-services-measurement-impl-21.5.0\AndroidManifest.xml:29:5-30:19
-MERGED from [com.google.android.gms:play-services-ads-identifier:18.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5a41828267b0c5c9ec6cfdc8bd16bdba\transformed\jetified-play-services-ads-identifier-18.0.0\AndroidManifest.xml:25:5-20
-MERGED from [com.google.android.gms:play-services-ads-identifier:18.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5a41828267b0c5c9ec6cfdc8bd16bdba\transformed\jetified-play-services-ads-identifier-18.0.0\AndroidManifest.xml:25:5-20
-MERGED from [com.google.android.gms:play-services-measurement-base:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7f402d8b0fbc80f0f45dc246326118f9\transformed\jetified-play-services-measurement-base-21.5.0\AndroidManifest.xml:7:5-20
-MERGED from [com.google.android.gms:play-services-measurement-base:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7f402d8b0fbc80f0f45dc246326118f9\transformed\jetified-play-services-measurement-base-21.5.0\AndroidManifest.xml:7:5-20
-MERGED from [com.google.android.gms:play-services-stats:17.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\a6552421f4906703285f49855b4fb450\transformed\jetified-play-services-stats-17.0.2\AndroidManifest.xml:7:5-20
-MERGED from [com.google.android.gms:play-services-stats:17.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\a6552421f4906703285f49855b4fb450\transformed\jetified-play-services-stats-17.0.2\AndroidManifest.xml:7:5-20
-MERGED from [com.google.firebase:firebase-measurement-connector:19.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e9c46a20f2bd6346e1154a086b3906b3\transformed\jetified-firebase-measurement-connector-19.0.0\AndroidManifest.xml:22:5-23:19
-MERGED from [com.google.firebase:firebase-measurement-connector:19.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e9c46a20f2bd6346e1154a086b3906b3\transformed\jetified-firebase-measurement-connector-19.0.0\AndroidManifest.xml:22:5-23:19
 MERGED from [androidx.privacysandbox.ads:ads-adservices:1.0.0-beta05] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5508b205fa62ebb482ec7b099af91ebd\transformed\jetified-ads-adservices-1.0.0-beta05\AndroidManifest.xml:22:5-26:19
 MERGED from [androidx.privacysandbox.ads:ads-adservices:1.0.0-beta05] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5508b205fa62ebb482ec7b099af91ebd\transformed\jetified-ads-adservices-1.0.0-beta05\AndroidManifest.xml:22:5-26:19
+MERGED from [com.google.android.gms:play-services-stats:17.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\a6552421f4906703285f49855b4fb450\transformed\jetified-play-services-stats-17.0.2\AndroidManifest.xml:7:5-20
+MERGED from [com.google.android.gms:play-services-stats:17.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\a6552421f4906703285f49855b4fb450\transformed\jetified-play-services-stats-17.0.2\AndroidManifest.xml:7:5-20
 MERGED from [androidx.lifecycle:lifecycle-process:2.6.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\be4654b7af27e5dbd645656aebb3e45d\transformed\jetified-lifecycle-process-2.6.1\AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.lifecycle:lifecycle-process:2.6.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\be4654b7af27e5dbd645656aebb3e45d\transformed\jetified-lifecycle-process-2.6.1\AndroidManifest.xml:23:5-33:19
 MERGED from [com.google.android.gms:play-services-tasks:18.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\725cea2c4fc6e66475f03e4f2aa0516d\transformed\jetified-play-services-tasks-18.0.2\AndroidManifest.xml:5:5-20
 MERGED from [com.google.android.gms:play-services-tasks:18.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\725cea2c4fc6e66475f03e4f2aa0516d\transformed\jetified-play-services-tasks-18.0.2\AndroidManifest.xml:5:5-20
+MERGED from [com.google.android.gms:play-services-ads-identifier:18.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5a41828267b0c5c9ec6cfdc8bd16bdba\transformed\jetified-play-services-ads-identifier-18.0.0\AndroidManifest.xml:25:5-20
+MERGED from [com.google.android.gms:play-services-ads-identifier:18.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5a41828267b0c5c9ec6cfdc8bd16bdba\transformed\jetified-play-services-ads-identifier-18.0.0\AndroidManifest.xml:25:5-20
+MERGED from [com.google.android.gms:play-services-measurement-base:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7f402d8b0fbc80f0f45dc246326118f9\transformed\jetified-play-services-measurement-base-21.5.0\AndroidManifest.xml:7:5-20
+MERGED from [com.google.android.gms:play-services-measurement-base:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7f402d8b0fbc80f0f45dc246326118f9\transformed\jetified-play-services-measurement-base-21.5.0\AndroidManifest.xml:7:5-20
+MERGED from [com.google.firebase:firebase-measurement-connector:19.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e9c46a20f2bd6346e1154a086b3906b3\transformed\jetified-firebase-measurement-connector-19.0.0\AndroidManifest.xml:22:5-23:19
+MERGED from [com.google.firebase:firebase-measurement-connector:19.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e9c46a20f2bd6346e1154a086b3906b3\transformed\jetified-firebase-measurement-connector-19.0.0\AndroidManifest.xml:22:5-23:19
 MERGED from [com.google.android.gms:play-services-basement:18.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0e616f7ea1b0191f60876b550f3ba2f3\transformed\jetified-play-services-basement-18.1.0\AndroidManifest.xml:20:5-24:19
 MERGED from [com.google.android.gms:play-services-basement:18.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0e616f7ea1b0191f60876b550f3ba2f3\transformed\jetified-play-services-basement-18.1.0\AndroidManifest.xml:20:5-24:19
 MERGED from [androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:28:5-89
@@ -199,41 +216,39 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\LENOVO\.gradle\cac
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\24a40acf92d9395fe89e5f821fb431ef\transformed\core-1.9.0\AndroidManifest.xml:28:18-86
 	android:supportsRtl
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:20:9-35
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:21:9-35
 	android:label
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:18:9-41
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:19:9-41
 	android:roundIcon
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:19:9-63
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:20:9-63
 	android:icon
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:17:9-58
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:18:9-58
 	android:allowBackup
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:16:9-35
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:17:9-35
 	android:theme
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:21:9-49
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:22:9-49
 receiver#com.azzahra.sync.BootReceiver
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:23:9-28:20
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:24:9-29:20
 	android:exported
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:23:48-71
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:24:48-71
 	android:name
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:23:19-47
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:24:19-47
 intent-filter#action:name:android.intent.action.BOOT_COMPLETED+category:name:android.intent.category.DEFAULT
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:24:13-27:29
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:25:13-28:29
 action#android.intent.action.BOOT_COMPLETED
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:25:17-79
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:26:17-79
 	android:name
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:25:25-76
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:26:25-76
 category#android.intent.category.DEFAULT
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:26:17-76
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:27:17-76
 	android:name
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:26:27-73
-activity#com.azzahra.sync.MainActivity
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:30:9-38:20
-	android:label
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:32:13-45
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:27:27-73
+activity#com.azzahra.sync.LoginActivity
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:31:9-38:20
 	android:exported
 		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:33:13-36
 	android:name
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:31:13-41
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:32:13-42
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
 ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:34:13-37:29
 action#android.intent.action.MAIN
@@ -244,34 +259,42 @@ category#android.intent.category.LAUNCHER
 ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:36:17-77
 	android:name
 		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:36:27-74
+activity#com.azzahra.sync.MainActivity
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:40:9-43:40
+	android:label
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:42:13-45
+	android:exported
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:43:13-37
+	android:name
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:41:13-41
 service#com.azzahra.sync.NotificationService
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:40:9-48:19
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:45:9-53:19
 	android:label
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:42:13-50
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:47:13-50
 	android:exported
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:44:13-36
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:49:13-36
 	android:permission
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:43:13-87
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:48:13-87
 	android:name
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:41:13-48
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:46:13-48
 intent-filter#action:name:android.service.notification.NotificationListenerService
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:45:13-47:29
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:50:13-52:29
 action#android.service.notification.NotificationListenerService
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:46:17-99
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:51:17-99
 	android:name
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:46:25-96
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:51:25-96
 service#com.azzahra.sync.ForegroundService
-ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:50:9-55:56
+ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:55:9-60:56
 	android:enabled
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:53:13-35
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:58:13-35
 	android:label
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:52:13-47
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:57:13-47
 	android:exported
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:54:13-37
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:59:13-37
 	android:foregroundServiceType
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:55:13-53
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:60:13-53
 	android:name
-		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:51:13-46
+		ADDED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml:56:13-46
 uses-sdk
 INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml
@@ -290,12 +313,16 @@ MERGED from [com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gr
 MERGED from [com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:6:5-44
 MERGED from [com.google.firebase:firebase-analytics:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\134944db917b55382eec91e92dd48d73\transformed\jetified-firebase-analytics-21.5.0\AndroidManifest.xml:5:5-44
 MERGED from [com.google.firebase:firebase-analytics:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\134944db917b55382eec91e92dd48d73\transformed\jetified-firebase-analytics-21.5.0\AndroidManifest.xml:5:5-44
+MERGED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:21:5-23:64
+MERGED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:21:5-23:64
 MERGED from [com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:20:5-44
 MERGED from [com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:20:5-44
 MERGED from [com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:5:5-44
 MERGED from [com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:5:5-44
 MERGED from [com.google.firebase:firebase-common-ktx:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4f8111b2f327910e446ce946980bd8ef\transformed\jetified-firebase-common-ktx-20.4.2\AndroidManifest.xml:5:5-44
 MERGED from [com.google.firebase:firebase-common-ktx:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\4f8111b2f327910e446ce946980bd8ef\transformed\jetified-firebase-common-ktx-20.4.2\AndroidManifest.xml:5:5-44
+MERGED from [com.google.firebase:firebase-auth-interop:20.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\27c0a2379a50d3c5849c15394d0acf2f\transformed\jetified-firebase-auth-interop-20.0.0\AndroidManifest.xml:5:5-44
+MERGED from [com.google.firebase:firebase-auth-interop:20.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\27c0a2379a50d3c5849c15394d0acf2f\transformed\jetified-firebase-auth-interop-20.0.0\AndroidManifest.xml:5:5-44
 MERGED from [com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:19:5-44
 MERGED from [com.google.firebase:firebase-common:20.4.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9c1ff27cd57094f22f122ad8c2e74961\transformed\jetified-firebase-common-20.4.2\AndroidManifest.xml:19:5-44
 MERGED from [androidx.emoji2:emoji2-views-helper:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\b02be1134860d1ca2ae559ad68346d23\transformed\jetified-emoji2-views-helper-1.2.0\AndroidManifest.xml:5:5-44
@@ -304,32 +331,26 @@ MERGED from [androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-mi
 MERGED from [androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:21:5-44
 MERGED from [androidx.viewpager2:viewpager2:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e764e1a156fc578a678a625c3703a0e3\transformed\jetified-viewpager2-1.0.0\AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.viewpager2:viewpager2:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e764e1a156fc578a678a625c3703a0e3\transformed\jetified-viewpager2-1.0.0\AndroidManifest.xml:20:5-22:41
+MERGED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.gms:play-services-measurement-sdk:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\36a57f3ee02204a72498fdb2efc19931\transformed\jetified-play-services-measurement-sdk-21.5.0\AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.gms:play-services-measurement-sdk:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\36a57f3ee02204a72498fdb2efc19931\transformed\jetified-play-services-measurement-sdk-21.5.0\AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.gms:play-services-auth-api-phone:17.4.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\816cba20d848c326955e412396a0d693\transformed\jetified-play-services-auth-api-phone-17.4.0\AndroidManifest.xml:5:5-44
+MERGED from [com.google.android.gms:play-services-auth-api-phone:17.4.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\816cba20d848c326955e412396a0d693\transformed\jetified-play-services-auth-api-phone-17.4.0\AndroidManifest.xml:5:5-44
+MERGED from [com.google.android.recaptcha:recaptcha:18.1.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b416a820dab1240622f345cfc8e4fe5\transformed\jetified-recaptcha-18.1.2\AndroidManifest.xml:5:5-44
+MERGED from [com.google.android.recaptcha:recaptcha:18.1.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b416a820dab1240622f345cfc8e4fe5\transformed\jetified-recaptcha-18.1.2\AndroidManifest.xml:5:5-44
+MERGED from [com.google.android.play:integrity:1.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7478f75b6fd4a8d8abf6e67583a4b4da\transformed\jetified-integrity-1.1.0\AndroidManifest.xml:4:5-44
+MERGED from [com.google.android.play:integrity:1.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7478f75b6fd4a8d8abf6e67583a4b4da\transformed\jetified-integrity-1.1.0\AndroidManifest.xml:4:5-44
 MERGED from [com.google.firebase:firebase-appcheck-interop:17.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e0002b535a7bd2c65b48c56dc34e5435\transformed\jetified-firebase-appcheck-interop-17.0.0\AndroidManifest.xml:18:5-20:41
 MERGED from [com.google.firebase:firebase-appcheck-interop:17.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e0002b535a7bd2c65b48c56dc34e5435\transformed\jetified-firebase-appcheck-interop-17.0.0\AndroidManifest.xml:18:5-20:41
 MERGED from [com.google.firebase:firebase-database-collection:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\87511cf39c8e059439b2a1109bfe8b32\transformed\jetified-firebase-database-collection-18.0.1\AndroidManifest.xml:5:5-7:41
 MERGED from [com.google.firebase:firebase-database-collection:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\87511cf39c8e059439b2a1109bfe8b32\transformed\jetified-firebase-database-collection-18.0.1\AndroidManifest.xml:5:5-7:41
 MERGED from [com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:18:5-43
 MERGED from [com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:18:5-43
-MERGED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:20:5-44
-MERGED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:20:5-44
-MERGED from [com.google.android.gms:play-services-measurement-sdk:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\36a57f3ee02204a72498fdb2efc19931\transformed\jetified-play-services-measurement-sdk-21.5.0\AndroidManifest.xml:20:5-44
-MERGED from [com.google.android.gms:play-services-measurement-sdk:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\36a57f3ee02204a72498fdb2efc19931\transformed\jetified-play-services-measurement-sdk-21.5.0\AndroidManifest.xml:20:5-44
-MERGED from [com.google.firebase:firebase-auth-interop:19.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\db00f80a8796aa46b56ae7496e4c6566\transformed\jetified-firebase-auth-interop-19.0.2\AndroidManifest.xml:5:5-44
-MERGED from [com.google.firebase:firebase-auth-interop:19.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\db00f80a8796aa46b56ae7496e4c6566\transformed\jetified-firebase-auth-interop-19.0.2\AndroidManifest.xml:5:5-44
-MERGED from [com.google.android.gms:play-services-measurement-impl:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\780fa669a9148db14093c7b1a34caa75\transformed\jetified-play-services-measurement-impl-21.5.0\AndroidManifest.xml:20:5-44
-MERGED from [com.google.android.gms:play-services-measurement-impl:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\780fa669a9148db14093c7b1a34caa75\transformed\jetified-play-services-measurement-impl-21.5.0\AndroidManifest.xml:20:5-44
-MERGED from [com.google.android.gms:play-services-ads-identifier:18.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5a41828267b0c5c9ec6cfdc8bd16bdba\transformed\jetified-play-services-ads-identifier-18.0.0\AndroidManifest.xml:20:5-44
-MERGED from [com.google.android.gms:play-services-ads-identifier:18.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5a41828267b0c5c9ec6cfdc8bd16bdba\transformed\jetified-play-services-ads-identifier-18.0.0\AndroidManifest.xml:20:5-44
-MERGED from [com.google.android.gms:play-services-measurement-sdk-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\204bc04d14dee31f5acc254b6bc33ba4\transformed\jetified-play-services-measurement-sdk-api-21.5.0\AndroidManifest.xml:20:5-44
-MERGED from [com.google.android.gms:play-services-measurement-sdk-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\204bc04d14dee31f5acc254b6bc33ba4\transformed\jetified-play-services-measurement-sdk-api-21.5.0\AndroidManifest.xml:20:5-44
-MERGED from [com.google.android.gms:play-services-measurement-base:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7f402d8b0fbc80f0f45dc246326118f9\transformed\jetified-play-services-measurement-base-21.5.0\AndroidManifest.xml:5:5-44
-MERGED from [com.google.android.gms:play-services-measurement-base:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7f402d8b0fbc80f0f45dc246326118f9\transformed\jetified-play-services-measurement-base-21.5.0\AndroidManifest.xml:5:5-44
-MERGED from [com.google.android.gms:play-services-stats:17.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\a6552421f4906703285f49855b4fb450\transformed\jetified-play-services-stats-17.0.2\AndroidManifest.xml:5:5-44
-MERGED from [com.google.android.gms:play-services-stats:17.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\a6552421f4906703285f49855b4fb450\transformed\jetified-play-services-stats-17.0.2\AndroidManifest.xml:5:5-44
-MERGED from [com.google.firebase:firebase-measurement-connector:19.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e9c46a20f2bd6346e1154a086b3906b3\transformed\jetified-firebase-measurement-connector-19.0.0\AndroidManifest.xml:20:5-44
-MERGED from [com.google.firebase:firebase-measurement-connector:19.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e9c46a20f2bd6346e1154a086b3906b3\transformed\jetified-firebase-measurement-connector-19.0.0\AndroidManifest.xml:20:5-44
 MERGED from [com.google.firebase:firebase-installations-interop:17.1.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\c42229b3fee3dbc97fa99fea760e6db5\transformed\jetified-firebase-installations-interop-17.1.1\AndroidManifest.xml:17:5-44
 MERGED from [com.google.firebase:firebase-installations-interop:17.1.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\c42229b3fee3dbc97fa99fea760e6db5\transformed\jetified-firebase-installations-interop-17.1.1\AndroidManifest.xml:17:5-44
+MERGED from [com.google.android.gms:play-services-measurement-impl:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\780fa669a9148db14093c7b1a34caa75\transformed\jetified-play-services-measurement-impl-21.5.0\AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.gms:play-services-measurement-impl:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\780fa669a9148db14093c7b1a34caa75\transformed\jetified-play-services-measurement-impl-21.5.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.privacysandbox.ads:ads-adservices-java:1.0.0-beta05] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\34a673c30a6d5fb438f1b69d11f52a46\transformed\jetified-ads-adservices-java-1.0.0-beta05\AndroidManifest.xml:5:5-44
 MERGED from [androidx.privacysandbox.ads:ads-adservices-java:1.0.0-beta05] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\34a673c30a6d5fb438f1b69d11f52a46\transformed\jetified-ads-adservices-java-1.0.0-beta05\AndroidManifest.xml:5:5-44
 MERGED from [androidx.privacysandbox.ads:ads-adservices:1.0.0-beta05] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5508b205fa62ebb482ec7b099af91ebd\transformed\jetified-ads-adservices-1.0.0-beta05\AndroidManifest.xml:20:5-44
@@ -338,6 +359,8 @@ MERGED from [androidx.activity:activity:1.8.0] C:\Users\LENOVO\.gradle\caches\9.
 MERGED from [androidx.activity:activity:1.8.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\b1a53546b436000b7d5bf54b7a61f8f8\transformed\jetified-activity-1.8.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.dynamicanimation:dynamicanimation:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\77bed0b3a161efe50a69ccaaadb741f4\transformed\dynamicanimation-1.0.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.dynamicanimation:dynamicanimation:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\77bed0b3a161efe50a69ccaaadb741f4\transformed\dynamicanimation-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.gms:play-services-stats:17.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\a6552421f4906703285f49855b4fb450\transformed\jetified-play-services-stats-17.0.2\AndroidManifest.xml:5:5-44
+MERGED from [com.google.android.gms:play-services-stats:17.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\a6552421f4906703285f49855b4fb450\transformed\jetified-play-services-stats-17.0.2\AndroidManifest.xml:5:5-44
 MERGED from [androidx.legacy:legacy-support-core-utils:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2f8fab34081cc1502ad47ef9a29d87a5\transformed\legacy-support-core-utils-1.0.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.legacy:legacy-support-core-utils:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2f8fab34081cc1502ad47ef9a29d87a5\transformed\legacy-support-core-utils-1.0.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.loader:loader:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2961d9269963c90d62faff38c6e742ec\transformed\loader-1.0.0\AndroidManifest.xml:20:5-44
@@ -358,6 +381,14 @@ MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.1] C:\Users\L
 MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\aec2870007929ed9d7ec17ec748d6505\transformed\jetified-lifecycle-viewmodel-savedstate-2.6.1\AndroidManifest.xml:20:5-44
 MERGED from [com.google.android.gms:play-services-tasks:18.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\725cea2c4fc6e66475f03e4f2aa0516d\transformed\jetified-play-services-tasks-18.0.2\AndroidManifest.xml:4:5-43
 MERGED from [com.google.android.gms:play-services-tasks:18.0.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\725cea2c4fc6e66475f03e4f2aa0516d\transformed\jetified-play-services-tasks-18.0.2\AndroidManifest.xml:4:5-43
+MERGED from [com.google.android.gms:play-services-ads-identifier:18.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5a41828267b0c5c9ec6cfdc8bd16bdba\transformed\jetified-play-services-ads-identifier-18.0.0\AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.gms:play-services-ads-identifier:18.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5a41828267b0c5c9ec6cfdc8bd16bdba\transformed\jetified-play-services-ads-identifier-18.0.0\AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.gms:play-services-measurement-sdk-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\204bc04d14dee31f5acc254b6bc33ba4\transformed\jetified-play-services-measurement-sdk-api-21.5.0\AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.gms:play-services-measurement-sdk-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\204bc04d14dee31f5acc254b6bc33ba4\transformed\jetified-play-services-measurement-sdk-api-21.5.0\AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.gms:play-services-measurement-base:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7f402d8b0fbc80f0f45dc246326118f9\transformed\jetified-play-services-measurement-base-21.5.0\AndroidManifest.xml:5:5-44
+MERGED from [com.google.android.gms:play-services-measurement-base:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7f402d8b0fbc80f0f45dc246326118f9\transformed\jetified-play-services-measurement-base-21.5.0\AndroidManifest.xml:5:5-44
+MERGED from [com.google.firebase:firebase-measurement-connector:19.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e9c46a20f2bd6346e1154a086b3906b3\transformed\jetified-firebase-measurement-connector-19.0.0\AndroidManifest.xml:20:5-44
+MERGED from [com.google.firebase:firebase-measurement-connector:19.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e9c46a20f2bd6346e1154a086b3906b3\transformed\jetified-firebase-measurement-connector-19.0.0\AndroidManifest.xml:20:5-44
 MERGED from [com.google.android.gms:play-services-basement:18.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0e616f7ea1b0191f60876b550f3ba2f3\transformed\jetified-play-services-basement-18.1.0\AndroidManifest.xml:18:5-43
 MERGED from [com.google.android.gms:play-services-basement:18.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0e616f7ea1b0191f60876b550f3ba2f3\transformed\jetified-play-services-basement-18.1.0\AndroidManifest.xml:18:5-43
 MERGED from [androidx.fragment:fragment:1.3.6] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\34237ea831fca8194d8b494d7b321c32\transformed\fragment-1.3.6\AndroidManifest.xml:20:5-22:41
@@ -372,6 +403,8 @@ MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] C:\Users\LEN
 MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\113d140d1dc48ae621d6ac8967eec364\transformed\vectordrawable-animated-1.1.0\AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\86839e6d2d3d2b253f934f1e5d21b08d\transformed\vectordrawable-1.1.0\AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\86839e6d2d3d2b253f934f1e5d21b08d\transformed\vectordrawable-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.browser:browser:1.4.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7622cd3947301077700c8d9f272e1caf\transformed\browser-1.4.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.browser:browser:1.4.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\7622cd3947301077700c8d9f272e1caf\transformed\browser-1.4.0\AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.core:core-ktx:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\f419ad9507e65451cd8ab7dba2edaed5\transformed\jetified-core-ktx-1.9.0\AndroidManifest.xml:5:5-44
 MERGED from [androidx.core:core-ktx:1.9.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\f419ad9507e65451cd8ab7dba2edaed5\transformed\jetified-core-ktx-1.9.0\AndroidManifest.xml:5:5-44
 MERGED from [androidx.viewpager:viewpager:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\50e4e16ea60f4e8e8a3aff9d78dc38b6\transformed\viewpager-1.0.0\AndroidManifest.xml:20:5-44
@@ -386,6 +419,8 @@ MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] C:\Users\LENOVO\.gradle
 MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\8921759f2e1e37a3507af6d5866d6604\transformed\cursoradapter-1.0.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.cardview:cardview:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\3812384f06434e1ad0051a5c204a5254\transformed\cardview-1.0.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.cardview:cardview:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\3812384f06434e1ad0051a5c204a5254\transformed\cardview-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dac4cba38efafdc9e5d06eff6e1deba9\transformed\localbroadcastmanager-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dac4cba38efafdc9e5d06eff6e1deba9\transformed\localbroadcastmanager-1.0.0\AndroidManifest.xml:20:5-44
 MERGED from [com.google.firebase:firebase-components:17.1.5] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\c2c9a2236dc8d7f7cb377cf1ca4ee25d\transformed\jetified-firebase-components-17.1.5\AndroidManifest.xml:18:5-44
 MERGED from [com.google.firebase:firebase-components:17.1.5] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\c2c9a2236dc8d7f7cb377cf1ca4ee25d\transformed\jetified-firebase-components-17.1.5\AndroidManifest.xml:18:5-44
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\71a9fe20cf52fe931e1bde7b10566155\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:20:5-22:41
@@ -402,8 +437,6 @@ MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\LENOVO\.gradle\cach
 MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\50260a894bc6fc143b3e428088c80d7d\transformed\core-runtime-2.2.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.documentfile:documentfile:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\257dfa7e42b09652e9b17df361829c4a\transformed\documentfile-1.0.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.documentfile:documentfile:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\257dfa7e42b09652e9b17df361829c4a\transformed\documentfile-1.0.0\AndroidManifest.xml:20:5-44
-MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dac4cba38efafdc9e5d06eff6e1deba9\transformed\localbroadcastmanager-1.0.0\AndroidManifest.xml:20:5-44
-MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dac4cba38efafdc9e5d06eff6e1deba9\transformed\localbroadcastmanager-1.0.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.print:print:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9063ccb595734a2c61e1a576a81b0751\transformed\print-1.0.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.print:print:1.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\9063ccb595734a2c61e1a576a81b0751\transformed\print-1.0.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.annotation:annotation-experimental:1.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\e22cd913940d275bc8ffa54aa793cd91\transformed\jetified-annotation-experimental-1.3.0\AndroidManifest.xml:20:5-44
@@ -412,18 +445,24 @@ MERGED from [io.grpc:grpc-android:1.52.1] C:\Users\LENOVO\.gradle\caches\9.0-mil
 MERGED from [io.grpc:grpc-android:1.52.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\72f78004f053d9fc8d3776a23f10daf9\transformed\jetified-grpc-android-1.52.1\AndroidManifest.xml:5:5-7:41
 MERGED from [com.google.firebase:protolite-well-known-types:18.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\23ff83210f8ff1daae29d61f6a3070dd\transformed\jetified-protolite-well-known-types-18.0.0\AndroidManifest.xml:7:5-9:41
 MERGED from [com.google.firebase:protolite-well-known-types:18.0.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\23ff83210f8ff1daae29d61f6a3070dd\transformed\jetified-protolite-well-known-types-18.0.0\AndroidManifest.xml:7:5-9:41
+	tools:overrideLibrary
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:23:9-61
 	android:targetSdkVersion
 		INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml
 	android:minSdkVersion
 		INJECTED from D:\My Project\Azzahra Fashion Muslim\project\mobile-app\app\src\main\AndroidManifest.xml
 uses-permission#android.permission.ACCESS_NETWORK_STATE
 ADDED from [com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:10:5-79
+MERGED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:26:5-79
+MERGED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:26:5-79
 MERGED from [com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:23:5-79
 MERGED from [com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:23:5-79
 MERGED from [com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:7:5-79
 MERGED from [com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:7:5-79
 MERGED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:24:5-79
 MERGED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:24:5-79
+MERGED from [com.google.android.recaptcha:recaptcha:18.1.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b416a820dab1240622f345cfc8e4fe5\transformed\jetified-recaptcha-18.1.2\AndroidManifest.xml:8:5-79
+MERGED from [com.google.android.recaptcha:recaptcha:18.1.2] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b416a820dab1240622f345cfc8e4fe5\transformed\jetified-recaptcha-18.1.2\AndroidManifest.xml:8:5-79
 MERGED from [com.google.android.gms:play-services-measurement-impl:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\780fa669a9148db14093c7b1a34caa75\transformed\jetified-play-services-measurement-impl-21.5.0\AndroidManifest.xml:24:5-79
 MERGED from [com.google.android.gms:play-services-measurement-impl:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\780fa669a9148db14093c7b1a34caa75\transformed\jetified-play-services-measurement-impl-21.5.0\AndroidManifest.xml:24:5-79
 MERGED from [com.google.android.gms:play-services-measurement-sdk-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\204bc04d14dee31f5acc254b6bc33ba4\transformed\jetified-play-services-measurement-sdk-api-21.5.0\AndroidManifest.xml:24:5-79
@@ -434,6 +473,8 @@ MERGED from [io.grpc:grpc-android:1.52.1] C:\Users\LENOVO\.gradle\caches\9.0-mil
 		ADDED from [com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:10:22-76
 service#com.google.firebase.components.ComponentDiscoveryService
 ADDED from [com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:14:9-23:19
+MERGED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:66:9-72:19
+MERGED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:66:9-72:19
 MERGED from [com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:34:9-40:19
 MERGED from [com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:34:9-40:19
 MERGED from [com.google.firebase:firebase-installations:17.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\56ea659e34846fbd7c6f2c32c16d8e41\transformed\jetified-firebase-installations-17.2.0\AndroidManifest.xml:12:9-21:19
@@ -462,6 +503,56 @@ ADDED from [com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gra
 		ADDED from [com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:22:17-82
 	android:name
 		ADDED from [com.google.firebase:firebase-firestore:24.10.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0b1141f717806acf3aedc97bd76317eb\transformed\jetified-firebase-firestore-24.10.0\AndroidManifest.xml:21:17-111
+activity#com.google.firebase.auth.internal.GenericIdpActivity
+ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:29:9-46:20
+	android:excludeFromRecents
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:31:13-46
+	android:launchMode
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:33:13-44
+	android:exported
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:32:13-36
+	android:theme
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:34:13-72
+	android:name
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:30:13-80
+intent-filter#action:name:android.intent.action.VIEW+category:name:android.intent.category.BROWSABLE+category:name:android.intent.category.DEFAULT+data:host:firebase.auth+data:path:/+data:scheme:genericidp
+ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:35:13-45:29
+action#android.intent.action.VIEW
+ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:36:17-69
+	android:name
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:36:25-66
+category#android.intent.category.BROWSABLE
+ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:39:17-78
+	android:name
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:39:27-75
+data
+ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:41:17-44:51
+	android:path
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:43:21-37
+	android:host
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:42:21-49
+	android:scheme
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:44:21-48
+activity#com.google.firebase.auth.internal.RecaptchaActivity
+ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:47:9-64:20
+	android:excludeFromRecents
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:49:13-46
+	android:launchMode
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:51:13-44
+	android:exported
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:50:13-36
+	android:theme
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:52:13-72
+	android:name
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:48:13-79
+intent-filter#action:name:android.intent.action.VIEW+category:name:android.intent.category.BROWSABLE+category:name:android.intent.category.DEFAULT+data:host:firebase.auth+data:path:/+data:scheme:recaptcha
+ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:53:13-63:29
+meta-data#com.google.firebase.components:com.google.firebase.auth.FirebaseAuthRegistrar
+ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:69:13-71:85
+	android:value
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:71:17-82
+	android:name
+		ADDED from [com.google.firebase:firebase-auth:22.3.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\dd7a7282e0c86aeb781b2e687e58f70e\transformed\jetified-firebase-auth-22.3.0\AndroidManifest.xml:70:17-109
 uses-permission#com.google.android.gms.permission.AD_ID
 ADDED from [com.google.android.gms:play-services-measurement-api:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\d0ff749fcb4891ae9cea51c8825d48a4\transformed\jetified-play-services-measurement-api-21.5.0\AndroidManifest.xml:25:5-79
 MERGED from [com.google.android.gms:play-services-measurement-impl:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\780fa669a9148db14093c7b1a34caa75\transformed\jetified-play-services-measurement-impl-21.5.0\AndroidManifest.xml:27:5-79
@@ -554,14 +645,6 @@ ADDED from [androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-mil
 		ADDED from [androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:31:17-49
 	android:name
 		ADDED from [androidx.emoji2:emoji2:1.2.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\2c0fa18e0f12aee7e66645bc04a036f4\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:30:17-75
-activity#com.google.android.gms.common.api.GoogleApiActivity
-ADDED from [com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:20:9-22:45
-	android:exported
-		ADDED from [com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:22:19-43
-	android:theme
-		ADDED from [com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:21:19-78
-	android:name
-		ADDED from [com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:20:19-85
 uses-permission#com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE
 ADDED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:26:5-110
 MERGED from [com.google.android.gms:play-services-measurement-impl:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\780fa669a9148db14093c7b1a34caa75\transformed\jetified-play-services-measurement-impl-21.5.0\AndroidManifest.xml:26:5-110
@@ -594,6 +677,14 @@ ADDED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LE
 		ADDED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:43:13-69
 	android:name
 		ADDED from [com.google.android.gms:play-services-measurement:21.5.0] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\074eb785257f741a1affe010f352a001\transformed\jetified-play-services-measurement-21.5.0\AndroidManifest.xml:40:13-87
+activity#com.google.android.gms.common.api.GoogleApiActivity
+ADDED from [com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:20:9-22:45
+	android:exported
+		ADDED from [com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:22:19-43
+	android:theme
+		ADDED from [com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:21:19-78
+	android:name
+		ADDED from [com.google.android.gms:play-services-base:18.0.1] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\0be00f77d58b2d7761337c99924c925f\transformed\jetified-play-services-base-18.0.1\AndroidManifest.xml:20:19-85
 uses-library#android.ext.adservices
 ADDED from [androidx.privacysandbox.ads:ads-adservices:1.0.0-beta05] C:\Users\LENOVO\.gradle\caches\9.0-milestone-1\transforms\5508b205fa62ebb482ec7b099af91ebd\transformed\jetified-ads-adservices-1.0.0-beta05\AndroidManifest.xml:23:9-25:40
 	android:required
