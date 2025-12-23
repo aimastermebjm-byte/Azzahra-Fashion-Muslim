@@ -2770,7 +2770,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       {showManualUploadModal && (
         <ManualUploadModal
           isOpen={showManualUploadModal}
-          onClose={() => setShowManualUploadModal(false)}
+          onClose={() => {
+            setShowManualUploadModal(false);
+            setManualUploadInitialState(null); // Reset state to prevent leaks to normal manual upload
+          }}
           categories={categories}
           initialState={manualUploadInitialState}
           onSuccess={async (productData) => {
