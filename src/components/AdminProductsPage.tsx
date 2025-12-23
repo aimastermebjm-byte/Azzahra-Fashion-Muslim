@@ -799,8 +799,14 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           category: data.category || 'Gamis',
           retailPrice: parseInt(data.retailPrice || 0),
           resellerPrice: parseInt(data.resellerPrice || 0),
-          costPrice: parseInt(data.retailPrice || 0) * 0.6 // Estimate 60% of retail
-        }
+          costPrice: parseInt(data.costPrice || 0), // Receive calculated cost price
+          status: data.status || 'ready',
+          weight: 1000 // Default weight
+        },
+        uploadSettings: {
+          stockPerVariant: data.defaultStock || 10, // Default stock setting
+        },
+        whatsappIds: data.whatsappIds || []
       });
 
       setShowManualUploadModal(true);

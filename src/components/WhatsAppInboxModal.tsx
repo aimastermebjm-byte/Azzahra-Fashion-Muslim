@@ -33,7 +33,9 @@ interface WhatsAppInboxModalProps {
 const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose, onProcess }) => {
     const [pendingItems, setPendingItems] = useState<PendingProduct[]>([]);
     const [loading, setLoading] = useState(false);
-    const [viewMode, setViewMode] = useState<'bundles' | 'list'>('bundles'); // Default to bundles
+    const [viewMode, setViewMode] = useState<'bundles' | 'list'>('bundles');
+    const [defaultStock, setDefaultStock] = useState<number>(10);
+    const [profitMargin, setProfitMargin] = useState<number>(30000);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -110,6 +112,42 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
         return groups;
     }, [pendingItems]);
 
+    // Helper: Extract price from text using robust Regex
+    const extractPriceFromText = (text: string): number => {
+        if (!text) return 0;
+
+        // Remove common separators and normalize
+        // Patterns: Rp 150.000, 150rb, 150.000, IDR 150000
+        const cleanText = text.toLowerCase();
+
+        // Match "150rb" or "150k" -> 150000
+        const kMatch = cleanText.match(/(\d+)(?:[.,]\d+)?\s*(rb|k|ribu)/);
+        if (kMatch) {
+            const val = parseFloat(kMatch[1].replace(',', '.'));
+            return val * 1000;
+        }
+
+        // Match standard price format with Rp/IDR prefix or just numbers with dot/comma
+        // Look for numbers > 1000 to avoid confusing dates/years/sizes
+        const matches = cleanText.match(/(?:rp|idr)?[\s\.]*([\d\.,]+)/g);
+
+        if (matches) {
+            // Filter and converting to numbers
+            const candidates = matches.map(m => {
+                const numStr = m.replace(/[^0-9]/g, ''); // Keep only digits
+                return parseInt(numStr, 10);
+            }).filter(n => n >= 10000 && n < 10000000); // Filter range usually for clothes
+
+            if (candidates.length > 0) {
+                // Return the largest number found (usually price is strictly the most prominent number)
+                // Or find most plausible
+                return Math.max(...candidates);
+            }
+        }
+
+        return 0;
+    };
+
     const handleProcessBundle = async (bundle: ProductBundle) => {
         setLoading(true);
 
@@ -150,6 +188,18 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
             // Generate analysis but PRIORITIZE existing caption
             const analysis = await geminiService.analyzeCaptionAndImage(firstImageBase64, finalCaption);
 
+            // Enhanced Price Logic
+            let retailPrice = analysis.price || 0;
+            // Override with regex parser if valid, as it's often more accurate for Indo formatting
+            const regexPrice = extractPriceFromText(finalCaption);
+            if (regexPrice > 0) {
+                console.log('💰 Price Override via Regex:', regexPrice);
+                retailPrice = regexPrice;
+            }
+
+            // Calculate Cost from Margin (Retail - Margin)
+            const costPrice = Math.max(0, retailPrice - profitMargin);
+
             // Construct Data - FORCE use of existing caption
             const productData = {
                 name: analysis.name || 'Produk Baru',
@@ -157,13 +207,15 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                 // Jika user ingin AI melengkapi, bisa ditambahkan, tapi amannya kita pakai caption asli di depan.
                 description: finalCaption ? finalCaption : (analysis.description || ''),
                 category: analysis.category || 'Gamis',
-                retailPrice: analysis.price || 0,
+                retailPrice: retailPrice,
                 resellerPrice: analysis.resellerPrice || 0,
+                costPrice: costPrice, // Pass calculated cost price
                 colors: analysis.colors || [],
                 sizes: analysis.sizes || [],
                 material: analysis.material || '',
                 status: analysis.status || 'ready',
                 images: imageFiles, // Parent handles collage
+                defaultStock: defaultStock // Pass default stock setting
             };
 
             onProcess({
@@ -214,6 +266,45 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                     <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
+                </div>
+
+                {/* Toolbar */}
+                <div className="px-4 py-3 border-b bg-white flex flex-col md:flex-row justify-between items-center gap-3">
+                    <button
+                        onClick={() => { }}
+                        className="flex items-center gap-2 text-sm text-gray-600 cursor-default"
+                        disabled
+                    >
+                        {/* Placeholder for future features */}
+                        <Layers className="w-4 h-4 text-green-600" />
+                        <span className="font-medium">Mode Otomatis</span>
+                    </button>
+
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border">
+                            <span className="text-xs text-gray-500 font-medium whitespace-nowrap">Stok / Varian:</span>
+                            <input
+                                type="number"
+                                min="1"
+                                value={defaultStock}
+                                onChange={(e) => setDefaultStock(parseInt(e.target.value) || 0)}
+                                className="w-16 text-sm bg-transparent outline-none font-bold text-gray-700 text-right"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border">
+                            <span className="text-xs text-gray-500 font-medium whitespace-nowrap">Potongan Modal:</span>
+                            <span className="text-xs text-gray-400">Rp</span>
+                            <input
+                                type="number"
+                                min="0"
+                                step="1000"
+                                value={profitMargin}
+                                onChange={(e) => setProfitMargin(parseInt(e.target.value) || 0)}
+                                className="w-24 text-sm bg-transparent outline-none font-bold text-gray-700 text-right"
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 {/* Content */}
