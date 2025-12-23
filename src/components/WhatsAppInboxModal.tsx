@@ -104,9 +104,9 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                             <Layers className="w-6 h-6 text-green-600" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-gray-800">Antrian Draft WhatsApp</h2>
+                            <h2 className="text-xl font-bold text-gray-800">Draft Siap Upload</h2>
                             <p className="text-sm text-gray-600">
-                                Draft otomatis diproses di background. Klik untuk review & upload.
+                                Silahkan cek terlebih dahulu sebelum upload.
                             </p>
                         </div>
                         <span className="bg-green-200 text-green-800 px-3 py-1 rounded-full text-xs font-bold">

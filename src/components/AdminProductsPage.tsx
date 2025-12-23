@@ -1135,15 +1135,15 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 <p className="text-sm opacity-90">Collage + Parameter</p>
               </div>
             </button>
-            {/* WhatsApp Inbox */}
+            {/* Draft Siap Upload */}
             <button
               onClick={() => setShowWhatsAppInbox(true)}
               className="bg-green-600 text-white p-4 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-3"
             >
               <MessageCircle className="w-6 h-6" />
               <div className="text-left">
-                <p className="font-semibold">WhatsApp Inbox</p>
-                <p className="text-sm opacity-90">Kelola pesan masuk</p>
+                <p className="font-semibold">Draft Siap Upload</p>
+                <p className="text-sm opacity-90">Silahkan cek dulu</p>
               </div>
             </button>
             {/* AI Auto Upload - Owner Only */}
