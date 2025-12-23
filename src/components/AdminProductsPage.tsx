@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight, Sparkles, MessageCircle } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { Product } from '../types';
-import { useGlobalProducts } from '../hooks/useGlobalProducts';
 import { useProductCRUD } from '../hooks/useProductCRUD';
 import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
 import { ProductTableSkeleton, FlashSaleStatusSkeleton, MenuSkeleton } from './LoadingSkeleton';
+import { useGlobalProducts } from '../hooks/useGlobalProducts';
 import { uploadMultipleImages, validateImageFile, generateImageName } from '../utils/imageUpload';
 import { forceSyncAllProducts } from '../services/globalIndexSync';
 import { productCategoryService, ProductCategory } from '../services/productCategoryService';
+import { collageService } from '../services/collageService';
 import AIAutoUploadModal from './AIAutoUploadModal';
 import ManualUploadModal from './ManualUploadModal';
 import WhatsAppInboxModal from './WhatsAppInboxModal';
@@ -740,41 +741,93 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   };
 
   // WhatsApp Process Handler
-  const handleWhatsAppProcess = (data: any, originalImageFile: File) => {
-    // Generate initial stock structure
-    const sizes = data.sizes?.length > 0 ? data.sizes : ['All Size'];
-    const colors = data.colors?.length > 0 ? data.colors : ['Putih'];
-    const stockMatrix: any = {};
-
-    sizes.forEach((size: string) => {
-      stockMatrix[size] = {};
-      colors.forEach((color: string) => {
-        stockMatrix[size][color] = 10; // Default stock
-      });
-    });
-
-    setFormData({
-      name: data.name || '',
-      description: data.description || '',
-      category: data.category || 'Gamis',
-      retailPrice: String(data.retailPrice || 0),
-      resellerPrice: String(Math.round((data.retailPrice || 0) * 0.8)), // Auto 20% off
-      costPrice: String(Math.round((data.retailPrice || 0) * 0.6)), // Estimate
-      weight: '500',
-      images: [{
+  const handleWhatsAppProcess = async (data: any, originalImageFile: File) => {
+    try {
+      let finalImageFile = originalImageFile;
+      let formImages = [{
         file: originalImageFile,
         preview: URL.createObjectURL(originalImageFile),
         isUploading: false
-      }],
-      variants: {
-        sizes: sizes,
-        colors: colors,
-        stock: stockMatrix
-      },
-      status: 'ready'
-    });
+      }];
+      let colors = data.colors?.length > 0 ? data.colors : ['Putih'];
 
-    setShowAddModal(true);
+      // Handle Multiple Images -> Collage
+      if (data.images && Array.isArray(data.images) && data.images.length > 1) {
+        console.log(`🖼️ Generating Collage from ${data.images.length} images...`);
+
+        // Generate labels (A, B, C...)
+        const variantLabels = collageService.generateVariantLabels(data.images.length);
+
+        // Generate Collage Blob
+        const collageBlob = await collageService.generateCollage(data.images, variantLabels);
+        finalImageFile = new File([collageBlob], `collage_${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+        // Update form images to show ONLY the collage
+        formImages = [{
+          file: finalImageFile,
+          preview: URL.createObjectURL(finalImageFile),
+          isUploading: false
+        }];
+
+        // If caption analysis didn't give specific colors, use A, B, C labels from collage
+        console.log('Using Collage Variant Labels as Colors:', variantLabels);
+        colors = variantLabels;
+      } else if (data.images && data.images.length === 1) {
+        // Explicitly use the single selected image
+        finalImageFile = data.images[0];
+        formImages = [{
+          file: finalImageFile,
+          preview: URL.createObjectURL(finalImageFile),
+          isUploading: false
+        }];
+      }
+
+      // Generate initial stock structure
+      const sizes = data.sizes?.length > 0 ? data.sizes : ['All Size'];
+      const stockMatrix: any = {};
+
+      sizes.forEach((size: string) => {
+        stockMatrix[size] = {};
+        colors.forEach((color: string) => {
+          stockMatrix[size][color] = 10; // Default stock
+        });
+      });
+
+      setFormData({
+        name: data.name || '',
+        description: data.description || '',
+        category: data.category || 'Gamis',
+        retailPrice: String(data.retailPrice || 0),
+        resellerPrice: String(data.resellerPrice || Math.round((data.retailPrice || 0) * 0.8)),
+        costPrice: String(Math.round((data.retailPrice || 0) * 0.6)), // Estimate
+        weight: '500',
+        images: formImages,
+        variants: {
+          sizes: sizes,
+          colors: colors,
+          stock: stockMatrix
+        },
+        status: data.status === 'po' ? 'po' : 'ready'
+      });
+
+      // Auto delete processed messages
+      if (data.whatsappIds && Array.isArray(data.whatsappIds)) {
+        data.whatsappIds.forEach(async (id: string) => {
+          try {
+            // Dynamic import to avoid circular dependency if any, but standard import is fine usually
+            // Using db from closure/import
+            const { deleteDoc, doc } = await import('firebase/firestore');
+            const { db } = await import('../utils/firebaseClient');
+            await deleteDoc(doc(db, 'pending_products', id));
+          } catch (e) { console.error('Delete error', e) }
+        });
+      }
+
+      setShowAddModal(true);
+    } catch (error) {
+      console.error('Error processing WhatsApp data:', error);
+      alert('Gagal memproses data WhatsApp: ' + (error as any).message);
+    }
   };
 
   // Bulk delete function
@@ -789,7 +842,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       return product ? product.name : 'Unknown Product';
     });
 
-    const confirmMessage = `Apakah Anda yakin ingin menghapus ${selectedProducts.length} produk berikut?\n\n${productNames.join('\n')}\n\n⚠️ Tindakan ini tidak dapat dibatalkan!`;
+    const confirmMessage = `Apakah Anda yakin ingin menghapus ${selectedProducts.length} produk berikut ?\n\n${productNames.join('\n')} \n\n⚠️ Tindakan ini tidak dapat dibatalkan!`;
 
     if (!confirm(confirmMessage)) {
       return;
@@ -868,7 +921,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       console.log('✅ FORCE SYNC GLOBALINDEX:', message);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan tidak diketahui';
-      setForceSyncMessage(`Force sync gagal: ${errorMessage}`);
+      setForceSyncMessage(`Force sync gagal: ${errorMessage} `);
       console.error('❌ Force sync globalindex gagal:', error);
     } finally {
       setIsForceSyncing(false);
@@ -886,8 +939,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           <button
             onClick={handleForceSyncGlobalIndex}
             disabled={isForceSyncing}
-            className={`rounded-full px-4 py-2 text-sm font-semibold text-brand-primary transition ${isForceSyncing ? 'bg-white/50 cursor-not-allowed' : 'bg-white text-brand-primary'
-              }`}
+            className={`rounded - full px - 4 py - 2 text - sm font - semibold text - brand - primary transition ${isForceSyncing ? 'bg-white/50 cursor-not-allowed' : 'bg-white text-brand-primary'
+              } `}
           >
             {isForceSyncing ? 'Syncing…' : 'Force Sync GlobalIndex'}
           </button>
@@ -930,8 +983,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
             </p>
             {forceSyncMessage && (
               <p
-                className={`text-xs mt-2 ${forceSyncMessage.includes('gagal') ? 'text-red-600' : 'text-green-700'
-                  }`}
+                className={`text - xs mt - 2 ${forceSyncMessage.includes('gagal') ? 'text-red-600' : 'text-green-700'
+                  } `}
               >
                 {forceSyncMessage}
               </p>
@@ -961,7 +1014,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     <div className="flex items-center space-x-1 text-xl font-mono font-bold text-red-600">
                       <Clock className="w-5 h-5 mr-1" />
                       <span>
-                        {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
+                        {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')} `}
                       </span>
                     </div>
                   </div>
@@ -1017,7 +1070,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               <button
                 onClick={() => {
                   const stuckProducts = products.filter(p => p.isFlashSale);
-                  alert(`Stuck products: ${stuckProducts.map(p => p.name).join(', ')}`);
+                  alert(`Stuck products: ${stuckProducts.map(p => p.name).join(', ')} `);
                 }}
                 className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 transition-colors text-xs"
               >
@@ -1194,7 +1247,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                       // Untuk konsistensi dengan Flash Sale, kita buka modal tapi khusus untuk konfirmasi
                       // Tapi batch modal yang ada sekarang (Edit Massal) terlalu kompleks.
                       // Kita buat simple confirm saja untuk Toggle Unggulan.
-                      if (confirm(`Tandai ${selectedProducts.length} produk sebagai Produk Unggulan?`)) {
+                      if (confirm(`Tandai ${selectedProducts.length} produk sebagai Produk Unggulan ? `)) {
                         const updateFeatured = async () => {
                           for (const pid of selectedProducts) {
                             await updateProduct(pid, { isFeatured: true });
@@ -1283,7 +1336,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   </thead>
                   <tbody>
                     {currentProducts.map((product, index) => (
-                      <tr key={`${product.id}_${index}`} className="border-b hover:bg-gray-50">
+                      <tr key={`${product.id}_${index} `} className="border-b hover:bg-gray-50">
                         <td className="p-3">
                           <input
                             type="checkbox"
@@ -1350,20 +1403,20 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                           </div>
                         </td>
                         <td className="p-3">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.stock > 10
-                            ? 'bg-green-100 text-green-800'
-                            : product.stock > 0
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                            }`}>
+                          <span className={`inline - flex items - center px - 2.5 py - 0.5 rounded - full text - xs font - medium ${product.stock > 10
+                              ? 'bg-green-100 text-green-800'
+                              : product.stock > 0
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-red-100 text-red-800'
+                            } `}>
                             {product.stock} pcs
                           </span>
                         </td>
                         <td className="p-3">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.status === 'ready'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-orange-100 text-orange-800'
-                            }`}>
+                          <span className={`inline - flex items - center px - 2.5 py - 0.5 rounded - full text - xs font - medium ${product.status === 'ready'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-orange-100 text-orange-800'
+                            } `}>
                             {product.status === 'ready' ? '✅ Ready Stock' : '⏳ Pre-Order'}
                           </span>
                         </td>
@@ -1422,10 +1475,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                         <button
                           key={pageNum}
                           onClick={() => setCurrentPage(pageNum)}
-                          className={`px-3 py-1 border rounded-lg ${currentPage === pageNum
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'border-gray-300 hover:bg-gray-50'
-                            }`}
+                          className={`px - 3 py - 1 border rounded - lg ${currentPage === pageNum
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'border-gray-300 hover:bg-gray-50'
+                            } `}
                         >
                           {pageNum}
                         </button>
@@ -1547,7 +1600,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                             <div key={index} className="relative group">
                               <img
                                 src={imageSrc}
-                                alt={`Preview ${index + 1}`}
+                                alt={`Preview ${index + 1} `}
                                 className="w-full h-24 object-cover rounded-lg border border-gray-200"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
@@ -1973,7 +2026,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                             <div key={index} className="relative group">
                               <img
                                 src={imageSrc}
-                                alt={`Preview ${index + 1}`}
+                                alt={`Preview ${index + 1} `}
                                 className="w-full h-24 object-cover rounded-lg border border-gray-200"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
@@ -2365,7 +2418,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 <button
                   type="button"
                   onClick={() => {
-                    const newSize = `Ukuran ${variantBatchFormData.sizes.length + 1}`;
+                    const newSize = `Ukuran ${variantBatchFormData.sizes.length + 1} `;
                     setVariantBatchFormData({
                       ...variantBatchFormData,
                       sizes: [...variantBatchFormData.sizes, newSize]
@@ -2659,7 +2712,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 const aiCaption = productData.description || `${productData.variantCount} varian premium dengan motif unik`;
                 const enhancedProductData = {
                   ...productData,
-                  name: productData.name || `Gamis Premium ${productData.variantLabels.join('-')}`,
+                  name: productData.name || `Gamis Premium ${productData.variantLabels.join('-')} `,
                   description: aiCaption,
                   retailPrice: productData.retailPrice || '150000',
                   resellerPrice: productData.resellerPrice || '135000',
@@ -2671,7 +2724,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
               // Upload collage image to Firebase Storage
               // CRITICAL FIX: Generate unique productId BEFORE upload to prevent file overwriting
-              const tempProductId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+              const tempProductId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)} `;
               const collageFile = productData.collageFile;
               const uploadedImages = await uploadMultipleImages([collageFile], tempProductId);
 
@@ -2745,10 +2798,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               await addProduct(newProduct);
 
               setShowAIUploadModal(false);
-              alert(`✅ Produk berhasil di-upload dengan AI! Mode: ${productData.uploadMode === 'direct' ? 'Langsung Upload' : 'Review Upload'}`);
+              alert(`✅ Produk berhasil di - upload dengan AI! Mode: ${productData.uploadMode === 'direct' ? 'Langsung Upload' : 'Review Upload'} `);
             } catch (error: any) {
               console.error('Failed to create AI product:', error);
-              alert(`❌ Gagal upload produk: ${error.message}`);
+              alert(`❌ Gagal upload produk: ${error.message} `);
             }
           }}
         />
@@ -2765,7 +2818,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               console.log('Manual Upload product data:', productData);
 
               // Generate unique productId for storage path
-              const tempProductId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+              const tempProductId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)} `;
 
               // Upload collage image to Firebase Storage
               const collageFile = productData.collageFile;
@@ -2823,7 +2876,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               alert('✅ Produk berhasil di-upload!');
             } catch (error: any) {
               console.error('Failed to create manual product:', error);
-              alert(`❌ Gagal upload produk: ${error.message}`);
+              alert(`❌ Gagal upload produk: ${error.message} `);
             }
           }}
         />

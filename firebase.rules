@@ -38,6 +38,11 @@ service cloud.firestore {
       allow write: if true; // Allow write for AI bulk analysis
     }
 
+    // Allow read/write access to pending_products (WhatsApp integration)
+    match /pending_products/{productId} {
+      allow read, write: if isSignedIn(); // Only authenticated users (dashboard admin/bridge script)
+    }
+
     // Allow read access to orders for reporting (public read for production)
     // Allow write only for authenticated users
     match /orders/{orderId} {

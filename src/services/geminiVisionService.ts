@@ -50,6 +50,16 @@ export interface GeminiClothingAnalysis {
 
   colors: string[];
   fabric_texture: 'smooth' | 'textured' | 'glossy' | 'matte';
+
+  // New fields for product automation
+  name?: string;
+  description?: string;
+  category?: string;
+  price?: number;
+  resellerPrice?: number;
+  sizes?: string[];
+  material?: string;
+  status?: 'ready' | 'po';
 }
 
 interface RateLimitState {
@@ -892,15 +902,7 @@ Scoring guidelines:
   async analyzeCaptionAndImage(
     imageBase64: string,
     caption: string
-  ): Promise<{
-    name: string;
-    description: string;
-    category: string;
-    price: number;
-    colors: string[];
-    sizes: string[];
-    material: string;
-  }> {
+  ): Promise<GeminiClothingAnalysis> {
     const prompt = `
     Analyze this product image and the accompanying caption/text.
     Caption: "${caption}"
@@ -909,10 +911,12 @@ Scoring guidelines:
     1. "name": A concise product name (combine model + motif/material).
     2. "description": A short, attractive description for a sales catalog.
     3. "category": Best guess category (Gamis, Tunik, Setelan, Hijab, etc.).
-    4. "price": The retail price found in text (if multiple, take the highest/retail one). If none, return 0.
-    5. "colors": List of available colors found in text or image.
-    6. "sizes": List of sizes found in text (e.g., S, M, L, XL, All Size).
-    7. "material": Material mentioned (e.g. Rayon, Katun).
+    4. "price": The RETAIL price found in text (usually higher). If text says "Reseller" vs "Retail", take Retail.
+    5. "resellerPrice": The RESELLER price if mentioned. If not, set to 0.
+    6. "colors": List of available colors found in text or image.
+    7. "sizes": List of sizes found in text (e.g., S, M, L, XL, All Size). If text says "All Size" or "Free Size", put ["All Size"].
+    8. "material": Material mentioned (e.g. Rayon, Katun).
+    9. "status": If text contains "PO", "Pre Order", or "Jahit dulu", set to "po". Otherwise "ready".
     
     Return ONLY JSON. No text.
     Structure:
@@ -921,9 +925,11 @@ Scoring guidelines:
       "description": "...",
       "category": "...",
       "price": 0,
+      "resellerPrice": 0,
       "colors": ["..."],
       "sizes": ["..."],
-      "material": "..."
+      "material": "...",
+      "status": "ready"
     }
     `.trim();
 
