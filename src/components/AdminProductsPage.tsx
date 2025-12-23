@@ -788,6 +788,19 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       // but we prepare the data structure just in case.
       // We don't really need stockMatrix here because ManualUploadModal manages it internally based on images.
 
+      // Generate variants based on image count
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const variantColors = data.images.map((_: any, index: number) => alphabet[index]);
+      const defaultStock = data.defaultStock || 10;
+
+      const variantStock: Record<string, Record<string, number>> = {
+        'All Size': {}
+      };
+
+      variantColors.forEach((color: string) => {
+        variantStock['All Size'][color] = defaultStock;
+      });
+
       // Prepare Initial State for ManualUploadModal
       setManualUploadInitialState({
         step: 'details',
@@ -801,10 +814,15 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           resellerPrice: parseInt(data.resellerPrice || 0),
           costPrice: parseInt(data.costPrice || 0), // Receive calculated cost price
           status: data.status || 'ready',
-          weight: 1000 // Default weight
+          weight: 1000, // Default weight
+          variants: {
+            sizes: ['All Size'],
+            colors: variantColors,
+            stock: variantStock
+          }
         },
         uploadSettings: {
-          stockPerVariant: data.defaultStock || 10, // Default stock setting
+          stockPerVariant: defaultStock,
         },
         whatsappIds: data.whatsappIds || []
       });
