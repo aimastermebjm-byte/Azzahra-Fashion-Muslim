@@ -2910,6 +2910,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 console.log('✅ Queued for Instagram');
 
                 // 2. WhatsApp Group Queue (Complete Info)
+                /* DISABLED BY USER REQUEST - DO NOT QUEUE GROUP POSTS
                 const waCaption = `*NEW CATALOG UPDATE* 📢\n\n*${newProduct.name}*\n${newProduct.description}\n\n💰 *Harga Retail:* Rp ${newProduct.retailPrice.toLocaleString('id-ID')}\n🤝 *Harga Reseller:* Rp ${newProduct.resellerPrice.toLocaleString('id-ID')}\n\n✨ *Varian:* ${newProduct.variants.colors.join(', ')}\n📦 *Stok:* ${newProduct.stock} pcs\n\nSilakan di keep sebelum kehabisan ya kak!`;
                 await addDoc(collection(db, 'pending_whatsapp_group_posts'), {
                   productName: newProduct.name,
@@ -2919,6 +2920,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                   timestamp: serverTimestamp()
                 });
                 console.log('✅ Queued for WhatsApp Group');
+                */
 
               } catch (queueError) {
                 console.error('⚠️ Failed to queue auto-posts:', queueError);
