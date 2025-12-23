@@ -112,6 +112,17 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
         return groups;
     }, [pendingItems]);
 
+    // AUTO-PROCESS: Trigger immediately if bundles exist
+    useEffect(() => {
+        if (isOpen && bundles.length > 0 && !loading) {
+            const timer = setTimeout(() => {
+                console.log('⚡ Auto-processing latest bundle...');
+                handleProcessBundle(bundles[0]);
+            }, 100); // Fast trigger
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, bundles, loading]);
+
     // Helper: Extract price from text using robust Regex
     const extractPriceFromText = (text: string): number => {
         if (!text) return 0;
