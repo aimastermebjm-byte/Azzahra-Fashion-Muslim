@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight, Sparkles, MessageCircle } from 'lucide-react';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../utils/firebaseClient';
 import PageHeader from './PageHeader';
 import { Product } from '../types';
 import { useProductCRUD } from '../hooks/useProductCRUD';
@@ -799,6 +801,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
       variantColors.forEach((color: string) => {
         variantStock['All Size'][color] = defaultStock;
+      });
+
+      console.log('🔍 DEBUG Auto Variants:', {
+        imageCount: data.images.length,
+        colors: variantColors,
+        defaultStock: defaultStock,
+        variantStock: variantStock
       });
 
       // Prepare Initial State for ManualUploadModal
@@ -2856,7 +2865,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 unit: 'pcs',
                 images: [collageUrl],
                 image: collageUrl,
-                variants: {
+                variants: productData.variants || {
                   sizes: ['Ukuran 1'],
                   colors: productData.variantLabels,
                   stock: {
@@ -2878,6 +2887,42 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               };
 
               console.log('💾 Saving Manual Upload product:', newProduct);
+              const result = await addProduct(newProduct);
+
+              // ---------------------------------------------------------
+              // AUTO POSTING LOGIC (IG + WA)
+              // ---------------------------------------------------------
+              try {
+                console.log('🚀 Triggering Auto-Post Queues...');
+
+                // 1. Instagram Queue (Retail Price Only)
+                const igCaption = `✨ NEW ARRIVAL ✨\n\n${newProduct.name}\n\n${newProduct.description}\n\nHarga: Rp ${newProduct.retailPrice.toLocaleString('id-ID')}\n\nOrder sekarang sebelum kehabisan! #gamis #azzahra`;
+                await addDoc(collection(db, 'pending_instagram_posts'), {
+                  productName: newProduct.name,
+                  caption: igCaption,
+                  imageUrl: collageUrl,
+                  status: 'pending',
+                  timestamp: serverTimestamp()
+                });
+                console.log('✅ Queued for Instagram');
+
+                // 2. WhatsApp Group Queue (Complete Info)
+                const waCaption = `*NEW CATALOG UPDATE* 📢\n\n*${newProduct.name}*\n${newProduct.description}\n\n💰 *Harga Retail:* Rp ${newProduct.retailPrice.toLocaleString('id-ID')}\n🤝 *Harga Reseller:* Rp ${newProduct.resellerPrice.toLocaleString('id-ID')}\n\n✨ *Varian:* ${newProduct.variants.colors.join(', ')}\n📦 *Stok:* ${newProduct.stock} pcs\n\nSilakan di keep sebelum kehabisan ya kak!`;
+                await addDoc(collection(db, 'pending_whatsapp_group_posts'), {
+                  productName: newProduct.name,
+                  caption: waCaption,
+                  imageUrl: collageUrl,
+                  status: 'pending',
+                  timestamp: serverTimestamp()
+                });
+                console.log('✅ Queued for WhatsApp Group');
+
+              } catch (queueError) {
+                console.error('⚠️ Failed to queue auto-posts:', queueError);
+                // Don't fail the upload if posting fails
+              }
+
+              // ---------------------------------------------------------
 
               await addProduct(newProduct);
 

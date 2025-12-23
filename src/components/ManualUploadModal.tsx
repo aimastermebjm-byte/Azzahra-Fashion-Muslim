@@ -18,6 +18,16 @@ interface ManualUploadModalProps {
             retailPrice: number;
             resellerPrice: number;
             costPrice: number;
+            variants?: {
+                sizes: string[];
+                colors: string[];
+                stock: Record<string, Record<string, number>>;
+            };
+        };
+        uploadSettings?: {
+            stockPerVariant?: number;
+            costPrice?: number;
+            pricingRules?: PricingRule[];
         };
     };
 }
@@ -88,21 +98,46 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                     category: initialState.productData?.category || categories[0] || 'gamis',
                 }));
 
-                const { costPrice } = initialState.productData;
+                // Load initial stock if available (from WhatsApp Inbox)
+                if (initialState.productData?.variants?.stock && initialState.productData?.variants?.colors) {
+                    const initialStock: Record<string, string> = {};
+                    // Assuming 'All Size' or generic size key for flat structure
+                    const sizes = initialState.productData.variants.sizes;
+                    const colors = initialState.productData.variants.colors;
+                    const stockMatrix = initialState.productData.variants.stock;
 
-                // Update settings to match prices approximately
-                // Since pricing rules are dynamic, we just set the cost price and let logic handle it,
-                // OR we override the calculated values implies we might need to modify how retailPrice is derived if we want exact values.
-                // For now, let's set costPrice. 
-                // To force retailPrice, we might need a manual override mode, but let's stick to setting costPrice.
+                    const primarySize = sizes[0] || 'All Size';
 
-                setUploadSettings(prev => ({
-                    ...prev,
-                    costPrice: costPrice || 100000,
-                    // If we want to match exact retail, we can't easily reverse engineer the rule, 
-                    // but we can set the markup rule to match.
-                    // For simplicity, we trust the cost price from AI for now.
-                }));
+                    // Map nested stock to flat stockPerVariant (Color -> Stock)
+                    colors.forEach(color => {
+                        const val = stockMatrix[primarySize]?.[color];
+                        if (val !== undefined) initialStock[color] = String(val);
+                    });
+
+                    setProductFormData(prev => ({ ...prev, stockPerVariant: initialStock }));
+                }
+
+                if (initialState.uploadSettings) {
+                    setUploadSettings(prev => ({
+                        ...prev,
+                        ...initialState.uploadSettings
+                    }));
+                } else if (initialState.productData?.costPrice) {
+                    setUploadSettings(prev => ({
+                        ...prev,
+                        costPrice: initialState.productData?.costPrice || 100000
+                    }));
+                }
+
+                // Set fixed prices if available
+                if (initialState.productData?.retailPrice || initialState.productData?.resellerPrice) {
+                    setFixedPrices({
+                        retail: initialState.productData.retailPrice,
+                        reseller: initialState.productData.resellerPrice
+                    });
+                } else {
+                    setFixedPrices(null);
+                }
             }
         }
     }, [isOpen, initialState]);
@@ -131,8 +166,13 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     // Show settings panel
     const [showPricingRules, setShowPricingRules] = useState(false);
 
-    // Calculate retail price based on cost and pricing rules
+    // State for fixed prices (from WhatsApp/Initial State) to prevent auto-calculation override
+    const [fixedPrices, setFixedPrices] = useState<{ retail?: number, reseller?: number } | null>(null);
+
+    // Calculate retail price based on cost and pricing rules, unless fixed
     const retailPrice = useMemo(() => {
+        if (fixedPrices?.retail) return fixedPrices.retail;
+
         const { costPrice, pricingRules } = uploadSettings;
 
         // Find matching rule
@@ -149,12 +189,13 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             (prev.maxCost > current.maxCost) ? prev : current
         );
         return costPrice + highestRule.retailMarkup;
-    }, [uploadSettings.costPrice, uploadSettings.pricingRules]);
+    }, [uploadSettings.costPrice, uploadSettings.pricingRules, fixedPrices]);
 
-    // Calculate reseller price (retail - discount)
+    // Calculate reseller price (retail - discount), unless fixed
     const resellerPrice = useMemo(() => {
-        return retailPrice - uploadSettings.resellerDiscount;
-    }, [retailPrice, uploadSettings.resellerDiscount]);
+        if (fixedPrices?.reseller) return fixedPrices.reseller;
+        return Math.max(0, retailPrice - uploadSettings.resellerDiscount);
+    }, [retailPrice, uploadSettings.resellerDiscount, fixedPrices]);
 
     // Add pricing rule
     const addPricingRule = () => {

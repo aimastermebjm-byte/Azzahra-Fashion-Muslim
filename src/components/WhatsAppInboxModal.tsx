@@ -117,31 +117,36 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
         if (!text) return 0;
 
         // Remove common separators and normalize
-        // Patterns: Rp 150.000, 150rb, 150.000, IDR 150000
+        // Patterns: Rp 150.000, 150rb, 150k, 150.000 (if follows RP)
         const cleanText = text.toLowerCase();
 
-        // Match "150rb" or "150k" -> 150000
-        const kMatch = cleanText.match(/(\d+)(?:[.,]\d+)?\s*(rb|k|ribu)/);
-        if (kMatch) {
-            const val = parseFloat(kMatch[1].replace(',', '.'));
-            return val * 1000;
+        // 1. High Confidence: "150rb", "150k", "150 ribu"
+        const suffixMatch = cleanText.match(/(\d+(?:[.,]\d+)?)\s*(rb|k|ribu|jt)/);
+        if (suffixMatch) {
+            const rawVal = parseFloat(suffixMatch[1].replace(',', '.'));
+            const suffix = suffixMatch[2];
+            if (suffix === 'jt') return rawVal * 1000000;
+            return rawVal * 1000;
         }
 
-        // Match standard price format with Rp/IDR prefix or just numbers with dot/comma
-        // Look for numbers > 1000 to avoid confusing dates/years/sizes
-        const matches = cleanText.match(/(?:rp|idr)?[\s\.]*([\d\.,]+)/g);
+        // 2. High Confidence: "Rp 150.000", "IDR 150.000"
+        const currencyMatch = cleanText.match(/(?:rp|idr)\s*\.?\s*([\d,.]+)/);
+        if (currencyMatch) {
+            const numStr = currencyMatch[1].replace(/[^0-9]/g, ''); // Keep only digits
+            return parseInt(numStr, 10);
+        }
 
-        if (matches) {
-            // Filter and converting to numbers
-            const candidates = matches.map(m => {
-                const numStr = m.replace(/[^0-9]/g, ''); // Keep only digits
-                return parseInt(numStr, 10);
-            }).filter(n => n >= 10000 && n < 10000000); // Filter range usually for clothes
+        // 3. Medium Confidence: Standalone number, BUT must be in plausible price range (e.g. 25000 - 10000000)
+        // Avoids picking up "Kode 123", "Hp 0812...", "4 Warna"
+        const numberMatches = cleanText.match(/[\d,.]+/g);
+        if (numberMatches) {
+            const potentialPrices = numberMatches.map(m => {
+                const clean = m.replace(/[^0-9]/g, '');
+                return parseInt(clean, 10);
+            }).filter(n => n >= 25000 && n <= 600000); // Limit bare numbers to 600k (Standard Gamis)
 
-            if (candidates.length > 0) {
-                // Return the largest number found (usually price is strictly the most prominent number)
-                // Or find most plausible
-                return Math.max(...candidates);
+            if (potentialPrices.length > 0) {
+                return Math.max(...potentialPrices);
             }
         }
 
@@ -189,12 +194,19 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
             const analysis = await geminiService.analyzeCaptionAndImage(firstImageBase64, finalCaption);
 
             // Enhanced Price Logic
+            // Enhanced Price Logic
+            // User Feedback: Trust AI analysis first as description usually contains correct Retail/Reseller prices.
             let retailPrice = analysis.price || 0;
-            // Override with regex parser if valid, as it's often more accurate for Indo formatting
-            const regexPrice = extractPriceFromText(finalCaption);
-            if (regexPrice > 0) {
-                console.log('💰 Price Override via Regex:', regexPrice);
-                retailPrice = regexPrice;
+
+            // Fallback to regex ONLY if AI failed to find price
+            if (retailPrice === 0) {
+                const regexPrice = extractPriceFromText(finalCaption);
+                if (regexPrice > 0) {
+                    console.log('💰 Price Fallback via Regex:', regexPrice);
+                    retailPrice = regexPrice;
+                }
+            } else {
+                console.log('🤖 Using AI Detected Price:', retailPrice);
             }
 
             // Calculate Cost from Margin (Retail - Margin)
