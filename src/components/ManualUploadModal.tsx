@@ -451,9 +451,33 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         <p className="text-[10px] text-gray-400 mt-0.5">Potongan dari harga retail</p>
                                     </div>
                                     <div className="bg-white rounded-lg p-2 border border-gray-200">
-                                        <p className="text-[10px] text-gray-500 mb-1">Preview Harga:</p>
-                                        <p className="text-xs">Retail: <strong className="text-green-600">Rp {retailPrice.toLocaleString('id-ID')}</strong></p>
-                                        <p className="text-xs">Reseller: <strong className="text-blue-600">Rp {resellerPrice.toLocaleString('id-ID')}</strong></p>
+                                        <p className="text-[10px] text-gray-500 mb-2">Harga Jual (Edit jika perlu):</p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="block text-[10px] text-gray-500 mb-0.5">Retail (Rp)</label>
+                                                <input
+                                                    type="number"
+                                                    value={retailPrice}
+                                                    onChange={(e) => setFixedPrices(prev => ({
+                                                        ...prev,
+                                                        retail: parseInt(e.target.value) || 0
+                                                    }))}
+                                                    className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:ring-1 focus:ring-green-500 font-semibold text-green-700"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] text-gray-500 mb-0.5">Reseller (Rp)</label>
+                                                <input
+                                                    type="number"
+                                                    value={resellerPrice}
+                                                    onChange={(e) => setFixedPrices(prev => ({
+                                                        ...prev,
+                                                        reseller: parseInt(e.target.value) || 0
+                                                    }))}
+                                                    className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:ring-1 focus:ring-blue-500 font-semibold text-blue-700"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
