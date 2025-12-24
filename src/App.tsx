@@ -719,7 +719,7 @@ function App() {
       <GlobalProductsProvider>
         <ToastProvider>
           {/* <FlashSaleProvider> - DISABLED Emergency fix untuk infinite loop */}
-          {/* <PaymentAutoVerifier /> - DISABLED favored Cloud Functions */}
+          <PaymentAutoVerifier />
           <AppContent />
           {/* </FlashSaleProvider> */}
         </ToastProvider>

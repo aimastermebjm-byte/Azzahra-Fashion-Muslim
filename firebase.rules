@@ -168,5 +168,13 @@ service cloud.firestore {
     match /aiApiKeys/{userId} {
       allow read, write: if isSignedIn() && request.auth.uid == userId && isOwner();
     }
+
+    // Auto Verification Logs - Audit trail for automatic payment verification
+    // Admin/Owner can read, system writes automatically
+    match /autoVerificationLogs/{logId} {
+      allow read: if isAdminOrOwner();
+      allow create: if isAdminOrOwner(); // System creates logs
+      allow update, delete: if isOwner(); // Only owner can modify/delete logs
+    }
   }
 }
