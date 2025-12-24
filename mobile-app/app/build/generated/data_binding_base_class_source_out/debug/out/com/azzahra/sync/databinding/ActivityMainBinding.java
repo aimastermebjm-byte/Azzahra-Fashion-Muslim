@@ -5,7 +5,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -39,9 +38,6 @@ public final class ActivityMainBinding implements ViewBinding {
   public final Button btnTestNotif;
 
   @NonNull
-  public final CheckBox cbAiAssistant;
-
-  @NonNull
   public final ListView logListView;
 
   @NonNull
@@ -55,15 +51,14 @@ public final class ActivityMainBinding implements ViewBinding {
 
   private ActivityMainBinding(@NonNull LinearLayout rootView, @NonNull ListView appList,
       @NonNull Button btnClearLog, @NonNull Button btnGrantNotif, @NonNull Button btnRefresh,
-      @NonNull Button btnTestNotif, @NonNull CheckBox cbAiAssistant, @NonNull ListView logListView,
-      @NonNull EditText searchApps, @NonNull View statusIndicator, @NonNull TextView statusText) {
+      @NonNull Button btnTestNotif, @NonNull ListView logListView, @NonNull EditText searchApps,
+      @NonNull View statusIndicator, @NonNull TextView statusText) {
     this.rootView = rootView;
     this.appList = appList;
     this.btnClearLog = btnClearLog;
     this.btnGrantNotif = btnGrantNotif;
     this.btnRefresh = btnRefresh;
     this.btnTestNotif = btnTestNotif;
-    this.cbAiAssistant = cbAiAssistant;
     this.logListView = logListView;
     this.searchApps = searchApps;
     this.statusIndicator = statusIndicator;
@@ -127,12 +122,6 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
-      id = R.id.cbAiAssistant;
-      CheckBox cbAiAssistant = ViewBindings.findChildViewById(rootView, id);
-      if (cbAiAssistant == null) {
-        break missingId;
-      }
-
       id = R.id.logListView;
       ListView logListView = ViewBindings.findChildViewById(rootView, id);
       if (logListView == null) {
@@ -158,8 +147,7 @@ public final class ActivityMainBinding implements ViewBinding {
       }
 
       return new ActivityMainBinding((LinearLayout) rootView, appList, btnClearLog, btnGrantNotif,
-          btnRefresh, btnTestNotif, cbAiAssistant, logListView, searchApps, statusIndicator,
-          statusText);
+          btnRefresh, btnTestNotif, logListView, searchApps, statusIndicator, statusText);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

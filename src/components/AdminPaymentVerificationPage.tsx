@@ -5,7 +5,7 @@ import {
   XCircle,
   Eye,
   Settings as SettingsIcon,
-  Filter,
+  FileText,
   Search,
   AlertCircle,
   Clock,
@@ -26,6 +26,7 @@ import PageHeader from './PageHeader';
 import { paymentDetectionService, PaymentDetection, PaymentDetectionSettings } from '../services/paymentDetectionService';
 import { ordersService } from '../services/ordersService';
 import { useToast } from './ToastProvider';
+import AdminAutoVerificationLogsPage from './AdminAutoVerificationLogsPage';
 
 interface AdminPaymentVerificationPageProps {
   onBack: () => void;
@@ -57,6 +58,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
   const [selectedDetection, setSelectedDetection] = useState<PaymentDetection | null>(null);
   const [showScreenshot, setShowScreenshot] = useState(false);
   const [initializing, setInitializing] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
 
   // Load data on mount
   useEffect(() => {
@@ -147,28 +149,9 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
         }
 
         // 🤖 AUTO-VERIFICATION LOGIC
-        if (detection.matchedOrderId && settings?.mode === 'full-auto') {
-          const threshold = settings.autoConfirmThreshold || 90;
-
-          // Check if already processing this ID
-          if ((detection.confidence || 0) >= threshold && !processingRef.current.has(detection.id)) {
-            console.log(`🤖 Auto-confirming detection ${detection.id} (Confidence: ${detection.confidence}%)`);
-
-            // Mark as processing
-            processingRef.current.add(detection.id);
-
-            // Execute verification
-            try {
-              await handleMarkAsPaid(detection);
-            } catch (err) {
-              console.error('Auto-verify failed', err);
-              // Remove from processing if failed so we can retry? 
-              // Or leave it to prevent infinite error loop?
-              // Let's remove it to allow manual retry if needed, but the loop might catch it again.
-              processingRef.current.delete(detection.id);
-            }
-          }
-        }
+        // ⚠️ REMOVED: Auto-verify logic moved to PaymentAutoVerifier component
+        // PaymentAutoVerifier handles all auto-verification with proper test mode support
+        // This page is now only for MANUAL verification and monitoring
       }
 
       // Only update state if we actually found new matches to avoid infinite render loop
@@ -363,6 +346,12 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
       </div>
     );
   }
+  // Show Logs Page
+  if (showLogs) {
+    return (
+      <AdminAutoVerificationLogsPage onBack={() => setShowLogs(false)} />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -377,12 +366,21 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
               Mode: {settings?.mode === 'full-auto' ? 'Full Otomatis' : 'Semi-Otomatis'}
             </span>
           </div>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <SettingsIcon className="w-5 h-5 text-gray-600" />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowLogs(true)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center space-x-1"
+              title="Lihat Log Pelunasan"
+            >
+              <FileText className="w-5 h-5 text-gray-600" />
+            </button>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <SettingsIcon className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-3">

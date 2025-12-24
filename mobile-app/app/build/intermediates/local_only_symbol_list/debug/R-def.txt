@@ -21,7 +21,6 @@ id btnGrantNotif
 id btnLogin
 id btnRefresh
 id btnTestNotif
-id cbAiAssistant
 id etEmail
 id etPassword
 id loading

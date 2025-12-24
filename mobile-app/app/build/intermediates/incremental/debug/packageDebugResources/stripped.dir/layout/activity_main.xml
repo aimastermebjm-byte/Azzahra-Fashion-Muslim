@@ -18,22 +18,6 @@
 
     <Button android:id="@+id/btnGrantNotif" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="1. Setup Permissions" android:layout_marginBottom="4dp"/>
     
-    <!-- AI ASSISTANT TOGGLE -->
-    <LinearLayout 
-        android:layout_width="match_parent" 
-        android:layout_height="wrap_content" 
-        android:orientation="horizontal" 
-        android:gravity="center_vertical"
-        android:background="#E1F5FE"
-        android:padding="8dp"
-        android:layout_marginBottom="8dp">
-        <CheckBox 
-            android:id="@+id/cbAiAssistant" 
-            android:layout_width="wrap_content" 
-            android:layout_height="wrap_content" 
-            android:text="Enable AI Store Assistant (WA)"/>
-    </LinearLayout>
-
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
         <Button android:id="@+id/btnTestNotif" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Diagnostic" android:backgroundTint="#607D8B" android:layout_marginEnd="4dp"/>
         <Button android:id="@+id/btnRefresh" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Refresh" android:backgroundTint="#4CAF50"/>

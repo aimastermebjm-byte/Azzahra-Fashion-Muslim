@@ -25,7 +25,7 @@ public class NotificationService extends NotificationListenerService {
     private SharedPreferences prefs;
     
     private static final Map<String, Long> processedHistory = new HashMap<>();
-    private static final long DUPLICATE_TIMEOUT = 15000; // 15 detik perlindungan duplikat
+    private static final long DUPLICATE_TIMEOUT = 10000;
 
     @Override
     public void onCreate() {
@@ -37,7 +37,7 @@ public class NotificationService extends NotificationListenerService {
     @Override
     public void onListenerConnected() {
         super.onListenerConnected();
-        updateUILog("✅ SYSTEM ACTIVE - MONITORING MODE");
+        updateUILog("✅ SERVICE ACTIVE - UNIQUE CODE ONLY");
     }
 
     @Override
@@ -76,36 +76,40 @@ public class NotificationService extends NotificationListenerService {
                 String text = (textChar != null) ? textChar.toString() : "";
                 String fullContent = (title + " " + text).trim();
 
-                // Anti Duplikat Sederhana
                 String uniqueId = pkg + "_" + fullContent.replaceAll("[^a-zA-Z0-9]", "");
+                
                 if (!isDiag) {
                     long now = System.currentTimeMillis();
                     if (processedHistory.containsKey(uniqueId) && (now - processedHistory.get(uniqueId) < DUPLICATE_TIMEOUT)) return;
                     processedHistory.put(uniqueId, now);
                 }
 
-                process(pkg, fullContent, isDiag);
+                process(pkg, fullContent, isDiag, uniqueId);
             }
         } catch (Exception err) {
-            Log.e("AzzahraLog", "Capture Error", err);
+            Log.e("AzzahraLog", "Error", err);
         }
     }
 
-    private void process(String pkg, String fullText, boolean isDiag) {
+    private void process(String pkg, String fullText, boolean isDiag, String docId) {
         String low = fullText.toLowerCase();
         if (isDiag) {
             updateUILog("DIAGNOSTIC OK: " + fullText);
             return;
         }
         
-        // Deteksi kata kunci pembayaran masuk
-        if (low.contains("masuk") || low.contains("berhasil") || low.contains("terima") || low.contains("dana") || low.contains("transfer")) {
+        if (low.contains("masuk") || low.contains("berhasil") || low.contains("terima") || low.contains("dana")) {
             long amt = extractAmount(fullText);
             
             if (amt > 0) {
+                // FILTER KODE UNIK (Kelipatan 500 diabaikan)
+                if (amt % 500 == 0) {
+                    updateUILog("ℹ️ Bulat diabaikan: Rp " + String.format("%,d", amt));
+                    return;
+                }
                 vibrate();
-                updateUILog("💰 DETECTED: Rp " + String.format("%,d", amt));
-                sendToFirebase(pkg, amt, fullText);
+                updateUILog("💰 DETECTED UNIQUE: Rp " + String.format("%,d", amt));
+                sendToFirebase(pkg, amt, fullText, docId);
             }
         }
     }
@@ -113,17 +117,14 @@ public class NotificationService extends NotificationListenerService {
     private long extractAmount(String text) {
         String low = text.toLowerCase();
         try {
-            // Pattern 1: Rp 10.000 atau IDR 10.000
             Pattern p1 = Pattern.compile("(rp|idr)\\s*([0-9.,]+)");
             Matcher m1 = p1.matcher(low);
             if (m1.find()) return parseCleanAmount(m1.group(2));
 
-            // Pattern 2: Angka dengan pemisah ribuan (10.000 atau 10,000)
             Pattern p2 = Pattern.compile("([0-9]{1,3}([.,][0-9]{3})+)");
             Matcher m2 = p2.matcher(low);
             if (m2.find()) return parseCleanAmount(m2.group());
 
-            // Pattern 3: Angka polos panjang (misal 10000)
             Pattern p3 = Pattern.compile("\\b[0-9]{4,12}\\b");
             Matcher m3 = p3.matcher(low);
             if (m3.find()) return parseCleanAmount(m3.group());
@@ -151,7 +152,7 @@ public class NotificationService extends NotificationListenerService {
         sendBroadcast(i);
     }
 
-    private void sendToFirebase(String bank, long amt, String raw) {
+    private void sendToFirebase(String bank, long amt, String raw, String docId) {
         Map<String, Object> d = new HashMap<>();
         d.put("amount", amt); 
         d.put("bank", bank); 
@@ -159,9 +160,9 @@ public class NotificationService extends NotificationListenerService {
         d.put("timestamp", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date()));
         d.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
 
-        // Menggunakan .add() agar Firebase generate ID otomatis (lebih aman)
-        db.collection("paymentDetectionsPending").add(d)
-            .addOnSuccessListener(ref -> updateUILog("☁️ SYNC OK: Data Sent!"))
-            .addOnFailureListener(e -> updateUILog("❌ SYNC FAIL: " + e.getMessage()));
+        // Mengirim ke collection paymentDetectionsPending
+        db.collection("paymentDetectionsPending").document(docId).set(d)
+            .addOnSuccessListener(aVoid -> updateUILog("☁️ SUCCESS: Cloud Sync OK!"))
+            .addOnFailureListener(e -> updateUILog("❌ REJECTED: " + e.getMessage()));
     }
 }
