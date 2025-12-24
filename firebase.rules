@@ -32,10 +32,23 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
-    // Allow read/write access to products for authenticated users
+    // Products - Owner full access, Admin limited (no delete, no price/stock edit)
     match /products/{productId} {
-      allow read: if true; // Public read for reporting system
-      allow write: if true; // Allow write for AI bulk analysis
+      allow read: if true; // Public read for catalog
+      allow create: if isAdminOrOwner(); // Owner & Admin can add products
+      
+      // Update: Owner can edit all, Admin can edit but NOT price/stock
+      allow update: if isOwner() || 
+        (isAdminOrOwner() && 
+         request.resource.data.price == resource.data.price &&
+         request.resource.data.retailPrice == resource.data.retailPrice &&
+         request.resource.data.resellerPrice == resource.data.resellerPrice &&
+         request.resource.data.costPrice == resource.data.costPrice &&
+         request.resource.data.stock == resource.data.stock
+        );
+      
+      // Delete: Only owner
+      allow delete: if isOwner();
     }
 
     // Allow read/write access to pending_products (WhatsApp integration)
@@ -71,28 +84,30 @@ service cloud.firestore {
       allow read, write: if isSelf(userId) || isAdminOrOwner();
     }
 
-    // Allow read access to categories for authenticated users
+    // Categories - Admin & Owner can manage
     match /categories/{categoryId} {
-      allow read: if true; // Public read for reporting system
-      allow write: if request.auth != null && request.auth.uid != null;
+      allow read: if true; // Public read
+      allow write: if isAdminOrOwner(); // Only Admin/Owner can edit
     }
 
-    // Allow read/write access to flash sales for authenticated users
+    // Flash Sales - OWNER ONLY can manage
     match /flashSales/{flashSaleId} {
-      allow read: if true; // Public read for reporting system
-      allow write: if request.auth != null;
+      allow read: if true; // Public read for promo display
+      allow write: if isOwner(); // Only Owner can manage flash sales
     }
 
-    // Allow read/write access to flash sale config for authenticated users
+    // Flash Sale Config - OWNER ONLY
     match /flashSale/{documentId} {
-      allow read: if true; // Public read for reporting system
-      allow write: if request.auth != null && request.auth.uid != null;
+      allow read: if true; // Public read for promo display
+      allow write: if isOwner(); // Only Owner can configure
     }
 
-    // Allow read/write access to batches for authenticated users
+    // Product Batches - Owner full access, Admin limited (same as products)
     match /productBatches/{batchId} {
-      allow read: if true; // Public read for reporting system
-      allow write: if true; // Allow write for AI bulk analysis
+      allow read: if true; // Public read
+      allow create: if isAdminOrOwner(); // Owner & Admin can add
+      allow update: if isAdminOrOwner(); // Owner & Admin can update
+      allow delete: if isOwner(); // Only owner can delete
     }
 
     // Allow read/write access to global index for authenticated users
@@ -115,22 +130,22 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
-    // Financial categories
+    // Financial categories - OWNER ONLY (sensitive data)
     match /financial_categories/{categoryId} {
-      allow read: if true;
-      allow write: if isSignedIn();
+      allow read: if isOwner();
+      allow write: if isOwner();
     }
 
-    // Financial payment methods
+    // Financial payment methods - OWNER ONLY
     match /financial_payment_methods/{methodId} {
-      allow read: if true;
-      allow write: if isSignedIn();
+      allow read: if isOwner();
+      allow write: if isOwner();
     }
 
-    // Financial entries
+    // Financial entries - OWNER ONLY (very sensitive!)
     match /financial_entries/{entryId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
+      allow read: if isOwner();
+      allow write: if isOwner();
     }
 
     // Product categories (Master data)
