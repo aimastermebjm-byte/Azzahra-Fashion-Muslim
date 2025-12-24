@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useAdmin } from '../contexts/AdminContext';
 import { useFirebaseAuth } from '../hooks/useFirebaseAuth';
-import { paymentDetectionService } from '../services/paymentDetectionService';
-import { PaymentDetection } from '../services/paymentDetectionService';
+import { paymentDetectionService, PaymentDetection, PaymentDetectionSettings } from '../services/paymentDetectionService';
+import { autoVerificationLogService } from '../services/autoVerificationLogService';
 import { useToast } from './ToastProvider';
 import { ordersService } from '../services/ordersService';
 
@@ -18,6 +17,10 @@ import { ordersService } from '../services/ordersService';
  * 3. JIKA settingan 'Full Auto' aktif
  * 4. DAN ada kecocokan 100% (Kode Unik)
  * 5. MAKA otomatis tandai LUNAS (Verified)
+ * 
+ * 🛡️ Safety Features:
+ * - Test Mode: Hanya log, tidak benar-benar lunaskan
+ * - Audit Log: Setiap aksi tercatat lengkap
  */
 const PaymentAutoVerifier: React.FC = () => {
     const { user } = useFirebaseAuth();
@@ -26,7 +29,7 @@ const PaymentAutoVerifier: React.FC = () => {
     // Local state for data
     const [detections, setDetections] = useState<PaymentDetection[]>([]);
     const [orders, setOrders] = useState<any[]>([]);
-    const [settings, setSettings] = useState<any>(null);
+    const [settings, setSettings] = useState<PaymentDetectionSettings | null>(null);
 
     // Guard untuk mencegah infinite loop / duplicate processing
     // Set ini menyimpan ID detection yang sedang atau sudah diproses
@@ -35,40 +38,27 @@ const PaymentAutoVerifier: React.FC = () => {
     // Hanya jalankan untuk OWNER
     const isOwner = user?.role === 'owner';
 
-    // 1. Load Settings
+    // 1. Load Settings (Real-time subscription)
     useEffect(() => {
         if (!isOwner) return;
 
         const unsubscribe = paymentDetectionService.subscribeToSettings((newSettings) => {
-            // console.log('🤖 AutoVerifier: Settings loaded', newSettings?.mode);
+            console.log('🤖 AutoVerifier: Settings loaded', newSettings?.mode, newSettings?.testMode ? '[TEST MODE]' : '');
             setSettings(newSettings);
         });
 
         return () => unsubscribe();
     }, [isOwner]);
 
-    // 2. Load Detections (Unverified only)
+    // 2. Load Pending Detections (Real-time subscription)
     useEffect(() => {
         if (!isOwner) return;
 
-        // Kita subscribe ke UNVERIFIED detections
-        // Note: service.subscribeToDetections biasanya return all or filter.
-        // Untuk efisiensi, kita pakai poll atau subscribe yang sudah ada.
-        // Di sini asumsi kita pakai subscribeToPendingDetections jika ada, atau filter manual.
-
-        // Tapi karena logic subscribeToDetections di service mungkin return semua,
-        // kita filter di sini.
-        const unsubscribe = paymentDetectionService.subscribeToDetections((allDetections) => {
-            const pending = allDetections.filter(d => d.status === 'unverified');
-            // Hanya update jika panjang array berubah untuk mengurangi render
-            // (Simplified check, idealnya deep compare tapi ini cukup untuk MVP)
-            setDetections(prev => {
-                if (prev.length !== pending.length) return pending;
-                // Check IDs
-                const prevIds = prev.map(d => d.id).join(',');
-                const newIds = pending.map(d => d.id).join(',');
-                return prevIds === newIds ? prev : pending;
-            });
+        // ✅ FIX: Use correct method name - onPendingDetectionsChange
+        const unsubscribe = paymentDetectionService.onPendingDetectionsChange((pendingDetections) => {
+            // ✅ FIX: No need to filter - already pending from source
+            console.log('🤖 AutoVerifier: Pending detections updated:', pendingDetections.length);
+            setDetections(pendingDetections);
         });
 
         return () => unsubscribe();
@@ -78,9 +68,9 @@ const PaymentAutoVerifier: React.FC = () => {
     useEffect(() => {
         if (!isOwner) return;
 
-        // Subscribe khusus waiting_payment
-        const unsubscribe = ordersService.subscribeToOrders((allOrders) => {
-            const pending = allOrders.filter(o => o.status === 'pending' || o.status === 'waiting_payment');
+        // Subscribe khusus pending orders (waiting_payment not in interface but included for safety)
+        const unsubscribe = ordersService.subscribeToOrders((allOrders: any[]) => {
+            const pending = allOrders.filter((o: any) => o.status === 'pending');
             setOrders(prev => {
                 if (prev.length !== pending.length) return pending;
                 const prevIds = prev.map(o => o.id).join(',');
@@ -98,6 +88,11 @@ const PaymentAutoVerifier: React.FC = () => {
             // Safety checks
             if (!isOwner || !settings || settings.mode !== 'full-auto') return;
             if (detections.length === 0 || orders.length === 0) return;
+
+            const isTestMode = settings.testMode === true;
+            if (isTestMode) {
+                console.log('🧪 AutoVerifier running in TEST MODE - will log but not execute');
+            }
 
             // Loop semua detection yang belum diproses
             for (const detection of detections) {
@@ -120,33 +115,107 @@ const PaymentAutoVerifier: React.FC = () => {
                             // Kunci detection ini biar gak diproses 2x
                             processingRef.current.add(detection.id);
 
-                            // EKSEKUSI: Update Detection jadi Verified & Link Order
-                            await paymentDetectionService.markAsVerified(
-                                detection.id,
-                                bestMatch.orderId,
-                                'auto',
-                                `Auto-verified by System (Confidence: ${bestMatch.confidence}%)`
-                            );
+                            // Get order details for logging
+                            const matchedOrder = orders.find(o => o.id === bestMatch.orderId);
+                            const customerName = matchedOrder?.shippingInfo?.name || matchedOrder?.userName || 'Unknown';
 
-                            // EKSEKUSI: Update Order jadi Paid
-                            await ordersService.updateOrderStatus(bestMatch.orderId, 'paid');
+                            if (isTestMode) {
+                                // 🧪 TEST MODE: Only log, don't execute
+                                await autoVerificationLogService.createLog({
+                                    orderId: bestMatch.orderId,
+                                    orderAmount: matchedOrder?.finalTotal || detection.amount,
+                                    customerName,
+                                    detectionId: detection.id,
+                                    detectedAmount: detection.amount,
+                                    senderName: detection.senderName || 'Unknown',
+                                    bank: detection.bank,
+                                    rawNotification: detection.rawText,
+                                    confidence: bestMatch.confidence,
+                                    matchReason: `Auto-match (Confidence: ${bestMatch.confidence}%)`,
+                                    status: 'dry-run',
+                                    executedBy: 'system',
+                                    paymentGroupId: matchedOrder?.paymentGroupId,
+                                    orderIds: matchedOrder?.paymentGroupId ? [bestMatch.orderId] : undefined
+                                });
 
-                            // Notifikasi Petir ⚡
-                            showToast({
-                                title: '🤖 Pembayaran Otomatis Diterima!',
-                                message: `Order ${bestMatch.orderId} telah dilunaskan otomatis.`,
-                                type: 'success',
-                                duration: 5000
-                            });
+                                showToast({
+                                    title: '🧪 [TEST] Pembayaran Terdeteksi',
+                                    message: `Order ${bestMatch.orderId} AKAN dilunaskan (mode test aktif)`,
+                                    type: 'info',
+                                    duration: 5000
+                                });
 
-                            // Play sound effect (optional)
-                            const audio = new Audio('/sounds/success.mp3'); // Pastikan file ada atau ignore error
-                            audio.play().catch(() => { });
+                                console.log('🧪 [DRY RUN] Would have verified:', bestMatch.orderId);
+                            } else {
+                                // 🚀 PRODUCTION MODE: Execute verification
+                                try {
+                                    // EKSEKUSI: Update Detection jadi Verified & Link Order
+                                    await paymentDetectionService.markAsVerified(
+                                        detection.id,
+                                        bestMatch.orderId,
+                                        'auto',
+                                        'full-auto'
+                                    );
+
+                                    // EKSEKUSI: Update Order jadi Paid
+                                    await ordersService.updateOrderStatus(bestMatch.orderId, 'paid');
+
+                                    // 📋 Log success
+                                    await autoVerificationLogService.createLog({
+                                        orderId: bestMatch.orderId,
+                                        orderAmount: matchedOrder?.finalTotal || detection.amount,
+                                        customerName,
+                                        detectionId: detection.id,
+                                        detectedAmount: detection.amount,
+                                        senderName: detection.senderName || 'Unknown',
+                                        bank: detection.bank,
+                                        rawNotification: detection.rawText,
+                                        confidence: bestMatch.confidence,
+                                        matchReason: `Auto-verified by System (Confidence: ${bestMatch.confidence}%)`,
+                                        status: 'success',
+                                        executedBy: 'system',
+                                        paymentGroupId: matchedOrder?.paymentGroupId,
+                                        orderIds: matchedOrder?.paymentGroupId ? [bestMatch.orderId] : undefined
+                                    });
+
+                                    // Notifikasi Petir ⚡
+                                    showToast({
+                                        title: '🤖 Pembayaran Otomatis Diterima!',
+                                        message: `Order ${bestMatch.orderId} telah dilunaskan otomatis.`,
+                                        type: 'success',
+                                        duration: 5000
+                                    });
+
+                                    // Play sound effect (optional)
+                                    const audio = new Audio('/sounds/success.mp3');
+                                    audio.play().catch(() => { });
+
+                                } catch (execError) {
+                                    // 📋 Log failure
+                                    await autoVerificationLogService.createLog({
+                                        orderId: bestMatch.orderId,
+                                        orderAmount: matchedOrder?.finalTotal || detection.amount,
+                                        customerName,
+                                        detectionId: detection.id,
+                                        detectedAmount: detection.amount,
+                                        senderName: detection.senderName || 'Unknown',
+                                        bank: detection.bank,
+                                        rawNotification: detection.rawText,
+                                        confidence: bestMatch.confidence,
+                                        matchReason: `Auto-verification attempted`,
+                                        status: 'failed',
+                                        executedBy: 'system',
+                                        errorMessage: execError instanceof Error ? execError.message : 'Unknown error'
+                                    });
+
+                                    throw execError;
+                                }
+                            }
                         }
                     }
                 } catch (error) {
                     console.error('🤖 AutoVerifier Error:', error);
-                    // Lepas kunci jika error, biar bisa dicoba lagi next cycle (atau biarkan terkunci manual)
+                    // Lepas kunci jika error, biar bisa dicoba lagi next cycle
                     processingRef.current.delete(detection.id);
                 }
             }

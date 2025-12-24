@@ -37,6 +37,7 @@ export interface PaymentDetection {
 export interface PaymentDetectionSettings {
   mode: 'semi-auto' | 'full-auto';
   enabled: boolean;
+  testMode?: boolean;  // 🧪 Test mode - hanya log, tidak benar-benar lunaskan
   autoConfirmThreshold: number;
   autoConfirmRules: {
     exactAmountMatch: boolean;
@@ -202,6 +203,24 @@ class PaymentDetectionService {
       console.error('❌ Error updating settings:', error);
       throw error;
     }
+  }
+
+  // Subscribe to settings changes (real-time)
+  subscribeToSettings(callback: (settings: PaymentDetectionSettings | null) => void): () => void {
+    const settingsRef = doc(db, 'paymentDetectionSettings', 'config');
+
+    const unsubscribe = onSnapshot(settingsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        callback(snapshot.data() as PaymentDetectionSettings);
+      } else {
+        callback(null);
+      }
+    }, (error) => {
+      console.error('Error listening to settings:', error);
+      callback(null);
+    });
+
+    return unsubscribe;
   }
 
   // Add mock detection for testing (temporary - for development)

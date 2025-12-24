@@ -1,6 +1,6 @@
 // Orders Service - Sync orders across devices using Firebase
 import { auth } from '../utils/firebaseClient';
-import { doc, setDoc, collection, getDocs, query, where, updateDoc, deleteDoc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs, query, where, updateDoc, deleteDoc, getDoc, Timestamp, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 
 export interface Order {
@@ -24,13 +24,13 @@ export interface Order {
   paymentProof?: string;
   paymentProofData?: string;
   paymentProofUrl?: string;
-  
+
   // ✨ NEW: Unique Payment Code System (OPTIONAL - Backward Compatible)
   verificationMode?: 'auto' | 'manual'; // Default: 'manual' (existing behavior)
   uniquePaymentCode?: number;          // 2-digit code (10-99) for auto verification
   exactPaymentAmount?: number;         // finalTotal + uniquePaymentCode
   originalAmount?: number;             // Store original finalTotal for reference
-  
+
   // ✨ NEW: Payment Group System (for batch payments)
   paymentGroupId?: string;             // Reference to payment group (if part of batch payment)
   groupPaymentAmount?: number;         // Total amount for the payment group
@@ -355,6 +355,25 @@ class OrdersService {
       console.error('❌ Error getting all orders:', error);
       throw error;
     }
+  }
+
+  // Subscribe to orders (real-time) for PaymentAutoVerifier
+  subscribeToOrders(callback: (orders: Order[]) => void): () => void {
+    const ordersRef = collection(db, this.collection);
+    const q = query(ordersRef, orderBy('createdAt', 'desc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const orders = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Order[];
+      callback(orders);
+    }, (error) => {
+      console.error('Error listening to orders:', error);
+      callback([]);
+    });
+
+    return unsubscribe;
   }
 
   // Generate order ID

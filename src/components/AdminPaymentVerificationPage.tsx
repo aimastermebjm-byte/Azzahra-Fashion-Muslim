@@ -685,18 +685,20 @@ interface SettingsModalProps {
 const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onSave, onClose }) => {
   const [mode, setMode] = useState(settings.mode);
   const [threshold, setThreshold] = useState(settings.autoConfirmThreshold);
+  const [testMode, setTestMode] = useState(settings.testMode ?? false);
 
   const handleSave = () => {
     onSave({
       ...settings,
       mode,
-      autoConfirmThreshold: threshold
+      autoConfirmThreshold: threshold,
+      testMode
     });
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900">Pengaturan Verifikasi</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
@@ -747,23 +749,57 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onSave, onClose
           </div>
 
           {mode === 'full-auto' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Confidence Threshold: {threshold}%
-              </label>
-              <input
-                type="range"
-                min="70"
-                max="99"
-                value={threshold}
-                onChange={(e) => setThreshold(parseInt(e.target.value))}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>70% (Lebih permisif)</span>
-                <span>99% (Sangat ketat)</span>
+            <>
+              {/* 🧪 Test Mode Toggle */}
+              <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold text-yellow-900 flex items-center space-x-2">
+                      <span>🧪</span>
+                      <span>Test Mode (Dry Run)</span>
+                    </div>
+                    <div className="text-sm text-yellow-700 mt-1">
+                      Saat aktif, sistem hanya <b>mencatat log</b> tanpa benar-benar melunaskan pesanan
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTestMode(!testMode)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${testMode ? 'bg-yellow-500' : 'bg-gray-300'
+                      }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${testMode ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                    />
+                  </button>
+                </div>
+                {testMode && (
+                  <div className="mt-3 text-xs text-yellow-800 bg-yellow-100 rounded-lg p-2">
+                    ✅ Test mode AKTIF - Semua pelunasan otomatis akan dicatat ke log tanpa mengubah status pesanan.
+                    Periksa log untuk memverifikasi akurasi sebelum mematikan test mode.
+                  </div>
+                )}
               </div>
-            </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Confidence Threshold: {threshold}%
+                </label>
+                <input
+                  type="range"
+                  min="70"
+                  max="99"
+                  value={threshold}
+                  onChange={(e) => setThreshold(parseInt(e.target.value))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>70% (Lebih permisif)</span>
+                  <span>99% (Sangat ketat)</span>
+                </div>
+              </div>
+            </>
           )}
         </div>
 
