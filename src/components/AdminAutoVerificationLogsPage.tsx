@@ -205,16 +205,37 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                             {expandedId === log.id && (
                                 <div className="px-4 pb-4 border-t bg-gray-50">
                                     {/* Order List for Group Payments */}
-                                    {(log as any).isGroupPayment && (log as any).orderIds && (
+                                    {(log as any).isGroupPayment && ((log as any).orderDetails || (log as any).orderIds) && (
                                         <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                                             <div className="text-xs text-blue-600 font-medium mb-2">📦 Pesanan dalam Group:</div>
-                                            <div className="space-y-1">
-                                                {(log as any).orderIds.map((orderId: string, index: number) => (
-                                                    <div key={index} className="text-sm font-semibold text-blue-800">
-                                                        • {orderId}
-                                                    </div>
-                                                ))}
+                                            <div className="space-y-2">
+                                                {/* Use orderDetails if available (new format), fallback to orderIds (old format) */}
+                                                {(log as any).orderDetails ? (
+                                                    (log as any).orderDetails.map((order: { id: string; amount: number; customerName?: string }, index: number) => (
+                                                        <div key={index} className="flex justify-between items-center bg-white rounded px-2 py-1 border border-blue-100">
+                                                            <span className="text-sm font-semibold text-blue-800">• {order.id}</span>
+                                                            <span className="text-sm font-bold text-green-600">
+                                                                Rp {order.amount.toLocaleString('id-ID')}
+                                                            </span>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    (log as any).orderIds.map((orderId: string, index: number) => (
+                                                        <div key={index} className="text-sm font-semibold text-blue-800">
+                                                            • {orderId}
+                                                        </div>
+                                                    ))
+                                                )}
                                             </div>
+                                            {/* Total Amount */}
+                                            {(log as any).orderDetails && (
+                                                <div className="mt-2 pt-2 border-t border-blue-200 flex justify-between">
+                                                    <span className="text-xs text-blue-600 font-medium">Total:</span>
+                                                    <span className="text-sm font-bold text-blue-800">
+                                                        Rp {(log as any).orderDetails.reduce((sum: number, o: { amount: number }) => sum + o.amount, 0).toLocaleString('id-ID')}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 

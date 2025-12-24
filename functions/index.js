@@ -161,11 +161,33 @@ exports.checkPaymentDetection = onDocumentWritten("paymentDetectionsPending/{det
         const isGroup = isGroupMatch && bestMatch.data;
         const actualOrderIds = isGroup ? (bestMatch.data.orderIds || []) : [bestMatch.orderId];
 
+        // 🆕 Fetch order details with amounts for each order
+        let orderDetails = [];
+        for (const orderId of actualOrderIds) {
+            try {
+                const orderDoc = await db.collection("orders").doc(orderId).get();
+                if (orderDoc.exists) {
+                    const orderData = orderDoc.data();
+                    orderDetails.push({
+                        id: orderId,
+                        amount: orderData.finalTotal || orderData.totalAmount || 0,
+                        customerName: orderData.userName || orderData.customerName || 'Unknown'
+                    });
+                } else {
+                    orderDetails.push({ id: orderId, amount: 0, customerName: 'Unknown' });
+                }
+            } catch (err) {
+                logger.warn(`⚠️ Could not fetch order ${orderId}: ${err.message}`);
+                orderDetails.push({ id: orderId, amount: 0, customerName: 'Unknown' });
+            }
+        }
+
         const logData = {
             timestamp: new Date(),
             // Header display: PG ID for group, AZ ID for single
             orderId: bestMatch.orderId, // PG ID for group, AZF ID for single
             orderIds: actualOrderIds, // Array of actual AZ order IDs
+            orderDetails: orderDetails, // 🆕 Array with id + amount for each order
             orderAmount: detection.amount,
             customerName: detection.senderName || 'Unknown',
             detectionId: detectionId,
