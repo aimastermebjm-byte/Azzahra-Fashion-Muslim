@@ -139,16 +139,16 @@ exports.checkPaymentDetection = onDocumentWritten("paymentDetectionsPending/{det
         logger.info(`🤖 Robot: Executing Auto-Verify for ${detectionId} -> ${bestMatch.orderId}`);
 
         // 📋 PREPARE AUDIT LOG DATA
-        // For group payments, use actual order IDs, not group ID
+        // For group payments: orderId = PG ID (header), orderIds = AZ order IDs (detail)
+        // For single payments: orderId = AZ order ID
         const isGroup = isGroupMatch && bestMatch.data;
         const actualOrderIds = isGroup ? (bestMatch.data.orderIds || []) : [bestMatch.orderId];
 
         const logData = {
             timestamp: new Date(),
-            // For display: show first order ID or all if group
-            orderId: isGroup ? actualOrderIds.join(', ') : bestMatch.orderId,
-            orderIds: actualOrderIds, // Array of actual order IDs
-            paymentGroupId: isGroup ? bestMatch.orderId : null, // PG ID if group
+            // Header display: PG ID for group, AZ ID for single
+            orderId: bestMatch.orderId, // PG ID for group, AZF ID for single
+            orderIds: actualOrderIds, // Array of actual AZ order IDs
             orderAmount: detection.amount,
             customerName: detection.senderName || 'Unknown',
             detectionId: detectionId,

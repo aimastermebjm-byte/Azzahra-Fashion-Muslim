@@ -204,18 +204,17 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                             {/* Expanded Details */}
                             {expandedId === log.id && (
                                 <div className="px-4 pb-4 border-t bg-gray-50">
-                                    {/* Group Payment Info */}
-                                    {(log as any).paymentGroupId && (
+                                    {/* Order List for Group Payments */}
+                                    {(log as any).isGroupPayment && (log as any).orderIds && (
                                         <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                            <div className="text-xs text-blue-600 font-medium mb-1">📦 Pembayaran Group</div>
-                                            <div className="text-sm font-semibold text-blue-800">
-                                                Group: {(log as any).paymentGroupId}
+                                            <div className="text-xs text-blue-600 font-medium mb-2">📦 Pesanan dalam Group:</div>
+                                            <div className="space-y-1">
+                                                {(log as any).orderIds.map((orderId: string, index: number) => (
+                                                    <div key={index} className="text-sm font-semibold text-blue-800">
+                                                        • {orderId}
+                                                    </div>
+                                                ))}
                                             </div>
-                                            {(log as any).orderIds && (
-                                                <div className="text-sm text-blue-700 mt-1">
-                                                    Pesanan: {(log as any).orderIds.join(', ')}
-                                                </div>
-                                            )}
                                         </div>
                                     )}
 
