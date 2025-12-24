@@ -38,6 +38,12 @@ const PaymentAutoVerifier: React.FC = () => {
     // Hanya jalankan untuk OWNER
     const isOwner = user?.role === 'owner';
 
+    // Debug mount log
+    useEffect(() => {
+        console.log('🤖 PaymentAutoVerifier MOUNTED', { isOwner, userId: user?.uid, role: user?.role });
+        return () => console.log('🤖 PaymentAutoVerifier UNMOUNTED');
+    }, [isOwner, user?.uid, user?.role]);
+
     // 1. Load Settings (Real-time subscription)
     useEffect(() => {
         if (!isOwner) return;

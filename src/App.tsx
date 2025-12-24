@@ -659,6 +659,8 @@ function AppContent() {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-brand-surface text-slate-900">
+        {/* 🤖 PaymentAutoVerifier - MUST be inside AppContent to access user auth */}
+        {user?.role === 'owner' && <PaymentAutoVerifier />}
         {renderCurrentPage()}
         {!showLogin && !currentPage.startsWith('admin-') && ['home', 'flash-sale', 'orders', 'account'].includes(currentPage) && (
           <BottomNavigation currentPage={currentPage} onPageChange={setCurrentPage} />
@@ -719,7 +721,7 @@ function App() {
       <GlobalProductsProvider>
         <ToastProvider>
           {/* <FlashSaleProvider> - DISABLED Emergency fix untuk infinite loop */}
-          <PaymentAutoVerifier />
+          {/* PaymentAutoVerifier moved inside AppContent for proper user auth access */}
           <AppContent />
           {/* </FlashSaleProvider> */}
         </ToastProvider>
