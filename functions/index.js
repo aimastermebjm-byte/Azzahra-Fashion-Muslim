@@ -54,6 +54,12 @@ exports.checkPaymentDetection = onDocumentWritten("paymentDetectionsPending/{det
         return;
     }
 
+    // 🧪 TEST MODE CHECK - Only log, don't execute verification
+    const isTestMode = settings.testMode === true;
+    if (isTestMode) {
+        logger.info("🧪 Robot: TEST MODE ACTIVE - Will log but NOT execute verification.");
+    }
+
     // 2. Ambil List Order Pending / Waiting Payment
     // Kita butuh order yang belum lunas
     const ordersSnapshot = await db.collection("orders")
@@ -132,6 +138,37 @@ exports.checkPaymentDetection = onDocumentWritten("paymentDetectionsPending/{det
     if (bestMatch && bestMatch.confidence >= threshold) {
         logger.info(`🤖 Robot: Executing Auto-Verify for ${detectionId} -> ${bestMatch.orderId}`);
 
+        // 📋 PREPARE AUDIT LOG DATA
+        const logData = {
+            timestamp: new Date(),
+            orderId: bestMatch.orderId,
+            orderAmount: detection.amount,
+            customerName: detection.senderName || 'Unknown',
+            detectionId: detectionId,
+            detectedAmount: detection.amount,
+            senderName: detection.senderName || 'Unknown',
+            bank: detection.bank || detection.serviceProvider || 'Unknown',
+            rawNotification: detection.rawText || '',
+            confidence: bestMatch.confidence,
+            matchReason: bestMatch.reason || `Auto-match (Confidence: ${bestMatch.confidence}%)`,
+            executedBy: 'system_cloud_function'
+        };
+
+        // 🧪 TEST MODE: Only log, don't execute
+        if (isTestMode) {
+            logger.info("🧪 Robot: TEST MODE - Writing dry-run log but NOT executing verification");
+
+            // Write audit log as dry-run
+            await db.collection("autoVerificationLogs").add({
+                ...logData,
+                status: 'dry-run'
+            });
+
+            logger.info("🧪 Robot: DRY-RUN log written. Order NOT marked as paid.");
+            return; // EXIT WITHOUT EXECUTING
+        }
+
+        // 🚀 PRODUCTION MODE: Execute verification
         try {
             const batch = db.batch();
 
@@ -191,10 +228,23 @@ exports.checkPaymentDetection = onDocumentWritten("paymentDetectionsPending/{det
             // Commit Transaction
             await batch.commit();
 
+            // 📋 Write SUCCESS audit log
+            await db.collection("autoVerificationLogs").add({
+                ...logData,
+                status: 'success'
+            });
+
             logger.info("🤖 Robot: SUCCESS! Payment verified & Order paid.");
 
         } catch (error) {
             logger.error("🤖 Robot: Execution Failed", error);
+
+            // 📋 Write FAILED audit log
+            await db.collection("autoVerificationLogs").add({
+                ...logData,
+                status: 'failed',
+                errorMessage: error.message || 'Unknown error'
+            });
         }
     } else {
         logger.info("🤖 Robot: No matching order found above threshold.");
