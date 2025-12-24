@@ -131,9 +131,9 @@ service cloud.firestore {
       allow create, update, delete: if isOwner(); // Only owner can edit
     }
 
-    // Payment Detection System - Admin/Owner only
+    // Payment Detection System - OWNER ONLY for create (security)
     match /paymentDetectionsPending/{detectionId} {
-      allow create: if isAdminOrOwner();
+      allow create: if isOwner();  // Only owner can create (not admin)
       allow read, update, delete: if isAdminOrOwner();
     }
 

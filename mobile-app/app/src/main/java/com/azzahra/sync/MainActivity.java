@@ -147,8 +147,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.btnRefresh).setOnClickListener(v -> {
-            NotificationListenerService.requestRebind(new ComponentName(this, NotificationService.class));
-            startForegroundService(new Intent(this, ForegroundService.class));
+            triggerStartServices();
             checkPermissions();
             Toast.makeText(this, "System Restored!", Toast.LENGTH_SHORT).show();
         });
@@ -160,8 +159,21 @@ public class MainActivity extends AppCompatActivity {
             @Override public void afterTextChanged(Editable s) {}
         });
         
-        // Auto-rebind on start
+        // AUTO START SERVICES ON OPEN
+        triggerStartServices();
+    }
+
+    private void triggerStartServices() {
+        // 1. Rebind Notification Listener
         NotificationListenerService.requestRebind(new ComponentName(this, NotificationService.class));
+        
+        // 2. Start Foreground Guardian Service
+        Intent fgIntent = new Intent(this, ForegroundService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(fgIntent);
+        } else {
+            startService(fgIntent);
+        }
     }
 
     private void loadAppList() {

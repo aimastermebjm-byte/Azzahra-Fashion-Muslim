@@ -11,6 +11,10 @@ const { logger } = require("firebase-functions");
 initializeApp();
 const db = getFirestore();
 
+// 🔐 SECRET KEY - Must match the key in Android APK
+// Change this to a random secure string and keep it secret!
+const PAYMENT_DETECTION_SECRET_KEY = "AZF-PAYMENT-SECRET-2024-xK9mP2vL8nQ4rT7w";
+
 /**
  * 🤖 Robot Eksekutor (Server Side)
  * Trigger: When a NEW payment detection is created in Firestore.
@@ -29,6 +33,19 @@ exports.checkPaymentDetection = onDocumentWritten("paymentDetectionsPending/{det
     const detectionId = event.params.detectionId;
 
     logger.info(`🤖 Robot: New detection received! ${detectionId}`, { amount: detection.amount });
+
+    // 🔐 SECRET KEY VALIDATION
+    if (detection.secretKey !== PAYMENT_DETECTION_SECRET_KEY) {
+        logger.error(`🚫 Robot: INVALID SECRET KEY! Detection ${detectionId} rejected.`);
+        logger.error(`🚫 Expected key but got: ${detection.secretKey ? 'wrong key' : 'no key'}`);
+
+        // Delete the invalid detection for security
+        await db.collection("paymentDetectionsPending").doc(detectionId).delete();
+        logger.info(`🗑️ Robot: Invalid detection deleted for security.`);
+        return;
+    }
+
+    logger.info(`✅ Robot: Secret key validated for ${detectionId}`);
 
     // 1. Cek User Settings (Apakah Full Auto?)
     // Note: Settings biasanya disimpan di collection 'admin' doc 'settings' atau sejenisnya

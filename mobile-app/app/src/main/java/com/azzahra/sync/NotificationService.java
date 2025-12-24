@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreSettings;
 
 public class NotificationService extends NotificationListenerService {
     private FirebaseFirestore db;
@@ -31,13 +32,23 @@ public class NotificationService extends NotificationListenerService {
     public void onCreate() {
         super.onCreate();
         db = FirebaseFirestore.getInstance();
+        
+        // Memastikan Offline Persistence Aktif (Sangat penting untuk kondisi internet mati)
+        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
+                .setPersistenceEnabled(true)
+                .build();
+        db.setFirestoreSettings(settings);
+        
         prefs = getSharedPreferences("AzzahraPrefs", MODE_PRIVATE);
     }
 
     @Override
     public void onListenerConnected() {
         super.onListenerConnected();
-        updateUILog("✅ SERVICE ACTIVE - UNIQUE CODE ONLY");
+        updateUILog("✅ SERVICE ACTIVE - SCANNING PENDING NOTIFS");
+        
+        // OTOMATIS SCAN: Menyisir notifikasi yang sudah ada saat HP baru nyala atau internet hidup
+        performManualScan();
     }
 
     @Override
@@ -160,9 +171,9 @@ public class NotificationService extends NotificationListenerService {
         d.put("timestamp", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date()));
         d.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
 
-        // Mengirim ke collection paymentDetectionsPending
+        // Pengiriman ke Firestore (Otomatis Sync jika offline)
         db.collection("paymentDetectionsPending").document(docId).set(d)
-            .addOnSuccessListener(aVoid -> updateUILog("☁️ SUCCESS: Cloud Sync OK!"))
+            .addOnSuccessListener(aVoid -> updateUILog("☁️ SUCCESS: Sync OK!"))
             .addOnFailureListener(e -> updateUILog("❌ REJECTED: " + e.getMessage()));
     }
 }
