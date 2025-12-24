@@ -25,11 +25,11 @@ service cloud.firestore {
     }
 
     // Allow read access to transactions for reporting (public read for production)
-    // Allow write only for authenticated users
+    // SECURITY: Anyone can create, only OWNER can edit/delete
     match /transactions/{transactionId} {
       allow read: if true; // Public read for reporting system
-      allow write, create: if request.auth != null;
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null; // Any authenticated user can create
+      allow update, delete: if isOwner(); // Only owner can edit/delete
     }
 
     // Products - Owner full access, Admin limited (no delete, no price/stock edit)
@@ -52,14 +52,14 @@ service cloud.firestore {
       allow delete: if isOwner();
     }
 
-    // Allow read/write access to pending_products (WhatsApp integration)
+    // WhatsApp integration - Admin & Owner only
     match /pending_products/{productId} {
-      allow read, write: if isSignedIn(); // Only authenticated users (dashboard admin/bridge script)
+      allow read, write: if isAdminOrOwner();
     }
 
-    // Allow read/write access to product_drafts (WhatsApp Draft Queue)
+    // WhatsApp Draft Queue - Admin & Owner only
     match /product_drafts/{draftId} {
-      allow read, write: if isSignedIn(); // Only authenticated users
+      allow read, write: if isAdminOrOwner();
     }
 
     // Allow read access to orders for reporting (public read for production)
@@ -111,11 +111,10 @@ service cloud.firestore {
       allow delete: if isOwner(); // Only owner can delete
     }
 
-    // Allow read/write access to global index for authenticated users
+    // Global index for product search - OWNER ONLY can write
     match /globalindex/{productId} {
-      allow read: if true; // Public read for reporting system
-      allow write: if request.auth != null;
-      allow delete: if request.auth != null;
+      allow read: if true; // Public read for search
+      allow write, delete: if isOwner(); // Only owner can modify
     }
 
     // Allow read/write access to user carts for authenticated users
