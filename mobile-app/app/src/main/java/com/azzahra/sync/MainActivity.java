@@ -11,6 +11,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
@@ -24,6 +25,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -51,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private ListView appListView, logListView;
     private EditText searchApps;
     private View statusIndicator;
+    private Button btnGrantNotif, btnBatteryIgnore, btnAppNotif;
     private SharedPreferences prefs;
     private Set<String> selectedPackages;
     private List<AppInfo> allAppInfos = new ArrayList<>();
@@ -92,13 +95,10 @@ public class MainActivity extends AppCompatActivity {
         logListView = findViewById(R.id.logListView);
         searchApps = findViewById(R.id.searchApps);
         statusIndicator = findViewById(R.id.statusIndicator);
-
-        // Load saved history
-        String history = prefs.getString("log_history_list", "");
-        if (!history.isEmpty()) {
-            String[] items = history.split("\\|\\|\\|");
-            for (String item : items) if (!item.trim().isEmpty()) logEntries.add(item);
-        }
+        
+        btnGrantNotif = findViewById(R.id.btnGrantNotif);
+        btnBatteryIgnore = findViewById(R.id.btnBatteryIgnore);
+        btnAppNotif = findViewById(R.id.btnAppNotif);
 
         logAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, logEntries) {
             @NonNull @Override public View getView(int position, @Nullable View v, @NonNull ViewGroup parent) {
@@ -111,7 +111,27 @@ public class MainActivity extends AppCompatActivity {
             new AlertDialog.Builder(this).setTitle("Detail Log").setMessage(logEntries.get(pos)).setPositiveButton("Close", null).show();
         });
 
-        findViewById(R.id.btnGrantNotif).setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)));
+        btnGrantNotif.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)));
+        
+        btnBatteryIgnore.setOnClickListener(v -> {
+            Intent intent = new Intent();
+            intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(Uri.parse("package:" + getPackageName()));
+            startActivity(intent);
+        });
+
+        btnAppNotif.setOnClickListener(v -> {
+            Intent intent = new Intent();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+            } else {
+                intent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
+                intent.putExtra("app_package", getPackageName());
+                intent.putExtra("app_uid", getApplicationInfo().uid);
+            }
+            startActivity(intent);
+        });
 
         findViewById(R.id.btnTestNotif).setOnClickListener(v -> {
             Intent i = new Intent(this, NotificationService.class); 
@@ -139,6 +159,9 @@ public class MainActivity extends AppCompatActivity {
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) { if (appAdapter != null) appAdapter.getFilter().filter(s); }
             @Override public void afterTextChanged(Editable s) {}
         });
+        
+        // Auto-rebind on start
+        NotificationListenerService.requestRebind(new ComponentName(this, NotificationService.class));
     }
 
     private void loadAppList() {
@@ -192,7 +215,7 @@ public class MainActivity extends AppCompatActivity {
     private void sendTestNotification() {
         NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) nm.createNotificationChannel(new NotificationChannel("diag", "Diag", NotificationManager.IMPORTANCE_DEFAULT));
-        nm.notify(77, new NotificationCompat.Builder(this, "diag").setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("Diagnostic Test").setContentText("Pemasukan IDR 10.000").build());
+        nm.notify(77, new NotificationCompat.Builder(this, "diag").setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("Diagnostic Test").setContentText("Pemasukan IDR 10.123").build());
     }
 
     @Override
@@ -207,8 +230,22 @@ public class MainActivity extends AppCompatActivity {
     @Override protected void onPause() { super.onPause(); unregisterReceiver(logReceiver); }
 
     private void checkPermissions() {
-        boolean ok = NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName());
-        statusText.setText(ok ? "Status: ACTIVE" : "Status: OFF (Setup Permissions)");
-        statusIndicator.setBackgroundResource(ok ? R.drawable.circle_green : R.drawable.circle_red);
+        // 1. Listener Permission
+        boolean listenerOk = NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName());
+        statusText.setText(listenerOk ? "Status: ACTIVE" : "Status: OFF (Setup Permissions)");
+        statusIndicator.setBackgroundResource(listenerOk ? R.drawable.circle_green : R.drawable.circle_red);
+        btnGrantNotif.setBackgroundColor(listenerOk ? Color.parseColor("#4CAF50") : Color.parseColor("#F44336"));
+        btnGrantNotif.setText(listenerOk ? "1. Listener: OK" : "1. Setup Listener Permission");
+
+        // 2. Battery Ignore Permission
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        boolean batteryOk = pm.isIgnoringBatteryOptimizations(getPackageName());
+        btnBatteryIgnore.setBackgroundColor(batteryOk ? Color.parseColor("#4CAF50") : Color.parseColor("#F44336"));
+        btnBatteryIgnore.setText(batteryOk ? "2. Battery: UNRESTRICTED" : "2. Disable Battery Optimization");
+
+        // 3. App Notification Permission
+        boolean appNotifOk = NotificationManagerCompat.from(this).areNotificationsEnabled();
+        btnAppNotif.setBackgroundColor(appNotifOk ? Color.parseColor("#4CAF50") : Color.parseColor("#F44336"));
+        btnAppNotif.setText(appNotifOk ? "3. Notifications: ENABLED" : "3. App Notification Permission");
     }
 }

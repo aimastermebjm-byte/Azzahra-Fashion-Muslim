@@ -16,6 +16,8 @@ id appIcon
 id appList
 id appName
 id appPkg
+id btnAppNotif
+id btnBatteryIgnore
 id btnClearLog
 id btnGrantNotif
 id btnLogin

@@ -16,7 +16,16 @@
         <Button android:id="@+id/btnClearLog" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Clear Log" android:textSize="10sp" style="@style/Widget.MaterialComponents.Button.TextButton"/>
     </LinearLayout>
 
-    <Button android:id="@+id/btnGrantNotif" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="1. Setup Permissions" android:layout_marginBottom="4dp"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Required Permissions (Step by Step):"
+        android:textStyle="bold"
+        android:layout_marginBottom="4dp"/>
+
+    <Button android:id="@+id/btnGrantNotif" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="1. Setup Listener Permission" android:layout_marginBottom="4dp"/>
+    <Button android:id="@+id/btnBatteryIgnore" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="2. Disable Battery Optimization" android:layout_marginBottom="4dp"/>
+    <Button android:id="@+id/btnAppNotif" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="3. App Notification Permission" android:layout_marginBottom="8dp"/>
     
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
         <Button android:id="@+id/btnTestNotif" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Diagnostic" android:backgroundTint="#607D8B" android:layout_marginEnd="4dp"/>

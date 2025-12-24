@@ -131,8 +131,8 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                             key={f}
                             onClick={() => setFilter(f)}
                             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${filter === f
-                                    ? 'bg-brand-primary text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                ? 'bg-brand-primary text-white'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                         >
                             {f === 'all' ? 'Semua' : f === 'dry-run' ? 'Test' : f === 'success' ? 'Berhasil' : 'Gagal'}
@@ -204,6 +204,21 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                             {/* Expanded Details */}
                             {expandedId === log.id && (
                                 <div className="px-4 pb-4 border-t bg-gray-50">
+                                    {/* Group Payment Info */}
+                                    {(log as any).paymentGroupId && (
+                                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                            <div className="text-xs text-blue-600 font-medium mb-1">📦 Pembayaran Group</div>
+                                            <div className="text-sm font-semibold text-blue-800">
+                                                Group: {(log as any).paymentGroupId}
+                                            </div>
+                                            {(log as any).orderIds && (
+                                                <div className="text-sm text-blue-700 mt-1">
+                                                    Pesanan: {(log as any).orderIds.join(', ')}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
                                         <div>
                                             <span className="text-gray-500">Pengirim:</span>

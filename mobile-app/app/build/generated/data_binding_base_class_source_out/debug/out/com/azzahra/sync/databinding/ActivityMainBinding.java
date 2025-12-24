@@ -26,6 +26,12 @@ public final class ActivityMainBinding implements ViewBinding {
   public final ListView appList;
 
   @NonNull
+  public final Button btnAppNotif;
+
+  @NonNull
+  public final Button btnBatteryIgnore;
+
+  @NonNull
   public final Button btnClearLog;
 
   @NonNull
@@ -50,11 +56,14 @@ public final class ActivityMainBinding implements ViewBinding {
   public final TextView statusText;
 
   private ActivityMainBinding(@NonNull LinearLayout rootView, @NonNull ListView appList,
-      @NonNull Button btnClearLog, @NonNull Button btnGrantNotif, @NonNull Button btnRefresh,
-      @NonNull Button btnTestNotif, @NonNull ListView logListView, @NonNull EditText searchApps,
-      @NonNull View statusIndicator, @NonNull TextView statusText) {
+      @NonNull Button btnAppNotif, @NonNull Button btnBatteryIgnore, @NonNull Button btnClearLog,
+      @NonNull Button btnGrantNotif, @NonNull Button btnRefresh, @NonNull Button btnTestNotif,
+      @NonNull ListView logListView, @NonNull EditText searchApps, @NonNull View statusIndicator,
+      @NonNull TextView statusText) {
     this.rootView = rootView;
     this.appList = appList;
+    this.btnAppNotif = btnAppNotif;
+    this.btnBatteryIgnore = btnBatteryIgnore;
     this.btnClearLog = btnClearLog;
     this.btnGrantNotif = btnGrantNotif;
     this.btnRefresh = btnRefresh;
@@ -95,6 +104,18 @@ public final class ActivityMainBinding implements ViewBinding {
       id = R.id.appList;
       ListView appList = ViewBindings.findChildViewById(rootView, id);
       if (appList == null) {
+        break missingId;
+      }
+
+      id = R.id.btnAppNotif;
+      Button btnAppNotif = ViewBindings.findChildViewById(rootView, id);
+      if (btnAppNotif == null) {
+        break missingId;
+      }
+
+      id = R.id.btnBatteryIgnore;
+      Button btnBatteryIgnore = ViewBindings.findChildViewById(rootView, id);
+      if (btnBatteryIgnore == null) {
         break missingId;
       }
 
@@ -146,8 +167,9 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
-      return new ActivityMainBinding((LinearLayout) rootView, appList, btnClearLog, btnGrantNotif,
-          btnRefresh, btnTestNotif, logListView, searchApps, statusIndicator, statusText);
+      return new ActivityMainBinding((LinearLayout) rootView, appList, btnAppNotif,
+          btnBatteryIgnore, btnClearLog, btnGrantNotif, btnRefresh, btnTestNotif, logListView,
+          searchApps, statusIndicator, statusText);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

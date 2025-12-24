@@ -139,9 +139,16 @@ exports.checkPaymentDetection = onDocumentWritten("paymentDetectionsPending/{det
         logger.info(`🤖 Robot: Executing Auto-Verify for ${detectionId} -> ${bestMatch.orderId}`);
 
         // 📋 PREPARE AUDIT LOG DATA
+        // For group payments, use actual order IDs, not group ID
+        const isGroup = isGroupMatch && bestMatch.data;
+        const actualOrderIds = isGroup ? (bestMatch.data.orderIds || []) : [bestMatch.orderId];
+
         const logData = {
             timestamp: new Date(),
-            orderId: bestMatch.orderId,
+            // For display: show first order ID or all if group
+            orderId: isGroup ? actualOrderIds.join(', ') : bestMatch.orderId,
+            orderIds: actualOrderIds, // Array of actual order IDs
+            paymentGroupId: isGroup ? bestMatch.orderId : null, // PG ID if group
             orderAmount: detection.amount,
             customerName: detection.senderName || 'Unknown',
             detectionId: detectionId,
@@ -151,7 +158,8 @@ exports.checkPaymentDetection = onDocumentWritten("paymentDetectionsPending/{det
             rawNotification: detection.rawText || '',
             confidence: bestMatch.confidence,
             matchReason: bestMatch.reason || `Auto-match (Confidence: ${bestMatch.confidence}%)`,
-            executedBy: 'system_cloud_function'
+            executedBy: 'system_cloud_function',
+            isGroupPayment: isGroup
         };
 
         // 🧪 TEST MODE: Only log, don't execute
