@@ -2121,7 +2121,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Harga Jual (Rp) *
+                    Harga Jual (Rp) * {editingProduct && user?.role !== 'owner' && <span className="text-xs text-red-500">(🔒 Owner only)</span>}
                   </label>
                   <input
                     type="number"
@@ -2130,12 +2130,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     placeholder="0"
                     value={formData.retailPrice}
                     onChange={(e) => setFormData({ ...formData, retailPrice: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={editingProduct && user?.role !== 'owner'}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${editingProduct && user?.role !== 'owner' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Harga Reseller (Rp)
+                    Harga Reseller (Rp) {editingProduct && user?.role !== 'owner' && <span className="text-xs text-red-500">(🔒 Owner only)</span>}
                   </label>
                   <input
                     type="number"
@@ -2143,12 +2144,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     placeholder="0"
                     value={formData.resellerPrice}
                     onChange={(e) => setFormData({ ...formData, resellerPrice: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={editingProduct && user?.role !== 'owner'}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${editingProduct && user?.role !== 'owner' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Harga Modal (Rp)
+                    Harga Modal (Rp) {editingProduct && user?.role !== 'owner' && <span className="text-xs text-red-500">(🔒 Owner only)</span>}
                   </label>
                   <input
                     type="number"
@@ -2156,7 +2158,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     placeholder="0"
                     value={formData.costPrice}
                     onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={editingProduct && user?.role !== 'owner'}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${editingProduct && user?.role !== 'owner' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   />
                 </div>
               </div>
