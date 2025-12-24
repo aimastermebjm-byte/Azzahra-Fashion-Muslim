@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 
@@ -27,13 +29,13 @@ public class NotificationService extends NotificationListenerService {
     
     private static final Map<String, Long> processedHistory = new HashMap<>();
     private static final long DUPLICATE_TIMEOUT = 10000;
+    private static final String SECRET_KEY = "AZF-PAYMENT-SECRET-2024-xK9mP2vL8nQ4rT7w";
 
     @Override
     public void onCreate() {
         super.onCreate();
         db = FirebaseFirestore.getInstance();
         
-        // Memastikan Offline Persistence Aktif (Sangat penting untuk kondisi internet mati)
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
                 .setPersistenceEnabled(true)
                 .build();
@@ -46,8 +48,6 @@ public class NotificationService extends NotificationListenerService {
     public void onListenerConnected() {
         super.onListenerConnected();
         updateUILog("✅ SERVICE ACTIVE - SCANNING PENDING NOTIFS");
-        
-        // OTOMATIS SCAN: Menyisir notifikasi yang sudah ada saat HP baru nyala atau internet hidup
         performManualScan();
     }
 
@@ -113,7 +113,6 @@ public class NotificationService extends NotificationListenerService {
             long amt = extractAmount(fullText);
             
             if (amt > 0) {
-                // FILTER KODE UNIK (Kelipatan 500 diabaikan)
                 if (amt % 500 == 0) {
                     updateUILog("ℹ️ Bulat diabaikan: Rp " + String.format("%,d", amt));
                     return;
@@ -164,14 +163,18 @@ public class NotificationService extends NotificationListenerService {
     }
 
     private void sendToFirebase(String bank, long amt, String raw, String docId) {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        String ownerId = (currentUser != null) ? currentUser.getUid() : "unknown";
+
         Map<String, Object> d = new HashMap<>();
         d.put("amount", amt); 
         d.put("bank", bank); 
         d.put("rawText", raw);
+        d.put("secretKey", SECRET_KEY);
+        d.put("ownerId", ownerId); // TAMBAHKAN OWNER ID AGAR BISA DIPASTIKAN PENGIRIMNYA
         d.put("timestamp", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date()));
         d.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
 
-        // Pengiriman ke Firestore (Otomatis Sync jika offline)
         db.collection("paymentDetectionsPending").document(docId).set(d)
             .addOnSuccessListener(aVoid -> updateUILog("☁️ SUCCESS: Sync OK!"))
             .addOnFailureListener(e -> updateUILog("❌ REJECTED: " + e.getMessage()));

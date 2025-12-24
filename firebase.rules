@@ -49,11 +49,19 @@ service cloud.firestore {
     }
 
     // Allow read access to orders for reporting (public read for production)
-    // Allow write only for authenticated users
+    // SECURITY: Only OWNER can update order status (including marking as paid)
     match /orders/{orderId} {
       allow read: if true; // Public read for reporting system
-      allow write, create: if request.auth != null;
-      allow read, write, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null; // Any authenticated user can create order
+      
+      // Update: User can update own order, OR owner can update any order
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.userId ||  // User updates own order
+        isOwner()  // Only OWNER can update any order (for status changes)
+      );
+      
+      // Delete: Only owner can delete orders
+      allow delete: if isOwner();
     }
 
     // Allow read/write access to user profiles

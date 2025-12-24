@@ -94,19 +94,19 @@ public class LoginActivity extends AppCompatActivity {
                         DocumentSnapshot doc = task.getResult();
                         if (doc.exists()) {
                             String role = doc.getString("role");
-                            if ("owner".equalsIgnoreCase(role) || "admin".equalsIgnoreCase(role)) {
-                                // Pindah ke MainActivity dengan stabil
+                            // HANYA ROLE OWNER YANG DIIZINKAN (ADMIN DIHAPUS)
+                            if ("owner".equalsIgnoreCase(role)) {
                                 Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                 startActivity(intent);
                                 finish();
                             } else {
                                 mAuth.signOut();
-                                Toast.makeText(this, "Akses Ditolak: Role Anda adalah " + role, Toast.LENGTH_LONG).show();
+                                Toast.makeText(this, "Akses Ditolak: Hanya Owner yang diizinkan masuk", Toast.LENGTH_LONG).show();
                             }
                         } else {
                             mAuth.signOut();
-                            Toast.makeText(this, "Data User tidak ditemukan di DB (UID: " + uid + ")", Toast.LENGTH_LONG).show();
+                            Toast.makeText(this, "Data User tidak ditemukan", Toast.LENGTH_LONG).show();
                         }
                     } else {
                         mAuth.signOut();
