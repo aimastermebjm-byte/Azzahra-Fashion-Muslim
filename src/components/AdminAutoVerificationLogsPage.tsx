@@ -163,131 +163,147 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                         </p>
                     </div>
                 ) : (
-                    filteredLogs.map((log) => (
-                        <div
-                            key={log.id}
-                            className="bg-white rounded-xl border shadow-sm overflow-hidden"
-                        >
-                            {/* Log Header */}
-                            <div
-                                className="p-4 cursor-pointer hover:bg-gray-50"
-                                onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
+                    <>
+                        {/* Back button when viewing expanded card */}
+                        {expandedId && (
+                            <button
+                                onClick={() => setExpandedId(null)}
+                                className="mb-3 flex items-center gap-2 text-sm text-brand-primary font-medium hover:underline"
                             >
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-start space-x-3">
-                                        {getStatusIcon(log.status)}
-                                        <div>
-                                            <div className="font-semibold text-gray-900">
-                                                Order: {log.orderId}
-                                            </div>
-                                            <div className="text-sm text-gray-600">
-                                                Rp {log.detectedAmount.toLocaleString('id-ID')}
-                                            </div>
-                                            <div className="text-xs text-gray-400 mt-1">
-                                                {formatTimestamp(log.timestamp)}
+                                ← Kembali ke Daftar ({filteredLogs.length} log)
+                            </button>
+                        )}
+                        {/* When a card is expanded, only show that card for cleaner UI */}
+                        {(expandedId ? filteredLogs.filter(log => log.id === expandedId) : filteredLogs).map((log) => (
+                            <div
+                                key={log.id}
+                                className={`bg-white rounded-xl border shadow-sm overflow-hidden ${expandedId === log.id ? 'ring-2 ring-brand-primary' : ''}`}
+                            >
+                                {/* Log Header */}
+                                <div
+                                    className="p-4 cursor-pointer hover:bg-gray-50"
+                                    onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
+                                >
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-start space-x-3">
+                                            {getStatusIcon(log.status)}
+                                            <div>
+                                                <div className="font-semibold text-gray-900">
+                                                    Order: {log.orderId}
+                                                </div>
+                                                {/* Customer Name */}
+                                                <div className="text-sm text-brand-primary font-medium">
+                                                    👤 {log.customerName || log.senderName || 'Unknown'}
+                                                </div>
+                                                <div className="text-sm text-gray-600">
+                                                    Rp {log.detectedAmount.toLocaleString('id-ID')}
+                                                </div>
+                                                <div className="text-xs text-gray-400 mt-1">
+                                                    {formatTimestamp(log.timestamp)}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadge(log.status)}`}>
-                                            {log.status === 'dry-run' ? '🧪 Test' : log.status === 'success' ? '✅ OK' : '❌ Fail'}
-                                        </span>
-                                        {expandedId === log.id ? (
-                                            <ChevronUp className="w-5 h-5 text-gray-400" />
-                                        ) : (
-                                            <ChevronDown className="w-5 h-5 text-gray-400" />
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Expanded Details */}
-                            {expandedId === log.id && (
-                                <div className="px-4 pb-4 border-t bg-gray-50">
-                                    {/* Order List for Group Payments */}
-                                    {(log as any).isGroupPayment && ((log as any).orderDetails || (log as any).orderIds) && (
-                                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                            <div className="text-xs text-blue-600 font-medium mb-2">📦 Pesanan dalam Group:</div>
-                                            <div className="space-y-2">
-                                                {/* Use orderDetails if available (new format), fallback to orderIds (old format) */}
-                                                {(log as any).orderDetails ? (
-                                                    (log as any).orderDetails.map((order: { id: string; amount: number; customerName?: string }, index: number) => (
-                                                        <div key={index} className="flex justify-between items-center bg-white rounded px-2 py-1 border border-blue-100">
-                                                            <span className="text-sm font-semibold text-blue-800">• {order.id}</span>
-                                                            <span className="text-sm font-bold text-green-600">
-                                                                Rp {order.amount.toLocaleString('id-ID')}
-                                                            </span>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    (log as any).orderIds.map((orderId: string, index: number) => (
-                                                        <div key={index} className="text-sm font-semibold text-blue-800">
-                                                            • {orderId}
-                                                        </div>
-                                                    ))
-                                                )}
-                                            </div>
-                                            {/* Total Amount */}
-                                            {(log as any).orderDetails && (
-                                                <div className="mt-2 pt-2 border-t border-blue-200 flex justify-between">
-                                                    <span className="text-xs text-blue-600 font-medium">Total:</span>
-                                                    <span className="text-sm font-bold text-blue-800">
-                                                        Rp {(log as any).orderDetails.reduce((sum: number, o: { amount: number }) => sum + o.amount, 0).toLocaleString('id-ID')}
-                                                    </span>
-                                                </div>
+                                        <div className="flex items-center space-x-2">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadge(log.status)}`}>
+                                                {log.status === 'dry-run' ? '🧪 Test' : log.status === 'success' ? '✅ OK' : '❌ Fail'}
+                                            </span>
+                                            {expandedId === log.id ? (
+                                                <ChevronUp className="w-5 h-5 text-gray-400" />
+                                            ) : (
+                                                <ChevronDown className="w-5 h-5 text-gray-400" />
                                             )}
                                         </div>
-                                    )}
-
-                                    <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
-                                        <div>
-                                            <span className="text-gray-500">Pengirim:</span>
-                                            <div className="font-medium">{log.senderName || '-'}</div>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500">Bank:</span>
-                                            <div className="font-medium">{log.bank || '-'}</div>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500">Customer:</span>
-                                            <div className="font-medium">{log.customerName || '-'}</div>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500">Confidence:</span>
-                                            <div className="font-medium">{log.confidence}%</div>
-                                        </div>
                                     </div>
-
-                                    {log.matchReason && (
-                                        <div className="mt-3">
-                                            <span className="text-gray-500 text-sm">Alasan Match:</span>
-                                            <div className="text-sm bg-white rounded-lg p-2 mt-1 border">
-                                                {log.matchReason}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {log.rawNotification && (
-                                        <div className="mt-3">
-                                            <span className="text-gray-500 text-sm">Raw Notification:</span>
-                                            <pre className="text-xs bg-white rounded-lg p-2 mt-1 border overflow-x-auto whitespace-pre-wrap">
-                                                {log.rawNotification}
-                                            </pre>
-                                        </div>
-                                    )}
-
-                                    {log.errorMessage && (
-                                        <div className="mt-3">
-                                            <span className="text-red-500 text-sm">Error:</span>
-                                            <div className="text-sm bg-red-50 text-red-700 rounded-lg p-2 mt-1 border border-red-200">
-                                                {log.errorMessage}
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
-                            )}
-                        </div>
-                    ))
+
+                                {/* Expanded Details */}
+                                {expandedId === log.id && (
+                                    <div className="px-4 pb-4 border-t bg-gray-50">
+                                        {/* Order List for Group Payments */}
+                                        {(log as any).isGroupPayment && ((log as any).orderDetails || (log as any).orderIds) && (
+                                            <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                                <div className="text-xs text-blue-600 font-medium mb-2">📦 Pesanan dalam Group:</div>
+                                                <div className="space-y-2">
+                                                    {/* Use orderDetails if available (new format), fallback to orderIds (old format) */}
+                                                    {(log as any).orderDetails ? (
+                                                        (log as any).orderDetails.map((order: { id: string; amount: number; customerName?: string }, index: number) => (
+                                                            <div key={index} className="flex justify-between items-center bg-white rounded px-2 py-1 border border-blue-100">
+                                                                <span className="text-sm font-semibold text-blue-800">• {order.id}</span>
+                                                                <span className="text-sm font-bold text-green-600">
+                                                                    Rp {order.amount.toLocaleString('id-ID')}
+                                                                </span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        (log as any).orderIds.map((orderId: string, index: number) => (
+                                                            <div key={index} className="text-sm font-semibold text-blue-800">
+                                                                • {orderId}
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                                {/* Total Amount */}
+                                                {(log as any).orderDetails && (
+                                                    <div className="mt-2 pt-2 border-t border-blue-200 flex justify-between">
+                                                        <span className="text-xs text-blue-600 font-medium">Total:</span>
+                                                        <span className="text-sm font-bold text-blue-800">
+                                                            Rp {(log as any).orderDetails.reduce((sum: number, o: { amount: number }) => sum + o.amount, 0).toLocaleString('id-ID')}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
+                                            <div>
+                                                <span className="text-gray-500">Pengirim:</span>
+                                                <div className="font-medium">{log.senderName || '-'}</div>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">Bank:</span>
+                                                <div className="font-medium">{log.bank || '-'}</div>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">Customer:</span>
+                                                <div className="font-medium">{log.customerName || '-'}</div>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">Confidence:</span>
+                                                <div className="font-medium">{log.confidence}%</div>
+                                            </div>
+                                        </div>
+
+                                        {log.matchReason && (
+                                            <div className="mt-3">
+                                                <span className="text-gray-500 text-sm">Alasan Match:</span>
+                                                <div className="text-sm bg-white rounded-lg p-2 mt-1 border">
+                                                    {log.matchReason}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {log.rawNotification && (
+                                            <div className="mt-3">
+                                                <span className="text-gray-500 text-sm">Raw Notification:</span>
+                                                <pre className="text-xs bg-white rounded-lg p-2 mt-1 border overflow-x-auto whitespace-pre-wrap">
+                                                    {log.rawNotification}
+                                                </pre>
+                                            </div>
+                                        )}
+
+                                        {log.errorMessage && (
+                                            <div className="mt-3">
+                                                <span className="text-red-500 text-sm">Error:</span>
+                                                <div className="text-sm bg-red-50 text-red-700 rounded-lg p-2 mt-1 border border-red-200">
+                                                    {log.errorMessage}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </>
                 )}
             </div>
         </div>
