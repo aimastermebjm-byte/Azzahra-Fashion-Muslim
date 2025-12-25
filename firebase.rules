@@ -199,5 +199,13 @@ service cloud.firestore {
       allow create: if isAdminOrOwner(); // System creates logs
       allow update, delete: if isOwner(); // Only owner can modify/delete logs
     }
+
+    // Stock Opname Sessions - Inventory counting sessions
+    // Admin/Owner can read (view sessions), Owner can create/update/delete
+    match /stockOpnameSessions/{sessionId} {
+      allow read: if isAdminOrOwner();
+      allow create, update: if isAdminOrOwner(); // Admin can create, Owner can approve
+      allow delete: if isOwner(); // Only owner can delete sessions
+    }
   }
 }

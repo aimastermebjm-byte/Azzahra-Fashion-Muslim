@@ -26,6 +26,7 @@ import AdminFinancialPage from './components/AdminFinancialPage';
 import AdminMasterDataPage from './components/AdminMasterDataPage';
 import AdminCacheManagement from './components/AdminCacheManagement';
 import AdminPaymentVerificationPage from './components/AdminPaymentVerificationPage';
+import AdminStockOpnamePage from './components/AdminStockOpnamePage';
 import BottomNavigation from './components/BottomNavigation';
 import InstallPrompt from './components/InstallPrompt';
 import PaymentAutoVerifier from './components/PaymentAutoVerifier';
@@ -39,7 +40,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from './utils/firebaseClient';
 import './utils/forceSyncGlobalIndex'; // Load force sync function to window
 
-type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'admin-cache' | 'admin-financials' | 'admin-master' | 'admin-payment-verification' | 'ongkir-test';
+type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'admin-cache' | 'admin-financials' | 'admin-master' | 'admin-payment-verification' | 'admin-stock-opname' | 'ongkir-test';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -483,6 +484,10 @@ function AppContent() {
     setCurrentPage('admin-payment-verification');
   };
 
+  const handleNavigateToAdminStockOpname = () => {
+    setCurrentPage('admin-stock-opname');
+  };
+
 
 
   const renderCurrentPage = () => {
@@ -568,6 +573,7 @@ function AppContent() {
             onNavigateToAdminFinancials={handleNavigateToAdminFinancials}
             onNavigateToAdminMaster={handleNavigateToAdminMaster}
             onNavigateToAddressManagement={() => setCurrentPage('address-management')}
+            onNavigateToAdminStockOpname={handleNavigateToAdminStockOpname}
           />
         );
       case 'address-management':
@@ -605,6 +611,8 @@ function AppContent() {
         return <AdminFinancialPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-master':
         return <AdminMasterDataPage onBack={() => setCurrentPage('account')} user={user} />;
+      case 'admin-stock-opname':
+        return <AdminStockOpnamePage onBack={() => setCurrentPage('account')} user={user} />;
       case 'ongkir-test':
         return <OngkirTestPage onBack={() => setCurrentPage('home')} />;
       case 'product-detail':
