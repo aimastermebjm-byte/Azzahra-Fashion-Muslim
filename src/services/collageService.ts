@@ -128,71 +128,70 @@ export class CollageService {
       boxes.push({ x: wBot * 2, y: hTop, w: wBot, h: hBot });
     }
     else if (count === 6) {
-      // 2 Cols x 3 Rows (To check width)
-      // Cells will be W/2 x H/3
-      const w = W / 2;
-      const h = H / 3;
-      for (let r = 0; r < 3; r++) {
-        for (let c = 0; c < 2; c++) {
-          boxes.push({ x: c * w, y: r * h, w: w, h: h });
-        }
+      // 3 top + 3 bottom
+      const h = H / 2;
+      const w = W / 3;
+      // Row 1: 3 items
+      for (let c = 0; c < 3; c++) {
+        boxes.push({ x: c * w, y: 0, w: w, h: h });
+      }
+      // Row 2: 3 items
+      for (let c = 0; c < 3; c++) {
+        boxes.push({ x: c * w, y: h, w: w, h: h });
       }
     }
     else if (count === 7) {
-      // 1 Top (Header), 6 Grid below (2x3)
-      const hHead = H * 0.4;
-      const hGrid = (H - hHead) / 2; // Remaining 2 rows
-
-      // 1. Header Full
-      boxes.push({ x: 0, y: 0, w: W, h: hHead });
-
-      // 6 items in 2 rows x 3 cols
-      const wGrid = W / 3;
-      for (let r = 0; r < 2; r++) {
-        for (let c = 0; c < 3; c++) {
-          boxes.push({ x: c * wGrid, y: hHead + (r * hGrid), w: wGrid, h: hGrid });
-        }
+      // 3 top + 4 bottom
+      const h = H / 2;
+      const wTop = W / 3;
+      const wBot = W / 4;
+      // Row 1: 3 items
+      for (let c = 0; c < 3; c++) {
+        boxes.push({ x: c * wTop, y: 0, w: wTop, h: h });
+      }
+      // Row 2: 4 items
+      for (let c = 0; c < 4; c++) {
+        boxes.push({ x: c * wBot, y: h, w: wBot, h: h });
       }
     }
     else if (count === 8) {
-      // 2 Cols x 4 Rows
-      const w = W / 2;
-      const h = H / 4;
-      for (let r = 0; r < 4; r++) {
-        for (let c = 0; c < 2; c++) {
-          boxes.push({ x: c * w, y: r * h, w: w, h: h });
-        }
+      // 4 top + 4 bottom
+      const h = H / 2;
+      const w = W / 4;
+      // Row 1: 4 items
+      for (let c = 0; c < 4; c++) {
+        boxes.push({ x: c * w, y: 0, w: w, h: h });
+      }
+      // Row 2: 4 items
+      for (let c = 0; c < 4; c++) {
+        boxes.push({ x: c * w, y: h, w: w, h: h });
       }
     }
     else if (count === 9) {
-      // 3x3 Grid (Perfect)
-      const w = W / 3;
-      const h = H / 3;
-      for (let r = 0; r < 3; r++) {
-        for (let c = 0; c < 3; c++) {
-          boxes.push({ x: c * w, y: r * h, w: w, h: h });
-        }
+      // 4 top + 5 bottom
+      const h = H / 2;
+      const wTop = W / 4;
+      const wBot = W / 5;
+      // Row 1: 4 items
+      for (let c = 0; c < 4; c++) {
+        boxes.push({ x: c * wTop, y: 0, w: wTop, h: h });
+      }
+      // Row 2: 5 items
+      for (let c = 0; c < 5; c++) {
+        boxes.push({ x: c * wBot, y: h, w: wBot, h: h });
       }
     }
     else if (count === 10) {
-      // 2 Top, 4 Mid, 4 Bot
-      const hRow1 = H * 0.4;
-      const hRowOther = (H - hRow1) / 2;
-
-      // Row 1: 2 Items
-      const wRow1 = W / 2;
-      boxes.push({ x: 0, y: 0, w: wRow1, h: hRow1 });
-      boxes.push({ x: wRow1, y: 0, w: wRow1, h: hRow1 });
-
-      // Row 2: 4 Items
-      const wRow2 = W / 4;
-      for (let c = 0; c < 4; c++) {
-        boxes.push({ x: c * wRow2, y: hRow1, w: wRow2, h: hRowOther });
+      // 5 top + 5 bottom
+      const h = H / 2;
+      const w = W / 5;
+      // Row 1: 5 items
+      for (let c = 0; c < 5; c++) {
+        boxes.push({ x: c * w, y: 0, w: w, h: h });
       }
-
-      // Row 3: 4 Items
-      for (let c = 0; c < 4; c++) {
-        boxes.push({ x: c * wRow2, y: hRow1 + hRowOther, w: wRow2, h: hRowOther });
+      // Row 2: 5 items
+      for (let c = 0; c < 5; c++) {
+        boxes.push({ x: c * w, y: h, w: w, h: h });
       }
     }
     else {
@@ -274,8 +273,11 @@ export class CollageService {
     cellW: number,
     cellH: number
   ) {
-    // JUMBO SIZE
-    const labelSize = 200;
+    // DYNAMIC SIZE based on cell dimensions
+    const minDim = Math.min(cellW, cellH);
+    const scaleFactor = minDim / 750; // Base: 750px cell
+    const labelSize = Math.max(60, Math.min(150, Math.round(150 * scaleFactor)));
+    const fontSize = Math.max(40, Math.min(100, Math.round(100 * scaleFactor)));
 
     const centerX = cellX + cellW / 2;
     const centerY = cellY + cellH / 2;
@@ -300,15 +302,15 @@ export class CollageService {
     ctx.shadowOffsetY = 0;
 
     // Text
-    ctx.font = 'bold 130px Arial, sans-serif';
+    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
     ctx.fillStyle = 'white';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, centerX, centerY + 8);
+    ctx.fillText(label, centerX, centerY + (fontSize * 0.06));
 
     // Border
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.lineWidth = 6;
+    ctx.lineWidth = Math.max(3, Math.round(6 * scaleFactor));
     ctx.strokeRect(x, y, labelSize, labelSize);
   }
 

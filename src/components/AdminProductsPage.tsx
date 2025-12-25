@@ -2903,10 +2903,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 images: [collageUrl],
                 image: collageUrl,
                 variants: productData.variants || {
-                  sizes: ['Ukuran 1'],
+                  sizes: [productData.sizeName || 'Ukuran 1'],
                   colors: productData.variantLabels,
                   stock: {
-                    'Ukuran 1': productData.stockPerVariant
+                    [productData.sizeName || 'Ukuran 1']: productData.stockPerVariant
                   }
                 },
                 status: 'po' as 'ready' | 'po',

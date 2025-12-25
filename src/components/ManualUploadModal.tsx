@@ -175,11 +175,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     });
 
     // Settings (Parameter) - with multiple pricing rules like AI Auto Upload
-    const [uploadSettings, setUploadSettings] = useState<UploadSettings>({
+    const [uploadSettings, setUploadSettings] = useState<UploadSettings & { sizeName: string }>({
         stockPerVariant: 5,
         costPrice: 100000,
         resellerDiscount: 15000, // Discount from retail in Rupiah
-        pricingRules: DEFAULT_PRICING_RULES
+        pricingRules: DEFAULT_PRICING_RULES,
+        sizeName: 'Ukuran 1' // Default size name, editable by user
     });
 
     // Show settings panel
@@ -356,7 +357,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             variantCount: images.length,
             collageBlob,
             collageFile: new File([collageBlob], `collage-${Date.now()}.jpg`, { type: 'image/jpeg' }),
-            uploadMode: 'direct'
+            uploadMode: 'direct',
+            sizeName: uploadSettings.sizeName // User-defined size name
         };
 
         onSuccess(productData);
@@ -425,7 +427,17 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     </button>
                                 </div>
 
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-gray-600 mb-1">Nama Ukuran</label>
+                                        <input
+                                            type="text"
+                                            value={uploadSettings.sizeName}
+                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, sizeName: e.target.value || 'Ukuran 1' }))}
+                                            placeholder="All Size, L, XL..."
+                                            className="w-full px-3 py-2 border border-purple-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                                        />
+                                    </div>
                                     <div>
                                         <label className="block text-xs text-gray-600 mb-1">Stok per Varian</label>
                                         <input
