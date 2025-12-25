@@ -182,6 +182,9 @@ exports.checkPaymentDetection = onDocumentWritten("paymentDetectionsPending/{det
             }
         }
 
+        // Get customer name from order data (username), not bank sender
+        const buyerName = orderDetails.length > 0 ? orderDetails[0].customerName : 'Unknown';
+
         const logData = {
             timestamp: new Date(),
             // Header display: PG ID for group, AZ ID for single
@@ -189,10 +192,10 @@ exports.checkPaymentDetection = onDocumentWritten("paymentDetectionsPending/{det
             orderIds: actualOrderIds, // Array of actual AZ order IDs
             orderDetails: orderDetails, // 🆕 Array with id + amount for each order
             orderAmount: detection.amount,
-            customerName: detection.senderName || 'Unknown',
+            customerName: buyerName, // 🔧 FIX: Use buyer username, not bank sender
             detectionId: detectionId,
             detectedAmount: detection.amount,
-            senderName: detection.senderName || 'Unknown',
+            senderName: detection.senderName || 'Unknown', // Keep bank sender separately
             bank: detection.bank || detection.serviceProvider || 'Unknown',
             rawNotification: detection.rawText || '',
             confidence: bestMatch.confidence,
