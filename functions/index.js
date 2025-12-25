@@ -3,7 +3,8 @@
  * "Robot Server" for Auto-Verification 24/7
  */
 
-const { onDocumentWritten } = require("firebase-functions/v2/firestore");
+// 🔧 FIX: Use onDocumentCreated instead of onDocumentWritten to prevent duplicate triggers
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 const { logger } = require("firebase-functions");
@@ -18,14 +19,15 @@ const PAYMENT_DETECTION_SECRET_KEY = "AZF-PAYMENT-SECRET-2024-xK9mP2vL8nQ4rT7w";
 /**
  * 🤖 Robot Eksekutor (Server Side)
  * Trigger: When a NEW payment detection is created in Firestore.
+ * 🔧 FIX: Use onDocumentCreated to trigger ONLY on new documents (not updates)
  */
-exports.checkPaymentDetection = onDocumentWritten("paymentDetectionsPending/{detectionId}", async (event) => {
+exports.checkPaymentDetection = onDocumentCreated("paymentDetectionsPending/{detectionId}", async (event) => {
     // Debug Log
-    logger.info(`🤖 Robot: Triggered! Event Type: ${event.type}`);
+    logger.info(`🤖 Robot: Triggered! New document created.`);
 
-    const snapshot = event.data.after; // For onDocumentWritten, use data.after
+    const snapshot = event.data; // For onDocumentCreated, use data directly
     if (!snapshot) {
-        // Document deleted
+        // Document not found
         return;
     }
 
