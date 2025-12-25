@@ -136,9 +136,9 @@ service cloud.firestore {
       allow write: if isOwner();
     }
 
-    // Financial payment methods - OWNER ONLY
+    // Financial payment methods - Public read (for checkout), Owner only write
     match /financial_payment_methods/{methodId} {
-      allow read: if isOwner();
+      allow read: if true;  // Public read - dibutuhkan untuk checkout & laporan
       allow write: if isOwner();
     }
 
