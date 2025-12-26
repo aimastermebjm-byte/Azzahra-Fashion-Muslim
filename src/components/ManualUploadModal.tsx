@@ -520,6 +520,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             inputMode="numeric"
                                             value={formatThousands(uploadSettings.stockPerVariant)}
                                             onChange={(e) => setUploadSettings(prev => ({ ...prev, stockPerVariant: parseFormattedNumber(e.target.value) }))}
+                                            onFocus={(e) => e.target.select()}
                                             placeholder="Masukkan stok"
                                             className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl text-lg font-semibold focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                         />
@@ -531,6 +532,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             inputMode="numeric"
                                             value={formatThousands(uploadSettings.costPrice)}
                                             onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }))}
+                                            onFocus={(e) => e.target.select()}
                                             placeholder="100.000"
                                             className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl text-lg font-semibold focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                         />
@@ -545,6 +547,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         inputMode="numeric"
                                         value={formatThousands(uploadSettings.retailMarkup)}
                                         onChange={(e) => setUploadSettings(prev => ({ ...prev, retailMarkup: parseFormattedNumber(e.target.value) }))}
+                                        onFocus={(e) => e.target.select()}
                                         placeholder="20.000"
                                         className="w-full px-4 py-3 border-2 border-green-300 rounded-xl text-lg font-semibold text-green-700 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                     />
@@ -602,6 +605,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     newRules[index] = { ...rule, minCost: parseFormattedNumber(e.target.value) };
                                                                     setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
                                                                 }}
+                                                                onFocus={(e) => e.target.select()}
                                                                 className="w-full px-3 py-3 text-base font-semibold border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
                                                             />
                                                         </div>
@@ -616,6 +620,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     newRules[index] = { ...rule, maxCost: parseFormattedNumber(e.target.value) };
                                                                     setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
                                                                 }}
+                                                                onFocus={(e) => e.target.select()}
                                                                 className="w-full px-3 py-3 text-base font-semibold border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
                                                             />
                                                         </div>
@@ -633,6 +638,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                 newRules[index] = { ...rule, retailMarkup: parseFormattedNumber(e.target.value) };
                                                                 setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
                                                             }}
+                                                            onFocus={(e) => e.target.select()}
                                                             className="w-full px-4 py-3 text-lg font-bold border-2 border-blue-400 rounded-xl text-blue-700 bg-blue-50 focus:ring-2 focus:ring-blue-500"
                                                         />
                                                     </div>
@@ -681,6 +687,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                     ...prev,
                                                     reseller: parseFormattedNumber(e.target.value)
                                                 }))}
+                                                onFocus={(e) => e.target.select()}
                                                 className="w-full px-4 py-3 text-lg border-2 border-blue-400 rounded-xl font-bold text-blue-700 focus:ring-2 focus:ring-blue-500"
                                             />
                                         </div>
@@ -694,6 +701,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                     ...prev,
                                                     retail: parseFormattedNumber(e.target.value)
                                                 }))}
+                                                onFocus={(e) => e.target.select()}
                                                 className="w-full px-4 py-3 text-lg border-2 border-green-400 rounded-xl font-bold text-green-700 focus:ring-2 focus:ring-green-500"
                                             />
                                         </div>
@@ -885,7 +893,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             const currentValue = productFormData.stockPerVariant[key];
 
                                                             return (
-                                                                <td key={key} className="px-2 py-2">
+                                                                <td key={key} className="px-1 py-2">
                                                                     <input
                                                                         type="text"
                                                                         inputMode="numeric"
@@ -897,8 +905,9 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                 [key]: e.target.value
                                                                             }
                                                                         }))}
+                                                                        onFocus={(e) => e.target.select()}
                                                                         placeholder="0"
-                                                                        className="w-full px-2 py-2 border border-gray-300 rounded-lg text-center text-base font-semibold focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                                                        className="w-full px-2 py-3 border-2 border-gray-300 rounded-lg text-center text-lg font-bold focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                                                     />
                                                                 </td>
                                                             );
