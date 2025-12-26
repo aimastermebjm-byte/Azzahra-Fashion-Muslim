@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { Plus, Minus, ShoppingCart, Heart, Share2, Star, ArrowLeft } from 'lucide-react';
 import { useToast } from './ToastProvider';
 import { Product } from '../types';
@@ -33,6 +33,79 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const { showToast } = useToast();
+
+  // Zoom state
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const zoomRef = useRef<HTMLDivElement>(null);
+
+  // Zoom handlers
+  const handleZoomOpen = useCallback(() => {
+    setIsZoomOpen(true);
+    setZoomScale(1);
+    setPanPosition({ x: 0, y: 0 });
+  }, []);
+
+  const handleZoomClose = useCallback(() => {
+    setIsZoomOpen(false);
+    setZoomScale(1);
+    setPanPosition({ x: 0, y: 0 });
+  }, []);
+
+  const handleZoomIn = useCallback(() => {
+    setZoomScale(prev => Math.min(prev + 0.5, 3)); // Max 3x zoom
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoomScale(prev => {
+      const newScale = Math.max(prev - 0.5, 1);
+      if (newScale === 1) setPanPosition({ x: 0, y: 0 });
+      return newScale;
+    });
+  }, []);
+
+  // Pan handlers for dragging
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (zoomScale > 1) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - panPosition.x, y: e.clientY - panPosition.y });
+    }
+  }, [zoomScale, panPosition]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isDragging && zoomScale > 1) {
+      setPanPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  }, [isDragging, zoomScale, dragStart]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // Touch handlers for mobile pinch zoom and pan
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1 && zoomScale > 1) {
+      // Single touch pan
+      const touch = e.touches[0];
+      setPanPosition({
+        x: touch.clientX - dragStart.x,
+        y: touch.clientY - dragStart.y
+      });
+    }
+  }, [zoomScale, dragStart]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1 && zoomScale > 1) {
+      const touch = e.touches[0];
+      setDragStart({ x: touch.clientX - panPosition.x, y: touch.clientY - panPosition.y });
+    }
+  }, [zoomScale, panPosition]);
 
   // 🔥 GLOBAL STATE: 0 reads untuk product data
   const { getProductById } = useGlobalProducts();
@@ -265,7 +338,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
       {/* Product Images */}
       <div className="bg-white">
-        <div className="relative aspect-[3/4] bg-gray-100">
+        <div className="relative aspect-[3/4] bg-gray-100 cursor-zoom-in" onClick={handleZoomOpen}>
           <img
             src={currentProduct.images?.[selectedImageIndex] || currentProduct.image || '/placeholder-currentProduct.jpg'}
             alt={currentProduct.name}
@@ -275,6 +348,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               target.src = '/placeholder-currentProduct.jpg';
             }}
           />
+
+          {/* Zoom hint */}
+          <div className="absolute bottom-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+            🔍 Tap untuk zoom
+          </div>
 
           {currentProduct.isFlashSale && (
             <div className="absolute top-4 left-4 rounded-full bg-red-500 px-4 py-1 text-sm font-semibold text-white shadow-lg">
@@ -287,14 +365,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               PRE ORDER
             </div>
           )}
-
-          <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2">
-            {currentProduct.tags?.map((tag: string) => (
-              <span key={tag} className="rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white">
-                {tag}
-              </span>
-            ))}
-          </div>
         </div>
 
         {currentProduct.images && currentProduct.images.length > 1 && (
@@ -416,46 +486,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       {/* Variants Selection */}
       {currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0 && (
         <div className="bg-white mt-2 p-4">
-          {/* Size Selection */}
+          {/* Variant/Color Selection - NOW FIRST */}
           <div className="mb-6">
-            <h3 className="font-semibold text-gray-800 mb-3">Pilih Ukuran</h3>
-            <div className="flex flex-wrap gap-2">
-              {(currentProduct.variants?.sizes || []).map((size) => {
-                // Calculate total stock for this size across all colors
-                const sizeTotalStock = (currentProduct.variants?.colors || []).reduce((total, color) => {
-                  return total + getVariantStock(size, color);
-                }, 0);
-
-                return (
-                  <button
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
-                    disabled={sizeTotalStock === 0}
-                    className={`relative rounded-full px-4 py-2 text-sm font-semibold transition shadow-sm ${selectedSize === size
-                      ? 'bg-brand-primary text-white shadow-brand-card'
-                      : sizeTotalStock === 0
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-700 hover:text-brand-primary border border-gray-200'
-                      }`}
-                  >
-                    <span>{size}</span>
-                    {sizeTotalStock === 0 && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                    )}
-                    {currentProduct.variants.stock && (
-                      <span className="block text-xs font-normal text-gray-500">
-                        {sizeTotalStock > 0 ? `${sizeTotalStock} pcs` : 'Habis'}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Color Selection */}
-          <div className="mb-6">
-            <h3 className="font-semibold text-gray-800 mb-3">Pilih Warna</h3>
+            <h3 className="font-semibold text-gray-800 mb-3">Pilih Varian</h3>
             <div className="flex flex-wrap gap-2">
               {(currentProduct.variants?.colors || []).map((color) => {
                 const colorStock = selectedSize
@@ -483,11 +516,50 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               })}
             </div>
 
-            {selectedSize && (
+            {selectedColor && (
               <p className="mt-2 text-xs text-gray-500">
-                💡 Stok warna ditampilkan untuk ukuran {selectedSize}
+                💡 Stok ukuran ditampilkan untuk varian {selectedColor}
               </p>
             )}
+          </div>
+
+          {/* Size Selection - NOW SECOND */}
+          <div className="mb-6">
+            <h3 className="font-semibold text-gray-800 mb-3">Pilih Ukuran</h3>
+            <div className="flex flex-wrap gap-2">
+              {(currentProduct.variants?.sizes || []).map((size) => {
+                // Calculate stock for this size based on selected color or all colors
+                const sizeTotalStock = selectedColor
+                  ? getVariantStock(size, selectedColor)
+                  : (currentProduct.variants?.colors || []).reduce((total, color) => {
+                    return total + getVariantStock(size, color);
+                  }, 0);
+
+                return (
+                  <button
+                    key={size}
+                    onClick={() => setSelectedSize(size)}
+                    disabled={sizeTotalStock === 0}
+                    className={`relative rounded-full px-4 py-2 text-sm font-semibold transition shadow-sm ${selectedSize === size
+                      ? 'bg-brand-primary text-white shadow-brand-card'
+                      : sizeTotalStock === 0
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 hover:text-brand-primary border border-gray-200'
+                      }`}
+                  >
+                    <span>{size}</span>
+                    {sizeTotalStock === 0 && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                    )}
+                    {currentProduct.variants.stock && (
+                      <span className="block text-xs font-normal text-gray-500">
+                        {sizeTotalStock > 0 ? `${sizeTotalStock} pcs` : 'Habis'}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -584,6 +656,78 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Zoom Modal */}
+      {isZoomOpen && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+          onClick={handleZoomClose}
+        >
+          {/* Close button */}
+          <button
+            onClick={handleZoomClose}
+            className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition"
+          >
+            ✕
+          </button>
+
+          {/* Zoom controls */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 bg-black/50 rounded-full px-4 py-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); handleZoomOut(); }}
+              className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white text-xl hover:bg-white/30 transition"
+              disabled={zoomScale <= 1}
+            >
+              −
+            </button>
+            <span className="text-white flex items-center px-2 min-w-[60px] justify-center">
+              {Math.round(zoomScale * 100)}%
+            </span>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleZoomIn(); }}
+              className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white text-xl hover:bg-white/30 transition"
+              disabled={zoomScale >= 3}
+            >
+              +
+            </button>
+          </div>
+
+          {/* Image with zoom and pan */}
+          <div
+            ref={zoomRef}
+            className="w-full h-full flex items-center justify-center overflow-hidden cursor-move"
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleMouseUp}
+          >
+            <img
+              src={currentProduct.images?.[selectedImageIndex] || currentProduct.image || '/placeholder-currentProduct.jpg'}
+              alt={currentProduct.name}
+              className="max-w-none select-none transition-transform duration-100"
+              style={{
+                transform: `scale(${zoomScale}) translate(${panPosition.x / zoomScale}px, ${panPosition.y / zoomScale}px)`,
+                cursor: zoomScale > 1 ? 'grab' : 'zoom-in'
+              }}
+              draggable={false}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                if (zoomScale < 3) handleZoomIn();
+                else { setZoomScale(1); setPanPosition({ x: 0, y: 0 }); }
+              }}
+            />
+          </div>
+
+          {/* Zoom hint */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/50 px-4 py-2 rounded-full">
+            {zoomScale === 1 ? 'Double tap untuk zoom' : 'Geser untuk melihat detail'}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

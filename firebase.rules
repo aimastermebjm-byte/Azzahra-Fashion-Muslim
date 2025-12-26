@@ -207,5 +207,23 @@ service cloud.firestore {
       allow create, update: if isAdminOrOwner(); // Admin can create, Owner can approve
       allow delete: if isOwner(); // Only owner can delete sessions
     }
+
+    // Vouchers - User-tied discount vouchers
+    // Owner only can create/update/delete, users can read their own vouchers
+    match /vouchers/{voucherId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.assignedTo ||  // User reads their own voucher
+        isOwner()  // Owner can read all
+      );
+      allow create, update, delete: if isOwner(); // Only owner can manage vouchers
+    }
+
+    // Notifications - System notifications to users
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow create: if isOwner(); // Owner creates notifications (vouchers, etc)
+      allow update: if isSignedIn() && request.auth.uid == resource.data.userId; // User marks as read
+      allow delete: if isOwner();
+    }
   }
 }

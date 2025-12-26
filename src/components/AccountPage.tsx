@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Package, Heart, MapPin, LogOut, Crown, Star, User as UserIcon, Shield, Eye, EyeOff, RefreshCw, Award, BarChart3, Users, TrendingUp, Package as PackageIcon, Mail, Phone, Key, Layers, CreditCard, Edit2, Check, X, ClipboardCheck } from 'lucide-react';
+import { User, Package, Heart, MapPin, LogOut, Crown, Star, User as UserIcon, Shield, Eye, EyeOff, RefreshCw, Award, BarChart3, Users, TrendingUp, Package as PackageIcon, Mail, Phone, Key, Layers, CreditCard, Edit2, Check, X, ClipboardCheck, Gift } from 'lucide-react';
 import { usersService } from '../services/usersService';
 import { auth, updateProfile } from '../utils/firebaseClient';
 import { useToast } from './ToastProvider';
@@ -16,6 +16,7 @@ interface AccountPageProps {
   onNavigateToAdminMaster?: () => void;
   onNavigateToAdminPaymentVerification?: () => void;
   onNavigateToAdminStockOpname?: () => void;
+  onNavigateToAdminVoucher?: () => void;
   onNavigateToAddressManagement?: () => void;
 }
 
@@ -31,6 +32,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
   onNavigateToAdminMaster,
   onNavigateToAdminPaymentVerification,
   onNavigateToAdminStockOpname,
+  onNavigateToAdminVoucher,
   onNavigateToAddressManagement
 }) => {
   const { showToast } = useToast();
@@ -713,6 +715,13 @@ const AccountPage: React.FC<AccountPageProps> = ({
                 >
                   <ClipboardCheck className="w-6 h-6 mx-auto mb-2" />
                   <p className="text-sm">Stock Opname</p>
+                </button>
+                <button
+                  onClick={onNavigateToAdminVoucher}
+                  className="p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <Gift className="w-6 h-6 mx-auto mb-2" />
+                  <p className="text-sm">Kelola Voucher</p>
                 </button>
               </div>
 

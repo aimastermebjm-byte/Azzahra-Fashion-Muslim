@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Phone, User, Package, Copy, Loader2, AlertCircle, Plus, Edit2, Trash2 } from 'lucide-react';
+import { MapPin, Phone, User, Package, Copy, Loader2, AlertCircle, Plus, Edit2, Trash2, Gift, Tag } from 'lucide-react';
 import { addressService } from '../services/addressService';
 import AddressForm from './AddressForm';
 import { komerceService, KomerceCostResult } from '../utils/komerceService';
@@ -9,6 +9,8 @@ import EmptyState from './ui/EmptyState';
 import { CardSkeleton, ListSkeleton } from './ui/Skeleton';
 import { useToast } from './ToastProvider';
 import { financialService, PaymentMethod } from '../services/financialService';
+import { voucherService } from '../services/voucherService';
+import { Voucher } from '../types/voucher';
 // ✅ SIMPLIFIED: No longer needed at checkout
 // Unique code generation moved to OrdersPage when customer is ready to pay
 
@@ -31,13 +33,19 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(true);
 
+  // Voucher states
+  const [userVouchers, setUserVouchers] = useState<Voucher[]>([]);
+  const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null);
+  const [voucherCode, setVoucherCode] = useState('');
+  const [voucherLoading, setVoucherLoading] = useState(false);
+
   // Load cart from backend
   const loadCart = async () => {
     try {
       setLoading(true);
       const items = await cartServiceOptimized.getCart();
       setAllCartItems(items || []);
-      } catch (error) {
+    } catch (error) {
       console.error('Failed to load cart for checkout:', error);
       setAllCartItems([]);
     } finally {
@@ -77,7 +85,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setAddressesLoading(true);
       const userAddresses = await addressService.getUserAddresses();
       setAddresses(userAddresses);
-      } catch (error) {
+    } catch (error) {
       console.error('Failed to load addresses:', error);
       setAddresses([]);
     } finally {
@@ -94,7 +102,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     const unsubscribe = addressService.onAddressesChange((userAddresses) => {
       setAddresses(userAddresses);
       setAddressesLoading(false);
-      });
+    });
 
     return () => unsubscribe();
   }, []);
@@ -127,6 +135,20 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     };
   }, []);
 
+  // Load user vouchers
+  useEffect(() => {
+    const loadUserVouchers = async () => {
+      if (!user?.uid) return;
+      try {
+        const vouchers = await voucherService.getVouchersForUser(user.uid);
+        setUserVouchers(vouchers);
+      } catch (error) {
+        console.error('Failed to load vouchers:', error);
+      }
+    };
+    loadUserVouchers();
+  }, [user]);
+
   const addAddress = async (addressData: any) => {
     try {
       const newAddress = await addressService.saveAddress(addressData);
@@ -150,7 +172,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const deleteAddress = async (id: string) => {
     try {
       await addressService.deleteAddress(id);
-      } catch (error) {
+    } catch (error) {
       console.error('Failed to delete address:', error);
       throw error;
     }
@@ -212,7 +234,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     return totalGrams;
   };
 
-  
+
   // Calculate shipping cost using RajaOngkir with localStorage cache PRIORITY - 0 reads for cached results
   const calculateShippingCost = async (
     courierCode: string,
@@ -493,7 +515,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   }, [formData.shippingCourier, selectedAddressId, addresses]); // Single effect for both changes
 
-  
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const newValue = type === 'checkbox'
@@ -608,7 +630,37 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     });
   };
 
-  const handleSubmitOrder = () => {
+  // Apply voucher handlers
+  const handleApplyVoucher = async (voucher?: Voucher) => {
+    const codeToApply = voucher?.code || voucherCode.trim().toUpperCase();
+    if (!codeToApply) {
+      showToast({ message: 'Masukkan kode voucher', type: 'warning' });
+      return;
+    }
+
+    setVoucherLoading(true);
+    try {
+      const result = await voucherService.validateVoucher(codeToApply, user?.uid, getTotalPrice());
+      if (result.valid && result.voucher) {
+        setAppliedVoucher(result.voucher);
+        setVoucherCode('');
+        showToast({ message: `Voucher ${result.voucher.code} berhasil digunakan! Diskon Rp ${result.voucher.discountAmount.toLocaleString('id-ID')}`, type: 'success' });
+      } else {
+        showToast({ message: result.message || 'Voucher tidak valid', type: 'error' });
+      }
+    } catch (error) {
+      showToast({ message: 'Gagal memvalidasi voucher', type: 'error' });
+    } finally {
+      setVoucherLoading(false);
+    }
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    showToast({ message: 'Voucher dihapus', type: 'info' });
+  };
+
+  const handleSubmitOrder = async () => {
     if (!formData.name || !formData.phone || !formData.address) {
       showToast({
         type: 'warning',
@@ -681,6 +733,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       paymentMethodName: selectedPaymentMethod.name,
       totalAmount: totalPrice,
       shippingCost: shippingFee,
+      voucherCode: appliedVoucher?.code || null,
+      voucherDiscount: voucherDiscount,
       finalTotal: finalTotal
       // ✅ SIMPLIFIED: No unique code fields
       // These will be added when customer generates payment in OrdersPage
@@ -688,6 +742,15 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     // Create order and get order ID (pass cartItems to eliminate duplicate read)
     const newOrderId = clearCart(orderData, cartItems);
+
+    // Mark voucher as used AFTER order is created
+    if (appliedVoucher) {
+      try {
+        await voucherService.useVoucher(appliedVoucher.id, newOrderId);
+      } catch (error) {
+        console.error('Failed to mark voucher as used:', error);
+      }
+    }
 
     // Show success message with instructions for payment
     showToast({
@@ -702,7 +765,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   const totalPrice = getTotalPrice();
   const shippingFee = formData.shippingCost || shippingCost || 0;
-  const finalTotal = totalPrice + shippingFee;
+  const voucherDiscount = appliedVoucher?.discountAmount || 0;
+  const finalTotal = Math.max(0, totalPrice + shippingFee - voucherDiscount);
   const cartCount = cartItems?.length || 0;
 
   // ✅ SIMPLIFIED: Just show finalTotal (no unique code)
@@ -728,433 +792,522 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
             <CardSkeleton lines={4} />
           </div>
         ) : (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)]">
-          <div className="space-y-6">
-        {/* Address Input */}
-        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-900">Alamat Pengiriman</h3>
-            <button
-              onClick={() => {
-                setEditingAddress(null);
-                setShowAddressModal(true);
-              }}
-              className="inline-flex items-center gap-2 rounded-full border border-brand-primary/30 px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/5"
-            >
-              <Plus className="h-4 w-4" />
-              Tambah Alamat
-            </button>
-          </div>
-
-          {/* Address Selection */}
-          {addressesLoading ? (
-            <ListSkeleton items={3} />
-          ) : addresses.length > 0 ? (
-            <div className="mb-4 space-y-2">
-              {addresses.map((address) => (
-                <label
-                  key={address.id}
-                  className={`block rounded-2xl border p-3 transition ${
-                    selectedAddressId === address.id
-                      ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
-                      : 'border-slate-200 hover:border-brand-primary/40'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="savedAddress"
-                          checked={selectedAddressId === address.id}
-                          onChange={() => {
-                            setSelectedAddressId(address.id);
-                            setFormData(prev => ({
-                              ...prev,
-                              name: formData.isDropship ? prev.name : address.name,
-                              phone: formData.isDropship ? prev.phone : address.phone,
-                              address: address.fullAddress,
-                              provinceId: address.provinceId || '',
-                              cityId: address.cityId || ''
-                            }));
-                          }}
-                          className="h-4 w-4 text-brand-primary"
-                        />
-                        <span className="text-sm font-semibold text-slate-900">{address.name}</span>
-                        {address.isDefault && (
-                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
-                            Utama
-                          </span>
-                        )}
-                      </div>
-                      <p className="ml-6 text-xs text-slate-500">{address.phone}</p>
-                      <p className="ml-6 text-sm text-slate-600">{address.fullAddress}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingAddress(address);
-                          setShowAddressModal(true);
-                        }}
-                        className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:text-brand-primary"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      {addresses.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteAddress(address.id);
-                          }}
-                          className="rounded-full border border-slate-200 p-2 text-rose-500 transition hover:bg-rose-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </label>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              title="Belum ada alamat"
-              description="Tambahkan alamat pengiriman untuk mempercepat proses checkout."
-              action={(
-                <button onClick={() => setShowAddressModal(true)} className="btn-brand">
-                  Tambah Alamat Baru
-                </button>
-              )}
-            />
-          )}
-
-          {/* Manual shipping cost input for non-automatic couriers */}
-          {!supportsAutomatic && (
-            <div className="mt-4 border-t border-dashed border-slate-200 pt-4">
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Biaya Ongkos Kirim (Rp)
-              </label>
-              <input
-                type="number"
-                name="shippingCost"
-                value={formData.shippingCost || ''}
-                onChange={handleInputChange}
-                min="0"
-                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                placeholder="Masukkan biaya ongkos kirim"
-              />
-              <p className="mt-1 text-xs text-slate-500">
-                * Masukkan manual biaya ongkos kirim untuk kurir lokal
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Order Items */}
-        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-900">Produk Pesanan</h3>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{cartCount} produk</span>
-          </div>
-          <div className="mt-4 space-y-3">
-            {cartCount === 0 ? (
-              <EmptyState
-                compact
-                title="Belum ada produk"
-                description="Silakan kembali ke katalog untuk menambahkan produk ke keranjang."
-                action={(
-                  <button onClick={onBack} className="btn-brand">
-                    Kembali Belanja
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)]">
+            <div className="space-y-6">
+              {/* Address Input */}
+              <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-slate-900">Alamat Pengiriman</h3>
+                  <button
+                    onClick={() => {
+                      setEditingAddress(null);
+                      setShowAddressModal(true);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full border border-brand-primary/30 px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/5"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Tambah Alamat
                   </button>
-                )}
-              />
-            ) : (
-            cartItems.map((item, index) => {
-              // Safety checks
-              if (!item) return null;
-
-              const itemName = item.name || 'Product';
-              const itemImage = item.image || `data:image/svg+xml;base64,${btoa('<svg width="80" height="80" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" fill="#f3f4f6"/><text x="40" y="45" text-anchor="middle" fill="#6b7280" font-size="12" font-family="Arial">Product</text></svg>')}`;
-              const itemPrice = item.price || 0;
-              const itemQuantity = item.quantity || 1;
-              const variant = item.variant || {};
-              const productId = item.productId || item.id || `product-${index}`;
-
-              return (
-                <div key={`${productId}-${variant.size || 'default'}-${variant.color || 'default'}`} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white/70 p-3">
-                  <img
-                    src={itemImage}
-                    alt={itemName}
-                    className="h-16 w-16 rounded-lg object-cover shadow-sm"
-                  />
-                  <div className="flex-1">
-                    <h4 className="text-sm font-semibold text-slate-900">{itemName}</h4>
-                    {variant && (variant.size || variant.color) && (
-                      <p className="text-xs text-slate-500">
-                        {variant.size || 'Standard'} · {variant.color || 'Default'}
-                      </p>
-                    )}
-                    <div className="mt-1 flex items-center justify-between">
-                      <span className="text-sm font-semibold text-brand-primary">
-                        Rp {itemPrice.toLocaleString('id-ID')}
-                      </span>
-                      <span className="text-xs text-slate-500">x{itemQuantity}</span>
-                    </div>
-                  </div>
                 </div>
-              );
-            }).filter(Boolean)
-            )}
-          </div>
-        </div>
 
-        {/* Courier Selection */}
-        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-900 mb-3">Pilih Kurir Pengiriman</h3>
-          <div className="space-y-3">
-            <div>
-              <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                <Package className="h-4 w-4 text-brand-primary" />
-                Kurir
-              </label>
-              <select
-                name="shippingCourier"
-                value={formData.shippingCourier}
-                onChange={handleInputChange}
-                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-              >
-                {shippingOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.name} {option.code ? '(✓ Otomatis)' : '(Manual)'}
-                  </option>
-                ))}
-              </select>
-
-              {/* Courier Info */}
-              <div className="mt-2 text-xs text-slate-500">
-                {supportsAutomatic ? (
-                  <div className="text-green-600">
-                    ✓ Otomatis via RajaOngkir dari Banjarmasin
+                {/* Address Selection */}
+                {addressesLoading ? (
+                  <ListSkeleton items={3} />
+                ) : addresses.length > 0 ? (
+                  <div className="mb-4 space-y-2">
+                    {addresses.map((address) => (
+                      <label
+                        key={address.id}
+                        className={`block rounded-2xl border p-3 transition ${selectedAddressId === address.id
+                          ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
+                          : 'border-slate-200 hover:border-brand-primary/40'
+                          }`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name="savedAddress"
+                                checked={selectedAddressId === address.id}
+                                onChange={() => {
+                                  setSelectedAddressId(address.id);
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    name: formData.isDropship ? prev.name : address.name,
+                                    phone: formData.isDropship ? prev.phone : address.phone,
+                                    address: address.fullAddress,
+                                    provinceId: address.provinceId || '',
+                                    cityId: address.cityId || ''
+                                  }));
+                                }}
+                                className="h-4 w-4 text-brand-primary"
+                              />
+                              <span className="text-sm font-semibold text-slate-900">{address.name}</span>
+                              {address.isDefault && (
+                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
+                                  Utama
+                                </span>
+                              )}
+                            </div>
+                            <p className="ml-6 text-xs text-slate-500">{address.phone}</p>
+                            <p className="ml-6 text-sm text-slate-600">{address.fullAddress}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingAddress(address);
+                                setShowAddressModal(true);
+                              }}
+                              className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:text-brand-primary"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            {addresses.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteAddress(address.id);
+                                }}
+                                className="rounded-full border border-slate-200 p-2 text-rose-500 transition hover:bg-rose-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
                   </div>
                 ) : (
-                  <div className="text-amber-600">
-                    ℹ️ Kurir lokal - biaya diinput manual
+                  <EmptyState
+                    title="Belum ada alamat"
+                    description="Tambahkan alamat pengiriman untuk mempercepat proses checkout."
+                    action={(
+                      <button onClick={() => setShowAddressModal(true)} className="btn-brand">
+                        Tambah Alamat Baru
+                      </button>
+                    )}
+                  />
+                )}
+
+                {/* Manual shipping cost input for non-automatic couriers */}
+                {!supportsAutomatic && (
+                  <div className="mt-4 border-t border-dashed border-slate-200 pt-4">
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      Biaya Ongkos Kirim (Rp)
+                    </label>
+                    <input
+                      type="number"
+                      name="shippingCost"
+                      value={formData.shippingCost || ''}
+                      onChange={handleInputChange}
+                      min="0"
+                      className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                      placeholder="Masukkan biaya ongkos kirim"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">
+                      * Masukkan manual biaya ongkos kirim untuk kurir lokal
+                    </p>
                   </div>
                 )}
               </div>
 
-              {/* Loading indicator */}
-              {loadingShipping && (
-                <div className="mt-2 flex items-center text-sm text-brand-primary">
-                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                  Menghitung ongkir...
+              {/* Order Items */}
+              <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-slate-900">Produk Pesanan</h3>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{cartCount} produk</span>
                 </div>
-              )}
+                <div className="mt-4 space-y-3">
+                  {cartCount === 0 ? (
+                    <EmptyState
+                      compact
+                      title="Belum ada produk"
+                      description="Silakan kembali ke katalog untuk menambahkan produk ke keranjang."
+                      action={(
+                        <button onClick={onBack} className="btn-brand">
+                          Kembali Belanja
+                        </button>
+                      )}
+                    />
+                  ) : (
+                    cartItems.map((item, index) => {
+                      // Safety checks
+                      if (!item) return null;
 
-              {/* Error message */}
-              {shippingError && (
-                <div className="mt-2 flex items-center text-sm text-red-600">
-                  <AlertCircle className="mr-1 h-4 w-4" />
-                  {shippingError}
+                      const itemName = item.name || 'Product';
+                      const itemImage = item.image || `data:image/svg+xml;base64,${btoa('<svg width="80" height="80" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" fill="#f3f4f6"/><text x="40" y="45" text-anchor="middle" fill="#6b7280" font-size="12" font-family="Arial">Product</text></svg>')}`;
+                      const itemPrice = item.price || 0;
+                      const itemQuantity = item.quantity || 1;
+                      const variant = item.variant || {};
+                      const productId = item.productId || item.id || `product-${index}`;
+
+                      return (
+                        <div key={`${productId}-${variant.size || 'default'}-${variant.color || 'default'}`} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white/70 p-3">
+                          <img
+                            src={itemImage}
+                            alt={itemName}
+                            className="h-16 w-16 rounded-lg object-cover shadow-sm"
+                          />
+                          <div className="flex-1">
+                            <h4 className="text-sm font-semibold text-slate-900">{itemName}</h4>
+                            {variant && (variant.size || variant.color) && (
+                              <p className="text-xs text-slate-500">
+                                {variant.size || 'Standard'} · {variant.color || 'Default'}
+                              </p>
+                            )}
+                            <div className="mt-1 flex items-center justify-between">
+                              <span className="text-sm font-semibold text-brand-primary">
+                                Rp {itemPrice.toLocaleString('id-ID')}
+                              </span>
+                              <span className="text-xs text-slate-500">x{itemQuantity}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }).filter(Boolean)
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
 
-            {/* Shipping Cost Display */}
-            {shippingFee > 0 && (
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                {/* Service Selection Dropdown */}
-                {ongkirResults.length > 1 && (
-                  <div className="mb-3">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Pilih Layanan:
+              {/* Courier Selection */}
+              <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-900 mb-3">Pilih Kurir Pengiriman</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                      <Package className="h-4 w-4 text-brand-primary" />
+                      Kurir
                     </label>
                     <select
-                      value={selectedService?.service || ''}
-                      onChange={(e) => {
-                        const selected = ongkirResults.find(result => result.service === e.target.value);
-                        if (selected) {
-                          setSelectedService(selected);
-                          setFormData(prev => ({
-                            ...prev,
-                            shippingCost: selected.cost,
-                            shippingService: selected.service,
-                            shippingETD: selected.etd
-                          }));
-                        }
-                      }}
-                      className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                      name="shippingCourier"
+                      value={formData.shippingCourier}
+                      onChange={handleInputChange}
+                      className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
                     >
-                      {ongkirResults.map((service, index) => (
-                        <option key={index} value={service.service}>
-                          {service.service} - Rp {service.cost.toLocaleString('id-ID')} ({service.etd})
+                      {shippingOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.name} {option.code ? '(✓ Otomatis)' : '(Manual)'}
                         </option>
                       ))}
                     </select>
-                  </div>
-                )}
 
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-slate-700">Biaya Ongkir:</span>
-                  <span className="text-sm font-semibold text-brand-primary">
-                    Rp {shippingFee.toLocaleString('id-ID')}
-                  </span>
-                </div>
-                {formData.shippingService && (
-                  <p className="mt-1 text-xs text-slate-500">
-                    Service: {formData.shippingService} | Estimasi: {formData.shippingETD}
-                    {ongkirResults.length > 1 && (
-                      <span className="ml-2 text-brand-primary">
-                        ({ongkirResults.length} layanan tersedia)
-                      </span>
+                    {/* Courier Info */}
+                    <div className="mt-2 text-xs text-slate-500">
+                      {supportsAutomatic ? (
+                        <div className="text-green-600">
+                          ✓ Otomatis via RajaOngkir dari Banjarmasin
+                        </div>
+                      ) : (
+                        <div className="text-amber-600">
+                          ℹ️ Kurir lokal - biaya diinput manual
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Loading indicator */}
+                    {loadingShipping && (
+                      <div className="mt-2 flex items-center text-sm text-brand-primary">
+                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                        Menghitung ongkir...
+                      </div>
                     )}
-                  </p>
+
+                    {/* Error message */}
+                    {shippingError && (
+                      <div className="mt-2 flex items-center text-sm text-red-600">
+                        <AlertCircle className="mr-1 h-4 w-4" />
+                        {shippingError}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Shipping Cost Display */}
+                  {shippingFee > 0 && (
+                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                      {/* Service Selection Dropdown */}
+                      {ongkirResults.length > 1 && (
+                        <div className="mb-3">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Pilih Layanan:
+                          </label>
+                          <select
+                            value={selectedService?.service || ''}
+                            onChange={(e) => {
+                              const selected = ongkirResults.find(result => result.service === e.target.value);
+                              if (selected) {
+                                setSelectedService(selected);
+                                setFormData(prev => ({
+                                  ...prev,
+                                  shippingCost: selected.cost,
+                                  shippingService: selected.service,
+                                  shippingETD: selected.etd
+                                }));
+                              }
+                            }}
+                            className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                          >
+                            {ongkirResults.map((service, index) => (
+                              <option key={index} value={service.service}>
+                                {service.service} - Rp {service.cost.toLocaleString('id-ID')} ({service.etd})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-slate-700">Biaya Ongkir:</span>
+                        <span className="text-sm font-semibold text-brand-primary">
+                          Rp {shippingFee.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      {formData.shippingService && (
+                        <p className="mt-1 text-xs text-slate-500">
+                          Service: {formData.shippingService} | Estimasi: {formData.shippingETD}
+                          {ongkirResults.length > 1 && (
+                            <span className="ml-2 text-brand-primary">
+                              ({ongkirResults.length} layanan tersedia)
+                            </span>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Payment Method */}
+              <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-900 mb-3">Metode Pembayaran</h3>
+                {paymentMethodsLoading ? (
+                  <div className="space-y-2">
+                    {[...Array(2)].map((_, idx) => (
+                      <div key={idx} className="h-12 rounded-xl bg-slate-100 animate-pulse" />
+                    ))}
+                  </div>
+                ) : paymentMethods.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-4 text-sm text-amber-700">
+                    Metode pembayaran belum dikonfigurasi. Silakan hubungi admin agar dapat melanjutkan checkout.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {paymentMethods.map((method) => (
+                      <label key={method.id} className={`flex items-center gap-3 rounded-xl border px-3 py-2 transition ${formData.paymentMethodId === method.id ? 'border-brand-primary bg-brand-primary/5' : 'border-slate-200 bg-white'}`}>
+                        <input
+                          type="radio"
+                          name="paymentMethodId"
+                          value={method.id}
+                          checked={formData.paymentMethodId === method.id}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 border-slate-300 text-brand-primary focus:ring-brand-primary"
+                        />
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">{method.name}</p>
+                          <p className="text-xs text-slate-500">Metode pembayaran toko</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Payment Method */}
-        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-900 mb-3">Metode Pembayaran</h3>
-          {paymentMethodsLoading ? (
-            <div className="space-y-2">
-              {[...Array(2)].map((_, idx) => (
-                <div key={idx} className="h-12 rounded-xl bg-slate-100 animate-pulse" />
-              ))}
-            </div>
-          ) : paymentMethods.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-4 text-sm text-amber-700">
-              Metode pembayaran belum dikonfigurasi. Silakan hubungi admin agar dapat melanjutkan checkout.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {paymentMethods.map((method) => (
-                <label key={method.id} className={`flex items-center gap-3 rounded-xl border px-3 py-2 transition ${formData.paymentMethodId === method.id ? 'border-brand-primary bg-brand-primary/5' : 'border-slate-200 bg-white'}`}>
-                  <input
-                    type="radio"
-                    name="paymentMethodId"
-                    value={method.id}
-                    checked={formData.paymentMethodId === method.id}
+              {/* ✅ SIMPLIFIED: No verification mode selection at checkout */}
+              {/* Customers will choose auto/manual when ready to pay in OrdersPage */}
+
+              {/* Voucher Section */}
+              <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Gift className="w-5 h-5 text-purple-600" />
+                  Voucher
+                </h3>
+
+                {appliedVoucher ? (
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-mono font-bold text-purple-700">{appliedVoucher.code}</p>
+                        <p className="text-sm text-green-600 font-semibold">
+                          -Rp {appliedVoucher.discountAmount.toLocaleString('id-ID')}
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleRemoveVoucher}
+                        className="text-sm text-red-500 hover:text-red-700"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Voucher code input */}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                        placeholder="Masukkan kode voucher..."
+                        className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono uppercase"
+                      />
+                      <button
+                        onClick={() => handleApplyVoucher()}
+                        disabled={voucherLoading || !voucherCode}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+                      >
+                        {voucherLoading ? '...' : 'Pakai'}
+                      </button>
+                    </div>
+
+                    {/* Available vouchers */}
+                    {userVouchers.length > 0 && (
+                      <div className="pt-2 border-t border-slate-100">
+                        <p className="text-xs text-slate-500 mb-2">Voucher tersedia:</p>
+                        <div className="space-y-2">
+                          {userVouchers.map(v => (
+                            <button
+                              key={v.id}
+                              onClick={() => handleApplyVoucher(v)}
+                              disabled={getTotalPrice() < v.minPurchase}
+                              className={`w-full text-left p-3 rounded-lg border transition ${getTotalPrice() >= v.minPurchase
+                                ? 'border-purple-200 bg-purple-50 hover:bg-purple-100'
+                                : 'border-slate-200 bg-slate-50 opacity-60'
+                                }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-mono text-sm font-bold text-purple-700">{v.code}</p>
+                                  <p className="text-xs text-green-600">Diskon Rp {v.discountAmount.toLocaleString('id-ID')}</p>
+                                  <p className="text-xs text-slate-500">Min. Rp {v.minPurchase.toLocaleString('id-ID')}</p>
+                                </div>
+                                <Tag className="w-4 h-4 text-purple-400" />
+                              </div>
+                              {getTotalPrice() < v.minPurchase && (
+                                <p className="text-xs text-amber-600 mt-1">
+                                  Belanja kurang Rp {(v.minPurchase - getTotalPrice()).toLocaleString('id-ID')} lagi
+                                </p>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Additional Options */}
+              <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-900 mb-3">Opsi Tambahan</h3>
+
+                {/* Notes */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Catatan Pesanan
+                  </label>
+                  <textarea
+                    name="notes"
+                    value={formData.notes}
                     onChange={handleInputChange}
-                    className="h-4 w-4 border-slate-300 text-brand-primary focus:ring-brand-primary"
+                    rows={3}
+                    className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    placeholder="Tambahkan catatan untuk pesanan (opsional)"
                   />
+                </div>
+
+                {/* Dropship Option */}
+                <div className="border-t pt-4">
+                  <label className="flex items-center space-x-3 mb-4">
+                    <input
+                      type="checkbox"
+                      name="isDropship"
+                      checked={formData.isDropship}
+                      onChange={handleInputChange}
+                      className="h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
+                    />
+                    <span className="text-sm font-medium text-slate-700">Kirim sebagai dropship</span>
+                  </label>
+
+                  {/* Dropship Fields */}
+                  {formData.isDropship && (
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        name="dropshipName"
+                        value={formData.dropshipName}
+                        onChange={handleInputChange}
+                        className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                        placeholder="Nama pengirim dropship"
+                      />
+                      <input
+                        type="tel"
+                        name="dropshipPhone"
+                        value={formData.dropshipPhone}
+                        onChange={handleInputChange}
+                        className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                        placeholder="Nomor telepon pengirim"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+            <div className="space-y-6">
+              {/* Order Summary - Desktop Sidebar */}
+              <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-lg lg:sticky lg:top-4">
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">{method.name}</p>
-                    <p className="text-xs text-slate-500">Metode pembayaran toko</p>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Total Pembayaran</p>
+                    <p className="text-2xl font-bold text-brand-primary">
+                      Rp {displayTotal.toLocaleString('id-ID')}
+                    </p>
+                    {/* ✅ SIMPLIFIED: No unique code display */}
                   </div>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ✅ SIMPLIFIED: No verification mode selection at checkout */}
-        {/* Customers will choose auto/manual when ready to pay in OrdersPage */}
-
-        {/* Additional Options */}
-        <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-900 mb-3">Opsi Tambahan</h3>
-
-          {/* Notes */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Catatan Pesanan
-            </label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleInputChange}
-              rows={3}
-              className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-              placeholder="Tambahkan catatan untuk pesanan (opsional)"
-            />
-          </div>
-
-          {/* Dropship Option */}
-          <div className="border-t pt-4">
-            <label className="flex items-center space-x-3 mb-4">
-              <input
-                type="checkbox"
-                name="isDropship"
-                checked={formData.isDropship}
-                onChange={handleInputChange}
-                className="h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
-              />
-              <span className="text-sm font-medium text-slate-700">Kirim sebagai dropship</span>
-            </label>
-
-            {/* Dropship Fields */}
-            {formData.isDropship && (
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  name="dropshipName"
-                  value={formData.dropshipName}
-                  onChange={handleInputChange}
-                  className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                  placeholder="Nama pengirim dropship"
-                />
-                <input
-                  type="tel"
-                  name="dropshipPhone"
-                  value={formData.dropshipPhone}
-                  onChange={handleInputChange}
-                  className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                  placeholder="Nomor telepon pengirim"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-          </div>
-          <div className="space-y-6">
-            {/* Order Summary - Desktop Sidebar */}
-            <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-lg lg:sticky lg:top-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Total Pembayaran</p>
-                  <p className="text-2xl font-bold text-brand-primary">
-                    Rp {displayTotal.toLocaleString('id-ID')}
-                  </p>
-                  {/* ✅ SIMPLIFIED: No unique code display */}
-                </div>
-                <div className="rounded-full bg-brand-primary/10 px-3 py-1 text-xs font-semibold text-brand-primary">
-                  {selectedPaymentMethod?.name || 'Metode belum dipilih'}
-                </div>
-              </div>
-              <div className="mt-4 space-y-3 text-sm">
-                <div className="flex items-center justify-between text-slate-600">
-                  <span>Subtotal Produk</span>
-                  <span className="font-semibold text-slate-900">Rp {totalPrice.toLocaleString('id-ID')}</span>
-                </div>
-                <div className="flex items-center justify-between text-slate-600">
-                  <span>Biaya Ongkir</span>
-                  <span className="font-semibold text-slate-900">Rp {shippingFee.toLocaleString('id-ID')}</span>
-                </div>
-                {formData.shippingService && (
-                  <div className="text-xs text-slate-500">
-                    Kurir: {formData.shippingCourier?.toUpperCase()} · {formData.shippingService} ({formData.shippingETD || 'estimasi cepat'})
+                  <div className="rounded-full bg-brand-primary/10 px-3 py-1 text-xs font-semibold text-brand-primary">
+                    {selectedPaymentMethod?.name || 'Metode belum dipilih'}
                   </div>
-                )}
+                </div>
+                <div className="mt-4 space-y-3 text-sm">
+                  <div className="flex items-center justify-between text-slate-600">
+                    <span>Subtotal Produk</span>
+                    <span className="font-semibold text-slate-900">Rp {totalPrice.toLocaleString('id-ID')}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-600">
+                    <span>Biaya Ongkir</span>
+                    <span className="font-semibold text-slate-900">Rp {shippingFee.toLocaleString('id-ID')}</span>
+                  </div>
+                  {appliedVoucher && (
+                    <div className="flex items-center justify-between text-green-600">
+                      <span className="flex items-center gap-1">
+                        <Gift className="w-3 h-3" />
+                        Diskon Voucher ({appliedVoucher.code})
+                      </span>
+                      <span className="font-semibold">-Rp {voucherDiscount.toLocaleString('id-ID')}</span>
+                    </div>
+                  )}
+                  {formData.shippingService && (
+                    <div className="text-xs text-slate-500">
+                      Kurir: {formData.shippingCourier?.toUpperCase()} · {formData.shippingService} ({formData.shippingETD || 'estimasi cepat'})
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-dashed border-brand-primary/30 bg-brand-primary/5 p-4 text-sm text-slate-600">
+                <h4 className="text-base font-semibold text-brand-primary">Tips Checkout</h4>
+                <ul className="mt-3 space-y-2 list-disc pl-4">
+                  <li>Pastikan alamat lengkap beserta RT/RW dan patokan lokasi.</li>
+                  <li>Untuk dropship, isi nama & nomor pengirim agar tercetak di resi.</li>
+                  <li>Upload bukti transfer di menu Pesanan setelah pembayaran.</li>
+                </ul>
               </div>
             </div>
-
-            <div className="rounded-2xl border border-dashed border-brand-primary/30 bg-brand-primary/5 p-4 text-sm text-slate-600">
-              <h4 className="text-base font-semibold text-brand-primary">Tips Checkout</h4>
-              <ul className="mt-3 space-y-2 list-disc pl-4">
-                <li>Pastikan alamat lengkap beserta RT/RW dan patokan lokasi.</li>
-                <li>Untuk dropship, isi nama & nomor pengirim agar tercetak di resi.</li>
-                <li>Upload bukti transfer di menu Pesanan setelah pembayaran.</li>
-              </ul>
-            </div>
           </div>
-        </div>
         )}
       </div>
 
@@ -1171,7 +1324,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 </p>
                 {/* ✅ SIMPLIFIED: No unique code display */}
               </div>
-              
+
               {/* Button - Kanan */}
               <button
                 onClick={handleSubmitOrder}

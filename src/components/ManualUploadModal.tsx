@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, Upload, Image as ImageIcon, Settings, Check, Plus, Trash2 } from 'lucide-react';
+import { X, Upload, Image as ImageIcon, Settings, Check } from 'lucide-react';
 import { collageService } from '../services/collageService';
 
 interface ManualUploadModalProps {
@@ -43,11 +43,11 @@ interface PricingRule {
 interface UploadSettings {
     stockPerVariant: number;
     costPrice: number;
-    resellerDiscount: number; // Discount from retail, in Rupiah
-    pricingRules: PricingRule[];
+    pricingRules: PricingRule[]; // Rules untuk menghitung harga reseller berdasarkan range modal
+    retailMarkup: number; // Tambahan dari reseller untuk harga retail
 }
 
-// Default pricing rules (same as AI Auto Upload)
+// Default pricing rules untuk reseller (berdasarkan range harga modal)
 const DEFAULT_PRICING_RULES: PricingRule[] = [
     { id: '1', minCost: 0, maxCost: 50000, retailMarkup: 25000 },
     { id: '2', minCost: 50001, maxCost: 100000, retailMarkup: 35000 },
@@ -55,6 +55,9 @@ const DEFAULT_PRICING_RULES: PricingRule[] = [
     { id: '4', minCost: 150001, maxCost: 200000, retailMarkup: 60000 },
     { id: '5', minCost: 200001, maxCost: 999999, retailMarkup: 75000 },
 ];
+
+// Size preset options
+const SIZE_PRESETS = ['All Size', 'S', 'M', 'L', 'XL'];
 
 const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     isOpen,
@@ -174,28 +177,61 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         stockPerVariant: {} as Record<string, string>
     });
 
-    // Settings (Parameter) - with multiple pricing rules like AI Auto Upload
-    const [uploadSettings, setUploadSettings] = useState<UploadSettings & { sizeName: string }>({
-        stockPerVariant: 5,
-        costPrice: 100000,
-        resellerDiscount: 15000, // Discount from retail in Rupiah
-        pricingRules: DEFAULT_PRICING_RULES,
-        sizeName: 'Ukuran 1' // Default size name, editable by user
-    });
+    // Load saved pricing rules from localStorage
+    const getSavedPricingRules = (): PricingRule[] => {
+        try {
+            const saved = localStorage.getItem('azzahra_pricing_rules');
+            if (saved) return JSON.parse(saved);
+        } catch (e) {
+            console.error('Error loading pricing rules:', e);
+        }
+        return DEFAULT_PRICING_RULES;
+    };
 
-    // Show settings panel
+    const getSavedRetailMarkup = (): number => {
+        try {
+            const saved = localStorage.getItem('azzahra_retail_markup');
+            if (saved) return parseInt(saved) || 20000;
+        } catch (e) {
+            console.error('Error loading retail markup:', e);
+        }
+        return 20000;
+    };
+
+    // Settings (Parameter) - Reseller = Modal + markup(berdasarkan range), Retail = Reseller + retailMarkup
+    const [uploadSettings, setUploadSettings] = useState<UploadSettings>(() => ({
+        stockPerVariant: 0, // Default kosong (0 akan jadi empty string di display)
+        costPrice: 0, // Default kosong
+        pricingRules: getSavedPricingRules(), // Load dari localStorage
+        retailMarkup: getSavedRetailMarkup(), // Load dari localStorage
+    }));
+
+    // Auto-save pricing rules to localStorage when they change
+    React.useEffect(() => {
+        try {
+            localStorage.setItem('azzahra_pricing_rules', JSON.stringify(uploadSettings.pricingRules));
+            localStorage.setItem('azzahra_retail_markup', String(uploadSettings.retailMarkup));
+        } catch (e) {
+            console.error('Error saving pricing rules:', e);
+        }
+    }, [uploadSettings.pricingRules, uploadSettings.retailMarkup]);
+
+    // Selected sizes from presets - MULTI SELECT
+    const [selectedSizes, setSelectedSizes] = useState<string[]>(['All Size']);
+
+    // Show pricing rules panel
     const [showPricingRules, setShowPricingRules] = useState(false);
 
     // State for fixed prices (from WhatsApp/Initial State) to prevent auto-calculation override
     const [fixedPrices, setFixedPrices] = useState<{ retail?: number, reseller?: number } | null>(null);
 
-    // Calculate retail price based on cost and pricing rules, unless fixed
-    const retailPrice = useMemo(() => {
-        if (fixedPrices?.retail) return fixedPrices.retail;
+    // NEW FORMULA: Reseller = Modal + markup (berdasarkan range pricing rules)
+    const resellerPrice = useMemo(() => {
+        if (fixedPrices?.reseller) return fixedPrices.reseller;
 
         const { costPrice, pricingRules } = uploadSettings;
 
-        // Find matching rule
+        // Find matching rule based on cost price range
         const matchingRule = pricingRules.find(
             rule => costPrice >= rule.minCost && costPrice <= rule.maxCost
         );
@@ -211,43 +247,19 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         return costPrice + highestRule.retailMarkup;
     }, [uploadSettings.costPrice, uploadSettings.pricingRules, fixedPrices]);
 
-    // Calculate reseller price (retail - discount), unless fixed
-    const resellerPrice = useMemo(() => {
-        if (fixedPrices?.reseller) return fixedPrices.reseller;
-        return Math.max(0, retailPrice - uploadSettings.resellerDiscount);
-    }, [retailPrice, uploadSettings.resellerDiscount, fixedPrices]);
+    const retailPrice = useMemo(() => {
+        if (fixedPrices?.retail) return fixedPrices.retail;
+        return resellerPrice + uploadSettings.retailMarkup;
+    }, [resellerPrice, uploadSettings.retailMarkup, fixedPrices]);
 
-    // Add pricing rule
-    const addPricingRule = () => {
-        const newRule: PricingRule = {
-            id: Date.now().toString(),
-            minCost: 0,
-            maxCost: 100000,
-            retailMarkup: 30000
-        };
-        setUploadSettings(prev => ({
-            ...prev,
-            pricingRules: [...prev.pricingRules, newRule]
-        }));
+    // Helper untuk format angka ribuan
+    const formatThousands = (num: number): string => {
+        if (num === 0) return '';
+        return num.toLocaleString('id-ID');
     };
 
-    // Remove pricing rule
-    const removePricingRule = (id: string) => {
-        if (uploadSettings.pricingRules.length <= 1) return;
-        setUploadSettings(prev => ({
-            ...prev,
-            pricingRules: prev.pricingRules.filter(r => r.id !== id)
-        }));
-    };
-
-    // Update pricing rule
-    const updatePricingRule = (id: string, field: keyof PricingRule, value: number) => {
-        setUploadSettings(prev => ({
-            ...prev,
-            pricingRules: prev.pricingRules.map(r =>
-                r.id === id ? { ...r, [field]: value } : r
-            )
-        }));
+    const parseFormattedNumber = (str: string): number => {
+        return parseInt(str.replace(/\./g, '')) || 0;
     };
 
     // Handle image upload
@@ -334,15 +346,41 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             return;
         }
 
-        // Calculate total stock
-        const totalStock = Object.values(productFormData.stockPerVariant).reduce(
-            (sum, stock) => sum + parseInt(stock || '0'), 0
-        );
+        // Calculate total stock from all Size-Varian combinations
+        let totalStock = 0;
+        selectedSizes.forEach((size) => {
+            variantLabels.forEach((label) => {
+                const key = `${size}-${label}`;
+                const defaultStock = uploadSettings.stockPerVariant || 0;
+                const editedValue = productFormData.stockPerVariant[key];
+                const stock = editedValue !== undefined
+                    ? parseInt(editedValue || '0')
+                    : defaultStock;
+                totalStock += stock;
+            });
+        });
 
         if (totalStock === 0) {
             alert('Stok minimal 1 untuk salah satu varian');
             return;
         }
+
+        // Build stock matrix for all size × variant combinations using user-edited values
+        const stockMatrix: Record<string, Record<string, number>> = {};
+        selectedSizes.forEach((size) => {
+            stockMatrix[size] = {};
+            variantLabels.forEach((label) => {
+                // Use key format "Size-Varian" (e.g., "S-A", "M-B")
+                const key = `${size}-${label}`;
+                const defaultStock = uploadSettings.stockPerVariant || 0;
+                const editedValue = productFormData.stockPerVariant[key];
+                // Use edited value if exists, otherwise use default from parameter
+                const finalStock = editedValue !== undefined
+                    ? parseInt(editedValue || '0')
+                    : defaultStock;
+                stockMatrix[size][label] = finalStock;
+            });
+        });
 
         const productData = {
             name: productFormData.name,
@@ -354,11 +392,17 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             stockPerVariant: productFormData.stockPerVariant,
             totalStock,
             variantLabels,
-            variantCount: images.length,
+            variantCount: images.length || draftVariantCount,
             collageBlob,
             collageFile: new File([collageBlob], `collage-${Date.now()}.jpg`, { type: 'image/jpeg' }),
             uploadMode: 'direct',
-            sizeName: uploadSettings.sizeName // User-defined size name
+            sizeName: selectedSizes.join(', '), // Display all selected sizes
+            // New: Include complete variants structure with all selected sizes
+            variants: {
+                sizes: selectedSizes,
+                colors: variantLabels,
+                stock: stockMatrix
+            }
         };
 
         onSuccess(productData);
@@ -414,157 +458,246 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                         <div className="space-y-6">
                             {/* Settings Panel */}
                             <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-2">
-                                        <Settings className="w-5 h-5 text-purple-600" />
-                                        <h3 className="font-semibold text-purple-800">Parameter Produk</h3>
-                                    </div>
-                                    <button
-                                        onClick={() => setShowPricingRules(!showPricingRules)}
-                                        className="text-xs text-purple-600 hover:text-purple-800 underline"
-                                    >
-                                        {showPricingRules ? 'Sembunyikan Rules' : 'Lihat Pricing Rules'}
-                                    </button>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Settings className="w-6 h-6 text-purple-600" />
+                                    <h3 className="text-lg font-bold text-purple-800">Parameter Produk</h3>
                                 </div>
 
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                {/* Size Preset - MULTI SELECT with Smart Toggle */}
+                                <div className="mb-5">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Pilih Ukuran (bisa pilih banyak)</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {SIZE_PRESETS.map((size) => {
+                                            const isSelected = selectedSizes.includes(size);
+                                            return (
+                                                <button
+                                                    key={size}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (size === 'All Size') {
+                                                            // If tap "All Size", select only "All Size"
+                                                            setSelectedSizes(['All Size']);
+                                                        } else {
+                                                            // If tap other sizes (S/M/L/XL)
+                                                            if (isSelected) {
+                                                                // Remove from selection (but keep at least one)
+                                                                const newSizes = selectedSizes.filter(s => s !== size);
+                                                                if (newSizes.length === 0) {
+                                                                    setSelectedSizes(['All Size']); // Fall back to All Size
+                                                                } else {
+                                                                    setSelectedSizes(newSizes);
+                                                                }
+                                                            } else {
+                                                                // Add to selection and remove "All Size" if present
+                                                                const sizesWithoutAllSize = selectedSizes.filter(s => s !== 'All Size');
+                                                                setSelectedSizes([...sizesWithoutAllSize, size]);
+                                                            }
+                                                        }
+                                                    }}
+                                                    className={`px-5 py-3 rounded-xl text-base font-semibold transition-all ${isSelected
+                                                        ? 'bg-purple-600 text-white shadow-lg scale-105'
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                        }`}
+                                                >
+                                                    {isSelected && '✓ '}{size}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    {selectedSizes.length > 0 && (
+                                        <p className="text-xs text-purple-600 mt-2">
+                                            Dipilih: {selectedSizes.join(', ')}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Main Parameters Grid - Bigger inputs */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
                                     <div>
-                                        <label className="block text-xs text-gray-600 mb-1">Nama Ukuran</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Stok per Varian</label>
                                         <input
                                             type="text"
-                                            value={uploadSettings.sizeName}
-                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, sizeName: e.target.value || 'Ukuran 1' }))}
-                                            placeholder="All Size, L, XL..."
-                                            className="w-full px-3 py-2 border border-purple-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                                            inputMode="numeric"
+                                            value={formatThousands(uploadSettings.stockPerVariant)}
+                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, stockPerVariant: parseFormattedNumber(e.target.value) }))}
+                                            placeholder="Masukkan stok"
+                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl text-lg font-semibold focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-600 mb-1">Stok per Varian</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Harga Modal (Rp)</label>
                                         <input
-                                            type="number"
-                                            min="1"
-                                            value={uploadSettings.stockPerVariant}
-                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, stockPerVariant: parseInt(e.target.value) || 1 }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={formatThousands(uploadSettings.costPrice)}
+                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }))}
+                                            placeholder="100.000"
+                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl text-lg font-semibold focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                         />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-600 mb-1">Harga Modal (Rp)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="1000"
-                                            value={uploadSettings.costPrice}
-                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseInt(e.target.value) || 0 }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-600 mb-1">Diskon Reseller (Rp)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="1000"
-                                            value={uploadSettings.resellerDiscount}
-                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, resellerDiscount: parseInt(e.target.value) || 0 }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                                        />
-                                        <p className="text-[10px] text-gray-400 mt-0.5">Potongan dari harga retail</p>
-                                    </div>
-                                    <div className="bg-white rounded-lg p-2 border border-gray-200">
-                                        <p className="text-[10px] text-gray-500 mb-2">Harga Jual (Edit jika perlu):</p>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div>
-                                                <label className="block text-[10px] text-gray-500 mb-0.5">Retail (Rp)</label>
-                                                <input
-                                                    type="number"
-                                                    value={retailPrice}
-                                                    onChange={(e) => setFixedPrices(prev => ({
-                                                        ...prev,
-                                                        retail: parseInt(e.target.value) || 0
-                                                    }))}
-                                                    className="w-full px-2 py-1 text-xs border border-green-300 rounded focus:ring-1 focus:ring-green-500 font-semibold text-green-700"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] text-gray-500 mb-0.5">Reseller (Rp)</label>
-                                                <input
-                                                    type="number"
-                                                    value={resellerPrice}
-                                                    onChange={(e) => setFixedPrices(prev => ({
-                                                        ...prev,
-                                                        reseller: parseInt(e.target.value) || 0
-                                                    }))}
-                                                    className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:ring-1 focus:ring-blue-500 font-semibold text-blue-700"
-                                                />
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Pricing Rules (Multiple Rules) */}
-                                {showPricingRules && (
-                                    <div className="mt-4 pt-4 border-t border-purple-200">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <h4 className="text-sm font-medium text-purple-700">Pricing Rules (Markup dalam Rp)</h4>
-                                            <button
-                                                onClick={addPricingRule}
-                                                className="flex items-center gap-1 text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700"
-                                            >
-                                                <Plus className="w-3 h-3" />
-                                                Tambah Rule
-                                            </button>
-                                        </div>
+                                {/* Retail Markup Only - Reseller uses pricing rules */}
+                                <div className="mb-5">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">+ Tambah Harga Retail (Rp)</label>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={formatThousands(uploadSettings.retailMarkup)}
+                                        onChange={(e) => setUploadSettings(prev => ({ ...prev, retailMarkup: parseFormattedNumber(e.target.value) }))}
+                                        placeholder="20.000"
+                                        className="w-full px-4 py-3 border-2 border-green-300 rounded-xl text-lg font-semibold text-green-700 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                    />
+                                    <p className="text-xs text-green-600 mt-1">Retail = Reseller + nilai ini</p>
+                                </div>
 
-                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                {/* Pricing Rules Editor */}
+                                <div className="mb-5 border-2 border-blue-200 rounded-xl overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPricingRules(!showPricingRules)}
+                                        className="w-full px-4 py-3 bg-blue-50 text-left flex justify-between items-center"
+                                    >
+                                        <span className="text-sm font-medium text-blue-800">
+                                            📋 Pricing Rules (Markup Reseller)
+                                        </span>
+                                        <span className="text-blue-600 text-xs">
+                                            {showPricingRules ? '▲ Tutup' : '▼ Buka'}
+                                        </span>
+                                    </button>
+
+                                    {showPricingRules && (
+                                        <div className="p-4 bg-white space-y-3">
+                                            <p className="text-xs text-gray-600 mb-2">
+                                                Harga Reseller = Modal + Markup (berdasarkan range modal)
+                                            </p>
                                             {uploadSettings.pricingRules.map((rule, index) => (
-                                                <div key={rule.id} className="flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200">
-                                                    <span className="text-xs text-gray-500 w-8">{index + 1}.</span>
+                                                <div key={rule.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                                                    <span className="text-xs text-gray-500 w-6">{index + 1}.</span>
                                                     <div className="flex-1 grid grid-cols-3 gap-2">
                                                         <div>
                                                             <label className="text-[10px] text-gray-500">Min Modal</label>
                                                             <input
-                                                                type="number"
-                                                                value={rule.minCost}
-                                                                onChange={(e) => updatePricingRule(rule.id, 'minCost', parseInt(e.target.value) || 0)}
-                                                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                                                type="text"
+                                                                inputMode="numeric"
+                                                                value={formatThousands(rule.minCost)}
+                                                                onChange={(e) => {
+                                                                    const newRules = [...uploadSettings.pricingRules];
+                                                                    newRules[index] = { ...rule, minCost: parseFormattedNumber(e.target.value) };
+                                                                    setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
+                                                                }}
+                                                                className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg"
                                                             />
                                                         </div>
                                                         <div>
                                                             <label className="text-[10px] text-gray-500">Max Modal</label>
                                                             <input
-                                                                type="number"
-                                                                value={rule.maxCost}
-                                                                onChange={(e) => updatePricingRule(rule.id, 'maxCost', parseInt(e.target.value) || 0)}
-                                                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                                                type="text"
+                                                                inputMode="numeric"
+                                                                value={formatThousands(rule.maxCost)}
+                                                                onChange={(e) => {
+                                                                    const newRules = [...uploadSettings.pricingRules];
+                                                                    newRules[index] = { ...rule, maxCost: parseFormattedNumber(e.target.value) };
+                                                                    setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
+                                                                }}
+                                                                className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg"
                                                             />
                                                         </div>
                                                         <div>
-                                                            <label className="text-[10px] text-gray-500">Markup (Rp)</label>
+                                                            <label className="text-[10px] text-gray-500">+ Markup</label>
                                                             <input
-                                                                type="number"
-                                                                value={rule.retailMarkup}
-                                                                onChange={(e) => updatePricingRule(rule.id, 'retailMarkup', parseInt(e.target.value) || 0)}
-                                                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                                                type="text"
+                                                                inputMode="numeric"
+                                                                value={formatThousands(rule.retailMarkup)}
+                                                                onChange={(e) => {
+                                                                    const newRules = [...uploadSettings.pricingRules];
+                                                                    newRules[index] = { ...rule, retailMarkup: parseFormattedNumber(e.target.value) };
+                                                                    setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
+                                                                }}
+                                                                className="w-full px-2 py-2 text-sm border border-blue-300 rounded-lg text-blue-700 font-semibold"
                                                             />
                                                         </div>
                                                     </div>
-                                                    <button
-                                                        onClick={() => removePricingRule(rule.id)}
-                                                        className="p-1 text-red-500 hover:bg-red-50 rounded"
-                                                        disabled={uploadSettings.pricingRules.length <= 1}
-                                                    >
-                                                        <Trash2 className="w-3 h-3" />
-                                                    </button>
+                                                    {/* Hapus Rule Button */}
+                                                    {uploadSettings.pricingRules.length > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newRules = uploadSettings.pricingRules.filter((_, i) => i !== index);
+                                                                setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
+                                                            }}
+                                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                                                            title="Hapus rule"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    )}
                                                 </div>
                                             ))}
-                                        </div>
 
-                                        <p className="text-[10px] text-gray-500 mt-2">
-                                            💡 Harga Retail = Harga Modal + Markup (sesuai range modal)
-                                        </p>
+                                            {/* Tombol Tambah Rule */}
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const lastRule = uploadSettings.pricingRules[uploadSettings.pricingRules.length - 1];
+                                                    const newRule: PricingRule = {
+                                                        id: Date.now().toString(),
+                                                        minCost: lastRule ? lastRule.maxCost + 1 : 0,
+                                                        maxCost: lastRule ? lastRule.maxCost + 100000 : 100000,
+                                                        retailMarkup: lastRule ? lastRule.retailMarkup + 10000 : 30000
+                                                    };
+                                                    setUploadSettings(prev => ({
+                                                        ...prev,
+                                                        pricingRules: [...prev.pricingRules, newRule]
+                                                    }));
+                                                }}
+                                                className="w-full py-2 border-2 border-dashed border-blue-300 rounded-lg text-blue-600 font-medium hover:bg-blue-50 transition"
+                                            >
+                                                + Tambah Rule Baru
+                                            </button>
+
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                Contoh: Modal {formatThousands(uploadSettings.costPrice) || '100.000'} → Reseller {formatThousands(resellerPrice)}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Final Prices - Editable, same row height */}
+                                <div className="bg-white rounded-xl p-4 border-2 border-gray-200">
+                                    <p className="text-sm font-medium text-gray-600 mb-3">Harga Jual (Edit jika perlu):</p>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm text-gray-500 mb-1">Harga Reseller</label>
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                value={formatThousands(resellerPrice)}
+                                                onChange={(e) => setFixedPrices(prev => ({
+                                                    ...prev,
+                                                    reseller: parseFormattedNumber(e.target.value)
+                                                }))}
+                                                className="w-full px-4 py-3 text-lg border-2 border-blue-400 rounded-xl font-bold text-blue-700 focus:ring-2 focus:ring-blue-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-gray-500 mb-1">Harga Retail</label>
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                value={formatThousands(retailPrice)}
+                                                onChange={(e) => setFixedPrices(prev => ({
+                                                    ...prev,
+                                                    retail: parseFormattedNumber(e.target.value)
+                                                }))}
+                                                className="w-full px-4 py-3 text-lg border-2 border-green-400 rounded-xl font-bold text-green-700 focus:ring-2 focus:ring-green-500"
+                                            />
+                                        </div>
                                     </div>
-                                )}
+                                    <p className="text-xs text-gray-500 mt-3 text-center">
+                                        💡 Modal {formatThousands(uploadSettings.costPrice) || '0'} → Reseller {formatThousands(resellerPrice)} → Retail {formatThousands(retailPrice)}
+                                    </p>
+                                </div>
                             </div>
 
                             {/* Upload Area */}
@@ -715,29 +848,90 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 </div>
                             </div>
 
-                            {/* Stock per Variant */}
-                            <div>
-                                <h3 className="font-medium text-gray-700 mb-3">Stok per Varian</h3>
-                                <div className="grid grid-cols-5 gap-3">
-                                    {variantLabels.map((label) => (
-                                        <div key={label} className="bg-gray-50 rounded-lg p-3 text-center">
-                                            <div className="text-lg font-bold text-purple-600 mb-2">{label}</div>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={productFormData.stockPerVariant[label] || ''}
-                                                onChange={(e) => setProductFormData(prev => ({
-                                                    ...prev,
-                                                    stockPerVariant: { ...prev.stockPerVariant, [label]: e.target.value }
-                                                }))}
-                                                className="w-full px-2 py-1 border border-gray-300 rounded text-center text-sm"
-                                            />
-                                        </div>
-                                    ))}
+                            {/* Stock per Size × Variant Matrix */}
+                            <div className="bg-gray-50 rounded-xl p-4">
+                                <h3 className="font-medium text-gray-700 mb-3">📦 Stok per Size × Varian</h3>
+                                <p className="text-xs text-gray-500 mb-3">Edit angka di bawah jika ingin mengubah stok (nilai yang diedit akan digunakan)</p>
+
+                                {/* Matrix Table */}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="bg-purple-100">
+                                                <th className="px-3 py-2 text-left font-semibold text-purple-800 rounded-tl-lg">Size</th>
+                                                {variantLabels.map((label) => (
+                                                    <th key={label} className="px-3 py-2 text-center font-bold text-purple-700">{label}</th>
+                                                ))}
+                                                <th className="px-3 py-2 text-center font-semibold text-purple-800 rounded-tr-lg">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {selectedSizes.map((size) => {
+                                                const sizeTotal = variantLabels.reduce((sum, label) => {
+                                                    const key = `${size}-${label}`;
+                                                    return sum + parseInt(productFormData.stockPerVariant[key] || String(uploadSettings.stockPerVariant) || '0');
+                                                }, 0);
+
+                                                return (
+                                                    <tr key={size} className="border-b border-gray-200">
+                                                        <td className="px-3 py-2 font-semibold text-gray-700 bg-purple-50">{size}</td>
+                                                        {variantLabels.map((label) => {
+                                                            const key = `${size}-${label}`;
+                                                            const defaultValue = uploadSettings.stockPerVariant || 0;
+                                                            const currentValue = productFormData.stockPerVariant[key];
+
+                                                            return (
+                                                                <td key={key} className="px-2 py-2">
+                                                                    <input
+                                                                        type="text"
+                                                                        inputMode="numeric"
+                                                                        value={currentValue !== undefined ? currentValue : (defaultValue > 0 ? defaultValue : '')}
+                                                                        onChange={(e) => setProductFormData(prev => ({
+                                                                            ...prev,
+                                                                            stockPerVariant: {
+                                                                                ...prev.stockPerVariant,
+                                                                                [key]: e.target.value
+                                                                            }
+                                                                        }))}
+                                                                        placeholder="0"
+                                                                        className="w-full px-2 py-2 border border-gray-300 rounded-lg text-center text-base font-semibold focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                                                    />
+                                                                </td>
+                                                            );
+                                                        })}
+                                                        <td className="px-3 py-2 text-center font-bold text-purple-700 bg-purple-50">
+                                                            {sizeTotal}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="bg-green-100">
+                                                <td className="px-3 py-2 font-bold text-green-800 rounded-bl-lg">Total</td>
+                                                {variantLabels.map((label) => {
+                                                    const variantTotal = selectedSizes.reduce((sum, size) => {
+                                                        const key = `${size}-${label}`;
+                                                        return sum + parseInt(productFormData.stockPerVariant[key] || String(uploadSettings.stockPerVariant) || '0');
+                                                    }, 0);
+                                                    return (
+                                                        <td key={label} className="px-3 py-2 text-center font-bold text-green-700">
+                                                            {variantTotal}
+                                                        </td>
+                                                    );
+                                                })}
+                                                <td className="px-3 py-2 text-center font-bold text-green-800 bg-green-200 rounded-br-lg">
+                                                    {selectedSizes.reduce((totalSum, size) => {
+                                                        return totalSum + variantLabels.reduce((sum, label) => {
+                                                            const key = `${size}-${label}`;
+                                                            return sum + parseInt(productFormData.stockPerVariant[key] || String(uploadSettings.stockPerVariant) || '0');
+                                                        }, 0);
+                                                    }, 0)} pcs
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
                                 </div>
-                                <p className="text-sm text-gray-500 mt-2">
-                                    Total Stok: <strong>{Object.values(productFormData.stockPerVariant).reduce((sum, s) => sum + parseInt(s || '0'), 0)} pcs</strong>
-                                </p>
                             </div>
 
                             {/* Actions */}

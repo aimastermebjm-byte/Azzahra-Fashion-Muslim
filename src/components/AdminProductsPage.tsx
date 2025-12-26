@@ -2963,8 +2963,6 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
               // ---------------------------------------------------------
 
-              await addProduct(newProduct);
-
               // DELETE DRAFT FROM QUEUE IF EXISTS
               if (processingDraftId) {
                 console.log(`🧹 Deleting processed draft: ${processingDraftId}`);

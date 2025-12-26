@@ -273,17 +273,17 @@ export class CollageService {
     cellW: number,
     cellH: number
   ) {
-    // DYNAMIC SIZE based on cell dimensions
-    const minDim = Math.min(cellW, cellH);
-    const scaleFactor = minDim / 750; // Base: 750px cell
-    const labelSize = Math.max(60, Math.min(150, Math.round(150 * scaleFactor)));
-    const fontSize = Math.max(40, Math.min(100, Math.round(100 * scaleFactor)));
+    // FIXED SIZE for consistency across all collage types (like 6-image collage)
+    // Base reference: 6-image collage has cells of 500x1000 (W/3 x H/2)
+    const fixedLabelSize = 100; // Fixed size for all label boxes
+    const fixedFontSize = 60; // Fixed font size for all labels
 
     const centerX = cellX + cellW / 2;
-    const centerY = cellY + cellH / 2;
+    // Position at 3/4 down the cell (not too low, slightly raised)
+    const positionY = cellY + cellH * 0.75;
 
-    const x = centerX - (labelSize / 2);
-    const y = centerY - (labelSize / 2);
+    const x = centerX - (fixedLabelSize / 2);
+    const y = positionY - (fixedLabelSize / 2);
 
     // Shadow
     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
@@ -293,7 +293,7 @@ export class CollageService {
 
     // Box
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.fillRect(x, y, labelSize, labelSize);
+    ctx.fillRect(x, y, fixedLabelSize, fixedLabelSize);
 
     // Reset Shadow
     ctx.shadowColor = 'transparent';
@@ -301,17 +301,17 @@ export class CollageService {
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
 
-    // Text
-    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+    // Text - positioned in center of the box
+    ctx.font = `bold ${fixedFontSize}px Arial, sans-serif`;
     ctx.fillStyle = 'white';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, centerX, centerY + (fontSize * 0.06));
+    ctx.fillText(label, centerX, positionY);
 
     // Border
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.lineWidth = Math.max(3, Math.round(6 * scaleFactor));
-    ctx.strokeRect(x, y, labelSize, labelSize);
+    ctx.lineWidth = 4;
+    ctx.strokeRect(x, y, fixedLabelSize, fixedLabelSize);
   }
 
   private loadImageFromFile(file: File): Promise<HTMLImageElement> {
