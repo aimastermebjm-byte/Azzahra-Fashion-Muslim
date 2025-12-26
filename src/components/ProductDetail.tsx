@@ -40,6 +40,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [initialPinchDistance, setInitialPinchDistance] = useState<number | null>(null);
+  const [initialScale, setInitialScale] = useState(1);
   const zoomRef = useRef<HTMLDivElement>(null);
 
   // Zoom handlers
@@ -55,19 +57,15 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     setPanPosition({ x: 0, y: 0 });
   }, []);
 
-  const handleZoomIn = useCallback(() => {
-    setZoomScale(prev => Math.min(prev + 0.5, 3)); // Max 3x zoom
-  }, []);
+  // Calculate distance between two touch points
+  const getTouchDistance = (touches: React.TouchList) => {
+    if (touches.length < 2) return 0;
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
 
-  const handleZoomOut = useCallback(() => {
-    setZoomScale(prev => {
-      const newScale = Math.max(prev - 0.5, 1);
-      if (newScale === 1) setPanPosition({ x: 0, y: 0 });
-      return newScale;
-    });
-  }, []);
-
-  // Pan handlers for dragging
+  // Pan handlers for dragging (mouse)
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (zoomScale > 1) {
       setIsDragging(true);
@@ -86,11 +84,40 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
+    setInitialPinchDistance(null);
   }, []);
 
   // Touch handlers for mobile pinch zoom and pan
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault(); // Prevent refresh/scroll
+
+    if (e.touches.length === 2) {
+      // Start pinch zoom
+      const distance = getTouchDistance(e.touches);
+      setInitialPinchDistance(distance);
+      setInitialScale(zoomScale);
+    } else if (e.touches.length === 1 && zoomScale > 1) {
+      // Start pan
+      const touch = e.touches[0];
+      setDragStart({ x: touch.clientX - panPosition.x, y: touch.clientY - panPosition.y });
+      setIsDragging(true);
+    }
+  }, [zoomScale, panPosition]);
+
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 1 && zoomScale > 1) {
+    e.preventDefault(); // Prevent refresh/scroll
+
+    if (e.touches.length === 2 && initialPinchDistance) {
+      // Pinch zoom
+      const currentDistance = getTouchDistance(e.touches);
+      const scale = (currentDistance / initialPinchDistance) * initialScale;
+      setZoomScale(Math.min(Math.max(scale, 1), 4)); // Min 1x, Max 4x
+
+      // Reset pan if zoomed out
+      if (scale <= 1) {
+        setPanPosition({ x: 0, y: 0 });
+      }
+    } else if (e.touches.length === 1 && isDragging && zoomScale > 1) {
       // Single touch pan
       const touch = e.touches[0];
       setPanPosition({
@@ -98,14 +125,15 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         y: touch.clientY - dragStart.y
       });
     }
-  }, [zoomScale, dragStart]);
+  }, [initialPinchDistance, initialScale, isDragging, zoomScale, dragStart]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 1 && zoomScale > 1) {
-      const touch = e.touches[0];
-      setDragStart({ x: touch.clientX - panPosition.x, y: touch.clientY - panPosition.y });
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 0) {
+      setIsDragging(false);
+      setInitialPinchDistance(null);
     }
-  }, [zoomScale, panPosition]);
+  }, []);
 
   // 🔥 GLOBAL STATE: 0 reads untuk product data
   const { getProductById } = useGlobalProducts();
@@ -666,36 +694,15 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           {/* Close button */}
           <button
             onClick={handleZoomClose}
-            className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition"
+            className="absolute top-4 right-4 z-10 w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white text-xl hover:bg-white/30 transition"
           >
             ✕
           </button>
 
-          {/* Zoom controls */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 bg-black/50 rounded-full px-4 py-2">
-            <button
-              onClick={(e) => { e.stopPropagation(); handleZoomOut(); }}
-              className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white text-xl hover:bg-white/30 transition"
-              disabled={zoomScale <= 1}
-            >
-              −
-            </button>
-            <span className="text-white flex items-center px-2 min-w-[60px] justify-center">
-              {Math.round(zoomScale * 100)}%
-            </span>
-            <button
-              onClick={(e) => { e.stopPropagation(); handleZoomIn(); }}
-              className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white text-xl hover:bg-white/30 transition"
-              disabled={zoomScale >= 3}
-            >
-              +
-            </button>
-          </div>
-
           {/* Image with zoom and pan */}
           <div
             ref={zoomRef}
-            className="w-full h-full flex items-center justify-center overflow-hidden cursor-move"
+            className="w-full h-full flex items-center justify-center overflow-hidden touch-none"
             onClick={(e) => e.stopPropagation()}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -703,28 +710,23 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             onMouseLeave={handleMouseUp}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
-            onTouchEnd={handleMouseUp}
+            onTouchEnd={handleTouchEnd}
           >
             <img
               src={currentProduct.images?.[selectedImageIndex] || currentProduct.image || '/placeholder-currentProduct.jpg'}
               alt={currentProduct.name}
-              className="max-w-none select-none transition-transform duration-100"
+              className="max-w-none select-none pointer-events-none"
               style={{
                 transform: `scale(${zoomScale}) translate(${panPosition.x / zoomScale}px, ${panPosition.y / zoomScale}px)`,
-                cursor: zoomScale > 1 ? 'grab' : 'zoom-in'
+                transition: isDragging || initialPinchDistance ? 'none' : 'transform 0.1s ease-out'
               }}
               draggable={false}
-              onDoubleClick={(e) => {
-                e.stopPropagation();
-                if (zoomScale < 3) handleZoomIn();
-                else { setZoomScale(1); setPanPosition({ x: 0, y: 0 }); }
-              }}
             />
           </div>
 
-          {/* Zoom hint */}
+          {/* Zoom hint - Updated for pinch */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/50 px-4 py-2 rounded-full">
-            {zoomScale === 1 ? 'Double tap untuk zoom' : 'Geser untuk melihat detail'}
+            {zoomScale <= 1 ? '👆 Cubit untuk zoom' : `${Math.round(zoomScale * 100)}% - Geser untuk melihat`}
           </div>
         </div>
       )}
