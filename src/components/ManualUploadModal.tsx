@@ -567,16 +567,32 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     </button>
 
                                     {showPricingRules && (
-                                        <div className="p-4 bg-white space-y-3">
-                                            <p className="text-xs text-gray-600 mb-2">
+                                        <div className="p-4 bg-white space-y-4">
+                                            <p className="text-sm text-gray-600 mb-2">
                                                 Harga Reseller = Modal + Markup (berdasarkan range modal)
                                             </p>
                                             {uploadSettings.pricingRules.map((rule, index) => (
-                                                <div key={rule.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                                                    <span className="text-xs text-gray-500 w-6">{index + 1}.</span>
-                                                    <div className="flex-1 grid grid-cols-3 gap-2">
+                                                <div key={rule.id} className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <span className="text-sm font-bold text-purple-700">Rule #{index + 1}</span>
+                                                        {uploadSettings.pricingRules.length > 1 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const newRules = uploadSettings.pricingRules.filter((_, i) => i !== index);
+                                                                    setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
+                                                                }}
+                                                                className="px-2 py-1 text-xs text-red-500 hover:bg-red-50 rounded-lg border border-red-200"
+                                                            >
+                                                                Hapus
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Range Modal - Full Width */}
+                                                    <div className="grid grid-cols-2 gap-3 mb-3">
                                                         <div>
-                                                            <label className="text-[10px] text-gray-500">Min Modal</label>
+                                                            <label className="block text-xs font-medium text-gray-600 mb-1">Min Modal (Rp)</label>
                                                             <input
                                                                 type="text"
                                                                 inputMode="numeric"
@@ -586,11 +602,11 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     newRules[index] = { ...rule, minCost: parseFormattedNumber(e.target.value) };
                                                                     setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
                                                                 }}
-                                                                className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg"
+                                                                className="w-full px-3 py-3 text-base font-semibold border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
                                                             />
                                                         </div>
                                                         <div>
-                                                            <label className="text-[10px] text-gray-500">Max Modal</label>
+                                                            <label className="block text-xs font-medium text-gray-600 mb-1">Max Modal (Rp)</label>
                                                             <input
                                                                 type="text"
                                                                 inputMode="numeric"
@@ -600,38 +616,26 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     newRules[index] = { ...rule, maxCost: parseFormattedNumber(e.target.value) };
                                                                     setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
                                                                 }}
-                                                                className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-[10px] text-gray-500">+ Markup</label>
-                                                            <input
-                                                                type="text"
-                                                                inputMode="numeric"
-                                                                value={formatThousands(rule.retailMarkup)}
-                                                                onChange={(e) => {
-                                                                    const newRules = [...uploadSettings.pricingRules];
-                                                                    newRules[index] = { ...rule, retailMarkup: parseFormattedNumber(e.target.value) };
-                                                                    setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
-                                                                }}
-                                                                className="w-full px-2 py-2 text-sm border border-blue-300 rounded-lg text-blue-700 font-semibold"
+                                                                className="w-full px-3 py-3 text-base font-semibold border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
                                                             />
                                                         </div>
                                                     </div>
-                                                    {/* Hapus Rule Button */}
-                                                    {uploadSettings.pricingRules.length > 1 && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const newRules = uploadSettings.pricingRules.filter((_, i) => i !== index);
+
+                                                    {/* Markup - Full Width, Prominent */}
+                                                    <div>
+                                                        <label className="block text-xs font-medium text-blue-700 mb-1">+ Tambah Markup (Rp)</label>
+                                                        <input
+                                                            type="text"
+                                                            inputMode="numeric"
+                                                            value={formatThousands(rule.retailMarkup)}
+                                                            onChange={(e) => {
+                                                                const newRules = [...uploadSettings.pricingRules];
+                                                                newRules[index] = { ...rule, retailMarkup: parseFormattedNumber(e.target.value) };
                                                                 setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
                                                             }}
-                                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                                                            title="Hapus rule"
-                                                        >
-                                                            ✕
-                                                        </button>
-                                                    )}
+                                                            className="w-full px-4 py-3 text-lg font-bold border-2 border-blue-400 rounded-xl text-blue-700 bg-blue-50 focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
                                                 </div>
                                             ))}
 
@@ -651,7 +655,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                         pricingRules: [...prev.pricingRules, newRule]
                                                     }));
                                                 }}
-                                                className="w-full py-2 border-2 border-dashed border-blue-300 rounded-lg text-blue-600 font-medium hover:bg-blue-50 transition"
+                                                className="w-full py-3 border-2 border-dashed border-blue-300 rounded-xl text-blue-600 font-medium hover:bg-blue-50 transition"
                                             >
                                                 + Tambah Rule Baru
                                             </button>
@@ -954,7 +958,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
