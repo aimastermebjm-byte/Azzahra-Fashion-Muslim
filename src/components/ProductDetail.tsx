@@ -42,6 +42,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [initialPinchDistance, setInitialPinchDistance] = useState<number | null>(null);
   const [initialScale, setInitialScale] = useState(1);
+  const [pinchCenter, setPinchCenter] = useState({ x: 0, y: 0 });
+  const [initialPanPosition, setInitialPanPosition] = useState({ x: 0, y: 0 });
   const zoomRef = useRef<HTMLDivElement>(null);
 
   // Zoom handlers
@@ -63,6 +65,15 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     const dx = touches[0].clientX - touches[1].clientX;
     const dy = touches[0].clientY - touches[1].clientY;
     return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // Calculate center point between two touches
+  const getTouchCenter = (touches: React.TouchList) => {
+    if (touches.length < 2) return { x: 0, y: 0 };
+    return {
+      x: (touches[0].clientX + touches[1].clientX) / 2,
+      y: (touches[0].clientY + touches[1].clientY) / 2
+    };
   };
 
   // Pan handlers for dragging (mouse)
@@ -92,10 +103,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     e.preventDefault(); // Prevent refresh/scroll
 
     if (e.touches.length === 2) {
-      // Start pinch zoom
+      // Start pinch zoom - save focal point
       const distance = getTouchDistance(e.touches);
+      const center = getTouchCenter(e.touches);
       setInitialPinchDistance(distance);
       setInitialScale(zoomScale);
+      setPinchCenter(center);
+      setInitialPanPosition(panPosition);
     } else if (e.touches.length === 1 && zoomScale > 1) {
       // Start pan
       const touch = e.touches[0];
@@ -108,13 +122,28 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     e.preventDefault(); // Prevent refresh/scroll
 
     if (e.touches.length === 2 && initialPinchDistance) {
-      // Pinch zoom
+      // Pinch zoom with focal point
       const currentDistance = getTouchDistance(e.touches);
-      const scale = (currentDistance / initialPinchDistance) * initialScale;
-      setZoomScale(Math.min(Math.max(scale, 1), 4)); // Min 1x, Max 4x
+      const currentCenter = getTouchCenter(e.touches);
+      const newScale = Math.min(Math.max((currentDistance / initialPinchDistance) * initialScale, 1), 4);
 
-      // Reset pan if zoomed out
-      if (scale <= 1) {
+      // Calculate pan offset to keep focal point stationary
+      // When zooming, we want the pinch center to stay at the same visual position
+      const scaleChange = newScale / initialScale;
+
+      // Calculate how much the image should move to keep focal point stable
+      const focalOffsetX = (pinchCenter.x - window.innerWidth / 2);
+      const focalOffsetY = (pinchCenter.y - window.innerHeight / 2);
+
+      // Apply focal point offset + follow the finger movement
+      const newPanX = initialPanPosition.x - focalOffsetX * (scaleChange - 1) + (currentCenter.x - pinchCenter.x);
+      const newPanY = initialPanPosition.y - focalOffsetY * (scaleChange - 1) + (currentCenter.y - pinchCenter.y);
+
+      setZoomScale(newScale);
+      setPanPosition({ x: newPanX, y: newPanY });
+
+      // Reset pan if zoomed out completely
+      if (newScale <= 1) {
         setPanPosition({ x: 0, y: 0 });
       }
     } else if (e.touches.length === 1 && isDragging && zoomScale > 1) {
@@ -125,7 +154,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         y: touch.clientY - dragStart.y
       });
     }
-  }, [initialPinchDistance, initialScale, isDragging, zoomScale, dragStart]);
+  }, [initialPinchDistance, initialScale, isDragging, zoomScale, dragStart, pinchCenter, initialPanPosition]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
