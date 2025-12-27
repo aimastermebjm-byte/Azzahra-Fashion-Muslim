@@ -856,115 +856,114 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
                             {/* Stock per Size × Variant Matrix */}
-                    <div className="bg-gray-50 rounded-xl p-4">
-                        <h3 className="font-medium text-gray-700 mb-3">📦 Stok per Size × Varian</h3>
-                        <p className="text-xs text-gray-500 mb-3">Edit angka di bawah jika ingin mengubah stok (nilai yang diedit akan digunakan)</p>
+                            <div className="bg-gray-50 rounded-xl p-4">
+                                <h3 className="font-medium text-gray-700 mb-3">📦 Stok per Size × Varian</h3>
+                                <p className="text-xs text-gray-500 mb-3">Edit angka di bawah jika ingin mengubah stok (nilai yang diedit akan digunakan)</p>
 
-                        {/* Matrix Table */}
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="bg-purple-100">
-                                        <th className="px-2 py-1 text-left font-semibold text-purple-800 rounded-tl-lg sticky left-0 z-10 bg-purple-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">Size</th>
-                                        {variantLabels.map((label) => (
-                                            <th key={label} className="px-1 py-1 text-center font-bold text-purple-700 min-w-[35px] text-xs">{label}</th>
-                                        ))}
-                                        <th className="px-2 py-1 text-center font-semibold text-purple-800 rounded-tr-lg text-xs">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {selectedSizes.map((size) => {
-                                        const sizeTotal = variantLabels.reduce((sum, label) => {
-                                            const key = `${size}-${label}`;
-                                            return sum + parseInt(productFormData.stockPerVariant[key] || String(uploadSettings.stockPerVariant) || '0');
-                                        }, 0);
-
-                                        return (
-                                            <tr key={size} className="border-b border-gray-200">
-                                                <td className="px-2 py-1 font-semibold text-gray-700 bg-purple-50 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">{size}</td>
-                                                {variantLabels.map((label) => {
-                                                    const key = `${size}-${label}`;
-                                                    const defaultValue = uploadSettings.stockPerVariant || 0;
-                                                    const currentValue = productFormData.stockPerVariant[key];
-
-                                                    return (
-                                                        <td key={key} className="px-0 py-1 min-w-[35px]">
-                                                            <input
-                                                                type="text"
-                                                                inputMode="numeric"
-                                                                value={currentValue !== undefined ? currentValue : (defaultValue > 0 ? defaultValue : '')}
-                                                                onChange={(e) => setProductFormData(prev => ({
-                                                                    ...prev,
-                                                                    stockPerVariant: {
-                                                                        ...prev.stockPerVariant,
-                                                                        [key]: e.target.value
-                                                                    }
-                                                                }))}
-                                                                onFocus={(e) => e.target.select()}
-                                                                placeholder="0"
-                                                                className="w-full px-1 py-1 border border-gray-300 rounded text-center text-sm font-bold focus:ring-1 focus:ring-purple-500 focus:border-purple-500 h-8"
-                                                            />
-                                                        </td>
-                                                    );
-                                                })}
-                                                <td className="px-3 py-2 text-center font-bold text-purple-700 bg-purple-50">
-                                                    {sizeTotal}
-                                                </td>
+                                {/* Matrix Table */}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="bg-purple-100">
+                                                <th className="px-2 py-1 text-left font-semibold text-purple-800 rounded-tl-lg sticky left-0 z-10 bg-purple-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">Size</th>
+                                                {variantLabels.map((label) => (
+                                                    <th key={label} className="px-1 py-1 text-center font-bold text-purple-700 min-w-[35px] text-xs">{label}</th>
+                                                ))}
+                                                <th className="px-2 py-1 text-center font-semibold text-purple-800 rounded-tr-lg text-xs">Total</th>
                                             </tr>
-                                        );
-                                    })}
-                                </tbody>
-                                <tfoot>
-                                    <tr className="bg-green-100">
-                                        <td className="px-2 py-1 font-bold text-green-800 rounded-bl-lg sticky left-0 z-10 bg-green-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">Total</td>
-                                        {variantLabels.map((label) => {
-                                            const variantTotal = selectedSizes.reduce((sum, size) => {
-                                                const key = `${size}-${label}`;
-                                                return sum + parseInt(productFormData.stockPerVariant[key] || String(uploadSettings.stockPerVariant) || '0');
-                                            }, 0);
-                                            return (
-                                                <td key={label} className="px-1 py-1 text-center font-bold text-green-700 min-w-[35px] text-xs">
-                                                    {variantTotal}
-                                                </td>
-                                            );
-                                        })}
-                                        <td className="px-3 py-2 text-center font-bold text-green-800 bg-green-200 rounded-br-lg">
-                                            {selectedSizes.reduce((totalSum, size) => {
-                                                return totalSum + variantLabels.reduce((sum, label) => {
+                                        </thead>
+                                        <tbody>
+                                            {selectedSizes.map((size) => {
+                                                const sizeTotal = variantLabels.reduce((sum, label) => {
                                                     const key = `${size}-${label}`;
                                                     return sum + parseInt(productFormData.stockPerVariant[key] || String(uploadSettings.stockPerVariant) || '0');
                                                 }, 0);
-                                            }, 0)} pcs
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => setStep('upload')}
-                            className="flex-1 py-3 border border-gray-300 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-                        >
-                            Kembali
-                        </button>
-                        <button
-                            onClick={handleSubmit}
-                            className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all flex items-center justify-center gap-2"
-                        >
-                            <Check className="w-5 h-5" />
-                            Upload Produk
-                        </button>
-                    </div>
-                </div>
+                                                return (
+                                                    <tr key={size} className="border-b border-gray-200">
+                                                        <td className="px-2 py-1 font-semibold text-gray-700 bg-purple-50 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">{size}</td>
+                                                        {variantLabels.map((label) => {
+                                                            const key = `${size}-${label}`;
+                                                            const defaultValue = uploadSettings.stockPerVariant || 0;
+                                                            const currentValue = productFormData.stockPerVariant[key];
+
+                                                            return (
+                                                                <td key={key} className="px-0 py-1 min-w-[35px]">
+                                                                    <input
+                                                                        type="text"
+                                                                        inputMode="numeric"
+                                                                        value={currentValue !== undefined ? currentValue : (defaultValue > 0 ? defaultValue : '')}
+                                                                        onChange={(e) => setProductFormData(prev => ({
+                                                                            ...prev,
+                                                                            stockPerVariant: {
+                                                                                ...prev.stockPerVariant,
+                                                                                [key]: e.target.value
+                                                                            }
+                                                                        }))}
+                                                                        onFocus={(e) => e.target.select()}
+                                                                        placeholder="0"
+                                                                        className="w-full px-1 py-1 border border-gray-300 rounded text-center text-sm font-bold focus:ring-1 focus:ring-purple-500 focus:border-purple-500 h-8"
+                                                                    />
+                                                                </td>
+                                                            );
+                                                        })}
+                                                        <td className="px-3 py-2 text-center font-bold text-purple-700 bg-purple-50">
+                                                            {sizeTotal}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="bg-green-100">
+                                                <td className="px-2 py-1 font-bold text-green-800 rounded-bl-lg sticky left-0 z-10 bg-green-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">Total</td>
+                                                {variantLabels.map((label) => {
+                                                    const variantTotal = selectedSizes.reduce((sum, size) => {
+                                                        const key = `${size}-${label}`;
+                                                        return sum + parseInt(productFormData.stockPerVariant[key] || String(uploadSettings.stockPerVariant) || '0');
+                                                    }, 0);
+                                                    return (
+                                                        <td key={label} className="px-1 py-1 text-center font-bold text-green-700 min-w-[35px] text-xs">
+                                                            {variantTotal}
+                                                        </td>
+                                                    );
+                                                })}
+                                                <td className="px-3 py-2 text-center font-bold text-green-800 bg-green-200 rounded-br-lg">
+                                                    {selectedSizes.reduce((totalSum, size) => {
+                                                        return totalSum + variantLabels.reduce((sum, label) => {
+                                                            const key = `${size}-${label}`;
+                                                            return sum + parseInt(productFormData.stockPerVariant[key] || String(uploadSettings.stockPerVariant) || '0');
+                                                        }, 0);
+                                                    }, 0)} pcs
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setStep('upload')}
+                                    className="flex-1 py-3 border border-gray-300 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                                >
+                                    Kembali
+                                </button>
+                                <button
+                                    onClick={handleSubmit}
+                                    className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Check className="w-5 h-5" />
+                                    Upload Produk
+                                </button>
+                            </div>
+                        </div>
                     )}
+                </div>
             </div>
-        </div>
         </div >
     );
 };
