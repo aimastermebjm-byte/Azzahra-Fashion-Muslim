@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, Upload, Image as ImageIcon, Settings, Check } from 'lucide-react';
 import { collageService } from '../services/collageService';
+import { useGlobalProducts } from '../hooks/useGlobalProducts';
 
 interface ManualUploadModalProps {
     isOpen: boolean;
@@ -14,6 +15,7 @@ interface ManualUploadModalProps {
         collageUrl?: string; // Support for pre-uploaded collage from Draft
         productData?: {
             name: string;
+            brand?: string;
             description: string;
             category: string;
             retailPrice: number;
@@ -66,6 +68,10 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     categories,
     initialState
 }) => {
+    // Brand options
+    const { allProducts: products } = useGlobalProducts();
+    const brandOptions = useMemo(() => Array.from(new Set(products.map((p: any) => p.brand).filter(Boolean))).sort() as string[], [products]);
+
     // Step management
     const [step, setStep] = useState<'upload' | 'details' | 'preview'>('upload');
 
@@ -115,6 +121,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                 setProductFormData(prev => ({
                     ...prev,
                     name: initialState.productData?.name || '',
+                    brand: initialState.productData?.brand || '',
                     description: initialState.productData?.description || '',
                     category: initialState.productData?.category || categories[0] || 'gamis',
                 }));
@@ -172,6 +179,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     // Product form data
     const [productFormData, setProductFormData] = useState({
         name: '',
+        brand: '',
         description: '',
         category: categories[0] || 'gamis',
         stockPerVariant: {} as Record<string, string>
@@ -384,6 +392,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
         const productData = {
             name: productFormData.name,
+            brand: productFormData.brand,
             description: productFormData.description,
             category: productFormData.category,
             retailPrice: String(retailPrice),
@@ -437,6 +446,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         setStep('upload');
         setProductFormData({
             name: '',
+            brand: '',
             description: '',
             category: categories[0] || 'gamis',
             stockPerVariant: {}
@@ -800,6 +810,28 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         rows={1}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[42px] focus:h-32 transition-[height] duration-300 ease-in-out resize-none"
                                     />
+                                </div>
+
+                                {/* Brand Selection */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Merk / Brand
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            list="brand-options"
+                                            value={productFormData.brand}
+                                            onChange={(e) => setProductFormData(prev => ({ ...prev, brand: e.target.value }))}
+                                            placeholder="Pilih atau ketik merk..."
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                        />
+                                        <datalist id="brand-options">
+                                            {brandOptions.map((brand: string, i: number) => (
+                                                <option key={i} value={brand} />
+                                            ))}
+                                        </datalist>
+                                    </div>
                                 </div>
 
                                 {/* Description */}

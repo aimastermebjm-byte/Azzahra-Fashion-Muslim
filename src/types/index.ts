@@ -2,6 +2,7 @@
 export interface Product {
   id: string;
   name: string;
+  brand?: string; // Tambahan field untuk Merk
   description: string;
   category: string;
   images: string[];

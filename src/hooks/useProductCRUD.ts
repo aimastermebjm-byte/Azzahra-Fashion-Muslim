@@ -84,6 +84,7 @@ export const useProductCRUD = (): UseProductCRUDResult => {
       const newProduct: Product = {
         id: newProductId,
         name: productData.name || '',
+        brand: productData.brand || undefined, // Include brand if available
         description: productData.description || '',
         category: productData.category || 'uncategorized',
         // price & sellingPrice removed as they are not in Type or optional
