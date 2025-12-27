@@ -61,9 +61,6 @@ const DEFAULT_PRICING_RULES: PricingRule[] = [
 // Size preset options
 const SIZE_PRESETS = ['All Size', 'S', 'M', 'L', 'XL'];
 
-// Default popular brands to jumpstart the dropdown
-const DEFAULT_BRANDS = ['Azzahra', 'Wardah', 'Zoya', 'Elzatta', 'Rabbani', 'Dian Pelangi', 'Ria Miranda'];
-
 const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     isOpen,
     onClose,
@@ -73,10 +70,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 }) => {
     // Brand options
     const { allProducts: products } = useGlobalProducts();
-    const brandOptions = useMemo(() => {
-        const existingBrands = products.map((p: any) => p.brand).filter(Boolean);
-        return Array.from(new Set([...DEFAULT_BRANDS, ...existingBrands])).sort() as string[];
-    }, [products]);
+    const brandOptions = useMemo(() => Array.from(new Set(products.map((p: any) => p.brand).filter(Boolean))).sort() as string[], [products]);
 
     // Step management
     const [step, setStep] = useState<'upload' | 'details' | 'preview'>('upload');
