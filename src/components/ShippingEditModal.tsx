@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { X, MapPin, Phone, User, Truck, Loader2, Package } from 'lucide-react';
 import { ordersService } from '../services/ordersService';
 import { addressService } from '../services/addressService';
-import { komerceService } from '../utils/komerceService';
 import { useToast } from './ToastProvider';
 
 // Shipping options (same as CheckoutPage)
@@ -85,10 +84,12 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
         console.log('📍 Selected address:', address);
         setSelectedAddressId(address.id);
 
-        // Save cityId for shipping calculation
-        const cityId = address.cityId || address.city_id || address.districtId || address.district_id || '';
-        console.log('🏙️ City ID for shipping:', cityId);
-        setSelectedCityId(cityId);
+        // Save destination ID for shipping calculation (prioritize subdistrictId > districtId > cityId)
+        const destId = address.subdistrictId || address.subdistrict_id ||
+            address.districtId || address.district_id ||
+            address.cityId || address.city_id || '';
+        console.log('🏙️ Destination ID for shipping:', destId);
+        setSelectedCityId(destId);
 
         // Build address string from available fields, filter out undefined/empty values
         const addressParts = [
@@ -130,26 +131,41 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
             setShippingError('');
 
             try {
-                // Origin: Bandung (ID: 23)
-                const origin = '23';
+                // Origin: Banjarmasin city ID (same as CheckoutPage)
+                const origin = '2425';
                 const weight = 1000; // Default 1kg
 
-                console.log(`🚚 Calculating shipping: ${selectedCourier.code} to ${selectedCityId}`);
+                console.log(`🚚 Calculating shipping (cached): ${selectedCourier.code} to ${selectedCityId}`);
 
-                const results = await komerceService.calculateShippingCost(
-                    origin,
-                    selectedCityId,
-                    weight,
-                    selectedCourier.code
-                );
+                // Call RajaOngkir CACHED API (same as CheckoutPage for cache hit)
+                const response = await fetch('/api/rajaongkir/cost-cached', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        origin: origin,
+                        destination: selectedCityId,
+                        weight: weight,
+                        courier: selectedCourier.code,
+                        price: 'lowest'
+                    })
+                });
 
-                if (results && results.length > 0) {
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.meta?.status === 'success' && data.data?.length > 0) {
                     // Get cheapest option
-                    const cheapest = results.reduce((min, r) => r.cost < min.cost ? r : min, results[0]);
-                    setFormData(prev => ({ ...prev, shippingCost: cheapest.cost }));
-                    setShippingService(cheapest.service);
-                    setShippingETD(cheapest.etd);
-                    console.log(`✅ Shipping cost: ${cheapest.cost} (${cheapest.service})`);
+                    const cheapest = data.data.reduce((min: any, r: any) =>
+                        (r.price || r.cost) < (min.price || min.cost) ? r : min, data.data[0]);
+
+                    const cost = cheapest.price || cheapest.cost || 0;
+                    setFormData(prev => ({ ...prev, shippingCost: cost }));
+                    setShippingService(cheapest.service || cheapest.service_name || '');
+                    setShippingETD(cheapest.etd || '');
+                    console.log(`✅ Shipping cost: ${cost} (${cheapest.service})`);
                 } else {
                     setShippingError('Tidak ada layanan tersedia');
                 }
