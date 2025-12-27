@@ -541,15 +541,34 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                   </div>
 
                   {/* ✨ NEW: Edit Shipping Button for Keep Mode */}
-                  {(order as any).shippingMode === 'keep' && !(order as any).shippingConfigured && (
-                    <button
-                      onClick={() => setShippingEditOrder(order)}
-                      className="w-full mt-3 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium text-sm flex items-center justify-center gap-2"
-                    >
-                      <MapPin className="w-4 h-4" />
-                      Atur Alamat & Kurir
-                    </button>
-                  )}
+                  {(() => {
+                    const isKeepMode = (order as any).shippingMode === 'keep';
+                    const notConfigured = !(order as any).shippingConfigured;
+                    const noAddress = !(order as any).shippingInfo?.address;
+
+                    // Debug log
+                    console.log('📦 Order Keep Mode Check:', {
+                      orderId: order.id,
+                      shippingMode: (order as any).shippingMode,
+                      shippingConfigured: (order as any).shippingConfigured,
+                      hasAddress: !!(order as any).shippingInfo?.address,
+                      shouldShow: isKeepMode && (notConfigured || noAddress)
+                    });
+
+                    // Show button if Keep mode AND (not configured OR no address)
+                    if (isKeepMode && (notConfigured || noAddress)) {
+                      return (
+                        <button
+                          onClick={() => setShippingEditOrder(order)}
+                          className="w-full mt-3 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium text-sm flex items-center justify-center gap-2"
+                        >
+                          <MapPin className="w-4 h-4" />
+                          Atur Alamat & Kurir
+                        </button>
+                      );
+                    }
+                    return null;
+                  })()}
 
                   {/* Action Button (old single payment - keep for non-pending) */}
                   {!isPending && order.status !== 'delivered' && order.status !== 'cancelled' && (
