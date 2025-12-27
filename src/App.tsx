@@ -77,8 +77,9 @@ function AppContent() {
 
   // ✨ NEW: Navigation history stack for hardware back button support
   const [navigationHistory, setNavigationHistory] = useState<Page[]>(['home']);
+  const [isNavigatingBack, setIsNavigatingBack] = useState(false);
 
-  // Get parent page for back navigation
+  // Parent page mapping for back navigation
   const getParentPage = (page: Page): Page => {
     const parentMap: Record<Page, Page> = {
       'home': 'home',
@@ -105,16 +106,41 @@ function AppContent() {
     return parentMap[page] || 'home';
   };
 
+  // Push history state whenever currentPage changes
+  useEffect(() => {
+    if (isNavigatingBack) {
+      setIsNavigatingBack(false);
+      return;
+    }
+
+    // Push new state to browser history
+    window.history.pushState({ page: currentPage }, '', window.location.pathname);
+
+    // Update navigation history stack
+    setNavigationHistory(prev => {
+      // Avoid duplicates at the end
+      if (prev[prev.length - 1] === currentPage) return prev;
+      return [...prev, currentPage];
+    });
+  }, [currentPage, isNavigatingBack]);
+
   // Handle hardware back button
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
+      event.preventDefault();
+
+      // Mark that we're navigating back to prevent pushing new state
+      setIsNavigatingBack(true);
+
       // Get previous page from history or use parent mapping
       const prevPage = navigationHistory.length > 1
         ? navigationHistory[navigationHistory.length - 2]
         : getParentPage(currentPage);
 
-      // Update history stack
-      setNavigationHistory(prev => prev.slice(0, -1).length > 0 ? prev.slice(0, -1) : ['home']);
+      // Update history stack (remove current page)
+      setNavigationHistory(prev =>
+        prev.length > 1 ? prev.slice(0, -1) : ['home']
+      );
 
       // Navigate to previous page
       setCurrentPage(prevPage);
@@ -124,16 +150,15 @@ function AppContent() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [currentPage, navigationHistory]);
 
-  // Navigation helper that pushes to history
+  // Navigation helper that pushes to history (kept for compatibility)
   const navigateTo = (page: Page, replace = false) => {
     if (replace) {
       window.history.replaceState({ page }, '', window.location.pathname);
       setNavigationHistory(prev => [...prev.slice(0, -1), page]);
     } else {
-      window.history.pushState({ page }, '', window.location.pathname);
-      setNavigationHistory(prev => [...prev, page]);
+      // Just set current page - useEffect will handle history push
+      setCurrentPage(page);
     }
-    setCurrentPage(page);
   };
 
   const handleProductClick = (product: any) => {
