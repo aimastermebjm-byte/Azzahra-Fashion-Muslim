@@ -536,7 +536,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           </div>
         )}
         <div className="border-t pt-4">
-          <p className="text-gray-600 leading-relaxed">{currentProduct.description}</p>
+          <p className="text-gray-600 leading-relaxed whitespace-pre-wrap text-left">{currentProduct.description}</p>
         </div>
       </div>
 

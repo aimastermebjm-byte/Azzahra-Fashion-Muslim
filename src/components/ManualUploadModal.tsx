@@ -410,6 +410,21 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         onClose();
     };
 
+    // Auto-paste from clipboard if field is empty
+    const handleAutoPaste = async (field: 'name' | 'description') => {
+        if (productFormData[field]) return; // Don't overwrite existing content
+
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text && text.trim().length > 0) {
+                setProductFormData(prev => ({ ...prev, [field]: text }));
+            }
+        } catch (error) {
+            console.error('Failed to read clipboard:', error);
+            // Fail silently - user can manual paste
+        }
+    };
+
     // Reset form
     const handleReset = () => {
         imagePreviews.forEach(url => URL.revokeObjectURL(url));
@@ -780,6 +795,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     <textarea
                                         value={productFormData.name}
                                         onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }))}
+                                        onClick={() => handleAutoPaste('name')}
                                         placeholder="Contoh: Gamis Syari Premium (Tap untuk memperbesar)"
                                         rows={1}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[42px] focus:h-32 transition-[height] duration-300 ease-in-out resize-none"
@@ -794,6 +810,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     <textarea
                                         value={productFormData.description}
                                         onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }))}
+                                        onClick={() => handleAutoPaste('description')}
                                         placeholder="Deskripsi produk... (Tap untuk memperbesar)"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[80px] h-[80px] focus:h-72 transition-[height] duration-300 ease-in-out resize-none"
                                     />
