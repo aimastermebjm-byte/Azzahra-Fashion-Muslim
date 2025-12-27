@@ -16,6 +16,7 @@ export interface CartItem {
     size?: string;
     color?: string;
   };
+  status?: string; // Product status: 'po', 'ready', etc.
   addedAt: string; // Selalu string untuk Firestore compatibility
 }
 
@@ -59,7 +60,7 @@ class CartServiceOptimized {
         // Validate and sanitize items
         items = items.filter((item: any) => {
           return item && item.id && item.name && item.productId &&
-                 item.productId !== '' && item.productId !== 'unknown_';
+            item.productId !== '' && item.productId !== 'unknown_';
         }).map((item: any) => ({
           ...item,
           price: Number(item.price) || 0,
@@ -97,7 +98,7 @@ class CartServiceOptimized {
     const user = auth.currentUser;
     if (!user) {
       console.log('❌ No user for real-time cart listener');
-      return () => {};
+      return () => { };
     }
 
     console.log('🔄 Setting up Firestore persistence cart listener for user:', user.uid);
@@ -137,13 +138,13 @@ class CartServiceOptimized {
       }
 
       console.log('🛒 Adding to cart via Firestore persistence:', product.name);
-        console.log('🔍 DEBUG: Product structure for addToCart:', {
-          id: product.id,
-          name: product.name,
-          retailPrice: product.retailPrice,
-          resellerPrice: product.resellerPrice,
-          price: product.price
-        });
+      console.log('🔍 DEBUG: Product structure for addToCart:', {
+        id: product.id,
+        name: product.name,
+        retailPrice: product.retailPrice,
+        resellerPrice: product.resellerPrice,
+        price: product.price
+      });
 
       // Define cart reference for writing
       const cartRef = doc(db, this.FIREBASE_COLLECTION, user.uid);
@@ -176,7 +177,7 @@ class CartServiceOptimized {
       } else {
         // Add new item
         const productId = product.id || product.productId || 'unknown_' + Date.now();
-        
+
         // Determine price with correct priority:
         // 1. If product.price is set (already calculated by ProductDetail based on role/flash sale)
         // 2. Flash sale price if active
@@ -190,7 +191,7 @@ class CartServiceOptimized {
         } else {
           itemPrice = Number(product.retailPrice || product.resellerPrice || 0);
         }
-        
+
         const cartItem: CartItem = {
           id: this.generateCartItemId(),
           productId: productId,
@@ -199,6 +200,7 @@ class CartServiceOptimized {
           quantity: Number(quantity) || 1,
           image: product.image || product.images?.[0] || '/placeholder-product.jpg',
           ...(variant && { variant }), // Hanya include variant jika ada
+          status: product.status || undefined, // Include product status (po, ready, etc.)
           addedAt: new Date().toISOString()
         };
 
