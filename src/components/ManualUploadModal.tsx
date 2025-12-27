@@ -71,6 +71,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     // Brand options
     const { allProducts: products } = useGlobalProducts();
     const brandOptions = useMemo(() => Array.from(new Set(products.map((p: any) => p.brand).filter(Boolean))).sort() as string[], [products]);
+    const [showBrandSuggestions, setShowBrandSuggestions] = useState(false);
 
     // Step management
     const [step, setStep] = useState<'upload' | 'details' | 'preview'>('upload');
@@ -820,17 +821,43 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     <div className="relative">
                                         <input
                                             type="text"
-                                            list="brand-options"
                                             value={productFormData.brand}
-                                            onChange={(e) => setProductFormData(prev => ({ ...prev, brand: e.target.value }))}
+                                            onChange={(e) => {
+                                                setProductFormData(prev => ({ ...prev, brand: e.target.value }));
+                                                setShowBrandSuggestions(true);
+                                            }}
+                                            onFocus={() => setShowBrandSuggestions(true)}
+                                            onBlur={() => setTimeout(() => setShowBrandSuggestions(false), 200)}
                                             placeholder="Pilih atau ketik merk..."
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                            autoComplete="off"
                                         />
-                                        <datalist id="brand-options">
-                                            {brandOptions.map((brand: string, i: number) => (
-                                                <option key={i} value={brand} />
-                                            ))}
-                                        </datalist>
+
+                                        {/* Custom Dropdown Suggestions */}
+                                        {showBrandSuggestions && (
+                                            <div className="absolute z-50 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                                                {brandOptions.filter(b => b.toLowerCase().includes(productFormData.brand.toLowerCase())).length > 0 ? (
+                                                    brandOptions
+                                                        .filter(b => b.toLowerCase().includes(productFormData.brand.toLowerCase()))
+                                                        .map((brand, i) => (
+                                                            <div
+                                                                key={i}
+                                                                className="px-3 py-2 hover:bg-purple-50 cursor-pointer text-gray-700 hover:text-purple-700 transition-colors border-b border-gray-50 last:border-0"
+                                                                onClick={() => {
+                                                                    setProductFormData(prev => ({ ...prev, brand }));
+                                                                    setShowBrandSuggestions(false);
+                                                                }}
+                                                            >
+                                                                {brand}
+                                                            </div>
+                                                        ))
+                                                ) : (
+                                                    <div className="px-3 py-2 text-gray-400 text-sm italic">
+                                                        Ketik untuk membuat merk baru...
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
