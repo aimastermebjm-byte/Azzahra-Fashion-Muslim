@@ -2888,6 +2888,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               // Create product with all fields
               const newProduct = {
                 name: productData.name,
+                brand: productData.brand, // Add brand field
                 description: productData.description || '',
                 category: productData.category,
                 retailPrice: parseInt(productData.retailPrice),
