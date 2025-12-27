@@ -34,9 +34,14 @@ export class CollageService {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, W, H);
 
-    // Load all images
+    // IMPROVEMENT: Compress images first for mobile reliability
+    const compressedImages = await Promise.all(
+      images.map(file => this.compressImage(file, 2)) // Max 2MB per image
+    );
+
+    // Load all images with timeout and retry
     const loadedImages = await Promise.all(
-      images.map(file => this.loadImageFromFile(file))
+      compressedImages.map(file => this.loadImageWithRetry(file, 3, 10000))
     );
 
     // Get Layout Configuration
@@ -73,6 +78,55 @@ export class CollageService {
       }, 'image/jpeg', 0.95);
     });
   }
+
+  // Load image with retry and timeout for mobile reliability
+  private async loadImageWithRetry(file: File, maxRetries: number = 3, timeout: number = 10000): Promise<HTMLImageElement> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const img = await this.loadImageWithTimeout(file, timeout);
+        return img;
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(`Image load attempt ${attempt}/${maxRetries} failed for ${file.name}:`, error);
+        // Wait a bit before retry (exponential backoff)
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+        }
+      }
+    }
+
+    throw lastError || new Error(`Failed to load image after ${maxRetries} attempts`);
+  }
+
+  // Load image with timeout
+  private loadImageWithTimeout(file: File, timeout: number): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+
+      const timeoutId = setTimeout(() => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error(`Image load timeout after ${timeout}ms: ${file.name}`));
+      }, timeout);
+
+      img.onload = () => {
+        clearTimeout(timeoutId);
+        URL.revokeObjectURL(objectUrl);
+        resolve(img);
+      };
+
+      img.onerror = () => {
+        clearTimeout(timeoutId);
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error(`Failed to load image: ${file.name}`));
+      };
+
+      img.src = objectUrl;
+    });
+  }
+
 
   // --- LAYOUT ENGINE ---
   private calculateLayout(count: number, W: number, H: number): Rect[] {
