@@ -185,8 +185,13 @@ function AppContent() {
     // This will be handled by LoginForm component and Firebase Auth
   };
 
-  const handleLoginWithUser = (user: any) => {
+  const handleLoginWithUser = (userData: any) => {
     setShowLogin(false);
+
+    // If user was trying to checkout, continue to checkout page
+    if (selectedCartItemIds.length > 0) {
+      setCurrentPage('checkout');
+    }
   };
 
   const handleRegistrationSuccess = (user: any) => {
@@ -535,6 +540,13 @@ function AppContent() {
   };
 
   const handleCheckout = (selectedItemIds: string[]) => {
+    // Guest browsing: Require login before checkout
+    if (!user) {
+      setShowLogin(true);
+      // Store selected items to continue after login
+      setSelectedCartItemIds(selectedItemIds);
+      return;
+    }
     setSelectedCartItemIds(selectedItemIds);
     setCurrentPage('checkout');
   };

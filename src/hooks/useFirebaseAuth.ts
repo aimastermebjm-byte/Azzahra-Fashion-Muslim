@@ -4,7 +4,9 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
-  updateProfile
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup
 } from '../utils/firebaseClient';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
@@ -36,9 +38,9 @@ export const useFirebaseAuth = () => {
           role: determineUserRole(firebaseUser.email || '')
         };
         setUser(appUser);
-              } else {
+      } else {
         setUser(null);
-              }
+      }
     });
 
     return unsubscribe;
@@ -58,7 +60,7 @@ export const useFirebaseAuth = () => {
       };
 
       await setDoc(userRef, userData, { merge: true });
-          } catch (error) {
+    } catch (error) {
       console.error('❌ Error saving user profile:', error);
     }
   };
@@ -96,7 +98,7 @@ export const useFirebaseAuth = () => {
         await saveUserProfile(firebaseUser, role);
 
         setUser(appUser);
-                return appUser;
+        return appUser;
       }
     } catch (err: any) {
       console.error('❌ Firebase login error:', err);
@@ -134,7 +136,7 @@ export const useFirebaseAuth = () => {
         await saveUserProfile(firebaseUser, userRole);
 
         setUser(appUser);
-                return appUser;
+        return appUser;
       }
     } catch (err: any) {
       console.error('❌ Firebase registration error:', err);
@@ -150,9 +152,61 @@ export const useFirebaseAuth = () => {
     try {
       await signOut(auth);
       setUser(null);
-          } catch (err: any) {
+    } catch (err: any) {
       console.error('❌ Firebase logout error:', err);
       setError(getAuthErrorMessage(err.code));
+    }
+  };
+
+  // Login with Google
+  const loginWithGoogle = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const firebaseUser = result.user;
+
+      if (firebaseUser) {
+        // Check if user exists in Firestore
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        const userDoc = await getDoc(userRef);
+
+        let role: 'customer' | 'reseller' | 'admin' | 'owner' = 'customer';
+
+        if (userDoc.exists()) {
+          // Use existing role from Firestore
+          role = userDoc.data().role || 'customer';
+        } else {
+          // New user - determine role based on email
+          role = determineUserRole(firebaseUser.email || '');
+        }
+
+        const appUser: User = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
+          role: role
+        };
+
+        // Save/update user profile to Firestore
+        await saveUserProfile(firebaseUser, role);
+
+        setUser(appUser);
+        console.log('✅ Google login successful:', appUser.email);
+        return appUser;
+      }
+    } catch (err: any) {
+      console.error('❌ Google login error:', err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('Login dibatalkan');
+      } else {
+        setError(getAuthErrorMessage(err.code));
+      }
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -183,6 +237,7 @@ export const useFirebaseAuth = () => {
     loading,
     error,
     login,
+    loginWithGoogle,
     register,
     logout,
     isAuthenticated: !!user
