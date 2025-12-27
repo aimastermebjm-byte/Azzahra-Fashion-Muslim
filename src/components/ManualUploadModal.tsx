@@ -872,7 +872,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             <tr className="bg-purple-100">
                                                 <th className="px-3 py-2 text-left font-semibold text-purple-800 rounded-tl-lg">Size</th>
                                                 {variantLabels.map((label) => (
-                                                    <th key={label} className="px-3 py-2 text-center font-bold text-purple-700">{label}</th>
+                                                    <th key={label} className="px-3 py-2 text-center font-bold text-purple-700 min-w-[100px]">{label}</th>
                                                 ))}
                                                 <th className="px-3 py-2 text-center font-semibold text-purple-800 rounded-tr-lg">Total</th>
                                             </tr>
@@ -893,7 +893,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             const currentValue = productFormData.stockPerVariant[key];
 
                                                             return (
-                                                                <td key={key} className="px-1 py-2">
+                                                                <td key={key} className="px-1 py-2 min-w-[100px]">
                                                                     <input
                                                                         type="text"
                                                                         inputMode="numeric"
@@ -928,7 +928,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                         return sum + parseInt(productFormData.stockPerVariant[key] || String(uploadSettings.stockPerVariant) || '0');
                                                     }, 0);
                                                     return (
-                                                        <td key={label} className="px-3 py-2 text-center font-bold text-green-700">
+                                                        <td key={label} className="px-3 py-2 text-center font-bold text-green-700 min-w-[100px]">
                                                             {variantTotal}
                                                         </td>
                                                     );
