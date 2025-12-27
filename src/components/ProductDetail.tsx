@@ -452,6 +452,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       <div className="bg-white mt-2 p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
+            {currentProduct.brand && (
+              <div className="mb-1">
+                <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-semibold rounded uppercase tracking-wide">
+                  {currentProduct.brand}
+                </span>
+              </div>
+            )}
             <h1 className="text-xl font-bold text-gray-800 mb-2">{currentProduct.name}</h1>
             <div className="flex items-center space-x-2 mb-2">
               <div className="flex items-center">
