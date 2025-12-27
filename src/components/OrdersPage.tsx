@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Package, Clock, Truck, CheckCircle, Search, XCircle, CreditCard, Upload, X, Copy, ArrowLeft, Check } from 'lucide-react';
+import { Package, Clock, Truck, CheckCircle, Search, XCircle, CreditCard, Upload, X, Copy, ArrowLeft, Check, MapPin } from 'lucide-react';
 import { ordersService } from '../services/ordersService';
 import { paymentGroupService } from '../services/paymentGroupService';
 import { useFirebaseOrders } from '../hooks/useFirebaseOrders';
 import { useToast } from './ToastProvider';
 import BackButton from './BackButton';
+import ShippingEditModal from './ShippingEditModal';
 
 interface OrdersPageProps {
   user: any;
@@ -26,6 +27,9 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [paymentData, setPaymentData] = useState<any>(null);
   const [uploadingProof, setUploadingProof] = useState(false);
+
+  // ✨ NEW: Shipping edit modal state
+  const [shippingEditOrder, setShippingEditOrder] = useState<any>(null);
 
   // ✨ NEW: Toggle order selection
   const handleToggleOrderSelection = (orderId: string) => {
@@ -399,8 +403,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex-shrink-0 px-4 py-2 mr-2 rounded-full text-sm font-medium transition-colors ${activeTab === tab.id
-                  ? 'bg-pink-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-pink-500 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
             >
               {tab.label}
@@ -486,9 +490,18 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                         })}
                       </p>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${status?.color || 'text-gray-600 bg-gray-100'}`}>
-                      {status?.label || order.status}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${status?.color || 'text-gray-600 bg-gray-100'}`}>
+                        {status?.label || order.status}
+                      </span>
+                      {/* ✨ NEW: Keep Mode Badge */}
+                      {(order as any).shippingMode === 'keep' && !(order as any).shippingConfigured && (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          Alamat belum diatur
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Order Items Preview */}
@@ -503,6 +516,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate">
                             {item.productName || item.name}
+                            {item.selectedVariant?.color && ` - ${item.selectedVariant.color}`}
+                            {item.selectedVariant?.size && ` (${item.selectedVariant.size})`}
                           </p>
                           <p className="text-xs text-gray-500">
                             {item.quantity}x • Rp {(item.price || 0).toLocaleString('id-ID')}
@@ -524,6 +539,17 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                       Rp {(order.finalTotal || 0).toLocaleString('id-ID')}
                     </span>
                   </div>
+
+                  {/* ✨ NEW: Edit Shipping Button for Keep Mode */}
+                  {(order as any).shippingMode === 'keep' && !(order as any).shippingConfigured && (
+                    <button
+                      onClick={() => setShippingEditOrder(order)}
+                      className="w-full mt-3 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium text-sm flex items-center justify-center gap-2"
+                    >
+                      <MapPin className="w-4 h-4" />
+                      Atur Alamat & Kurir
+                    </button>
+                  )}
 
                   {/* Action Button (old single payment - keep for non-pending) */}
                   {!isPending && order.status !== 'delivered' && order.status !== 'cancelled' && (
@@ -956,6 +982,17 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
           </div>
         </div>
       )}
+
+      {/* ✨ NEW: Shipping Edit Modal */}
+      <ShippingEditModal
+        isOpen={!!shippingEditOrder}
+        onClose={() => setShippingEditOrder(null)}
+        order={shippingEditOrder}
+        onSuccess={() => {
+          // Refresh orders will happen via real-time listener
+          setShippingEditOrder(null);
+        }}
+      />
     </div>
   );
 };

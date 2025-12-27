@@ -4,6 +4,7 @@ import PageHeader from './PageHeader';
 import { useFirebaseAdminOrders } from '../hooks/useFirebaseAdminOrders';
 import { ordersService } from '../services/ordersService';
 import { paymentGroupService } from '../services/paymentGroupService';
+import ShippingEditModal from './ShippingEditModal';
 
 interface AdminOrdersPageProps {
   onBack: () => void;
@@ -41,12 +42,15 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   const [assistPaymentData, setAssistPaymentData] = useState<any>(null);
   const [assistPaymentProof, setAssistPaymentProof] = useState<File | null>(null);
 
+  // ✨ NEW: Shipping edit state for admin/owner
+  const [shippingEditOrder, setShippingEditOrder] = useState<any>(null);
+
   // Modern confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState({
     title: '',
     message: '',
-    onConfirm: () => {},
+    onConfirm: () => { },
     confirmText: 'Ya, Lanjutkan',
     cancelText: 'Batal',
     type: 'warning' // 'warning', 'success', 'error', 'info'
@@ -96,8 +100,8 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
   // ✨ NEW: Bulk operations functions
   const toggleSelectOrder = (orderId: string) => {
-    setSelectedOrderIds(prev => 
-      prev.includes(orderId) 
+    setSelectedOrderIds(prev =>
+      prev.includes(orderId)
         ? prev.filter(id => id !== orderId)
         : [...prev, orderId]
     );
@@ -118,7 +122,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     }
 
     showModernConfirm(
-      'Konfirmasi Bulk Delete', 
+      'Konfirmasi Bulk Delete',
       `Apakah Anda yakin ingin menghapus ${selectedOrderIds.length} pesanan sekaligus? Stock akan dikembalikan.`,
       async () => {
         let successCount = 0;
@@ -206,7 +210,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   // Listen for order updates
   useEffect(() => {
     const handleOrderUpdate = (event: any) => {
-            // Force re-render by updating state
+      // Force re-render by updating state
       setSearchQuery(prev => prev + ' ');
       setTimeout(() => setSearchQuery(prev => prev.trim()), 100);
     };
@@ -349,7 +353,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     if (order.paymentGroupId) {
       try {
         const existingGroup = await paymentGroupService.getPaymentGroup(order.paymentGroupId);
-        
+
         if (existingGroup && existingGroup.status === 'pending') {
           // Reuse existing payment group
           setAssistPaymentData({
@@ -358,7 +362,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             subtotal: order.finalTotal,
             paymentGroup: existingGroup
           });
-          
+
           if (existingGroup.verificationMode === 'auto') {
             setShowAutoInstructionsModal(true);
           } else if (existingGroup.verificationMode === 'manual') {
@@ -372,13 +376,13 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         console.error('Error loading existing payment group:', error);
       }
     }
-    
+
     // No existing payment group, show method selection
-    setAssistPaymentData({ 
-      order, 
+    setAssistPaymentData({
+      order,
       orders: [order],
       subtotal: order.finalTotal,
-      paymentGroup: null 
+      paymentGroup: null
     });
     setShowPaymentMethodModal(true);
   };
@@ -392,7 +396,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
     // Filter only pending orders
     const selected = orders.filter(o => selectedOrderIds.includes(o.id) && o.status === 'pending');
-    
+
     if (selected.length === 0) {
       showModernAlert('Peringatan', 'Hanya pesanan pending yang bisa dibantu pembayaran', 'warning');
       return;
@@ -403,23 +407,23 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     }
 
     const subtotal = selected.reduce((sum, o) => sum + o.finalTotal, 0);
-    
+
     // Check if first order has payment group
     const firstOrder = selected[0];
     let existingPaymentGroup = null;
-    
+
     if (firstOrder?.paymentGroupId) {
       try {
         existingPaymentGroup = await paymentGroupService.getPaymentGroup(firstOrder.paymentGroupId);
-        
+
         if (existingPaymentGroup && existingPaymentGroup.status === 'pending') {
           // Validate if matches current selection
-          const isSameOrders = 
+          const isSameOrders =
             existingPaymentGroup.orderIds.length === selected.length &&
             existingPaymentGroup.orderIds.every(id => selected.find(o => o.id === id));
-          
+
           const isSameTotal = existingPaymentGroup.originalTotal === subtotal;
-          
+
           if (isSameOrders && isSameTotal) {
             // Reuse existing
             setAssistPaymentData({
@@ -427,7 +431,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
               subtotal,
               paymentGroup: existingPaymentGroup
             });
-            
+
             if (existingPaymentGroup.verificationMode === 'auto') {
               setShowAutoInstructionsModal(true);
             } else {
@@ -442,7 +446,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
               `Selection baru: ${selected.length} pesanan (Rp ${subtotal.toLocaleString('id-ID')})\n\n` +
               `Batalkan payment group lama dan buat baru?`
             );
-            
+
             if (shouldCancel) {
               await paymentGroupService.cancelPaymentGroup(existingPaymentGroup.id);
               for (const orderId of existingPaymentGroup.orderIds) {
@@ -462,14 +466,14 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         console.error('Error loading existing payment group:', error);
       }
     }
-    
+
     // No existing payment group (or cancelled), show method selection
     setAssistPaymentData({
       orders: selected,
       subtotal,
       paymentGroup: null
     });
-    
+
     setShowPaymentMethodModal(true);
   };
 
@@ -480,7 +484,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         const targetOrders = assistPaymentData.orders || [assistPaymentData.order];
         const firstOrder = targetOrders[0];
         const totalAmount = assistPaymentData.subtotal || assistPaymentData.order.finalTotal;
-        
+
         // Create payment group for selected order(s)
         const paymentGroup = await paymentGroupService.createPaymentGroup({
           userId: firstOrder.userId,
@@ -490,7 +494,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           originalTotal: totalAmount,
           verificationMode: 'auto'
         });
-        
+
         // Update all orders with payment group
         for (const order of targetOrders) {
           await ordersService.updateOrder(order.id, {
@@ -499,12 +503,12 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             verificationMode: 'auto'
           });
         }
-        
+
         setAssistPaymentData({
           ...assistPaymentData,
           paymentGroup
         });
-        
+
         setShowPaymentMethodModal(false);
         setShowAutoInstructionsModal(true);
         setSelectedOrderIds([]); // Clear bulk selection
@@ -515,7 +519,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           ...assistPaymentData,
           verificationMode: 'manual'
         });
-        
+
         setShowPaymentMethodModal(false);
         setShowManualUploadModal(true);
       }
@@ -545,7 +549,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     try {
       // Support both single and multiple orders
       const targetOrders = assistPaymentData.orders || [assistPaymentData.order];
-      
+
       // Upload payment proof for all selected orders
       for (const order of targetOrders) {
         await ordersService.updateOrderPayment(
@@ -559,10 +563,10 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       setAssistPaymentData(null);
       setAssistPaymentProof(null);
       setSelectedOrderIds([]); // Clear bulk selection
-      
+
       showModernAlert(
-        'Berhasil', 
-        `Bukti pembayaran berhasil diupload untuk ${targetOrders.length} pesanan`, 
+        'Berhasil',
+        `Bukti pembayaran berhasil diupload untuk ${targetOrders.length} pesanan`,
         'success'
       );
     } catch (error) {
@@ -802,13 +806,13 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     className="w-4 h-4 text-brand-primary border-gray-300 rounded focus:ring-brand-primary"
                   />
                   <span className="text-sm font-medium text-gray-700">
-                    {selectedOrderIds.length > 0 
-                      ? `${selectedOrderIds.length} dipilih` 
+                    {selectedOrderIds.length > 0
+                      ? `${selectedOrderIds.length} dipilih`
                       : 'Pilih Semua'}
                   </span>
                 </label>
               </div>
-              
+
               {selectedOrderIds.length > 0 && (
                 <div className="flex items-center space-x-3">
                   {/* ✨ NEW: Bulk Payment Assistance Button */}
@@ -819,7 +823,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     <CreditCard className="w-4 h-4" />
                     <span>Bantu Pembayaran ({selectedOrderIds.length})</span>
                   </button>
-                  
+
                   <button
                     onClick={handleBulkDelete}
                     className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
@@ -861,7 +865,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         />
                       </div>
                     )}
-                    
+
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-3">
                         <div>
@@ -889,89 +893,89 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                       </div>
 
                       <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-600">
-                        {order.items.length} item • {paymentMethodLabel}
-                      </div>
-                        <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleViewOrder(order)}
-                        className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
-                      >
-                        <Eye className="w-4 h-4" />
-                        <span>Detail</span>
-                      </button>
-
-                      {order.status === 'pending' || order.status === 'awaiting_verification' ? (
-                        user?.role === 'owner' ? (
-                          <button
-                            onClick={() => handleVerifyPayment(order)}
-                            className="flex items-center space-x-1 text-green-600 hover:text-green-700 text-sm font-medium"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            <span>Verifikasi</span>
-                          </button>
-                        ) : (
-                          <div className="flex items-center space-x-1 text-gray-400 text-sm font-medium">
-                            <CheckCircle className="w-4 h-4" />
-                            <span>Verifikasi (Owner Only)</span>
-                          </div>
-                        )
-                      ) : order.status === 'paid' && (order.paymentProof || order.paymentProofData) ? (
-                        <div className="flex items-center space-x-1 text-blue-600 text-sm font-medium">
-                          <CreditCard className="w-4 h-4" />
-                          <span>Sudah Diverifikasi</span>
+                        <div className="text-sm text-gray-600">
+                          {order.items.length} item • {paymentMethodLabel}
                         </div>
-                      ) : null}
-
-                      {order.status === 'paid' && (
-                        <button
-                          onClick={() => handleUpdateStatus(order.id, 'processing', order.id)}
-                          className="flex items-center space-x-1 text-purple-600 hover:text-purple-700 text-sm font-medium"
-                        >
-                          <Package className="w-4 h-4" />
-                          <span>Proses</span>
-                        </button>
-                      )}
-
-                      {order.status === 'processing' && (
-                        <button
-                          onClick={() => handleUpdateStatus(order.id, 'shipped', order.id)}
-                          className="flex items-center space-x-1 text-indigo-600 hover:text-indigo-700 text-sm font-medium"
-                        >
-                          <Truck className="w-4 h-4" />
-                          <span>Kirim</span>
-                        </button>
-                      )}
-
-                      {order.status === 'shipped' && (
-                        <button
-                          onClick={() => handleUpdateStatus(order.id, 'delivered', order.id)}
-                          className="flex items-center space-x-1 text-green-600 hover:text-green-700 text-sm font-medium"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          <span>Selesai</span>
-                        </button>
-                      )}
-
-                      {/* ✨ NEW: Edit button (Owner only) */}
-                      {user?.role === 'owner' && (
-                        <>
+                        <div className="flex items-center space-x-2">
                           <button
-                            onClick={() => handleEditOrder(order)}
+                            onClick={() => handleViewOrder(order)}
                             className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
                           >
-                            <Edit2 className="w-4 h-4" />
-                            <span>Edit</span>
+                            <Eye className="w-4 h-4" />
+                            <span>Detail</span>
                           </button>
-                          <button
-                            onClick={() => handleDeleteOrder(order.id)}
-                            className="flex items-center space-x-1 text-red-600 hover:text-red-700 text-sm font-medium"
-                          >
-                            <XCircle className="w-4 h-4" />
-                            <span>Hapus</span>
-                          </button>
-                        </>
-                      )}
+
+                          {order.status === 'pending' || order.status === 'awaiting_verification' ? (
+                            user?.role === 'owner' ? (
+                              <button
+                                onClick={() => handleVerifyPayment(order)}
+                                className="flex items-center space-x-1 text-green-600 hover:text-green-700 text-sm font-medium"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                                <span>Verifikasi</span>
+                              </button>
+                            ) : (
+                              <div className="flex items-center space-x-1 text-gray-400 text-sm font-medium">
+                                <CheckCircle className="w-4 h-4" />
+                                <span>Verifikasi (Owner Only)</span>
+                              </div>
+                            )
+                          ) : order.status === 'paid' && (order.paymentProof || order.paymentProofData) ? (
+                            <div className="flex items-center space-x-1 text-blue-600 text-sm font-medium">
+                              <CreditCard className="w-4 h-4" />
+                              <span>Sudah Diverifikasi</span>
+                            </div>
+                          ) : null}
+
+                          {order.status === 'paid' && (
+                            <button
+                              onClick={() => handleUpdateStatus(order.id, 'processing', order.id)}
+                              className="flex items-center space-x-1 text-purple-600 hover:text-purple-700 text-sm font-medium"
+                            >
+                              <Package className="w-4 h-4" />
+                              <span>Proses</span>
+                            </button>
+                          )}
+
+                          {order.status === 'processing' && (
+                            <button
+                              onClick={() => handleUpdateStatus(order.id, 'shipped', order.id)}
+                              className="flex items-center space-x-1 text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                            >
+                              <Truck className="w-4 h-4" />
+                              <span>Kirim</span>
+                            </button>
+                          )}
+
+                          {order.status === 'shipped' && (
+                            <button
+                              onClick={() => handleUpdateStatus(order.id, 'delivered', order.id)}
+                              className="flex items-center space-x-1 text-green-600 hover:text-green-700 text-sm font-medium"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              <span>Selesai</span>
+                            </button>
+                          )}
+
+                          {/* ✨ NEW: Edit button (Owner only) */}
+                          {user?.role === 'owner' && (
+                            <>
+                              <button
+                                onClick={() => handleEditOrder(order)}
+                                className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteOrder(order.id)}
+                                className="flex items-center space-x-1 text-red-600 hover:text-red-700 text-sm font-medium"
+                              >
+                                <XCircle className="w-4 h-4" />
+                                <span>Hapus</span>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1020,10 +1024,29 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
               {/* Shipping Info */}
               <div className="bg-blue-50 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-                  <MapPin className="w-4 h-4 mr-2" />
-                  Informasi Pengiriman
-                </h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-800 flex items-center">
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Informasi Pengiriman
+                    {/* ✨ NEW: Keep mode badge */}
+                    {(selectedOrder as any).shippingMode === 'keep' && !(selectedOrder as any).shippingConfigured && (
+                      <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700">
+                        Belum diatur
+                      </span>
+                    )}
+                  </h3>
+                  {/* ✨ NEW: Edit button for admin/owner */}
+                  <button
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      setShippingEditOrder(selectedOrder);
+                    }}
+                    className="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition flex items-center gap-1"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                    Edit Alamat
+                  </button>
+                </div>
                 <div className="space-y-2 text-sm">
                   <div>
                     <p className="text-gray-600">Nama Penerima</p>
@@ -1075,9 +1098,13 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         <Package className="w-8 h-8 text-gray-400" style={{ display: (item.productImage || item.image) ? 'none' : 'flex' }} />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium">{item.productName}</p>
+                        <p className="font-medium">
+                          {item.productName}
+                          {item.selectedVariant?.color && ` - ${item.selectedVariant.color}`}
+                          {item.selectedVariant?.size && ` (${item.selectedVariant.size})`}
+                        </p>
                         <p className="text-sm text-gray-600">
-                          {item.selectedVariant?.size}, {item.selectedVariant?.color} • {item.quantity} pcs
+                          Qty: {item.quantity} pcs
                         </p>
                         <p className="text-xs text-gray-500">
                           Rp {item.price.toLocaleString('id-ID')} × {item.quantity}
@@ -1412,11 +1439,10 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full mx-4 shadow-2xl transform transition-all">
             {/* Header with icon */}
-            <div className={`px-6 py-5 rounded-t-2xl ${
-              confirmModalData.type === 'error' ? 'bg-red-50' :
+            <div className={`px-6 py-5 rounded-t-2xl ${confirmModalData.type === 'error' ? 'bg-red-50' :
               confirmModalData.type === 'success' ? 'bg-green-50' :
-              confirmModalData.type === 'warning' ? 'bg-yellow-50' : 'bg-blue-50'
-            }`}>
+                confirmModalData.type === 'warning' ? 'bg-yellow-50' : 'bg-blue-50'
+              }`}>
               <div className="flex items-center space-x-3">
                 {confirmModalData.type === 'error' && (
                   <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
@@ -1439,11 +1465,10 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   </div>
                 )}
                 <div className="flex-1">
-                  <h3 className={`text-xl font-bold ${
-                    confirmModalData.type === 'error' ? 'text-red-800' :
+                  <h3 className={`text-xl font-bold ${confirmModalData.type === 'error' ? 'text-red-800' :
                     confirmModalData.type === 'success' ? 'text-green-800' :
-                    confirmModalData.type === 'warning' ? 'text-yellow-800' : 'text-blue-800'
-                  }`}>
+                      confirmModalData.type === 'warning' ? 'text-yellow-800' : 'text-blue-800'
+                    }`}>
                     {confirmModalData.title}
                   </h3>
                 </div>
@@ -1469,11 +1494,10 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
               )}
               <button
                 onClick={confirmModalData.onConfirm}
-                className={`px-5 py-2.5 text-white rounded-xl font-medium transition-all hover:shadow-lg transform hover:scale-105 ${
-                  confirmModalData.type === 'error' ? 'bg-red-600 hover:bg-red-700' :
+                className={`px-5 py-2.5 text-white rounded-xl font-medium transition-all hover:shadow-lg transform hover:scale-105 ${confirmModalData.type === 'error' ? 'bg-red-600 hover:bg-red-700' :
                   confirmModalData.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
-                  confirmModalData.type === 'warning' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-blue-600 hover:bg-blue-700'
-                }`}
+                    confirmModalData.type === 'warning' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
               >
                 {confirmModalData.confirmText}
               </button>
@@ -1526,7 +1550,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   <MapPin className="w-4 h-4" />
                   <span>Informasi Pengiriman</span>
                 </h4>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nama Penerima</label>
                   <input
@@ -1724,7 +1748,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
-                
+
                 <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 flex items-center justify-between">
                   <div>
                     <p className="text-xs text-blue-700 font-medium">🏦 BCA - Fahrin</p>
@@ -1838,7 +1862,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
-                
+
                 <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 flex items-center justify-between">
                   <div>
                     <p className="text-xs text-blue-700 font-medium">🏦 BCA - Fahrin</p>
@@ -1932,6 +1956,16 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           </div>
         </div>
       )}
+
+      {/* ✨ NEW: Shipping Edit Modal for Admin/Owner */}
+      <ShippingEditModal
+        isOpen={!!shippingEditOrder}
+        onClose={() => setShippingEditOrder(null)}
+        order={shippingEditOrder}
+        onSuccess={() => {
+          setShippingEditOrder(null);
+        }}
+      />
     </div>
   );
 };

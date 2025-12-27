@@ -2,6 +2,7 @@ node_modules/
 dist/
 .vercel
 service-account.json
+.env
 .wwebjs_auth
 .wwebjs_cache
 .wwebjs_auth/

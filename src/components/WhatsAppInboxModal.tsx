@@ -16,6 +16,8 @@ interface ProductDraft {
     variantCount: number;
     timestamp: any;
     rawImages: string[];
+    sizes?: string[]; // NEW: Sizes from backend parsing
+    colors?: string[]; // NEW: Colors from backend parsing
 }
 
 interface WhatsAppInboxModalProps {
@@ -63,10 +65,10 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
             costPrice: draft.costPrice,
             variants: {
                 colors: variantLabels,
-                sizes: ['All Size'],
-                stock: {
-                    'All Size': stockPerVariant
-                }
+                sizes: draft.sizes && draft.sizes.length > 0 ? draft.sizes : ['All Size'],
+                stock: draft.sizes && draft.sizes.length > 0
+                    ? Object.fromEntries(draft.sizes.map(size => [size, stockPerVariant]))
+                    : { 'All Size': stockPerVariant }
             }
         };
 

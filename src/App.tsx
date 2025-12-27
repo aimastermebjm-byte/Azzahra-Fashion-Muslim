@@ -56,6 +56,7 @@ function AppContent() {
   const { allProducts: products, featuredProducts, flashSaleProducts, loading, refresh, updateProductStock } = useUnifiedProducts();
   const { addOrder } = useAdmin();
 
+
   // Initialize Firebase-only app on app start
   useEffect(() => {
 
@@ -73,6 +74,67 @@ function AppContent() {
 
     handleRouting();
   }, []);
+
+  // ✨ NEW: Navigation history stack for hardware back button support
+  const [navigationHistory, setNavigationHistory] = useState<Page[]>(['home']);
+
+  // Get parent page for back navigation
+  const getParentPage = (page: Page): Page => {
+    const parentMap: Record<Page, Page> = {
+      'home': 'home',
+      'flash-sale': 'home',
+      'orders': 'home',
+      'account': 'home',
+      'address-management': 'account',
+      'product-detail': 'home',
+      'cart': 'home',
+      'checkout': 'cart',
+      'login': 'home',
+      'admin-products': 'account',
+      'admin-orders': 'account',
+      'admin-reports': 'account',
+      'admin-users': 'account',
+      'admin-cache': 'account',
+      'admin-financials': 'account',
+      'admin-master': 'account',
+      'admin-payment-verification': 'account',
+      'admin-stock-opname': 'account',
+      'admin-voucher': 'account',
+      'ongkir-test': 'home'
+    };
+    return parentMap[page] || 'home';
+  };
+
+  // Handle hardware back button
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      // Get previous page from history or use parent mapping
+      const prevPage = navigationHistory.length > 1
+        ? navigationHistory[navigationHistory.length - 2]
+        : getParentPage(currentPage);
+
+      // Update history stack
+      setNavigationHistory(prev => prev.slice(0, -1).length > 0 ? prev.slice(0, -1) : ['home']);
+
+      // Navigate to previous page
+      setCurrentPage(prevPage);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentPage, navigationHistory]);
+
+  // Navigation helper that pushes to history
+  const navigateTo = (page: Page, replace = false) => {
+    if (replace) {
+      window.history.replaceState({ page }, '', window.location.pathname);
+      setNavigationHistory(prev => [...prev.slice(0, -1), page]);
+    } else {
+      window.history.pushState({ page }, '', window.location.pathname);
+      setNavigationHistory(prev => [...prev, page]);
+    }
+    setCurrentPage(page);
+  };
 
   const handleProductClick = (product: any) => {
     console.log('🔗 App.tsx handleProductClick:', {

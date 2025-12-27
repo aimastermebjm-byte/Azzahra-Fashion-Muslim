@@ -5,6 +5,24 @@ const fs = require('fs');
 const path = require('path');
 const { Jimp } = require('jimp');
 
+// Load .env file from project root
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+// Gemini AI for image analysis
+// REQUIRED: Set environment variable GEMINI_API_KEY with your API key
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+let visionModel = null;
+
+if (GEMINI_API_KEY) {
+  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+  visionModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  console.log('✅ Gemini AI initialized for image analysis');
+} else {
+  console.log('⚠️ GEMINI_API_KEY not set - AI image selection disabled');
+}
+
 // ============================================================
 // 1. FIREBASE INITIALIZATION
 // ============================================================
@@ -77,13 +95,22 @@ async function processBundle() {
   }
 
   try {
-    // 1. Parse Caption
+    // 1. Parse Caption (enhanced with sizes)
     const parsed = parseCaption(finalCaption);
     console.log('📋 Parsed:', parsed);
 
-    // 2. Generate Collage
-    console.log('🎨 Generating collage...');
-    const collageBuffer = await generateCollage(images.map(i => i.imageBuffer));
+    // 2. AI Smart Image Selection (if more than 3 images)
+    let selectedImages = images;
+    if (images.length > 3) {
+      console.log('🤖 Running AI image selection...');
+      selectedImages = await selectBestImages(images);
+    } else {
+      console.log('📸 Using all', images.length, 'images (no AI needed)');
+    }
+
+    // 3. Generate Collage from selected images
+    console.log('🎨 Generating collage from', selectedImages.length, 'images...');
+    const collageBuffer = await generateCollage(selectedImages.map(i => i.imageBuffer));
 
     // 3. Upload Collage to Storage
     const filename = `collages/draft_${Date.now()}.jpg`;
@@ -105,10 +132,12 @@ async function processBundle() {
       retailPrice: parsed.retailPrice,
       resellerPrice: parsed.resellerPrice,
       costPrice: parsed.costPrice,
+      sizes: parsed.sizes || ['All Size'],
+      colors: parsed.colors || [],
       collageUrl: collageUrl,
-      variantCount: images.length,
+      variantCount: selectedImages.length,
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      rawImages: images.map(i => i.storageUrl).filter(Boolean)
+      rawImages: selectedImages.map(i => i.storageUrl).filter(Boolean)
     };
 
     const docRef = await db.collection('product_drafts').add(draftData);
@@ -121,7 +150,100 @@ async function processBundle() {
 }
 
 // ============================================================
-// 3. CAPTION PARSER (No AI, Regex Only)
+// 2B. AI IMAGE ANALYSIS (Gemini Vision)
+// ============================================================
+async function analyzeImageWithAI(imageBuffer) {
+  try {
+    const base64Image = imageBuffer.toString('base64');
+
+    const prompt = `Analisis gambar fashion/pakaian ini dengan singkat:
+1. Apakah menampilkan FULL BODY (kepala sampai kaki terlihat)? Jawab: Ya atau Tidak
+2. Warna DOMINAN pakaian (satu kata saja, contoh: Hitam, Navy, Putih, Coklat, Abu, Maroon, Sage, Dusty, Mocca, dll)?
+
+Format jawaban HARUS seperti ini:
+FULLBODY:Ya
+WARNA:Hitam`;
+
+    const result = await visionModel.generateContent([
+      prompt,
+      {
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: base64Image
+        }
+      }
+    ]);
+
+    const response = result.response.text();
+    console.log('   🔍 AI Response:', response.replace(/\n/g, ' '));
+
+    // Parse response
+    const isFullBody = /FULLBODY\s*:\s*Ya/i.test(response);
+    const colorMatch = response.match(/WARNA\s*:\s*(\w+)/i);
+    const color = colorMatch ? colorMatch[1].toLowerCase() : 'unknown';
+
+    return { isFullBody, color };
+  } catch (error) {
+    console.error('   ⚠️ AI analysis failed:', error.message);
+    // Fallback: assume full body, unknown color
+    return { isFullBody: true, color: 'unknown' };
+  }
+}
+
+async function selectBestImages(images) {
+  // If AI not configured, return all images
+  if (!visionModel) {
+    console.log('⚠️ AI not configured - using all images');
+    return images;
+  }
+
+  console.log('🤖 AI analyzing', images.length, 'images...');
+
+  // Analyze each image
+  const analyzed = [];
+  for (let i = 0; i < images.length; i++) {
+    console.log(`   📸 Analyzing image ${i + 1}/${images.length}...`);
+    const analysis = await analyzeImageWithAI(images[i].imageBuffer);
+    analyzed.push({
+      ...images[i],
+      ...analysis,
+      index: i
+    });
+
+    // Small delay to avoid rate limiting
+    await new Promise(r => setTimeout(r, 500));
+  }
+
+  // Filter: only full body images
+  const fullBodyImages = analyzed.filter(img => img.isFullBody);
+  console.log(`   ✅ Full body images: ${fullBodyImages.length}/${analyzed.length}`);
+
+  if (fullBodyImages.length === 0) {
+    // Fallback: use first 3 images if no full body detected
+    console.log('   ⚠️ No full body detected, using first 3 images as fallback');
+    return analyzed.slice(0, 3);
+  }
+
+  // Group by color, take first of each color
+  const uniqueByColor = {};
+  fullBodyImages.forEach(img => {
+    const colorKey = img.color.toLowerCase().trim();
+    if (!uniqueByColor[colorKey]) {
+      uniqueByColor[colorKey] = img;
+      console.log(`   🎨 Selected: Image ${img.index + 1} - ${colorKey}`);
+    } else {
+      console.log(`   ⏩ Skipped: Image ${img.index + 1} - duplicate ${colorKey}`);
+    }
+  });
+
+  const selected = Object.values(uniqueByColor);
+  console.log(`🎯 Final selection: ${selected.length} unique images`);
+
+  return selected;
+}
+
+// ============================================================
+// 3. CAPTION PARSER (Enhanced with Sizes & Colors)
 // ============================================================
 function parseCaption(caption) {
   if (!caption) {
@@ -131,26 +253,133 @@ function parseCaption(caption) {
       category: 'Gamis',
       retailPrice: 0,
       resellerPrice: 0,
-      costPrice: 0
+      costPrice: 0,
+      sizes: ['All Size'],
+      colors: []
     };
   }
 
   const lines = caption.split('\n').map(l => l.trim()).filter(Boolean);
-  const name = lines[0] || 'Produk Baru';
-  const description = lines.slice(1).join('\n');
 
-  // Extract price
-  let retailPrice = 0;
-  const cleanText = caption.toLowerCase();
-
-  // Pattern 1: "450k", "150rb", "1.5jt"
-  const suffixMatch = cleanText.match(/(\d+(?:[.,]\d+)?)\s*(rb|k|ribu|jt)/);
-  if (suffixMatch) {
-    const val = parseFloat(suffixMatch[1].replace(',', '.'));
-    retailPrice = suffixMatch[2] === 'jt' ? val * 1000000 : val * 1000;
+  // Find product name (skip lines starting with Estimasi, Ready, PO, etc)
+  let name = 'Produk Baru';
+  for (const line of lines) {
+    const skipPatterns = /^(estimasi|ready|po\s|pre.?order|open\s|close|limited|grab|happy|#)/i;
+    if (!skipPatterns.test(line) && line.length > 3 && line.length < 50) {
+      // Check if it looks like a product name (mostly uppercase or title case)
+      if (/^[A-Z][A-Za-z\s\d-]+$/.test(line) || /^[A-Z\s]+$/.test(line)) {
+        name = line;
+        break;
+      }
+    }
+  }
+  // Fallback to first non-trivial line
+  if (name === 'Produk Baru' && lines.length > 0) {
+    name = lines.find(l => l.length > 5 && !/^(estimasi|ready|#)/i.test(l)) || lines[0];
   }
 
-  // Pattern 2: "Rp 450.000" or "IDR 150,000"
+  const description = lines.slice(1).join('\n');
+  const cleanText = caption.toLowerCase();
+
+  // ========== EXTRACT SIZES ==========
+  let sizes = [];
+
+  // Pattern 1: Size Chart section (e.g. "Size Chart\nS : LD 96\nM : LD 100")
+  const sizeChartMatch = caption.match(/size\s*(?:chart)?[\s:]*\n([\s\S]*?)(?:\n\n|\nWeight|$)/i);
+  if (sizeChartMatch) {
+    const sizeLines = sizeChartMatch[1];
+    const foundSizes = sizeLines.match(/\b(S|M|L|XL|XXL|XXXL|2XL|3XL)\b/gi);
+    if (foundSizes) {
+      sizes = [...new Set(foundSizes.map(s => s.toUpperCase()))];
+      console.log('   📏 Size Chart detected:', sizes);
+    }
+  }
+
+  // Pattern 2: Range format "S sampai XL" or "S-XL" or "size S - XL"
+  if (sizes.length === 0) {
+    const rangeMatch = caption.match(/(?:size[\s:]*)?([SMLX]+)\s*(?:-|sampai|s\.d\.?|hingga|to)\s*([SMLX]+)/i);
+    if (rangeMatch) {
+      const allSizes = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+      const start = allSizes.indexOf(rangeMatch[1].toUpperCase());
+      const end = allSizes.indexOf(rangeMatch[2].toUpperCase());
+      if (start >= 0 && end >= start) {
+        sizes = allSizes.slice(start, end + 1);
+        console.log('   📏 Size range detected:', sizes);
+      }
+    }
+  }
+
+  // Pattern 3: Inline sizes like "S M L XL" or "S/M/L/XL" or "S,M,L,XL"
+  if (sizes.length === 0) {
+    const inlineSizeMatch = caption.match(/\b((?:[SMLX]{1,3}[\s,/]+)+[SMLX]{1,3})\b/i);
+    if (inlineSizeMatch) {
+      sizes = inlineSizeMatch[1].split(/[\s,/]+/).filter(s => /^[SMLX]+$/i.test(s)).map(s => s.toUpperCase());
+      sizes = [...new Set(sizes)];
+      console.log('   📏 Inline sizes detected:', sizes);
+    }
+  }
+
+  // Default
+  if (sizes.length === 0) {
+    sizes = ['All Size'];
+    console.log('   📏 No size detected, using default: All Size');
+  }
+
+  // ========== EXTRACT COLORS ==========
+  let colors = [];
+
+  // Pattern 1: "Tersedia warna: Black, Navy" or multiline "warna :\nBlack,Navy"
+  const colorLineMatch = caption.match(/(?:warna|color|pilihan)[:\s]*[\n]?([^\n]+(?:,[^\n]+)*)/i);
+  if (colorLineMatch) {
+    let colorText = colorLineMatch[1].trim();
+    // Remove leading/trailing punctuation and whitespace
+    colorText = colorText.replace(/^[:\s]+|[:\s]+$/g, '');
+    // Split by comma, "dan", "/", newline
+    const extracted = colorText.split(/[,\/\n]|\sdan\s|\s&\s/i)
+      .map(c => c.trim())
+      .filter(c => c.length > 1 && c.length < 25 && !/^[\d\s:]+$/.test(c) && !/^warna$/i.test(c));
+    if (extracted.length > 0) {
+      colors = extracted;
+      console.log('   🎨 Colors detected from pattern:', colors);
+    }
+  }
+
+  // Pattern 2: Common color names in text (fallback)
+  if (colors.length === 0) {
+    const commonColors = ['hitam', 'black', 'navy', 'putih', 'white', 'coklat', 'brown', 'mocca', 'mocha',
+      'maroon', 'merah', 'red', 'biru', 'blue', 'hijau', 'green', 'abu', 'grey', 'gray',
+      'sage', 'dusty', 'pink', 'cream', 'krem', 'army', 'milo', 'wine', 'beige', 'olive'];
+    commonColors.forEach(color => {
+      if (cleanText.includes(color) && !colors.includes(color)) {
+        colors.push(color.charAt(0).toUpperCase() + color.slice(1));
+      }
+    });
+    if (colors.length > 0) {
+      console.log('   🎨 Colors detected from common names:', colors);
+    }
+  }
+
+  // ========== EXTRACT PRICE ==========
+  let retailPrice = 0;
+  let resellerPrice = 0;
+
+  // Pattern 1: "Retail 895.000 Resell 825k"
+  const retailResellMatch = caption.match(/(?:retail|idr|rp)?[\s:]*?(\d[\d.,]+)\s*(?:resell|reseller)[\s:]*?(\d[\d.,k]+)/i);
+  if (retailResellMatch) {
+    retailPrice = parsePrice(retailResellMatch[1]);
+    resellerPrice = parsePrice(retailResellMatch[2]);
+  }
+
+  // Pattern 2: Just price like "895.000" or "895k"
+  if (retailPrice === 0) {
+    const suffixMatch = cleanText.match(/(\d+(?:[.,]\d+)?)\s*(rb|k|ribu|jt)/);
+    if (suffixMatch) {
+      const val = parseFloat(suffixMatch[1].replace(',', '.'));
+      retailPrice = suffixMatch[2] === 'jt' ? val * 1000000 : val * 1000;
+    }
+  }
+
+  // Pattern 3: "Rp 450.000" or "IDR 150,000"
   if (retailPrice === 0) {
     const currencyMatch = cleanText.match(/(?:rp|idr)\s*\.?\s*([\d,.]+)/);
     if (currencyMatch) {
@@ -158,20 +387,22 @@ function parseCaption(caption) {
     }
   }
 
-  // Pattern 3: Fallback - numbers in price range
+  // Pattern 4: Fallback - numbers in price range
   if (retailPrice === 0) {
     const numberMatches = cleanText.match(/[\d,.]+/g);
     if (numberMatches) {
       const potentialPrices = numberMatches
         .map(m => parseInt(m.replace(/[^0-9]/g, ''), 10))
-        .filter(n => n >= 25000 && n <= 600000);
+        .filter(n => n >= 25000 && n <= 2000000);
       if (potentialPrices.length > 0) retailPrice = Math.max(...potentialPrices);
     }
   }
 
-  // Calculate reseller & cost
-  const resellerPrice = Math.round(retailPrice * 0.9);
-  const costPrice = Math.max(0, retailPrice - 30000);
+  // Calculate reseller if not found
+  if (resellerPrice === 0 && retailPrice > 0) {
+    resellerPrice = Math.round(retailPrice * 0.9);
+  }
+  const costPrice = Math.max(0, resellerPrice - 30000);
 
   // Detect category
   let category = 'Gamis';
@@ -179,8 +410,19 @@ function parseCaption(caption) {
   else if (/khimar/i.test(caption)) category = 'Khimar';
   else if (/tunik/i.test(caption)) category = 'Tunik';
   else if (/mukena/i.test(caption)) category = 'Mukena';
+  else if (/palazzo|outer|set\s/i.test(caption)) category = 'Set';
 
-  return { name, description, category, retailPrice, resellerPrice, costPrice };
+  return { name, description, category, retailPrice, resellerPrice, costPrice, sizes, colors };
+}
+
+// Helper function to parse price strings
+function parsePrice(str) {
+  if (!str) return 0;
+  const clean = str.toLowerCase().replace(/[^\d.,k]/g, '');
+  if (clean.includes('k')) {
+    return parseFloat(clean.replace('k', '')) * 1000;
+  }
+  return parseInt(clean.replace(/[.,]/g, ''), 10) || 0;
 }
 
 // ============================================================
@@ -260,55 +502,70 @@ function calculateLayout(count, W, H) {
     boxes.push({ x: wBot * 2, y: hTop, w: wBot, h: hBot });
   }
   else if (count === 6) {
-    const w = W / 2;
-    const h = H / 3;
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 2; c++) {
-        boxes.push({ x: c * w, y: r * h, w: w, h: h });
-      }
+    // 3 top + 3 bottom (same as frontend)
+    const h = H / 2;
+    const w = W / 3;
+    // Row 1: 3 items
+    for (let c = 0; c < 3; c++) {
+      boxes.push({ x: c * w, y: 0, w: w, h: h });
+    }
+    // Row 2: 3 items
+    for (let c = 0; c < 3; c++) {
+      boxes.push({ x: c * w, y: h, w: w, h: h });
     }
   }
   else if (count === 7) {
-    const hHead = H * 0.4;
-    const hGrid = (H - hHead) / 2;
-    const wGrid = W / 3;
-    boxes.push({ x: 0, y: 0, w: W, h: hHead });
-    for (let r = 0; r < 2; r++) {
-      for (let c = 0; c < 3; c++) {
-        boxes.push({ x: c * wGrid, y: hHead + (r * hGrid), w: wGrid, h: hGrid });
-      }
+    // 3 top + 4 bottom (same as frontend)
+    const h = H / 2;
+    const wTop = W / 3;
+    const wBot = W / 4;
+    // Row 1: 3 items
+    for (let c = 0; c < 3; c++) {
+      boxes.push({ x: c * wTop, y: 0, w: wTop, h: h });
+    }
+    // Row 2: 4 items
+    for (let c = 0; c < 4; c++) {
+      boxes.push({ x: c * wBot, y: h, w: wBot, h: h });
     }
   }
   else if (count === 8) {
-    const w = W / 2;
-    const h = H / 4;
-    for (let r = 0; r < 4; r++) {
-      for (let c = 0; c < 2; c++) {
-        boxes.push({ x: c * w, y: r * h, w: w, h: h });
-      }
+    // 4 top + 4 bottom (same as frontend)
+    const h = H / 2;
+    const w = W / 4;
+    // Row 1: 4 items
+    for (let c = 0; c < 4; c++) {
+      boxes.push({ x: c * w, y: 0, w: w, h: h });
+    }
+    // Row 2: 4 items
+    for (let c = 0; c < 4; c++) {
+      boxes.push({ x: c * w, y: h, w: w, h: h });
     }
   }
   else if (count === 9) {
-    const w = W / 3;
-    const h = H / 3;
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 3; c++) {
-        boxes.push({ x: c * w, y: r * h, w: w, h: h });
-      }
+    // 4 top + 5 bottom (same as frontend)
+    const h = H / 2;
+    const wTop = W / 4;
+    const wBot = W / 5;
+    // Row 1: 4 items
+    for (let c = 0; c < 4; c++) {
+      boxes.push({ x: c * wTop, y: 0, w: wTop, h: h });
+    }
+    // Row 2: 5 items
+    for (let c = 0; c < 5; c++) {
+      boxes.push({ x: c * wBot, y: h, w: wBot, h: h });
     }
   }
   else if (count === 10) {
-    const hRow1 = H * 0.4;
-    const hRowOther = (H - hRow1) / 2;
-    const wRow1 = W / 2;
-    const wRow2 = W / 4;
-    boxes.push({ x: 0, y: 0, w: wRow1, h: hRow1 });
-    boxes.push({ x: wRow1, y: 0, w: wRow1, h: hRow1 });
-    for (let c = 0; c < 4; c++) {
-      boxes.push({ x: c * wRow2, y: hRow1, w: wRow2, h: hRowOther });
+    // 5 top + 5 bottom (same as frontend)
+    const h = H / 2;
+    const w = W / 5;
+    // Row 1: 5 items
+    for (let c = 0; c < 5; c++) {
+      boxes.push({ x: c * w, y: 0, w: w, h: h });
     }
-    for (let c = 0; c < 4; c++) {
-      boxes.push({ x: c * wRow2, y: hRow1 + hRowOther, w: wRow2, h: hRowOther });
+    // Row 2: 5 items
+    for (let c = 0; c < 5; c++) {
+      boxes.push({ x: c * w, y: h, w: w, h: h });
     }
   }
   else {
@@ -336,152 +593,98 @@ function drawImageInBox(canvas, img, box) {
   // Resize image (Jimp v1.x API)
   const resized = img.clone().resize({ w: scaledW, h: scaledH });
 
-  // Center X, Top Y
-  const dx = Math.round(box.x + (box.w - scaledW) / 2);
-  const dy = box.y; // Top anchor
+  // Calculate position: Center X, Top Y anchor
+  let dx = Math.round((box.w - scaledW) / 2); // Offset within box
+  let dy = 0; // Top anchor
+
+  // Crop the resized image to fit exactly in the box
+  // This prevents overflow into adjacent cells
+  const cropX = dx < 0 ? -dx : 0;
+  const cropY = dy < 0 ? -dy : 0;
+  const cropW = Math.min(scaledW - cropX, box.w);
+  const cropH = Math.min(scaledH - cropY, box.h);
+
+  // Apply crop to prevent overflow
+  const cropped = resized.crop({ x: cropX, y: cropY, w: cropW, h: cropH });
+
+  // Final position on canvas
+  const finalX = Math.round(box.x + (dx < 0 ? 0 : dx));
+  const finalY = Math.round(box.y);
 
   // Composite onto canvas
-  canvas.composite(resized, dx, dy);
+  canvas.composite(cropped, finalX, finalY);
 }
 
 function drawLabel(canvas, label, box) {
-  // Label style like reference: white rounded box with black letter
-  const labelSize = 120; // Smaller, cleaner
+  // Match frontend style: black box with white letter at 3/4 down position
+  const labelSize = 100; // Fixed size like frontend
   const centerX = Math.round(box.x + box.w / 2);
-  const centerY = Math.round(box.y + box.h / 2);
-  const x = Math.round(centerX - labelSize / 2);
-  const y = Math.round(centerY - labelSize / 2);
-  const radius = 15; // Corner radius for rounded effect
+  // Position at 3/4 down the cell (same as frontend)
+  const positionY = Math.round(box.y + box.h * 0.75);
 
-  // Draw white rounded rectangle background
+  const x = Math.round(centerX - labelSize / 2);
+  const y = Math.round(positionY - labelSize / 2);
+
+  // Jimp color format is RGBA (0xRRGGBBAA)
+  // Black with 60% opacity = rgba(0, 0, 0, 0.6) = 0x00000099 is WRONG
+  // Jimp uses 0xRRGGBBAA, so black with ~60% opacity (alpha=0x99) = 0x00000099 is actually correct
+  // But let's use fully opaque black for better visibility: 0x000000FF
+  const bgColor = 0x000000CC; // Black with 80% opacity for better visibility
   for (let px = Math.max(0, x); px < Math.min(canvas.width, x + labelSize); px++) {
     for (let py = Math.max(0, y); py < Math.min(canvas.height, y + labelSize); py++) {
-      // Calculate distance from corners to create rounded effect
-      const dx = Math.min(px - x, x + labelSize - 1 - px);
-      const dy = Math.min(py - y, y + labelSize - 1 - py);
-
-      // Skip corner pixels to create rounded effect
-      if (dx < radius && dy < radius) {
-        const cornerDist = Math.sqrt(Math.pow(radius - dx, 2) + Math.pow(radius - dy, 2));
-        if (cornerDist > radius) continue;
-      }
-
-      canvas.setPixelColor(0xFFFFFFFF, px, py); // White background
+      canvas.setPixelColor(bgColor, px, py);
     }
   }
 
-  // Draw letter using simple pixel bitmap (5x7 grid scaled up)
+  // Draw white border (4px)
+  const borderColor = 0xFFFFFFFF; // Solid white
+  const borderWidth = 4;
+  // Top and bottom borders
+  for (let px = x; px < x + labelSize; px++) {
+    for (let i = 0; i < borderWidth; i++) {
+      if (y + i >= 0 && y + i < canvas.height) canvas.setPixelColor(borderColor, px, y + i);
+      if (y + labelSize - 1 - i >= 0 && y + labelSize - 1 - i < canvas.height) canvas.setPixelColor(borderColor, px, y + labelSize - 1 - i);
+    }
+  }
+  // Left and right borders
+  for (let py = y; py < y + labelSize; py++) {
+    for (let i = 0; i < borderWidth; i++) {
+      if (x + i >= 0 && x + i < canvas.width) canvas.setPixelColor(borderColor, x + i, py);
+      if (x + labelSize - 1 - i >= 0 && x + labelSize - 1 - i < canvas.width) canvas.setPixelColor(borderColor, x + labelSize - 1 - i, py);
+    }
+  }
+
+  // Draw letter using simple pixel bitmap (5x7 grid scaled up) in WHITE
   const letterPatterns = {
-    'A': [
-      '  #  ',
-      ' # # ',
-      '#   #',
-      '#####',
-      '#   #',
-      '#   #',
-      '#   #',
-    ],
-    'B': [
-      '#### ',
-      '#   #',
-      '#### ',
-      '#   #',
-      '#   #',
-      '#   #',
-      '#### ',
-    ],
-    'C': [
-      ' ### ',
-      '#   #',
-      '#    ',
-      '#    ',
-      '#    ',
-      '#   #',
-      ' ### ',
-    ],
-    'D': [
-      '#### ',
-      '#   #',
-      '#   #',
-      '#   #',
-      '#   #',
-      '#   #',
-      '#### ',
-    ],
-    'E': [
-      '#####',
-      '#    ',
-      '#    ',
-      '#### ',
-      '#    ',
-      '#    ',
-      '#####',
-    ],
-    'F': [
-      '#####',
-      '#    ',
-      '#    ',
-      '#### ',
-      '#    ',
-      '#    ',
-      '#    ',
-    ],
-    'G': [
-      ' ### ',
-      '#   #',
-      '#    ',
-      '# ###',
-      '#   #',
-      '#   #',
-      ' ### ',
-    ],
-    'H': [
-      '#   #',
-      '#   #',
-      '#   #',
-      '#####',
-      '#   #',
-      '#   #',
-      '#   #',
-    ],
-    'I': [
-      '#####',
-      '  #  ',
-      '  #  ',
-      '  #  ',
-      '  #  ',
-      '  #  ',
-      '#####',
-    ],
-    'J': [
-      '#####',
-      '    #',
-      '    #',
-      '    #',
-      '#   #',
-      '#   #',
-      ' ### ',
-    ]
+    'A': ['  #  ', ' # # ', '#   #', '#####', '#   #', '#   #', '#   #'],
+    'B': ['#### ', '#   #', '#### ', '#   #', '#   #', '#   #', '#### '],
+    'C': [' ### ', '#   #', '#    ', '#    ', '#    ', '#   #', ' ### '],
+    'D': ['#### ', '#   #', '#   #', '#   #', '#   #', '#   #', '#### '],
+    'E': ['#####', '#    ', '#    ', '#### ', '#    ', '#    ', '#####'],
+    'F': ['#####', '#    ', '#    ', '#### ', '#    ', '#    ', '#    '],
+    'G': [' ### ', '#   #', '#    ', '# ###', '#   #', '#   #', ' ### '],
+    'H': ['#   #', '#   #', '#   #', '#####', '#   #', '#   #', '#   #'],
+    'I': ['#####', '  #  ', '  #  ', '  #  ', '  #  ', '  #  ', '#####'],
+    'J': ['#####', '    #', '    #', '    #', '#   #', '#   #', ' ### ']
   };
 
   const pattern = letterPatterns[label] || letterPatterns['A'];
-  const pixelSize = 12; // Size of each "pixel" in the letter (smaller for cleaner look)
+  const pixelSize = 10; // Size of each "pixel" in the letter
   const letterWidth = 5 * pixelSize;
   const letterHeight = 7 * pixelSize;
   const letterX = x + (labelSize - letterWidth) / 2;
   const letterY = y + (labelSize - letterHeight) / 2;
 
-  // Draw each pixel of the letter in BLACK
+  // Draw each pixel of the letter in WHITE
   for (let row = 0; row < 7; row++) {
     for (let col = 0; col < 5; col++) {
       if (pattern[row][col] === '#') {
-        // Draw a filled square for this pixel
         for (let px = 0; px < pixelSize; px++) {
           for (let py = 0; py < pixelSize; py++) {
             const drawX = Math.round(letterX + col * pixelSize + px);
             const drawY = Math.round(letterY + row * pixelSize + py);
             if (drawX >= 0 && drawX < canvas.width && drawY >= 0 && drawY < canvas.height) {
-              canvas.setPixelColor(0x000000FF, drawX, drawY); // Black color
+              canvas.setPixelColor(0xFFFFFFFF, drawX, drawY); // White color
             }
           }
         }
@@ -489,7 +692,7 @@ function drawLabel(canvas, label, box) {
     }
   }
 
-  console.log(`   Label ${label} drawn at (${centerX}, ${centerY})`);
+  console.log(`   Label ${label} drawn at (${centerX}, ${positionY})`);
 }
 
 function drawBorder(canvas, box) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Phone, User, Package, Copy, Loader2, AlertCircle, Plus, Edit2, Trash2, Gift, Tag } from 'lucide-react';
+import { MapPin, Phone, User, Package, Copy, Loader2, AlertCircle, Plus, Edit2, Trash2, Gift, Tag, Truck, Archive } from 'lucide-react';
 import { addressService } from '../services/addressService';
 import AddressForm from './AddressForm';
 import { komerceService, KomerceCostResult } from '../utils/komerceService';
@@ -389,6 +389,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   };
 
+  // Shipping mode: 'delivery' = kirim ke alamat, 'keep' = atur alamat nanti
+  const [shippingMode, setShippingMode] = useState<'delivery' | 'keep'>('delivery');
+
   const [formData, setFormData] = useState({
     name: user?.name || '',
     phone: '',
@@ -602,7 +605,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     } catch (error) {
       console.error('Failed to save address:', error);
       showToast({
-        type: 'danger',
+        type: 'error',
         title: 'Gagal menyimpan alamat',
         message: 'Periksa koneksi dan coba lagi.'
       });
@@ -661,35 +664,38 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   const handleSubmitOrder = async () => {
-    if (!formData.name || !formData.phone || !formData.address) {
-      showToast({
-        type: 'warning',
-        title: 'Data belum lengkap',
-        message: 'Lengkapi nama, telepon, dan alamat penerima.'
-      });
-      return;
-    }
+    // Validasi alamat hanya jika mode 'delivery'
+    if (shippingMode === 'delivery') {
+      if (!formData.name || !formData.phone || !formData.address) {
+        showToast({
+          type: 'warning',
+          title: 'Data belum lengkap',
+          message: 'Lengkapi nama, telepon, dan alamat penerima.'
+        });
+        return;
+      }
 
-    // Stock validation now handled by atomic transaction in App.tsx
-    // No need to check here - transaction will handle it atomically
+      // Stock validation now handled by atomic transaction in App.tsx
+      // No need to check here - transaction will handle it atomically
 
-    // Check if selected courier has valid shipping cost
-    if (supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {
-      showToast({
-        type: 'warning',
-        title: 'Ongkir belum siap',
-        message: 'Tunggu perhitungan ongkir selesai atau pilih kurir lain.'
-      });
-      return;
-    }
+      // Check if selected courier has valid shipping cost (only for delivery mode)
+      if (supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {
+        showToast({
+          type: 'warning',
+          title: 'Ongkir belum siap',
+          message: 'Tunggu perhitungan ongkir selesai atau pilih kurir lain.'
+        });
+        return;
+      }
 
-    if (!supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {
-      showToast({
-        type: 'warning',
-        title: 'Isi biaya ongkir',
-        message: 'Masukkan biaya ongkos kirim untuk kurir lokal.'
-      });
-      return;
+      if (!supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {
+        showToast({
+          type: 'warning',
+          title: 'Isi biaya ongkir',
+          message: 'Masukkan biaya ongkos kirim untuk kurir lokal.'
+        });
+        return;
+      }
     }
 
     if (!selectedPaymentMethod) {
@@ -704,6 +710,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     // ✅ SIMPLIFIED: No unique code at checkout
     // Unique code will be generated when customer decides to pay
 
+    // Hitung shipping fee berdasarkan mode
+    const effectiveShippingFee = shippingMode === 'keep' ? 0 : shippingFee;
+    const effectiveFinalTotal = Math.max(0, totalPrice + effectiveShippingFee - voucherDiscount);
+
     const orderData = {
       items: cartItems.map(item => ({
         ...item,
@@ -711,11 +721,22 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         total: (item.price || 0) * (item.quantity || 1),
         productName: item.name || item.productName || 'Produk',
         productId: item.productId || item.id,
-        productImage: item.image || item.productImage || item.images?.[0] || '', // ✅ Save image
+        productImage: item.image || item.productImage || item.images?.[0] || '',
         selectedVariant: item.variant,
-        category: item.category || '' // Also save category for sales analysis
+        category: item.category || ''
       })),
-      shippingInfo: {
+      shippingInfo: shippingMode === 'keep' ? {
+        name: user?.displayName || 'Belum diatur',
+        phone: user?.phone || 'Belum diatur',
+        address: 'Belum ditentukan (Keep)',
+        isDropship: false,
+        dropshipName: '',
+        dropshipPhone: '',
+        courier: null,
+        shippingCost: null,
+        shippingService: '',
+        shippingETD: ''
+      } : {
         name: formData.name,
         phone: formData.phone,
         address: formData.address,
@@ -727,15 +748,18 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         shippingService: formData.shippingService,
         shippingETD: formData.shippingETD
       },
+      // ✨ NEW: Shipping mode fields
+      shippingMode: shippingMode,
+      shippingConfigured: shippingMode === 'delivery', // true jika sudah lengkap
       paymentMethod: selectedPaymentMethod.name,
       notes: formData.notes,
       paymentMethodId: selectedPaymentMethod.id,
       paymentMethodName: selectedPaymentMethod.name,
       totalAmount: totalPrice,
-      shippingCost: shippingFee,
+      shippingCost: effectiveShippingFee,
       voucherCode: appliedVoucher?.code || null,
       voucherDiscount: voucherDiscount,
-      finalTotal: finalTotal
+      finalTotal: effectiveFinalTotal
       // ✅ SIMPLIFIED: No unique code fields
       // These will be added when customer generates payment in OrdersPage
     };
@@ -794,127 +818,220 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         ) : (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)]">
             <div className="space-y-6">
-              {/* Address Input */}
-              <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-slate-900">Alamat Pengiriman</h3>
-                  <button
-                    onClick={() => {
-                      setEditingAddress(null);
-                      setShowAddressModal(true);
-                    }}
-                    className="inline-flex items-center gap-2 rounded-full border border-brand-primary/30 px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/5"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Tambah Alamat
-                  </button>
-                </div>
+              {/* ✨ Shipping Mode Toggle - Only show for PO items AND specific roles */}
+              {(() => {
+                // Check for PO items - check multiple possible field names
+                const hasPOItems = cartItems.some((item: any) =>
+                  item.status === 'po' ||
+                  item.productStatus === 'po' ||
+                  item.badge === 'po' ||
+                  item.productBadge === 'po' ||
+                  (item.status && item.status.toLowerCase() === 'po') ||
+                  (item.badge && item.badge.toLowerCase() === 'po')
+                );
 
-                {/* Address Selection */}
-                {addressesLoading ? (
-                  <ListSkeleton items={3} />
-                ) : addresses.length > 0 ? (
-                  <div className="mb-4 space-y-2">
-                    {addresses.map((address) => (
+                // Only show for reseller, admin, owner roles
+                const allowedRoles = ['reseller', 'admin', 'owner'];
+                const userRole = user?.role || 'customer';
+                const isAllowedRole = allowedRoles.includes(userRole);
+
+                // Debug log - remove after testing
+                console.log('🛒 Keep Mode Check:', {
+                  hasPOItems,
+                  userRole,
+                  isAllowedRole,
+                  cartItemsStatuses: cartItems.map((i: any) => ({
+                    name: i.name,
+                    status: i.status,
+                    badge: i.badge,
+                    productStatus: i.productStatus
+                  }))
+                });
+
+                if (!hasPOItems || !isAllowedRole) return null;
+
+                return (
+                  <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+                    <h3 className="text-lg font-semibold text-slate-900 mb-3">Mode Pengiriman</h3>
+                    <p className="text-sm text-amber-700 bg-amber-50 p-2 rounded-lg mb-3">
+                      ⚠️ Keranjang berisi produk <strong>Pre-Order</strong>
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
                       <label
-                        key={address.id}
-                        className={`block rounded-2xl border p-3 transition ${selectedAddressId === address.id
+                        className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${shippingMode === 'delivery'
                           ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
                           : 'border-slate-200 hover:border-brand-primary/40'
                           }`}
                       >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="radio"
-                                name="savedAddress"
-                                checked={selectedAddressId === address.id}
-                                onChange={() => {
-                                  setSelectedAddressId(address.id);
-                                  setFormData(prev => ({
-                                    ...prev,
-                                    name: formData.isDropship ? prev.name : address.name,
-                                    phone: formData.isDropship ? prev.phone : address.phone,
-                                    address: address.fullAddress,
-                                    provinceId: address.provinceId || '',
-                                    cityId: address.cityId || ''
-                                  }));
-                                }}
-                                className="h-4 w-4 text-brand-primary"
-                              />
-                              <span className="text-sm font-semibold text-slate-900">{address.name}</span>
-                              {address.isDefault && (
-                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
-                                  Utama
-                                </span>
-                              )}
+                        <input
+                          type="radio"
+                          name="shippingMode"
+                          value="delivery"
+                          checked={shippingMode === 'delivery'}
+                          onChange={() => setShippingMode('delivery')}
+                          className="sr-only"
+                        />
+                        <Truck className={`h-6 w-6 ${shippingMode === 'delivery' ? 'text-brand-primary' : 'text-slate-400'}`} />
+                        <div>
+                          <p className="font-semibold text-slate-900">Kirim ke Alamat</p>
+                          <p className="text-xs text-slate-500">Pilih kurir & hitung ongkir sekarang</p>
+                        </div>
+                      </label>
+                      <label
+                        className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${shippingMode === 'keep'
+                          ? 'border-amber-500 bg-amber-50 shadow-sm'
+                          : 'border-slate-200 hover:border-amber-400'
+                          }`}
+                      >
+                        <input
+                          type="radio"
+                          name="shippingMode"
+                          value="keep"
+                          checked={shippingMode === 'keep'}
+                          onChange={() => setShippingMode('keep')}
+                          className="sr-only"
+                        />
+                        <Archive className={`h-6 w-6 ${shippingMode === 'keep' ? 'text-amber-600' : 'text-slate-400'}`} />
+                        <div>
+                          <p className="font-semibold text-slate-900">Keep Saja</p>
+                          <p className="text-xs text-slate-500">Atur alamat & kurir nanti</p>
+                        </div>
+                      </label>
+                    </div>
+                    {shippingMode === 'keep' && (
+                      <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                        <p className="text-sm text-amber-800">
+                          📍 Alamat dan kurir bisa diatur nanti di menu <strong>Pesanan Saya</strong> setelah barang ready.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Address Input - Only show when shippingMode is 'delivery' */}
+              {shippingMode === 'delivery' && (
+                <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-slate-900">Alamat Pengiriman</h3>
+                    <button
+                      onClick={() => {
+                        setEditingAddress(null);
+                        setShowAddressModal(true);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-brand-primary/30 px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/5"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Tambah Alamat
+                    </button>
+                  </div>
+
+                  {/* Address Selection */}
+                  {addressesLoading ? (
+                    <ListSkeleton items={3} />
+                  ) : addresses.length > 0 ? (
+                    <div className="mb-4 space-y-2">
+                      {addresses.map((address) => (
+                        <label
+                          key={address.id}
+                          className={`block rounded-2xl border p-3 transition ${selectedAddressId === address.id
+                            ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
+                            : 'border-slate-200 hover:border-brand-primary/40'
+                            }`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="radio"
+                                  name="savedAddress"
+                                  checked={selectedAddressId === address.id}
+                                  onChange={() => {
+                                    setSelectedAddressId(address.id);
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      name: formData.isDropship ? prev.name : address.name,
+                                      phone: formData.isDropship ? prev.phone : address.phone,
+                                      address: address.fullAddress,
+                                      provinceId: address.provinceId || '',
+                                      cityId: address.cityId || ''
+                                    }));
+                                  }}
+                                  className="h-4 w-4 text-brand-primary"
+                                />
+                                <span className="text-sm font-semibold text-slate-900">{address.name}</span>
+                                {address.isDefault && (
+                                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
+                                    Utama
+                                  </span>
+                                )}
+                              </div>
+                              <p className="ml-6 text-xs text-slate-500">{address.phone}</p>
+                              <p className="ml-6 text-sm text-slate-600">{address.fullAddress}</p>
                             </div>
-                            <p className="ml-6 text-xs text-slate-500">{address.phone}</p>
-                            <p className="ml-6 text-sm text-slate-600">{address.fullAddress}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingAddress(address);
-                                setShowAddressModal(true);
-                              }}
-                              className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:text-brand-primary"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            {addresses.length > 1 && (
+                            <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleDeleteAddress(address.id);
+                                  setEditingAddress(address);
+                                  setShowAddressModal(true);
                                 }}
-                                className="rounded-full border border-slate-200 p-2 text-rose-500 transition hover:bg-rose-50"
+                                className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:text-brand-primary"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Edit2 className="h-4 w-4" />
                               </button>
-                            )}
+                              {addresses.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteAddress(address.id);
+                                  }}
+                                  className="rounded-full border border-slate-200 p-2 text-rose-500 transition hover:bg-rose-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState
-                    title="Belum ada alamat"
-                    description="Tambahkan alamat pengiriman untuk mempercepat proses checkout."
-                    action={(
-                      <button onClick={() => setShowAddressModal(true)} className="btn-brand">
-                        Tambah Alamat Baru
-                      </button>
-                    )}
-                  />
-                )}
-
-                {/* Manual shipping cost input for non-automatic couriers */}
-                {!supportsAutomatic && (
-                  <div className="mt-4 border-t border-dashed border-slate-200 pt-4">
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
-                      Biaya Ongkos Kirim (Rp)
-                    </label>
-                    <input
-                      type="number"
-                      name="shippingCost"
-                      value={formData.shippingCost || ''}
-                      onChange={handleInputChange}
-                      min="0"
-                      className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                      placeholder="Masukkan biaya ongkos kirim"
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState
+                      title="Belum ada alamat"
+                      description="Tambahkan alamat pengiriman untuk mempercepat proses checkout."
+                      action={(
+                        <button onClick={() => setShowAddressModal(true)} className="btn-brand">
+                          Tambah Alamat Baru
+                        </button>
+                      )}
                     />
-                    <p className="mt-1 text-xs text-slate-500">
-                      * Masukkan manual biaya ongkos kirim untuk kurir lokal
-                    </p>
-                  </div>
-                )}
-              </div>
+                  )}
+
+                  {/* Manual shipping cost input for non-automatic couriers */}
+                  {!supportsAutomatic && (
+                    <div className="mt-4 border-t border-dashed border-slate-200 pt-4">
+                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                        Biaya Ongkos Kirim (Rp)
+                      </label>
+                      <input
+                        type="number"
+                        name="shippingCost"
+                        value={formData.shippingCost || ''}
+                        onChange={handleInputChange}
+                        min="0"
+                        className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                        placeholder="Masukkan biaya ongkos kirim"
+                      />
+                      <p className="mt-1 text-xs text-slate-500">
+                        * Masukkan manual biaya ongkos kirim untuk kurir lokal
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Order Items */}
               <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
@@ -974,112 +1091,114 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 </div>
               </div>
 
-              {/* Courier Selection */}
-              <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">Pilih Kurir Pengiriman</h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <Package className="h-4 w-4 text-brand-primary" />
-                      Kurir
-                    </label>
-                    <select
-                      name="shippingCourier"
-                      value={formData.shippingCourier}
-                      onChange={handleInputChange}
-                      className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                    >
-                      {shippingOptions.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.name} {option.code ? '(✓ Otomatis)' : '(Manual)'}
-                        </option>
-                      ))}
-                    </select>
+              {/* Courier Selection - Only show when shippingMode is 'delivery' */}
+              {shippingMode === 'delivery' && (
+                <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-3">Pilih Kurir Pengiriman</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                        <Package className="h-4 w-4 text-brand-primary" />
+                        Kurir
+                      </label>
+                      <select
+                        name="shippingCourier"
+                        value={formData.shippingCourier}
+                        onChange={handleInputChange}
+                        className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                      >
+                        {shippingOptions.map((option) => (
+                          <option key={option.id} value={option.id}>
+                            {option.name} {option.code ? '(✓ Otomatis)' : '(Manual)'}
+                          </option>
+                        ))}
+                      </select>
 
-                    {/* Courier Info */}
-                    <div className="mt-2 text-xs text-slate-500">
-                      {supportsAutomatic ? (
-                        <div className="text-green-600">
-                          ✓ Otomatis via RajaOngkir dari Banjarmasin
+                      {/* Courier Info */}
+                      <div className="mt-2 text-xs text-slate-500">
+                        {supportsAutomatic ? (
+                          <div className="text-green-600">
+                            ✓ Otomatis via RajaOngkir dari Banjarmasin
+                          </div>
+                        ) : (
+                          <div className="text-amber-600">
+                            ℹ️ Kurir lokal - biaya diinput manual
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Loading indicator */}
+                      {loadingShipping && (
+                        <div className="mt-2 flex items-center text-sm text-brand-primary">
+                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                          Menghitung ongkir...
                         </div>
-                      ) : (
-                        <div className="text-amber-600">
-                          ℹ️ Kurir lokal - biaya diinput manual
+                      )}
+
+                      {/* Error message */}
+                      {shippingError && (
+                        <div className="mt-2 flex items-center text-sm text-red-600">
+                          <AlertCircle className="mr-1 h-4 w-4" />
+                          {shippingError}
                         </div>
                       )}
                     </div>
 
-                    {/* Loading indicator */}
-                    {loadingShipping && (
-                      <div className="mt-2 flex items-center text-sm text-brand-primary">
-                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                        Menghitung ongkir...
-                      </div>
-                    )}
+                    {/* Shipping Cost Display */}
+                    {shippingFee > 0 && (
+                      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                        {/* Service Selection Dropdown */}
+                        {ongkirResults.length > 1 && (
+                          <div className="mb-3">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Pilih Layanan:
+                            </label>
+                            <select
+                              value={selectedService?.service || ''}
+                              onChange={(e) => {
+                                const selected = ongkirResults.find(result => result.service === e.target.value);
+                                if (selected) {
+                                  setSelectedService(selected);
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    shippingCost: selected.cost,
+                                    shippingService: selected.service,
+                                    shippingETD: selected.etd
+                                  }));
+                                }
+                              }}
+                              className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                            >
+                              {ongkirResults.map((service, index) => (
+                                <option key={index} value={service.service}>
+                                  {service.service} - Rp {service.cost.toLocaleString('id-ID')} ({service.etd})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
 
-                    {/* Error message */}
-                    {shippingError && (
-                      <div className="mt-2 flex items-center text-sm text-red-600">
-                        <AlertCircle className="mr-1 h-4 w-4" />
-                        {shippingError}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-slate-700">Biaya Ongkir:</span>
+                          <span className="text-sm font-semibold text-brand-primary">
+                            Rp {shippingFee.toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                        {formData.shippingService && (
+                          <p className="mt-1 text-xs text-slate-500">
+                            Service: {formData.shippingService} | Estimasi: {formData.shippingETD}
+                            {ongkirResults.length > 1 && (
+                              <span className="ml-2 text-brand-primary">
+                                ({ongkirResults.length} layanan tersedia)
+                              </span>
+                            )}
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
-
-                  {/* Shipping Cost Display */}
-                  {shippingFee > 0 && (
-                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                      {/* Service Selection Dropdown */}
-                      {ongkirResults.length > 1 && (
-                        <div className="mb-3">
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Pilih Layanan:
-                          </label>
-                          <select
-                            value={selectedService?.service || ''}
-                            onChange={(e) => {
-                              const selected = ongkirResults.find(result => result.service === e.target.value);
-                              if (selected) {
-                                setSelectedService(selected);
-                                setFormData(prev => ({
-                                  ...prev,
-                                  shippingCost: selected.cost,
-                                  shippingService: selected.service,
-                                  shippingETD: selected.etd
-                                }));
-                              }
-                            }}
-                            className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                          >
-                            {ongkirResults.map((service, index) => (
-                              <option key={index} value={service.service}>
-                                {service.service} - Rp {service.cost.toLocaleString('id-ID')} ({service.etd})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-slate-700">Biaya Ongkir:</span>
-                        <span className="text-sm font-semibold text-brand-primary">
-                          Rp {shippingFee.toLocaleString('id-ID')}
-                        </span>
-                      </div>
-                      {formData.shippingService && (
-                        <p className="mt-1 text-xs text-slate-500">
-                          Service: {formData.shippingService} | Estimasi: {formData.shippingETD}
-                          {ongkirResults.length > 1 && (
-                            <span className="ml-2 text-brand-primary">
-                              ({ongkirResults.length} layanan tersedia)
-                            </span>
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  )}
                 </div>
-              </div>
+              )}
 
               {/* Payment Method */}
               <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
@@ -1279,7 +1398,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </div>
                   <div className="flex items-center justify-between text-slate-600">
                     <span>Biaya Ongkir</span>
-                    <span className="font-semibold text-slate-900">Rp {shippingFee.toLocaleString('id-ID')}</span>
+                    {shippingMode === 'keep' ? (
+                      <span className="font-semibold text-amber-600">Belum dihitung</span>
+                    ) : (
+                      <span className="font-semibold text-slate-900">Rp {shippingFee.toLocaleString('id-ID')}</span>
+                    )}
                   </div>
                   {appliedVoucher && (
                     <div className="flex items-center justify-between text-green-600">
