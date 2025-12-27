@@ -26,6 +26,7 @@ export const syncProductToGlobalIndex = async (product: Product): Promise<boolea
       const globalIndexData = {
         id: product.id,
         name: product.name,
+        brand: product.brand || null, // Sync Merk
         description: product.description || '',
         category: product.category || 'uncategorized',
 
