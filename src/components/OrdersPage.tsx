@@ -571,8 +571,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                     return null;
                   })()}
 
-                  {/* Action Button (old single payment - keep for non-pending) */}
-                  {!isPending && order.status !== 'delivered' && order.status !== 'cancelled' && (
+                  {/* Action Button (only for awaiting verification) */}
+                  {!isPending && order.status === 'awaiting_verification' && (
                     <button
                       onClick={() => {
                         // ✨ NEW: Block payment if Keep mode and not configured
