@@ -782,7 +782,99 @@ client.on('ready', () => {
       console.log(`🟢 [${now}] Connected - Waiting for messages...`);
     }
   }, 60000); // Every 60 seconds
+
+  // Start notification queue listener
+  startNotificationQueueListener();
 });
+
+// ============================================================
+// 6. NOTIFICATION QUEUE LISTENER (Send queued WhatsApp notifications)
+// ============================================================
+let notificationListener = null;
+
+function startNotificationQueueListener() {
+  console.log('📬 Starting notification queue listener...');
+
+  // Listen to pending notifications
+  notificationListener = db.collection('notificationQueue')
+    .where('status', '==', 'pending')
+    .onSnapshot(async (snapshot) => {
+      for (const change of snapshot.docChanges()) {
+        if (change.type === 'added') {
+          const doc = change.doc;
+          const data = doc.data();
+
+          console.log(`📨 New notification: ${data.type} for ${data.phoneNumber}`);
+
+          // Send via WhatsApp
+          try {
+            await sendWhatsAppNotification(doc.id, data);
+          } catch (error) {
+            console.error(`❌ Failed to send notification ${doc.id}:`, error);
+          }
+        }
+      }
+    }, (error) => {
+      console.error('❌ Notification queue listener error:', error);
+    });
+
+  console.log('✅ Notification queue listener active');
+}
+
+async function sendWhatsAppNotification(docId, data) {
+  if (!isConnected) {
+    console.log('⚠️ WhatsApp not connected, skipping notification');
+    return;
+  }
+
+  const { phoneNumber, message, attempts = 0 } = data;
+
+  // Validate phone number
+  if (!phoneNumber || phoneNumber.length < 10) {
+    console.log(`⚠️ Invalid phone number: ${phoneNumber}`);
+    await db.collection('notificationQueue').doc(docId).update({
+      status: 'failed',
+      errorMessage: 'Invalid phone number',
+      processedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    return;
+  }
+
+  // Format phone number for WhatsApp (must be 628xxx@c.us format)
+  let formattedPhone = phoneNumber.replace(/\D/g, ''); // Remove non-digits
+  if (formattedPhone.startsWith('0')) {
+    formattedPhone = '62' + formattedPhone.substring(1);
+  } else if (!formattedPhone.startsWith('62')) {
+    formattedPhone = '62' + formattedPhone;
+  }
+  const chatId = formattedPhone + '@c.us';
+
+  console.log(`📤 Sending to ${chatId}...`);
+
+  try {
+    await client.sendMessage(chatId, message);
+
+    // Mark as sent
+    await db.collection('notificationQueue').doc(docId).update({
+      status: 'sent',
+      sentAt: admin.firestore.FieldValue.serverTimestamp(),
+      attempts: attempts + 1
+    });
+
+    console.log(`✅ Notification sent successfully to ${formattedPhone}`);
+
+  } catch (error) {
+    console.error(`❌ Send failed:`, error.message);
+
+    // Update with error
+    await db.collection('notificationQueue').doc(docId).update({
+      status: attempts >= 2 ? 'failed' : 'pending',
+      errorMessage: error.message,
+      attempts: attempts + 1,
+      lastAttemptAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  }
+}
 
 client.on('disconnected', async (reason) => {
   isConnected = false;
