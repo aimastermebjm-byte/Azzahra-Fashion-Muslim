@@ -527,6 +527,108 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     </div>
                                 </div>
                             )}
+
+                            {/* Product Details - After Image Upload, Before Parameter Produk */}
+                            {images.length > 0 && (
+                                <div className="bg-white rounded-xl p-4 border border-gray-200">
+                                    <h3 className="font-medium text-gray-700 mb-3">📝 Detail Produk</h3>
+                                    <div className="space-y-4">
+                                        {/* Product Name */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Nama Produk *
+                                            </label>
+                                            <textarea
+                                                value={productFormData.name}
+                                                onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }))}
+                                                onClick={() => handleAutoPaste('name')}
+                                                placeholder="Contoh: Gamis Syari Premium (Tap untuk memperbesar)"
+                                                rows={1}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[42px] focus:h-32 transition-[height] duration-300 ease-in-out resize-none"
+                                            />
+                                        </div>
+
+                                        {/* Brand Selection */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Merk / Brand
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    value={productFormData.brand}
+                                                    onChange={(e) => {
+                                                        setProductFormData(prev => ({ ...prev, brand: e.target.value }));
+                                                        setShowBrandSuggestions(true);
+                                                    }}
+                                                    onFocus={() => setShowBrandSuggestions(true)}
+                                                    onBlur={() => setTimeout(() => setShowBrandSuggestions(false), 200)}
+                                                    placeholder="Pilih atau ketik merk..."
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                                    autoComplete="off"
+                                                />
+
+                                                {/* Custom Dropdown Suggestions */}
+                                                {showBrandSuggestions && (
+                                                    <div className="absolute z-50 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                                                        {brandOptions.filter(b => b.toLowerCase().includes(productFormData.brand.toLowerCase())).length > 0 ? (
+                                                            brandOptions
+                                                                .filter(b => b.toLowerCase().includes(productFormData.brand.toLowerCase()))
+                                                                .map((brand, i) => (
+                                                                    <div
+                                                                        key={i}
+                                                                        className="px-3 py-2 hover:bg-purple-50 cursor-pointer text-gray-700 hover:text-purple-700 transition-colors border-b border-gray-50 last:border-0"
+                                                                        onClick={() => {
+                                                                            setProductFormData(prev => ({ ...prev, brand }));
+                                                                            setShowBrandSuggestions(false);
+                                                                        }}
+                                                                    >
+                                                                        {brand}
+                                                                    </div>
+                                                                ))
+                                                        ) : (
+                                                            <div className="px-3 py-2 text-gray-400 text-sm italic">
+                                                                Ketik untuk membuat merk baru...
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Description */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Deskripsi (Opsional)
+                                            </label>
+                                            <textarea
+                                                value={productFormData.description}
+                                                onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }))}
+                                                onClick={() => handleAutoPaste('description')}
+                                                placeholder="Deskripsi produk... (Tap untuk memperbesar)"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[80px] h-[80px] focus:h-48 transition-[height] duration-300 ease-in-out resize-none"
+                                            />
+                                        </div>
+
+                                        {/* Category */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Kategori
+                                            </label>
+                                            <select
+                                                value={productFormData.category}
+                                                onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }))}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                            >
+                                                {categories.map(cat => (
+                                                    <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Settings Panel */}
                             <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
                                 <div className="flex items-center gap-2 mb-4">
@@ -757,106 +859,6 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
 
 
-                            {/* Product Details - Moved to Step 1 */}
-                            {images.length > 0 && (
-                                <div className="bg-white rounded-xl p-4 border border-gray-200">
-                                    <h3 className="font-medium text-gray-700 mb-3">📝 Detail Produk</h3>
-                                    <div className="space-y-4">
-                                        {/* Product Name */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Nama Produk *
-                                            </label>
-                                            <textarea
-                                                value={productFormData.name}
-                                                onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }))}
-                                                onClick={() => handleAutoPaste('name')}
-                                                placeholder="Contoh: Gamis Syari Premium (Tap untuk memperbesar)"
-                                                rows={1}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[42px] focus:h-32 transition-[height] duration-300 ease-in-out resize-none"
-                                            />
-                                        </div>
-
-                                        {/* Brand Selection */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Merk / Brand
-                                            </label>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    value={productFormData.brand}
-                                                    onChange={(e) => {
-                                                        setProductFormData(prev => ({ ...prev, brand: e.target.value }));
-                                                        setShowBrandSuggestions(true);
-                                                    }}
-                                                    onFocus={() => setShowBrandSuggestions(true)}
-                                                    onBlur={() => setTimeout(() => setShowBrandSuggestions(false), 200)}
-                                                    placeholder="Pilih atau ketik merk..."
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                                    autoComplete="off"
-                                                />
-
-                                                {/* Custom Dropdown Suggestions */}
-                                                {showBrandSuggestions && (
-                                                    <div className="absolute z-50 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
-                                                        {brandOptions.filter(b => b.toLowerCase().includes(productFormData.brand.toLowerCase())).length > 0 ? (
-                                                            brandOptions
-                                                                .filter(b => b.toLowerCase().includes(productFormData.brand.toLowerCase()))
-                                                                .map((brand, i) => (
-                                                                    <div
-                                                                        key={i}
-                                                                        className="px-3 py-2 hover:bg-purple-50 cursor-pointer text-gray-700 hover:text-purple-700 transition-colors border-b border-gray-50 last:border-0"
-                                                                        onClick={() => {
-                                                                            setProductFormData(prev => ({ ...prev, brand }));
-                                                                            setShowBrandSuggestions(false);
-                                                                        }}
-                                                                    >
-                                                                        {brand}
-                                                                    </div>
-                                                                ))
-                                                        ) : (
-                                                            <div className="px-3 py-2 text-gray-400 text-sm italic">
-                                                                Ketik untuk membuat merk baru...
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Description */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Deskripsi (Opsional)
-                                            </label>
-                                            <textarea
-                                                value={productFormData.description}
-                                                onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }))}
-                                                onClick={() => handleAutoPaste('description')}
-                                                placeholder="Deskripsi produk... (Tap untuk memperbesar)"
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[80px] h-[80px] focus:h-48 transition-[height] duration-300 ease-in-out resize-none"
-                                            />
-                                        </div>
-
-                                        {/* Category */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Kategori
-                                            </label>
-                                            <select
-                                                value={productFormData.category}
-                                                onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }))}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                            >
-                                                {categories.map(cat => (
-                                                    <option key={cat} value={cat}>{cat}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
 
                             {/* Generate Collage Button */}
                             {images.length > 0 && (
