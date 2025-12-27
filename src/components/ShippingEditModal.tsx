@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, MapPin, Phone, User, Truck, Loader2, Package } from 'lucide-react';
 import { ordersService } from '../services/ordersService';
 import { addressService } from '../services/addressService';
+import { komerceService } from '../utils/komerceService';
 import { useToast } from './ToastProvider';
 
 // Shipping options (same as CheckoutPage)
@@ -32,8 +33,13 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
 }) => {
     const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
+    const [loadingShipping, setLoadingShipping] = useState(false);
     const [addresses, setAddresses] = useState<any[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState<string>('');
+    const [selectedCityId, setSelectedCityId] = useState<string>(''); // For auto shipping calc
+    const [shippingError, setShippingError] = useState('');
+    const [shippingService, setShippingService] = useState('');
+    const [shippingETD, setShippingETD] = useState('');
 
     const [formData, setFormData] = useState({
         name: '',
@@ -79,6 +85,11 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
         console.log('📍 Selected address:', address);
         setSelectedAddressId(address.id);
 
+        // Save cityId for shipping calculation
+        const cityId = address.cityId || address.city_id || address.districtId || address.district_id || '';
+        console.log('🏙️ City ID for shipping:', cityId);
+        setSelectedCityId(cityId);
+
         // Build address string from available fields, filter out undefined/empty values
         const addressParts = [
             address.address || address.fullAddress || address.addressLine || address.detail || '',
@@ -94,9 +105,64 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
             ...prev,
             name: address.recipientName || address.name || address.label || '',
             phone: address.phone || address.phoneNumber || '',
-            address: fullAddressString
+            address: fullAddressString,
+            shippingCost: 0 // Reset shipping cost when address changes
         }));
+
+        setShippingError('');
+        setShippingService('');
+        setShippingETD('');
     };
+
+    // Auto-calculate shipping when cityId and courier are selected
+    useEffect(() => {
+        if (!selectedCityId || !formData.courier) return;
+
+        const selectedCourier = shippingOptions.find(opt => opt.id === formData.courier);
+        if (!selectedCourier?.code) {
+            // Manual courier - don't auto-calculate
+            setShippingError('Kurir lokal - isi ongkir manual');
+            return;
+        }
+
+        const calculateShipping = async () => {
+            setLoadingShipping(true);
+            setShippingError('');
+
+            try {
+                // Origin: Bandung (ID: 23)
+                const origin = '23';
+                const weight = 1000; // Default 1kg
+
+                console.log(`🚚 Calculating shipping: ${selectedCourier.code} to ${selectedCityId}`);
+
+                const results = await komerceService.calculateShippingCost(
+                    origin,
+                    selectedCityId,
+                    weight,
+                    selectedCourier.code
+                );
+
+                if (results && results.length > 0) {
+                    // Get cheapest option
+                    const cheapest = results.reduce((min, r) => r.cost < min.cost ? r : min, results[0]);
+                    setFormData(prev => ({ ...prev, shippingCost: cheapest.cost }));
+                    setShippingService(cheapest.service);
+                    setShippingETD(cheapest.etd);
+                    console.log(`✅ Shipping cost: ${cheapest.cost} (${cheapest.service})`);
+                } else {
+                    setShippingError('Tidak ada layanan tersedia');
+                }
+            } catch (error: any) {
+                console.error('❌ Shipping calculation failed:', error);
+                setShippingError('Gagal hitung ongkir - isi manual');
+            } finally {
+                setLoadingShipping(false);
+            }
+        };
+
+        calculateShipping();
+    }, [selectedCityId, formData.courier]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
@@ -298,13 +364,42 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
                                 <Package className="w-4 h-4 text-brand-primary" />
                                 Biaya Ongkir (Rp)
                             </label>
+
+                            {/* Loading indicator */}
+                            {loadingShipping && (
+                                <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl mb-2">
+                                    <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                                    <span className="text-sm text-blue-600">Menghitung ongkir...</span>
+                                </div>
+                            )}
+
+                            {/* Error message */}
+                            {shippingError && !loadingShipping && (
+                                <p className="text-xs text-amber-600 mb-2">
+                                    ⚠️ {shippingError}
+                                </p>
+                            )}
+
+                            {/* Show service and ETD if calculated */}
+                            {shippingService && formData.shippingCost > 0 && !loadingShipping && (
+                                <div className="p-3 bg-green-50 rounded-xl mb-2">
+                                    <p className="text-sm font-medium text-green-700">
+                                        ✅ {shippingService} - Rp {formData.shippingCost.toLocaleString('id-ID')}
+                                    </p>
+                                    {shippingETD && (
+                                        <p className="text-xs text-green-600">Estimasi: {shippingETD} hari</p>
+                                    )}
+                                </div>
+                            )}
+
                             <input
                                 type="number"
                                 name="shippingCost"
                                 value={formData.shippingCost || ''}
                                 onChange={handleInputChange}
                                 min="0"
-                                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                                disabled={loadingShipping}
+                                className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent disabled:bg-gray-100"
                                 placeholder="Masukkan biaya ongkos kirim"
                             />
                             {isManualCourier && (
