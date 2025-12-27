@@ -897,48 +897,133 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 </div>
                             </div>
 
-                            {/* Price Summary (Read-Only Display) */}
-                            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
-                                <h4 className="font-semibold text-gray-700 mb-3 text-center">💰 Ringkasan Harga</h4>
-                                <div className="grid grid-cols-3 gap-3 text-center">
-                                    <div className="bg-white rounded-lg p-3 shadow-sm">
-                                        <div className="text-xs text-gray-500 mb-1">Modal</div>
-                                        <div className="text-lg font-bold text-gray-700">Rp {formatThousands(uploadSettings.costPrice)}</div>
+                            {/* Price Summary - Editable */}
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <h4 className="font-medium text-gray-700 mb-2">Ringkasan Harga</h4>
+                                <div className="space-y-4 text-sm max-w-sm mx-auto">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-600 mb-1">Harga Modal</label>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={formatThousands(uploadSettings.costPrice)}
+                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }))}
+                                            onFocus={(e) => e.target.select()}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg font-bold focus:ring-2 focus:ring-purple-500 bg-white"
+                                            placeholder="0"
+                                        />
                                     </div>
-                                    <div className="bg-green-50 rounded-lg p-3 shadow-sm border border-green-200">
-                                        <div className="text-xs text-green-600 mb-1">Retail</div>
-                                        <div className="text-lg font-bold text-green-700">Rp {formatThousands(retailPrice)}</div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-green-700 mb-1">Harga Jual (Retail)</label>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={formatThousands(retailPrice)}
+                                            onChange={(e) => setFixedPrices(prev => ({ ...prev, retail: parseFormattedNumber(e.target.value) }))}
+                                            onFocus={(e) => e.target.select()}
+                                            className="w-full px-4 py-3 border-2 border-green-400 rounded-xl text-lg font-bold text-green-700 bg-green-50 focus:ring-2 focus:ring-green-500"
+                                            placeholder="0"
+                                        />
                                     </div>
-                                    <div className="bg-blue-50 rounded-lg p-3 shadow-sm border border-blue-200">
-                                        <div className="text-xs text-blue-600 mb-1">Reseller</div>
-                                        <div className="text-lg font-bold text-blue-700">Rp {formatThousands(resellerPrice)}</div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-blue-700 mb-1">Harga Reseller</label>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={formatThousands(resellerPrice)}
+                                            onChange={(e) => setFixedPrices(prev => ({ ...prev, reseller: parseFormattedNumber(e.target.value) }))}
+                                            onFocus={(e) => e.target.select()}
+                                            className="w-full px-4 py-3 border-2 border-blue-400 rounded-xl text-lg font-bold text-blue-700 bg-blue-50 focus:ring-2 focus:ring-blue-500"
+                                            placeholder="0"
+                                        />
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Stock Summary (Read-Only Display) */}
-                            <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
-                                <h4 className="font-semibold text-purple-700 mb-3 text-center">📦 Ringkasan Stok</h4>
-                                <div className="grid grid-cols-2 gap-4 text-center">
-                                    <div className="bg-white rounded-lg p-3 shadow-sm">
-                                        <div className="text-xs text-gray-500 mb-1">Ukuran</div>
-                                        <div className="text-sm font-bold text-gray-700">{selectedSizes.join(', ')}</div>
-                                    </div>
-                                    <div className="bg-white rounded-lg p-3 shadow-sm">
-                                        <div className="text-xs text-gray-500 mb-1">Varian</div>
-                                        <div className="text-sm font-bold text-gray-700">{variantLabels.length} varian</div>
-                                    </div>
-                                </div>
-                                <div className="mt-3 bg-green-100 rounded-lg p-4 text-center border border-green-300">
-                                    <div className="text-sm text-green-600 mb-1">Total Stok</div>
-                                    <div className="text-2xl font-bold text-green-700">
-                                        {selectedSizes.reduce((totalSum, size) => {
-                                            return totalSum + variantLabels.reduce((sum, label) => {
-                                                const key = `${size}-${label}`;
-                                                return sum + parseInt(productFormData.stockPerVariant[key] || String(uploadSettings.stockPerVariant) || '0');
-                                            }, 0);
-                                        }, 0)} pcs
-                                    </div>
+                            {/* Stock per Size × Variant Matrix - Editable */}
+                            <div className="bg-gray-50 rounded-xl p-4">
+                                <h3 className="font-medium text-gray-700 mb-3">📦 Stok per Size × Varian</h3>
+                                <p className="text-xs text-gray-500 mb-3">Edit angka di bawah jika ingin mengubah stok (nilai yang diedit akan digunakan)</p>
+
+                                {/* Matrix Table */}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="bg-purple-100">
+                                                <th className="px-2 py-1 text-left font-semibold text-purple-800 rounded-tl-lg sticky left-0 z-10 bg-purple-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">Size</th>
+                                                {variantLabels.map((label) => (
+                                                    <th key={label} className="px-1 py-1 text-center font-bold text-purple-700 min-w-[35px] text-xs">{label}</th>
+                                                ))}
+                                                <th className="px-2 py-1 text-center font-semibold text-purple-800 rounded-tr-lg text-xs">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {selectedSizes.map((size) => {
+                                                const sizeTotal = variantLabels.reduce((sum, label) => {
+                                                    const key = `${size}-${label}`;
+                                                    return sum + parseInt(productFormData.stockPerVariant[key] || String(uploadSettings.stockPerVariant) || '0');
+                                                }, 0);
+
+                                                return (
+                                                    <tr key={size} className="border-b border-gray-200">
+                                                        <td className="px-2 py-1 font-semibold text-gray-700 bg-purple-50 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">{size}</td>
+                                                        {variantLabels.map((label) => {
+                                                            const key = `${size}-${label}`;
+                                                            const defaultValue = uploadSettings.stockPerVariant || 0;
+                                                            const currentValue = productFormData.stockPerVariant[key];
+
+                                                            return (
+                                                                <td key={key} className="px-0 py-1 min-w-[35px]">
+                                                                    <input
+                                                                        type="text"
+                                                                        inputMode="numeric"
+                                                                        value={currentValue !== undefined ? currentValue : (defaultValue > 0 ? defaultValue : '')}
+                                                                        onChange={(e) => setProductFormData(prev => ({
+                                                                            ...prev,
+                                                                            stockPerVariant: {
+                                                                                ...prev.stockPerVariant,
+                                                                                [key]: e.target.value
+                                                                            }
+                                                                        }))}
+                                                                        onFocus={(e) => e.target.select()}
+                                                                        placeholder="0"
+                                                                        className="w-full px-1 py-1 border border-gray-300 rounded text-center text-sm font-bold focus:ring-1 focus:ring-purple-500 focus:border-purple-500 h-8"
+                                                                    />
+                                                                </td>
+                                                            );
+                                                        })}
+                                                        <td className="px-3 py-2 text-center font-bold text-purple-700 bg-purple-50">
+                                                            {sizeTotal}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="bg-green-100">
+                                                <td className="px-2 py-1 font-bold text-green-800 rounded-bl-lg sticky left-0 z-10 bg-green-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">Total</td>
+                                                {variantLabels.map((label) => {
+                                                    const variantTotal = selectedSizes.reduce((sum, size) => {
+                                                        const key = `${size}-${label}`;
+                                                        return sum + parseInt(productFormData.stockPerVariant[key] || String(uploadSettings.stockPerVariant) || '0');
+                                                    }, 0);
+                                                    return (
+                                                        <td key={label} className="px-1 py-1 text-center font-bold text-green-700 min-w-[35px] text-xs">
+                                                            {variantTotal}
+                                                        </td>
+                                                    );
+                                                })}
+                                                <td className="px-3 py-2 text-center font-bold text-green-800 bg-green-200 rounded-br-lg">
+                                                    {selectedSizes.reduce((totalSum, size) => {
+                                                        return totalSum + variantLabels.reduce((sum, label) => {
+                                                            const key = `${size}-${label}`;
+                                                            return sum + parseInt(productFormData.stockPerVariant[key] || String(uploadSettings.stockPerVariant) || '0');
+                                                        }, 0);
+                                                    }, 0)} pcs
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
                                 </div>
                             </div>
 
