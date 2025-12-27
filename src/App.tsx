@@ -476,6 +476,14 @@ function AppContent() {
         orderRecord.groupPaymentAmount = orderData.groupPaymentAmount;
       }
 
+      // ✨ NEW: Add shippingMode and shippingConfigured fields
+      if (orderData.shippingMode) {
+        orderRecord.shippingMode = orderData.shippingMode;
+      }
+      if (orderData.shippingConfigured !== undefined) {
+        orderRecord.shippingConfigured = orderData.shippingConfigured;
+      }
+
       // Save to Firebase only - single source of truth
       const savedOrder = await ordersService.createOrder(orderRecord);
 
