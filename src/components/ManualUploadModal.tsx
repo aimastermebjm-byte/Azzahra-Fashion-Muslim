@@ -758,101 +758,103 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                     {step === 'details' && (
                         <div className="space-y-6">
                             {/* Collage Preview */}
-                            <div className="flex gap-6">
-                                <div className="w-1/3">
-                                    <h3 className="font-medium text-gray-700 mb-2">Preview Collage</h3>
+                            {/* 1. Large Collage Preview */}
+                            <div className="w-full">
+                                <h3 className="font-medium text-gray-700 mb-2 text-center">Preview Collage</h3>
+                                <div className="aspect-[3/4] w-full max-w-sm mx-auto bg-gray-100 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
                                     <img
                                         src={collagePreview}
                                         alt="Collage Preview"
-                                        className="w-full rounded-xl border border-gray-200"
+                                        className="w-full h-full object-contain"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* 2. Product Details Form */}
+                            <div className="space-y-4">
+                                {/* Product Name */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Nama Produk *
+                                    </label>
+                                    <textarea
+                                        value={productFormData.name}
+                                        onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }))}
+                                        placeholder="Contoh: Gamis Syari Premium (Tap untuk memperbesar)"
+                                        rows={1}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[42px] focus:h-32 transition-[height] duration-300 ease-in-out resize-none"
                                     />
                                 </div>
 
-                                <div className="flex-1 space-y-4">
-                                    {/* Product Name */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Nama Produk *
-                                        </label>
-                                        <textarea
-                                            value={productFormData.name}
-                                            onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }))}
-                                            placeholder="Contoh: Gamis Syari Premium (Tap untuk memperbesar)"
-                                            rows={1}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[42px] focus:h-32 transition-[height] duration-300 ease-in-out resize-none"
-                                        />
-                                    </div>
-
-                                    {/* Category */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Kategori
-                                        </label>
-                                        <select
-                                            value={productFormData.category}
-                                            onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        >
-                                            {categories.map(cat => (
-                                                <option key={cat} value={cat}>{cat}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {/* Description - Auto Expand */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Deskripsi (Opsional)
-                                        </label>
-                                        <textarea
-                                            value={productFormData.description}
-                                            onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }))}
-                                            placeholder="Deskripsi produk... (Tap untuk memperbesar)"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[80px] h-[80px] focus:h-72 transition-[height] duration-300 ease-in-out resize-none"
-                                        />
-                                    </div>
+                                {/* Description */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Deskripsi (Opsional)
+                                    </label>
+                                    <textarea
+                                        value={productFormData.description}
+                                        onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }))}
+                                        placeholder="Deskripsi produk... (Tap untuk memperbesar)"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[80px] h-[80px] focus:h-72 transition-[height] duration-300 ease-in-out resize-none"
+                                    />
                                 </div>
 
-                                {/* Price Summary */}
-                                <div className="bg-gray-50 rounded-lg p-4">
-                                    <h4 className="font-medium text-gray-700 mb-2">Ringkasan Harga</h4>
-                                    <div className="space-y-4 text-sm max-w-sm mx-auto">
-                                        <div>
-                                            <label className="block text-sm font-bold text-gray-600 mb-1">Harga Modal</label>
-                                            <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                value={formatThousands(uploadSettings.costPrice)}
-                                                onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }))}
-                                                onFocus={(e) => e.target.select()}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg font-bold focus:ring-2 focus:ring-purple-500 bg-white"
-                                                placeholder="0"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-green-700 mb-1">Harga Jual (Retail)</label>
-                                            <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                value={formatThousands(retailPrice)}
-                                                onChange={(e) => setFixedPrices(prev => ({ ...prev, retail: parseFormattedNumber(e.target.value) }))}
-                                                onFocus={(e) => e.target.select()}
-                                                className="w-full px-4 py-3 border-2 border-green-400 rounded-xl text-lg font-bold text-green-700 bg-green-50 focus:ring-2 focus:ring-green-500"
-                                                placeholder="0"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-blue-700 mb-1">Harga Reseller</label>
-                                            <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                value={formatThousands(resellerPrice)}
-                                                onChange={(e) => setFixedPrices(prev => ({ ...prev, reseller: parseFormattedNumber(e.target.value) }))}
-                                                onFocus={(e) => e.target.select()}
-                                                className="w-full px-4 py-3 border-2 border-blue-400 rounded-xl text-lg font-bold text-blue-700 bg-blue-50 focus:ring-2 focus:ring-blue-500"
-                                                placeholder="0"
-                                            />
-                                        </div>
+                                {/* Category */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Kategori
+                                    </label>
+                                    <select
+                                        value={productFormData.category}
+                                        onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                    >
+                                        {categories.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* 3. Price Summary */}
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <h4 className="font-medium text-gray-700 mb-2">Ringkasan Harga</h4>
+                                <div className="space-y-4 text-sm max-w-sm mx-auto">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-600 mb-1">Harga Modal</label>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={formatThousands(uploadSettings.costPrice)}
+                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }))}
+                                            onFocus={(e) => e.target.select()}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg font-bold focus:ring-2 focus:ring-purple-500 bg-white"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-green-700 mb-1">Harga Jual (Retail)</label>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={formatThousands(retailPrice)}
+                                            onChange={(e) => setFixedPrices(prev => ({ ...prev, retail: parseFormattedNumber(e.target.value) }))}
+                                            onFocus={(e) => e.target.select()}
+                                            className="w-full px-4 py-3 border-2 border-green-400 rounded-xl text-lg font-bold text-green-700 bg-green-50 focus:ring-2 focus:ring-green-500"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-blue-700 mb-1">Harga Reseller</label>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={formatThousands(resellerPrice)}
+                                            onChange={(e) => setFixedPrices(prev => ({ ...prev, reseller: parseFormattedNumber(e.target.value) }))}
+                                            onFocus={(e) => e.target.select()}
+                                            className="w-full px-4 py-3 border-2 border-blue-400 rounded-xl text-lg font-bold text-blue-700 bg-blue-50 focus:ring-2 focus:ring-blue-500"
+                                            placeholder="0"
+                                        />
                                     </div>
                                 </div>
                             </div>
