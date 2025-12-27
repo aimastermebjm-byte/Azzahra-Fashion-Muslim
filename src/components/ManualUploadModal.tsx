@@ -842,18 +842,39 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     {/* Price Summary */}
                                     <div className="bg-gray-50 rounded-lg p-4">
                                         <h4 className="font-medium text-gray-700 mb-2">Ringkasan Harga</h4>
-                                        <div className="grid grid-cols-3 gap-4 text-sm">
+                                        <div className="grid grid-cols-3 gap-3 text-sm">
                                             <div>
-                                                <span className="text-gray-500">Modal:</span>
-                                                <p className="font-semibold">Rp {uploadSettings.costPrice.toLocaleString('id-ID')}</p>
+                                                <label className="block text-xs text-gray-500 mb-1">Modal</label>
+                                                <input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    value={formatThousands(uploadSettings.costPrice)}
+                                                    onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }))}
+                                                    onFocus={(e) => e.target.select()}
+                                                    className="w-full px-2 py-2 border border-gray-300 rounded-lg font-semibold focus:ring-1 focus:ring-purple-500"
+                                                />
                                             </div>
                                             <div>
-                                                <span className="text-gray-500">Retail:</span>
-                                                <p className="font-semibold text-green-600">Rp {retailPrice.toLocaleString('id-ID')}</p>
+                                                <label className="block text-xs text-gray-500 mb-1">Retail</label>
+                                                <input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    value={formatThousands(retailPrice)}
+                                                    onChange={(e) => setFixedPrices(prev => ({ ...prev, retail: parseFormattedNumber(e.target.value) }))}
+                                                    onFocus={(e) => e.target.select()}
+                                                    className="w-full px-2 py-2 border border-green-300 rounded-lg font-semibold text-green-700 focus:ring-1 focus:ring-green-500"
+                                                />
                                             </div>
                                             <div>
-                                                <span className="text-gray-500">Reseller:</span>
-                                                <p className="font-semibold text-blue-600">Rp {resellerPrice.toLocaleString('id-ID')}</p>
+                                                <label className="block text-xs text-gray-500 mb-1">Reseller</label>
+                                                <input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    value={formatThousands(resellerPrice)}
+                                                    onChange={(e) => setFixedPrices(prev => ({ ...prev, reseller: parseFormattedNumber(e.target.value) }))}
+                                                    onFocus={(e) => e.target.select()}
+                                                    className="w-full px-2 py-2 border border-blue-300 rounded-lg font-semibold text-blue-700 focus:ring-1 focus:ring-blue-500"
+                                                />
                                             </div>
                                         </div>
                                     </div>
