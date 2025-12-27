@@ -74,12 +74,25 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
     };
 
     const handleSelectAddress = (address: any) => {
+        console.log('📍 Selected address:', address);
         setSelectedAddressId(address.id);
+
+        // Build address string from available fields, filter out undefined/empty values
+        const addressParts = [
+            address.address || address.fullAddress || address.addressLine || address.detail || '',
+            address.subDistrict || address.kelurahan || '',
+            address.district || address.kecamatan || '',
+            address.city || address.kota || address.regency || '',
+            address.province || address.provinsi || ''
+        ].filter(part => part && part.trim() !== '');
+
+        const fullAddressString = addressParts.join(', ');
+
         setFormData(prev => ({
             ...prev,
-            name: address.recipientName || address.name || '',
-            phone: address.phone || '',
-            address: `${address.address}, ${address.district || ''}, ${address.city || ''}, ${address.province || ''}`
+            name: address.recipientName || address.name || address.label || '',
+            phone: address.phone || address.phoneNumber || '',
+            address: fullAddressString
         }));
     };
 
@@ -191,8 +204,8 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
                                         key={addr.id}
                                         onClick={() => handleSelectAddress(addr)}
                                         className={`w-full text-left p-3 rounded-xl border transition ${selectedAddressId === addr.id
-                                                ? 'border-brand-primary bg-brand-primary/5'
-                                                : 'border-slate-200 hover:border-brand-primary/40'
+                                            ? 'border-brand-primary bg-brand-primary/5'
+                                            : 'border-slate-200 hover:border-brand-primary/40'
                                             }`}
                                     >
                                         <p className="font-medium text-sm">{addr.recipientName || addr.label}</p>
