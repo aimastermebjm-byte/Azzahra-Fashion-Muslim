@@ -573,7 +573,19 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                   {/* Action Button (old single payment - keep for non-pending) */}
                   {!isPending && order.status !== 'delivered' && order.status !== 'cancelled' && (
                     <button
-                      onClick={() => handlePayNow(order)}
+                      onClick={() => {
+                        // ✨ NEW: Block payment if Keep mode and not configured
+                        const isKeepUnconfigured = (order as any).shippingMode === 'keep' && !(order as any).shippingConfigured;
+                        if (isKeepUnconfigured) {
+                          showToast({
+                            type: 'warning',
+                            title: 'Alamat belum diatur',
+                            message: 'Silahkan atur alamat pengiriman terlebih dahulu sebelum melakukan pembayaran.'
+                          });
+                          return;
+                        }
+                        handlePayNow(order);
+                      }}
                       className="w-full mt-3 px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors font-medium text-sm"
                     >
                       {order.status === 'awaiting_verification' ? 'Upload Ulang Bukti' : 'Bayar Sekarang'}
