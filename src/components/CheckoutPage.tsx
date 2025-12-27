@@ -16,7 +16,7 @@ import { Voucher } from '../types/voucher';
 
 interface CheckoutPageProps {
   user: any;
-  clearCart: (orderData: any, cartItems: any[]) => string;
+  clearCart: (orderData: any, cartItems: any[]) => Promise<string | null>;
   onBack: () => void;
   selectedCartItemIds?: string[];
 }
@@ -765,7 +765,17 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     };
 
     // Create order and get order ID (pass cartItems to eliminate duplicate read)
-    const newOrderId = clearCart(orderData, cartItems);
+    const newOrderId = await clearCart(orderData, cartItems);
+
+    // Handle case when order creation fails
+    if (!newOrderId) {
+      showToast({
+        type: 'error',
+        title: 'Gagal membuat pesanan',
+        message: 'Terjadi kesalahan. Silakan coba lagi.'
+      });
+      return;
+    }
 
     // Mark voucher as used AFTER order is created
     if (appliedVoucher) {
