@@ -299,8 +299,19 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
                                             : 'border-slate-200 hover:border-brand-primary/40'
                                             }`}
                                     >
-                                        <p className="font-medium text-sm">{addr.recipientName || addr.label}</p>
-                                        <p className="text-xs text-slate-500 truncate">{addr.address}</p>
+                                        <p className="font-medium text-sm">
+                                            {addr.recipientName || addr.name || addr.label || 'Penerima'}
+                                            <span className="text-slate-400 font-normal ml-1">({addr.label || 'Alamat'})</span>
+                                        </p>
+                                        <p className="text-xs text-slate-500 truncate">
+                                            {addr.address || addr.fullAddress || addr.detail ||
+                                                [
+                                                    addr.subDistrict || addr.kelurahan,
+                                                    addr.district || addr.kecamatan,
+                                                    addr.city || addr.kota || addr.regency
+                                                ].filter(Boolean).join(', ') ||
+                                                'Alamat belum lengkap'}
+                                        </p>
                                     </button>
                                 ))}
                             </div>
