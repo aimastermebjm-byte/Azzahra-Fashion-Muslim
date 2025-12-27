@@ -4,6 +4,7 @@ import { paymentDetectionService, PaymentDetection, PaymentDetectionSettings } f
 import { autoVerificationLogService } from '../services/autoVerificationLogService';
 import { useToast } from './ToastProvider';
 import { ordersService } from '../services/ordersService';
+import { checkAndUpgradeRole } from '../services/roleUpgradeService';
 
 /**
  * 🤖 PaymentAutoVerifier
@@ -165,6 +166,23 @@ const PaymentAutoVerifier: React.FC = () => {
 
                                     // EKSEKUSI: Update Order jadi Paid
                                     await ordersService.updateOrderStatus(bestMatch.orderId, 'paid');
+
+                                    // Auto upgrade role if eligible (Customer -> Reseller)
+                                    try {
+                                        const orderItems = (matchedOrder?.items || []).map((item: any) => ({
+                                            productId: item.productId || item.id,
+                                            productName: item.name || item.productName || '',
+                                            productStatus: item.productStatus || item.status || 'ready',
+                                            quantity: item.quantity || 1
+                                        }));
+
+                                        const upgradeResult = await checkAndUpgradeRole(matchedOrder?.userId, orderItems);
+                                        if (upgradeResult.upgraded) {
+                                            console.log('🎉 Auto-verified: User upgraded to Reseller:', upgradeResult.reason);
+                                        }
+                                    } catch (upgradeError) {
+                                        console.error('Role upgrade check failed (non-blocking):', upgradeError);
+                                    }
 
                                     // 📋 Log success
                                     await autoVerificationLogService.createLog({

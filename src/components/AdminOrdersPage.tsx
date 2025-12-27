@@ -4,6 +4,7 @@ import PageHeader from './PageHeader';
 import { useFirebaseAdminOrders } from '../hooks/useFirebaseAdminOrders';
 import { ordersService } from '../services/ordersService';
 import { paymentGroupService } from '../services/paymentGroupService';
+import { checkAndUpgradeRole, OrderItemForUpgrade } from '../services/roleUpgradeService';
 import ShippingEditModal from './ShippingEditModal';
 
 interface AdminOrdersPageProps {
@@ -313,6 +314,25 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       try {
         if (status === 'paid') {
           await updateOrderPayment(selectedOrder.id, paymentProof || 'payment_verified', 'paid');
+
+          // Auto upgrade role if eligible (Customer -> Reseller)
+          try {
+            const orderItems: OrderItemForUpgrade[] = (selectedOrder.items || []).map((item: any) => ({
+              productId: item.productId || item.id,
+              productName: item.name || item.productName || '',
+              productStatus: item.productStatus || item.status || 'ready',
+              quantity: item.quantity || 1
+            }));
+
+            const result = await checkAndUpgradeRole(selectedOrder.userId, orderItems);
+            if (result.upgraded) {
+              console.log('🎉 User upgraded to Reseller:', result.reason);
+              // TODO: Send WhatsApp notification
+            }
+          } catch (upgradeError) {
+            console.error('Role upgrade check failed (non-blocking):', upgradeError);
+            // Non-blocking: don't fail the payment verification if upgrade fails
+          }
         } else {
           console.log('🔄 CANCELLING ORDER - Status will be set to:', status);
           await updateOrderStatus(selectedOrder.id, status);
