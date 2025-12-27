@@ -30,6 +30,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
   // ✨ NEW: Shipping edit modal state
   const [shippingEditOrder, setShippingEditOrder] = useState<any>(null);
+  const [bulkAddressMode, setBulkAddressMode] = useState(false); // For applying address to all selected Keep orders
 
   // ✨ NEW: Toggle order selection
   const handleToggleOrderSelection = (orderId: string) => {
@@ -602,23 +603,60 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       {selectedCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20 p-4">
           <div className="max-w-2xl mx-auto">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <p className="text-sm text-gray-600">
-                  {selectedCount} pesanan dipilih
-                </p>
-                <p className="text-xl font-bold text-gray-900">
-                  Rp {selectedTotal.toLocaleString('id-ID')}
-                </p>
-              </div>
-              <button
-                onClick={handleBayarSekarang}
-                className="px-8 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
-              >
-                <CreditCard className="w-5 h-5" />
-                Bayar Sekarang
-              </button>
-            </div>
+            {/* Check if any selected order is Keep mode and not configured */}
+            {(() => {
+              const selectedKeepOrders = pendingOrders.filter(
+                (o: any) => selectedOrderIds.includes(o.id) &&
+                  o.shippingMode === 'keep' && !o.shippingConfigured
+              );
+              const hasUnconfiguredKeep = selectedKeepOrders.length > 0;
+
+              return (
+                <>
+                  {/* Warning and Apply Address button for Keep orders */}
+                  {hasUnconfiguredKeep && (
+                    <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                      <p className="text-sm text-amber-800 mb-2">
+                        ⚠️ <strong>{selectedKeepOrders.length} pesanan</strong> belum diatur alamatnya
+                      </p>
+                      <button
+                        onClick={() => {
+                          // Open modal with first unconfigured order, but in bulk mode
+                          setBulkAddressMode(true);
+                          setShippingEditOrder(selectedKeepOrders[0]);
+                        }}
+                        className="w-full py-2 bg-amber-500 text-white rounded-lg font-medium text-sm hover:bg-amber-600 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <MapPin className="w-4 h-4" />
+                        Terapkan Alamat ke Semua ({selectedKeepOrders.length} pesanan)
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">
+                        {selectedCount} pesanan dipilih
+                      </p>
+                      <p className="text-xl font-bold text-gray-900">
+                        Rp {selectedTotal.toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleBayarSekarang}
+                      disabled={hasUnconfiguredKeep}
+                      className={`px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 ${hasUnconfiguredKeep
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:shadow-lg'
+                        }`}
+                    >
+                      <CreditCard className="w-5 h-5" />
+                      Bayar Sekarang
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -1017,11 +1055,23 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       {/* ✨ NEW: Shipping Edit Modal */}
       <ShippingEditModal
         isOpen={!!shippingEditOrder}
-        onClose={() => setShippingEditOrder(null)}
+        onClose={() => {
+          setShippingEditOrder(null);
+          setBulkAddressMode(false);
+        }}
         order={shippingEditOrder}
+        bulkOrders={bulkAddressMode
+          ? pendingOrders.filter((o: any) =>
+            selectedOrderIds.includes(o.id) &&
+            o.shippingMode === 'keep' &&
+            !o.shippingConfigured
+          )
+          : undefined
+        }
         onSuccess={() => {
           // Refresh orders will happen via real-time listener
           setShippingEditOrder(null);
+          setBulkAddressMode(false);
         }}
       />
     </div>

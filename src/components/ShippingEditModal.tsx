@@ -19,6 +19,7 @@ interface ShippingEditModalProps {
     isOpen: boolean;
     onClose: () => void;
     order: any;
+    bulkOrders?: any[]; // For applying same address to multiple orders
     onSuccess: () => void;
 }
 
@@ -26,6 +27,7 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
     isOpen,
     onClose,
     order,
+    bulkOrders,
     onSuccess
 }) => {
     const { showToast } = useToast();
@@ -129,33 +131,40 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
 
         setLoading(true);
         try {
-            // Calculate new final total
-            const newFinalTotal = (order.totalAmount || 0) + formData.shippingCost - (order.voucherDiscount || 0);
+            // Determine which orders to update
+            const ordersToUpdate = bulkOrders && bulkOrders.length > 0 ? bulkOrders : [order];
 
-            // Update order in Firestore
-            await ordersService.updateOrder(order.id, {
-                shippingInfo: {
-                    name: formData.name,
-                    phone: formData.phone,
-                    address: formData.address,
-                    courier: formData.courier,
+            for (const targetOrder of ordersToUpdate) {
+                // Calculate new final total for each order
+                const newFinalTotal = (targetOrder.totalAmount || 0) + formData.shippingCost - (targetOrder.voucherDiscount || 0);
+
+                // Update order in Firestore
+                await ordersService.updateOrder(targetOrder.id, {
+                    shippingInfo: {
+                        name: formData.name,
+                        phone: formData.phone,
+                        address: formData.address,
+                        courier: formData.courier,
+                        shippingCost: formData.shippingCost,
+                        isDropship: formData.isDropship,
+                        dropshipName: formData.dropshipName,
+                        dropshipPhone: formData.dropshipPhone,
+                        shippingService: '',
+                        shippingETD: ''
+                    },
                     shippingCost: formData.shippingCost,
-                    isDropship: formData.isDropship,
-                    dropshipName: formData.dropshipName,
-                    dropshipPhone: formData.dropshipPhone,
-                    shippingService: '',
-                    shippingETD: ''
-                },
-                shippingCost: formData.shippingCost,
-                finalTotal: Math.max(0, newFinalTotal),
-                shippingConfigured: true, // Mark as configured
-                shippingMode: 'delivery' // Change from 'keep' to 'delivery'
-            });
+                    finalTotal: Math.max(0, newFinalTotal),
+                    shippingConfigured: true, // Mark as configured
+                    shippingMode: 'delivery' // Change from 'keep' to 'delivery'
+                } as any);
+            }
 
             showToast({
                 type: 'success',
                 title: 'Berhasil!',
-                message: 'Alamat pengiriman berhasil diperbarui.'
+                message: ordersToUpdate.length > 1
+                    ? `Alamat berhasil diterapkan ke ${ordersToUpdate.length} pesanan.`
+                    : 'Alamat pengiriman berhasil diperbarui.'
             });
 
             onSuccess();
