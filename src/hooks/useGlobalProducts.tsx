@@ -32,6 +32,7 @@ export const GlobalProductsProvider: React.FC<{ children: React.ReactNode }> = (
         const transformedProducts: Product[] = products.map((data: any) => ({
           id: data.id,
           name: data.name || '',
+          brand: data.brand || undefined, // Include Brand
           description: data.description || '',
           category: data.category || 'uncategorized',
 
