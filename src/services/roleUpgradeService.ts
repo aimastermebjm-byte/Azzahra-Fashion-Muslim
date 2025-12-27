@@ -1,6 +1,28 @@
 // Role Upgrade Service - Auto upgrade Customer to Reseller based on purchase
-import { doc, updateDoc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, Timestamp, collection, addDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
+
+// WhatsApp notification templates
+const WA_TEMPLATES = {
+    upgrade: (userName: string) =>
+        `🎉 Selamat ${userName}!\n\n` +
+        `Anda resmi menjadi *RESELLER* Azzahra Fashion Muslim!\n\n` +
+        `✨ Nikmati harga spesial reseller untuk semua produk.\n` +
+        `💰 Refresh halaman untuk melihat harga reseller Anda.\n\n` +
+        `Terima kasih atas kepercayaan Anda! 🙏`,
+
+    warning: (userName: string, daysLeft: number) =>
+        `⚠️ Reminder untuk ${userName}\n\n` +
+        `Status reseller Anda akan berakhir dalam *${daysLeft} hari* jika tidak ada pembelian.\n\n` +
+        `🛒 Belanja sekarang untuk mempertahankan harga reseller!\n` +
+        `📱 Kunjungi: azzahra-fashion.vercel.app`,
+
+    downgrade: (userName: string) =>
+        `ℹ️ Informasi untuk ${userName}\n\n` +
+        `Status reseller Anda telah berakhir karena tidak ada pembelian selama 1 tahun.\n\n` +
+        `🛒 Belanja minimal 3 pcs (Ready) atau 4 pcs (PO) untuk kembali menjadi reseller!\n` +
+        `📱 Kunjungi: azzahra-fashion.vercel.app`
+};
 
 export interface RoleUpgradeResult {
     upgraded: boolean;
@@ -193,5 +215,70 @@ export async function manualRoleChange(
     } catch (error) {
         console.error('[RoleUpgrade] Error in manual role change:', error);
         return false;
+    }
+}
+
+/**
+ * Queue WhatsApp notification for role change
+ * WhatsApp Bridge will read from 'notificationQueue' collection and send messages
+ */
+export async function queueWhatsAppNotification(
+    userId: string,
+    phoneNumber: string,
+    userName: string,
+    type: 'upgrade' | 'warning' | 'downgrade',
+    daysLeft?: number
+): Promise<boolean> {
+    try {
+        let message = '';
+
+        switch (type) {
+            case 'upgrade':
+                message = WA_TEMPLATES.upgrade(userName);
+                break;
+            case 'warning':
+                message = WA_TEMPLATES.warning(userName, daysLeft || 30);
+                break;
+            case 'downgrade':
+                message = WA_TEMPLATES.downgrade(userName);
+                break;
+        }
+
+        // Add to notification queue in Firestore
+        const queueRef = collection(db, 'notificationQueue');
+        await addDoc(queueRef, {
+            userId,
+            phoneNumber: phoneNumber.replace(/\D/g, ''), // Remove non-digits
+            message,
+            type: `role_${type}`,
+            status: 'pending',
+            createdAt: Timestamp.now(),
+            attempts: 0
+        });
+
+        console.log(`[RoleUpgrade] Queued WhatsApp notification: ${type} for ${phoneNumber}`);
+        return true;
+    } catch (error) {
+        console.error('[RoleUpgrade] Error queueing WhatsApp notification:', error);
+        return false;
+    }
+}
+
+/**
+ * Get user phone number from order or user profile
+ */
+export async function getUserPhoneNumber(userId: string): Promise<string | null> {
+    try {
+        const userRef = doc(db, 'users', userId);
+        const userDoc = await getDoc(userRef);
+
+        if (userDoc.exists()) {
+            const data = userDoc.data();
+            return data.phone || data.phoneNumber || null;
+        }
+        return null;
+    } catch (error) {
+        console.error('[RoleUpgrade] Error getting user phone:', error);
+        return null;
     }
 }

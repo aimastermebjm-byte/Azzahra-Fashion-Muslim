@@ -4,7 +4,7 @@ import PageHeader from './PageHeader';
 import { useFirebaseAdminOrders } from '../hooks/useFirebaseAdminOrders';
 import { ordersService } from '../services/ordersService';
 import { paymentGroupService } from '../services/paymentGroupService';
-import { checkAndUpgradeRole, OrderItemForUpgrade } from '../services/roleUpgradeService';
+import { checkAndUpgradeRole, OrderItemForUpgrade, queueWhatsAppNotification } from '../services/roleUpgradeService';
 import ShippingEditModal from './ShippingEditModal';
 
 interface AdminOrdersPageProps {
@@ -327,7 +327,18 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             const result = await checkAndUpgradeRole(selectedOrder.userId, orderItems);
             if (result.upgraded) {
               console.log('🎉 User upgraded to Reseller:', result.reason);
-              // TODO: Send WhatsApp notification
+
+              // Queue WhatsApp notification for upgrade
+              const customerPhone = selectedOrder.shippingInfo?.phone || selectedOrder.phone;
+              const customerName = selectedOrder.shippingInfo?.name || selectedOrder.userName || 'Pelanggan';
+              if (customerPhone) {
+                await queueWhatsAppNotification(
+                  selectedOrder.userId,
+                  customerPhone,
+                  customerName,
+                  'upgrade'
+                );
+              }
             }
           } catch (upgradeError) {
             console.error('Role upgrade check failed (non-blocking):', upgradeError);
