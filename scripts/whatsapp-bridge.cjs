@@ -191,13 +191,9 @@ WARNA:Hitam`;
 }
 
 async function selectBestImages(images) {
-  // If AI not configured, return all images
-  if (!visionModel) {
-    console.log('⚠️ AI not configured - using all images');
-    return images;
-  }
-
-  console.log('🤖 AI analyzing', images.length, 'images...');
+  // AI selection disabled for speed - always return all images
+  console.log(`📸 Using all ${images.length} images (AI disabled for speed)`);
+  return images;
 
   // Analyze each image
   const analyzed = [];
