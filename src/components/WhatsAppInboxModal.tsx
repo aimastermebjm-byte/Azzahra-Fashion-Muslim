@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ArrowRight, Trash2, Layers, Loader, CheckSquare, Package, RefreshCw, Check, ArrowLeft, Edit3 } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import { db, storage } from '../utils/firebaseClient';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from '../utils/firebaseClient';
 import { collageService } from '../services/collageService';
 
 interface ProductDraft {
@@ -93,30 +92,28 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                 })
             );
 
-            // Generate new collage
+            // Generate new collage locally (for preview)
             const labels = collageService.generateVariantLabels(imageFiles.length);
             const collageBlob = await collageService.generateCollage(imageFiles, labels);
 
-            // Upload new collage
-            const collageRef = ref(storage, `collages/draft_${Date.now()}.jpg`);
-            await uploadBytes(collageRef, collageBlob);
-            const newCollageUrl = await getDownloadURL(collageRef);
+            // Create local preview URL (not uploading to Firebase - that happens in ManualUploadModal)
+            const localPreviewUrl = URL.createObjectURL(collageBlob);
 
-            // Update draft in Firestore
+            // Update draft in Firestore (update rawImages, but keep using local preview)
             await updateDoc(doc(db, 'product_drafts', selectedDraft.id), {
-                collageUrl: newCollageUrl,
                 rawImages: selectedImages,
                 variantCount: selectedImages.length,
                 name: editName,
                 description: editDescription,
                 retailPrice: editRetailPrice,
                 resellerPrice: editResellerPrice
+                // Note: collageUrl not updated - will be regenerated in ManualUploadModal
             });
 
-            // Update local state
+            // Update local state with local preview
             setSelectedDraft({
                 ...selectedDraft,
-                collageUrl: newCollageUrl,
+                collageUrl: localPreviewUrl, // Local preview only
                 rawImages: selectedImages,
                 variantCount: selectedImages.length,
                 name: editName,
@@ -294,8 +291,8 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                                         onClick={regenerateCollage}
                                         disabled={isRegenerating || selectedImages.length === 0}
                                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${isRegenerating || selectedImages.length === 0
-                                                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                                : 'bg-blue-500 text-white hover:bg-blue-600'
+                                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                            : 'bg-blue-500 text-white hover:bg-blue-600'
                                             }`}
                                     >
                                         {isRegenerating ? (
@@ -315,8 +312,8 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                                             key={index}
                                             onClick={() => toggleImageSelection(imageUrl)}
                                             className={`relative aspect-[3/4] rounded-lg overflow-hidden cursor-pointer border-4 transition-all ${selectedImages.includes(imageUrl)
-                                                    ? 'border-green-500 shadow-lg'
-                                                    : 'border-transparent opacity-50 grayscale'
+                                                ? 'border-green-500 shadow-lg'
+                                                : 'border-transparent opacity-50 grayscale'
                                                 }`}
                                         >
                                             <img
