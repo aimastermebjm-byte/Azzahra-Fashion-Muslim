@@ -135,40 +135,63 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
     const handleProceedDraft = async (draft: ProductDraft) => {
         const draftToUse = selectedDraft || draft;
 
-        // Generate variant structure
-        const variantLabels = collageService.generateVariantLabels(draftToUse.variantCount);
-        const stockPerVariant: Record<string, number> = {};
-        variantLabels.forEach(label => stockPerVariant[label] = defaultStock);
+        // Show loading state while preparing images
+        setIsRegenerating(true);
 
-        const productData = {
-            name: draftToUse.name,
-            description: draftToUse.description,
-            category: draftToUse.category,
-            retailPrice: draftToUse.retailPrice,
-            resellerPrice: draftToUse.resellerPrice,
-            costPrice: draftToUse.costPrice,
-            variants: {
-                colors: variantLabels,
-                sizes: draftToUse.sizes && draftToUse.sizes.length > 0 ? draftToUse.sizes : ['All Size'],
-                stock: draftToUse.sizes && draftToUse.sizes.length > 0
-                    ? Object.fromEntries(draftToUse.sizes.map(size => [size, stockPerVariant]))
-                    : { 'All Size': stockPerVariant }
-            }
-        };
+        try {
+            // Download images as File objects
+            const imageUrls = selectedImages.length > 0 ? selectedImages : draftToUse.rawImages;
+            const imageFiles: File[] = await Promise.all(
+                imageUrls.map(async (url, index) => {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    return new File([blob], `image_${index}.jpg`, { type: 'image/jpeg' });
+                })
+            );
 
-        // Pass to parent (AdminProductsPage)
-        onProcess({
-            productData,
-            collageUrl: draftToUse.collageUrl,
-            draftId: draftToUse.id,
-            uploadSettings: {
+            // Generate collage blob
+            const variantLabels = collageService.generateVariantLabels(imageFiles.length);
+            const collageBlob = await collageService.generateCollage(imageFiles, variantLabels);
+
+            const stockPerVariant: Record<string, number> = {};
+            variantLabels.forEach(label => stockPerVariant[label] = defaultStock);
+
+            const productData = {
+                name: editName || draftToUse.name,
+                description: editDescription || draftToUse.description,
+                category: draftToUse.category,
+                retailPrice: editRetailPrice || draftToUse.retailPrice,
+                resellerPrice: editResellerPrice || draftToUse.resellerPrice,
                 costPrice: draftToUse.costPrice,
-                stockPerVariant: defaultStock
-            }
-        }, new File([], 'placeholder'));
+                variants: {
+                    colors: variantLabels,
+                    sizes: draftToUse.sizes && draftToUse.sizes.length > 0 ? draftToUse.sizes : ['All Size'],
+                    stock: draftToUse.sizes && draftToUse.sizes.length > 0
+                        ? Object.fromEntries(draftToUse.sizes.map(size => [size, stockPerVariant]))
+                        : { 'All Size': stockPerVariant }
+                }
+            };
 
-        setSelectedDraft(null);
-        onClose();
+            // Pass to parent (AdminProductsPage) with images and collage blob
+            onProcess({
+                productData,
+                images: imageFiles,
+                collageBlob: collageBlob,
+                draftId: draftToUse.id,
+                uploadSettings: {
+                    costPrice: draftToUse.costPrice,
+                    stockPerVariant: defaultStock
+                }
+            }, imageFiles[0] || new File([], 'placeholder'));
+
+            setSelectedDraft(null);
+            onClose();
+        } catch (error) {
+            console.error('Error preparing draft for upload:', error);
+            alert('❌ Gagal mempersiapkan draft. Coba lagi.');
+        } finally {
+            setIsRegenerating(false);
+        }
     };
 
     // Delete Draft
