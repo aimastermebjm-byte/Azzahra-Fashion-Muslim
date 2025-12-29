@@ -231,6 +231,35 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     // Show pricing rules panel
     const [showPricingRules, setShowPricingRules] = useState(false);
 
+    // Show price per size panel (expandable)
+    const [showPricePerSize, setShowPricePerSize] = useState(false);
+    const [pricesPerSize, setPricesPerSize] = useState<Record<string, { retail: number, reseller: number }>>({});
+
+    // Auto-generate collage when images change
+    React.useEffect(() => {
+        const autoGenerateCollage = async () => {
+            if (images.length === 0) {
+                setCollageBlob(null);
+                setCollagePreview('');
+                return;
+            }
+
+            setIsGeneratingCollage(true);
+            try {
+                const labels = collageService.generateVariantLabels(images.length);
+                const blob = await collageService.generateCollage(images, labels);
+                setCollageBlob(blob);
+                setCollagePreview(URL.createObjectURL(blob));
+            } catch (error) {
+                console.error('Auto collage generation failed:', error);
+            } finally {
+                setIsGeneratingCollage(false);
+            }
+        };
+
+        autoGenerateCollage();
+    }, [images]);
+
     // State for fixed prices (from WhatsApp/Initial State) to prevent auto-calculation override
     const [fixedPrices, setFixedPrices] = useState<{ retail?: number, reseller?: number } | null>(null);
 
@@ -260,6 +289,18 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         if (fixedPrices?.retail) return fixedPrices.retail;
         return resellerPrice + uploadSettings.retailMarkup;
     }, [resellerPrice, uploadSettings.retailMarkup, fixedPrices]);
+
+    // Auto-initialize pricesPerSize when sizes or base prices change
+    React.useEffect(() => {
+        const newPrices: Record<string, { retail: number, reseller: number }> = {};
+        selectedSizes.forEach(size => {
+            newPrices[size] = pricesPerSize[size] || {
+                retail: retailPrice,
+                reseller: resellerPrice
+            };
+        });
+        setPricesPerSize(newPrices);
+    }, [selectedSizes, retailPrice, resellerPrice]);
 
     // Helper untuk format angka ribuan
     const formatThousands = (num: number): string => {
@@ -528,6 +569,36 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 </div>
                             )}
 
+                            {/* Auto-Generated Collage Preview */}
+                            {images.length > 0 && (
+                                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+                                    <h3 className="font-medium text-purple-700 mb-3 text-center">🖼️ Preview Collage (Auto)</h3>
+                                    <div className="aspect-[3/4] w-full max-w-xs mx-auto bg-white rounded-xl overflow-hidden border-2 border-purple-300 shadow-lg">
+                                        {isGeneratingCollage ? (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                                <div className="text-center">
+                                                    <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                                                    <p className="text-sm text-purple-600">Membuat collage...</p>
+                                                </div>
+                                            </div>
+                                        ) : collagePreview ? (
+                                            <img
+                                                src={collagePreview}
+                                                alt="Collage Preview"
+                                                className="w-full h-full object-contain"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                Collage akan muncul di sini
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-purple-500 text-center mt-2">
+                                        Collage otomatis diperbarui saat gambar ditambah/dihapus
+                                    </p>
+                                </div>
+                            )}
+
                             {/* Product Details - After Image Upload, Before Parameter Produk */}
                             {images.length > 0 && (
                                 <div className="bg-white rounded-xl p-4 border border-gray-200">
@@ -734,6 +805,80 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     </div>
                                 </div>
 
+                                {/* Expandable Price per Size */}
+                                {selectedSizes.length > 0 && selectedSizes[0] !== 'All Size' && (
+                                    <div className="mb-5 border border-orange-200 rounded-xl overflow-hidden bg-white">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPricePerSize(!showPricePerSize)}
+                                            className="w-full px-4 py-3 bg-orange-50 text-left flex justify-between items-center"
+                                        >
+                                            <span className="text-sm font-medium text-orange-800">
+                                                💰 Harga Beda per Size?
+                                            </span>
+                                            <span className="text-orange-600 text-xs">
+                                                {showPricePerSize ? '▲ Tutup' : '▼ Expand'}
+                                            </span>
+                                        </button>
+
+                                        {showPricePerSize && (
+                                            <div className="p-4">
+                                                <p className="text-xs text-gray-500 mb-3">Edit jika harga berbeda per size:</p>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-sm">
+                                                        <thead>
+                                                            <tr className="bg-orange-100">
+                                                                <th className="px-2 py-2 text-left font-semibold text-orange-800">Size</th>
+                                                                <th className="px-2 py-2 text-center font-semibold text-green-700">Retail</th>
+                                                                <th className="px-2 py-2 text-center font-semibold text-blue-700">Reseller</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {selectedSizes.map(size => (
+                                                                <tr key={size} className="border-b border-gray-100">
+                                                                    <td className="px-2 py-2 font-semibold text-gray-700">{size}</td>
+                                                                    <td className="px-2 py-2">
+                                                                        <input
+                                                                            type="text"
+                                                                            inputMode="numeric"
+                                                                            value={formatThousands(pricesPerSize[size]?.retail || retailPrice)}
+                                                                            onChange={(e) => setPricesPerSize(prev => ({
+                                                                                ...prev,
+                                                                                [size]: {
+                                                                                    ...prev[size],
+                                                                                    retail: parseFormattedNumber(e.target.value)
+                                                                                }
+                                                                            }))}
+                                                                            onFocus={(e) => e.target.select()}
+                                                                            className="w-full px-2 py-1 border border-green-300 rounded text-center font-bold text-green-700"
+                                                                        />
+                                                                    </td>
+                                                                    <td className="px-2 py-2">
+                                                                        <input
+                                                                            type="text"
+                                                                            inputMode="numeric"
+                                                                            value={formatThousands(pricesPerSize[size]?.reseller || resellerPrice)}
+                                                                            onChange={(e) => setPricesPerSize(prev => ({
+                                                                                ...prev,
+                                                                                [size]: {
+                                                                                    ...prev[size],
+                                                                                    reseller: parseFormattedNumber(e.target.value)
+                                                                                }
+                                                                            }))}
+                                                                            onFocus={(e) => e.target.select()}
+                                                                            className="w-full px-2 py-1 border border-blue-300 rounded text-center font-bold text-blue-700"
+                                                                        />
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {/* Pricing Rules Editor (Moved Retail Markup Inside) */}
                                 <div className="mb-5 border border-blue-200 rounded-xl overflow-hidden bg-white">
                                     <button
@@ -859,23 +1004,22 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
 
 
-
-                            {/* Generate Collage Button */}
-                            {images.length > 0 && (
+                            {/* Go to Preview Button */}
+                            {images.length > 0 && collageBlob && (
                                 <button
-                                    onClick={handleGenerateCollage}
-                                    disabled={isGeneratingCollage}
+                                    onClick={() => setStep('details')}
+                                    disabled={isGeneratingCollage || !productFormData.name}
                                     className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50"
                                 >
                                     {isGeneratingCollage ? (
                                         <span className="flex items-center justify-center gap-2">
                                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            Membuat Collage...
+                                            Sedang membuat collage...
                                         </span>
                                     ) : (
                                         <span className="flex items-center justify-center gap-2">
-                                            <ImageIcon className="w-5 h-5" />
-                                            Buat Collage & Lanjut
+                                            <Check className="w-5 h-5" />
+                                            Lanjut ke Preview →
                                         </span>
                                     )}
                                 </button>
