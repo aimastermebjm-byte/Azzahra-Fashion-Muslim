@@ -173,7 +173,9 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
             };
 
             // Pass to parent (AdminProductsPage) with images and collage blob
+            // Set step='details' to skip collage generation in ManualUploadModal
             onProcess({
+                step: 'details',
                 productData,
                 images: imageFiles,
                 collageBlob: collageBlob,
