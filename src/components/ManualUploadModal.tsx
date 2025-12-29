@@ -452,8 +452,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             variants: {
                 sizes: selectedSizes,
                 colors: variantLabels,
-                stock: stockMatrix
-            }
+                stock: stockMatrix,
+                // Include per-size pricing if enabled
+                prices: showPricePerSize ? pricesPerSize : null
+            },
+            // Also include at top level for easier access if needed
+            pricesPerSize: showPricePerSize ? pricesPerSize : null
         };
 
         onSuccess(productData);
