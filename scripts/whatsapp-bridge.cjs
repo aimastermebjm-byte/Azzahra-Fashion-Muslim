@@ -25,6 +25,34 @@ if (GEMINI_API_KEY) {
 }
 
 // ============================================================
+// CONFIGURATION - Centralized Settings (sesuai spec)
+// ============================================================
+const CONFIG = {
+  // Bridge Settings
+  BUNDLE_WINDOW_MS: 60000,        // 60 detik window untuk bundling
+
+  // Whitelist (bisa diubah sesuai kebutuhan)
+  ALLOWED_SENDERS: ['6287815990944@c.us'],
+
+  // AI Model
+  GEMINI_MODEL: 'gemini-2.0-flash-lite',
+
+  // Optional Features (toggle ON/OFF)
+  ENABLE_FULL_BODY_CHECK: true,   // Validasi gambar full body
+  ENABLE_AUTO_UPLOAD: false,       // Langsung upload ke katalog (future)
+
+  // Defaults
+  DEFAULT_STOCK: 1,
+  DEFAULT_CATEGORY: 'Gamis',
+};
+
+console.log('⚙️ CONFIG loaded:', JSON.stringify({
+  BUNDLE_WINDOW_MS: CONFIG.BUNDLE_WINDOW_MS,
+  ENABLE_FULL_BODY_CHECK: CONFIG.ENABLE_FULL_BODY_CHECK,
+  ENABLE_AUTO_UPLOAD: CONFIG.ENABLE_AUTO_UPLOAD
+}, null, 2));
+
+// ============================================================
 // FAMILY KEYWORDS for conditional processing
 // ============================================================
 const FAMILY_KEYWORDS = [
@@ -115,9 +143,9 @@ console.log('⏳ Starting WhatsApp client (this may take 30-60 seconds)...');
 console.log('   Puppeteer is loading headless Chrome...');
 
 // ============================================================
-// 2. SMART BUNDLER (15-second window)
+// 2. SMART BUNDLER (using CONFIG.BUNDLE_WINDOW_MS)
 // ============================================================
-const PAIRING_WINDOW = 5000; // 5 seconds - reduced for faster processing
+const PAIRING_WINDOW = CONFIG.BUNDLE_WINDOW_MS; // From CONFIG (60 detik sesuai spec)
 let messageBuffer = [];
 let processingTimeout = null;
 
@@ -168,9 +196,18 @@ async function processBundle() {
     // Task 1: AI Caption Parse (1-2 detik)
     const aiParsePromise = parseWithAI(finalCaption);
 
-    // Task 2: Generate Collage (20-25 detik) - jalankan bersamaan
-    console.log('🎨 Generating collage from', images.length, 'images...');
-    const collagePromise = generateCollage(images.map(i => i.imageBuffer));
+    // Task 2: Full Body Check (conditional via CONFIG)
+    let selectedImages = images;
+    if (CONFIG.ENABLE_FULL_BODY_CHECK) {
+      console.log('🔍 Running Full Body Check (CONFIG enabled)...');
+      selectedImages = await selectBestImages(images);
+    } else {
+      console.log('⏩ Skipping Full Body Check (CONFIG disabled)');
+    }
+
+    // Task 3: Generate Collage (20-25 detik)
+    console.log('🎨 Generating collage from', selectedImages.length, 'images...');
+    const collagePromise = generateCollage(selectedImages.map(i => i.imageBuffer));
 
     // Wait for both tasks
     const [aiParsed, collageBuffer] = await Promise.all([aiParsePromise, collagePromise]);
@@ -226,8 +263,8 @@ async function processBundle() {
       // Variants & Stock
       sizes: parsed.sizes || ['All Size'],
       colors: parsed.colors || [],
-      stockPerVariant: parsed.stockPerVariant || 1,
-      variantCount: images.length,
+      stockPerVariant: parsed.stockPerVariant || CONFIG.DEFAULT_STOCK,
+      variantCount: selectedImages.length,
 
       // Family product handling
       isFamily: parsed.isFamily || false,
@@ -235,7 +272,7 @@ async function processBundle() {
 
       // Images
       collageUrl: collageUrl,
-      rawImages: images.map(i => i.storageUrl).filter(Boolean),
+      rawImages: selectedImages.map(i => i.storageUrl).filter(Boolean),
 
       // Metadata
       source: 'whatsapp-bridge',
@@ -297,9 +334,13 @@ WARNA:Hitam`;
 }
 
 async function selectBestImages(images) {
-  // AI selection disabled for speed - always return all images
-  console.log(`📸 Using all ${images.length} images (AI disabled for speed)`);
-  return images;
+  // Check if Full Body Check is enabled via CONFIG
+  if (!CONFIG.ENABLE_FULL_BODY_CHECK) {
+    console.log(`📸 Full Body Check DISABLED - using all ${images.length} images`);
+    return images;
+  }
+
+  console.log(`📸 Full Body Check ENABLED - analyzing ${images.length} images...`);
 
   // Analyze each image
   const analyzed = [];
@@ -1020,11 +1061,8 @@ client.on('change_state', (state) => {
   }
 });
 
-// --- WHITELIST ---
-const ALLOWED_NUMBERS = [
-  '6287815990944@c.us',
-  // Add more numbers here
-];
+// --- WHITELIST (using CONFIG.ALLOWED_SENDERS) ---
+const ALLOWED_NUMBERS = CONFIG.ALLOWED_SENDERS;
 
 client.on('message_create', async (msg) => {
   if (!isConnected) {
