@@ -65,7 +65,7 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
             // Pass to ManualUploadModal at step='upload' (first step, like manual upload)
             // User can manage images there, then generate collage
             onProcess({
-                step: 'upload', // Start at upload step (same as manual)
+                step: 'details', // Start at details (preview) step
                 images: imageFiles,
                 productData: {
                     name: draft.name,
@@ -74,6 +74,9 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                     retailPrice: draft.retailPrice,
                     resellerPrice: draft.resellerPrice,
                     costPrice: draft.costPrice,
+                    variants: {
+                        sizes: draft.sizes && draft.sizes.length > 0 ? draft.sizes : ['All Size']
+                    }
                 },
                 draftId: draft.id,
                 uploadSettings: {

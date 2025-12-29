@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, Upload, Image as ImageIcon, Settings, Check } from 'lucide-react';
+import { X, Upload, Settings, Check } from 'lucide-react';
 import { collageService } from '../services/collageService';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
 
@@ -26,6 +26,7 @@ interface ManualUploadModalProps {
                 colors: string[];
                 stock: Record<string, Record<string, number>>;
             };
+            pricesPerVariant?: Record<string, { retail: number, reseller: number }>;
         };
         uploadSettings?: {
             stockPerVariant?: number;
@@ -126,6 +127,17 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                     description: initialState.productData?.description || '',
                     category: initialState.productData?.category || categories[0] || 'gamis',
                 }));
+
+                // Set sizes from draft
+                if (initialState.productData?.variants?.sizes) {
+                    setSelectedSizes(initialState.productData.variants.sizes);
+                }
+
+                // Set prices per variant from draft
+                if (initialState.productData?.pricesPerVariant) {
+                    setPricesPerVariant(initialState.productData.pricesPerVariant);
+                    setShowPricePerVariant(true);
+                }
 
                 // Load initial stock if available (from WhatsApp Inbox)
                 if (initialState.productData?.variants?.stock && initialState.productData?.variants?.colors) {
@@ -231,9 +243,10 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     // Show pricing rules panel
     const [showPricingRules, setShowPricingRules] = useState(false);
 
-    // Show price per size panel (expandable)
-    const [showPricePerSize, setShowPricePerSize] = useState(false);
-    const [pricesPerSize, setPricesPerSize] = useState<Record<string, { retail: number, reseller: number }>>({});
+    // Show price per size/variant panel (expandable)
+    const [showPricePerVariant, setShowPricePerVariant] = useState(false);
+    // Key format: "Size-Label" (e.g., "S-A", "XL-B")
+    const [pricesPerVariant, setPricesPerVariant] = useState<Record<string, { retail: number, reseller: number }>>({});
 
     // Auto-generate collage when images change
     React.useEffect(() => {
@@ -290,17 +303,20 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         return resellerPrice + uploadSettings.retailMarkup;
     }, [resellerPrice, uploadSettings.retailMarkup, fixedPrices]);
 
-    // Auto-initialize pricesPerSize when sizes or base prices change
+    // Auto-initialize pricesPerVariant when sizes, variants, or base prices change
     React.useEffect(() => {
         const newPrices: Record<string, { retail: number, reseller: number }> = {};
         selectedSizes.forEach(size => {
-            newPrices[size] = pricesPerSize[size] || {
-                retail: retailPrice,
-                reseller: resellerPrice
-            };
+            variantLabels.forEach(label => {
+                const key = `${size}-${label}`;
+                newPrices[key] = pricesPerVariant[key] || {
+                    retail: retailPrice,
+                    reseller: resellerPrice
+                };
+            });
         });
-        setPricesPerSize(newPrices);
-    }, [selectedSizes, retailPrice, resellerPrice]);
+        setPricesPerVariant(newPrices);
+    }, [selectedSizes, variantLabels, retailPrice, resellerPrice]);
 
     // Helper untuk format angka ribuan
     const formatThousands = (num: number): string => {
@@ -360,29 +376,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         setProductFormData(prev => ({ ...prev, stockPerVariant: newStockPerVariant }));
     };
 
-    // Generate collage
-    const handleGenerateCollage = async () => {
-        if (images.length === 0) {
-            alert('Pilih minimal 1 gambar');
-            return;
-        }
 
-        setIsGeneratingCollage(true);
-        try {
-            const blob = await collageService.generateCollage(images, variantLabels);
-            setCollageBlob(blob);
-
-            const previewUrl = URL.createObjectURL(blob);
-            setCollagePreview(previewUrl);
-
-            setStep('details');
-        } catch (error) {
-            console.error('Error generating collage:', error);
-            alert('Gagal membuat collage');
-        } finally {
-            setIsGeneratingCollage(false);
-        }
-    };
 
     // Handle submit
     const handleSubmit = () => {
@@ -453,11 +447,11 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                 sizes: selectedSizes,
                 colors: variantLabels,
                 stock: stockMatrix,
-                // Include per-size pricing if enabled
-                prices: showPricePerSize ? pricesPerSize : null
+                // Include per-variant pricing if enabled
+                prices: showPricePerVariant ? pricesPerVariant : null
             },
             // Also include at top level for easier access if needed
-            pricesPerSize: showPricePerSize ? pricesPerSize : null
+            pricesPerVariant: showPricePerVariant ? pricesPerVariant : null
         };
 
         onSuccess(productData);
@@ -809,74 +803,118 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     </div>
                                 </div>
 
-                                {/* Expandable Price per Size */}
+                                {/* Expandable Price per Variant Matrix */}
                                 {selectedSizes.length > 0 && selectedSizes[0] !== 'All Size' && (
                                     <div className="mb-5 border border-orange-200 rounded-xl overflow-hidden bg-white">
                                         <button
                                             type="button"
-                                            onClick={() => setShowPricePerSize(!showPricePerSize)}
+                                            onClick={() => setShowPricePerVariant(!showPricePerVariant)}
                                             className="w-full px-4 py-3 bg-orange-50 text-left flex justify-between items-center"
                                         >
                                             <span className="text-sm font-medium text-orange-800">
-                                                💰 Harga Beda per Size?
+                                                💰 Harga Beda per Size / Varian?
                                             </span>
                                             <span className="text-orange-600 text-xs">
-                                                {showPricePerSize ? '▲ Tutup' : '▼ Expand'}
+                                                {showPricePerVariant ? '▲ Tutup' : '▼ Expand'}
                                             </span>
                                         </button>
 
-                                        {showPricePerSize && (
-                                            <div className="p-4">
-                                                <p className="text-xs text-gray-500 mb-3">Edit jika harga berbeda per size:</p>
-                                                <div className="overflow-x-auto">
-                                                    <table className="w-full text-sm">
-                                                        <thead>
-                                                            <tr className="bg-orange-100">
-                                                                <th className="px-2 py-2 text-left font-semibold text-orange-800">Size</th>
-                                                                <th className="px-2 py-2 text-center font-semibold text-green-700">Retail</th>
-                                                                <th className="px-2 py-2 text-center font-semibold text-blue-700">Reseller</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {selectedSizes.map(size => (
-                                                                <tr key={size} className="border-b border-gray-100">
-                                                                    <td className="px-2 py-2 font-semibold text-gray-700">{size}</td>
-                                                                    <td className="px-2 py-2">
-                                                                        <input
-                                                                            type="text"
-                                                                            inputMode="numeric"
-                                                                            value={formatThousands(pricesPerSize[size]?.retail || retailPrice)}
-                                                                            onChange={(e) => setPricesPerSize(prev => ({
-                                                                                ...prev,
-                                                                                [size]: {
-                                                                                    ...prev[size],
-                                                                                    retail: parseFormattedNumber(e.target.value)
-                                                                                }
-                                                                            }))}
-                                                                            onFocus={(e) => e.target.select()}
-                                                                            className="w-full px-2 py-1 border border-green-300 rounded text-center font-bold text-green-700"
-                                                                        />
-                                                                    </td>
-                                                                    <td className="px-2 py-2">
-                                                                        <input
-                                                                            type="text"
-                                                                            inputMode="numeric"
-                                                                            value={formatThousands(pricesPerSize[size]?.reseller || resellerPrice)}
-                                                                            onChange={(e) => setPricesPerSize(prev => ({
-                                                                                ...prev,
-                                                                                [size]: {
-                                                                                    ...prev[size],
-                                                                                    reseller: parseFormattedNumber(e.target.value)
-                                                                                }
-                                                                            }))}
-                                                                            onFocus={(e) => e.target.select()}
-                                                                            className="w-full px-2 py-1 border border-blue-300 rounded text-center font-bold text-blue-700"
-                                                                        />
-                                                                    </td>
+                                        {showPricePerVariant && (
+                                            <div className="p-4 space-y-6">
+                                                {/* Retail Price Matrix */}
+                                                <div>
+                                                    <h4 className="text-xs font-bold text-green-700 mb-2">Matrix Harga Retail</h4>
+                                                    <div className="overflow-x-auto">
+                                                        <table className="w-full text-xs">
+                                                            <thead>
+                                                                <tr className="bg-green-50">
+                                                                    <th className="px-2 py-1 text-left border border-green-100">Size</th>
+                                                                    {variantLabels.map(label => (
+                                                                        <th key={label} className="px-2 py-1 text-center border border-green-100">{label}</th>
+                                                                    ))}
                                                                 </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
+                                                            </thead>
+                                                            <tbody>
+                                                                {selectedSizes.map(size => (
+                                                                    <tr key={size}>
+                                                                        <td className="px-2 py-1 font-bold border border-green-100">{size}</td>
+                                                                        {variantLabels.map(label => {
+                                                                            const key = `${size}-${label}`;
+                                                                            return (
+                                                                                <td key={key} className="px-1 py-1 border border-green-100">
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        inputMode="numeric"
+                                                                                        value={formatThousands(pricesPerVariant[key]?.retail || retailPrice)}
+                                                                                        onChange={(e) => {
+                                                                                            const val = parseFormattedNumber(e.target.value);
+                                                                                            setPricesPerVariant(prev => ({
+                                                                                                ...prev,
+                                                                                                [key]: {
+                                                                                                    ...(prev[key] || { reseller: resellerPrice }),
+                                                                                                    retail: val
+                                                                                                }
+                                                                                            }));
+                                                                                        }}
+                                                                                        onFocus={(e) => e.target.select()}
+                                                                                        className="w-full px-1 py-1 text-center bg-white border border-green-200 rounded text-[10px] focus:ring-1 focus:ring-green-500"
+                                                                                    />
+                                                                                </td>
+                                                                            );
+                                                                        })}
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+
+                                                {/* Reseller Price Matrix */}
+                                                <div>
+                                                    <h4 className="text-xs font-bold text-blue-700 mb-2">Matrix Harga Reseller</h4>
+                                                    <div className="overflow-x-auto">
+                                                        <table className="w-full text-xs">
+                                                            <thead>
+                                                                <tr className="bg-blue-50">
+                                                                    <th className="px-2 py-1 text-left border border-blue-100">Size</th>
+                                                                    {variantLabels.map(label => (
+                                                                        <th key={label} className="px-2 py-1 text-center border border-blue-100">{label}</th>
+                                                                    ))}
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {selectedSizes.map(size => (
+                                                                    <tr key={size}>
+                                                                        <td className="px-2 py-1 font-bold border border-blue-100">{size}</td>
+                                                                        {variantLabels.map(label => {
+                                                                            const key = `${size}-${label}`;
+                                                                            return (
+                                                                                <td key={key} className="px-1 py-1 border border-blue-100">
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        inputMode="numeric"
+                                                                                        value={formatThousands(pricesPerVariant[key]?.reseller || resellerPrice)}
+                                                                                        onChange={(e) => {
+                                                                                            const val = parseFormattedNumber(e.target.value);
+                                                                                            setPricesPerVariant(prev => ({
+                                                                                                ...prev,
+                                                                                                [key]: {
+                                                                                                    ...(prev[key] || { retail: retailPrice }),
+                                                                                                    reseller: val
+                                                                                                }
+                                                                                            }));
+                                                                                        }}
+                                                                                        onFocus={(e) => e.target.select()}
+                                                                                        className="w-full px-1 py-1 text-center bg-white border border-blue-200 rounded text-[10px] focus:ring-1 focus:ring-blue-500"
+                                                                                    />
+                                                                                </td>
+                                                                            );
+                                                                        })}
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
@@ -1038,12 +1076,19 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                             {/* 1. Large Collage Preview */}
                             <div className="w-full">
                                 <h3 className="font-medium text-gray-700 mb-2 text-center">Preview Collage</h3>
-                                <div className="aspect-[3/4] w-full max-w-sm mx-auto bg-gray-100 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-                                    <img
-                                        src={collagePreview}
-                                        alt="Collage Preview"
-                                        className="w-full h-full object-contain"
-                                    />
+                                <div className="aspect-[3/4] w-full max-w-sm mx-auto bg-gray-100 rounded-xl overflow-hidden border border-gray-200 shadow-sm relative">
+                                    {isGeneratingCollage ? (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50">
+                                            <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                                            <p className="text-sm text-purple-600">Memproses collage...</p>
+                                        </div>
+                                    ) : (
+                                        <img
+                                            src={collagePreview}
+                                            alt="Collage Preview"
+                                            className="w-full h-full object-contain"
+                                        />
+                                    )}
                                 </div>
                             </div>
 
