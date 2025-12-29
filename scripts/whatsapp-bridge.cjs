@@ -251,8 +251,8 @@ async function processBundle() {
     const draftData = {
       // Basic info
       name: parsed.name || 'Produk Baru',
-      description: parsed.description || '',
-      category: parsed.category || 'Gamis',
+      description: finalCaption || '',  // USE ORIGINAL CAPTION as description
+      category: parsed.category || CONFIG.DEFAULT_CATEGORY,
       brand: parsed.brand || '',
 
       // Pricing
@@ -293,19 +293,24 @@ async function processBundle() {
 }
 
 // ============================================================
-// 2B. AI IMAGE ANALYSIS (Gemini Vision)
+// 2B. AI IMAGE ANALYSIS (Gemini Vision) - Enhanced
 // ============================================================
 async function analyzeImageWithAI(imageBuffer) {
   try {
     const base64Image = imageBuffer.toString('base64');
 
-    const prompt = `Analisis gambar fashion/pakaian ini dengan singkat:
-1. Apakah menampilkan FULL BODY (kepala sampai kaki terlihat)? Jawab: Ya atau Tidak
-2. Warna DOMINAN pakaian (satu kata saja, contoh: Hitam, Navy, Putih, Coklat, Abu, Maroon, Sage, Dusty, Mocca, dll)?
+    const prompt = `Analisis gambar fashion ini dengan SINGKAT:
 
-Format jawaban HARUS seperti ini:
+1. FULL BODY: Apakah ada model yang tampil PENUH (kepala sampai kaki)? Jawab Ya atau Tidak
+2. JUMLAH MODEL: Ada berapa orang/model dalam gambar ini? Jawab angka (1, 2, 3, dst)
+3. WARNA: Warna DOMINAN pakaian (satu kata saja)
+
+Format jawaban HARUS PERSIS seperti ini:
 FULLBODY:Ya
-WARNA:Hitam`;
+JUMLAH:1
+WARNA:Hitam
+
+Catatan: Jika gambar adalah kolase/gabungan beberapa foto, hitung sebagai "2" atau lebih.`;
 
     const result = await visionModel.generateContent([
       prompt,
@@ -322,14 +327,22 @@ WARNA:Hitam`;
 
     // Parse response
     const isFullBody = /FULLBODY\s*:\s*Ya/i.test(response);
+    const countMatch = response.match(/JUMLAH\s*:\s*(\d+)/i);
+    const modelCount = countMatch ? parseInt(countMatch[1]) : 1;
+    const isSingleModel = modelCount === 1;
     const colorMatch = response.match(/WARNA\s*:\s*(\w+)/i);
     const color = colorMatch ? colorMatch[1].toLowerCase() : 'unknown';
 
-    return { isFullBody, color };
+    // Valid image = full body + single model
+    const isValid = isFullBody && isSingleModel;
+
+    console.log(`   📊 Result: FullBody=${isFullBody}, Models=${modelCount}, Color=${color}, Valid=${isValid}`);
+
+    return { isFullBody, isSingleModel, modelCount, color, isValid };
   } catch (error) {
     console.error('   ⚠️ AI analysis failed:', error.message);
-    // Fallback: assume full body, unknown color
-    return { isFullBody: true, color: 'unknown' };
+    // Fallback: assume valid single model full body
+    return { isFullBody: true, isSingleModel: true, modelCount: 1, color: 'unknown', isValid: true };
   }
 }
 
@@ -357,19 +370,25 @@ async function selectBestImages(images) {
     await new Promise(r => setTimeout(r, 500));
   }
 
-  // Filter: only full body images
-  const fullBodyImages = analyzed.filter(img => img.isFullBody);
-  console.log(`   ✅ Full body images: ${fullBodyImages.length}/${analyzed.length}`);
+  // Filter: only VALID images (full body + single model)
+  const validImages = analyzed.filter(img => img.isValid);
+  console.log(`   ✅ Valid images (full body + 1 model): ${validImages.length}/${analyzed.length}`);
 
-  if (fullBodyImages.length === 0) {
-    // Fallback: use first 3 images if no full body detected
-    console.log('   ⚠️ No full body detected, using first 3 images as fallback');
+  // Log skipped images
+  analyzed.filter(img => !img.isValid).forEach(img => {
+    const reason = !img.isFullBody ? 'not full body' : `${img.modelCount} models`;
+    console.log(`   ❌ Skipped: Image ${img.index + 1} - ${reason}`);
+  });
+
+  if (validImages.length === 0) {
+    // Fallback: use first 3 images if no valid detected
+    console.log('   ⚠️ No valid images, using first 3 as fallback');
     return analyzed.slice(0, 3);
   }
 
-  // Group by color, take first of each color
+  // Group by color, take first of each color (avoid duplicate colors)
   const uniqueByColor = {};
-  fullBodyImages.forEach(img => {
+  validImages.forEach(img => {
     const colorKey = img.color.toLowerCase().trim();
     if (!uniqueByColor[colorKey]) {
       uniqueByColor[colorKey] = img;

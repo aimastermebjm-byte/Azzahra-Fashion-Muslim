@@ -194,9 +194,16 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         name: '',
         brand: '',
         description: '',
-        category: categories[0] || 'gamis',
+        category: '', // Empty initially, will be set from initialState or default
         stockPerVariant: {} as Record<string, string>
     });
+
+    // Set default category when categories prop changes (only if not already set)
+    React.useEffect(() => {
+        if (!productFormData.category && categories.length > 0 && !initialState?.productData?.category) {
+            setProductFormData(prev => ({ ...prev, category: categories[0] || 'gamis' }));
+        }
+    }, [categories, initialState]);
 
     // Load saved pricing rules from localStorage
     const getSavedPricingRules = (): PricingRule[] => {
