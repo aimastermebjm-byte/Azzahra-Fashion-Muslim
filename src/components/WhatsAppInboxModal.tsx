@@ -38,7 +38,13 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
     const [editDescription, setEditDescription] = useState('');
     const [editRetailPrice, setEditRetailPrice] = useState(0);
     const [editResellerPrice, setEditResellerPrice] = useState(0);
+    const [editCategory, setEditCategory] = useState('');
+    const [editSizes, setEditSizes] = useState<string[]>(['All Size']);
     const [isRegenerating, setIsRegenerating] = useState(false);
+
+    // Category and size options
+    const categoryOptions = ['Gamis', 'Khimar', 'Mukena', 'Inner', 'Bergo', 'Tunik', 'Outer', 'Rok', 'Set', 'Lainnya'];
+    const sizeOptions = ['All Size', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 
     // Listen to Processed Drafts (Queue) - View Only
     useEffect(() => {
@@ -66,6 +72,25 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
         setEditDescription(draft.description);
         setEditRetailPrice(draft.retailPrice);
         setEditResellerPrice(draft.resellerPrice);
+        setEditCategory(draft.category || 'Gamis');
+        setEditSizes(draft.sizes && draft.sizes.length > 0 ? draft.sizes : ['All Size']);
+    };
+
+    // Toggle size selection
+    const toggleSizeSelection = (size: string) => {
+        if (size === 'All Size') {
+            setEditSizes(['All Size']);
+        } else {
+            setEditSizes(prev => {
+                const filtered = prev.filter(s => s !== 'All Size');
+                if (filtered.includes(size)) {
+                    const result = filtered.filter(s => s !== size);
+                    return result.length === 0 ? ['All Size'] : result;
+                } else {
+                    return [...filtered, size];
+                }
+            });
+        }
     };
 
     // Toggle image selection
@@ -159,15 +184,15 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
             const productData = {
                 name: editName || draftToUse.name,
                 description: editDescription || draftToUse.description,
-                category: draftToUse.category,
+                category: editCategory || draftToUse.category,
                 retailPrice: editRetailPrice || draftToUse.retailPrice,
                 resellerPrice: editResellerPrice || draftToUse.resellerPrice,
                 costPrice: draftToUse.costPrice,
                 variants: {
                     colors: variantLabels,
-                    sizes: draftToUse.sizes && draftToUse.sizes.length > 0 ? draftToUse.sizes : ['All Size'],
-                    stock: draftToUse.sizes && draftToUse.sizes.length > 0
-                        ? Object.fromEntries(draftToUse.sizes.map(size => [size, stockPerVariant]))
+                    sizes: editSizes.length > 0 ? editSizes : ['All Size'],
+                    stock: editSizes.length > 0 && !editSizes.includes('All Size')
+                        ? Object.fromEntries(editSizes.map(size => [size, stockPerVariant]))
                         : { 'All Size': stockPerVariant }
                 }
             };
@@ -269,12 +294,15 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-600 mb-1">Kategori</label>
-                                        <input
-                                            type="text"
-                                            value={selectedDraft.category}
-                                            disabled
-                                            className="w-full border rounded-lg px-3 py-2 bg-gray-50"
-                                        />
+                                        <select
+                                            value={editCategory}
+                                            onChange={(e) => setEditCategory(e.target.value)}
+                                            className="w-full border rounded-lg px-3 py-2"
+                                        >
+                                            {categoryOptions.map(cat => (
+                                                <option key={cat} value={cat}>{cat}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-600 mb-1">Harga Retail</label>
@@ -303,6 +331,25 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                                         rows={3}
                                         className="w-full border rounded-lg px-3 py-2"
                                     />
+                                </div>
+                                {/* Size Selection */}
+                                <div className="mt-4">
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">Ukuran</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {sizeOptions.map(size => (
+                                            <button
+                                                key={size}
+                                                type="button"
+                                                onClick={() => toggleSizeSelection(size)}
+                                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${editSizes.includes(size)
+                                                    ? 'bg-green-500 text-white'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                    }`}
+                                            >
+                                                {size}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
 
