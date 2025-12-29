@@ -3,6 +3,7 @@ import { X, ArrowRight, Trash2, Layers, Loader, CheckSquare, Package, RefreshCw,
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { collageService } from '../services/collageService';
+import { productCategoryService } from '../services/productCategoryService';
 
 interface ProductDraft {
     id: string;
@@ -26,6 +27,9 @@ interface WhatsAppInboxModalProps {
     onProcess: (data: any, originalImage: File) => void;
 }
 
+// Size presets - same as ManualUploadModal
+const SIZE_PRESETS = ['All Size', 'S', 'M', 'L', 'XL'];
+
 const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose, onProcess }) => {
     const [drafts, setDrafts] = useState<ProductDraft[]>([]);
     const [loading, setLoading] = useState(true);
@@ -42,9 +46,24 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
     const [editSizes, setEditSizes] = useState<string[]>(['All Size']);
     const [isRegenerating, setIsRegenerating] = useState(false);
 
-    // Category and size options
-    const categoryOptions = ['Gamis', 'Khimar', 'Mukena', 'Inner', 'Bergo', 'Tunik', 'Outer', 'Rok', 'Set', 'Lainnya'];
-    const sizeOptions = ['All Size', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+    // Categories from master
+    const [categories, setCategories] = useState<string[]>(['Gamis', 'Khimar', 'Hijab', 'Tunik']);
+
+    // Load categories from master on mount
+    useEffect(() => {
+        const loadCategories = async () => {
+            try {
+                const masterCategories = await productCategoryService.listCategories();
+                const categoryNames = masterCategories.map(cat => cat.name);
+                if (categoryNames.length > 0) {
+                    setCategories(categoryNames);
+                }
+            } catch (error) {
+                console.error('Failed to load categories:', error);
+            }
+        };
+        loadCategories();
+    }, []);
 
     // Listen to Processed Drafts (Queue) - View Only
     useEffect(() => {
@@ -299,7 +318,7 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                                             onChange={(e) => setEditCategory(e.target.value)}
                                             className="w-full border rounded-lg px-3 py-2"
                                         >
-                                            {categoryOptions.map(cat => (
+                                            {categories.map((cat: string) => (
                                                 <option key={cat} value={cat}>{cat}</option>
                                             ))}
                                         </select>
@@ -336,7 +355,7 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                                 <div className="mt-4">
                                     <label className="block text-sm font-medium text-gray-600 mb-2">Ukuran</label>
                                     <div className="flex flex-wrap gap-2">
-                                        {sizeOptions.map(size => (
+                                        {SIZE_PRESETS.map((size: string) => (
                                             <button
                                                 key={size}
                                                 type="button"
