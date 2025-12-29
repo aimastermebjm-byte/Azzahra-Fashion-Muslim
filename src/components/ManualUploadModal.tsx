@@ -535,7 +535,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     <div className="flex flex-col items-center justify-center gap-2">
                                         <Upload className="w-8 h-8 text-purple-500" />
                                         <p className="text-gray-700 font-bold">Tap untuk Upload Gambar</p>
-                                        <p className="text-xs text-gray-400">Max 10 gambar (Jpg/Png)</p>
+                                        <p className="text-xs text-gray-400">Banyak gambar (Jpg/Png)</p>
                                     </div>
                                 </label>
                             </div>
@@ -545,57 +545,31 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 <div>
                                     <div className="grid grid-cols-5 gap-2">
                                         {imagePreviews.map((preview, index) => (
-                                            <div key={index} className="relative group">
+                                            <div
+                                                key={index}
+                                                className="relative group cursor-pointer"
+                                                onClick={() => handleRemoveImage(index)}
+                                            >
                                                 <img
                                                     src={preview}
                                                     alt={`Preview ${index + 1}`}
-                                                    className="w-full aspect-[3/4] object-cover rounded-lg border border-gray-200"
+                                                    className="w-full aspect-[3/4] object-cover rounded-lg border border-gray-200 transition-opacity group-hover:opacity-75"
                                                 />
+                                                {/* Overlay on hover */}
+                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                                    <X className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                                                </div>
+
                                                 <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
                                                     {variantLabels[index]}
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveImage(index)}
-                                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </button>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                             )}
 
-                            {/* Auto-Generated Collage Preview */}
-                            {images.length > 0 && (
-                                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
-                                    <h3 className="font-medium text-purple-700 mb-3 text-center">🖼️ Preview Collage (Auto)</h3>
-                                    <div className="aspect-[3/4] w-full max-w-xs mx-auto bg-white rounded-xl overflow-hidden border-2 border-purple-300 shadow-lg">
-                                        {isGeneratingCollage ? (
-                                            <div className="w-full h-full flex items-center justify-center">
-                                                <div className="text-center">
-                                                    <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                                                    <p className="text-sm text-purple-600">Membuat collage...</p>
-                                                </div>
-                                            </div>
-                                        ) : collagePreview ? (
-                                            <img
-                                                src={collagePreview}
-                                                alt="Collage Preview"
-                                                className="w-full h-full object-contain"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                                Collage akan muncul di sini
-                                            </div>
-                                        )}
-                                    </div>
-                                    <p className="text-xs text-purple-500 text-center mt-2">
-                                        Collage otomatis diperbarui saat gambar ditambah/dihapus
-                                    </p>
-                                </div>
-                            )}
+
 
                             {/* Product Details - After Image Upload, Before Parameter Produk */}
                             {images.length > 0 && (
@@ -1045,6 +1019,34 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                             </div>
 
 
+
+                            {/* Auto-Generated Collage Preview (Moved to Bottom) */}
+                            {images.length > 0 && (
+                                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200 mb-6">
+                                    <h3 className="font-medium text-purple-700 mb-3 text-center">🖼️ Preview Collage (Auto)</h3>
+                                    <div className="aspect-[3/4] w-full max-w-xs mx-auto bg-white rounded-xl overflow-hidden border-2 border-purple-300 shadow-lg">
+                                        {isGeneratingCollage ? (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                                <div className="text-center">
+                                                    <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                                                    <p className="text-sm text-purple-600">Membuat collage...</p>
+                                                </div>
+                                            </div>
+                                        ) : collagePreview ? (
+                                            <img
+                                                src={collagePreview}
+                                                alt="Collage Preview"
+                                                className="w-full h-full object-contain"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                <X className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                                <p className="text-xs">No preview</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Go to Preview Button */}
                             {images.length > 0 && collageBlob && (
