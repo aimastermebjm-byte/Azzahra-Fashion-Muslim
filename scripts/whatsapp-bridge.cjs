@@ -17,10 +17,76 @@ let visionModel = null;
 
 if (GEMINI_API_KEY) {
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-  visionModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-  console.log('✅ Gemini AI initialized for image analysis');
+  // Use Flash-Lite for faster & cheaper processing
+  visionModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+  console.log('✅ Gemini AI initialized (gemini-2.0-flash-lite)');
 } else {
-  console.log('⚠️ GEMINI_API_KEY not set - AI image selection disabled');
+  console.log('⚠️ GEMINI_API_KEY not set - AI features disabled');
+}
+
+// ============================================================
+// FAMILY KEYWORDS for conditional processing
+// ============================================================
+const FAMILY_KEYWORDS = [
+  'keluarga', 'sarimbit', 'couple', 'family', 'serimbit',
+  'ayah', 'abah', 'bapak', 'daddy', 'papa',
+  'mom', 'ibu', 'bunda', 'mommy', 'mama',
+  'anak', 'kids', 'junior', 'boy', 'girl'
+];
+
+function isFamilyProduct(caption) {
+  const lower = caption.toLowerCase();
+  return FAMILY_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+// ============================================================
+// AI CAPTION PARSER (Gemini Flash-Lite)
+// ============================================================
+async function parseWithAI(caption) {
+  if (!visionModel || !caption) return null;
+
+  try {
+    const prompt = `Extract product data from this Indonesian fashion caption.
+Return ONLY data that exists. Use null if not found.
+
+Caption:
+"${caption}"
+
+Output JSON only (no markdown, no explanation):
+{
+  "nama": string | null,
+  "deskripsi": string | null,
+  "kategori": "gamis" | "tunik" | "dress" | "outer" | "khimar" | "set" | null,
+  "warna": string[] | null,
+  "sizes": string[] | null,
+  "hargaRetail": number | null,
+  "hargaReseller": number | null,
+  "stokPerVarian": number | 1,
+  "brand": string | null,
+  "isFamily": boolean,
+  "variants": [{ "nama": string, "size": string, "hargaRetail": number, "hargaReseller": number }] | null
+}
+
+Rules:
+- stokPerVarian: find "stok 5" or "stock semua 10", default 1
+- harga: convert "895k" → 895000, "1.250.000" → 1250000
+- isFamily: true if contains family/couple/ayah/ibu/anak keywords
+- variants: only if different prices per type (ayah/ibu/anak)`;
+
+    const result = await visionModel.generateContent(prompt);
+    const text = result.response.text();
+
+    // Extract JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      console.log('🤖 AI Parse result:', JSON.stringify(parsed, null, 2));
+      return parsed;
+    }
+  } catch (error) {
+    console.error('⚠️ AI parse failed:', error.message);
+  }
+  return null;
 }
 
 // ============================================================
@@ -87,7 +153,7 @@ async function processBundle() {
   const finalCaption = combinedCaption || imageCaption;
 
   console.log(`🖼️ Images: ${images.length}`);
-  console.log(`📝 Caption: ${finalCaption.substring(0, 50)}...`);
+  console.log(`📝 Caption: ${finalCaption.substring(0, 100)}...`);
 
   if (images.length === 0) {
     console.log('⚠️ No images in bundle, skipping...');
@@ -95,22 +161,42 @@ async function processBundle() {
   }
 
   try {
-    // 1. Parse Caption (enhanced with sizes)
-    const parsed = parseCaption(finalCaption);
-    console.log('📋 Parsed:', parsed);
+    // PARALLEL PROCESSING for speed (target: <25 detik)
+    console.log('🚀 Starting parallel processing...');
+    const startTime = Date.now();
 
-    // 2. AI Smart Image Selection (if more than 3 images)
-    let selectedImages = images;
-    if (images.length > 3) {
-      console.log('🤖 Running AI image selection...');
-      selectedImages = await selectBestImages(images);
-    } else {
-      console.log('📸 Using all', images.length, 'images (no AI needed)');
+    // Task 1: AI Caption Parse (1-2 detik)
+    const aiParsePromise = parseWithAI(finalCaption);
+
+    // Task 2: Generate Collage (20-25 detik) - jalankan bersamaan
+    console.log('🎨 Generating collage from', images.length, 'images...');
+    const collagePromise = generateCollage(images.map(i => i.imageBuffer));
+
+    // Wait for both tasks
+    const [aiParsed, collageBuffer] = await Promise.all([aiParsePromise, collagePromise]);
+
+    // Fallback to regex if AI fails
+    const regexParsed = parseCaption(finalCaption);
+    const parsed = aiParsed || regexParsed;
+
+    // Merge AI result with regex fallback for missing fields
+    if (aiParsed) {
+      parsed.name = aiParsed.nama || regexParsed.name;
+      parsed.description = aiParsed.deskripsi || regexParsed.description;
+      parsed.category = aiParsed.kategori || regexParsed.category;
+      parsed.retailPrice = aiParsed.hargaRetail || regexParsed.retailPrice;
+      parsed.resellerPrice = aiParsed.hargaReseller || regexParsed.resellerPrice;
+      parsed.sizes = aiParsed.sizes || regexParsed.sizes;
+      parsed.colors = aiParsed.warna || regexParsed.colors;
+      parsed.stockPerVariant = aiParsed.stokPerVarian || 1;
+      parsed.isFamily = aiParsed.isFamily || isFamilyProduct(finalCaption);
+      parsed.variants = aiParsed.variants || null;
+      parsed.brand = aiParsed.brand || '';
     }
 
-    // 3. Generate Collage from selected images
-    console.log('🎨 Generating collage from', selectedImages.length, 'images...');
-    const collageBuffer = await generateCollage(selectedImages.map(i => i.imageBuffer));
+    console.log('📋 Final parsed data:', JSON.stringify(parsed, null, 2));
+    console.log(`⏱️ Parallel processing done in ${Date.now() - startTime}ms`);
+
 
     // 3. Upload Collage to Storage
     const filename = `collages/draft_${Date.now()}.jpg`;
@@ -124,25 +210,45 @@ async function processBundle() {
     });
     console.log('☁️ Collage uploaded:', filename);
 
-    // 4. Save to product_drafts
+    // 4. Save to product_drafts with AI-enhanced data
     const draftData = {
-      name: parsed.name,
-      description: parsed.description,
-      category: parsed.category,
-      retailPrice: parsed.retailPrice,
-      resellerPrice: parsed.resellerPrice,
-      costPrice: parsed.costPrice,
+      // Basic info
+      name: parsed.name || 'Produk Baru',
+      description: parsed.description || '',
+      category: parsed.category || 'Gamis',
+      brand: parsed.brand || '',
+
+      // Pricing
+      retailPrice: parsed.retailPrice || 0,
+      resellerPrice: parsed.resellerPrice || 0,
+      costPrice: parsed.costPrice || 0,
+
+      // Variants & Stock
       sizes: parsed.sizes || ['All Size'],
       colors: parsed.colors || [],
+      stockPerVariant: parsed.stockPerVariant || 1,
+      variantCount: images.length,
+
+      // Family product handling
+      isFamily: parsed.isFamily || false,
+      familyVariants: parsed.variants || null,
+
+      // Images
       collageUrl: collageUrl,
-      variantCount: selectedImages.length,
+      rawImages: images.map(i => i.storageUrl).filter(Boolean),
+
+      // Metadata
+      source: 'whatsapp-bridge',
+      aiParsed: !!aiParsed,
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      rawImages: selectedImages.map(i => i.storageUrl).filter(Boolean)
+
+      // Data completeness check
+      dataComplete: !!(parsed.name && parsed.retailPrice > 0)
     };
 
     const docRef = await db.collection('product_drafts').add(draftData);
     console.log('✅ Draft SAVED! ID:', docRef.id);
-    console.log('📊 Draft:', JSON.stringify(draftData, null, 2));
+    console.log(`📊 Draft: ${draftData.name} | Retail: ${draftData.retailPrice} | Family: ${draftData.isFamily}`);
 
   } catch (error) {
     console.error('❌ Bundle processing failed:', error);
