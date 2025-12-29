@@ -35,14 +35,27 @@ export class CollageService {
     ctx.fillRect(0, 0, W, H);
 
     // IMPROVEMENT: Compress images first for mobile reliability
-    const compressedImages = await Promise.all(
-      images.map(file => this.compressImage(file, 2)) // Max 2MB per image
-    );
+    // Process in batches to avoid memory spikes
+    const BATCH_SIZE = 3;
+    const compressedImages: File[] = [];
 
-    // Load all images with timeout and retry
-    const loadedImages = await Promise.all(
-      compressedImages.map(file => this.loadImageWithRetry(file, 3, 10000))
-    );
+    for (let i = 0; i < count; i += BATCH_SIZE) {
+      const chunk = images.slice(i, i + BATCH_SIZE);
+      const processedChunk = await Promise.all(
+        chunk.map(file => this.compressImage(file, 2)) // Max 2MB per image
+      );
+      compressedImages.push(...processedChunk);
+    }
+
+    // Load all images with timeout and retry (also batched)
+    const loadedImages: HTMLImageElement[] = [];
+    for (let i = 0; i < count; i += BATCH_SIZE) {
+      const chunk = compressedImages.slice(i, i + BATCH_SIZE);
+      const loadedChunk = await Promise.all(
+        chunk.map(file => this.loadImageWithRetry(file, 3, 10000))
+      );
+      loadedImages.push(...loadedChunk);
+    }
 
     // Get Layout Configuration
     const layout = this.calculateLayout(count, W, H);
@@ -420,11 +433,17 @@ export class CollageService {
     });
   }
 
-  // Variant Label Generator (Maintained)
+  // Variant Label Generator (Unlimited A-Z, AA-ZZ)
   generateVariantLabels(count: number): string[] {
     const labels: string[] = [];
     for (let i = 0; i < count; i++) {
-      labels.push(String.fromCharCode(65 + i));
+      let label = '';
+      let n = i;
+      while (n >= 0) {
+        label = String.fromCharCode(65 + (n % 26)) + label;
+        n = Math.floor(n / 26) - 1;
+      }
+      labels.push(label);
     }
     return labels;
   }
