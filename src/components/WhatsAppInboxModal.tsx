@@ -327,33 +327,51 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                                     </button>
                                 </div>
                                 <p className="text-sm text-gray-500 mb-3">
-                                    Klik gambar untuk pilih/hapus. Collage akan dibuat dari gambar yang dipilih.
+                                    Klik gambar untuk pilih/hapus. Gambar terpilih akan naik ke atas.
                                 </p>
-                                <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
-                                    {selectedDraft.rawImages.map((imageUrl, index) => (
-                                        <div
-                                            key={index}
-                                            onClick={() => toggleImageSelection(imageUrl)}
-                                            className={`relative aspect-[3/4] rounded-lg overflow-hidden cursor-pointer border-4 transition-all ${selectedImages.includes(imageUrl)
-                                                ? 'border-green-500 shadow-lg'
-                                                : 'border-transparent opacity-50 grayscale'
-                                                }`}
-                                        >
-                                            <img
-                                                src={imageUrl}
-                                                alt={`Image ${index + 1}`}
-                                                className="w-full h-full object-cover"
-                                            />
-                                            {selectedImages.includes(imageUrl) && (
-                                                <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
-                                                    <Check className="w-4 h-4" />
+                                {/* Sorted grid: selected first, then unselected */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {/* First render selected images */}
+                                    {selectedDraft.rawImages
+                                        .filter(url => selectedImages.includes(url))
+                                        .map((imageUrl) => (
+                                            <div
+                                                key={imageUrl}
+                                                onClick={() => toggleImageSelection(imageUrl)}
+                                                className="relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer border-4 border-green-500 shadow-lg transition-all hover:scale-[1.02]"
+                                            >
+                                                <img
+                                                    src={imageUrl}
+                                                    alt="Selected"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1.5">
+                                                    <Check className="w-5 h-5" />
                                                 </div>
-                                            )}
-                                            <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                                                {String.fromCharCode(65 + selectedImages.indexOf(imageUrl))}
+                                                <div className="absolute bottom-2 left-2 bg-black/70 text-white text-sm font-bold px-3 py-1 rounded-lg">
+                                                    {String.fromCharCode(65 + selectedImages.indexOf(imageUrl))}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    {/* Then render unselected images */}
+                                    {selectedDraft.rawImages
+                                        .filter(url => !selectedImages.includes(url))
+                                        .map((imageUrl) => (
+                                            <div
+                                                key={imageUrl}
+                                                onClick={() => toggleImageSelection(imageUrl)}
+                                                className="relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer border-4 border-gray-200 opacity-50 grayscale transition-all hover:opacity-80 hover:grayscale-0"
+                                            >
+                                                <img
+                                                    src={imageUrl}
+                                                    alt="Unselected"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                                    <span className="bg-white/80 text-gray-600 text-xs px-2 py-1 rounded">Klik untuk pilih</span>
+                                                </div>
+                                            </div>
+                                        ))}
                                 </div>
                             </div>
 
