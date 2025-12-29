@@ -51,7 +51,7 @@ console.log('   Puppeteer is loading headless Chrome...');
 // ============================================================
 // 2. SMART BUNDLER (15-second window)
 // ============================================================
-const PAIRING_WINDOW = 15000; // 15 seconds
+const PAIRING_WINDOW = 5000; // 5 seconds - reduced for faster processing
 let messageBuffer = [];
 let processingTimeout = null;
 

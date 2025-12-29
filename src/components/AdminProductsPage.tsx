@@ -782,10 +782,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         }
 
         // Set initial state directly from draft
+        // Use images and collageBlob if available (from WhatsAppInboxModal regenerate)
         setManualUploadInitialState({
-          step: 'details',
-          images: [], // No raw images in draft flow
-          collageBlob: null,
+          step: data.step || 'details',
+          images: data.images || [],
+          collageBlob: data.collageBlob || null,
           collageUrl: data.collageUrl,
           productData: data.productData,
           uploadSettings: data.uploadSettings || { stockPerVariant: 10 }
