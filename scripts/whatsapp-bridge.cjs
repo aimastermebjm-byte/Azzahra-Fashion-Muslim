@@ -110,8 +110,10 @@ Rules:
 - nama: Nama produk TANPA kategori di depan, tapi TERMASUK "by Brand"
   Contoh: "gamis delta set by irish label" → nama = "Delta Set By Irish Label"
   
-- brand: Kata setelah "by" sampai akhir baris pertama
-  Contoh: "...by irish label" → brand = "Irish Label"
+- brand: Kata setelah "by", TAPI HAPUS suffix umum seperti:
+  DAILY, OFFICIAL, COLLECTION, STORE, SHOP, LABEL, INDONESIA, ID
+  Contoh: "by eR.Ha DAILY" → brand = "eR.Ha"
+  Contoh: "by Irish Label Official" → brand = "Irish Label"
   
 - kategori: Detect dari kata PERTAMA. Return PERSIS seperti ini:
   * "gamis" → "Gamis"
