@@ -101,16 +101,20 @@ Output JSON only (no markdown, no explanation):
 Rules:
 - nama: AMBIL NAMA LENGKAP termasuk "by [Brand]" jika ada. Contoh: "GAMIS PREMIUM BY NABIL" → nama = "GAMIS PREMIUM BY NABIL"
 - brand: Kata setelah "by" adalah brand. Contoh: "...by Nabil" → brand = "Nabil"
-- kategori: Deteksi dari kata kunci dalam caption:
+- kategori: Detect dari kata kunci di caption. Return PERSIS seperti ini:
   * "gamis" → "Gamis"
   * "tunik" → "Tunik"
   * "dress" → "Dress"
+  * "hijab"/"kerudung"/"jilbab" → "Hijab"
+  * "khimar" → "Khimar"
+  * "set"/"setelan"/"palazzo" → "Setelan"
   * "outer"/"cardigan"/"blazer" → "Outer"
-  * "khimar"/"hijab"/"kerudung" → "Khimar"
-  * "set"/"setelan"/"palazzo" → "Set"
   * "rok" → "Rok"
   * "celana" → "Celana"
-  * Jika tidak ada → "Gamis" (default)
+  * "aksesoris"/"bros"/"kalung" → "Aksesoris"
+  * "mukena" → "Mukena"
+  * "pashmina" → "Pashmina"
+  * Jika tidak ada kata kunci → "Gamis" (default)
 - sizes: 
   * Jika ada size chart (S, M, L, XL, XXL) → gunakan nama BERSIH. Contoh: ["S", "M", "L", "XL"]
   * Jika HANYA ada PJ/LD/Lingkar tanpa size chart → return ["All Size"]
