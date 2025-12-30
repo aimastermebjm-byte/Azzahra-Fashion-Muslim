@@ -1291,21 +1291,32 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
-                    checked={selectedProducts.length === currentProducts.length && currentProducts.length > 0}
+                    checked={currentProducts.length > 0 && currentProducts.every(p => selectedProducts.includes(p.id))}
                     onChange={(e) => {
                       if (e.target.checked) {
-                        setSelectedProducts(currentProducts.map(p => p.id));
+                        // Tambahkan produk halaman ini ke selection yang sudah ada (hindari duplikat)
+                        const newIds = currentProducts.map(p => p.id);
+                        setSelectedProducts(prev => [...new Set([...prev, ...newIds])]);
                       } else {
-                        setSelectedProducts([]);
+                        // Hapus hanya produk halaman ini dari selection
+                        const currentPageIds = currentProducts.map(p => p.id);
+                        setSelectedProducts(prev => prev.filter(id => !currentPageIds.includes(id)));
                       }
                     }}
                     className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-gray-600">Pilih Semua</span>
+                  <span className="text-gray-600">Pilih Halaman Ini</span>
                 </label>
-                <span className="text-xs text-gray-500">
-                  {filteredAndSortedProducts.length} produk
-                </span>
+                <div className="text-right">
+                  <span className="text-xs text-gray-500 block">
+                    {filteredAndSortedProducts.length} produk total
+                  </span>
+                  {selectedProducts.length > 0 && (
+                    <span className="text-xs font-semibold text-blue-600 block">
+                      {selectedProducts.length} terpilih (Total)
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">{currentProducts.map((product) => {
