@@ -31,8 +31,11 @@ const CONFIG = {
   // Bridge Settings
   BUNDLE_WINDOW_MS: 60000,        // 60 detik window untuk bundling
 
-  // Whitelist (bisa diubah sesuai kebutuhan)
-  ALLOWED_SENDERS: ['6287815990944@c.us'],
+  // Whitelist (nomor yang diizinkan mengirim produk)
+  ALLOWED_SENDERS: [
+    '6287815990944@c.us',     // Nomor utama
+    '6281977514100@c.us'      // Nomor supplier
+  ],
 
   // AI Model
   GEMINI_MODEL: 'gemini-2.0-flash-lite',
@@ -96,6 +99,8 @@ Output JSON only (no markdown, no explanation):
 }
 
 Rules:
+- nama: AMBIL NAMA LENGKAP termasuk "by [Brand]" jika ada. Contoh: "GAMIS PREMIUM BY NABIL" → nama = "GAMIS PREMIUM BY NABIL"
+- brand: Kata setelah "by" adalah brand. Contoh: "...by Nabil" → brand = "Nabil"
 - stokPerVarian: find "stok 5" or "stock semua 10", default 1
 - harga: convert "895k" → 895000, "1.250.000" → 1250000
 - isFamily: true if contains family/couple/ayah/ibu/anak keywords
@@ -198,16 +203,29 @@ async function processBundle() {
 
     // Task 2: Full Body Check (conditional via CONFIG)
     let selectedImages = images;
+    let isPreMadeCollage = false;
+    let collageVariantCount = 0;
+
     if (CONFIG.ENABLE_FULL_BODY_CHECK) {
       console.log('🔍 Running Full Body Check (CONFIG enabled)...');
-      selectedImages = await selectBestImages(images);
+      const selectionResult = await selectBestImages(images);
+      selectedImages = selectionResult.images;
+      isPreMadeCollage = selectionResult.isPreMadeCollage || false;
+      collageVariantCount = selectionResult.collageVariantCount || 0;
     } else {
       console.log('⏩ Skipping Full Body Check (CONFIG disabled)');
     }
 
-    // Task 3: Generate Collage (20-25 detik)
-    console.log('🎨 Generating collage from', selectedImages.length, 'images...');
-    const collagePromise = generateCollage(selectedImages.map(i => i.imageBuffer));
+    // Task 3: Generate Collage (or use pre-made collage)
+    let collagePromise;
+    if (isPreMadeCollage) {
+      // Use the pre-made collage as-is (just add labels later)
+      console.log('🖼️ Using pre-made collage, variant count:', collageVariantCount);
+      collagePromise = Promise.resolve(selectedImages[0].imageBuffer);
+    } else {
+      console.log('🎨 Generating collage from', selectedImages.length, 'images...');
+      collagePromise = generateCollage(selectedImages.map(i => i.imageBuffer));
+    }
 
     // Wait for both tasks
     const [aiParsed, collageBuffer] = await Promise.all([aiParsePromise, collagePromise]);
@@ -264,7 +282,8 @@ async function processBundle() {
       sizes: parsed.sizes || ['All Size'],
       colors: parsed.colors || [],
       stockPerVariant: parsed.stockPerVariant || CONFIG.DEFAULT_STOCK,
-      variantCount: selectedImages.length,
+      variantCount: isPreMadeCollage ? collageVariantCount : selectedImages.length,
+      isPreMadeCollage: isPreMadeCollage,
 
       // Family product handling
       isFamily: parsed.isFamily || false,
@@ -299,18 +318,29 @@ async function analyzeImageWithAI(imageBuffer) {
   try {
     const base64Image = imageBuffer.toString('base64');
 
-    const prompt = `Analisis gambar fashion ini dengan SINGKAT:
+    const prompt = `Analisis gambar fashion ini dengan TELITI:
 
-1. FULL BODY: Apakah ada model yang tampil PENUH (kepala sampai kaki)? Jawab Ya atau Tidak
-2. JUMLAH MODEL: Ada berapa orang/model dalam gambar ini? Jawab angka (1, 2, 3, dst)
+1. FULL BODY: Apakah model tampil LENGKAP dari KEPALA sampai UJUNG KAKI?
+   - Jawab "Ya" HANYA jika kepala + badan + kaki SEMUA terlihat jelas
+   - Jawab "Tidak" jika: setengah badan, kepala terpotong, kaki tidak terlihat, atau hanya tampak dari pinggang ke atas
+
+2. JUMLAH MODEL: Ada berapa orang/model BERBEDA dalam gambar? (1, 2, 3, dst)
+
 3. WARNA: Warna DOMINAN pakaian (satu kata saja)
 
-Format jawaban HARUS PERSIS seperti ini:
+4. COLLAGE: Apakah gambar ini adalah KOLASE (gabungan beberapa foto terpisah dalam 1 frame)?
+   - Jawab "Ya" jika ada garis pemisah, border, atau tampak jelas beberapa foto digabung
+   - Jawab "Tidak" jika ini foto tunggal biasa
+
+5. VARIAN: Jika COLLAGE=Ya, ada berapa varian/foto TERPISAH di dalam kolase? (2, 3, 4, dst)
+   - Jika COLLAGE=Tidak, jawab 0
+
+Format jawaban HARUS PERSIS:
 FULLBODY:Ya
 JUMLAH:1
 WARNA:Hitam
-
-Catatan: Jika gambar adalah kolase/gabungan beberapa foto, hitung sebagai "2" atau lebih.`;
+COLLAGE:Tidak
+VARIAN:0`;
 
     const result = await visionModel.generateContent([
       prompt,
@@ -333,16 +363,21 @@ Catatan: Jika gambar adalah kolase/gabungan beberapa foto, hitung sebagai "2" at
     const colorMatch = response.match(/WARNA\s*:\s*(\w+)/i);
     const color = colorMatch ? colorMatch[1].toLowerCase() : 'unknown';
 
-    // Valid image = full body + single model
-    const isValid = isFullBody && isSingleModel;
+    // Collage detection
+    const isCollage = /COLLAGE\s*:\s*Ya/i.test(response);
+    const varianMatch = response.match(/VARIAN\s*:\s*(\d+)/i);
+    const collageVariantCount = varianMatch ? parseInt(varianMatch[1]) : 0;
 
-    console.log(`   📊 Result: FullBody=${isFullBody}, Models=${modelCount}, Color=${color}, Valid=${isValid}`);
+    // Valid image = full body + single model + NOT collage
+    const isValid = isFullBody && isSingleModel && !isCollage;
 
-    return { isFullBody, isSingleModel, modelCount, color, isValid };
+    console.log(`   📊 Result: FullBody=${isFullBody}, Models=${modelCount}, Collage=${isCollage}, Variants=${collageVariantCount}, Valid=${isValid}`);
+
+    return { isFullBody, isSingleModel, modelCount, color, isCollage, collageVariantCount, isValid };
   } catch (error) {
     console.error('   ⚠️ AI analysis failed:', error.message);
     // Fallback: assume valid single model full body
-    return { isFullBody: true, isSingleModel: true, modelCount: 1, color: 'unknown', isValid: true };
+    return { isFullBody: true, isSingleModel: true, modelCount: 1, color: 'unknown', isCollage: false, collageVariantCount: 0, isValid: true };
   }
 }
 
@@ -350,7 +385,7 @@ async function selectBestImages(images) {
   // Check if Full Body Check is enabled via CONFIG
   if (!CONFIG.ENABLE_FULL_BODY_CHECK) {
     console.log(`📸 Full Body Check DISABLED - using all ${images.length} images`);
-    return images;
+    return { images, isPreMadeCollage: false };
   }
 
   console.log(`📸 Full Body Check ENABLED - analyzing ${images.length} images...`);
@@ -370,20 +405,43 @@ async function selectBestImages(images) {
     await new Promise(r => setTimeout(r, 500));
   }
 
-  // Filter: only VALID images (full body + single model)
-  const validImages = analyzed.filter(img => img.isValid);
+  // SPECIAL CASE: Jika hanya 1 gambar dan itu adalah COLLAGE
+  if (images.length === 1 && analyzed[0].isCollage) {
+    console.log(`📸 SINGLE COLLAGE detected with ${analyzed[0].collageVariantCount} variants`);
+    console.log('   ✨ Using pre-made collage - will add variant labels only');
+    return {
+      images: analyzed,
+      isPreMadeCollage: true,
+      collageVariantCount: analyzed[0].collageVariantCount || 2
+    };
+  }
+
+  // For multiple images: Filter out collages first
+  const nonCollageImages = analyzed.filter(img => !img.isCollage);
+  if (nonCollageImages.length < analyzed.length) {
+    const skippedCount = analyzed.length - nonCollageImages.length;
+    console.log(`   🖼️ Filtered out ${skippedCount} collage images from multi-image upload`);
+  }
+
+  // Filter: only VALID images (full body + single model + not collage)
+  const validImages = nonCollageImages.filter(img => img.isValid);
   console.log(`   ✅ Valid images (full body + 1 model): ${validImages.length}/${analyzed.length}`);
 
-  // Log skipped images
+  // Log skipped images with detailed reason
   analyzed.filter(img => !img.isValid).forEach(img => {
-    const reason = !img.isFullBody ? 'not full body' : `${img.modelCount} models`;
+    let reason = '';
+    if (img.isCollage) reason = 'is a collage';
+    else if (!img.isFullBody) reason = 'not full body';
+    else if (!img.isSingleModel) reason = `${img.modelCount} models`;
+    else reason = 'unknown';
     console.log(`   ❌ Skipped: Image ${img.index + 1} - ${reason}`);
   });
 
   if (validImages.length === 0) {
-    // Fallback: use first 3 images if no valid detected
+    // Fallback: use first 3 non-collage images, or all if no non-collage
+    const fallbackImages = nonCollageImages.length > 0 ? nonCollageImages : analyzed;
     console.log('   ⚠️ No valid images, using first 3 as fallback');
-    return analyzed.slice(0, 3);
+    return { images: fallbackImages.slice(0, 3), isPreMadeCollage: false };
   }
 
   // Group by color, take first of each color (avoid duplicate colors)
@@ -401,7 +459,7 @@ async function selectBestImages(images) {
   const selected = Object.values(uniqueByColor);
   console.log(`🎯 Final selection: ${selected.length} unique images`);
 
-  return selected;
+  return { images: selected, isPreMadeCollage: false };
 }
 
 // ============================================================
