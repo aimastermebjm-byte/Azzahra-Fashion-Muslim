@@ -4,13 +4,14 @@
 
 @layer base {
   :root {
-    --brand-primary: #0F172A;
-    --brand-primary-dark: #070B16;
-    --brand-surface: #F7F4EE;
+    --brand-primary: #004BFE;
+    --brand-primary-dark: #0039C7;
+    --brand-secondary: #D9E4FF;
+    --brand-surface: #F5F7FA;
     --brand-card: #FFFFFF;
-    --brand-border: #E2DED5;
-    --brand-accent: #D6A354;
-    --brand-accent-muted: #F4E7D3;
+    --brand-border: #E5E9F2;
+    --brand-accent: #FF6600;
+    --brand-accent-muted: #FFEAD9;
   }
 
   body {

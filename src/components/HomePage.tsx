@@ -389,116 +389,82 @@ const HomePage: React.FC<HomePageProps> = ({
 
   return (
     <div className="min-h-screen bg-brand-surface pb-20">
-      {/* Header - Sticky - Premium Glassmorphism */}
-      <div className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-brand-primary/98 via-brand-info/98 to-brand-primary/98 shadow-xl border-b border-white/10">
-        <div className="px-2 sm:px-4 py-3 sm:py-4">
-          {/* Search Bar - Premium */}
-          <div className="flex items-center space-x-2">
+      {/* Header - Sticky - Modern Solid Blue */}
+      <div className="sticky top-0 z-50 bg-brand-primary shadow-lg">
+        <div className="px-3 sm:px-4 py-3">
+          {/* Top Bar: Brand & Search */}
+          <div className="flex items-center gap-3">
+            {/* Search Input - Clean White */}
             <div className="flex-1 relative group">
-              {/* Animated Search Icon */}
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
-                <Search className={`w-5 h-5 transition-all duration-300 ${searchQuery
-                    ? 'text-brand-accent scale-110'
-                    : 'text-gray-400 group-focus-within:text-brand-accent group-focus-within:scale-110'
-                  }`} />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 text-gray-400">
+                <Search className="w-4 h-4" />
               </div>
-
-              {/* Input Field */}
               <input
                 type="text"
-                placeholder="Cari hijab, gamis, atau busana favoritmu..."
+                placeholder="Cari di Azzahra Fashion..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-12 py-3.5 
-                           rounded-2xl 
-                           bg-white shadow-lg 
-                           text-gray-900 
+                className="w-full pl-9 pr-8 py-2.5 
+                           rounded-lg
+                           bg-white 
+                           text-gray-900 text-sm
                            placeholder:text-gray-400 
-                           focus:outline-none 
-                           focus:ring-2 
-                           focus:ring-brand-accent/50 
-                           focus:shadow-2xl 
-                           transition-all duration-300
-                           hover:shadow-xl"
+                           focus:outline-none focus:ring-2 focus:ring-brand-accent/30
+                           shadow-sm"
               />
-
-              {/* Loading Indicator */}
-              {isSearching && (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                  <div className="w-5 h-5 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
-                </div>
-              )}
-
               {/* Clear Button */}
-              {searchQuery && !isSearching && (
+              {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 
-                             text-gray-400 hover:text-gray-600 
-                             transition-colors p-1 hover:bg-gray-100 rounded-full"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
 
-            {/* WhatsApp Button - Enhanced with Gradient & Pulse */}
-            <button
-              onClick={() => window.open('https://wa.me/6281952989904?text=Halo%20Admin%20Azzahra%20Fashion%2C%20saya%20ingin%20bertanya', '_blank')}
-              className="relative p-3 sm:p-3.5 
-                         bg-gradient-to-br from-green-500 to-green-600 
-                         rounded-2xl 
-                         shadow-lg hover:shadow-2xl 
-                         hover:scale-105 
-                         transition-all duration-300 
-                         group"
-              title="Hubungi Admin via WhatsApp"
-            >
-              <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:scale-110 transition-transform" />
-              {/* Pulse animation ring */}
-              <span className="absolute inset-0 rounded-2xl bg-green-400/50 animate-ping opacity-20" />
-            </button>
+            {/* Icons Group - White Clean */}
+            <div className="flex items-center gap-2">
+              {/* Chat Icon - White */}
+              <button
+                onClick={() => window.open('https://wa.me/6281952989904', '_blank')}
+                className="p-2 text-white hover:bg-white/10 rounded-full transition-colors relative"
+              >
+                <MessageCircle className="w-6 h-6" />
+                {/* Dot notification */}
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-accent rounded-full border border-brand-primary"></span>
+              </button>
 
-            {/* Cart Button - Premium Badge with Gradient */}
-            <button
-              onClick={onCartClick}
-              className="relative p-3 sm:p-3.5 
-                         bg-gradient-to-br from-brand-accent to-amber-600 
-                         rounded-2xl 
-                         shadow-lg hover:shadow-2xl 
-                         hover:scale-105 
-                         transition-all duration-300 
-                         group"
-            >
-              <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:scale-110 transition-transform" />
-
-              {/* Premium Badge with Bounce */}
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 
-                                 bg-gradient-to-br from-red-500 to-pink-600 
-                                 text-white 
-                                 text-xs font-bold 
-                                 rounded-full 
-                                 w-6 h-6 
-                                 flex items-center justify-center 
-                                 shadow-lg 
-                                 ring-2 ring-white 
-                                 animate-bounce">
-                  {cartCount > 99 ? '99+' : cartCount}
-                </span>
-              )}
-            </button>
+              {/* Cart Icon - White */}
+              <button
+                onClick={onCartClick}
+                className="p-2 text-white hover:bg-white/10 rounded-full transition-colors relative"
+              >
+                <ShoppingCart className="w-6 h-6" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 
+                                    bg-brand-accent text-white 
+                                    text-[10px] font-bold 
+                                    px-1.5 py-0.5 rounded-full 
+                                    border border-brand-primary">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
+
+
       {/* Banner Carousel */}
-      <div className="p-4">
+      < div className="p-4" >
         <BannerCarousel onBannerClick={handleBannerClick} />
-      </div>
+      </div >
 
       {/* Flash Sale Section */}
-      <div className="px-1 sm:px-3 md:px-4 mb-3 sm:mb-6">
+      < div className="px-1 sm:px-3 md:px-4 mb-3 sm:mb-6" >
         <div className="bg-brand-gradient rounded-2xl p-5 text-white shadow-brand-card relative overflow-hidden">
           {/* Premium animated background pattern */}
           <div className="absolute inset-0 opacity-10">
@@ -586,7 +552,7 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
           )}
         </div>
-      </div>
+      </div >
 
       {/* Flash Sale Countdown Display removed - using top section only */}
 
@@ -633,155 +599,97 @@ const HomePage: React.FC<HomePageProps> = ({
         )}
       </div>
 
-      {/* Categories - Segmented Control Premium */}
-      <div className="px-1 sm:px-3 md:px-4 mb-4">
-        <div className="bg-white rounded-2xl p-1.5 shadow-lg border border-gray-100">
-          <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
-            {categories.map((category) => {
-              const productCount = category.id === 'all'
-                ? filteredProducts.length
-                : filteredProducts.filter(p => p.category === category.id).length;
+      {/* Categories - Modern Circle Grid */}
+      <div className="px-4 mb-4">
+        <div className="flex space-x-4 overflow-x-auto scrollbar-hide pb-2 pt-2">
+          {categories.map((category, index) => {
+            // Generate dynamic pastel colors for circle background
+            const bgColors = ['bg-blue-100', 'bg-pink-100', 'bg-purple-100', 'bg-orange-100', 'bg-green-100', 'bg-teal-100'];
+            const textColors = ['text-blue-600', 'text-pink-600', 'text-purple-600', 'text-orange-600', 'text-green-600', 'text-teal-600'];
+            const colorIndex = index % bgColors.length;
 
-              return (
-                <button
-                  key={category.id}
-                  onClick={() => {
-                    setSelectedCategory(category.id);
-                    setActiveTab(category.id === 'all' ? 'all' : 'terbaru');
-                  }}
-                  className={`
-                    flex-shrink-0 
-                    flex items-center space-x-2 
-                    px-4 py-2.5 
-                    rounded-xl 
-                    text-sm font-medium 
-                    transition-all duration-300
-                    ${selectedCategory === category.id
-                      ? 'bg-gradient-to-r from-brand-primary to-brand-info text-white shadow-md scale-105'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }
-                  `}
-                >
-                  <span className="text-lg">{category.icon}</span>
-                  <span>{category.name}</span>
-
-                  {/* Product count badge on active */}
-                  {selectedCategory === category.id && productCount > 0 && (
-                    <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">
-                      {productCount}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+            return (
+              <button
+                key={category.id}
+                onClick={() => {
+                  setSelectedCategory(category.id);
+                  setActiveTab(category.id === 'all' ? 'all' : 'terbaru');
+                }}
+                className="flex flex-col items-center flex-shrink-0 w-16 group"
+              >
+                <div className={`
+              w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-1.5
+              transition-all duration-300 shadow-sm group-hover:shadow-md group-hover:-translate-y-1
+              ${selectedCategory === category.id
+                    ? 'bg-brand-primary text-white ring-2 ring-offset-2 ring-brand-primary shadow-lg scale-110'
+                    : `${bgColors[colorIndex]} ${textColors[colorIndex]}`}
+            `}>
+                  {category.icon}
+                </div>
+                <span className={`
+              text-xs font-medium text-center truncate w-full transition-colors
+              ${selectedCategory === category.id ? 'text-brand-primary font-bold' : 'text-gray-600'}
+            `}>
+                  {category.name}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Filters & Sort - Grouped Premium Chips */}
-      <div className="px-1 sm:px-3 md:px-4">
-        <div className="space-y-3 mb-4">
-
-          {/* Sort Options - Premium Pills with Icons */}
-          <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide flex-shrink-0">
-              Urutkan
-            </span>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setSortBy('terbaru')}
-                className={`
-                  flex-shrink-0 px-4 py-2 
-                  rounded-xl 
-                  text-sm font-medium 
-                  transition-all duration-300
-                  ${sortBy === 'terbaru'
-                    ? 'bg-gradient-to-r from-brand-accent to-amber-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }
-                `}
-              >
-                🆕 Terbaru
-              </button>
-              <button
-                onClick={() => setSortBy('termurah')}
-                className={`
-                  flex-shrink-0 px-4 py-2 
-                  rounded-xl 
-                  text-sm font-medium 
-                  transition-all duration-300
-                  ${sortBy === 'termurah'
-                    ? 'bg-gradient-to-r from-brand-accent to-amber-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }
-                `}
-              >
-                💰 Termurah
-              </button>
+      {/* Filters & Sort - Clean Horizontal Scroll */}
+      <div className="sticky top-[60px] z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm mb-4">
+        <div className="px-4 py-3 flex items-center space-x-3 overflow-x-auto scrollbar-hide">
+          {/* Sort Filter - Minimalist Dropdown feel */}
+          <div className="relative">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="appearance-none pl-3 pr-8 py-1.5 rounded-full border border-gray-200 bg-white text-sm font-medium text-gray-700 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"
+            >
+              <option value="terbaru">🆕 Terbaru</option>
+              <option value="termurah">💰 Termurah</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+              <ArrowUpDown className="h-3 w-3" />
             </div>
           </div>
 
-          {/* Status Filter - Icon Pills with Pulse Dots */}
-          <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide flex-shrink-0">
-              Status
-            </span>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setStatusFilter('all')}
-                className={`
-                  flex-shrink-0 px-4 py-2 
-                  rounded-xl 
-                  text-sm font-medium 
-                  transition-all duration-300
+          <div className="w-px h-6 bg-gray-200 flex-shrink-0 mx-1"></div>
+
+          {/* Chip Filters */}
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium border transition-colors
                   ${statusFilter === 'all'
-                    ? 'bg-gray-900 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }
-                `}
-              >
-                Semua
-              </button>
+                ? 'bg-brand-primary text-white border-brand-primary'
+                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+          >
+            Semua
+          </button>
 
-              <button
-                onClick={() => setStatusFilter('ready')}
-                className={`
-                  flex-shrink-0 flex items-center space-x-1.5
-                  px-4 py-2 
-                  rounded-xl 
-                  text-sm font-medium 
-                  transition-all duration-300
+          <button
+            onClick={() => setStatusFilter('ready')}
+            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium border transition-colors flex items-center gap-1.5
                   ${statusFilter === 'ready'
-                    ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md'
-                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                  }
-                `}
-              >
-                <div className={`w-2 h-2 rounded-full ${statusFilter === 'ready' ? 'bg-white' : 'bg-emerald-500'
-                  } animate-pulse`} />
-                <span>Ready Stock</span>
-              </button>
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-1 ring-emerald-500 font-semibold'
+                : 'bg-white text-gray-600 border-gray-200 hover:bg-emerald-50'}`}
+          >
+            <div className={`w-2 h-2 rounded-full ${statusFilter === 'ready' ? 'bg-emerald-500' : 'bg-emerald-400'}`}></div>
+            Ready Stock
+          </button>
 
-              <button
-                onClick={() => setStatusFilter('po')}
-                className={`
-                  flex-shrink-0 flex items-center space-x-1.5
-                  px-4 py-2 
-                  rounded-xl 
-                  text-sm font-medium 
-                  transition-all duration-300
+          <button
+            onClick={() => setStatusFilter('po')}
+            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium border transition-colors flex items-center gap-1.5
                   ${statusFilter === 'po'
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md'
-                    : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
-                  }
-                `}
-              >
-                <div className={`w-2 h-2 rounded-full ${statusFilter === 'po' ? 'bg-white' : 'bg-amber-500'
-                  } animate-pulse`} />
-                <span>Pre Order</span>
-              </button>
-            </div>
-          </div>
+                ? 'bg-amber-50 text-amber-700 border-amber-200 ring-1 ring-amber-500 font-semibold'
+                : 'bg-white text-gray-600 border-gray-200 hover:bg-amber-50'}`}
+          >
+            <div className={`w-2 h-2 rounded-full ${statusFilter === 'po' ? 'bg-amber-500' : 'bg-amber-400'}`}></div>
+            Pre Order
+          </button>
         </div>
       </div>
 
@@ -827,7 +735,7 @@ const HomePage: React.FC<HomePageProps> = ({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-0.5 sm:gap-2 md:grid-cols-3 md:gap-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 px-2 sm:gap-4 md:grid-cols-3 md:gap-5 lg:grid-cols-4 lg:gap-6">
               {currentProducts.map((product) => (
                 <ProductCard
                   key={product.id}
@@ -863,24 +771,26 @@ const HomePage: React.FC<HomePageProps> = ({
       </div>
 
       {/* User Role Info */}
-      {user && (
-        <div className="fixed bottom-24 right-4 bg-white rounded-lg shadow-lg p-3 border-l-4 border-pink-500">
-          <div className="text-xs text-gray-600">
-            {user.role === 'reseller' ? (
-              <div className="flex items-center space-x-1">
-                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                <span>Harga Reseller Aktif</span>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-1">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                <span>Harga Retail</span>
-              </div>
-            )}
+      {
+        user && (
+          <div className="fixed bottom-24 right-4 bg-white rounded-lg shadow-lg p-3 border-l-4 border-pink-500">
+            <div className="text-xs text-gray-600">
+              {user.role === 'reseller' ? (
+                <div className="flex items-center space-x-1">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                  <span>Harga Reseller Aktif</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-1">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  <span>Harga Retail</span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 
