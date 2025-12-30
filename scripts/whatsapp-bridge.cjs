@@ -99,9 +99,21 @@ Output JSON only (no markdown, no explanation):
 }
 
 Rules:
-- nama: AMBIL NAMA LENGKAP termasuk "by [Brand]" jika ada. Contoh: "GAMIS PREMIUM BY NABIL" → nama = "GAMIS PREMIUM BY NABIL"
-- brand: Kata setelah "by" adalah brand. Contoh: "...by Nabil" → brand = "Nabil"
-- kategori: Detect dari kata kunci di caption. Return PERSIS seperti ini:
+- FORMAT CAPTION: "[KATEGORI] [NAMA PRODUK] by [BRAND]"
+  Contoh: "gamis delta set by irish label"
+  
+- kategori: Kata PERTAMA dari caption/nama produk. Harus match PERSIS salah satu:
+  Gamis, Tunik, Dress, Hijab, Khimar, Setelan, Outer, Rok, Celana, Aksesoris, Mukena, Pashmina
+  * Jika typo/mirip, pilih yang paling dekat (misal "gams" → "Gamis")
+  * Jika tidak match → default "Gamis"
+  
+- nama: Nama produk TANPA kategori di depan, tapi TERMASUK "by Brand"
+  Contoh: "gamis delta set by irish label" → nama = "Delta Set By Irish Label"
+  
+- brand: Kata setelah "by" sampai akhir baris pertama
+  Contoh: "...by irish label" → brand = "Irish Label"
+  
+- kategori: Detect dari kata PERTAMA. Return PERSIS seperti ini:
   * "gamis" → "Gamis"
   * "tunik" → "Tunik"
   * "dress" → "Dress"
