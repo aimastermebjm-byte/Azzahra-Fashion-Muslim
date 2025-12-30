@@ -29,7 +29,7 @@ if (GEMINI_API_KEY) {
 // ============================================================
 const CONFIG = {
   // Bridge Settings
-  BUNDLE_WINDOW_MS: 60000,        // 60 detik window untuk bundling
+  BUNDLE_WINDOW_MS: 10000,        // 10 detik window untuk bundling (setelah pesan terakhir)
 
   // Whitelist (nomor yang diizinkan mengirim produk)
   ALLOWED_SENDERS: [
