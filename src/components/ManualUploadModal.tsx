@@ -1131,15 +1131,47 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 ))}
                                             </select>
                                         </div>
-                                        <div>
+                                        <div className="relative">
                                             <label className="block text-xs font-bold text-gray-600 mb-1">Brand</label>
                                             <input
                                                 type="text"
                                                 value={productFormData.brand}
-                                                onChange={(e) => setProductFormData(prev => ({ ...prev, brand: e.target.value }))}
+                                                onChange={(e) => {
+                                                    setProductFormData(prev => ({ ...prev, brand: e.target.value }));
+                                                    setShowBrandSuggestions(true);
+                                                }}
+                                                onFocus={() => setShowBrandSuggestions(true)}
+                                                onBlur={() => setTimeout(() => setShowBrandSuggestions(false), 200)}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
-                                                placeholder="Brand..."
+                                                placeholder="Pilih atau ketik brand..."
+                                                autoComplete="off"
                                             />
+                                            {/* Brand Suggestions Dropdown */}
+                                            {showBrandSuggestions && (
+                                                <div className="absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-32 overflow-y-auto">
+                                                    {brandOptions.filter(b => b.toLowerCase().includes(productFormData.brand.toLowerCase())).length > 0 ? (
+                                                        brandOptions
+                                                            .filter(b => b.toLowerCase().includes(productFormData.brand.toLowerCase()))
+                                                            .slice(0, 5)
+                                                            .map((brand, i) => (
+                                                                <div
+                                                                    key={i}
+                                                                    className="px-3 py-2 hover:bg-purple-50 cursor-pointer text-gray-700 hover:text-purple-700 transition-colors border-b border-gray-50 last:border-0 text-sm"
+                                                                    onClick={() => {
+                                                                        setProductFormData(prev => ({ ...prev, brand }));
+                                                                        setShowBrandSuggestions(false);
+                                                                    }}
+                                                                >
+                                                                    {brand}
+                                                                </div>
+                                                            ))
+                                                    ) : (
+                                                        <div className="px-3 py-2 text-gray-400 text-xs italic">
+                                                            Ketik untuk membuat brand baru...
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -1170,8 +1202,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                         }
                                                     }}
                                                     className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${selectedSizes.includes(size)
-                                                            ? 'bg-purple-600 text-white'
-                                                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                                        ? 'bg-purple-600 text-white'
+                                                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                                                         }`}
                                                 >
                                                     {size}
