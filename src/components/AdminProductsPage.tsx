@@ -1112,45 +1112,29 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           </div>
         )}
 
-        {/* Main Actions - Compact for Mobile */}
+        {/* Main Actions - 2 Columns */}
         <div className="bg-white rounded-lg shadow-sm p-3">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {/* Tambah Produk */}
             <button
               onClick={() => {
                 setManualUploadInitialState(null);
                 setShowManualUploadModal(true);
               }}
-              className="bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 transition-colors flex flex-col items-center justify-center text-center"
+              className="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
             >
-              <Plus className="w-5 h-5 mb-1" />
-              <span className="text-[10px] font-medium leading-tight">Tambah Produk</span>
+              <Plus className="w-5 h-5" />
+              <span className="text-sm font-medium">Tambah Produk</span>
             </button>
 
             {/* Draft Siap Upload */}
             <button
               onClick={() => setShowWhatsAppInbox(true)}
-              className="bg-green-600 text-white p-2.5 rounded-lg hover:bg-green-700 transition-colors flex flex-col items-center justify-center text-center"
+              className="bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
             >
-              <MessageCircle className="w-5 h-5 mb-1" />
-              <span className="text-[10px] font-medium leading-tight">Draft Upload</span>
+              <MessageCircle className="w-5 h-5" />
+              <span className="text-sm font-medium">Draft Upload</span>
             </button>
-
-            {/* AI Auto Upload - Owner Only */}
-            {user?.role === 'owner' ? (
-              <button
-                onClick={() => setShowAIUploadModal(true)}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-2.5 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all flex flex-col items-center justify-center text-center"
-              >
-                <Sparkles className="w-5 h-5 mb-1" />
-                <span className="text-[10px] font-medium leading-tight">AI Upload</span>
-              </button>
-            ) : (
-              <div className="bg-gray-100 p-2.5 rounded-lg flex flex-col items-center justify-center text-center opacity-50">
-                <Sparkles className="w-5 h-5 mb-1 text-gray-400" />
-                <span className="text-[10px] font-medium leading-tight text-gray-400">AI Upload</span>
-              </div>
-            )}
           </div>
         </div>
 
