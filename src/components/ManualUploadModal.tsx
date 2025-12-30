@@ -1279,8 +1279,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 {/* Retail Price Matrix */}
                                                 <div>
                                                     <h4 className="text-sm font-bold text-green-700 mb-3">💚 Matrix Harga Retail</h4>
-                                                    <div className="overflow-x-auto -mx-2 px-2">
-                                                        <table className="w-full text-sm min-w-[280px]">
+                                                    <div className="overflow-x-auto -mx-2 px-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
+                                                        <table className="w-full text-sm min-w-[320px]">
                                                             <thead>
                                                                 <tr className="bg-green-50">
                                                                     <th className="px-2 py-1 text-left border border-green-100">Size</th>
@@ -1296,7 +1296,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                         {variantLabels.map(label => {
                                                                             const key = `${size}-${label}`;
                                                                             return (
-                                                                                <td key={key} className="px-1 py-2 border border-green-100 min-w-[80px]">
+                                                                                <td key={key} className="px-2 py-2 border border-green-100 min-w-[95px]">
                                                                                     <input
                                                                                         type="text"
                                                                                         inputMode="numeric"
@@ -1327,8 +1327,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 {/* Reseller Price Matrix */}
                                                 <div>
                                                     <h4 className="text-sm font-bold text-blue-700 mb-3">💙 Matrix Harga Reseller</h4>
-                                                    <div className="overflow-x-auto -mx-2 px-2">
-                                                        <table className="w-full text-sm min-w-[280px]">
+                                                    <div className="overflow-x-auto -mx-2 px-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
+                                                        <table className="w-full text-sm min-w-[320px]">
                                                             <thead>
                                                                 <tr className="bg-blue-50">
                                                                     <th className="px-2 py-2 text-left border border-blue-100 font-bold">Size</th>
@@ -1344,7 +1344,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                         {variantLabels.map(label => {
                                                                             const key = `${size}-${label}`;
                                                                             return (
-                                                                                <td key={key} className="px-1 py-2 border border-blue-100 min-w-[80px]">
+                                                                                <td key={key} className="px-2 py-2 border border-blue-100 min-w-[95px]">
                                                                                     <input
                                                                                         type="text"
                                                                                         inputMode="numeric"
