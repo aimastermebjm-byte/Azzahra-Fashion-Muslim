@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, Edit, Search, Filter, X, Trash2, Clock, Flame, Star, ChevronLeft, ChevronRight, Sparkles, MessageCircle } from 'lucide-react';
+import { Package, Plus, Edit, Search, X, Trash2, Clock, Flame, Star, MessageCircle } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import PageHeader from './PageHeader';
@@ -87,8 +87,37 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   const [selectedCategory, setSelectedCategory] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [tappedProductId, setTappedProductId] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [visibleCount, setVisibleCount] = useState(20);
+
+  // Ref for infinite scroll
+  const loaderRef = React.useRef<HTMLDivElement>(null);
+
+  // Infinite Scroll Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => prev + 20);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
+
+    return () => {
+      if (loaderRef.current) {
+        observer.unobserve(loaderRef.current);
+      }
+    };
+  }, []);
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [searchQuery, selectedCategory, sortBy]);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -366,16 +395,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     return filtered;
   }, [products, searchQuery, selectedCategory, sortBy]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredAndSortedProducts.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProducts = filteredAndSortedProducts.slice(startIndex, endIndex);
-
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedCategory, sortBy, itemsPerPage]);
+  // Infinite Scroll Slice
+  const currentProducts = filteredAndSortedProducts.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredAndSortedProducts.length;
 
   // Handle form submissions
   const handleAddProduct = async (e: React.FormEvent) => {
@@ -1188,13 +1210,19 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
             {/* Batch Actions - 2 Columns Like Main Menu */}
             {selectedProducts.length > 0 && (
               <div className="pt-3 border-t space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">{selectedProducts.length} produk dipilih</span>
+                <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      {selectedProducts.length}
+                    </span>
+                    <span className="text-sm font-semibold text-blue-900">Produk Terpilih</span>
+                  </div>
                   <button
                     onClick={() => setSelectedProducts([])}
-                    className="text-xs text-gray-500 hover:text-gray-700"
+                    className="bg-white text-red-600 px-3 py-1.5 rounded border border-red-200 shadow-sm text-xs font-bold hover:bg-red-50 flex items-center gap-1 transition-colors"
                   >
-                    Batal pilih
+                    <X className="w-3.5 h-3.5" />
+                    Reset Pilihan
                   </button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -1461,55 +1489,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               })}
               </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <div className="text-sm text-gray-700">
-                    Menampilkan {startIndex + 1} hingga {Math.min(endIndex, filteredAndSortedProducts.length)} dari {filteredAndSortedProducts.length} produk
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1}
-                      className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = currentPage - 2 + i;
-                      }
-
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={`px - 3 py - 1 border rounded - lg ${currentPage === pageNum
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'border-gray-300 hover:bg-gray-50'
-                            } `}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-
-                    <button
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage === totalPages}
-                      className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
+              {/* Infinite Scroll Loader */}
+              {hasMore && (
+                <div ref={loaderRef} className="py-6 text-center">
+                  <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-blue-600"></div>
+                  <p className="text-gray-400 text-xs mt-1">Memuat produk...</p>
                 </div>
               )}
             </>
