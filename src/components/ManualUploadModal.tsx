@@ -1279,7 +1279,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 {/* Retail Price Matrix */}
                                                 <div>
                                                     <h4 className="text-sm font-bold text-green-700 mb-3">💚 Matrix Harga Retail</h4>
-                                                    <div className="overflow-x-auto -mx-2 px-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
+                                                    <div className="overflow-x-auto -mx-2 px-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
                                                         <table className="w-full text-sm min-w-[320px]">
                                                             <thead>
                                                                 <tr className="bg-green-50">
@@ -1327,7 +1327,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 {/* Reseller Price Matrix */}
                                                 <div>
                                                     <h4 className="text-sm font-bold text-blue-700 mb-3">💙 Matrix Harga Reseller</h4>
-                                                    <div className="overflow-x-auto -mx-2 px-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
+                                                    <div className="overflow-x-auto -mx-2 px-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
                                                         <table className="w-full text-sm min-w-[320px]">
                                                             <thead>
                                                                 <tr className="bg-blue-50">
