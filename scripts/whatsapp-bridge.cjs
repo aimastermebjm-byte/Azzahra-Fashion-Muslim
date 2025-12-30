@@ -320,7 +320,7 @@ async function processBundle() {
 }
 
 // ============================================================
-// 2B. AI IMAGE ANALYSIS (Gemini Vision) - Enhanced
+// 2B. AI IMAGE ANALYSIS (Gemini Vision) - Enhanced with Motif
 // ============================================================
 async function analyzeImageWithAI(imageBuffer) {
   try {
@@ -330,23 +330,29 @@ async function analyzeImageWithAI(imageBuffer) {
 
 1. FULL BODY: Apakah model tampil LENGKAP dari KEPALA sampai UJUNG KAKI?
    - Jawab "Ya" HANYA jika kepala + badan + kaki SEMUA terlihat jelas
-   - Jawab "Tidak" jika: setengah badan, kepala terpotong, kaki tidak terlihat, atau hanya tampak dari pinggang ke atas
+   - Jawab "Tidak" jika: setengah badan, kepala terpotong, kaki tidak terlihat
 
 2. JUMLAH MODEL: Ada berapa orang/model BERBEDA dalam gambar? (1, 2, 3, dst)
 
-3. WARNA: Warna DOMINAN pakaian (satu kata saja)
+3. WARNA: Warna DOMINAN pakaian (satu kata saja, contoh: Hitam, Abu, Cokelat, Pink, Putih)
 
-4. COLLAGE: Apakah gambar ini adalah KOLASE (gabungan beberapa foto terpisah dalam 1 frame)?
-   - Jawab "Ya" jika ada garis pemisah, border, atau tampak jelas beberapa foto digabung
-   - Jawab "Tidak" jika ini foto tunggal biasa
+4. MOTIF: Jenis motif/pattern pakaian (satu kata, contoh: Polos, Bermotif, Cardigan, Brukat, Tile, Denim)
+   - Jika ada outer/cardigan: jawab "Cardigan"
+   - Jika polos tanpa motif: jawab "Polos"
+   - Jika ada motif/pattern: jawab jenis motifnya
 
-5. VARIAN: Jika COLLAGE=Ya, ada berapa varian/foto TERPISAH di dalam kolase? (2, 3, 4, dst)
+5. COLLAGE: Apakah gambar ini adalah KOLASE (gabungan beberapa foto dalam 1 frame)?
+   - Jawab "Ya" jika ada garis pemisah atau beberapa foto digabung
+   - Jawab "Tidak" jika foto tunggal
+
+6. VARIAN: Jika COLLAGE=Ya, ada berapa varian di dalam kolase? (2, 3, 4, dst)
    - Jika COLLAGE=Tidak, jawab 0
 
 Format jawaban HARUS PERSIS:
 FULLBODY:Ya
 JUMLAH:1
 WARNA:Hitam
+MOTIF:Polos
 COLLAGE:Tidak
 VARIAN:0`;
 
@@ -371,6 +377,13 @@ VARIAN:0`;
     const colorMatch = response.match(/WARNA\s*:\s*(\w+)/i);
     const color = colorMatch ? colorMatch[1].toLowerCase() : 'unknown';
 
+    // Motif detection
+    const motifMatch = response.match(/MOTIF\s*:\s*(\w+)/i);
+    const motif = motifMatch ? motifMatch[1].toLowerCase() : 'polos';
+
+    // Unique key = warna + motif (untuk filter duplikat)
+    const uniqueKey = `${color}-${motif}`;
+
     // Collage detection
     const isCollage = /COLLAGE\s*:\s*Ya/i.test(response);
     const varianMatch = response.match(/VARIAN\s*:\s*(\d+)/i);
@@ -379,13 +392,13 @@ VARIAN:0`;
     // Valid image = full body + single model + NOT collage
     const isValid = isFullBody && isSingleModel && !isCollage;
 
-    console.log(`   📊 Result: FullBody=${isFullBody}, Models=${modelCount}, Collage=${isCollage}, Variants=${collageVariantCount}, Valid=${isValid}`);
+    console.log(`   📊 Result: FullBody=${isFullBody}, Models=${modelCount}, Color=${color}, Motif=${motif}, Key=${uniqueKey}, Collage=${isCollage}, Variants=${collageVariantCount}, Valid=${isValid}`);
 
-    return { isFullBody, isSingleModel, modelCount, color, isCollage, collageVariantCount, isValid };
+    return { isFullBody, isSingleModel, modelCount, color, motif, uniqueKey, isCollage, collageVariantCount, isValid };
   } catch (error) {
     console.error('   ⚠️ AI analysis failed:', error.message);
     // Fallback: assume valid single model full body
-    return { isFullBody: true, isSingleModel: true, modelCount: 1, color: 'unknown', isCollage: false, collageVariantCount: 0, isValid: true };
+    return { isFullBody: true, isSingleModel: true, modelCount: 1, color: 'unknown', motif: 'polos', uniqueKey: 'unknown-polos', isCollage: false, collageVariantCount: 0, isValid: true };
   }
 }
 
@@ -452,19 +465,19 @@ async function selectBestImages(images) {
     return { images: fallbackImages.slice(0, 3), isPreMadeCollage: false };
   }
 
-  // Group by color, take first of each color (avoid duplicate colors)
-  const uniqueByColor = {};
+  // Group by uniqueKey (warna + motif), take first of each unique combination
+  const uniqueByKey = {};
   validImages.forEach(img => {
-    const colorKey = img.color.toLowerCase().trim();
-    if (!uniqueByColor[colorKey]) {
-      uniqueByColor[colorKey] = img;
-      console.log(`   🎨 Selected: Image ${img.index + 1} - ${colorKey}`);
+    const key = img.uniqueKey || `${img.color}-polos`;
+    if (!uniqueByKey[key]) {
+      uniqueByKey[key] = img;
+      console.log(`   🎨 Selected: Image ${img.index + 1} - ${key}`);
     } else {
-      console.log(`   ⏩ Skipped: Image ${img.index + 1} - duplicate ${colorKey}`);
+      console.log(`   ⏩ Skipped: Image ${img.index + 1} - duplicate ${key}`);
     }
   });
 
-  const selected = Object.values(uniqueByColor);
+  const selected = Object.values(uniqueByKey);
   console.log(`🎯 Final selection: ${selected.length} unique images`);
 
   return { images: selected, isPreMadeCollage: false };
