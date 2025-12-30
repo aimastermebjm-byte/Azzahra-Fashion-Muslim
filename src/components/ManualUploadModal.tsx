@@ -1101,6 +1101,87 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 </div>
                             </div>
 
+                            {/* 2. Product Info - Editable */}
+                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+                                <h4 className="font-medium text-purple-800 mb-3">📦 Informasi Produk</h4>
+                                <div className="space-y-3">
+                                    {/* Nama Produk */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-600 mb-1">Nama Produk</label>
+                                        <input
+                                            type="text"
+                                            value={productFormData.name}
+                                            onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
+                                            placeholder="Nama produk..."
+                                        />
+                                    </div>
+
+                                    {/* Kategori & Brand */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-600 mb-1">Kategori</label>
+                                            <select
+                                                value={productFormData.category}
+                                                onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }))}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
+                                            >
+                                                {categories.map(cat => (
+                                                    <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-600 mb-1">Brand</label>
+                                            <input
+                                                type="text"
+                                                value={productFormData.brand}
+                                                onChange={(e) => setProductFormData(prev => ({ ...prev, brand: e.target.value }))}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
+                                                placeholder="Brand..."
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Deskripsi */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-600 mb-1">Deskripsi</label>
+                                        <textarea
+                                            value={productFormData.description}
+                                            onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }))}
+                                            rows={3}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white resize-none"
+                                            placeholder="Deskripsi produk..."
+                                        />
+                                    </div>
+
+                                    {/* Size */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-600 mb-1">Size</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {SIZE_PRESETS.map(size => (
+                                                <button
+                                                    key={size}
+                                                    onClick={() => {
+                                                        if (selectedSizes.includes(size)) {
+                                                            setSelectedSizes(prev => prev.filter(s => s !== size));
+                                                        } else {
+                                                            setSelectedSizes(prev => [...prev, size]);
+                                                        }
+                                                    }}
+                                                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${selectedSizes.includes(size)
+                                                            ? 'bg-purple-600 text-white'
+                                                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                                        }`}
+                                                >
+                                                    {size}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Price Summary - Editable */}
                             <div className="bg-gray-50 rounded-lg p-4">
                                 <h4 className="font-medium text-gray-700 mb-2">Ringkasan Harga</h4>

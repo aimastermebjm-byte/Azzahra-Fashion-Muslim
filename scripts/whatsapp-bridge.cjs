@@ -29,7 +29,7 @@ if (GEMINI_API_KEY) {
 // ============================================================
 const CONFIG = {
   // Bridge Settings
-  BUNDLE_WINDOW_MS: 10000,        // 10 detik window untuk bundling (setelah pesan terakhir)
+  BUNDLE_WINDOW_MS: 5000,        // 5 detik window untuk bundling (setelah pesan terakhir)
 
   // Whitelist (nomor yang diizinkan mengirim produk)
   ALLOWED_SENDERS: [
@@ -41,7 +41,7 @@ const CONFIG = {
   GEMINI_MODEL: 'gemini-2.0-flash-lite',
 
   // Optional Features (toggle ON/OFF)
-  ENABLE_FULL_BODY_CHECK: true,   // Validasi gambar full body
+  ENABLE_FULL_BODY_CHECK: false,  // DISABLED - user sudah filter gambar sendiri
   ENABLE_AUTO_UPLOAD: false,       // Langsung upload ke katalog (future)
 
   // Defaults
@@ -87,7 +87,7 @@ Output JSON only (no markdown, no explanation):
 {
   "nama": string | null,
   "deskripsi": string | null,
-  "kategori": "gamis" | "tunik" | "dress" | "outer" | "khimar" | "set" | null,
+  "kategori": string | null,
   "warna": string[] | null,
   "sizes": string[] | null,
   "hargaRetail": number | null,
@@ -101,15 +101,22 @@ Output JSON only (no markdown, no explanation):
 Rules:
 - nama: AMBIL NAMA LENGKAP termasuk "by [Brand]" jika ada. Contoh: "GAMIS PREMIUM BY NABIL" → nama = "GAMIS PREMIUM BY NABIL"
 - brand: Kata setelah "by" adalah brand. Contoh: "...by Nabil" → brand = "Nabil"
+- kategori: Deteksi dari kata kunci dalam caption:
+  * "gamis" → "Gamis"
+  * "tunik" → "Tunik"
+  * "dress" → "Dress"
+  * "outer"/"cardigan"/"blazer" → "Outer"
+  * "khimar"/"hijab"/"kerudung" → "Khimar"
+  * "set"/"setelan"/"palazzo" → "Set"
+  * "rok" → "Rok"
+  * "celana" → "Celana"
+  * Jika tidak ada → "Gamis" (default)
 - sizes: 
-  * Jika ada size chart (S, M, L, XL, XXL) → gunakan nama BERSIH tanpa embel-embel. Contoh: ["S", "M", "L", "XL"]
+  * Jika ada size chart (S, M, L, XL, XXL) → gunakan nama BERSIH. Contoh: ["S", "M", "L", "XL"]
   * Jika HANYA ada PJ/LD/Lingkar tanpa size chart → return ["All Size"]
-  * JANGAN tulis "L ld110" atau "XL pb120", cukup "L" atau "XL" saja
 - stokPerVarian: 
   * Default adalah 1
-  * "1 seri" atau "stock 1" → 1
-  * "3 seri" atau "stok 3" → 3
-  * Cari angka setelah kata "seri" atau "stok"
+  * "1 seri" → 1, "3 seri" → 3
 - harga: convert "895k" → 895000, "1.250.000" → 1250000
 - isFamily: true if contains family/couple/ayah/ibu/anak keywords
 - variants: only if different prices per type (ayah/ibu/anak)`;
@@ -334,12 +341,14 @@ async function analyzeImageWithAI(imageBuffer) {
 
 2. JUMLAH MODEL: Ada berapa orang/model BERBEDA dalam gambar? (1, 2, 3, dst)
 
-3. WARNA: Warna DOMINAN pakaian (satu kata saja, contoh: Hitam, Abu, Cokelat, Pink, Putih)
+3. WARNA: Warna DOMINAN pakaian UTAMA/INNER (satu kata: Hitam, Abu, Cokelat, Pink, Putih, Cream, Navy)
 
-4. MOTIF: Jenis motif/pattern pakaian (satu kata, contoh: Polos, Bermotif, Cardigan, Brukat, Tile, Denim)
-   - Jika ada outer/cardigan: jawab "Cardigan"
-   - Jika polos tanpa motif: jawab "Polos"
-   - Jika ada motif/pattern: jawab jenis motifnya
+4. MOTIF: Jenis OUTER atau pattern pakaian (PENTING - perhatikan baik-baik):
+   - Jika model MEMAKAI outer/cardigan/blazer/jaket DI ATAS pakaian: jawab "Cardigan"
+   - Jika pakaian ada MOTIF/PATTERN/PRINT: jawab "Bermotif"
+   - Jika pakaian POLOS tanpa outer dan tanpa motif: jawab "Polos"
+   - Jika bahan tile/brukat transparan: jawab "Tile" atau "Brukat"
+   - PERHATIKAN: Outer berbeda warna dari dalam = "Cardigan"
 
 5. COLLAGE: Apakah gambar ini adalah KOLASE (gabungan beberapa foto dalam 1 frame)?
    - Jawab "Ya" jika ada garis pemisah atau beberapa foto digabung
@@ -465,22 +474,14 @@ async function selectBestImages(images) {
     return { images: fallbackImages.slice(0, 3), isPreMadeCollage: false };
   }
 
-  // Group by uniqueKey (warna + motif), take first of each unique combination
-  const uniqueByKey = {};
-  validImages.forEach(img => {
-    const key = img.uniqueKey || `${img.color}-polos`;
-    if (!uniqueByKey[key]) {
-      uniqueByKey[key] = img;
-      console.log(`   🎨 Selected: Image ${img.index + 1} - ${key}`);
-    } else {
-      console.log(`   ⏩ Skipped: Image ${img.index + 1} - duplicate ${key}`);
-    }
+  // SIMPLE MODE: Ambil SEMUA gambar full body yang valid
+  // Tidak ada filter warna/motif - tugas user pastikan gambar sudah berbeda
+  console.log(`🎯 Final selection: ${validImages.length} valid full body images (no color/motif filter)`);
+  validImages.forEach((img, i) => {
+    console.log(`   🎨 Selected: Image ${img.index + 1} - ${img.uniqueKey || img.color}`);
   });
 
-  const selected = Object.values(uniqueByKey);
-  console.log(`🎯 Final selection: ${selected.length} unique images`);
-
-  return { images: selected, isPreMadeCollage: false };
+  return { images: validImages, isPreMadeCollage: false };
 }
 
 // ============================================================
