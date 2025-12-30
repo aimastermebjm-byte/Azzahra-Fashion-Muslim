@@ -6,6 +6,7 @@ import { db } from '../utils/firebaseClient';
 interface ProductDraft {
     id: string;
     name: string;
+    brand?: string;  // Add brand
     description: string;
     category: string;
     retailPrice: number;
@@ -69,6 +70,7 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                 images: imageFiles,
                 productData: {
                     name: draft.name,
+                    brand: draft.brand || '',  // Add brand from draft
                     description: draft.description,
                     category: draft.category,
                     retailPrice: draft.retailPrice,
