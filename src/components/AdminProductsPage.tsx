@@ -86,6 +86,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [sortBy, setSortBy] = useState('name');
+  const [tappedProductId, setTappedProductId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -967,48 +968,44 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     <div className="min-h-screen bg-gray-50 pb-20">
       <PageHeader
         title="Kelola Produk"
-        subtitle="Monitor stok, kelola varian, dan optimalkan katalog dengan cepat"
+        subtitle="Monitor dan kelola katalog produk"
         onBack={onBack}
-        variant="gradient"
+        variant="surface"
         actions={user?.role === 'admin' && (
           <button
             onClick={handleForceSyncGlobalIndex}
             disabled={isForceSyncing}
-            className={`rounded - full px - 4 py - 2 text - sm font - semibold text - brand - primary transition ${isForceSyncing ? 'bg-white/50 cursor-not-allowed' : 'bg-white text-brand-primary'
-              } `}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${isForceSyncing ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
           >
-            {isForceSyncing ? 'Syncing…' : 'Force Sync GlobalIndex'}
+            {isForceSyncing ? 'Syncing…' : 'Sync'}
           </button>
         )}
-      >
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
-            <p className="text-xs uppercase tracking-wider text-white/70">Total Produk</p>
-            <p className="mt-2 text-2xl font-bold">{products.length}</p>
-            <p className="text-xs text-white/70">Semua kategori</p>
-          </div>
-          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
-            <p className="text-xs uppercase tracking-wider text-white/70">Stok Tersedia</p>
-            <p className="mt-2 text-2xl font-bold">
-              {products.reduce((total, product) => total + product.stock, 0)}
-            </p>
-            <p className="text-xs text-white/70">Unit siap kirim</p>
-          </div>
-          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
-            <p className="text-xs uppercase tracking-wider text-white/70">Kategori Aktif</p>
-            <p className="mt-2 text-2xl font-bold">{categories.length}</p>
-            <p className="text-xs text-white/70">Sedang ditampilkan</p>
-          </div>
-          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
-            <p className="text-xs uppercase tracking-wider text-white/70">Produk Unggulan</p>
-            <p className="mt-2 text-2xl font-bold">{products.filter(p => p.isFeatured).length}</p>
-            <p className="text-xs text-white/70">Sedang dipromosikan</p>
-          </div>
-        </div>
-      </PageHeader>
+      />
 
       {/* Content */}
-      <div className="p-4 space-y-4">
+      <div className="p-3 space-y-3">
+        {/* Stats Cards - Compact 4 columns for mobile */}
+        <div className="grid grid-cols-4 gap-2">
+          <div className="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-100">
+            <p className="text-lg font-bold text-blue-600">{products.length}</p>
+            <p className="text-[10px] text-gray-500">Produk</p>
+          </div>
+          <div className="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-100">
+            <p className="text-lg font-bold text-green-600">
+              {products.reduce((total, product) => total + product.stock, 0)}
+            </p>
+            <p className="text-[10px] text-gray-500">Stok</p>
+          </div>
+          <div className="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-100">
+            <p className="text-lg font-bold text-purple-600">{categories.length}</p>
+            <p className="text-[10px] text-gray-500">Kategori</p>
+          </div>
+          <div className="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-100">
+            <p className="text-lg font-bold text-yellow-600">{products.filter(p => p.isFeatured).length}</p>
+            <p className="text-[10px] text-gray-500">Unggulan</p>
+          </div>
+        </div>
+
 
         {user?.role === 'admin' && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -1115,230 +1112,185 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
           </div>
         )}
 
-        {/* Main Actions */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Menu Utama</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Main Actions - Compact for Mobile */}
+        <div className="bg-white rounded-lg shadow-sm p-3">
+          <div className="grid grid-cols-3 gap-2">
             {/* Tambah Produk */}
             <button
               onClick={() => {
-                setManualUploadInitialState(null); // Clear any previous auto-state
+                setManualUploadInitialState(null);
                 setShowManualUploadModal(true);
               }}
-              className="bg-blue-600 text-white p-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-3"
+              className="bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 transition-colors flex flex-col items-center justify-center text-center"
             >
-              <Plus className="w-6 h-6" />
-              <div className="text-left">
-                <p className="font-semibold">Tambah Produk</p>
-                <p className="text-sm opacity-90">Collage + Parameter</p>
-              </div>
+              <Plus className="w-5 h-5 mb-1" />
+              <span className="text-[10px] font-medium leading-tight">Tambah Produk</span>
             </button>
+
             {/* Draft Siap Upload */}
             <button
               onClick={() => setShowWhatsAppInbox(true)}
-              className="bg-green-600 text-white p-4 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-3"
+              className="bg-green-600 text-white p-2.5 rounded-lg hover:bg-green-700 transition-colors flex flex-col items-center justify-center text-center"
             >
-              <MessageCircle className="w-6 h-6" />
-              <div className="text-left">
-                <p className="font-semibold">Draft Siap Upload</p>
-                <p className="text-sm opacity-90">Silahkan cek dulu</p>
-              </div>
+              <MessageCircle className="w-5 h-5 mb-1" />
+              <span className="text-[10px] font-medium leading-tight">Draft Upload</span>
             </button>
+
             {/* AI Auto Upload - Owner Only */}
-            {user?.role === 'owner' && (
+            {user?.role === 'owner' ? (
               <button
                 onClick={() => setShowAIUploadModal(true)}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg flex items-center space-x-3"
+                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-2.5 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all flex flex-col items-center justify-center text-center"
               >
-                <Sparkles className="w-6 h-6" />
-                <div className="text-left">
-                  <p className="font-semibold">🤖 AI Auto Upload</p>
-                  <p className="text-sm opacity-90">Upload produk dengan AI</p>
-                </div>
+                <Sparkles className="w-5 h-5 mb-1" />
+                <span className="text-[10px] font-medium leading-tight">AI Upload</span>
               </button>
+            ) : (
+              <div className="bg-gray-100 p-2.5 rounded-lg flex flex-col items-center justify-center text-center opacity-50">
+                <Sparkles className="w-5 h-5 mb-1 text-gray-400" />
+                <span className="text-[10px] font-medium leading-tight text-gray-400">AI Upload</span>
+              </div>
             )}
-
-            {/* Produk Unggulan - REMOVED (Now via Table Bulk Action) */}
-            {/* 
-            <button
-              onClick={() => {
-                const featuredProducts = products.filter(p => p.isFeatured);
-                if (featuredProducts.length > 0) {
-                  setSelectedProducts(featuredProducts.map(p => p.id));
-                  setBatchFormData({ ...batchFormData, isFeatured: undefined }); 
-                  setShowBatchModal(true);
-                } else {
-                  alert('Belum ada produk unggulan. Pilih produk terlebih dahulu dari daftar produk.');
-                }
-              }}
-              className="bg-yellow-500 text-white p-4 rounded-lg hover:bg-yellow-600 transition-colors flex items-center space-x-3"
-            >
-              <Star className="w-6 h-6" />
-              <div className="text-left">
-                <p className="font-semibold">Produk Unggulan</p>
-                <p className="text-sm opacity-90">Kelola produk unggulan ({products.filter(p => p.isFeatured).length})</p>
-              </div>
-            </button>
-            */}
-
-            {/* Flash Sale - REMOVED (Now via Table Bulk Action) */}
-            {/*
-            <button
-              onClick={() => setShowFlashSaleModal(true)}
-              className="bg-red-600 text-white p-4 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-3"
-            >
-              <Flame className="w-6 h-6" />
-              <div className="text-left">
-                <p className="font-semibold">Flash Sale</p>
-                <p className="text-sm opacity-90">Atur diskon flash sale ({products.filter(p => p.isFlashSale).length})</p>
-              </div>
-            </button>
-            */}
           </div>
         </div>
 
         {/* Product List */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 space-y-4 md:space-y-0">
-            <h2 className="text-lg font-semibold">
-              Daftar Produk {selectedProducts.length > 0 && `(${selectedProducts.length} dipilih)`}
-            </h2>
+        <div className="bg-white rounded-lg shadow-sm p-3">
+          {/* Header & Search/Filter - Compact */}
+          <div className="space-y-2 mb-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-800">
+                Produk {selectedProducts.length > 0 && <span className="text-blue-600">({selectedProducts.length})</span>}
+              </h2>
+            </div>
 
-            <div className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-3">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            {/* Search & Filter Row */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
                 <input
                   type="text"
-                  placeholder="Cari produk..."
+                  placeholder="Cari..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full md:w-64"
+                  className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-
-              {/* Category Filter */}
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
               >
-                <option value="">Semua Kategori</option>
+                <option value="">Semua</option>
                 {categories.map((category) => (
                   <option key={category} value={category}>
                     {category}
                   </option>
                 ))}
               </select>
-
-              {/* Sort */}
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
               >
                 <option value="name">Nama</option>
-                <option value="price-asc">Harga (Rendah ke Tinggi)</option>
-                <option value="price-desc">Harga (Tinggi ke Rendah)</option>
+                <option value="price-asc">Harga ↑</option>
+                <option value="price-desc">Harga ↓</option>
                 <option value="date-newest">Terbaru</option>
-                <option value="date-oldest">Terlama</option>
               </select>
-
-              {/* Batch Actions */}
-              {selectedProducts.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => {
-                      // Jika flash sale sedang aktif, masukkan produk ke sesi aktif
-                      // Jika tidak aktif, buka modal setting baru
-                      if (isFlashSaleActive) {
-                        // Langsung update produk
-                        setFlashSaleFormData({
-                          ...flashSaleFormData,
-                          productIds: selectedProducts
-                        });
-                        // Panggil startUnifiedFlashSale dengan config yang sedang berjalan (extend ke produk baru)
-                        // ... logic akan dihandle di fungsi khusus
-                        handleAddToActiveFlashSale();
-                      } else {
-                        // Buka modal setting baru
-                        setFlashSaleFormData({
-                          ...flashSaleFormData,
-                          productIds: selectedProducts
-                        });
-                        setShowFlashSaleModal(true);
-                      }
-                    }}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
-                  >
-                    <Flame className="w-4 h-4" />
-                    <span>Set Flash Sale ({selectedProducts.length})</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setBatchFormData({ ...batchFormData, isFeatured: true });
-                      // Langsung eksekusi update untuk UX yang lebih cepat, atau buka modal konfirmasi?
-                      // Untuk konsistensi dengan Flash Sale, kita buka modal tapi khusus untuk konfirmasi
-                      // Tapi batch modal yang ada sekarang (Edit Massal) terlalu kompleks.
-                      // Kita buat simple confirm saja untuk Toggle Unggulan.
-                      if (confirm(`Tandai ${selectedProducts.length} produk sebagai Produk Unggulan ? `)) {
-                        const updateFeatured = async () => {
-                          for (const pid of selectedProducts) {
-                            await updateProduct(pid, { isFeatured: true });
-                          }
-                          alert('✅ Berhasil menandai produk unggulan!');
-                          setSelectedProducts([]);
-                        };
-                        updateFeatured();
-                      }
-                    }}
-                    className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors flex items-center space-x-2"
-                  >
-                    <Star className="w-4 h-4" />
-                    <span>Set Unggulan</span>
-                  </button>
-
-                  <button
-                    onClick={() => setShowBatchModal(true)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                  >
-                    <Edit className="w-4 h-4" />
-                    <span>Edit {selectedProducts.length} Produk</span>
-                  </button>
-
-                  <button
-                    onClick={() => setShowVariantBatchModal(true)}
-                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
-                  >
-                    <Package className="w-4 h-4" />
-                    <span>Varian {selectedProducts.length} Produk</span>
-                  </button>
-
-                  {user?.role === 'owner' && (
-                    <button
-                      onClick={handleBulkDelete}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Hapus {selectedProducts.length} Produk</span>
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
+
+            {/* Batch Actions - Compact Icon Buttons */}
+            {selectedProducts.length > 0 && (
+              <div className="flex items-center gap-1.5 pt-2 border-t">
+                <span className="text-[10px] text-gray-500">{selectedProducts.length} dipilih:</span>
+                <button
+                  onClick={() => {
+                    if (isFlashSaleActive) {
+                      setFlashSaleFormData({ ...flashSaleFormData, productIds: selectedProducts });
+                      handleAddToActiveFlashSale();
+                    } else {
+                      setFlashSaleFormData({ ...flashSaleFormData, productIds: selectedProducts });
+                      setShowFlashSaleModal(true);
+                    }
+                  }}
+                  className="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 transition-colors"
+                  title="Flash Sale"
+                >
+                  <Flame className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm(`Tandai ${selectedProducts.length} produk sebagai Unggulan?`)) {
+                      const updateFeatured = async () => {
+                        for (const pid of selectedProducts) {
+                          await updateProduct(pid, { isFeatured: true });
+                        }
+                        alert('✅ Berhasil!');
+                        setSelectedProducts([]);
+                      };
+                      updateFeatured();
+                    }
+                  }}
+                  className="bg-yellow-500 text-white p-1.5 rounded hover:bg-yellow-600 transition-colors"
+                  title="Set Unggulan"
+                >
+                  <Star className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setShowBatchModal(true)}
+                  className="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 transition-colors"
+                  title="Edit Massal"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setShowVariantBatchModal(true)}
+                  className="bg-purple-600 text-white p-1.5 rounded hover:bg-purple-700 transition-colors"
+                  title="Varian Massal"
+                >
+                  <Package className="w-3.5 h-3.5" />
+                </button>
+                {user?.role === 'owner' && (
+                  <button
+                    onClick={handleBulkDelete}
+                    className="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 transition-colors"
+                    title="Hapus"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedProducts([])}
+                  className="bg-gray-400 text-white p-1.5 rounded hover:bg-gray-500 transition-colors ml-auto"
+                  title="Batal Pilih"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Product Table */}
+          {/* Product Cards Grid - 3 Columns */}
           {loading ? (
-            <ProductTableSkeleton />
+            /* Loading Skeleton */
+            <div className="grid grid-cols-3 gap-2">
+              {Array.from({ length: 9 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-lg border border-gray-200 overflow-hidden animate-pulse">
+                  <div className="aspect-square bg-gray-200" />
+                  <div className="p-1.5 space-y-1">
+                    <div className="h-3 bg-gray-200 rounded w-full" />
+                    <div className="h-3 bg-gray-200 rounded w-2/3" />
+                    <div className="h-2 bg-gray-200 rounded w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : currentProducts.length === 0 ? (
-            <div className="text-center py-8">
-              <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-500">
+            /* Empty State */
+            <div className="text-center py-12">
+              <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm">
                 {searchQuery || selectedCategory
                   ? 'Tidak ada produk yang ditemukan'
                   : 'Belum ada produk'}
@@ -1346,140 +1298,154 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedProducts.length === currentProducts.length}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedProducts(currentProducts.map(p => p.id));
-                            } else {
-                              setSelectedProducts([]);
-                            }
+              {/* Select All Checkbox */}
+              <div className="flex items-center justify-between mb-3 pb-3 border-b">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={selectedProducts.length === currentProducts.length && currentProducts.length > 0}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedProducts(currentProducts.map(p => p.id));
+                      } else {
+                        setSelectedProducts([]);
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-gray-600">Pilih Semua</span>
+                </label>
+                <span className="text-xs text-gray-500">
+                  {filteredAndSortedProducts.length} produk
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">{currentProducts.map((product) => {
+                const isTapped = tappedProductId === product.id;
+                const isSelected = selectedProducts.includes(product.id);
+
+                return (
+                  <div
+                    key={product.id}
+                    className={`relative bg-white rounded-lg border overflow-hidden transition-all ${isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                      }`}
+                    onClick={() => setTappedProductId(isTapped ? null : product.id)}
+                  >
+                    {/* Checkbox - Top Left */}
+                    <div
+                      className="absolute top-1 left-1 z-10"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedProducts([...selectedProducts, product.id]);
+                          } else {
+                            setSelectedProducts(selectedProducts.filter(id => id !== product.id));
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white shadow-sm"
+                      />
+                    </div>
+
+                    {/* Badges - Top Right */}
+                    <div className="absolute top-1 right-1 z-10 flex flex-col gap-0.5">
+                      {product.isFeatured && (
+                        <span className="bg-yellow-400 text-white text-[8px] px-1 py-0.5 rounded shadow">
+                          ⭐
+                        </span>
+                      )}
+                      {product.isFlashSale && (
+                        <span className="bg-red-500 text-white text-[8px] px-1 py-0.5 rounded shadow">
+                          🔥
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Product Image */}
+                    <div className="aspect-square bg-gray-100">
+                      {product.images?.length > 0 || product.image ? (
+                        <img
+                          src={product.image || product.images[0] || '/placeholder-product.jpg'}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/placeholder-product.jpg';
                           }}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
-                      </th>
-                      <th className="text-left p-3">Produk</th>
-                      <th className="text-left p-3">Kategori</th>
-                      <th className="text-left p-3">Harga</th>
-                      <th className="text-left p-3">Stok</th>
-                      <th className="text-left p-3">Status</th>
-                      <th className="text-left p-3">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentProducts.map((product, index) => (
-                      <tr key={`${product.id}_${index} `} className="border-b hover:bg-gray-50">
-                        <td className="p-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedProducts.includes(product.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedProducts([...selectedProducts, product.id]);
-                              } else {
-                                setSelectedProducts(selectedProducts.filter(id => id !== product.id));
-                              }
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="w-6 h-6 text-gray-300" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Product Info */}
+                    <div className="p-1.5">
+                      <h4 className="text-[10px] font-medium text-gray-800 line-clamp-2 leading-tight mb-1">
+                        {product.name}
+                      </h4>
+                      <p className="text-[10px] font-bold text-pink-600">
+                        Rp {product.retailPrice.toLocaleString('id-ID')}
+                      </p>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <span className={`text-[8px] px-1 py-0.5 rounded ${product.stock > 10
+                          ? 'bg-green-100 text-green-700'
+                          : product.stock > 0
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-red-100 text-red-700'
+                          }`}>
+                          Stok: {product.stock}
+                        </span>
+                        <span className={`text-[8px] px-1 py-0.5 rounded ${product.status === 'ready'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-orange-100 text-orange-700'
+                          }`}>
+                          {product.status === 'ready' ? 'Ready' : 'PO'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Overlay with Edit/Delete - Shows on Tap */}
+                    {isTapped && (
+                      <div
+                        className="absolute inset-0 bg-black/50 flex items-center justify-center gap-3 animate-fade-in"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          onClick={() => {
+                            handleEditProduct(product);
+                            setTappedProductId(null);
+                          }}
+                          className="bg-blue-600 text-white p-2.5 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        {user?.role === 'owner' && (
+                          <button
+                            onClick={() => {
+                              handleDeleteProduct(product.id);
+                              setTappedProductId(null);
                             }}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center space-x-3">
-                            {product.images.length > 0 ? (
-                              <img
-                                src={product.image || product.images[0] || '/placeholder-product.jpg'}
-                                alt={product.name}
-                                className="w-10 h-10 object-cover rounded-lg"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                                <Package className="w-5 h-5 text-gray-400" />
-                              </div>
-                            )}
-                            <div>
-                              <p className="font-medium text-gray-900">{product.name}</p>
-                              {product.isFeatured && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                                  ⭐ Unggulan
-                                </span>
-                              )}
-                              {product.isFlashSale && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 ml-2">
-                                  🔥 Flash Sale
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            {product.category}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <div>
-                            {product.isFlashSale ? (
-                              <>
-                                <p className="font-semibold text-red-600">
-                                  Rp {product.flashSalePrice?.toLocaleString('id-ID')}
-                                </p>
-                                <p className="text-sm text-gray-400 line-through">
-                                  Rp {product.retailPrice.toLocaleString('id-ID')}
-                                </p>
-                              </>
-                            ) : (
-                              <p className="font-semibold">
-                                Rp {product.retailPrice.toLocaleString('id-ID')}
-                              </p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <span className={`inline - flex items - center px - 2.5 py - 0.5 rounded - full text - xs font - medium ${product.stock > 10
-                            ? 'bg-green-100 text-green-800'
-                            : product.stock > 0
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                            } `}>
-                            {product.stock} pcs
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <span className={`inline - flex items - center px - 2.5 py - 0.5 rounded - full text - xs font - medium ${product.status === 'ready'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-orange-100 text-orange-800'
-                            } `}>
-                            {product.status === 'ready' ? '✅ Ready Stock' : '⏳ Pre-Order'}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => handleEditProduct(product)}
-                              className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            {user?.role === 'owner' && (
-                              <button
-                                onClick={() => handleDeleteProduct(product.id)}
-                                className="p-1 text-red-600 hover:bg-red-100 rounded"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                            className="bg-red-600 text-white p-2.5 rounded-full shadow-lg hover:bg-red-700 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setTappedProductId(null)}
+                          className="bg-gray-600 text-white p-2.5 rounded-full shadow-lg hover:bg-gray-700 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               </div>
 
               {/* Pagination */}
@@ -1959,1034 +1925,1047 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
             </form>
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* Edit Product Modal */}
-      {showEditModal && editingProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-800">Edit Produk</h2>
-                <button
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setEditingProduct(null);
-                  }}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleUpdateProduct} className="p-6 space-y-6">
-              {/* Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nama Produk *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kategori *
-                  </label>
-                  <select
-                    required
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      {
+        showEditModal && editingProduct && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-800">Edit Produk</h2>
+                  <button
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingProduct(null);
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Deskripsi
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* Product Images */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  📷 Gambar Produk
-                </label>
-                <div className="space-y-4">
-                  {/* File Upload Input */}
+              <form onSubmit={handleUpdateProduct} className="p-6 space-y-6">
+                {/* Basic Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">
-                      Upload Gambar dari Device (opsional)
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nama Produk *
                     </label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                      💡 Bisa pilih multiple gambar (JPG, PNG, WebP). Maksimal 5MB per gambar.
-                    </p>
                   </div>
-
-                  {/* Image Preview */}
-                  {formData.images.length > 0 && (
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-2">
-                        Gambar yang Ditambahkan ({formData.images.length})
-                      </label>
-                      <div className="grid grid-cols-4 gap-2">
-                        {formData.images.map((image, index) => {
-                          const isFileObject = typeof image === 'object';
-                          const imageSrc = isFileObject ? (image as any).preview : (image as string);
-
-                          return (
-                            <div key={index} className="relative group">
-                              <img
-                                src={imageSrc}
-                                alt={`Preview ${index + 1} `}
-                                className="w-full h-24 object-cover rounded-lg border border-gray-200"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.src = '/placeholder-product.jpg';
-                                }}
-                              />
-                              {isFileObject && (image as any).isUploading && (
-                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-                                  <div className="text-white text-xs">⏳ Uploading...</div>
-                                </div>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setFormData({
-                                    ...formData,
-                                    images: formData.images.filter((_, i) => i !== index)
-                                  });
-                                }}
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                              <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-                                {index + 1}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        💡 Gambar pertama akan menjadi gambar utama produk
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Placeholder Info */}
-                  {formData.images.length === 0 && (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-                      <div className="text-gray-400 mb-2">
-                        <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-1">Belum ada gambar produk</p>
-                      <p className="text-xs text-gray-500">
-                        Upload gambar dari device atau lanjutkan tanpa gambar (gambar placeholder akan digunakan)
-                      </p>
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Kategori *
+                    </label>
+                    <select
+                      required
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {categories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
 
-              {/* Pricing */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Harga Jual (Rp) * {editingProduct && user?.role !== 'owner' && <span className="text-xs text-red-500">(🔒 Owner only)</span>}
+                    Deskripsi
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Product Images */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📷 Gambar Produk
+                  </label>
+                  <div className="space-y-4">
+                    {/* File Upload Input */}
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Upload Gambar dari Device (opsional)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageUpload}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        💡 Bisa pilih multiple gambar (JPG, PNG, WebP). Maksimal 5MB per gambar.
+                      </p>
+                    </div>
+
+                    {/* Image Preview */}
+                    {formData.images.length > 0 && (
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-2">
+                          Gambar yang Ditambahkan ({formData.images.length})
+                        </label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {formData.images.map((image, index) => {
+                            const isFileObject = typeof image === 'object';
+                            const imageSrc = isFileObject ? (image as any).preview : (image as string);
+
+                            return (
+                              <div key={index} className="relative group">
+                                <img
+                                  src={imageSrc}
+                                  alt={`Preview ${index + 1} `}
+                                  className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = '/placeholder-product.jpg';
+                                  }}
+                                />
+                                {isFileObject && (image as any).isUploading && (
+                                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                                    <div className="text-white text-xs">⏳ Uploading...</div>
+                                  </div>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData({
+                                      ...formData,
+                                      images: formData.images.filter((_, i) => i !== index)
+                                    });
+                                  }}
+                                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                                <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                                  {index + 1}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          💡 Gambar pertama akan menjadi gambar utama produk
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Placeholder Info */}
+                    {formData.images.length === 0 && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                        <div className="text-gray-400 mb-2">
+                          <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">Belum ada gambar produk</p>
+                        <p className="text-xs text-gray-500">
+                          Upload gambar dari device atau lanjutkan tanpa gambar (gambar placeholder akan digunakan)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Pricing */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Harga Jual (Rp) * {editingProduct && user?.role !== 'owner' && <span className="text-xs text-red-500">(🔒 Owner only)</span>}
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      placeholder="0"
+                      value={formData.retailPrice}
+                      onChange={(e) => setFormData({ ...formData, retailPrice: e.target.value })}
+                      disabled={editingProduct && user?.role !== 'owner'}
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${editingProduct && user?.role !== 'owner' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Harga Reseller (Rp) {editingProduct && user?.role !== 'owner' && <span className="text-xs text-red-500">(🔒 Owner only)</span>}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={formData.resellerPrice}
+                      onChange={(e) => setFormData({ ...formData, resellerPrice: e.target.value })}
+                      disabled={editingProduct && user?.role !== 'owner'}
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${editingProduct && user?.role !== 'owner' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Harga Modal (Rp) {editingProduct && user?.role !== 'owner' && <span className="text-xs text-red-500">(🔒 Owner only)</span>}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={formData.costPrice}
+                      onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
+                      disabled={editingProduct && user?.role !== 'owner'}
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${editingProduct && user?.role !== 'owner' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    />
+                  </div>
+                </div>
+
+                {/* Weight */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Berat Produk (gram) *
                   </label>
                   <input
                     type="number"
                     required
-                    min="0"
-                    placeholder="0"
-                    value={formData.retailPrice}
-                    onChange={(e) => setFormData({ ...formData, retailPrice: e.target.value })}
-                    disabled={editingProduct && user?.role !== 'owner'}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${editingProduct && user?.role !== 'owner' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    min="1"
+                    step="1"
+                    placeholder="1000"
+                    value={formData.weight}
+                    onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Berat produk dalam gram (contoh: 1000 = 1kg)</p>
                 </div>
+
+                {/* Product Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Harga Reseller (Rp) {editingProduct && user?.role !== 'owner' && <span className="text-xs text-red-500">(🔒 Owner only)</span>}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={formData.resellerPrice}
-                    onChange={(e) => setFormData({ ...formData, resellerPrice: e.target.value })}
-                    disabled={editingProduct && user?.role !== 'owner'}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${editingProduct && user?.role !== 'owner' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Harga Modal (Rp) {editingProduct && user?.role !== 'owner' && <span className="text-xs text-red-500">(🔒 Owner only)</span>}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={formData.costPrice}
-                    onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
-                    disabled={editingProduct && user?.role !== 'owner'}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${editingProduct && user?.role !== 'owner' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                  />
-                </div>
-              </div>
-
-              {/* Weight */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Berat Produk (gram) *
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  step="1"
-                  placeholder="1000"
-                  value={formData.weight}
-                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <p className="text-xs text-gray-500 mt-1">Berat produk dalam gram (contoh: 1000 = 1kg)</p>
-              </div>
-
-              {/* Product Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Kondisi Produk *
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'ready' | 'po' })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="ready">Ready Stock</option>
-                  <option value="po">Pre-Order (PO)</option>
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.status === 'ready' ? '✅ Produk siap dikirim' : '⏳ Produk butuh waktu pengerjaan'}
-                </p>
-              </div>
-
-              {/* Form Actions */}
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setEditingProduct(null);
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Simpan Perubahan
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Batch Edit Modal */}
-      {showBatchModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-800">
-                  Edit {selectedProducts.length} Produk Terpilih
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowBatchModal(false);
-                    setSelectedProducts([]);
-                  }}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Selected Products List */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-800 mb-3">Produk yang akan diedit:</h4>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {selectedProducts.map(productId => {
-                    const product = products.find(p => p.id === productId);
-                    return product ? (
-                      <div key={product.id} className="flex items-center justify-between text-sm">
-                        <span className="font-medium">{product.name}</span>
-                        <span className="text-gray-500">{product.category}</span>
-                      </div>
-                    ) : null;
-                  })}
-                </div>
-              </div>
-
-              {/* Info untuk admin */}
-              {selectedProducts.length > 0 && selectedProducts.every(id => products.find(p => p.id === id)?.isFeatured) && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  <p className="text-sm text-yellow-800">
-                    💡 <strong>Info:</strong> Saat ini semua produk yang dipilih adalah produk unggulan.
-                    Pilih "Hapus dari Unggulan" untuk menghapus status unggulan dari produk ini.
-                  </p>
-                </div>
-              )}
-
-              {/* Batch Edit Form */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ubah Kategori (kosongkan jika tidak ingin mengubah)
+                    Kondisi Produk *
                   </label>
                   <select
-                    value={batchFormData.category}
-                    onChange={(e) => setBatchFormData({ ...batchFormData, category: e.target.value })}
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as 'ready' | 'po' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="">-- Tidak Diubah --</option>
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ubah Harga Jual (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={batchFormData.retailPrice || ''}
-                    onChange={(e) => setBatchFormData({ ...batchFormData, retailPrice: parseInt(e.target.value) || 0 })}
-                    placeholder="Kosongkan jika tidak ingin mengubah"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ubah Stok
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={batchFormData.stock || ''}
-                    onChange={(e) => setBatchFormData({ ...batchFormData, stock: parseInt(e.target.value) || 0 })}
-                    placeholder="Kosongkan jika tidak ingin mengubah"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ubah Kondisi Produk
-                  </label>
-                  <select
-                    value={batchFormData.status || ''}
-                    onChange={(e) => setBatchFormData({ ...batchFormData, status: e.target.value as 'ready' | 'po' | '' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">-- Tidak Diubah --</option>
                     <option value="ready">Ready Stock</option>
                     <option value="po">Pre-Order (PO)</option>
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.status === 'ready' ? '✅ Produk siap dikirim' : '⏳ Produk butuh waktu pengerjaan'}
+                  </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Status Produk Unggulan
-                  </label>
-                  <select
-                    value={batchFormData.isFeatured === undefined ? '' : batchFormData.isFeatured ? 'true' : 'false'}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === '') {
-                        setBatchFormData({ ...batchFormData, isFeatured: undefined });
-                      } else {
-                        setBatchFormData({ ...batchFormData, isFeatured: value === 'true' });
-                      }
+                {/* Form Actions */}
+                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingProduct(null);
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    <option value="">-- Pilih Aksi --</option>
-                    <option value="false">Hapus dari Unggulan</option>
-                    <option value="true">Jadikan Unggulan</option>
-                  </select>
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Simpan Perubahan
+                  </button>
                 </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => {
-                    setShowBatchModal(false);
-                    setSelectedProducts([]);
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={handleBatchUpdate}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Simpan Perubahan
-                </button>
-              </div>
+              </form>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {/* Variant Batch Modal */}
-      {showVariantBatchModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-800 flex items-center space-x-2">
-                  <Package className="w-5 h-5 text-purple-600" />
-                  <span>Edit Varian Massal ({selectedProducts.length} Produk)</span>
-                </h2>
-                <button
-                  onClick={() => setShowVariantBatchModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Selected Products List */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-800 mb-3">Produk yang akan diedit:</h4>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {selectedProducts.map(productId => {
-                    const product = products.find(p => p.id === productId);
-                    return product ? (
-                      <div key={product.id} className="flex items-center justify-between text-sm">
-                        <span className="font-medium">{product.name}</span>
-                        <span className="text-gray-500">{product.category}</span>
-                      </div>
-                    ) : null;
-                  })}
+      {/* Batch Edit Modal */}
+      {
+        showBatchModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-800">
+                    Edit {selectedProducts.length} Produk Terpilih
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setShowBatchModal(false);
+                      setSelectedProducts([]);
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
                 </div>
               </div>
 
-              {/* Sizes Configuration */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  📏 Ukuran Produk
-                </label>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {variantBatchFormData.sizes.map((size, index) => (
-                    <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
-                      <input
-                        type="text"
-                        value={size}
-                        onChange={(e) => {
-                          const newSizes = [...variantBatchFormData.sizes];
-                          newSizes[index] = e.target.value;
-                          setVariantBatchFormData({
-                            ...variantBatchFormData,
-                            sizes: newSizes
-                          });
-                        }}
-                        className="px-2 py-1 border border-gray-300 rounded text-sm"
-                        placeholder="contoh: S, M, L"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newSizes = variantBatchFormData.sizes.filter((_, i) => i !== index);
-                          setVariantBatchFormData({
-                            ...variantBatchFormData,
-                            sizes: newSizes
-                          });
-                        }}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newSize = `Ukuran ${variantBatchFormData.sizes.length + 1} `;
-                    setVariantBatchFormData({
-                      ...variantBatchFormData,
-                      sizes: [...variantBatchFormData.sizes, newSize]
-                    });
-                  }}
-                  className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
-                >
-                  + Tambah Ukuran
-                </button>
-              </div>
-
-              {/* Colors Configuration */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  🎨 Warna Produk
-                </label>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {variantBatchFormData.colors.map((color, index) => (
-                    <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
-                      <input
-                        type="text"
-                        value={color}
-                        onChange={(e) => {
-                          const newColors = [...variantBatchFormData.colors];
-                          newColors[index] = e.target.value;
-                          setVariantBatchFormData({
-                            ...variantBatchFormData,
-                            colors: newColors
-                          });
-                        }}
-                        className="px-2 py-1 border border-gray-300 rounded text-sm"
-                        placeholder="contoh: Merah, Biru"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newColors = variantBatchFormData.colors.filter((_, i) => i !== index);
-                          setVariantBatchFormData({
-                            ...variantBatchFormData,
-                            colors: newColors
-                          });
-                        }}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-                    const letterIndex = variantBatchFormData.colors.length % 26;
-                    const newColor = alphabet[letterIndex];
-                    setVariantBatchFormData({
-                      ...variantBatchFormData,
-                      colors: [...variantBatchFormData.colors, newColor]
-                    });
-                  }}
-                  className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
-                >
-                  + Tambah Warna
-                </button>
-              </div>
-
-              {/* Stock per Variant */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  📦 Stok per Varian
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={variantBatchFormData.stockPerVariant}
-                  onChange={(e) => setVariantBatchFormData({
-                    ...variantBatchFormData,
-                    stockPerVariant: parseInt(e.target.value) || 0
-                  })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="Masukkan stok per varian"
-                />
-                <p className="text-sm text-gray-600 mt-1">
-                  Total stok per produk: {variantBatchFormData.sizes.length} × {variantBatchFormData.colors.length} × {variantBatchFormData.stockPerVariant} = {variantBatchFormData.sizes.length * variantBatchFormData.colors.length * variantBatchFormData.stockPerVariant} pcs
-                </p>
-              </div>
-
-              {/* Preview Matrix */}
-              {(variantBatchFormData.sizes.length > 0 && variantBatchFormData.colors.length > 0) && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    👀 Preview Stok Matrix
-                  </label>
-                  <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left py-2 px-2 font-medium text-gray-700">Ukuran \ Warna</th>
-                          {variantBatchFormData.colors.map((color, index) => (
-                            <th key={index} className="text-center py-2 px-2 font-medium text-gray-700">
-                              {color}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {variantBatchFormData.sizes.map((size, sizeIndex) => (
-                          <tr key={sizeIndex} className="border-b border-gray-100">
-                            <td className="py-2 px-2 font-medium text-gray-600">{size}</td>
-                            {variantBatchFormData.colors.map((color, colorIndex) => (
-                              <td key={colorIndex} className="py-2 px-2 text-center">
-                                <span className="inline-block bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-medium">
-                                  {variantBatchFormData.stockPerVariant}
-                                </span>
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+              <div className="p-6 space-y-6">
+                {/* Selected Products List */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-800 mb-3">Produk yang akan diedit:</h4>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {selectedProducts.map(productId => {
+                      const product = products.find(p => p.id === productId);
+                      return product ? (
+                        <div key={product.id} className="flex items-center justify-between text-sm">
+                          <span className="font-medium">{product.name}</span>
+                          <span className="text-gray-500">{product.category}</span>
+                        </div>
+                      ) : null;
+                    })}
                   </div>
                 </div>
-              )}
 
-              {/* Warning */}
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <p className="text-sm text-yellow-800">
-                  ⚠️ <strong>Perhatian:</strong> Ini akan mengganti semua varian yang ada untuk produk yang dipilih. Semua ukuran, warna, dan stok akan disesuaikan dengan konfigurasi di atas.
-                </p>
-              </div>
+                {/* Info untuk admin */}
+                {selectedProducts.length > 0 && selectedProducts.every(id => products.find(p => p.id === id)?.isFeatured) && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p className="text-sm text-yellow-800">
+                      💡 <strong>Info:</strong> Saat ini semua produk yang dipilih adalah produk unggulan.
+                      Pilih "Hapus dari Unggulan" untuk menghapus status unggulan dari produk ini.
+                    </p>
+                  </div>
+                )}
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => setShowVariantBatchModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={handleVariantBatchUpdate}
-                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
-                >
-                  <Package className="w-4 h-4" />
-                  <span>Update Varian</span>
-                </button>
+                {/* Batch Edit Form */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ubah Kategori (kosongkan jika tidak ingin mengubah)
+                    </label>
+                    <select
+                      value={batchFormData.category}
+                      onChange={(e) => setBatchFormData({ ...batchFormData, category: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">-- Tidak Diubah --</option>
+                      {categories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ubah Harga Jual (Rp)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={batchFormData.retailPrice || ''}
+                      onChange={(e) => setBatchFormData({ ...batchFormData, retailPrice: parseInt(e.target.value) || 0 })}
+                      placeholder="Kosongkan jika tidak ingin mengubah"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ubah Stok
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={batchFormData.stock || ''}
+                      onChange={(e) => setBatchFormData({ ...batchFormData, stock: parseInt(e.target.value) || 0 })}
+                      placeholder="Kosongkan jika tidak ingin mengubah"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ubah Kondisi Produk
+                    </label>
+                    <select
+                      value={batchFormData.status || ''}
+                      onChange={(e) => setBatchFormData({ ...batchFormData, status: e.target.value as 'ready' | 'po' | '' })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">-- Tidak Diubah --</option>
+                      <option value="ready">Ready Stock</option>
+                      <option value="po">Pre-Order (PO)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Status Produk Unggulan
+                    </label>
+                    <select
+                      value={batchFormData.isFeatured === undefined ? '' : batchFormData.isFeatured ? 'true' : 'false'}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setBatchFormData({ ...batchFormData, isFeatured: undefined });
+                        } else {
+                          setBatchFormData({ ...batchFormData, isFeatured: value === 'true' });
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">-- Pilih Aksi --</option>
+                      <option value="false">Hapus dari Unggulan</option>
+                      <option value="true">Jadikan Unggulan</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setShowBatchModal(false);
+                      setSelectedProducts([]);
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleBatchUpdate}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Simpan Perubahan
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
+
+      {/* Variant Batch Modal */}
+      {
+        showVariantBatchModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-800 flex items-center space-x-2">
+                    <Package className="w-5 h-5 text-purple-600" />
+                    <span>Edit Varian Massal ({selectedProducts.length} Produk)</span>
+                  </h2>
+                  <button
+                    onClick={() => setShowVariantBatchModal(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Selected Products List */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-800 mb-3">Produk yang akan diedit:</h4>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {selectedProducts.map(productId => {
+                      const product = products.find(p => p.id === productId);
+                      return product ? (
+                        <div key={product.id} className="flex items-center justify-between text-sm">
+                          <span className="font-medium">{product.name}</span>
+                          <span className="text-gray-500">{product.category}</span>
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+
+                {/* Sizes Configuration */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    📏 Ukuran Produk
+                  </label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {variantBatchFormData.sizes.map((size, index) => (
+                      <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
+                        <input
+                          type="text"
+                          value={size}
+                          onChange={(e) => {
+                            const newSizes = [...variantBatchFormData.sizes];
+                            newSizes[index] = e.target.value;
+                            setVariantBatchFormData({
+                              ...variantBatchFormData,
+                              sizes: newSizes
+                            });
+                          }}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm"
+                          placeholder="contoh: S, M, L"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newSizes = variantBatchFormData.sizes.filter((_, i) => i !== index);
+                            setVariantBatchFormData({
+                              ...variantBatchFormData,
+                              sizes: newSizes
+                            });
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newSize = `Ukuran ${variantBatchFormData.sizes.length + 1} `;
+                      setVariantBatchFormData({
+                        ...variantBatchFormData,
+                        sizes: [...variantBatchFormData.sizes, newSize]
+                      });
+                    }}
+                    className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
+                  >
+                    + Tambah Ukuran
+                  </button>
+                </div>
+
+                {/* Colors Configuration */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    🎨 Warna Produk
+                  </label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {variantBatchFormData.colors.map((color, index) => (
+                      <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
+                        <input
+                          type="text"
+                          value={color}
+                          onChange={(e) => {
+                            const newColors = [...variantBatchFormData.colors];
+                            newColors[index] = e.target.value;
+                            setVariantBatchFormData({
+                              ...variantBatchFormData,
+                              colors: newColors
+                            });
+                          }}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm"
+                          placeholder="contoh: Merah, Biru"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newColors = variantBatchFormData.colors.filter((_, i) => i !== index);
+                            setVariantBatchFormData({
+                              ...variantBatchFormData,
+                              colors: newColors
+                            });
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                      const letterIndex = variantBatchFormData.colors.length % 26;
+                      const newColor = alphabet[letterIndex];
+                      setVariantBatchFormData({
+                        ...variantBatchFormData,
+                        colors: [...variantBatchFormData.colors, newColor]
+                      });
+                    }}
+                    className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
+                  >
+                    + Tambah Warna
+                  </button>
+                </div>
+
+                {/* Stock per Variant */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📦 Stok per Varian
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={variantBatchFormData.stockPerVariant}
+                    onChange={(e) => setVariantBatchFormData({
+                      ...variantBatchFormData,
+                      stockPerVariant: parseInt(e.target.value) || 0
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Masukkan stok per varian"
+                  />
+                  <p className="text-sm text-gray-600 mt-1">
+                    Total stok per produk: {variantBatchFormData.sizes.length} × {variantBatchFormData.colors.length} × {variantBatchFormData.stockPerVariant} = {variantBatchFormData.sizes.length * variantBatchFormData.colors.length * variantBatchFormData.stockPerVariant} pcs
+                  </p>
+                </div>
+
+                {/* Preview Matrix */}
+                {(variantBatchFormData.sizes.length > 0 && variantBatchFormData.colors.length > 0) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      👀 Preview Stok Matrix
+                    </label>
+                    <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left py-2 px-2 font-medium text-gray-700">Ukuran \ Warna</th>
+                            {variantBatchFormData.colors.map((color, index) => (
+                              <th key={index} className="text-center py-2 px-2 font-medium text-gray-700">
+                                {color}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {variantBatchFormData.sizes.map((size, sizeIndex) => (
+                            <tr key={sizeIndex} className="border-b border-gray-100">
+                              <td className="py-2 px-2 font-medium text-gray-600">{size}</td>
+                              {variantBatchFormData.colors.map((color, colorIndex) => (
+                                <td key={colorIndex} className="py-2 px-2 text-center">
+                                  <span className="inline-block bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-medium">
+                                    {variantBatchFormData.stockPerVariant}
+                                  </span>
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Warning */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-sm text-yellow-800">
+                    ⚠️ <strong>Perhatian:</strong> Ini akan mengganti semua varian yang ada untuk produk yang dipilih. Semua ukuran, warna, dan stok akan disesuaikan dengan konfigurasi di atas.
+                  </p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowVariantBatchModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleVariantBatchUpdate}
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                  >
+                    <Package className="w-4 h-4" />
+                    <span>Update Varian</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
 
       {/* Flash Sale Modal */}
-      {showFlashSaleModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-800 flex items-center space-x-2">
-                  <Flame className="w-6 h-6 text-red-600" />
-                  <span>Konfigurasi Flash Sale</span>
-                </h2>
-                <button
-                  onClick={() => setShowFlashSaleModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Product Selection Info (Replacing selector) */}
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-sm text-blue-800">
-                <div className="flex items-center gap-2 mb-3 border-b border-blue-200 pb-2">
-                  <Star className="w-4 h-4 text-blue-600" />
-                  <span className="font-semibold">Konfirmasi Produk Terpilih: {flashSaleFormData.productIds.length} item</span>
+      {
+        showFlashSaleModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-800 flex items-center space-x-2">
+                    <Flame className="w-6 h-6 text-red-600" />
+                    <span>Konfigurasi Flash Sale</span>
+                  </h2>
+                  <button
+                    onClick={() => setShowFlashSaleModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
                 </div>
+              </div>
 
-                {/* List of selected products ONLY */}
-                <div className="max-h-40 overflow-y-auto pr-2 space-y-2">
-                  {products
-                    .filter(p => flashSaleFormData.productIds.includes(p.id))
-                    .map(p => (
-                      <div key={p.id} className="flex justify-between items-center text-xs bg-white p-2 rounded border border-blue-100 shadow-sm">
-                        <div className="flex items-center gap-2 overflow-hidden">
-                          {p.images.length > 0 && (
-                            <img src={p.image || p.images[0]} alt="" className="w-6 h-6 object-cover rounded" />
-                          )}
-                          <span className="truncate font-medium">{p.name}</span>
+              <div className="p-6 space-y-6">
+                {/* Product Selection Info (Replacing selector) */}
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-sm text-blue-800">
+                  <div className="flex items-center gap-2 mb-3 border-b border-blue-200 pb-2">
+                    <Star className="w-4 h-4 text-blue-600" />
+                    <span className="font-semibold">Konfirmasi Produk Terpilih: {flashSaleFormData.productIds.length} item</span>
+                  </div>
+
+                  {/* List of selected products ONLY */}
+                  <div className="max-h-40 overflow-y-auto pr-2 space-y-2">
+                    {products
+                      .filter(p => flashSaleFormData.productIds.includes(p.id))
+                      .map(p => (
+                        <div key={p.id} className="flex justify-between items-center text-xs bg-white p-2 rounded border border-blue-100 shadow-sm">
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            {p.images.length > 0 && (
+                              <img src={p.image || p.images[0]} alt="" className="w-6 h-6 object-cover rounded" />
+                            )}
+                            <span className="truncate font-medium">{p.name}</span>
+                          </div>
+                          <span className="font-mono text-blue-700 whitespace-nowrap ml-2">
+                            Rp {p.retailPrice.toLocaleString('id-ID')}
+                          </span>
                         </div>
-                        <span className="font-mono text-blue-700 whitespace-nowrap ml-2">
-                          Rp {p.retailPrice.toLocaleString('id-ID')}
-                        </span>
-                      </div>
-                    ))
-                  }
+                      ))
+                    }
+                  </div>
+                  <p className="text-xs opacity-70 mt-2 italic">
+                    * Produk ini akan didaftarkan ke sesi Flash Sale baru.
+                  </p>
                 </div>
-                <p className="text-xs opacity-70 mt-2 italic">
-                  * Produk ini akan didaftarkan ke sesi Flash Sale baru.
-                </p>
-              </div>
 
-              {/* Flash Sale Settings */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Flash Sale Settings */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Clock className="w-4 h-4 inline mr-1" />
+                      Waktu Mulai
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={flashSaleFormData.startTime}
+                      onChange={(e) => setFlashSaleFormData({ ...flashSaleFormData, startTime: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Clock className="w-4 h-4 inline mr-1" />
+                      Waktu Berakhir
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={flashSaleFormData.endTime}
+                      onChange={(e) => setFlashSaleFormData({ ...flashSaleFormData, endTime: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Clock className="w-4 h-4 inline mr-1" />
-                    Waktu Mulai
+                    Diskon Flash Sale (Rp)
                   </label>
                   <input
-                    type="datetime-local"
-                    value={flashSaleFormData.startTime}
-                    onChange={(e) => setFlashSaleFormData({ ...flashSaleFormData, startTime: e.target.value })}
+                    type="number"
+                    value={flashSaleFormData.flashSaleDiscount || ''}
+                    onChange={(e) => setFlashSaleFormData({ ...flashSaleFormData, flashSaleDiscount: parseInt(e.target.value) || 0 })}
+                    placeholder="Masukkan jumlah diskon"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Clock className="w-4 h-4 inline mr-1" />
-                    Waktu Berakhir
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={flashSaleFormData.endTime}
-                    onChange={(e) => setFlashSaleFormData({ ...flashSaleFormData, endTime: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Diskon Flash Sale (Rp)
-                </label>
-                <input
-                  type="number"
-                  value={flashSaleFormData.flashSaleDiscount || ''}
-                  onChange={(e) => setFlashSaleFormData({ ...flashSaleFormData, flashSaleDiscount: parseInt(e.target.value) || 0 })}
-                  placeholder="Masukkan jumlah diskon"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => setShowFlashSaleModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Batal
-                </button>
-                <div className="flex items-center space-x-2">
-                  {isFlashSaleActive && (
-                    <button
-                      onClick={handleFlashSaleEnd}
-                      className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors flex items-center space-x-2"
-                    >
-                      <Flame className="w-4 h-4" />
-                      <span>Stop Flash Sale</span>
-                    </button>
-                  )}
-                  {flashSaleFormData.productIds.length > 0 && (
-                    <button
-                      onClick={handleFlashSaleStart}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
-                    >
-                      <Flame className="w-4 h-4" />
-                      <span>Mulai Flash Sale</span>
-                    </button>
-                  )}
+                {/* Action Buttons */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowFlashSaleModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <div className="flex items-center space-x-2">
+                    {isFlashSaleActive && (
+                      <button
+                        onClick={handleFlashSaleEnd}
+                        className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors flex items-center space-x-2"
+                      >
+                        <Flame className="w-4 h-4" />
+                        <span>Stop Flash Sale</span>
+                      </button>
+                    )}
+                    {flashSaleFormData.productIds.length > 0 && (
+                      <button
+                        onClick={handleFlashSaleStart}
+                        className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                      >
+                        <Flame className="w-4 h-4" />
+                        <span>Mulai Flash Sale</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* AI Auto Upload Modal */}
-      {showAIUploadModal && (
-        <AIAutoUploadModal
-          isOpen={showAIUploadModal}
-          onClose={() => setShowAIUploadModal(false)}
-          existingProducts={products}
-          onSuccess={async (productData) => {
-            try {
-              console.log('AI Upload product data:', productData);
+      {
+        showAIUploadModal && (
+          <AIAutoUploadModal
+            isOpen={showAIUploadModal}
+            onClose={() => setShowAIUploadModal(false)}
+            existingProducts={products}
+            onSuccess={async (productData) => {
+              try {
+                console.log('AI Upload product data:', productData);
 
-              // Auto-generate caption if direct upload mode
-              if (productData.uploadMode === 'direct') {
-                const aiCaption = productData.description || `${productData.variantCount} varian premium dengan motif unik`;
-                const enhancedProductData = {
-                  ...productData,
-                  name: productData.name || `Gamis Premium ${productData.variantLabels.join('-')} `,
-                  description: aiCaption,
-                  retailPrice: productData.retailPrice || '150000',
-                  resellerPrice: productData.resellerPrice || '135000',
-                  costPrice: productData.costPrice || '100000'
-                };
-                console.log('🚀 Direct Upload Mode - Auto-enhancing with AI data');
-                productData = enhancedProductData;
-              }
+                // Auto-generate caption if direct upload mode
+                if (productData.uploadMode === 'direct') {
+                  const aiCaption = productData.description || `${productData.variantCount} varian premium dengan motif unik`;
+                  const enhancedProductData = {
+                    ...productData,
+                    name: productData.name || `Gamis Premium ${productData.variantLabels.join('-')} `,
+                    description: aiCaption,
+                    retailPrice: productData.retailPrice || '150000',
+                    resellerPrice: productData.resellerPrice || '135000',
+                    costPrice: productData.costPrice || '100000'
+                  };
+                  console.log('🚀 Direct Upload Mode - Auto-enhancing with AI data');
+                  productData = enhancedProductData;
+                }
 
-              // Upload collage image to Firebase Storage
-              // CRITICAL FIX: Generate unique productId BEFORE upload to prevent file overwriting
-              const tempProductId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)} `;
-              const collageFile = productData.collageFile;
-              const uploadedImages = await uploadMultipleImages([collageFile], tempProductId);
-
-              if (uploadedImages.length === 0) {
-                throw new Error('Failed to upload collage image');
-              }
-
-              const collageUrl = uploadedImages[0];
-
-              // Calculate total stock from variants
-              const totalStock = productData.totalStock || Object.values(productData.stockPerVariant).reduce((sum: number, stock) => sum + parseInt(stock || '0'), 0);
-
-              // Create product with all new fields
-              const newProduct = {
-                name: productData.name,
-                description: productData.description,
-                category: productData.category,
-                retailPrice: parseInt(productData.retailPrice),
-                resellerPrice: parseInt(productData.resellerPrice),
-                costPrice: parseInt(productData.costPrice) || 0,
-                purchasePrice: parseInt(productData.costPrice) || 0, // Required field
-                price: parseInt(productData.retailPrice), // Required field (same as retailPrice)
-                originalRetailPrice: parseInt(productData.retailPrice), // Required field
-                originalResellerPrice: parseInt(productData.resellerPrice), // Required field
-                weight: 1000,
-                stock: totalStock,
-                unit: 'pcs', // Required field - default to pcs
-                images: [collageUrl],
-                image: collageUrl, // Required field - main image
-                variants: {
-                  sizes: ['Ukuran 1'],
-                  colors: productData.variantLabels,
-                  stock: {
-                    'Ukuran 1': productData.stockPerVariant || {} as any
-                  }
-                },
-                status: 'po' as 'ready' | 'po', // Default to Pre Order for AI uploads
-                createdAt: new Date(),
-                salesCount: 0,
-                isFeatured: false,
-                isFlashSale: false,
-                flashSalePrice: parseInt(productData.retailPrice) || 0,
-                // Optional fields with defaults
-                condition: 'baru',
-                featured: false,
-                discount: 0,
-                reviews: 0,
-                rating: 0,
-                // Save AI analysis for future comparisons
-                aiAnalysis: productData.analysisResults?.[0]?.analysis ? {
-                  ...productData.analysisResults[0].analysis,
-                  analyzedAt: new Date().toISOString()
-                } : null,
-                // Save profit margin data
-                profitMargin: productData.profitMargin || 0,
-                // Save upload mode info
-                uploadMode: productData.uploadMode || 'review'
-              };
-
-              console.log('💾 Saving AI-generated product:', {
-                name: newProduct.name,
-                description: newProduct.description,
-                totalStock: newProduct.stock,
-                costPrice: newProduct.costPrice,
-                retailPrice: newProduct.retailPrice,
-                profitMargin: newProduct.profitMargin,
-                variants: newProduct.variants,
-                uploadMode: newProduct.uploadMode
-              });
-
-              await addProduct(newProduct);
-
-              setShowAIUploadModal(false);
-              alert(`✅ Produk berhasil di - upload dengan AI! Mode: ${productData.uploadMode === 'direct' ? 'Langsung Upload' : 'Review Upload'} `);
-            } catch (error: any) {
-              console.error('Failed to create AI product:', error);
-              alert(`❌ Gagal upload produk: ${error.message} `);
-            }
-          }}
-        />
-      )}
-
-      {/* Manual Upload Modal (Collage + Parameter) */}
-      {showManualUploadModal && (
-        <ManualUploadModal
-          isOpen={showManualUploadModal}
-          onClose={() => {
-            setShowManualUploadModal(false);
-            setManualUploadInitialState(null); // Reset state to prevent leaks to normal manual upload
-          }}
-          categories={categories}
-          initialState={manualUploadInitialState}
-          onSuccess={async (productData) => {
-            try {
-              console.log('Manual Upload product data:', productData);
-
-              // Generate unique productId for storage path
-              const tempProductId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-
-              let collageUrl = '';
-
-              // If collage already exists (from draft), use it. DO NOT RE-UPLOAD if it's already a URL string from firebase storage
-              if (manualUploadInitialState?.collageUrl) { // Check initial state for URL
-                collageUrl = manualUploadInitialState.collageUrl;
-                console.log('Using existing collage URL:', collageUrl);
-              } else if (productData.collageFile) {
                 // Upload collage image to Firebase Storage
+                // CRITICAL FIX: Generate unique productId BEFORE upload to prevent file overwriting
+                const tempProductId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)} `;
                 const collageFile = productData.collageFile;
                 const uploadedImages = await uploadMultipleImages([collageFile], tempProductId);
 
                 if (uploadedImages.length === 0) {
                   throw new Error('Failed to upload collage image');
                 }
-                collageUrl = uploadedImages[0];
-              } else {
-                throw new Error('No collage image provided');
-              }
 
+                const collageUrl = uploadedImages[0];
 
+                // Calculate total stock from variants
+                const totalStock = productData.totalStock || Object.values(productData.stockPerVariant).reduce((sum: number, stock) => sum + parseInt(stock || '0'), 0);
 
-              // Create product with all fields
-              const newProduct = {
-                name: productData.name,
-                brand: productData.brand, // Add brand field
-                description: productData.description || '',
-                category: productData.category,
-                retailPrice: parseInt(productData.retailPrice),
-                resellerPrice: parseInt(productData.resellerPrice),
-                costPrice: parseInt(productData.costPrice) || 0,
-                purchasePrice: parseInt(productData.costPrice) || 0,
-                price: parseInt(productData.retailPrice),
-                originalRetailPrice: parseInt(productData.retailPrice),
-                originalResellerPrice: parseInt(productData.resellerPrice),
-                weight: 1000,
-                stock: productData.totalStock,
-                unit: 'pcs',
-                images: [collageUrl],
-                image: collageUrl,
-                variants: productData.variants || {
-                  sizes: [productData.sizeName || 'Ukuran 1'],
-                  colors: productData.variantLabels,
-                  stock: {
-                    [productData.sizeName || 'Ukuran 1']: productData.stockPerVariant
-                  }
-                },
-                status: 'po' as 'ready' | 'po',
-                createdAt: new Date(),
-                salesCount: 0,
-                isFeatured: false,
-                isFlashSale: false,
-                flashSalePrice: parseInt(productData.retailPrice) || 0,
-                condition: 'baru',
-                featured: false,
-                discount: 0,
-                reviews: 0,
-                rating: 0,
-                uploadMode: 'manual'
-              };
+                // Create product with all new fields
+                const newProduct = {
+                  name: productData.name,
+                  description: productData.description,
+                  category: productData.category,
+                  retailPrice: parseInt(productData.retailPrice),
+                  resellerPrice: parseInt(productData.resellerPrice),
+                  costPrice: parseInt(productData.costPrice) || 0,
+                  purchasePrice: parseInt(productData.costPrice) || 0, // Required field
+                  price: parseInt(productData.retailPrice), // Required field (same as retailPrice)
+                  originalRetailPrice: parseInt(productData.retailPrice), // Required field
+                  originalResellerPrice: parseInt(productData.resellerPrice), // Required field
+                  weight: 1000,
+                  stock: totalStock,
+                  unit: 'pcs', // Required field - default to pcs
+                  images: [collageUrl],
+                  image: collageUrl, // Required field - main image
+                  variants: {
+                    sizes: ['Ukuran 1'],
+                    colors: productData.variantLabels,
+                    stock: {
+                      'Ukuran 1': productData.stockPerVariant || {} as any
+                    }
+                  },
+                  status: 'po' as 'ready' | 'po', // Default to Pre Order for AI uploads
+                  createdAt: new Date(),
+                  salesCount: 0,
+                  isFeatured: false,
+                  isFlashSale: false,
+                  flashSalePrice: parseInt(productData.retailPrice) || 0,
+                  // Optional fields with defaults
+                  condition: 'baru',
+                  featured: false,
+                  discount: 0,
+                  reviews: 0,
+                  rating: 0,
+                  // Save AI analysis for future comparisons
+                  aiAnalysis: productData.analysisResults?.[0]?.analysis ? {
+                    ...productData.analysisResults[0].analysis,
+                    analyzedAt: new Date().toISOString()
+                  } : null,
+                  // Save profit margin data
+                  profitMargin: productData.profitMargin || 0,
+                  // Save upload mode info
+                  uploadMode: productData.uploadMode || 'review'
+                };
 
-              console.log('💾 Saving Manual Upload product:', newProduct);
-              const result = await addProduct(newProduct);
-
-              // ---------------------------------------------------------
-              // AUTO POSTING LOGIC (IG + WA)
-              // ---------------------------------------------------------
-              try {
-                console.log('🚀 Triggering Auto-Post Queues...');
-
-                // 1. Instagram Queue (Retail Price Only)
-                const igCaption = `✨ NEW ARRIVAL ✨\n\n${newProduct.name}\n\n${newProduct.description}\n\nHarga: Rp ${newProduct.retailPrice.toLocaleString('id-ID')}\n\nOrder sekarang sebelum kehabisan! #gamis #azzahra`;
-                await addDoc(collection(db, 'pending_instagram_posts'), {
-                  productName: newProduct.name,
-                  caption: igCaption,
-                  imageUrl: collageUrl,
-                  status: 'pending',
-                  timestamp: serverTimestamp()
+                console.log('💾 Saving AI-generated product:', {
+                  name: newProduct.name,
+                  description: newProduct.description,
+                  totalStock: newProduct.stock,
+                  costPrice: newProduct.costPrice,
+                  retailPrice: newProduct.retailPrice,
+                  profitMargin: newProduct.profitMargin,
+                  variants: newProduct.variants,
+                  uploadMode: newProduct.uploadMode
                 });
-                console.log('✅ Queued for Instagram');
 
-                // 2. WhatsApp Group Queue (Complete Info)
-                /* DISABLED BY USER REQUEST - DO NOT QUEUE GROUP POSTS
-                const waCaption = `*NEW CATALOG UPDATE* 📢\n\n*${newProduct.name}*\n${newProduct.description}\n\n💰 *Harga Retail:* Rp ${newProduct.retailPrice.toLocaleString('id-ID')}\n🤝 *Harga Reseller:* Rp ${newProduct.resellerPrice.toLocaleString('id-ID')}\n\n✨ *Varian:* ${newProduct.variants.colors.join(', ')}\n📦 *Stok:* ${newProduct.stock} pcs\n\nSilakan di keep sebelum kehabisan ya kak!`;
-                await addDoc(collection(db, 'pending_whatsapp_group_posts'), {
-                  productName: newProduct.name,
-                  caption: waCaption,
-                  imageUrl: collageUrl,
-                  status: 'pending',
-                  timestamp: serverTimestamp()
-                });
-                console.log('✅ Queued for WhatsApp Group');
-                */
+                await addProduct(newProduct);
 
-              } catch (queueError) {
-                console.error('⚠️ Failed to queue auto-posts:', queueError);
-                // Don't fail the upload if posting fails
+                setShowAIUploadModal(false);
+                alert(`✅ Produk berhasil di - upload dengan AI! Mode: ${productData.uploadMode === 'direct' ? 'Langsung Upload' : 'Review Upload'} `);
+              } catch (error: any) {
+                console.error('Failed to create AI product:', error);
+                alert(`❌ Gagal upload produk: ${error.message} `);
               }
+            }}
+          />
+        )
+      }
 
-              // ---------------------------------------------------------
-
-              // DELETE DRAFT FROM QUEUE IF EXISTS
-              if (processingDraftId) {
-                console.log(`🧹 Deleting processed draft: ${processingDraftId}`);
-                await deleteDoc(doc(db, 'product_drafts', processingDraftId));
-                setProcessingDraftId(null);
-              }
-
+      {/* Manual Upload Modal (Collage + Parameter) */}
+      {
+        showManualUploadModal && (
+          <ManualUploadModal
+            isOpen={showManualUploadModal}
+            onClose={() => {
               setShowManualUploadModal(false);
-              alert('✅ Produk berhasil di-upload!');
-            } catch (error: any) {
-              console.error('Failed to create manual product:', error);
-              alert(`❌ Gagal upload produk: ${error.message} `);
-            }
-          }}
-        />
-      )}
+              setManualUploadInitialState(null); // Reset state to prevent leaks to normal manual upload
+            }}
+            categories={categories}
+            initialState={manualUploadInitialState}
+            onSuccess={async (productData) => {
+              try {
+                console.log('Manual Upload product data:', productData);
+
+                // Generate unique productId for storage path
+                const tempProductId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+                let collageUrl = '';
+
+                // If collage already exists (from draft), use it. DO NOT RE-UPLOAD if it's already a URL string from firebase storage
+                if (manualUploadInitialState?.collageUrl) { // Check initial state for URL
+                  collageUrl = manualUploadInitialState.collageUrl;
+                  console.log('Using existing collage URL:', collageUrl);
+                } else if (productData.collageFile) {
+                  // Upload collage image to Firebase Storage
+                  const collageFile = productData.collageFile;
+                  const uploadedImages = await uploadMultipleImages([collageFile], tempProductId);
+
+                  if (uploadedImages.length === 0) {
+                    throw new Error('Failed to upload collage image');
+                  }
+                  collageUrl = uploadedImages[0];
+                } else {
+                  throw new Error('No collage image provided');
+                }
+
+
+
+                // Create product with all fields
+                const newProduct = {
+                  name: productData.name,
+                  brand: productData.brand, // Add brand field
+                  description: productData.description || '',
+                  category: productData.category,
+                  retailPrice: parseInt(productData.retailPrice),
+                  resellerPrice: parseInt(productData.resellerPrice),
+                  costPrice: parseInt(productData.costPrice) || 0,
+                  purchasePrice: parseInt(productData.costPrice) || 0,
+                  price: parseInt(productData.retailPrice),
+                  originalRetailPrice: parseInt(productData.retailPrice),
+                  originalResellerPrice: parseInt(productData.resellerPrice),
+                  weight: 1000,
+                  stock: productData.totalStock,
+                  unit: 'pcs',
+                  images: [collageUrl],
+                  image: collageUrl,
+                  variants: productData.variants || {
+                    sizes: [productData.sizeName || 'Ukuran 1'],
+                    colors: productData.variantLabels,
+                    stock: {
+                      [productData.sizeName || 'Ukuran 1']: productData.stockPerVariant
+                    }
+                  },
+                  status: 'po' as 'ready' | 'po',
+                  createdAt: new Date(),
+                  salesCount: 0,
+                  isFeatured: false,
+                  isFlashSale: false,
+                  flashSalePrice: parseInt(productData.retailPrice) || 0,
+                  condition: 'baru',
+                  featured: false,
+                  discount: 0,
+                  reviews: 0,
+                  rating: 0,
+                  uploadMode: 'manual'
+                };
+
+                console.log('💾 Saving Manual Upload product:', newProduct);
+                const result = await addProduct(newProduct);
+
+                // ---------------------------------------------------------
+                // AUTO POSTING LOGIC (IG + WA)
+                // ---------------------------------------------------------
+                try {
+                  console.log('🚀 Triggering Auto-Post Queues...');
+
+                  // 1. Instagram Queue (Retail Price Only)
+                  const igCaption = `✨ NEW ARRIVAL ✨\n\n${newProduct.name}\n\n${newProduct.description}\n\nHarga: Rp ${newProduct.retailPrice.toLocaleString('id-ID')}\n\nOrder sekarang sebelum kehabisan! #gamis #azzahra`;
+                  await addDoc(collection(db, 'pending_instagram_posts'), {
+                    productName: newProduct.name,
+                    caption: igCaption,
+                    imageUrl: collageUrl,
+                    status: 'pending',
+                    timestamp: serverTimestamp()
+                  });
+                  console.log('✅ Queued for Instagram');
+
+                  // 2. WhatsApp Group Queue (Complete Info)
+                  /* DISABLED BY USER REQUEST - DO NOT QUEUE GROUP POSTS
+                  const waCaption = `*NEW CATALOG UPDATE* 📢\n\n*${newProduct.name}*\n${newProduct.description}\n\n💰 *Harga Retail:* Rp ${newProduct.retailPrice.toLocaleString('id-ID')}\n🤝 *Harga Reseller:* Rp ${newProduct.resellerPrice.toLocaleString('id-ID')}\n\n✨ *Varian:* ${newProduct.variants.colors.join(', ')}\n📦 *Stok:* ${newProduct.stock} pcs\n\nSilakan di keep sebelum kehabisan ya kak!`;
+                  await addDoc(collection(db, 'pending_whatsapp_group_posts'), {
+                    productName: newProduct.name,
+                    caption: waCaption,
+                    imageUrl: collageUrl,
+                    status: 'pending',
+                    timestamp: serverTimestamp()
+                  });
+                  console.log('✅ Queued for WhatsApp Group');
+                  */
+
+                } catch (queueError) {
+                  console.error('⚠️ Failed to queue auto-posts:', queueError);
+                  // Don't fail the upload if posting fails
+                }
+
+                // ---------------------------------------------------------
+
+                // DELETE DRAFT FROM QUEUE IF EXISTS
+                if (processingDraftId) {
+                  console.log(`🧹 Deleting processed draft: ${processingDraftId}`);
+                  await deleteDoc(doc(db, 'product_drafts', processingDraftId));
+                  setProcessingDraftId(null);
+                }
+
+                setShowManualUploadModal(false);
+                alert('✅ Produk berhasil di-upload!');
+              } catch (error: any) {
+                console.error('Failed to create manual product:', error);
+                alert(`❌ Gagal upload produk: ${error.message} `);
+              }
+            }}
+          />
+        )
+      }
       <WhatsAppInboxModal
         isOpen={showWhatsAppInbox}
         onClose={() => setShowWhatsAppInbox(false)}
         onProcess={handleWhatsAppProcess}
       />
-    </div>
+    </div >
   );
 };
 
