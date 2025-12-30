@@ -1184,73 +1184,76 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
               </select>
             </div>
 
-            {/* Batch Actions - Compact Icon Buttons */}
+            {/* Batch Actions - 2 Columns Like Main Menu */}
             {selectedProducts.length > 0 && (
-              <div className="flex items-center gap-1.5 pt-2 border-t">
-                <span className="text-[10px] text-gray-500">{selectedProducts.length} dipilih:</span>
-                <button
-                  onClick={() => {
-                    if (isFlashSaleActive) {
-                      setFlashSaleFormData({ ...flashSaleFormData, productIds: selectedProducts });
-                      handleAddToActiveFlashSale();
-                    } else {
-                      setFlashSaleFormData({ ...flashSaleFormData, productIds: selectedProducts });
-                      setShowFlashSaleModal(true);
-                    }
-                  }}
-                  className="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 transition-colors"
-                  title="Flash Sale"
-                >
-                  <Flame className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => {
-                    if (confirm(`Tandai ${selectedProducts.length} produk sebagai Unggulan?`)) {
-                      const updateFeatured = async () => {
-                        for (const pid of selectedProducts) {
-                          await updateProduct(pid, { isFeatured: true });
-                        }
-                        alert('✅ Berhasil!');
-                        setSelectedProducts([]);
-                      };
-                      updateFeatured();
-                    }
-                  }}
-                  className="bg-yellow-500 text-white p-1.5 rounded hover:bg-yellow-600 transition-colors"
-                  title="Set Unggulan"
-                >
-                  <Star className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setShowBatchModal(true)}
-                  className="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 transition-colors"
-                  title="Edit Massal"
-                >
-                  <Edit className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setShowVariantBatchModal(true)}
-                  className="bg-purple-600 text-white p-1.5 rounded hover:bg-purple-700 transition-colors"
-                  title="Varian Massal"
-                >
-                  <Package className="w-3.5 h-3.5" />
-                </button>
-                {user?.role === 'owner' && (
+              <div className="pt-3 border-t space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">{selectedProducts.length} produk dipilih</span>
                   <button
-                    onClick={handleBulkDelete}
-                    className="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 transition-colors"
-                    title="Hapus"
+                    onClick={() => setSelectedProducts([])}
+                    className="text-xs text-gray-500 hover:text-gray-700"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    Batal pilih
                   </button>
-                )}
-                <button
-                  onClick={() => setSelectedProducts([])}
-                  className="bg-gray-400 text-white p-1.5 rounded hover:bg-gray-500 transition-colors ml-auto"
-                  title="Batal Pilih"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      if (isFlashSaleActive) {
+                        setFlashSaleFormData({ ...flashSaleFormData, productIds: selectedProducts });
+                        handleAddToActiveFlashSale();
+                      } else {
+                        setFlashSaleFormData({ ...flashSaleFormData, productIds: selectedProducts });
+                        setShowFlashSaleModal(true);
+                      }
+                    }}
+                    className="bg-red-600 text-white p-3 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Flame className="w-5 h-5" />
+                    <span className="text-sm font-medium">Flash Sale</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm(`Tandai ${selectedProducts.length} produk sebagai Unggulan?`)) {
+                        const updateFeatured = async () => {
+                          for (const pid of selectedProducts) {
+                            await updateProduct(pid, { isFeatured: true });
+                          }
+                          alert('✅ Berhasil!');
+                          setSelectedProducts([]);
+                        };
+                        updateFeatured();
+                      }
+                    }}
+                    className="bg-yellow-500 text-white p-3 rounded-lg hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Star className="w-5 h-5" />
+                    <span className="text-sm font-medium">Unggulan</span>
+                  </button>
+                  <button
+                    onClick={() => setShowBatchModal(true)}
+                    className="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Edit className="w-5 h-5" />
+                    <span className="text-sm font-medium">Edit Massal</span>
+                  </button>
+                  <button
+                    onClick={() => setShowVariantBatchModal(true)}
+                    className="bg-purple-600 text-white p-3 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Package className="w-5 h-5" />
+                    <span className="text-sm font-medium">Varian</span>
+                  </button>
+                  {user?.role === 'owner' && (
+                    <button
+                      onClick={handleBulkDelete}
+                      className="bg-red-700 text-white p-3 rounded-lg hover:bg-red-800 transition-colors flex items-center justify-center gap-2 col-span-2"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                      <span className="text-sm font-medium">Hapus {selectedProducts.length} Produk</span>
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
