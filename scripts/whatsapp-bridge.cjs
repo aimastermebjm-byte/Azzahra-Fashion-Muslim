@@ -101,7 +101,15 @@ Output JSON only (no markdown, no explanation):
 Rules:
 - nama: AMBIL NAMA LENGKAP termasuk "by [Brand]" jika ada. Contoh: "GAMIS PREMIUM BY NABIL" → nama = "GAMIS PREMIUM BY NABIL"
 - brand: Kata setelah "by" adalah brand. Contoh: "...by Nabil" → brand = "Nabil"
-- stokPerVarian: find "stok 5" or "stock semua 10", default 1
+- sizes: 
+  * Jika ada size chart (S, M, L, XL, XXL) → gunakan nama BERSIH tanpa embel-embel. Contoh: ["S", "M", "L", "XL"]
+  * Jika HANYA ada PJ/LD/Lingkar tanpa size chart → return ["All Size"]
+  * JANGAN tulis "L ld110" atau "XL pb120", cukup "L" atau "XL" saja
+- stokPerVarian: 
+  * Default adalah 1
+  * "1 seri" atau "stock 1" → 1
+  * "3 seri" atau "stok 3" → 3
+  * Cari angka setelah kata "seri" atau "stok"
 - harga: convert "895k" → 895000, "1.250.000" → 1250000
 - isFamily: true if contains family/couple/ayah/ibu/anak keywords
 - variants: only if different prices per type (ayah/ibu/anak)`;
