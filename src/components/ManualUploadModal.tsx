@@ -1275,12 +1275,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         </button>
 
                                         {showPricePerVariant && (
-                                            <div className="mt-3 p-3 bg-white rounded-lg border border-orange-200 space-y-4">
+                                            <div className="mt-3 p-4 bg-white rounded-lg border border-orange-200 space-y-5">
                                                 {/* Retail Price Matrix */}
                                                 <div>
-                                                    <h4 className="text-xs font-bold text-green-700 mb-2">Matrix Harga Retail</h4>
-                                                    <div className="overflow-x-auto">
-                                                        <table className="w-full text-xs">
+                                                    <h4 className="text-sm font-bold text-green-700 mb-3">💚 Matrix Harga Retail</h4>
+                                                    <div className="overflow-x-auto -mx-2 px-2">
+                                                        <table className="w-full text-sm min-w-[280px]">
                                                             <thead>
                                                                 <tr className="bg-green-50">
                                                                     <th className="px-2 py-1 text-left border border-green-100">Size</th>
@@ -1296,7 +1296,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                         {variantLabels.map(label => {
                                                                             const key = `${size}-${label}`;
                                                                             return (
-                                                                                <td key={key} className="px-1 py-1 border border-green-100">
+                                                                                <td key={key} className="px-1 py-2 border border-green-100 min-w-[80px]">
                                                                                     <input
                                                                                         type="text"
                                                                                         inputMode="numeric"
@@ -1312,7 +1312,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                             }));
                                                                                         }}
                                                                                         onFocus={(e) => e.target.select()}
-                                                                                        className="w-full px-1 py-1 text-center bg-white border border-green-200 rounded text-[10px] focus:ring-1 focus:ring-green-500"
+                                                                                        className="w-full px-2 py-2 text-center bg-white border border-green-300 rounded text-sm font-medium focus:ring-2 focus:ring-green-500"
                                                                                     />
                                                                                 </td>
                                                                             );
@@ -1326,25 +1326,25 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
                                                 {/* Reseller Price Matrix */}
                                                 <div>
-                                                    <h4 className="text-xs font-bold text-blue-700 mb-2">Matrix Harga Reseller</h4>
-                                                    <div className="overflow-x-auto">
-                                                        <table className="w-full text-xs">
+                                                    <h4 className="text-sm font-bold text-blue-700 mb-3">💙 Matrix Harga Reseller</h4>
+                                                    <div className="overflow-x-auto -mx-2 px-2">
+                                                        <table className="w-full text-sm min-w-[280px]">
                                                             <thead>
                                                                 <tr className="bg-blue-50">
-                                                                    <th className="px-2 py-1 text-left border border-blue-100">Size</th>
+                                                                    <th className="px-2 py-2 text-left border border-blue-100 font-bold">Size</th>
                                                                     {variantLabels.map(label => (
-                                                                        <th key={label} className="px-2 py-1 text-center border border-blue-100">{label}</th>
+                                                                        <th key={label} className="px-2 py-2 text-center border border-blue-100 font-bold min-w-[80px]">{label}</th>
                                                                     ))}
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
                                                                 {selectedSizes.map(size => (
                                                                     <tr key={size}>
-                                                                        <td className="px-2 py-1 font-bold border border-blue-100">{size}</td>
+                                                                        <td className="px-2 py-2 font-bold border border-blue-100">{size}</td>
                                                                         {variantLabels.map(label => {
                                                                             const key = `${size}-${label}`;
                                                                             return (
-                                                                                <td key={key} className="px-1 py-1 border border-blue-100">
+                                                                                <td key={key} className="px-1 py-2 border border-blue-100 min-w-[80px]">
                                                                                     <input
                                                                                         type="text"
                                                                                         inputMode="numeric"
@@ -1360,7 +1360,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                             }));
                                                                                         }}
                                                                                         onFocus={(e) => e.target.select()}
-                                                                                        className="w-full px-1 py-1 text-center bg-white border border-blue-200 rounded text-[10px] focus:ring-1 focus:ring-blue-500"
+                                                                                        className="w-full px-2 py-2 text-center bg-white border border-blue-300 rounded text-sm font-medium focus:ring-2 focus:ring-blue-500"
                                                                                     />
                                                                                 </td>
                                                                             );
