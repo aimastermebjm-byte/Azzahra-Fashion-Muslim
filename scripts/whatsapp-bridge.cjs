@@ -107,8 +107,14 @@ Rules:
   * Jika typo/mirip, pilih yang paling dekat (misal "gams" → "Gamis")
   * Jika tidak match → default "Gamis"
   
-- nama: Nama produk TANPA kategori di depan, tapi TERMASUK "by Brand"
-  Contoh: "gamis delta set by irish label" → nama = "Delta Set By Irish Label"
+- nama: AMBIL SEMUA baris nama produk (TANPA kategori di depan), SAMPAI bertemu baris detail seperti:
+  "Bahan:", "Material:", "Harga:", "Size:", "Ukuran:", "Warna:", "-Material", dll
+  Contoh caption:
+  "Gamis SETCEL KALIEDO
+   BFT : BALI FASHION TREND 2025
+   By eR.Ha DAILY
+   -Material: ..."
+  → nama = "SETCEL KALIEDO BFT : BALI FASHION TREND 2025 By eR.Ha DAILY"
   
 - brand: Kata setelah "by", TAPI HAPUS suffix umum seperti:
   DAILY, OFFICIAL, COLLECTION, STORE, SHOP, LABEL, INDONESIA, ID
