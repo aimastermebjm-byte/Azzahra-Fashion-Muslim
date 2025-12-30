@@ -1181,6 +1181,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 <option value="price-asc">Harga ↑</option>
                 <option value="price-desc">Harga ↓</option>
                 <option value="date-newest">Terbaru</option>
+                <option value="date-oldest">Terlama</option>
               </select>
             </div>
 
@@ -1258,10 +1259,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
             )}
           </div>
 
-          {/* Product Cards Grid - 3 Columns */}
+          {/* Product Cards Grid - 2 Columns */}
           {loading ? (
             /* Loading Skeleton */
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {Array.from({ length: 9 }).map((_, i) => (
                 <div key={i} className="bg-white rounded-lg border border-gray-200 overflow-hidden animate-pulse">
                   <div className="aspect-square bg-gray-200" />
@@ -1307,7 +1308,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">{currentProducts.map((product) => {
+              <div className="grid grid-cols-2 gap-2">{currentProducts.map((product) => {
                 const isTapped = tappedProductId === product.id;
                 const isSelected = selectedProducts.includes(product.id);
 
@@ -1399,35 +1400,49 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     {/* Overlay with Edit/Delete - Shows on Tap */}
                     {isTapped && (
                       <div
-                        className="absolute inset-0 bg-black/50 flex items-center justify-center gap-3 animate-fade-in"
-                        onClick={(e) => e.stopPropagation()}
+                        className="absolute inset-0 bg-black/60 flex flex-col animate-fade-in"
+                        onClick={() => setTappedProductId(null)}
                       >
-                        <button
-                          onClick={() => {
-                            handleEditProduct(product);
-                            setTappedProductId(null);
-                          }}
-                          className="bg-blue-600 text-white p-2.5 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        {user?.role === 'owner' && (
+                        {/* Close Button - Top Right */}
+                        <div className="flex justify-end p-1">
                           <button
-                            onClick={() => {
-                              handleDeleteProduct(product.id);
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setTappedProductId(null);
                             }}
-                            className="bg-red-600 text-white p-2.5 rounded-full shadow-lg hover:bg-red-700 transition-colors"
+                            className="bg-white/20 text-white p-1.5 rounded-full"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <X className="w-4 h-4" />
                           </button>
-                        )}
-                        <button
-                          onClick={() => setTappedProductId(null)}
-                          className="bg-gray-600 text-white p-2.5 rounded-full shadow-lg hover:bg-gray-700 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                        </div>
+
+                        {/* Action Buttons - Centered Vertical */}
+                        <div className="flex-1 flex flex-col items-center justify-center gap-2 px-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditProduct(product);
+                              setTappedProductId(null);
+                            }}
+                            className="w-full bg-blue-600 text-white py-2 px-3 rounded-lg shadow-lg flex items-center justify-center gap-2"
+                          >
+                            <Edit className="w-4 h-4" />
+                            <span className="text-xs font-medium">Edit</span>
+                          </button>
+                          {user?.role === 'owner' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteProduct(product.id);
+                                setTappedProductId(null);
+                              }}
+                              className="w-full bg-red-600 text-white py-2 px-3 rounded-lg shadow-lg flex items-center justify-center gap-2"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              <span className="text-xs font-medium">Hapus</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
