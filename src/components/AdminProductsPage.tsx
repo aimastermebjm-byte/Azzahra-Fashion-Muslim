@@ -1114,26 +1114,26 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
         {/* Main Actions - 2 Columns */}
         <div className="bg-white rounded-lg shadow-sm p-3">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             {/* Tambah Produk */}
             <button
               onClick={() => {
                 setManualUploadInitialState(null);
                 setShowManualUploadModal(true);
               }}
-              className="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+              className="bg-blue-600 text-white p-4 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-3"
             >
-              <Plus className="w-5 h-5" />
-              <span className="text-sm font-medium">Tambah Produk</span>
+              <Plus className="w-6 h-6" />
+              <span className="text-base font-semibold">Tambah Produk</span>
             </button>
 
             {/* Draft Siap Upload */}
             <button
               onClick={() => setShowWhatsAppInbox(true)}
-              className="bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+              className="bg-green-600 text-white p-4 rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center gap-3"
             >
-              <MessageCircle className="w-5 h-5" />
-              <span className="text-sm font-medium">Draft Upload</span>
+              <MessageCircle className="w-6 h-6" />
+              <span className="text-base font-semibold">Draft Upload</span>
             </button>
           </div>
         </div>
