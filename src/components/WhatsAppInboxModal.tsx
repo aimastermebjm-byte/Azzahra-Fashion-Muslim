@@ -31,6 +31,27 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
     const [loading, setLoading] = useState(true);
     const [processingDraftId, setProcessingDraftId] = useState<string | null>(null);
 
+    // Normalize kategori dari AI ke format dropdown
+    const normalizeCategory = (category: string): string => {
+        const mapping: Record<string, string> = {
+            'set': 'Setelan',
+            'setelan': 'Setelan',
+            'gamis': 'Gamis',
+            'tunik': 'Tunik',
+            'dress': 'Dress',
+            'outer': 'Outer',
+            'khimar': 'Khimar',
+            'hijab': 'Hijab',
+            'rok': 'Rok',
+            'celana': 'Celana',
+            'aksesoris': 'Aksesoris',
+            'mukena': 'Mukena',
+            'pashmina': 'Pashmina'
+        };
+        const lower = (category || '').toLowerCase().trim();
+        return mapping[lower] || 'Gamis'; // Default ke Gamis jika tidak match
+    };
+
     // Listen to Drafts
     useEffect(() => {
         if (!isOpen) return;
@@ -72,7 +93,7 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                     name: draft.name,
                     brand: draft.brand || '',  // Add brand from draft
                     description: draft.description,
-                    category: draft.category,
+                    category: normalizeCategory(draft.category),  // Normalize kategori
                     retailPrice: draft.retailPrice,
                     resellerPrice: draft.resellerPrice,
                     costPrice: draft.costPrice,
@@ -83,7 +104,7 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                 draftId: draft.id,
                 uploadSettings: {
                     costPrice: draft.costPrice,
-                    stockPerVariant: 10
+                    stockPerVariant: 1  // Default stok = 1
                 }
             }, imageFiles[0] || new File([], 'placeholder'));
 
