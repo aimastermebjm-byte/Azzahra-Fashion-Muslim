@@ -29,7 +29,7 @@ if (GEMINI_API_KEY) {
 // ============================================================
 const CONFIG = {
   // Bridge Settings
-  BUNDLE_WINDOW_MS: 5000,        // 5 detik window untuk bundling (setelah pesan terakhir)
+  BUNDLE_WINDOW_MS: 10000,        // 10 detik window untuk bundling (setelah pesan terakhir)
 
   // Whitelist (nomor yang diizinkan mengirim produk)
   ALLOWED_SENDERS: [
@@ -95,7 +95,8 @@ Output JSON only (no markdown, no explanation):
   "stokPerVarian": number | 1,
   "brand": string | null,
   "isFamily": boolean,
-  "variants": [{ "nama": string, "size": string, "hargaRetail": number, "hargaReseller": number }] | null
+  "variants": [{ "nama": string, "size": string, "hargaRetail": number, "hargaReseller": number }] | null,
+  "setTypes": [{ "type": string, "hargaRetail": number, "hargaReseller": number }] | null
 }
 
 Rules:
@@ -143,6 +144,16 @@ Rules:
   * "1 seri" → 1, "3 seri" → 3
 - harga: convert "895k" → 895000, "1.250.000" → 1250000
 - isFamily: true if contains family/couple/ayah/ibu/anak keywords
+
+- setTypes: PENTING! Jika caption berisi BEBERAPA TIPE PRODUK dengan HARGA BERBEDA, ekstrak ke array:
+  * Contoh caption: "SET SCARF Retail 565k Reseller 515k, SET KHIMAR Retail 600k Reseller 550k"
+  * → setTypes: [
+      { "type": "SET SCARF", "hargaRetail": 565000, "hargaReseller": 515000 },
+      { "type": "SET KHIMAR", "hargaRetail": 600000, "hargaReseller": 550000 }
+    ]
+  * Keywords untuk setTypes: "SET SCARF", "SET KHIMAR", "SET PASHMINA", "GAMIS ONLY", "KHIMAR ONLY", dll
+  * Jika hanya ada 1 harga (tidak ada variasi tipe) → setTypes: null
+  
 - variants: only if different prices per type (ayah/ibu/anak)`;
 
     const result = await visionModel.generateContent(prompt);
@@ -283,6 +294,7 @@ async function processBundle() {
       parsed.isFamily = aiParsed.isFamily || isFamilyProduct(finalCaption);
       parsed.variants = aiParsed.variants || null;
       parsed.brand = aiParsed.brand || '';
+      parsed.setTypes = aiParsed.setTypes || null; // NEW: Set types with prices (KHIMAR/SCARF)
     }
 
     console.log('📋 Final parsed data:', JSON.stringify(parsed, null, 2));
@@ -301,7 +313,7 @@ async function processBundle() {
       category: parsed.category || CONFIG.DEFAULT_CATEGORY,
       brand: parsed.brand || '',
 
-      // Pricing
+      // Pricing (default prices, setTypes override per variant)
       retailPrice: parsed.retailPrice || 0,
       resellerPrice: parsed.resellerPrice || 0,
       costPrice: parsed.costPrice || 0,
@@ -316,6 +328,9 @@ async function processBundle() {
       // Family product handling
       isFamily: parsed.isFamily || false,
       familyVariants: parsed.variants || null,
+
+      // SET TYPES (KHIMAR/SCARF with individual prices)
+      setTypes: parsed.setTypes || null,
 
       // Images - rawImages will trigger Cloud Function to generate collage
       collageUrl: collageUrl,  // Placeholder, Cloud Function will update
@@ -343,7 +358,7 @@ async function processBundle() {
 }
 
 // ============================================================
-// 2B. AI IMAGE ANALYSIS (Gemini Vision) - Enhanced with Motif
+// 2B. AI IMAGE ANALYSIS (Gemini Vision) - Enhanced with Hijab/Family Detection
 // ============================================================
 async function analyzeImageWithAI(imageBuffer) {
   try {
@@ -373,13 +388,29 @@ async function analyzeImageWithAI(imageBuffer) {
 6. VARIAN: Jika COLLAGE=Ya, ada berapa varian di dalam kolase? (2, 3, 4, dst)
    - Jika COLLAGE=Tidak, jawab 0
 
+7. HIJAB TYPE: Jenis hijab/kerudung yang dipakai model (PENTING untuk produk SET):
+   - "KHIMAR" = Hijab PANJANG yang menutupi dada (biasanya 1 layer, tanpa lipatan di dada)
+   - "SCARF" = Hijab PERSEGI yang dilipat segitiga, tampak PENDEK atau ada lipatan di depan dada
+   - "PASHMINA" = Hijab panjang rectangular dililit
+   - "TANPA" = Tidak pakai hijab
+   - PERHATIKAN BAIK-BAIK: Khimar lebih panjang, Scarf lebih pendek dengan lipatan
+
+8. FAMILY TYPE: Siapa yang mengenakan pakaian ini (PENTING untuk busana keluarga):
+   - "AYAH" = Model PRIA DEWASA (kemeja, baju koko, dll)
+   - "IBU" = Model WANITA DEWASA dengan gamis/dress dewasa
+   - "ANAK_LAKI" = Model ANAK LAKI-LAKI (baju koko anak, dll)
+   - "ANAK_PEREMPUAN" = Model ANAK PEREMPUAN dengan gamis anak
+   - "DEWASA" = Tidak bisa ditentukan (default untuk non-family)
+
 Format jawaban HARUS PERSIS:
 FULLBODY:Ya
 JUMLAH:1
 WARNA:Hitam
 MOTIF:Polos
 COLLAGE:Tidak
-VARIAN:0`;
+VARIAN:0
+HIJAB:KHIMAR
+FAMILY:DEWASA`;
 
     const result = await visionModel.generateContent([
       prompt,
@@ -414,16 +445,33 @@ VARIAN:0`;
     const varianMatch = response.match(/VARIAN\s*:\s*(\d+)/i);
     const collageVariantCount = varianMatch ? parseInt(varianMatch[1]) : 0;
 
+    // Hijab type detection (for SET KHIMAR/SCARF products)
+    const hijabMatch = response.match(/HIJAB\s*:\s*(\w+)/i);
+    const hijabType = hijabMatch ? hijabMatch[1].toUpperCase() : 'UNKNOWN';
+
+    // Family type detection (for busana keluarga)
+    const familyMatch = response.match(/FAMILY\s*:\s*(\w+)/i);
+    const familyType = familyMatch ? familyMatch[1].toUpperCase() : 'DEWASA';
+
     // Valid image = full body + single model + NOT collage
     const isValid = isFullBody && isSingleModel && !isCollage;
 
-    console.log(`   📊 Result: FullBody=${isFullBody}, Models=${modelCount}, Color=${color}, Motif=${motif}, Key=${uniqueKey}, Collage=${isCollage}, Variants=${collageVariantCount}, Valid=${isValid}`);
+    console.log(`   📊 Result: FullBody=${isFullBody}, Models=${modelCount}, Color=${color}, Motif=${motif}, Hijab=${hijabType}, Family=${familyType}, Collage=${isCollage}, Valid=${isValid}`);
 
-    return { isFullBody, isSingleModel, modelCount, color, motif, uniqueKey, isCollage, collageVariantCount, isValid };
+    return {
+      isFullBody, isSingleModel, modelCount, color, motif, uniqueKey,
+      isCollage, collageVariantCount, isValid,
+      hijabType, familyType
+    };
   } catch (error) {
     console.error('   ⚠️ AI analysis failed:', error.message);
     // Fallback: assume valid single model full body
-    return { isFullBody: true, isSingleModel: true, modelCount: 1, color: 'unknown', motif: 'polos', uniqueKey: 'unknown-polos', isCollage: false, collageVariantCount: 0, isValid: true };
+    return {
+      isFullBody: true, isSingleModel: true, modelCount: 1,
+      color: 'unknown', motif: 'polos', uniqueKey: 'unknown-polos',
+      isCollage: false, collageVariantCount: 0, isValid: true,
+      hijabType: 'UNKNOWN', familyType: 'DEWASA'
+    };
   }
 }
 
