@@ -38,21 +38,21 @@ export default {
       },
       keyframes: {
         fadeInScale: {
-          '0%': {
+          '0%': { 
             opacity: '0',
             transform: 'scale(0.8)'
           },
-          '100%': {
+          '100%': { 
             opacity: '1',
             transform: 'scale(1)'
           }
         },
         slideUp: {
-          '0%': {
+          '0%': { 
             opacity: '0',
             transform: 'translateY(30px)'
           },
-          '100%': {
+          '100%': { 
             opacity: '1',
             transform: 'translateY(0)'
           }
@@ -68,33 +68,32 @@ export default {
       },
       colors: {
         brand: {
-          primary: '#004BFE', // Royal Blue (User Request)
-          primaryDark: '#0039C7', // Darker Royal Blue
-          secondary: '#D9E4FF', // Light Blue Surface (User Request)
-          surface: '#F5F7FA', // Cool White/Grey Background
+          primary: '#0F172A',
+          primaryDark: '#070B16',
+          surface: '#F7F4EE',
           card: '#FFFFFF',
-          border: '#E5E9F2',
-          accent: '#FF6600', // Marketplace Orange for CTAs/Price
-          accentMuted: '#FFEAD9',
-          success: '#00A651',
-          warning: '#FFC107',
-          danger: '#DC3545',
-          info: '#17A2B8'
+          border: '#E2DED5',
+          accent: '#D6A354',
+          accentMuted: '#F4E7D3',
+          success: '#2D8A5D',
+          warning: '#C35627',
+          info: '#1C2A44'
         },
-        // Keep these consistent or remove if unused, but for safety keep structure
         purple: modernNavy,
         pink: modernGold,
+        slate: {
+          950: '#02040a'
+        }
       },
       boxShadow: {
-        'brand-card': '0 4px 20px rgba(0, 75, 254, 0.08)', // Blue-tinted shadow
-        'elevation': '0 10px 40px -10px rgba(0,0,0,0.08)'
+        'brand-card': '0 20px 45px rgba(15, 23, 42, 0.08)'
       },
       borderColor: {
-        'brand-border': '#E5E9F2'
+        'brand-border': '#E2DED5'
       },
       backgroundImage: {
-        'brand-gradient': 'linear-gradient(135deg, #004BFE 0%, #0039C7 100%)', // Solid Blue Gradient
-        'brand-surface': 'linear-gradient(180deg, #F5F7FA 0%, #FFFFFF 100%)'
+        'brand-gradient': 'linear-gradient(135deg, #0F172A 0%, #1C2A44 55%, #D6A354 100%)',
+        'brand-surface': 'linear-gradient(180deg, #F7F4EE 0%, #FFFFFF 100%)'
       }
     }
   },

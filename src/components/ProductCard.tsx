@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ShoppingCart, ChevronUp, MessageCircle, X, ZoomIn } from 'lucide-react';
+import { ShoppingCart, ChevronUp, MessageCircle, Star, X, ZoomIn } from 'lucide-react';
 import { Product } from '../types';
 
 interface ProductCardProps {
@@ -112,31 +112,32 @@ const ProductCard: React.FC<ProductCardProps> = ({
     const isReady = displayStatus === 'ready';
 
     return (
-      <div className={`flex items-center gap-1 px-2 py-1 shadow-sm text-[10px] font-bold rounded-r-full ${isReady
-        ? 'bg-emerald-500 text-white'
-        : 'bg-amber-500 text-white'
+      <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 backdrop-blur-md shadow-sm text-[10px] sm:text-xs font-bold ${isReady
+          ? 'bg-emerald-500/95 text-white border border-emerald-400/50'
+          : 'bg-amber-500/95 text-white border border-amber-400/50'
         }`}>
-        {isReady ? 'READY' : 'PO'} {totalStock > 0 && `(${totalStock})`}
+        {isReady ? 'Ready' : 'PO'} · {totalStock}
       </div>
     );
   };
 
   const getPrice = () => {
-    // Use the isFlashSale prop passed from parent
+    // Use the isFlashSale prop passed from parent (HomePage already knows which products are flash sale)
     const isThisProductInFlashSale = isFlashSale && product.flashSalePrice && product.flashSalePrice > 0;
+
 
     if (isThisProductInFlashSale) {
       return (
         <div className="space-y-1">
-          <div className="flex items-center flex-wrap gap-1.5">
-            <span className="text-base font-bold text-brand-accent">
+          <div className="flex items-center space-x-2">
+            <span className="text-base sm:text-lg font-bold text-red-600">
               Rp {product.flashSalePrice.toLocaleString('id-ID')}
             </span>
-            <span className="bg-red-100 text-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded">
+            <span className="bg-red-100 text-red-600 text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
               -{Math.round((1 - product.flashSalePrice / (product.originalRetailPrice || product.retailPrice)) * 100)}%
             </span>
           </div>
-          <div className="text-xs text-gray-400 line-through">
+          <div className="text-xs sm:text-sm text-gray-500 line-through">
             Rp {(product.originalRetailPrice || product.retailPrice).toLocaleString('id-ID')}
           </div>
         </div>
@@ -145,35 +146,37 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
     return (
       <div className="space-y-1 relative">
-        <div className="text-base font-bold text-brand-accent">
+        <div className="text-base sm:text-lg font-bold text-pink-600">
           Rp {product.retailPrice.toLocaleString('id-ID')}
         </div>
         <div className="relative">
           {user?.role === 'reseller' ? (
-            <div className="text-xs font-medium text-brand-primary">
+            <div className="text-xs sm:text-sm text-pink-600">
               Reseller: Rp {product.resellerPrice.toLocaleString('id-ID')}
             </div>
           ) : (
             <button
               onClick={handleResellerClick}
-              className="text-xs text-gray-400 hover:text-brand-primary transition-colors flex items-center gap-1"
+              className="text-xs sm:text-sm text-pink-600 hover:text-pink-700 font-medium transition-colors flex items-center space-x-1"
             >
-              <span>Harga Reseller?</span>
+              <span>Reseller: Rp {product.resellerPrice.toLocaleString('id-ID')}</span>
               <ChevronUp className={`w-3 h-3 transition-transform ${showResellerMenu ? 'rotate-180' : ''}`} />
             </button>
           )}
 
           {/* Dropdown Menu */}
           {showResellerMenu && user?.role !== 'reseller' && (
-            <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-20 p-2">
-              <p className="text-xs text-gray-600 mb-2">Login sebagai reseller untuk melihat harga khusus.</p>
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
               <button
                 onClick={handleWhatsAppClick}
-                className="w-full px-3 py-1.5 text-xs bg-green-50 text-green-700 rounded hover:bg-green-100 transition-colors flex items-center justify-center gap-2"
+                className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2 rounded-t-lg"
               >
-                <MessageCircle className="w-3 h-3" />
-                <span>Chat Admin</span>
+                <MessageCircle className="w-4 h-4 text-green-600" />
+                <span>Info Reseller via WhatsApp</span>
               </button>
+              <div className="text-xs text-gray-500 px-3 pb-2 text-center">
+                Hubungi admin untuk harga reseller
+              </div>
             </div>
           )}
         </div>
@@ -184,48 +187,67 @@ const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <>
       <div
-        className={`bg-white rounded-lg hover:shadow-lg transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 relative
-        ${isFeatured ? 'ring-1 ring-yellow-400' : ''}`}
-        onClick={handleImageClick}
+        className={`bg-white shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 ${isFeatured ? 'ring-2 ring-yellow-400' : ''
+          }`}
       >
-        <div className="relative aspect-[3/4] bg-gray-50 overflow-hidden">
+        <div className="relative aspect-[3/4] bg-white overflow-hidden">
           <img
             src={product.image || product.images?.[0] || '/placeholder-product.jpg'}
             alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            className="w-full h-full object-cover hover:scale-110 transition-transform duration-500 ease-out"
+            onClick={handleImageClick}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
               const parent = target.parentElement;
               if (parent) {
                 parent.classList.remove('bg-gray-50');
-                parent.classList.add('bg-blue-50');
-                parent.innerHTML = '<div class="flex items-center justify-center h-full w-full text-blue-300 flex-col"><div class="text-3xl mb-2">📦</div></div>';
+                parent.classList.add('bg-gradient-to-br', 'from-blue-100', 'to-purple-100');
+                parent.innerHTML = '<div class="flex items-center justify-center h-full w-full text-gray-400 text-center p-4 flex-col"><div class="text-3xl mb-2">📦</div><div class="text-xs font-medium">No Image</div></div>';
               }
             }}
           />
 
-          {/* Status Badge - Modern Ribbon Left */}
-          <div className="absolute top-3 left-0">
+          {/* Status Badge - Back to Top Left */}
+          <div className="absolute top-1 left-1 sm:top-1.5 sm:left-1.5">
             {getStatusBadge()}
           </div>
 
-          {/* Quick Actions Overlay (Mobile friendly touches) */}
-          <div className="absolute bottom-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          {/* Zoom Button */}
+          <div className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={handleImageZoom}
-              className="w-8 h-8 rounded-full bg-white/90 text-gray-700 shadow-sm flex items-center justify-center hover:bg-brand-primary hover:text-white transition-colors"
+              type="button"
+              className="bg-black bg-opacity-60 text-white p-1 sm:p-1.5 rounded-full hover:bg-opacity-80 transition-all shadow-lg"
+              title="Klik untuk zoom (Shift+Klik gambar)"
+              aria-label="Zoom gambar"
             >
-              <ZoomIn className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleAddToCart}
-              className="w-8 h-8 rounded-full bg-brand-accent text-white shadow-sm flex items-center justify-center hover:bg-orange-600 transition-colors"
-            >
-              <ShoppingCart className="w-4 h-4" />
+              <ZoomIn className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
           </div>
 
+          {/* Featured Product Star - Moved to Top Right */}
+          {isFeatured && (
+            <div className="absolute top-8 right-1 sm:top-10 sm:right-1.5 bg-yellow-400 text-white p-1 sm:p-1.5 rounded-full shadow-lg">
+              <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
+            </div>
+          )}
+          <div className="absolute bottom-1 right-1 sm:bottom-1.5 sm:right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={handleAddToCart}
+              className="bg-pink-500 text-white p-1.5 sm:p-2 rounded-full hover:bg-pink-600 transition-colors shadow-lg"
+              type="button"
+              aria-label="Tambah ke keranjang"
+              title="Tambah ke keranjang"
+            >
+              <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4" />
+            </button>
+          </div>
+
+          {/* Zoom Hint - Hide on mobile */}
+          <div className="absolute bottom-1 left-1 sm:bottom-1.5 sm:left-1.5 bg-black bg-opacity-60 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block">
+            Shift+Klik untuk zoom
+          </div>
         </div>
 
         <div className="p-2 sm:p-2.5 md:p-3">

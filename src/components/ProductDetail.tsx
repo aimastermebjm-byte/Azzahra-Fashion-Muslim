@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { Plus, Minus, ShoppingCart, Heart, Share2, Star, ArrowLeft, MessageCircle } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, Heart, Share2, Star, ArrowLeft } from 'lucide-react';
 import { useToast } from './ToastProvider';
 import { Product } from '../types';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
@@ -295,7 +295,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
   const requiresVariantSelection = Boolean(currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0);
   const isVariantIncomplete = requiresVariantSelection && (!selectedSize || !selectedColor);
-
+  const totalPrice = getPrice() * quantity;
 
   const getOriginalPrice = () => {
     return user?.role === 'reseller' ? currentProduct.resellerPrice : currentProduct.retailPrice;
@@ -488,29 +488,20 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               </div>
             </div>
           ) : (
-            <div className="space-y-1 bg-gray-50 p-3 rounded-lg border border-gray-100">
-              <div className="flex items-baseline gap-2">
-                <div className="text-3xl font-bold text-brand-accent">
-                  Rp {getPrice().toLocaleString('id-ID')}
-                </div>
-                {/* Jika ada diskon/harga eceran asli */}
-                <div className="text-sm text-gray-400 line-through">
-                  Rp {currentProduct.retailPrice.toLocaleString('id-ID')}
-                </div>
+            <div className="space-y-1">
+              <div className="text-2xl font-bold text-pink-600">
+                Rp {getPrice().toLocaleString('id-ID')}
               </div>
-
               {user?.role === 'reseller' ? (
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded">RESELLER</span>
-                  <span className="text-sm text-gray-500">Harga Retail: Rp {currentProduct.retailPrice.toLocaleString('id-ID')}</span>
+                <div className="text-sm text-blue-600 font-medium">
+                  Harga Reseller (Retail: Rp {currentProduct.retailPrice.toLocaleString('id-ID')})
                 </div>
               ) : (
                 <button
                   onClick={handleResellerPriceClick}
-                  className="mt-2 w-full text-sm text-brand-primary bg-blue-50 py-2 rounded border border-blue-100 font-medium hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
+                  className="text-sm text-green-600 font-medium hover:text-green-700 underline transition-colors"
                 >
-                  <MessageCircle className="w-4 h-4" />
-                  Info Harga Reseller
+                  💬 Info Harga Reseller?
                 </button>
               )}
             </div>
@@ -573,11 +564,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                     key={color}
                     onClick={() => setSelectedColor(color)}
                     disabled={colorStock === 0}
-                    className={`min-w-[4rem] rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 border ${selectedColor === color
-                      ? 'bg-brand-primary text-white border-brand-primary shadow-md transform scale-105'
+                    className={`rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition ${selectedColor === color
+                      ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/40'
                       : colorStock === 0
-                        ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed decoration-slice'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-brand-primary hover:text-brand-primary'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 border border-gray-200 hover:text-brand-primary'
                       }`}
                   >
                     <span>{color}</span>
@@ -613,11 +604,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                     key={size}
                     onClick={() => setSelectedSize(size)}
                     disabled={sizeTotalStock === 0}
-                    className={`relative min-w-[3.5rem] rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 border ${selectedSize === size
-                      ? 'bg-brand-primary text-white border-brand-primary shadow-md transform scale-105'
+                    className={`relative rounded-full px-4 py-2 text-sm font-semibold transition shadow-sm ${selectedSize === size
+                      ? 'bg-brand-primary text-white shadow-brand-card'
                       : sizeTotalStock === 0
-                        ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-brand-primary hover:text-brand-primary'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 hover:text-brand-primary border border-gray-200'
                       }`}
                   >
                     <span>{size}</span>
@@ -697,40 +688,35 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       </div>
 
       {/* Sticky CTA */}
-      {/* Sticky CTA - Modern Marketplace Style */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 safe-area-inset-bottom shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <div className="mx-auto max-w-4xl px-3 py-3 sm:px-4">
-          <div className="flex items-center gap-3">
-            {/* Chat / Shop Button */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white shadow-lg safe-area-inset-bottom">
+        <div className="mx-auto flex max-w-4xl flex-col gap-2 px-3 py-3 sm:px-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-shrink-0">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Subtotal</p>
+            <p className="text-xl sm:text-2xl font-bold text-brand-primary">
+              Rp {totalPrice.toLocaleString('id-ID')}
+            </p>
+            {requiresVariantSelection && (
+              <p className="text-xs text-slate-500 truncate">
+                {isVariantIncomplete ? 'Pilih ukuran dan warna terlebih dahulu' : `${selectedSize} / ${selectedColor}`}
+              </p>
+            )}
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:min-w-[400px]">
             <button
-              onClick={handleResellerPriceClick} // Fallback to chat action
-              className="flex flex-col items-center justify-center min-w-[3.5rem] gap-0.5 text-gray-500 hover:text-brand-primary transition-colors"
+              onClick={handleAddToCart}
+              disabled={isVariantIncomplete}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-brand-primary/30 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary shadow-sm transition hover:bg-brand-primary/5 disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
             >
-              <MessageCircle className="w-6 h-6" />
-              <span className="text-[10px] font-medium">Chat</span>
+              <ShoppingCart className="h-4 w-4" />
+              <span className="hidden sm:inline">Tambah ke </span>Keranjang
             </button>
-
-            <div className="w-px h-8 bg-gray-200 mx-1"></div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-1 gap-3">
-              <button
-                onClick={handleAddToCart}
-                disabled={isVariantIncomplete}
-                className="flex-1 flex items-center justify-center gap-2 rounded-full border border-brand-accent bg-orange-50 px-4 py-2.5 text-sm font-bold text-brand-accent transition hover:bg-orange-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                <span>+ Keranjang</span>
-              </button>
-
-              <button
-                onClick={handleBuyNow}
-                disabled={isVariantIncomplete}
-                className="flex-1 flex items-center justify-center rounded-full bg-brand-accent px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Beli Sekarang
-              </button>
-            </div>
+            <button
+              onClick={handleBuyNow}
+              disabled={isVariantIncomplete}
+              className="inline-flex flex-1 items-center justify-center rounded-full bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white shadow-brand-card transition hover:bg-brand-primary/90 disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
+            >
+              Beli Sekarang
+            </button>
           </div>
         </div>
       </div>
