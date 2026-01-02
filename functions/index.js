@@ -1,16 +1,25 @@
 /**
  * Cloud Functions for Azzahra Fashion Muslim
  * "Robot Server" for Auto-Verification 24/7
+ * + Image Analysis & Collage Generator for WhatsApp Bridge
  */
 
 // 🔧 FIX: Use onDocumentCreated instead of onDocumentWritten to prevent duplicate triggers
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { defineSecret } = require("firebase-functions/params");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
+const { getStorage } = require("firebase-admin/storage");
 const { logger } = require("firebase-functions");
+const Jimp = require("jimp");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 initializeApp();
 const db = getFirestore();
+const bucket = getStorage().bucket();
+
+// Define secret for Gemini API Key (set via: firebase functions:secrets:set GEMINI_API_KEY)
+const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
 // 🔐 SECRET KEY - Must match the key in Android APK
 // Change this to a random secure string and keep it secret!
@@ -302,3 +311,336 @@ exports.checkPaymentDetection = onDocumentCreated("paymentDetectionsPending/{det
         logger.info("🤖 Robot: No matching order found above threshold.");
     }
 });
+
+// ============================================================
+// 🎨 PRODUCT DRAFT PROCESSOR
+// Trigger: When a new product draft is created
+// - Analyze images (detect KHIMAR/SCARF, AYAH/IBU/ANAK)
+// - Match with setTypes/familyVariants for correct pricing
+// - Generate collage
+// - Update draft with complete data
+// ============================================================
+exports.processProductDraft = onDocumentCreated(
+    {
+        document: "product_drafts/{draftId}",
+        memory: "2GiB",
+        timeoutSeconds: 540,
+        secrets: [geminiApiKey]
+    },
+    async (event) => {
+        const snapshot = event.data;
+        if (!snapshot) return;
+
+        const draft = snapshot.data();
+        const draftId = event.params.draftId;
+
+        logger.info(`🎨 Draft Processor: New draft ${draftId}`);
+
+        // Skip if already processed or no raw images
+        const rawImages = draft.rawImages || [];
+        if (rawImages.length === 0) {
+            logger.info(`⏩ No raw images, skipping.`);
+            return;
+        }
+
+        if (draft.collageStatus === 'processed') {
+            logger.info(`⏩ Already processed, skipping.`);
+            return;
+        }
+
+        try {
+            // Initialize Gemini AI
+            const genAI = new GoogleGenerativeAI(geminiApiKey.value());
+            const visionModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+
+            // 1. Download and analyze each image
+            const imageAnalysis = [];
+            const imageBuffers = [];
+
+            for (let i = 0; i < rawImages.length; i++) {
+                const url = rawImages[i];
+                try {
+                    logger.info(`📷 Downloading image ${i + 1}/${rawImages.length}...`);
+                    const response = await fetch(url);
+                    const arrayBuffer = await response.arrayBuffer();
+                    const buffer = Buffer.from(arrayBuffer);
+                    imageBuffers.push(buffer);
+
+                    // Analyze image with AI
+                    const analysis = await analyzeImage(visionModel, buffer);
+                    imageAnalysis.push({
+                        index: i,
+                        label: String.fromCharCode(65 + i), // A, B, C, ...
+                        ...analysis
+                    });
+                    logger.info(`   ✓ Image ${i + 1}: Hijab=${analysis.hijabType}, Family=${analysis.familyType}`);
+                } catch (err) {
+                    logger.warn(`   ⚠️ Failed to process image ${i + 1}: ${err.message}`);
+                    imageBuffers.push(null);
+                    imageAnalysis.push({ index: i, label: String.fromCharCode(65 + i), hijabType: 'UNKNOWN', familyType: 'DEWASA' });
+                }
+            }
+
+            // 2. Match analysis with setTypes/familyVariants for pricing
+            const variantPricing = matchPricing(imageAnalysis, draft.setTypes, draft.familyVariants);
+            logger.info(`💰 Variant pricing matched:`, JSON.stringify(variantPricing));
+
+            // 3. Generate collage (skip null buffers)
+            const validBuffers = imageBuffers.filter(b => b !== null);
+            let collageUrl = draft.collageUrl;
+
+            if (validBuffers.length > 0) {
+                logger.info(`🎨 Generating collage from ${validBuffers.length} images...`);
+                const collageBuffer = await generateCollageFromBuffers(validBuffers);
+
+                // Upload collage
+                const collageFilename = `collages/draft_${draftId}_${Date.now()}.jpg`;
+                const file = bucket.file(collageFilename);
+                await file.save(collageBuffer, { metadata: { contentType: 'image/jpeg' } });
+
+                const [signedUrl] = await file.getSignedUrl({
+                    action: 'read',
+                    expires: '03-09-2491'
+                });
+                collageUrl = signedUrl;
+                logger.info(`☁️ Collage uploaded: ${collageFilename}`);
+            }
+
+            // 4. Update draft with complete data
+            await db.collection("product_drafts").doc(draftId).update({
+                collageUrl: collageUrl,
+                collageStatus: 'processed',
+                imageAnalysis: imageAnalysis,
+                variantPricing: variantPricing,
+                processedAt: new Date().toISOString(),
+                processedBy: 'cloud_function'
+            });
+
+            logger.info(`✅ Draft ${draftId} processed successfully!`);
+
+        } catch (error) {
+            logger.error(`❌ Draft processing failed:`, error);
+            await db.collection("product_drafts").doc(draftId).update({
+                collageStatus: 'failed',
+                collageError: error.message
+            });
+        }
+    }
+);
+
+// ============================================================
+// Helper: Analyze single image with Gemini AI
+// ============================================================
+async function analyzeImage(visionModel, imageBuffer) {
+    try {
+        const base64Image = imageBuffer.toString('base64');
+
+        const prompt = `Analisis gambar fashion ini:
+
+1. HIJAB TYPE: Jenis hijab/kerudung yang dipakai:
+   - "KHIMAR" = Hijab PANJANG menutupi dada
+   - "SCARF" = Hijab PERSEGI dilipat, tampak PENDEK
+   - "PASHMINA" = Hijab panjang rectangular
+   - "TANPA" = Tidak pakai hijab
+
+2. FAMILY TYPE: Siapa yang mengenakan:
+   - "AYAH" = Pria DEWASA
+   - "IBU" = Wanita DEWASA
+   - "ANAK_LAKI" = Anak laki-laki
+   - "ANAK_PEREMPUAN" = Anak perempuan
+   - "DEWASA" = Default
+
+Format jawaban PERSIS:
+HIJAB:KHIMAR
+FAMILY:DEWASA`;
+
+        const result = await visionModel.generateContent([
+            prompt,
+            { inlineData: { mimeType: 'image/jpeg', data: base64Image } }
+        ]);
+
+        const response = result.response.text();
+        const hijabMatch = response.match(/HIJAB\s*:\s*(\w+)/i);
+        const familyMatch = response.match(/FAMILY\s*:\s*(\w+)/i);
+
+        return {
+            hijabType: hijabMatch ? hijabMatch[1].toUpperCase() : 'UNKNOWN',
+            familyType: familyMatch ? familyMatch[1].toUpperCase() : 'DEWASA'
+        };
+    } catch (error) {
+        logger.warn(`AI analysis failed: ${error.message}`);
+        return { hijabType: 'UNKNOWN', familyType: 'DEWASA' };
+    }
+}
+
+// ============================================================
+// Helper: Match image analysis with pricing from setTypes/familyVariants
+// ============================================================
+function matchPricing(imageAnalysis, setTypes, familyVariants) {
+    const pricing = [];
+
+    for (const img of imageAnalysis) {
+        let matched = null;
+
+        // Try to match with setTypes (KHIMAR/SCARF)
+        if (setTypes && Array.isArray(setTypes)) {
+            for (const st of setTypes) {
+                // Match type (e.g., "SET KHIMAR" contains "KHIMAR")
+                if (st.type && img.hijabType && st.type.toUpperCase().includes(img.hijabType)) {
+                    matched = {
+                        label: img.label,
+                        type: st.type,
+                        retailPrice: st.hargaRetail,
+                        resellerPrice: st.hargaReseller,
+                        matchedBy: 'setTypes'
+                    };
+                    break;
+                }
+            }
+        }
+
+        // Try to match with familyVariants (AYAH/IBU/ANAK)
+        if (!matched && familyVariants && Array.isArray(familyVariants)) {
+            for (const fv of familyVariants) {
+                const fvType = (fv.nama || '').toUpperCase();
+                if (fvType.includes(img.familyType) ||
+                    (img.familyType === 'ANAK_LAKI' && fvType.includes('ANAK')) ||
+                    (img.familyType === 'ANAK_PEREMPUAN' && fvType.includes('ANAK'))) {
+                    matched = {
+                        label: img.label,
+                        type: fv.nama,
+                        retailPrice: fv.hargaRetail,
+                        resellerPrice: fv.hargaReseller,
+                        matchedBy: 'familyVariants'
+                    };
+                    break;
+                }
+            }
+        }
+
+        // If no match, use default
+        if (!matched) {
+            matched = {
+                label: img.label,
+                type: 'default',
+                retailPrice: null,
+                resellerPrice: null,
+                matchedBy: 'none'
+            };
+        }
+
+        pricing.push(matched);
+    }
+
+    return pricing;
+}
+
+// ============================================================
+// Helper: Generate collage from image buffers
+// ============================================================
+async function generateCollageFromBuffers(imageBuffers) {
+    const W = 1500;
+    const H = 2000;
+    const count = Math.min(imageBuffers.length, 10);
+
+    // Create white canvas
+    const canvas = new Jimp(W, H, 0xFFFFFFFF);
+
+    // Load and resize images
+    const loadedImages = [];
+    for (let i = 0; i < count; i++) {
+        try {
+            let img = await Jimp.read(imageBuffers[i]);
+            // Pre-resize to max 800x800
+            const maxDim = 800;
+            if (img.getWidth() > maxDim || img.getHeight() > maxDim) {
+                const scale = maxDim / Math.max(img.getWidth(), img.getHeight());
+                img = img.resize(Math.round(img.getWidth() * scale), Math.round(img.getHeight() * scale));
+            }
+            loadedImages.push(img);
+        } catch (err) {
+            logger.warn(`Failed to load image ${i}: ${err.message}`);
+        }
+    }
+
+    if (loadedImages.length === 0) {
+        throw new Error("No images could be loaded");
+    }
+
+    // Calculate layout
+    const layout = calculateLayout(loadedImages.length, W, H);
+
+    // Draw images
+    for (let i = 0; i < loadedImages.length; i++) {
+        const img = loadedImages[i];
+        const box = layout[i];
+
+        const scale = Math.max(box.w / img.getWidth(), box.h / img.getHeight());
+        const scaledW = Math.round(img.getWidth() * scale);
+        const scaledH = Math.round(img.getHeight() * scale);
+
+        const resized = img.clone().resize(scaledW, scaledH);
+        const cropX = Math.round((scaledW - box.w) / 2);
+        const cropY = 0;
+        const cropped = resized.crop(cropX, cropY, Math.min(box.w, scaledW), Math.min(box.h, scaledH));
+
+        canvas.composite(cropped, Math.round(box.x), Math.round(box.y));
+    }
+
+    return canvas.getBufferAsync(Jimp.MIME_JPEG);
+}
+
+// ============================================================
+// Helper: Calculate collage layout
+// ============================================================
+function calculateLayout(count, W, H) {
+    const boxes = [];
+
+    if (count === 1) {
+        boxes.push({ x: 0, y: 0, w: W, h: H });
+    } else if (count === 2) {
+        const w = W / 2;
+        boxes.push({ x: 0, y: 0, w: w, h: H });
+        boxes.push({ x: w, y: 0, w: w, h: H });
+    } else if (count === 3) {
+        const wHalf = W / 2;
+        const hHalf = H / 2;
+        boxes.push({ x: 0, y: 0, w: wHalf, h: H });
+        boxes.push({ x: wHalf, y: 0, w: wHalf, h: hHalf });
+        boxes.push({ x: wHalf, y: hHalf, w: wHalf, h: hHalf });
+    } else if (count === 4) {
+        const w = W / 2;
+        const h = H / 2;
+        boxes.push({ x: 0, y: 0, w: w, h: h });
+        boxes.push({ x: w, y: 0, w: w, h: h });
+        boxes.push({ x: 0, y: h, w: w, h: h });
+        boxes.push({ x: w, y: h, w: w, h: h });
+    } else if (count === 5) {
+        const hTop = H * 0.5;
+        const hBot = H * 0.5;
+        const wTop = W / 2;
+        const wBot = W / 3;
+        boxes.push({ x: 0, y: 0, w: wTop, h: hTop });
+        boxes.push({ x: wTop, y: 0, w: wTop, h: hTop });
+        boxes.push({ x: 0, y: hTop, w: wBot, h: hBot });
+        boxes.push({ x: wBot, y: hTop, w: wBot, h: hBot });
+        boxes.push({ x: wBot * 2, y: hTop, w: wBot, h: hBot });
+    } else if (count === 6) {
+        const h = H / 2;
+        const w = W / 3;
+        for (let c = 0; c < 3; c++) boxes.push({ x: c * w, y: 0, w: w, h: h });
+        for (let c = 0; c < 3; c++) boxes.push({ x: c * w, y: h, w: w, h: h });
+    } else if (count <= 8) {
+        const h = H / 2;
+        const w = W / 4;
+        for (let c = 0; c < 4; c++) boxes.push({ x: c * w, y: 0, w: w, h: h });
+        for (let c = 0; c < Math.min(count - 4, 4); c++) boxes.push({ x: c * w, y: h, w: w, h: h });
+    } else {
+        const h = H / 2;
+        const w = W / 5;
+        for (let c = 0; c < 5; c++) boxes.push({ x: c * w, y: 0, w: w, h: h });
+        for (let c = 0; c < Math.min(count - 5, 5); c++) boxes.push({ x: c * w, y: h, w: w, h: h });
+    }
+
+    return boxes;
+}
