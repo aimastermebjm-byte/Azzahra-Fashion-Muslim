@@ -91,6 +91,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
     // Selected image index for tap-to-swap reordering
     const [selectedSwapIndex, setSelectedSwapIndex] = useState<number | null>(null);
+    const [customSizeInput, setCustomSizeInput] = useState('');
 
     // Initialize from initialState when isOpen changes
     React.useEffect(() => {
@@ -647,234 +648,266 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             ...prev,
                                                             [variantLabels[index]]: e.target.value
                                                         }))}
-                                                        placeholder={variantLabels[index]}
-                                                        className="w-full px-1 py-1 text-[10px] text-center border border-gray-200 rounded focus:ring-1 focus:ring-purple-500"
+                                                        placeholder={`${variantLabels[index]} - Nama`}
+                                                        className="w-full px-1 py-1.5 text-xs text-center border-2 border-purple-200 rounded bg-purple-50 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 placeholder-purple-300"
                                                     />
                                                 </div>
                                             );
                                         })}
+
+
+                                        <p className="text-[10px] text-gray-400 text-center">
+                                            Nama varian akan tampil saat checkout. Collage tetap pakai huruf A, B, C...
+                                        </p>
                                     </div>
-                                    <p className="text-[10px] text-gray-400 text-center">
-                                        Nama varian akan tampil saat checkout. Collage tetap pakai huruf A, B, C...
-                                    </p>
-                                </div>
                             )}
 
 
 
-                            {/* Product Details - After Image Upload, Before Parameter Produk */}
-                            {images.length > 0 && (
-                                <div className="bg-white rounded-xl p-4 border border-gray-200">
-                                    <h3 className="font-medium text-gray-700 mb-3">📝 Detail Produk</h3>
-                                    <div className="space-y-4">
-                                        {/* Product Name */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Nama Produk *
-                                            </label>
-                                            <textarea
-                                                value={productFormData.name}
-                                                onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }))}
-                                                onClick={() => handleAutoPaste('name')}
-                                                placeholder="Contoh: Gamis Syari Premium (Tap untuk memperbesar)"
-                                                rows={1}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[42px] focus:h-32 transition-[height] duration-300 ease-in-out resize-none"
-                                            />
-                                        </div>
+                                    {/* Product Details - After Image Upload, Before Parameter Produk */}
+                                    {images.length > 0 && (
+                                        <div className="bg-white rounded-xl p-4 border border-gray-200">
+                                            <h3 className="font-medium text-gray-700 mb-3">📝 Detail Produk</h3>
+                                            <div className="space-y-4">
+                                                {/* Product Name */}
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                        Nama Produk *
+                                                    </label>
+                                                    <textarea
+                                                        value={productFormData.name}
+                                                        onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }))}
+                                                        onClick={() => handleAutoPaste('name')}
+                                                        placeholder="Contoh: Gamis Syari Premium (Tap untuk memperbesar)"
+                                                        rows={1}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[42px] focus:h-32 transition-[height] duration-300 ease-in-out resize-none"
+                                                    />
+                                                </div>
 
-                                        {/* Brand Selection */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Merk / Brand
-                                            </label>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    value={productFormData.brand}
-                                                    onChange={(e) => {
-                                                        setProductFormData(prev => ({ ...prev, brand: e.target.value }));
-                                                        setShowBrandSuggestions(true);
-                                                    }}
-                                                    onFocus={() => setShowBrandSuggestions(true)}
-                                                    onBlur={() => setTimeout(() => setShowBrandSuggestions(false), 200)}
-                                                    placeholder="Pilih atau ketik merk..."
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                                    autoComplete="off"
-                                                />
+                                                {/* Brand Selection */}
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                        Merk / Brand
+                                                    </label>
+                                                    <div className="relative">
+                                                        <input
+                                                            type="text"
+                                                            value={productFormData.brand}
+                                                            onChange={(e) => {
+                                                                setProductFormData(prev => ({ ...prev, brand: e.target.value }));
+                                                                setShowBrandSuggestions(true);
+                                                            }}
+                                                            onFocus={() => setShowBrandSuggestions(true)}
+                                                            onBlur={() => setTimeout(() => setShowBrandSuggestions(false), 200)}
+                                                            placeholder="Pilih atau ketik merk..."
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                                            autoComplete="off"
+                                                        />
 
-                                                {/* Custom Dropdown Suggestions */}
-                                                {showBrandSuggestions && (
-                                                    <div className="absolute z-50 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
-                                                        {brandOptions.filter(b => b.toLowerCase().includes(productFormData.brand.toLowerCase())).length > 0 ? (
-                                                            brandOptions
-                                                                .filter(b => b.toLowerCase().includes(productFormData.brand.toLowerCase()))
-                                                                .map((brand, i) => (
-                                                                    <div
-                                                                        key={i}
-                                                                        className="px-3 py-2 hover:bg-purple-50 cursor-pointer text-gray-700 hover:text-purple-700 transition-colors border-b border-gray-50 last:border-0"
-                                                                        onClick={() => {
-                                                                            setProductFormData(prev => ({ ...prev, brand }));
-                                                                            setShowBrandSuggestions(false);
-                                                                        }}
-                                                                    >
-                                                                        {brand}
+                                                        {/* Custom Dropdown Suggestions */}
+                                                        {showBrandSuggestions && (
+                                                            <div className="absolute z-50 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                                                                {brandOptions.filter(b => b.toLowerCase().includes(productFormData.brand.toLowerCase())).length > 0 ? (
+                                                                    brandOptions
+                                                                        .filter(b => b.toLowerCase().includes(productFormData.brand.toLowerCase()))
+                                                                        .map((brand, i) => (
+                                                                            <div
+                                                                                key={i}
+                                                                                className="px-3 py-2 hover:bg-purple-50 cursor-pointer text-gray-700 hover:text-purple-700 transition-colors border-b border-gray-50 last:border-0"
+                                                                                onClick={() => {
+                                                                                    setProductFormData(prev => ({ ...prev, brand }));
+                                                                                    setShowBrandSuggestions(false);
+                                                                                }}
+                                                                            >
+                                                                                {brand}
+                                                                            </div>
+                                                                        ))
+                                                                ) : (
+                                                                    <div className="px-3 py-2 text-gray-400 text-sm italic">
+                                                                        Ketik untuk membuat merk baru...
                                                                     </div>
-                                                                ))
-                                                        ) : (
-                                                            <div className="px-3 py-2 text-gray-400 text-sm italic">
-                                                                Ketik untuk membuat merk baru...
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
-                                                )}
+                                                </div>
+
+                                                {/* Description */}
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                        Deskripsi (Opsional)
+                                                    </label>
+                                                    <textarea
+                                                        value={productFormData.description}
+                                                        onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }))}
+                                                        onClick={() => handleAutoPaste('description')}
+                                                        placeholder="Deskripsi produk... (Tap untuk memperbesar)"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[80px] h-[80px] focus:h-48 transition-[height] duration-300 ease-in-out resize-none"
+                                                    />
+                                                </div>
+
+                                                {/* Category */}
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                        Kategori
+                                                    </label>
+                                                    <select
+                                                        value={productFormData.category}
+                                                        onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                                    >
+                                                        {categories.map(cat => (
+                                                            <option key={cat} value={cat}>{cat}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
                                             </div>
                                         </div>
+                                    )}
 
-                                        {/* Description */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Deskripsi (Opsional)
-                                            </label>
-                                            <textarea
-                                                value={productFormData.description}
-                                                onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }))}
-                                                onClick={() => handleAutoPaste('description')}
-                                                placeholder="Deskripsi produk... (Tap untuk memperbesar)"
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[80px] h-[80px] focus:h-48 transition-[height] duration-300 ease-in-out resize-none"
-                                            />
+                                    {/* Settings Panel */}
+                                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <Settings className="w-6 h-6 text-purple-600" />
+                                            <h3 className="text-lg font-bold text-purple-800">Parameter Produk</h3>
                                         </div>
 
-                                        {/* Category */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Kategori
-                                            </label>
-                                            <select
-                                                value={productFormData.category}
-                                                onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }))}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                            >
-                                                {categories.map(cat => (
-                                                    <option key={cat} value={cat}>{cat}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Settings Panel */}
-                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <Settings className="w-6 h-6 text-purple-600" />
-                                    <h3 className="text-lg font-bold text-purple-800">Parameter Produk</h3>
-                                </div>
-
-                                {/* Size Preset - MULTI SELECT with Smart Toggle */}
-                                <div className="mb-5">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Pilih Ukuran (bisa pilih banyak)</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {SIZE_PRESETS.map((size) => {
-                                            const isSelected = selectedSizes.includes(size);
-                                            return (
-                                                <button
-                                                    key={size}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (size === 'All Size') {
-                                                            setSelectedSizes(['All Size']);
-                                                        } else {
-                                                            if (isSelected) {
-                                                                const newSizes = selectedSizes.filter(s => s !== size);
-                                                                if (newSizes.length === 0) {
+                                        {/* Size Preset - MULTI SELECT with Smart Toggle */}
+                                        <div className="mb-5">
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Pilih Ukuran (bisa pilih banyak)</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {SIZE_PRESETS.map((size) => {
+                                                    const isSelected = selectedSizes.includes(size);
+                                                    return (
+                                                        <button
+                                                            key={size}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (size === 'All Size') {
                                                                     setSelectedSizes(['All Size']);
                                                                 } else {
-                                                                    setSelectedSizes(newSizes);
+                                                                    if (isSelected) {
+                                                                        const newSizes = selectedSizes.filter(s => s !== size);
+                                                                        if (newSizes.length === 0) {
+                                                                            setSelectedSizes(['All Size']);
+                                                                        } else {
+                                                                            setSelectedSizes(newSizes);
+                                                                        }
+                                                                    } else {
+                                                                        const sizesWithoutAllSize = selectedSizes.filter(s => s !== 'All Size');
+                                                                        setSelectedSizes([...sizesWithoutAllSize, size]);
+                                                                    }
                                                                 }
-                                                            } else {
-                                                                const sizesWithoutAllSize = selectedSizes.filter(s => s !== 'All Size');
-                                                                setSelectedSizes([...sizesWithoutAllSize, size]);
+                                                            }}
+                                                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${isSelected
+                                                                ? 'bg-purple-600 text-white shadow-md'
+                                                                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                                                                }`}
+                                                        >
+                                                            {isSelected && '✓ '}{size}
+                                                        </button>
+                                                    );
+                                                })}
+
+                                                {/* Custom Sizes */}
+                                                {selectedSizes.filter(s => !SIZE_PRESETS.includes(s)).map((size) => (
+                                                    <button
+                                                        key={size}
+                                                        type="button"
+                                                        onClick={() => setSelectedSizes(selectedSizes.filter(s => s !== size))}
+                                                        className="px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-purple-600 text-white shadow-md flex items-center gap-1"
+                                                    >
+                                                        {size} <span className="text-purple-200 hover:text-white">×</span>
+                                                    </button>
+                                                ))}
+
+                                                {/* Custom Size Input */}
+                                                <input
+                                                    type="text"
+                                                    value={customSizeInput}
+                                                    onChange={(e) => setCustomSizeInput(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            const val = customSizeInput.trim();
+                                                            if (val && !selectedSizes.includes(val)) {
+                                                                setSelectedSizes(prev => {
+                                                                    const sizesWithoutAllSize = prev.filter(s => s !== 'All Size');
+                                                                    return [...sizesWithoutAllSize, val];
+                                                                });
+                                                                setCustomSizeInput('');
                                                             }
                                                         }
                                                     }}
-                                                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${isSelected
-                                                        ? 'bg-purple-600 text-white shadow-md'
-                                                        : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-                                                        }`}
-                                                >
-                                                    {isSelected && '✓ '}{size}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
+                                                    placeholder="+ Custom (Enter)"
+                                                    className="px-3 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 w-32 focus:w-56 transition-all"
+                                                />
+                                            </div>
+                                        </div>
 
-                                {/* Stack Parameters: Stock -> Modal -> Reseller -> Retail */}
-                                <div className="space-y-4 mb-5">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Stok per Varian</label>
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            value={formatThousands(uploadSettings.stockPerVariant)}
-                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, stockPerVariant: parseFormattedNumber(e.target.value) }))}
-                                            onFocus={(e) => e.target.select()}
-                                            placeholder="Masukkan stok"
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg font-semibold focus:ring-2 focus:ring-purple-500"
-                                        />
-                                    </div>
+                                        {/* Stack Parameters: Stock -> Modal -> Reseller -> Retail */}
+                                        <div className="space-y-4 mb-5">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Stok per Varian</label>
+                                                <input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    value={formatThousands(uploadSettings.stockPerVariant)}
+                                                    onChange={(e) => setUploadSettings(prev => ({ ...prev, stockPerVariant: parseFormattedNumber(e.target.value) }))}
+                                                    onFocus={(e) => e.target.select()}
+                                                    placeholder="Masukkan stok"
+                                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg font-semibold focus:ring-2 focus:ring-purple-500"
+                                                />
+                                            </div>
 
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-800 mb-1">Harga Modal</label>
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            value={formatThousands(uploadSettings.costPrice)}
-                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }))}
-                                            onFocus={(e) => e.target.select()}
-                                            placeholder="100.000"
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl text-lg font-bold focus:ring-2 focus:ring-purple-500"
-                                        />
-                                    </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-800 mb-1">Harga Modal</label>
+                                                <input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    value={formatThousands(uploadSettings.costPrice)}
+                                                    onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }))}
+                                                    onFocus={(e) => e.target.select()}
+                                                    placeholder="100.000"
+                                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl text-lg font-bold focus:ring-2 focus:ring-purple-500"
+                                                />
+                                            </div>
 
-                                    <div>
-                                        <label className="block text-sm font-bold text-blue-700 mb-1">Harga Reseller (Otomatis)</label>
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            value={formatThousands(resellerPrice)}
-                                            onChange={(e) => setFixedPrices(prev => ({
-                                                ...prev,
-                                                reseller: parseFormattedNumber(e.target.value)
-                                            }))}
-                                            onFocus={(e) => e.target.select()}
-                                            className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl text-lg font-bold text-blue-700 bg-blue-50 focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-blue-700 mb-1">Harga Reseller (Otomatis)</label>
+                                                <input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    value={formatThousands(resellerPrice)}
+                                                    onChange={(e) => setFixedPrices(prev => ({
+                                                        ...prev,
+                                                        reseller: parseFormattedNumber(e.target.value)
+                                                    }))}
+                                                    onFocus={(e) => e.target.select()}
+                                                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl text-lg font-bold text-blue-700 bg-blue-50 focus:ring-2 focus:ring-blue-500"
+                                                />
+                                            </div>
 
-                                    <div>
-                                        <label className="block text-sm font-bold text-green-700 mb-1">Harga Retail (Otomatis)</label>
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            value={formatThousands(retailPrice)}
-                                            onChange={(e) => setFixedPrices(prev => ({
-                                                ...prev,
-                                                retail: parseFormattedNumber(e.target.value)
-                                            }))}
-                                            onFocus={(e) => e.target.select()}
-                                            className="w-full px-4 py-3 border-2 border-green-200 rounded-xl text-lg font-bold text-green-700 bg-green-50 focus:ring-2 focus:ring-green-500"
-                                        />
-                                    </div>
-                                </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-green-700 mb-1">Harga Retail (Otomatis)</label>
+                                                <input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    value={formatThousands(retailPrice)}
+                                                    onChange={(e) => setFixedPrices(prev => ({
+                                                        ...prev,
+                                                        retail: parseFormattedNumber(e.target.value)
+                                                    }))}
+                                                    onFocus={(e) => e.target.select()}
+                                                    className="w-full px-4 py-3 border-2 border-green-200 rounded-xl text-lg font-bold text-green-700 bg-green-50 focus:ring-2 focus:ring-green-500"
+                                                />
+                                            </div>
+                                        </div>
 
-                                {/* Expandable Price per Variant Matrix */}
-                                {/* Show when: multiple sizes OR showPricePerVariant is true (set from draft) */}
-                                {(() => {
-                                    const shouldShow = selectedSizes.length > 0 && (selectedSizes[0] !== 'All Size' || showPricePerVariant);
-                                    console.log('🔍 Matrix visibility check:', { selectedSizes, showPricePerVariant, shouldShow, pricesPerVariantCount: Object.keys(pricesPerVariant).length });
-                                    return shouldShow;
-                                })() && (
+                                        {/* Expandable Price per Variant Matrix */}
+                                        {/* Show when: multiple sizes OR showPricePerVariant is true (set from draft) */}
+                                        {/* Expandable Price per Variant Matrix */}
+                                        {/* Always show container so user can toggle it */}
                                         <div className="mb-5 border border-orange-200 rounded-xl overflow-hidden bg-white">
                                             <button
                                                 type="button"
@@ -989,130 +1022,131 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 </div>
                                             )}
                                         </div>
-                                    )}
+                                    </div>
 
-                                {/* Pricing Rules Editor (Moved Retail Markup Inside) */}
-                                <div className="mb-5 border border-blue-200 rounded-xl overflow-hidden bg-white">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPricingRules(!showPricingRules)}
-                                        className="w-full px-4 py-3 bg-blue-50 text-left flex justify-between items-center"
-                                    >
-                                        <span className="text-sm font-medium text-blue-800">
-                                            ⚙️ Aturan Harga & Markup
-                                        </span>
-                                        <span className="text-blue-600 text-xs">
-                                            {showPricingRules ? '▲ Tutup' : '▼ Setup'}
-                                        </span>
-                                    </button>
+                                    {/* Pricing Rules Editor (Moved Retail Markup Inside) */}
+                                    <div className="mb-5 border border-blue-200 rounded-xl overflow-hidden bg-white">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPricingRules(!showPricingRules)}
+                                            className="w-full px-4 py-3 bg-blue-50 text-left flex justify-between items-center"
+                                        >
+                                            <span className="text-sm font-medium text-blue-800">
+                                                ⚙️ Aturan Harga & Markup
+                                            </span>
+                                            <span className="text-blue-600 text-xs">
+                                                {showPricingRules ? '▲ Tutup' : '▼ Setup'}
+                                            </span>
+                                        </button>
 
-                                    {showPricingRules && (
-                                        <div className="p-4 space-y-5">
-                                            {/* Retail Markup Input (Moved Here) */}
-                                            <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                                                <label className="block text-xs font-bold text-green-800 mb-1">Selisih Retail - Reseller (Markup Retail)</label>
-                                                <input
-                                                    type="text"
-                                                    inputMode="numeric"
-                                                    value={formatThousands(uploadSettings.retailMarkup)}
-                                                    onChange={(e) => setUploadSettings(prev => ({ ...prev, retailMarkup: parseFormattedNumber(e.target.value) }))}
-                                                    onFocus={(e) => e.target.select()}
-                                                    className="w-full px-3 py-2 border border-green-300 rounded-lg text-base font-bold text-green-700 focus:ring-1 focus:ring-green-500"
-                                                />
-                                                <p className="text-[10px] text-green-600 mt-1">Retail = Harga Reseller + Nilai ini</p>
-                                            </div>
-
-                                            <div>
-                                                <p className="text-xs font-semibold text-gray-600 mb-2">
-                                                    Rumus Reseller = Modal + Markup (berdasarkan grafik range):
-                                                </p>
-                                                <div className="space-y-3">
-                                                    {uploadSettings.pricingRules.map((rule, index) => (
-                                                        <div key={rule.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <span className="text-xs font-bold text-gray-500">Range #{index + 1}</span>
-                                                                {uploadSettings.pricingRules.length > 1 && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => {
-                                                                            const newRules = uploadSettings.pricingRules.filter((_, i) => i !== index);
-                                                                            setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
-                                                                        }}
-                                                                        className="text-xs text-red-500"
-                                                                    >
-                                                                        Hapus
-                                                                    </button>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="grid grid-cols-2 gap-2 mb-2">
-                                                                <div>
-                                                                    <label className="block text-[10px] text-gray-500">Min Modal</label>
-                                                                    <input
-                                                                        type="text"
-                                                                        value={formatThousands(rule.minCost)}
-                                                                        onChange={(e) => {
-                                                                            const newRules = [...uploadSettings.pricingRules];
-                                                                            newRules[index] = { ...rule, minCost: parseFormattedNumber(e.target.value) };
-                                                                            setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
-                                                                        }}
-                                                                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                                                                    />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="block text-[10px] text-gray-500">Max Modal</label>
-                                                                    <input
-                                                                        type="text"
-                                                                        value={formatThousands(rule.maxCost)}
-                                                                        onChange={(e) => {
-                                                                            const newRules = [...uploadSettings.pricingRules];
-                                                                            newRules[index] = { ...rule, maxCost: parseFormattedNumber(e.target.value) };
-                                                                            setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
-                                                                        }}
-                                                                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <label className="block text-[10px] text-blue-600 font-bold">+ Markup Reseller (Cuan)</label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={formatThousands(rule.retailMarkup)}
-                                                                    onChange={(e) => {
-                                                                        const newRules = [...uploadSettings.pricingRules];
-                                                                        newRules[index] = { ...rule, retailMarkup: parseFormattedNumber(e.target.value) };
-                                                                        setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
-                                                                    }}
-                                                                    className="w-full px-2 py-2 text-base font-bold text-blue-700 bg-blue-50 border border-blue-300 rounded"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                        {showPricingRules && (
+                                            <div className="p-4 space-y-5">
+                                                {/* Retail Markup Input (Moved Here) */}
+                                                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                                                    <label className="block text-xs font-bold text-green-800 mb-1">Selisih Retail - Reseller (Markup Retail)</label>
+                                                    <input
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        value={formatThousands(uploadSettings.retailMarkup)}
+                                                        onChange={(e) => setUploadSettings(prev => ({ ...prev, retailMarkup: parseFormattedNumber(e.target.value) }))}
+                                                        onFocus={(e) => e.target.select()}
+                                                        className="w-full px-3 py-2 border border-green-300 rounded-lg text-base font-bold text-green-700 focus:ring-1 focus:ring-green-500"
+                                                    />
+                                                    <p className="text-[10px] text-green-600 mt-1">Retail = Harga Reseller + Nilai ini</p>
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const lastRule = uploadSettings.pricingRules[uploadSettings.pricingRules.length - 1];
-                                                        const newRule: PricingRule = {
-                                                            id: Date.now().toString(),
-                                                            minCost: lastRule ? lastRule.maxCost + 1 : 0,
-                                                            maxCost: lastRule ? lastRule.maxCost + 100000 : 100000,
-                                                            retailMarkup: lastRule ? lastRule.retailMarkup + 10000 : 30000
-                                                        };
-                                                        setUploadSettings(prev => ({
-                                                            ...prev,
-                                                            pricingRules: [...prev.pricingRules, newRule]
-                                                        }));
-                                                    }}
-                                                    className="w-full mt-3 py-2 border border-dashed border-blue-400 rounded-lg text-blue-600 text-sm font-medium hover:bg-blue-50"
-                                                >
-                                                    + Tambah Range Rule
-                                                </button>
+
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-600 mb-2">
+                                                        Rumus Reseller = Modal + Markup (berdasarkan grafik range):
+                                                    </p>
+                                                    <div className="space-y-3">
+                                                        {uploadSettings.pricingRules.map((rule, index) => (
+                                                            <div key={rule.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <span className="text-xs font-bold text-gray-500">Range #{index + 1}</span>
+                                                                    {uploadSettings.pricingRules.length > 1 && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                const newRules = uploadSettings.pricingRules.filter((_, i) => i !== index);
+                                                                                setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
+                                                                            }}
+                                                                            className="text-xs text-red-500"
+                                                                        >
+                                                                            Hapus
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+
+                                                                <div className="grid grid-cols-2 gap-2 mb-2">
+                                                                    <div>
+                                                                        <label className="block text-[10px] text-gray-500">Min Modal</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={formatThousands(rule.minCost)}
+                                                                            onChange={(e) => {
+                                                                                const newRules = [...uploadSettings.pricingRules];
+                                                                                newRules[index] = { ...rule, minCost: parseFormattedNumber(e.target.value) };
+                                                                                setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
+                                                                            }}
+                                                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="block text-[10px] text-gray-500">Max Modal</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={formatThousands(rule.maxCost)}
+                                                                            onChange={(e) => {
+                                                                                const newRules = [...uploadSettings.pricingRules];
+                                                                                newRules[index] = { ...rule, maxCost: parseFormattedNumber(e.target.value) };
+                                                                                setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
+                                                                            }}
+                                                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-[10px] text-blue-600 font-bold">+ Markup Reseller (Cuan)</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={formatThousands(rule.retailMarkup)}
+                                                                        onChange={(e) => {
+                                                                            const newRules = [...uploadSettings.pricingRules];
+                                                                            newRules[index] = { ...rule, retailMarkup: parseFormattedNumber(e.target.value) };
+                                                                            setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
+                                                                        }}
+                                                                        className="w-full px-2 py-2 text-base font-bold text-blue-700 bg-blue-50 border border-blue-300 rounded"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const lastRule = uploadSettings.pricingRules[uploadSettings.pricingRules.length - 1];
+                                                            const newRule: PricingRule = {
+                                                                id: Date.now().toString(),
+                                                                minCost: lastRule ? lastRule.maxCost + 1 : 0,
+                                                                maxCost: lastRule ? lastRule.maxCost + 100000 : 100000,
+                                                                retailMarkup: lastRule ? lastRule.retailMarkup + 10000 : 30000
+                                                            };
+                                                            setUploadSettings(prev => ({
+                                                                ...prev,
+                                                                pricingRules: [...prev.pricingRules, newRule]
+                                                            }));
+                                                        }}
+                                                        className="w-full mt-3 py-2 border border-dashed border-blue-400 rounded-lg text-blue-600 text-sm font-medium hover:bg-blue-50"
+                                                    >
+                                                        + Tambah Range Rule
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+
 
 
 
@@ -1166,6 +1200,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                             )}
                         </div>
                     )}
+
 
                     {/* Step 2: Details */}
                     {step === 'details' && (
@@ -1601,7 +1636,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
         </div >
     );
 };
