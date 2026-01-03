@@ -89,6 +89,9 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     // Variant count from draft (when images array is empty)
     const [draftVariantCount, setDraftVariantCount] = useState<number>(0);
 
+    // Selected image index for tap-to-swap reordering
+    const [selectedSwapIndex, setSelectedSwapIndex] = useState<number | null>(null);
+
     // Initialize from initialState when isOpen changes
     React.useEffect(() => {
         if (isOpen && initialState) {
@@ -571,86 +574,88 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                             {images.length > 0 && (
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center">
-                                        <h4 className="text-sm font-medium text-gray-700">📷 Gambar Produk ({images.length})</h4>
-                                        <span className="text-xs text-gray-400">Tap gambar untuk hapus, gunakan panah untuk pindahkan</span>
+                                        <h4 className="text-sm font-medium text-gray-700">📷 Gambar ({images.length})</h4>
+                                        {selectedSwapIndex !== null && (
+                                            <span className="text-xs text-purple-600 font-medium">🔄 Pilih target swap</span>
+                                        )}
                                     </div>
+                                    <p className="text-xs text-blue-600 bg-blue-50 p-2 rounded-lg">
+                                        💡 <strong>Tap 2x berbeda</strong> untuk tukar posisi. <strong>Pakai panah</strong> untuk geser.
+                                    </p>
                                     <div className="grid grid-cols-5 gap-2">
-                                        {imagePreviews.map((preview, index) => (
-                                            <div key={index} className="space-y-1">
-                                                <div className="relative group">
-                                                    <img
-                                                        src={preview}
-                                                        alt={`Preview ${index + 1}`}
-                                                        className="w-full aspect-[3/4] object-cover rounded-lg border border-gray-200 cursor-pointer"
-                                                        onClick={() => handleRemoveImage(index)}
+                                        {imagePreviews.map((preview, index) => {
+                                            const isSelected = selectedSwapIndex === index;
+                                            return (
+                                                <div key={index} className="space-y-1">
+                                                    <div
+                                                        className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${isSelected ? 'border-purple-500 ring-2 ring-purple-300 scale-105' : 'border-gray-200 hover:border-purple-300'
+                                                            }`}
+                                                        onClick={() => {
+                                                            if (selectedSwapIndex === null) {
+                                                                // First tap: select
+                                                                setSelectedSwapIndex(index);
+                                                            } else if (selectedSwapIndex === index) {
+                                                                // Tap same: deselect
+                                                                setSelectedSwapIndex(null);
+                                                            } else {
+                                                                // Second tap: swap
+                                                                const fromIdx = selectedSwapIndex;
+                                                                const newImages = [...images];
+                                                                const newPreviews = [...imagePreviews];
+                                                                [newImages[fromIdx], newImages[index]] = [newImages[index], newImages[fromIdx]];
+                                                                [newPreviews[fromIdx], newPreviews[index]] = [newPreviews[index], newPreviews[fromIdx]];
+                                                                setImages(newImages);
+                                                                setImagePreviews(newPreviews);
+                                                                setSelectedSwapIndex(null);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <img
+                                                            src={preview}
+                                                            alt={`Preview ${index + 1}`}
+                                                            className="w-full aspect-[3/4] object-cover"
+                                                        />
+                                                        {isSelected && (
+                                                            <div className="absolute inset-0 bg-purple-500/30 flex items-center justify-center">
+                                                                <span className="text-white text-2xl">✓</span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Label badge */}
+                                                        <div className="absolute top-1 left-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
+                                                            {variantLabels[index]}
+                                                        </div>
+
+                                                        {/* Delete button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleRemoveImage(index);
+                                                            }}
+                                                            className="absolute top-1 right-1 w-5 h-5 bg-red-500/80 rounded-full text-white text-xs font-bold hover:bg-red-600 transition-colors"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Editable variant name */}
+                                                    <input
+                                                        type="text"
+                                                        value={variantNames[variantLabels[index]] || ''}
+                                                        onChange={(e) => setVariantNames(prev => ({
+                                                            ...prev,
+                                                            [variantLabels[index]]: e.target.value
+                                                        }))}
+                                                        placeholder={variantLabels[index]}
+                                                        className="w-full px-1 py-1 text-[10px] text-center border border-gray-200 rounded focus:ring-1 focus:ring-purple-500"
                                                     />
-                                                    {/* Overlay on hover */}
-                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
-                                                        <X className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
-                                                    </div>
-
-                                                    {/* Label badge */}
-                                                    <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
-                                                        {variantLabels[index]}
-                                                    </div>
-
-                                                    {/* Reorder arrows */}
-                                                    <div className="absolute bottom-1 left-1 right-1 flex justify-between gap-1">
-                                                        {index > 0 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    // Swap with previous
-                                                                    const newImages = [...images];
-                                                                    const newPreviews = [...imagePreviews];
-                                                                    [newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]];
-                                                                    [newPreviews[index - 1], newPreviews[index]] = [newPreviews[index], newPreviews[index - 1]];
-                                                                    setImages(newImages);
-                                                                    setImagePreviews(newPreviews);
-                                                                }}
-                                                                className="w-5 h-5 bg-white/90 rounded text-gray-700 text-xs font-bold hover:bg-purple-500 hover:text-white transition-colors shadow"
-                                                            >
-                                                                ←
-                                                            </button>
-                                                        )}
-                                                        {index < images.length - 1 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    // Swap with next
-                                                                    const newImages = [...images];
-                                                                    const newPreviews = [...imagePreviews];
-                                                                    [newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]];
-                                                                    [newPreviews[index], newPreviews[index + 1]] = [newPreviews[index + 1], newPreviews[index]];
-                                                                    setImages(newImages);
-                                                                    setImagePreviews(newPreviews);
-                                                                }}
-                                                                className="w-5 h-5 bg-white/90 rounded text-gray-700 text-xs font-bold hover:bg-purple-500 hover:text-white transition-colors shadow"
-                                                            >
-                                                                →
-                                                            </button>
-                                                        )}
-                                                    </div>
                                                 </div>
-
-                                                {/* Editable variant name */}
-                                                <input
-                                                    type="text"
-                                                    value={variantNames[variantLabels[index]] || ''}
-                                                    onChange={(e) => setVariantNames(prev => ({
-                                                        ...prev,
-                                                        [variantLabels[index]]: e.target.value
-                                                    }))}
-                                                    placeholder={variantLabels[index]}
-                                                    className="w-full px-1 py-0.5 text-[10px] text-center border border-gray-200 rounded focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
-                                                />
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                     <p className="text-[10px] text-gray-400 text-center">
-                                        Nama varian di atas akan tampil saat checkout. Collage tetap pakai huruf A, B, C...
+                                        Nama varian akan tampil saat checkout. Collage tetap pakai huruf A, B, C...
                                     </p>
                                 </div>
                             )}
