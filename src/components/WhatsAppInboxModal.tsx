@@ -119,10 +119,10 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                 console.log('⚠️ DEBUG: No variantPricing in draft');
             }
 
-            // Pass to ManualUploadModal at step='upload' (first step, like manual upload)
-            // User can manage images there, then generate collage
+            // Pass to ManualUploadModal at step='upload'
+            // Collage will be generated in browser (Cloud Function disabled to save costs)
             onProcess({
-                step: 'details', // Start at details (preview) step
+                step: 'upload', // Start at upload step, collage will be auto-generated in browser
                 images: imageFiles,
                 productData: {
                     name: draft.name,

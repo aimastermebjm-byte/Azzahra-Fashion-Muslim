@@ -314,13 +314,11 @@ exports.checkPaymentDetection = onDocumentCreated("paymentDetectionsPending/{det
 });
 
 // ============================================================
-// 🎨 PRODUCT DRAFT PROCESSOR
-// Trigger: When a new product draft is created
-// - Analyze images (detect KHIMAR/SCARF, AYAH/IBU/ANAK)
-// - Match with setTypes/familyVariants for correct pricing
-// - Generate collage
-// - Update draft with complete data
+// 🎨 PRODUCT DRAFT PROCESSOR - DISABLED
+// Collage is now generated in browser to save Firebase Function costs
+// Keep this code for reference in case we need to re-enable
 // ============================================================
+/*
 exports.processProductDraft = onDocumentCreated(
     {
         document: "product_drafts/{draftId}",
@@ -328,105 +326,11 @@ exports.processProductDraft = onDocumentCreated(
         timeoutSeconds: 540
     },
     async (event) => {
-        const snapshot = event.data;
-        if (!snapshot) return;
-
-        const draft = snapshot.data();
-        const draftId = event.params.draftId;
-
-        logger.info(`🎨 Draft Processor: New draft ${draftId}`);
-
-        // Skip if already processed or no raw images
-        const rawImages = draft.rawImages || [];
-        if (rawImages.length === 0) {
-            logger.info(`⏩ No raw images, skipping.`);
-            return;
-        }
-
-        if (draft.collageStatus === 'processed') {
-            logger.info(`⏩ Already processed, skipping.`);
-            return;
-        }
-
-        try {
-            // Initialize Gemini AI
-            const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-            const visionModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
-
-            // 1. Download and analyze each image
-            const imageAnalysis = [];
-            const imageBuffers = [];
-
-            for (let i = 0; i < rawImages.length; i++) {
-                const url = rawImages[i];
-                try {
-                    logger.info(`📷 Downloading image ${i + 1}/${rawImages.length}...`);
-                    const response = await fetch(url);
-                    const arrayBuffer = await response.arrayBuffer();
-                    const buffer = Buffer.from(arrayBuffer);
-                    imageBuffers.push(buffer);
-
-                    // Analyze image with AI
-                    const analysis = await analyzeImage(visionModel, buffer);
-                    imageAnalysis.push({
-                        index: i,
-                        label: String.fromCharCode(65 + i), // A, B, C, ...
-                        ...analysis
-                    });
-                    logger.info(`   ✓ Image ${i + 1}: Hijab=${analysis.hijabType}, Family=${analysis.familyType}`);
-                } catch (err) {
-                    logger.warn(`   ⚠️ Failed to process image ${i + 1}: ${err.message}`);
-                    imageBuffers.push(null);
-                    imageAnalysis.push({ index: i, label: String.fromCharCode(65 + i), hijabType: 'UNKNOWN', familyType: 'DEWASA' });
-                }
-            }
-
-            // 2. Match analysis with setTypes/familyVariants for pricing
-            const variantPricing = matchPricing(imageAnalysis, draft.setTypes || [], draft.familyVariants || []);
-            logger.info(`💰 Variant pricing matched:`, JSON.stringify(variantPricing));
-
-            // 3. Generate collage (skip null buffers)
-            const validBuffers = imageBuffers.filter(b => b !== null);
-            let collageUrl = draft.collageUrl;
-
-            if (validBuffers.length > 0) {
-                logger.info(`🎨 Generating collage from ${validBuffers.length} images...`);
-                const collageBuffer = await generateCollageFromBuffers(validBuffers);
-
-                // Upload collage
-                const collageFilename = `collages/draft_${draftId}_${Date.now()}.jpg`;
-                const file = bucket.file(collageFilename);
-                await file.save(collageBuffer, {
-                    metadata: { contentType: 'image/jpeg' },
-                    public: true // Make file public
-                });
-
-                // Use public URL instead of signed URL (no IAM permission needed)
-                collageUrl = `https://storage.googleapis.com/${bucket.name}/${collageFilename}`;
-                logger.info(`☁️ Collage uploaded: ${collageFilename}`);
-            }
-
-            // 4. Update draft with complete data
-            await db.collection("product_drafts").doc(draftId).update({
-                collageUrl: collageUrl,
-                collageStatus: 'processed',
-                imageAnalysis: imageAnalysis,
-                variantPricing: variantPricing,
-                processedAt: new Date().toISOString(),
-                processedBy: 'cloud_function'
-            });
-
-            logger.info(`✅ Draft ${draftId} processed successfully!`);
-
-        } catch (error) {
-            logger.error(`❌ Draft processing failed:`, error);
-            await db.collection("product_drafts").doc(draftId).update({
-                collageStatus: 'failed',
-                collageError: error.message
-            });
-        }
+        // DISABLED - collage now generated in browser
+        // See WhatsAppInboxModal.tsx for collage generation
     }
 );
+*/
 
 // ============================================================
 // Helper: Analyze single image with Gemini AI

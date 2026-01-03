@@ -317,17 +317,26 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     }, [resellerPrice, uploadSettings.retailMarkup, fixedPrices]);
 
     // Auto-initialize pricesPerVariant when sizes, variants, or base prices change
+    // IMPORTANT: Don't overwrite values that already exist (e.g., from draft)
     React.useEffect(() => {
+        // Skip if we already have pricing data (from draft)
+        const existingCount = Object.keys(pricesPerVariant).length;
+        if (existingCount > 0) {
+            console.log('🔒 Preserving existing pricesPerVariant:', existingCount, 'items');
+            return; // Don't overwrite existing data
+        }
+
         const newPrices: Record<string, { retail: number, reseller: number }> = {};
         selectedSizes.forEach(size => {
             variantLabels.forEach(label => {
                 const key = `${size}-${label}`;
-                newPrices[key] = pricesPerVariant[key] || {
+                newPrices[key] = {
                     retail: retailPrice,
                     reseller: resellerPrice
                 };
             });
         });
+        console.log('🔄 Auto-initializing pricesPerVariant:', newPrices);
         setPricesPerVariant(newPrices);
     }, [selectedSizes, variantLabels, retailPrice, resellerPrice]);
 
