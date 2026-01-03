@@ -138,6 +138,11 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                     setSelectedSizes(initialState.productData.variants.sizes);
                 }
 
+                // Set variant names from draft
+                if ((initialState.productData as any)?.variantNames) {
+                    setVariantNames((initialState.productData as any).variantNames);
+                }
+
                 // Set prices per variant from draft
                 if (initialState.productData?.pricesPerVariant) {
                     console.log('💰 Setting pricesPerVariant from Draft:', initialState.productData.pricesPerVariant); // DEBUG
