@@ -92,6 +92,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     // Initialize from initialState when isOpen changes
     React.useEffect(() => {
         if (isOpen && initialState) {
+            console.log('📦 ManualUploadModal OPENED', { initialState }); // DEBUG
             if (initialState.step) setStep(initialState.step);
 
             if (initialState.images && initialState.images.length > 0) {
@@ -135,8 +136,11 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
                 // Set prices per variant from draft
                 if (initialState.productData?.pricesPerVariant) {
+                    console.log('💰 Setting pricesPerVariant from Draft:', initialState.productData.pricesPerVariant); // DEBUG
                     setPricesPerVariant(initialState.productData.pricesPerVariant);
                     setShowPricePerVariant(true);
+                } else {
+                    console.log('⚠️ No pricesPerVariant in productData'); // DEBUG
                 }
 
                 // Load initial stock if available (from WhatsApp Inbox)
@@ -787,7 +791,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 </div>
 
                                 {/* Expandable Price per Variant Matrix */}
-                                {selectedSizes.length > 0 && selectedSizes[0] !== 'All Size' && (
+                                {/* Show when: multiple sizes OR pricesPerVariant has data (from Cloud Function) */}
+                                {(selectedSizes.length > 0 && (selectedSizes[0] !== 'All Size' || Object.keys(pricesPerVariant).length > 0)) && (
                                     <div className="mb-5 border border-orange-200 rounded-xl overflow-hidden bg-white">
                                         <button
                                             type="button"

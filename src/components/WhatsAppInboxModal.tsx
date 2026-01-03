@@ -18,6 +18,12 @@ interface ProductDraft {
     rawImages: string[];
     sizes?: string[];
     colors?: string[];
+    variantPricing?: Array<{
+        label: string;
+        type: string;
+        retailPrice: number;
+        resellerPrice: number;
+    }>;
 }
 
 interface WhatsAppInboxModalProps {
@@ -84,6 +90,27 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                 })
             );
 
+            // Transform variant pricing for ManualUploadModal
+            let pricesPerVariant: Record<string, { retail: number, reseller: number }> | undefined;
+
+            if (draft.variantPricing && Array.isArray(draft.variantPricing)) {
+                pricesPerVariant = {};
+                const sizes = draft.sizes && draft.sizes.length > 0 ? draft.sizes : ['All Size'];
+
+                draft.variantPricing.forEach((vp) => {
+                    // vp.label is "A", "B", etc.
+                    sizes.forEach(size => {
+                        const key = `${size}-${vp.label}`; // e.g. "All Size-A"
+                        if (vp.retailPrice && vp.resellerPrice) {
+                            pricesPerVariant![key] = {
+                                retail: vp.retailPrice,
+                                reseller: vp.resellerPrice
+                            };
+                        }
+                    });
+                });
+            }
+
             // Pass to ManualUploadModal at step='upload' (first step, like manual upload)
             // User can manage images there, then generate collage
             onProcess({
@@ -99,7 +126,8 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                     costPrice: draft.costPrice,
                     variants: {
                         sizes: draft.sizes && draft.sizes.length > 0 ? draft.sizes : ['All Size']
-                    }
+                    },
+                    pricesPerVariant: pricesPerVariant
                 },
                 draftId: draft.id,
                 uploadSettings: {
