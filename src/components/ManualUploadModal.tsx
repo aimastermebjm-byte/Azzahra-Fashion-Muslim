@@ -1267,11 +1267,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     </div>
                                 </div>
 
-                                {/* Expand Harga per Size/Varian - show when multiple sizes OR showPricePerVariant is set */}
+                                {/* Expand Harga per Size/Varian - show when multiple sizes OR has pricing data */}
                                 {(() => {
-                                    const shouldShow = selectedSizes.length > 0 && (selectedSizes[0] !== 'All Size' || showPricePerVariant);
-                                    console.log('🔍 Step2 Matrix check:', { selectedSizes, showPricePerVariant, shouldShow });
-                                    return shouldShow;
+                                    const hasVariantPricing = Object.keys(pricesPerVariant).length > 0;
+                                    const shouldShowSection = selectedSizes.length > 0 && (selectedSizes[0] !== 'All Size' || hasVariantPricing);
+                                    console.log('🔍 Step2 Matrix check:', { selectedSizes, hasVariantPricing, showPricePerVariant, shouldShowSection, pricesPerVariant });
+                                    return shouldShowSection;
                                 })() && (
                                         <div className="mt-4 border-t pt-4">
                                             <button
