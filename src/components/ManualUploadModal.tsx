@@ -791,123 +791,127 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 </div>
 
                                 {/* Expandable Price per Variant Matrix */}
-                                {/* Show when: multiple sizes OR pricesPerVariant has data (from Cloud Function) */}
-                                {(selectedSizes.length > 0 && (selectedSizes[0] !== 'All Size' || Object.keys(pricesPerVariant).length > 0)) && (
-                                    <div className="mb-5 border border-orange-200 rounded-xl overflow-hidden bg-white">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPricePerVariant(!showPricePerVariant)}
-                                            className="w-full px-4 py-3 bg-orange-50 text-left flex justify-between items-center"
-                                        >
-                                            <span className="text-sm font-medium text-orange-800">
-                                                💰 Harga Beda per Size / Varian?
-                                            </span>
-                                            <span className="text-orange-600 text-xs">
-                                                {showPricePerVariant ? '▲ Tutup' : '▼ Expand'}
-                                            </span>
-                                        </button>
+                                {/* Show when: multiple sizes OR showPricePerVariant is true (set from draft) */}
+                                {(() => {
+                                    const shouldShow = selectedSizes.length > 0 && (selectedSizes[0] !== 'All Size' || showPricePerVariant);
+                                    console.log('🔍 Matrix visibility check:', { selectedSizes, showPricePerVariant, shouldShow, pricesPerVariantCount: Object.keys(pricesPerVariant).length });
+                                    return shouldShow;
+                                })() && (
+                                        <div className="mb-5 border border-orange-200 rounded-xl overflow-hidden bg-white">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPricePerVariant(!showPricePerVariant)}
+                                                className="w-full px-4 py-3 bg-orange-50 text-left flex justify-between items-center"
+                                            >
+                                                <span className="text-sm font-medium text-orange-800">
+                                                    💰 Harga Beda per Size / Varian?
+                                                </span>
+                                                <span className="text-orange-600 text-xs">
+                                                    {showPricePerVariant ? '▲ Tutup' : '▼ Expand'}
+                                                </span>
+                                            </button>
 
-                                        {showPricePerVariant && (
-                                            <div className="p-4 space-y-6">
-                                                {/* Retail Price Matrix */}
-                                                <div>
-                                                    <h4 className="text-xs font-bold text-green-700 mb-2">Matrix Harga Retail</h4>
-                                                    <div className="overflow-x-auto">
-                                                        <table className="w-full text-xs">
-                                                            <thead>
-                                                                <tr className="bg-green-50">
-                                                                    <th className="px-2 py-1 text-left border border-green-100">Size</th>
-                                                                    {variantLabels.map(label => (
-                                                                        <th key={label} className="px-2 py-1 text-center border border-green-100">{label}</th>
-                                                                    ))}
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {selectedSizes.map(size => (
-                                                                    <tr key={size}>
-                                                                        <td className="px-2 py-1 font-bold border border-green-100">{size}</td>
-                                                                        {variantLabels.map(label => {
-                                                                            const key = `${size}-${label}`;
-                                                                            return (
-                                                                                <td key={key} className="px-1 py-1 border border-green-100">
-                                                                                    <input
-                                                                                        type="text"
-                                                                                        inputMode="numeric"
-                                                                                        value={formatThousands(pricesPerVariant[key]?.retail || retailPrice)}
-                                                                                        onChange={(e) => {
-                                                                                            const val = parseFormattedNumber(e.target.value);
-                                                                                            setPricesPerVariant(prev => ({
-                                                                                                ...prev,
-                                                                                                [key]: {
-                                                                                                    ...(prev[key] || { reseller: resellerPrice }),
-                                                                                                    retail: val
-                                                                                                }
-                                                                                            }));
-                                                                                        }}
-                                                                                        onFocus={(e) => e.target.select()}
-                                                                                        className="w-full px-1 py-1 text-center bg-white border border-green-200 rounded text-[10px] focus:ring-1 focus:ring-green-500"
-                                                                                    />
-                                                                                </td>
-                                                                            );
-                                                                        })}
+                                            {showPricePerVariant && (
+                                                <div className="p-4 space-y-6">
+                                                    {/* Retail Price Matrix */}
+                                                    <div>
+                                                        <h4 className="text-xs font-bold text-green-700 mb-2">Matrix Harga Retail</h4>
+                                                        <div className="overflow-x-auto">
+                                                            <table className="w-full text-xs">
+                                                                <thead>
+                                                                    <tr className="bg-green-50">
+                                                                        <th className="px-2 py-1 text-left border border-green-100">Size</th>
+                                                                        {variantLabels.map(label => (
+                                                                            <th key={label} className="px-2 py-1 text-center border border-green-100">{label}</th>
+                                                                        ))}
                                                                     </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {selectedSizes.map(size => (
+                                                                        <tr key={size}>
+                                                                            <td className="px-2 py-1 font-bold border border-green-100">{size}</td>
+                                                                            {variantLabels.map(label => {
+                                                                                const key = `${size}-${label}`;
+                                                                                return (
+                                                                                    <td key={key} className="px-1 py-1 border border-green-100">
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            inputMode="numeric"
+                                                                                            value={formatThousands(pricesPerVariant[key]?.retail || retailPrice)}
+                                                                                            onChange={(e) => {
+                                                                                                const val = parseFormattedNumber(e.target.value);
+                                                                                                setPricesPerVariant(prev => ({
+                                                                                                    ...prev,
+                                                                                                    [key]: {
+                                                                                                        ...(prev[key] || { reseller: resellerPrice }),
+                                                                                                        retail: val
+                                                                                                    }
+                                                                                                }));
+                                                                                            }}
+                                                                                            onFocus={(e) => e.target.select()}
+                                                                                            className="w-full px-1 py-1 text-center bg-white border border-green-200 rounded text-[10px] focus:ring-1 focus:ring-green-500"
+                                                                                        />
+                                                                                    </td>
+                                                                                );
+                                                                            })}
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Reseller Price Matrix */}
+                                                    <div>
+                                                        <h4 className="text-xs font-bold text-blue-700 mb-2">Matrix Harga Reseller</h4>
+                                                        <div className="overflow-x-auto">
+                                                            <table className="w-full text-xs">
+                                                                <thead>
+                                                                    <tr className="bg-blue-50">
+                                                                        <th className="px-2 py-1 text-left border border-blue-100">Size</th>
+                                                                        {variantLabels.map(label => (
+                                                                            <th key={label} className="px-2 py-1 text-center border border-blue-100">{label}</th>
+                                                                        ))}
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {selectedSizes.map(size => (
+                                                                        <tr key={size}>
+                                                                            <td className="px-2 py-1 font-bold border border-blue-100">{size}</td>
+                                                                            {variantLabels.map(label => {
+                                                                                const key = `${size}-${label}`;
+                                                                                return (
+                                                                                    <td key={key} className="px-1 py-1 border border-blue-100">
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            inputMode="numeric"
+                                                                                            value={formatThousands(pricesPerVariant[key]?.reseller || resellerPrice)}
+                                                                                            onChange={(e) => {
+                                                                                                const val = parseFormattedNumber(e.target.value);
+                                                                                                setPricesPerVariant(prev => ({
+                                                                                                    ...prev,
+                                                                                                    [key]: {
+                                                                                                        ...(prev[key] || { retail: retailPrice }),
+                                                                                                        reseller: val
+                                                                                                    }
+                                                                                                }));
+                                                                                            }}
+                                                                                            onFocus={(e) => e.target.select()}
+                                                                                            className="w-full px-1 py-1 text-center bg-white border border-blue-200 rounded text-[10px] focus:ring-1 focus:ring-blue-500"
+                                                                                        />
+                                                                                    </td>
+                                                                                );
+                                                                            })}
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
                                                     </div>
                                                 </div>
-
-                                                {/* Reseller Price Matrix */}
-                                                <div>
-                                                    <h4 className="text-xs font-bold text-blue-700 mb-2">Matrix Harga Reseller</h4>
-                                                    <div className="overflow-x-auto">
-                                                        <table className="w-full text-xs">
-                                                            <thead>
-                                                                <tr className="bg-blue-50">
-                                                                    <th className="px-2 py-1 text-left border border-blue-100">Size</th>
-                                                                    {variantLabels.map(label => (
-                                                                        <th key={label} className="px-2 py-1 text-center border border-blue-100">{label}</th>
-                                                                    ))}
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {selectedSizes.map(size => (
-                                                                    <tr key={size}>
-                                                                        <td className="px-2 py-1 font-bold border border-blue-100">{size}</td>
-                                                                        {variantLabels.map(label => {
-                                                                            const key = `${size}-${label}`;
-                                                                            return (
-                                                                                <td key={key} className="px-1 py-1 border border-blue-100">
-                                                                                    <input
-                                                                                        type="text"
-                                                                                        inputMode="numeric"
-                                                                                        value={formatThousands(pricesPerVariant[key]?.reseller || resellerPrice)}
-                                                                                        onChange={(e) => {
-                                                                                            const val = parseFormattedNumber(e.target.value);
-                                                                                            setPricesPerVariant(prev => ({
-                                                                                                ...prev,
-                                                                                                [key]: {
-                                                                                                    ...(prev[key] || { retail: retailPrice }),
-                                                                                                    reseller: val
-                                                                                                }
-                                                                                            }));
-                                                                                        }}
-                                                                                        onFocus={(e) => e.target.select()}
-                                                                                        className="w-full px-1 py-1 text-center bg-white border border-blue-200 rounded text-[10px] focus:ring-1 focus:ring-blue-500"
-                                                                                    />
-                                                                                </td>
-                                                                            );
-                                                                        })}
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                            )}
+                                        </div>
+                                    )}
 
                                 {/* Pricing Rules Editor (Moved Retail Markup Inside) */}
                                 <div className="mb-5 border border-blue-200 rounded-xl overflow-hidden bg-white">
@@ -1263,123 +1267,127 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     </div>
                                 </div>
 
-                                {/* Expand Harga per Size/Varian */}
-                                {selectedSizes.length > 0 && selectedSizes[0] !== 'All Size' && (
-                                    <div className="mt-4 border-t pt-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPricePerVariant(!showPricePerVariant)}
-                                            className="w-full px-3 py-2 bg-orange-50 rounded-lg text-left flex justify-between items-center border border-orange-200"
-                                        >
-                                            <span className="text-xs font-medium text-orange-800">
-                                                💰 Harga Beda per Size / Varian?
-                                            </span>
-                                            <span className="text-orange-600">
-                                                {showPricePerVariant ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                            </span>
-                                        </button>
+                                {/* Expand Harga per Size/Varian - show when multiple sizes OR showPricePerVariant is set */}
+                                {(() => {
+                                    const shouldShow = selectedSizes.length > 0 && (selectedSizes[0] !== 'All Size' || showPricePerVariant);
+                                    console.log('🔍 Step2 Matrix check:', { selectedSizes, showPricePerVariant, shouldShow });
+                                    return shouldShow;
+                                })() && (
+                                        <div className="mt-4 border-t pt-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPricePerVariant(!showPricePerVariant)}
+                                                className="w-full px-3 py-2 bg-orange-50 rounded-lg text-left flex justify-between items-center border border-orange-200"
+                                            >
+                                                <span className="text-xs font-medium text-orange-800">
+                                                    💰 Harga Beda per Size / Varian?
+                                                </span>
+                                                <span className="text-orange-600">
+                                                    {showPricePerVariant ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                                </span>
+                                            </button>
 
-                                        {showPricePerVariant && (
-                                            <div className="mt-3 p-4 bg-white rounded-lg border border-orange-200 space-y-5">
-                                                {/* Retail Price Matrix */}
-                                                <div>
-                                                    <h4 className="text-sm font-bold text-green-700 mb-3">💚 Matrix Harga Retail</h4>
-                                                    <div className="overflow-x-auto -mx-2 px-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
-                                                        <table className="w-full text-sm min-w-[320px]">
-                                                            <thead>
-                                                                <tr className="bg-green-50">
-                                                                    <th className="px-2 py-1 text-left border border-green-100">Size</th>
-                                                                    {variantLabels.map(label => (
-                                                                        <th key={label} className="px-2 py-1 text-center border border-green-100">{label}</th>
-                                                                    ))}
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {selectedSizes.map(size => (
-                                                                    <tr key={size}>
-                                                                        <td className="px-2 py-1 font-bold border border-green-100">{size}</td>
-                                                                        {variantLabels.map(label => {
-                                                                            const key = `${size}-${label}`;
-                                                                            return (
-                                                                                <td key={key} className="px-2 py-2 border border-green-100 min-w-[95px]">
-                                                                                    <input
-                                                                                        type="text"
-                                                                                        inputMode="numeric"
-                                                                                        value={formatThousands(pricesPerVariant[key]?.retail || retailPrice)}
-                                                                                        onChange={(e) => {
-                                                                                            const val = parseFormattedNumber(e.target.value);
-                                                                                            setPricesPerVariant(prev => ({
-                                                                                                ...prev,
-                                                                                                [key]: {
-                                                                                                    ...(prev[key] || { reseller: resellerPrice }),
-                                                                                                    retail: val
-                                                                                                }
-                                                                                            }));
-                                                                                        }}
-                                                                                        onFocus={(e) => e.target.select()}
-                                                                                        className="w-full px-2 py-2 text-center bg-white border border-green-300 rounded text-sm font-medium focus:ring-2 focus:ring-green-500"
-                                                                                    />
-                                                                                </td>
-                                                                            );
-                                                                        })}
+                                            {showPricePerVariant && (
+                                                <div className="mt-3 p-4 bg-white rounded-lg border border-orange-200 space-y-5">
+                                                    {/* Retail Price Matrix */}
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-green-700 mb-3">💚 Matrix Harga Retail</h4>
+                                                        <div className="overflow-x-auto -mx-2 px-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                                                            <table className="w-full text-sm min-w-[320px]">
+                                                                <thead>
+                                                                    <tr className="bg-green-50">
+                                                                        <th className="px-2 py-1 text-left border border-green-100">Size</th>
+                                                                        {variantLabels.map(label => (
+                                                                            <th key={label} className="px-2 py-1 text-center border border-green-100">{label}</th>
+                                                                        ))}
                                                                     </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {selectedSizes.map(size => (
+                                                                        <tr key={size}>
+                                                                            <td className="px-2 py-1 font-bold border border-green-100">{size}</td>
+                                                                            {variantLabels.map(label => {
+                                                                                const key = `${size}-${label}`;
+                                                                                return (
+                                                                                    <td key={key} className="px-2 py-2 border border-green-100 min-w-[95px]">
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            inputMode="numeric"
+                                                                                            value={formatThousands(pricesPerVariant[key]?.retail || retailPrice)}
+                                                                                            onChange={(e) => {
+                                                                                                const val = parseFormattedNumber(e.target.value);
+                                                                                                setPricesPerVariant(prev => ({
+                                                                                                    ...prev,
+                                                                                                    [key]: {
+                                                                                                        ...(prev[key] || { reseller: resellerPrice }),
+                                                                                                        retail: val
+                                                                                                    }
+                                                                                                }));
+                                                                                            }}
+                                                                                            onFocus={(e) => e.target.select()}
+                                                                                            className="w-full px-2 py-2 text-center bg-white border border-green-300 rounded text-sm font-medium focus:ring-2 focus:ring-green-500"
+                                                                                        />
+                                                                                    </td>
+                                                                                );
+                                                                            })}
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Reseller Price Matrix */}
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-blue-700 mb-3">💙 Matrix Harga Reseller</h4>
+                                                        <div className="overflow-x-auto -mx-2 px-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                                                            <table className="w-full text-sm min-w-[320px]">
+                                                                <thead>
+                                                                    <tr className="bg-blue-50">
+                                                                        <th className="px-2 py-2 text-left border border-blue-100 font-bold">Size</th>
+                                                                        {variantLabels.map(label => (
+                                                                            <th key={label} className="px-2 py-2 text-center border border-blue-100 font-bold min-w-[80px]">{label}</th>
+                                                                        ))}
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {selectedSizes.map(size => (
+                                                                        <tr key={size}>
+                                                                            <td className="px-2 py-2 font-bold border border-blue-100">{size}</td>
+                                                                            {variantLabels.map(label => {
+                                                                                const key = `${size}-${label}`;
+                                                                                return (
+                                                                                    <td key={key} className="px-2 py-2 border border-blue-100 min-w-[95px]">
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            inputMode="numeric"
+                                                                                            value={formatThousands(pricesPerVariant[key]?.reseller || resellerPrice)}
+                                                                                            onChange={(e) => {
+                                                                                                const val = parseFormattedNumber(e.target.value);
+                                                                                                setPricesPerVariant(prev => ({
+                                                                                                    ...prev,
+                                                                                                    [key]: {
+                                                                                                        ...(prev[key] || { retail: retailPrice }),
+                                                                                                        reseller: val
+                                                                                                    }
+                                                                                                }));
+                                                                                            }}
+                                                                                            onFocus={(e) => e.target.select()}
+                                                                                            className="w-full px-2 py-2 text-center bg-white border border-blue-300 rounded text-sm font-medium focus:ring-2 focus:ring-blue-500"
+                                                                                        />
+                                                                                    </td>
+                                                                                );
+                                                                            })}
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
                                                     </div>
                                                 </div>
-
-                                                {/* Reseller Price Matrix */}
-                                                <div>
-                                                    <h4 className="text-sm font-bold text-blue-700 mb-3">💙 Matrix Harga Reseller</h4>
-                                                    <div className="overflow-x-auto -mx-2 px-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
-                                                        <table className="w-full text-sm min-w-[320px]">
-                                                            <thead>
-                                                                <tr className="bg-blue-50">
-                                                                    <th className="px-2 py-2 text-left border border-blue-100 font-bold">Size</th>
-                                                                    {variantLabels.map(label => (
-                                                                        <th key={label} className="px-2 py-2 text-center border border-blue-100 font-bold min-w-[80px]">{label}</th>
-                                                                    ))}
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {selectedSizes.map(size => (
-                                                                    <tr key={size}>
-                                                                        <td className="px-2 py-2 font-bold border border-blue-100">{size}</td>
-                                                                        {variantLabels.map(label => {
-                                                                            const key = `${size}-${label}`;
-                                                                            return (
-                                                                                <td key={key} className="px-2 py-2 border border-blue-100 min-w-[95px]">
-                                                                                    <input
-                                                                                        type="text"
-                                                                                        inputMode="numeric"
-                                                                                        value={formatThousands(pricesPerVariant[key]?.reseller || resellerPrice)}
-                                                                                        onChange={(e) => {
-                                                                                            const val = parseFormattedNumber(e.target.value);
-                                                                                            setPricesPerVariant(prev => ({
-                                                                                                ...prev,
-                                                                                                [key]: {
-                                                                                                    ...(prev[key] || { retail: retailPrice }),
-                                                                                                    reseller: val
-                                                                                                }
-                                                                                            }));
-                                                                                        }}
-                                                                                        onFocus={(e) => e.target.select()}
-                                                                                        className="w-full px-2 py-2 text-center bg-white border border-blue-300 rounded text-sm font-medium focus:ring-2 focus:ring-blue-500"
-                                                                                    />
-                                                                                </td>
-                                                                            );
-                                                                        })}
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                            )}
+                                        </div>
+                                    )}
                             </div>
 
                             {/* Stock per Size × Variant Matrix - Collapsible */}

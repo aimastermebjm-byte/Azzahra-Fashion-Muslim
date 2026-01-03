@@ -93,9 +93,13 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
             // Transform variant pricing for ManualUploadModal
             let pricesPerVariant: Record<string, { retail: number, reseller: number }> | undefined;
 
+            console.log('🔍 DEBUG: draft.variantPricing =', draft.variantPricing);
+
             if (draft.variantPricing && Array.isArray(draft.variantPricing)) {
                 pricesPerVariant = {};
                 const sizes = draft.sizes && draft.sizes.length > 0 ? draft.sizes : ['All Size'];
+
+                console.log('🔍 DEBUG: sizes =', sizes);
 
                 draft.variantPricing.forEach((vp) => {
                     // vp.label is "A", "B", etc.
@@ -109,6 +113,10 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                         }
                     });
                 });
+
+                console.log('💰 DEBUG: pricesPerVariant =', pricesPerVariant);
+            } else {
+                console.log('⚠️ DEBUG: No variantPricing in draft');
             }
 
             // Pass to ManualUploadModal at step='upload' (first step, like manual upload)

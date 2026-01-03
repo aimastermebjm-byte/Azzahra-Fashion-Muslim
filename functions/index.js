@@ -6,7 +6,7 @@
 
 // 🔧 FIX: Use onDocumentCreated instead of onDocumentWritten to prevent duplicate triggers
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
-const { defineSecret } = require("firebase-functions/params");
+const { defineString } = require("firebase-functions/params");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 const { getStorage } = require("firebase-admin/storage");
@@ -18,8 +18,9 @@ initializeApp();
 const db = getFirestore();
 const bucket = getStorage().bucket();
 
-// Define secret for Gemini API Key (set via: firebase functions:secrets:set GEMINI_API_KEY)
-const geminiApiKey = defineSecret("GEMINI_API_KEY");
+// Gemini API Key (set via: firebase functions:config:set gemini.apikey="...")
+// Or hardcoded for quick deploy (TEMPORARY - should use secrets in production)
+const GEMINI_API_KEY = "AIzaSyB5oDXhIXOaOrukCayVPCdRtbvHSTAqUo4";
 
 // 🔐 SECRET KEY - Must match the key in Android APK
 // Change this to a random secure string and keep it secret!
@@ -324,8 +325,7 @@ exports.processProductDraft = onDocumentCreated(
     {
         document: "product_drafts/{draftId}",
         memory: "2GiB",
-        timeoutSeconds: 540,
-        secrets: [geminiApiKey]
+        timeoutSeconds: 540
     },
     async (event) => {
         const snapshot = event.data;
@@ -350,7 +350,7 @@ exports.processProductDraft = onDocumentCreated(
 
         try {
             // Initialize Gemini AI
-            const genAI = new GoogleGenerativeAI(geminiApiKey.value());
+            const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
             const visionModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
 
             // 1. Download and analyze each image
@@ -382,7 +382,7 @@ exports.processProductDraft = onDocumentCreated(
             }
 
             // 2. Match analysis with setTypes/familyVariants for pricing
-            const variantPricing = matchPricing(imageAnalysis, draft.setTypes, draft.familyVariants);
+            const variantPricing = matchPricing(imageAnalysis, draft.setTypes || [], draft.familyVariants || []);
             logger.info(`💰 Variant pricing matched:`, JSON.stringify(variantPricing));
 
             // 3. Generate collage (skip null buffers)
@@ -396,13 +396,13 @@ exports.processProductDraft = onDocumentCreated(
                 // Upload collage
                 const collageFilename = `collages/draft_${draftId}_${Date.now()}.jpg`;
                 const file = bucket.file(collageFilename);
-                await file.save(collageBuffer, { metadata: { contentType: 'image/jpeg' } });
-
-                const [signedUrl] = await file.getSignedUrl({
-                    action: 'read',
-                    expires: '03-09-2491'
+                await file.save(collageBuffer, {
+                    metadata: { contentType: 'image/jpeg' },
+                    public: true // Make file public
                 });
-                collageUrl = signedUrl;
+
+                // Use public URL instead of signed URL (no IAM permission needed)
+                collageUrl = `https://storage.googleapis.com/${bucket.name}/${collageFilename}`;
                 logger.info(`☁️ Collage uploaded: ${collageFilename}`);
             }
 
@@ -479,57 +479,64 @@ FAMILY:DEWASA`;
 function matchPricing(imageAnalysis, setTypes, familyVariants) {
     const pricing = [];
 
+    // Combine all potential pricing sources into a single candidates array
+    // Normalize structure: { type: string, retailPrice: number, resellerPrice: number, origin: string }
+    const candidates = [];
+
+    if (setTypes && Array.isArray(setTypes)) {
+        candidates.push(...setTypes.map(s => ({
+            type: s.type,
+            retailPrice: s.hargaRetail,
+            resellerPrice: s.hargaReseller,
+            origin: 'setTypes'
+        })));
+    }
+
+    if (familyVariants && Array.isArray(familyVariants)) {
+        candidates.push(...familyVariants.map(s => ({
+            type: s.nama || s.type,
+            retailPrice: s.hargaRetail,
+            resellerPrice: s.hargaReseller,
+            origin: 'familyVariants'
+        })));
+    }
+
     for (const img of imageAnalysis) {
         let matched = null;
 
-        // Try to match with setTypes (KHIMAR/SCARF)
-        if (setTypes && Array.isArray(setTypes)) {
-            for (const st of setTypes) {
-                // Match type (e.g., "SET KHIMAR" contains "KHIMAR")
-                if (st.type && img.hijabType && st.type.toUpperCase().includes(img.hijabType)) {
-                    matched = {
-                        label: img.label,
-                        type: st.type,
-                        retailPrice: st.hargaRetail,
-                        resellerPrice: st.hargaReseller,
-                        matchedBy: 'setTypes'
-                    };
+        // Try to find best match among all candidates
+        for (const candidate of candidates) {
+            const typeUpper = (candidate.type || '').toUpperCase();
+
+            // LOGIC 1: Match HIJAB Types (Khimar/Scarf/Pashmina)
+            // Only if image detected confident hijab type
+            if (['KHIMAR', 'SCARF', 'PASHMINA'].includes(img.hijabType)) {
+                if (typeUpper.includes(img.hijabType)) {
+                    matched = candidate;
+                    break; // Found strong match
+                }
+            }
+
+            // LOGIC 2: Match FAMILY Types
+            if (img.familyType && img.familyType !== 'DEWASA' && img.familyType !== 'UNKNOWN') {
+                if (typeUpper.includes(img.familyType) ||
+                    (img.familyType === 'ANAK_LAKI' && typeUpper.includes('ANAK')) ||
+                    (img.familyType === 'ANAK_PEREMPUAN' && typeUpper.includes('ANAK'))) {
+                    matched = candidate;
                     break;
                 }
             }
         }
 
-        // Try to match with familyVariants (AYAH/IBU/ANAK)
-        if (!matched && familyVariants && Array.isArray(familyVariants)) {
-            for (const fv of familyVariants) {
-                const fvType = (fv.nama || '').toUpperCase();
-                if (fvType.includes(img.familyType) ||
-                    (img.familyType === 'ANAK_LAKI' && fvType.includes('ANAK')) ||
-                    (img.familyType === 'ANAK_PEREMPUAN' && fvType.includes('ANAK'))) {
-                    matched = {
-                        label: img.label,
-                        type: fv.nama,
-                        retailPrice: fv.hargaRetail,
-                        resellerPrice: fv.hargaReseller,
-                        matchedBy: 'familyVariants'
-                    };
-                    break;
-                }
-            }
-        }
-
-        // If no match, use default
-        if (!matched) {
-            matched = {
+        if (matched) {
+            pricing.push({
                 label: img.label,
-                type: 'default',
-                retailPrice: null,
-                resellerPrice: null,
-                matchedBy: 'none'
-            };
+                type: matched.type,
+                retailPrice: matched.retailPrice,
+                resellerPrice: matched.resellerPrice,
+                matchedBy: matched.origin
+            });
         }
-
-        pricing.push(matched);
     }
 
     return pricing;
