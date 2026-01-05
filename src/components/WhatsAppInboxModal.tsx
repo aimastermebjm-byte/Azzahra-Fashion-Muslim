@@ -230,19 +230,58 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                     { label: 'Set Scarf', keys: ['set scarf', 'set scraf', 'scarf set'] },
                     { label: 'Set Khimar', keys: ['set khimar', 'set syari', 'khimar set'] },
                     { label: 'Gamis Only', keys: ['gamis only', 'dress only'] },
-                    // Family patterns - Enhanced for complex descriptions
+
+                    // Family patterns - Mom Look variations
                     { label: 'Mom Look I Scarf', keys: ['mom look i set scraf', 'mom look i ciki set scraf', 'look i set scarf', 'look l set scraf'] },
                     { label: 'Mom Look I Syari', keys: ['mom look i set syari', 'mom look i niesa', 'look i set syari', 'look l set syari'] },
                     { label: 'Mom Look II Scarf', keys: ['mom look ii set scraf', 'mom look ii nuy', 'look ii set scraf', 'look ll set scraf'] },
                     { label: 'Mom Look II Syari', keys: ['mom look ii set syari', 'mom look ii adel', 'look ii set syari', 'look ll set syari'] },
-                    { label: 'Daddy', keys: ['daddy', 'dady', 'dad ', 'size chart daddy', 'dadd n boy'] },
-                    { label: 'Boy', keys: ['anak boy', 'size chart anak boy', 'boy lengan'] },
-                    { label: 'Anak Girls', keys: ['anak cewe', 'anak girls', 'size curt anak girls', 'girls'] },
-                    // Basic family patterns as fallback
-                    { label: 'Ayah', keys: ['ayah', 'abah', 'bapak', 'papa', 'koko ayah'] },
-                    { label: 'Bunda', keys: ['bunda', 'ibu', 'mama', 'gamis bunda', 'gamis ibu'] },
-                    { label: 'Anak Laki', keys: ['anak laki', 'anak cowok', 'koko anak'] },
-                    { label: 'Anak Perempuan', keys: ['anak perempuan', 'anak cewek', 'gamis anak'] }
+
+                    // === FAMILY: MOM / IBU / BUNDA / MAMA ===
+                    {
+                        label: 'Mom', keys: [
+                            'mom ', 'mom:', 'size mom', 'size chart mom', 'gamis mom', 'dress mom',
+                            'ibu ', 'ibu:', 'size ibu', 'gamis ibu', 'baju ibu',
+                            'bunda ', 'bunda:', 'size bunda', 'gamis bunda', 'baju bunda',
+                            'mama ', 'mama:', 'size mama', 'gamis mama', 'baju mama',
+                            'mommy', 'mami'
+                        ]
+                    },
+
+                    // === FAMILY: DAD / AYAH / BAPAK / PAPA ===
+                    {
+                        label: 'Dad', keys: [
+                            'dad ', 'dad:', 'dadd ', 'daddy', 'dady', 'size dad', 'size chart dad',
+                            'size chart daddy', 'dadd n boy', 'baju dad', 'koko dad',
+                            'ayah ', 'ayah:', 'size ayah', 'koko ayah', 'baju ayah',
+                            'abah ', 'abah:', 'size abah', 'koko abah', 'baju abah',
+                            'bapak ', 'bapak:', 'size bapak', 'koko bapak', 'baju bapak',
+                            'papa ', 'papa:', 'size papa', 'koko papa', 'baju papa',
+                            'papi', 'daddy lengan'
+                        ]
+                    },
+
+                    // === FAMILY: BOY / ANAK LAKI / COWOK ===
+                    {
+                        label: 'Boy', keys: [
+                            'boy ', 'boy:', 'boys', 'size boy', 'size chart boy', 'size chart anak boy',
+                            'anak boy', 'boy lengan', 'koko boy', 'baju boy',
+                            'anak laki', 'anak laki-laki', 'anak laki2', 'anak lelaki',
+                            'anak cowok', 'anak cowo', 'size anak laki', 'koko anak laki',
+                            'junior laki', 'junior cowok', 'junior boy'
+                        ]
+                    },
+
+                    // === FAMILY: GIRL / ANAK PEREMPUAN / CEWEK ===
+                    {
+                        label: 'Girl', keys: [
+                            'girl ', 'girl:', 'girls', 'size girl', 'size chart girl', 'size curt anak girls',
+                            'anak girl', 'anak girls', 'gamis girl', 'baju girl', 'dress girl',
+                            'anak cewe', 'anak cewek', 'anak cew', 'anak perempuan', 'anak wanita',
+                            'size anak cewe', 'size anak perempuan', 'gamis anak cewe', 'gamis anak perempuan',
+                            'junior cewe', 'junior cewek', 'junior perempuan', 'junior girl'
+                        ]
+                    }
                 ];
 
                 // Enhanced price extractor: also look for "S : 460.000" or "= 245.000" format
