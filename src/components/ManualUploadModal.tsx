@@ -949,34 +949,54 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 <div className="mb-5">
                                     <div className="flex items-center justify-between mb-2">
                                         <label className="block text-sm font-medium text-gray-700">Pilih Ukuran</label>
-                                        {/* Family Mode Toggle */}
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const newFamilyMode = !familyMode;
-                                                setFamilyMode(newFamilyMode);
+                                        {/* Family Mode Toggle - Hide if family data already detected */}
+                                        {(() => {
+                                            // Check if sizes contain family patterns (auto-detected)
+                                            const familyKeywords = ['dad', 'mom', 'boy', 'girl', 'ayah', 'bunda', 'ibu'];
+                                            const hasFamilyData = selectedSizes.some(size =>
+                                                familyKeywords.some(kw => size.toLowerCase().includes(kw))
+                                            );
 
-                                                // Only reset sizes if switching TO family mode AND no sizes already set
-                                                // This preserves auto-detected sizes from draft
-                                                if (newFamilyMode && selectedSizes.length === 1 && selectedSizes[0] === 'All Size') {
-                                                    // Switching to family mode from default - clear for manual selection
-                                                    setSelectedSizes([]);
-                                                } else if (!newFamilyMode) {
-                                                    // Switching back to normal mode
-                                                    setFamilyGroups({});
-                                                    if (selectedSizes.length === 0) {
-                                                        setSelectedSizes(['All Size']);
-                                                    }
-                                                }
-                                                // If sizes already have data (from draft), DON'T reset!
-                                            }}
-                                            className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${familyMode
-                                                ? 'bg-pink-600 text-white'
-                                                : 'bg-gray-100 text-gray-600 hover:bg-pink-100 hover:text-pink-600'
-                                                }`}
-                                        >
-                                            👨‍👩‍👧‍👦 Mode Keluarga
-                                        </button>
+                                            // If family data detected, auto-enable family mode and hide toggle
+                                            if (hasFamilyData && !familyMode) {
+                                                // Auto-set family mode when family sizes detected
+                                                setTimeout(() => setFamilyMode(true), 0);
+                                            }
+
+                                            // Only show toggle if NO family data detected
+                                            if (hasFamilyData) {
+                                                return (
+                                                    <span className="px-3 py-1 rounded-lg text-xs font-medium bg-pink-600 text-white">
+                                                        👨‍👩‍👧‍👦 Mode Keluarga (Auto)
+                                                    </span>
+                                                );
+                                            }
+
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newFamilyMode = !familyMode;
+                                                        setFamilyMode(newFamilyMode);
+
+                                                        if (newFamilyMode && selectedSizes.length === 1 && selectedSizes[0] === 'All Size') {
+                                                            setSelectedSizes([]);
+                                                        } else if (!newFamilyMode) {
+                                                            setFamilyGroups({});
+                                                            if (selectedSizes.length === 0) {
+                                                                setSelectedSizes(['All Size']);
+                                                            }
+                                                        }
+                                                    }}
+                                                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${familyMode
+                                                        ? 'bg-pink-600 text-white'
+                                                        : 'bg-gray-100 text-gray-600 hover:bg-pink-100 hover:text-pink-600'
+                                                        }`}
+                                                >
+                                                    👨‍👩‍👧‍👦 Mode Keluarga
+                                                </button>
+                                            );
+                                        })()}
                                     </div>
 
                                     {!familyMode ? (
