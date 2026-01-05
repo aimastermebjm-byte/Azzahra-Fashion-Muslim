@@ -164,10 +164,82 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                 console.log('⚠️ DEBUG: No variantPricing in draft');
             }
 
+            // Initialize finalSizes from draft first
+            let finalSizes = draft.sizes && draft.sizes.length > 0 ? draft.sizes : ['All Size'];
+
+            // ========================================
+            // READ GEMINI-PARSED DATA FROM DRAFT
+            // Backend already parsed with Gemini - just read it!
+            // ========================================
+
+            // Read familyVariants (parsed by Gemini for family products)
+            const geminiVariants = (draft as any).familyVariants;
+            const geminiSetTypes = (draft as any).setTypes;
+
+            console.log('🤖 GEMINI DATA FROM DRAFT:');
+            console.log('   familyVariants:', geminiVariants);
+            console.log('   setTypes:', geminiSetTypes);
+
+            // If Gemini parsed familyVariants, use it!
+            if (geminiVariants && Array.isArray(geminiVariants) && geminiVariants.length > 0) {
+                if (!pricesPerVariant) pricesPerVariant = {};
+
+                geminiVariants.forEach((v: { nama?: string, size?: string, hargaRetail?: number, hargaReseller?: number }) => {
+                    const sizeName = v.nama || v.size || 'Unknown';
+                    // Add to finalSizes if not exists
+                    if (!finalSizes.includes(sizeName) && sizeName !== 'Unknown') {
+                        if (finalSizes.length === 1 && finalSizes[0] === 'All Size') {
+                            finalSizes = [sizeName];
+                        } else {
+                            finalSizes.push(sizeName);
+                        }
+                    }
+                    // Add pricing
+                    if (v.hargaRetail || v.hargaReseller) {
+                        ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].forEach(label => {
+                            const key = `${sizeName}-${label}`;
+                            pricesPerVariant![key] = {
+                                retail: v.hargaRetail || v.hargaReseller || 0,
+                                reseller: v.hargaReseller || v.hargaRetail || 0
+                            };
+                        });
+                    }
+                });
+                console.log('✅ Used familyVariants from Gemini');
+            }
+
+            // If Gemini parsed setTypes (Set Khimar, Set Scarf, etc), use it!
+            if (geminiSetTypes && Array.isArray(geminiSetTypes) && geminiSetTypes.length > 0) {
+                if (!pricesPerVariant) pricesPerVariant = {};
+
+                geminiSetTypes.forEach((st: { type?: string, hargaRetail?: number, hargaReseller?: number }) => {
+                    const sizeName = st.type || 'Unknown';
+                    // Add to finalSizes if not exists
+                    if (!finalSizes.includes(sizeName) && sizeName !== 'Unknown') {
+                        if (finalSizes.length === 1 && finalSizes[0] === 'All Size') {
+                            finalSizes = [sizeName];
+                        } else {
+                            finalSizes.push(sizeName);
+                        }
+                    }
+                    // Add pricing
+                    if (st.hargaRetail || st.hargaReseller) {
+                        ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].forEach(label => {
+                            const key = `${sizeName}-${label}`;
+                            pricesPerVariant![key] = {
+                                retail: st.hargaRetail || st.hargaReseller || 0,
+                                reseller: st.hargaReseller || st.hargaRetail || 0
+                            };
+                        });
+                    }
+                });
+                console.log('✅ Used setTypes from Gemini');
+            }
+
             // Pass to ManualUploadModal at step='upload'
             // Collage will be generated in browser (Cloud Function disabled to save costs)
             // Intelligent Size Detection & Price Extraction (Client Side Override)
-            let finalSizes = draft.sizes && draft.sizes.length > 0 ? draft.sizes : ['All Size'];
+            // ONLY run client-side detection if Gemini didn't provide data
             let detectedPricing: Record<string, { retail: number, reseller: number }> = {};
 
             // Helper to parse price from various formats: "600.000", "550k", "550rb", "Rp 600.000"
