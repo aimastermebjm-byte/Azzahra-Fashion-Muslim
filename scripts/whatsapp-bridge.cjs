@@ -108,14 +108,17 @@ Rules:
   * Jika typo/mirip, pilih yang paling dekat (misal "gams" → "Gamis")
   * Jika tidak match → default "Gamis"
   
-- nama: AMBIL SEMUA baris nama produk (TANPA kategori di depan), SAMPAI bertemu baris detail seperti:
-  "Bahan:", "Material:", "Harga:", "Size:", "Ukuran:", "Warna:", "-Material", dll
-  Contoh caption:
-  "Gamis SETCEL KALIEDO
-   BFT : BALI FASHION TREND 2025
-   By eR.Ha DAILY
-   -Material: ..."
-  → nama = "SETCEL KALIEDO BFT : BALI FASHION TREND 2025 By eR.Ha DAILY"
+- nama: IDENTIFIKASI JUDUL UTAMA PRODUK.
+  * Biasanya text KAPITAL sebelum baris "By ...".
+  * ABAIKAN baris "Open PO", "Close PO", "Estimasi".
+  * Format Output: "[JUDUL PRODUK] By [BRAND]" (Satukan dalam 1 kalimat).
+  * Contoh caption:
+    "Open PO
+     ANGGUN RAYYA SERIES
+     By Eldeena"
+    → nama = "ANGGUN RAYYA SERIES By Eldeena"
+  * JANGAN POTONG jadi cuma "By Eldeena". Harus ada judulnya!
+  * Ambil sampai bertemu baris detail (Bahan, Harga, Size, dll).
   
 - brand: Kata setelah "by", TAPI HAPUS suffix umum seperti:
   DAILY, OFFICIAL, COLLECTION, STORE, SHOP, LABEL, INDONESIA, ID
