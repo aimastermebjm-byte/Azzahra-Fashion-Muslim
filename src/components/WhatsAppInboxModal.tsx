@@ -395,19 +395,33 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                 const isResellerSection = descLower.indexOf('harga reseller') < descLower.indexOf('harga retail') ||
                     (descLower.includes('harga reseller') && !descLower.includes('harga retail'));
 
-                // Helper to extract size+price pairs from a block: "S : 400.000", "M = 410k", etc.
+                // Helper to extract size+price pairs from a block: "S : 400.000", "S = 400k", "S pb 90 ... = Rp 460.000", "S dan M = 200.000", "L dan XL 210.000"
                 const extractSizePrices = (block: string): Array<{ size: string, price: number }> => {
                     const results: Array<{ size: string, price: number }> = [];
                     const sizes = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL', '2XL', '3XL'];
 
+                    // Pre-clean block: replace 'dan', '&' with space to handle "S dan M"
+                    const cleanBlock = block.replace(/\s+(dan|&)\s+/gi, ' ').replace(/\n/g, '  ');
+
                     sizes.forEach(size => {
-                        // Match patterns: "S : 400.000", "S = 400k", "S: Rp 400.000", "S pb 90 / ld 72 (3-5 th) = Rp 460.000"
-                        const regex = new RegExp(`\\b${size}\\b[^\\n]*?[=:]\\s*((?:rp\\.?\\s*)?[\\d.,]+(?:k|rb)?)`, 'i');
-                        const match = block.match(regex);
+                        // Pattern 1: Explicit separator (= or :) e.g. "S : 400.000" or "S = 400rb"
+                        let regex = new RegExp(`\\b${size}\\b[^\\d]*?[=:]\\s*[^\\d]*?((?:rp\\.?\\s*)?[\\d.,]+(?:k|rb)?)`, 'i');
+                        let match = cleanBlock.match(regex);
+
+                        // Pattern 2: No separator, direct price e.g. "L 210.000", "L dan XL 210.000" (checked due to cleanBlock logic)
+                        if (!match) {
+                            regex = new RegExp(`\\b${size}\\b\\s+[^\\d=:]*?((?:rp\\.?\\s*)?[\\d.,]+(?:k|rb)?)`, 'i');
+                            match = cleanBlock.match(regex);
+                        }
+
                         if (match) {
                             const price = parsePrice(match[1]);
                             if (price && price > 10000) { // Minimum valid price
-                                results.push({ size, price });
+                                // Check if this price is close to the size (avoid matching distant prices)
+                                const distance = match.index !== undefined ? match[0].length : 100;
+                                if (distance < 100) {
+                                    results.push({ size, price });
+                                }
                             }
                         }
                     });
