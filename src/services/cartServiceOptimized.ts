@@ -179,17 +179,32 @@ class CartServiceOptimized {
         const productId = product.id || product.productId || 'unknown_' + Date.now();
 
         // Determine price with correct priority:
-        // 1. If product.price is set (already calculated by ProductDetail based on role/flash sale)
-        // 2. Flash sale price if active
-        // 3. Retail price (default for owner, customer, admin)
-        // 4. Fallback to any price field available
+        // 1. If pricesPerVariant exists and variant is selected, use variant-specific price
+        // 2. If product.price is set (already calculated by ProductDetail based on role/flash sale)
+        // 3. Flash sale price if active
+        // 4. Retail price (default for owner, customer, admin)
+        // 5. Fallback to any price field available
         let itemPrice = 0;
-        if (product.price && Number(product.price) > 0) {
-          itemPrice = Number(product.price);
-        } else if (product.isFlashSale && product.flashSalePrice > 0) {
-          itemPrice = Number(product.flashSalePrice);
-        } else {
-          itemPrice = Number(product.retailPrice || product.resellerPrice || 0);
+
+        // Check for variant-specific pricing (Size-Color key format)
+        if (product.pricesPerVariant && variant?.size && variant?.color) {
+          const variantKey = `${variant.size}-${variant.color}`;
+          const variantPricing = product.pricesPerVariant[variantKey];
+          if (variantPricing?.retail && Number(variantPricing.retail) > 0) {
+            itemPrice = Number(variantPricing.retail);
+            console.log(`💰 Using variant-specific price for ${variantKey}: ${itemPrice}`);
+          }
+        }
+
+        // Fallback to other price sources if variant price not found
+        if (itemPrice === 0) {
+          if (product.price && Number(product.price) > 0) {
+            itemPrice = Number(product.price);
+          } else if (product.isFlashSale && product.flashSalePrice > 0) {
+            itemPrice = Number(product.flashSalePrice);
+          } else {
+            itemPrice = Number(product.retailPrice || product.resellerPrice || 0);
+          }
         }
 
         const cartItem: CartItem = {

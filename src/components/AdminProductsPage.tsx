@@ -2886,6 +2886,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                       [productData.sizeName || 'Ukuran 1']: productData.stockPerVariant
                     }
                   },
+                  // Variant-specific pricing for checkout
+                  pricesPerVariant: productData.pricesPerVariant || null,
+                  costPricePerSize: productData.costPricePerSize || null,
+                  variantNames: productData.variantNames || null,
                   status: 'po' as 'ready' | 'po',
                   createdAt: new Date(),
                   salesCount: 0,

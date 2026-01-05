@@ -95,7 +95,12 @@ export const GlobalProductsProvider: React.FC<{ children: React.ReactNode }> = (
           cleanupDate: data.cleanupDate,
           cleanupNote: data.cleanupNote,
           migrationDate: data.migrationDate,
-          migrationNote: data.migrationNote
+          migrationNote: data.migrationNote,
+
+          // Variant-specific pricing (for cart/checkout)
+          pricesPerVariant: data.pricesPerVariant || null,
+          costPricePerSize: data.costPricePerSize || null,
+          variantNames: data.variantNames || null
         }));
 
         setAllProducts(transformedProducts);

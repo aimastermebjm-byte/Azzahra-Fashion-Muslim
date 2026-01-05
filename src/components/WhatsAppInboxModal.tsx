@@ -58,6 +58,51 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
         return mapping[lower] || 'Gamis'; // Default ke Gamis jika tidak match
     };
 
+    // Detect category from description (smarter than AI guess)
+    const detectCategory = (description: string): string => {
+        const descLower = description.toLowerCase();
+
+        // Priority order: main product categories first
+        // Ignore "set khimar/scarf" as those are SIZE variants, not product category
+
+        // Check for main product types (HIGH PRIORITY)
+        if (descLower.match(/\bgamis\b/) && !descLower.match(/set\s+gamis/i)) return 'Gamis';
+        if (descLower.match(/\b(setelan|set\s+dress)\b/i)) return 'Setelan';
+        if (descLower.match(/\bdress\b/) && !descLower.match(/set\s+dress/i)) return 'Dress';
+        if (descLower.match(/\btunik\b/)) return 'Tunik';
+        if (descLower.match(/\bouter\b/)) return 'Outer';
+        if (descLower.match(/\bmukena\b/)) return 'Mukena';
+        if (descLower.match(/\brok\b/)) return 'Rok';
+        if (descLower.match(/\bcelana\b/)) return 'Celana';
+
+        // Accessories (LOWER PRIORITY - only if no main product found)
+        // Don't detect "khimar" if it appears in "set khimar" context (that's a size variant)
+        if (descLower.match(/\bkhimar\b/) && !descLower.match(/set\s+khimar/i)) return 'Khimar';
+        if (descLower.match(/\bhijab\b/)) return 'Hijab';
+        if (descLower.match(/\bpashmina\b/)) return 'Pashmina';
+
+        // Default to Gamis (most common product type)
+        return 'Gamis';
+    };
+
+    // Detect brand from description (look for "by [Brand Name]" pattern)
+    const detectBrand = (description: string): string => {
+        // Pattern 1: "by [Brand Name]" - most reliable
+        const byMatch = description.match(/\bby\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)/i);
+        if (byMatch) {
+            // Capitalize properly
+            return byMatch[1].split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+        }
+
+        // Pattern 2: "Brand: [Name]" or "Merk: [Name]"
+        const labelMatch = description.match(/(?:brand|merk)[:\s]+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)/i);
+        if (labelMatch) {
+            return labelMatch[1].split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+        }
+
+        return ''; // Not detected
+    };
+
     // Listen to Drafts
     useEffect(() => {
         if (!isOpen) return;
@@ -121,21 +166,132 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
 
             // Pass to ManualUploadModal at step='upload'
             // Collage will be generated in browser (Cloud Function disabled to save costs)
+            // Intelligent Size Detection & Price Extraction (Client Side Override)
+            let finalSizes = draft.sizes && draft.sizes.length > 0 ? draft.sizes : ['All Size'];
+            let detectedPricing: Record<string, { retail: number, reseller: number }> = {};
+
+            // Helper to parse price from various formats: "600.000", "550k", "550rb", "Rp 600.000"
+            const parsePrice = (str: string): number | null => {
+                if (!str) return null;
+                const cleaned = str.toLowerCase().replace(/rp\.?\s*/g, '').replace(/\s/g, '');
+
+                // Format: 550k or 550rb
+                const kMatch = cleaned.match(/(\d+)[.,]?(\d*)(k|rb)/);
+                if (kMatch) {
+                    const base = parseInt(kMatch[1]);
+                    const decimal = kMatch[2] ? parseInt(kMatch[2]) : 0;
+                    return (base * 1000) + (decimal * 100); // 550k -> 550000, 5.5k -> 5500
+                }
+
+                // Format: 600.000 (dots as thousands)
+                const dotMatch = cleaned.match(/(\d{1,3}(?:\.\d{3})+)/);
+                if (dotMatch) {
+                    return parseInt(dotMatch[0].replace(/\./g, ''));
+                }
+
+                // Format: plain number 600000
+                const plainMatch = cleaned.match(/(\d{4,})/);
+                if (plainMatch) {
+                    return parseInt(plainMatch[0]);
+                }
+
+                return null;
+            };
+
+            // Helper to extract retail & reseller prices from a text block
+            const extractPricesFromBlock = (block: string): { retail: number | null, reseller: number | null } => {
+                const lower = block.toLowerCase();
+                let retail: number | null = null;
+                let reseller: number | null = null;
+
+                // Look for "retail" keyword
+                const retailMatch = lower.match(/retail[:\s]*([^\n,;]+)/i);
+                if (retailMatch) {
+                    retail = parsePrice(retailMatch[1]);
+                }
+
+                // Look for "reseller" or "agen" keyword
+                const resellerMatch = lower.match(/(reseller|agen)[:\s]*([^\n,;]+)/i);
+                if (resellerMatch) {
+                    reseller = parsePrice(resellerMatch[2]);
+                }
+
+                return { retail, reseller };
+            };
+
+            // Only try detect if AI detected nothing specific (default 'All Size') OR force smarter detection
+            if (JSON.stringify(finalSizes) === '["All Size"]' || finalSizes.length === 0) {
+                const descLower = draft.description.toLowerCase();
+                const matches: string[] = [];
+
+                // Urutan prioritas/deteksi + Price Check
+                const patterns = [
+                    { label: 'Set Scarf', keys: ['set scarf', 'set scraf', 'scarf set'] },
+                    { label: 'Set Khimar', keys: ['set khimar', 'set syari', 'khimar set'] },
+                    { label: 'Gamis Only', keys: ['gamis only', 'dress only'] }
+                ];
+
+                patterns.forEach(p => {
+                    const foundKey = p.keys.find(k => descLower.includes(k));
+                    if (foundKey) {
+                        matches.push(p.label);
+
+                        // Extract block of text after keyword (assume prices are within 150 chars)
+                        const idx = descLower.indexOf(foundKey);
+                        const block = draft.description.substring(idx, idx + 150);
+                        const prices = extractPricesFromBlock(block);
+
+                        if (prices.retail || prices.reseller) {
+                            detectedPricing[p.label] = {
+                                retail: prices.retail || prices.reseller || 0,
+                                reseller: prices.reseller || prices.retail || 0
+                            };
+                        }
+                    }
+                });
+
+                if (matches.length > 0) {
+                    finalSizes = matches;
+                }
+            }
+
+            // Merge detected prices into pricesPerVariant (Flood fill A-J 10 variants to be safe)
+            if (Object.keys(detectedPricing).length > 0) {
+                if (!pricesPerVariant) pricesPerVariant = {};
+
+                finalSizes.forEach(size => {
+                    const priceData = detectedPricing[size];
+                    if (priceData && (priceData.retail || priceData.reseller)) {
+                        // Generate for labels A-J (Top 10 variants)
+                        ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].forEach(label => {
+                            const key = `${size}-${label}`;
+                            if (!pricesPerVariant![key]) {
+                                pricesPerVariant![key] = {
+                                    retail: priceData.retail || 0,
+                                    reseller: priceData.reseller || 0
+                                };
+                            }
+                        });
+                    }
+                });
+            }
+
             onProcess({
                 step: 'upload', // Start at upload step, collage will be auto-generated in browser
                 images: imageFiles,
                 productData: {
                     name: draft.name,
-                    brand: draft.brand || '',  // Add brand from draft
+                    brand: draft.brand || detectBrand(draft.description) || '',  // Auto-detect brand from description
                     description: draft.description,
-                    category: normalizeCategory(draft.category),  // Normalize kategori
+                    category: detectCategory(draft.description),  // Smart detect from description, default Gamis
                     retailPrice: draft.retailPrice,
                     resellerPrice: draft.resellerPrice,
                     costPrice: draft.costPrice,
                     variants: {
-                        sizes: draft.sizes && draft.sizes.length > 0 ? draft.sizes : ['All Size']
+                        sizes: finalSizes
                     },
-                    pricesPerVariant: pricesPerVariant
+                    pricesPerVariant: pricesPerVariant,
+                    variantNames: (draft as any).variantNames
                 },
                 draftId: draft.id,
                 uploadSettings: {

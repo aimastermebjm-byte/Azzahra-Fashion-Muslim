@@ -222,10 +222,24 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
     console.log('🔍 DEBUG: Final variant object:', variant);
 
-    // Pass product with correct price based on user role and flash sale
+    // Check for variant-specific pricing
+    let variantPrice = 0;
+    const productAny = currentProduct as any;
+    if (productAny.pricesPerVariant && selectedSize && selectedColor) {
+      const variantKey = `${selectedSize}-${selectedColor}`;
+      const variantPricing = productAny.pricesPerVariant[variantKey];
+      if (variantPricing?.retail && Number(variantPricing.retail) > 0) {
+        variantPrice = user?.role === 'reseller' && variantPricing.reseller
+          ? Number(variantPricing.reseller)
+          : Number(variantPricing.retail);
+        console.log(`💰 Using variant-specific price for ${variantKey}: ${variantPrice}`);
+      }
+    }
+
+    // Pass product with correct price based on variant pricing, user role and flash sale
     const productWithPrice = {
       ...currentProduct,
-      price: getPrice() // Use calculated price based on flash sale and user role
+      price: variantPrice > 0 ? variantPrice : getPrice() // Use variant price if available
     };
 
     onAddToCart(productWithPrice, variant, quantity);
@@ -277,16 +291,45 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       ? { size: selectedSize, color: selectedColor }
       : null;
 
-    // Pass product with correct price based on user role and flash sale
+    // Check for variant-specific pricing
+    let variantPrice = 0;
+    const productAny = currentProduct as any;
+    if (productAny.pricesPerVariant && selectedSize && selectedColor) {
+      const variantKey = `${selectedSize}-${selectedColor}`;
+      const variantPricing = productAny.pricesPerVariant[variantKey];
+      if (variantPricing?.retail && Number(variantPricing.retail) > 0) {
+        variantPrice = user?.role === 'reseller' && variantPricing.reseller
+          ? Number(variantPricing.reseller)
+          : Number(variantPricing.retail);
+        console.log(`💰 BuyNow: Using variant-specific price for ${variantKey}: ${variantPrice}`);
+      }
+    }
+
+    // Pass product with correct price based on variant pricing, user role and flash sale
     const productWithPrice = {
       ...currentProduct,
-      price: getPrice() // Use calculated price based on flash sale and user role
+      price: variantPrice > 0 ? variantPrice : getPrice() // Use variant price if available
     };
 
     onBuyNow(productWithPrice, variant, quantity);
   };
 
+  // Get price - check variant-specific pricing first
   const getPrice = () => {
+    // Check for variant-specific pricing
+    const productAny = currentProduct as any;
+    if (productAny.pricesPerVariant && selectedSize && selectedColor) {
+      const variantKey = `${selectedSize}-${selectedColor}`;
+      const variantPricing = productAny.pricesPerVariant[variantKey];
+      if (variantPricing?.retail && Number(variantPricing.retail) > 0) {
+        const variantPrice = user?.role === 'reseller' && variantPricing.reseller
+          ? Number(variantPricing.reseller)
+          : Number(variantPricing.retail);
+        return variantPrice;
+      }
+    }
+
+    // Fallback to global prices
     if (currentProduct.isFlashSale && currentProduct.flashSalePrice > 0) {
       return currentProduct.flashSalePrice;
     }
