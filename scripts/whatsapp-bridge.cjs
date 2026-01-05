@@ -154,7 +154,34 @@ Rules:
   * Keywords untuk setTypes: "SET SCARF", "SET KHIMAR", "SET PASHMINA", "GAMIS ONLY", "KHIMAR ONLY", dll
   * Jika hanya ada 1 harga (tidak ada variasi tipe) → setTypes: null
   
-- variants: only if different prices per type (ayah/ibu/anak)`;
+- variants: WAJIB EKSTRAK jika ada harga berbeda per tipe/ukuran keluarga!
+  Struktur deskripsi sering seperti ini:
+  
+  HARGA RESELLER:
+  - Look l set scraf : 460.000
+  - Anak cewe S : 400.000, M : 410.000
+  - Daddy S dan M = 245.000, L dan XL = 260.000
+  
+  HARGA RETAIL:
+  - Mom Look l set Scraf : 550.000
+  - Anak Girls S = Rp 460.000
+  - Size Chart Daddy S : Rp 310.000
+  
+  UNTUK SETIAP SIZE/TIPE, EKSTRAK KE ARRAY variants:
+  [
+    { "nama": "Look l set scraf", "size": "", "hargaRetail": 550000, "hargaReseller": 460000 },
+    { "nama": "Anak cewe S", "size": "S", "hargaRetail": 460000, "hargaReseller": 400000 },
+    { "nama": "Anak cewe M", "size": "M", "hargaRetail": 470000, "hargaReseller": 410000 },
+    { "nama": "Daddy S", "size": "S", "hargaRetail": 310000, "hargaReseller": 245000 },
+    { "nama": "Daddy M", "size": "M", "hargaRetail": 310000, "hargaReseller": 245000 },
+    { "nama": "Boy L", "size": "L", "hargaRetail": 270000, "hargaReseller": 210000 }
+  ]
+  
+  RULES:
+  * MATCH harga Reseller dengan Retail untuk produk yang SAMA (Look l = Mom Look l)
+  * Jika "S dan M = 245.000" → buat 2 entry: Daddy S dan Daddy M dengan harga sama
+  * Konversi harga: "460.000" → 460000, "550k" → 550000, "Rp 310.000" → 310000
+  * HARUS ekstrak SEMUA size dari kedua section (Reseller DAN Retail)`;
 
     const result = await visionModel.generateContent(prompt);
     const text = result.response.text();
