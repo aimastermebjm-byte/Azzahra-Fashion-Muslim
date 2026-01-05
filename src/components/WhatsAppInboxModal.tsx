@@ -226,9 +226,15 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
 
                 // Urutan prioritas/deteksi + Price Check
                 const patterns = [
+                    // Existing patterns - JANGAN DIUBAH
                     { label: 'Set Scarf', keys: ['set scarf', 'set scraf', 'scarf set'] },
                     { label: 'Set Khimar', keys: ['set khimar', 'set syari', 'khimar set'] },
-                    { label: 'Gamis Only', keys: ['gamis only', 'dress only'] }
+                    { label: 'Gamis Only', keys: ['gamis only', 'dress only'] },
+                    // NEW: Family patterns (Baju Keluarga)
+                    { label: 'Ayah', keys: ['ayah', 'abah', 'bapak', 'daddy', 'papa', 'koko ayah', 'baju ayah'] },
+                    { label: 'Bunda', keys: ['bunda', 'ibu', 'mama', 'mommy', 'gamis bunda', 'baju bunda', 'gamis ibu'] },
+                    { label: 'Anak Laki', keys: ['anak laki', 'anak cowok', 'boy', 'koko anak', 'baju anak laki'] },
+                    { label: 'Anak Perempuan', keys: ['anak perempuan', 'anak cewek', 'girl', 'gamis anak', 'baju anak perempuan'] }
                 ];
 
                 patterns.forEach(p => {
