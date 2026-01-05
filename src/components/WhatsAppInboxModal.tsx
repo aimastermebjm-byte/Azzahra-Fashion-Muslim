@@ -230,22 +230,68 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                     { label: 'Set Scarf', keys: ['set scarf', 'set scraf', 'scarf set'] },
                     { label: 'Set Khimar', keys: ['set khimar', 'set syari', 'khimar set'] },
                     { label: 'Gamis Only', keys: ['gamis only', 'dress only'] },
-                    // NEW: Family patterns (Baju Keluarga)
-                    { label: 'Ayah', keys: ['ayah', 'abah', 'bapak', 'daddy', 'papa', 'koko ayah', 'baju ayah'] },
-                    { label: 'Bunda', keys: ['bunda', 'ibu', 'mama', 'mommy', 'gamis bunda', 'baju bunda', 'gamis ibu'] },
-                    { label: 'Anak Laki', keys: ['anak laki', 'anak cowok', 'boy', 'koko anak', 'baju anak laki'] },
-                    { label: 'Anak Perempuan', keys: ['anak perempuan', 'anak cewek', 'girl', 'gamis anak', 'baju anak perempuan'] }
+                    // Family patterns - Enhanced for complex descriptions
+                    { label: 'Mom Look I Scarf', keys: ['mom look i set scraf', 'mom look i ciki set scraf', 'look i set scarf', 'look l set scraf'] },
+                    { label: 'Mom Look I Syari', keys: ['mom look i set syari', 'mom look i niesa', 'look i set syari', 'look l set syari'] },
+                    { label: 'Mom Look II Scarf', keys: ['mom look ii set scraf', 'mom look ii nuy', 'look ii set scraf', 'look ll set scraf'] },
+                    { label: 'Mom Look II Syari', keys: ['mom look ii set syari', 'mom look ii adel', 'look ii set syari', 'look ll set syari'] },
+                    { label: 'Daddy', keys: ['daddy', 'dady', 'dad ', 'size chart daddy', 'dadd n boy'] },
+                    { label: 'Boy', keys: ['anak boy', 'size chart anak boy', 'boy lengan'] },
+                    { label: 'Anak Girls', keys: ['anak cewe', 'anak girls', 'size curt anak girls', 'girls'] },
+                    // Basic family patterns as fallback
+                    { label: 'Ayah', keys: ['ayah', 'abah', 'bapak', 'papa', 'koko ayah'] },
+                    { label: 'Bunda', keys: ['bunda', 'ibu', 'mama', 'gamis bunda', 'gamis ibu'] },
+                    { label: 'Anak Laki', keys: ['anak laki', 'anak cowok', 'koko anak'] },
+                    { label: 'Anak Perempuan', keys: ['anak perempuan', 'anak cewek', 'gamis anak'] }
                 ];
+
+                // Enhanced price extractor: also look for "S : 460.000" or "= 245.000" format
+                const extractEnhancedPrices = (block: string, isReseller: boolean): { retail: number | null, reseller: number | null } => {
+                    let retail: number | null = null;
+                    let reseller: number | null = null;
+
+                    // Try standard retail/reseller keywords first
+                    const retailMatch = block.match(/retail[:\s]*([^\n,;]+)/i);
+                    if (retailMatch) retail = parsePrice(retailMatch[1]);
+
+                    const resellerMatch = block.match(/(reseller|agen)[:\s]*([^\n,;]+)/i);
+                    if (resellerMatch) reseller = parsePrice(resellerMatch[2]);
+
+                    // If no keyword found, try to extract first price in block
+                    if (!retail && !reseller) {
+                        // Match patterns like ": 460.000" or "= 245.000" or "Rp 460.000"
+                        const priceMatches = block.match(/[:\s=]\s*((?:rp\.?\s*)?[\d.,]+(?:k|rb)?)/gi);
+                        if (priceMatches && priceMatches.length > 0) {
+                            const firstPrice = parsePrice(priceMatches[0]);
+                            if (firstPrice) {
+                                if (isReseller) {
+                                    reseller = firstPrice;
+                                    // Estimate retail as reseller + ~20%
+                                    retail = Math.round(firstPrice * 1.2);
+                                } else {
+                                    retail = firstPrice;
+                                    reseller = Math.round(firstPrice * 0.85);
+                                }
+                            }
+                        }
+                    }
+
+                    return { retail, reseller };
+                };
+
+                // Check which section we're in (RESELLER or RETAIL)
+                const isResellerSection = descLower.indexOf('harga reseller') < descLower.indexOf('harga retail') ||
+                    (descLower.includes('harga reseller') && !descLower.includes('harga retail'));
 
                 patterns.forEach(p => {
                     const foundKey = p.keys.find(k => descLower.includes(k));
                     if (foundKey) {
                         matches.push(p.label);
 
-                        // Extract block of text after keyword (assume prices are within 150 chars)
+                        // Extract block of text after keyword (assume prices are within 200 chars)
                         const idx = descLower.indexOf(foundKey);
-                        const block = draft.description.substring(idx, idx + 150);
-                        const prices = extractPricesFromBlock(block);
+                        const block = draft.description.substring(idx, idx + 200);
+                        const prices = extractEnhancedPrices(block, isResellerSection);
 
                         if (prices.retail || prices.reseller) {
                             detectedPricing[p.label] = {
