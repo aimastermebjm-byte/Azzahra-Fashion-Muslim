@@ -132,11 +132,34 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             }
 
             if (initialState.productData) {
+                // Name sanitization: If name starts with "By ", try to extract real name from description
+                let finalName = initialState.productData?.name || '';
+                const description = initialState.productData?.description || '';
+
+                if (finalName.trim().toLowerCase().startsWith('by ') && description) {
+                    const lines = description.split('\n').map(l => l.trim()).filter(l => l);
+                    // Find line index starting with "By "
+                    const byLineIndex = lines.findIndex(l => l.toLowerCase().startsWith('by '));
+                    if (byLineIndex > 0) {
+                        // Look backwards for a valid title line
+                        for (let i = byLineIndex - 1; i >= 0; i--) {
+                            const line = lines[i];
+                            // Skip "Open PO", "Close PO", "Estimasi" lines
+                            if (!line.toLowerCase().includes('open po') &&
+                                !line.toLowerCase().includes('close po') &&
+                                !line.toLowerCase().includes('estimasi')) {
+                                finalName = line + ' ' + lines[byLineIndex]; // Combine: "Title By Brand"
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 setProductFormData(prev => ({
                     ...prev,
-                    name: initialState.productData?.name || '',
+                    name: finalName,
                     brand: initialState.productData?.brand || '',
-                    description: initialState.productData?.description || '',
+                    description: description,
                     category: initialState.productData?.category || categories[0] || 'gamis',
                 }));
 
