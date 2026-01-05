@@ -239,7 +239,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     }, [images.length, draftVariantCount, isVariant]);
 
     // Active variant labels (exclude empty strings/details) for Matrix & Submission
-    const activeVariantLabels = useMemo(() => variantLabels.filter(l => l !== ''), [variantLabels]);
+    // Ensure at least 1 label exists even if images haven't loaded (mobile timing issue)
+    const activeVariantLabels = useMemo(() => {
+        const filtered = variantLabels.filter(l => l !== '');
+        // Fallback: If no labels yet (images loading), return default ['A']
+        return filtered.length > 0 ? filtered : ['A'];
+    }, [variantLabels]);
 
     // Product form data
     const [productFormData, setProductFormData] = useState({
