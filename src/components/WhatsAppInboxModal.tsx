@@ -322,21 +322,73 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                 const isResellerSection = descLower.indexOf('harga reseller') < descLower.indexOf('harga retail') ||
                     (descLower.includes('harga reseller') && !descLower.includes('harga retail'));
 
+                // Helper to extract size+price pairs from a block: "S : 400.000", "M = 410k", etc.
+                const extractSizePrices = (block: string): Array<{ size: string, price: number }> => {
+                    const results: Array<{ size: string, price: number }> = [];
+                    const sizes = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL', '2XL', '3XL'];
+
+                    sizes.forEach(size => {
+                        // Match patterns: "S : 400.000", "S = 400k", "S: Rp 400.000", "S pb 90 / ld 72 (3-5 th) = Rp 460.000"
+                        const regex = new RegExp(`\\b${size}\\b[^\\n]*?[=:]\\s*((?:rp\\.?\\s*)?[\\d.,]+(?:k|rb)?)`, 'i');
+                        const match = block.match(regex);
+                        if (match) {
+                            const price = parsePrice(match[1]);
+                            if (price && price > 10000) { // Minimum valid price
+                                results.push({ size, price });
+                            }
+                        }
+                    });
+
+                    return results;
+                };
+
+                // Family type patterns that should have per-size pricing
+                const familyTypeLabels = ['Mom', 'Dad', 'Boy', 'Girl'];
+
                 patterns.forEach(p => {
                     const foundKey = p.keys.find(k => descLower.includes(k));
                     if (foundKey) {
-                        matches.push(p.label);
-
-                        // Extract block of text after keyword (assume prices are within 200 chars)
+                        // Extract block of text after keyword (larger block for size chart)
                         const idx = descLower.indexOf(foundKey);
-                        const block = draft.description.substring(idx, idx + 200);
-                        const prices = extractEnhancedPrices(block, isResellerSection);
+                        const block = draft.description.substring(idx, idx + 500);
 
-                        if (prices.retail || prices.reseller) {
-                            detectedPricing[p.label] = {
-                                retail: prices.retail || prices.reseller || 0,
-                                reseller: prices.reseller || prices.retail || 0
-                            };
+                        // Check if this is a family type that might have per-size pricing
+                        if (familyTypeLabels.includes(p.label)) {
+                            const sizePrices = extractSizePrices(block);
+
+                            if (sizePrices.length > 0) {
+                                // Generate combined labels: "Dad S", "Dad M", etc.
+                                sizePrices.forEach(sp => {
+                                    const combinedLabel = `${p.label} ${sp.size}`;
+                                    matches.push(combinedLabel);
+
+                                    const price = sp.price;
+                                    detectedPricing[combinedLabel] = {
+                                        retail: isResellerSection ? Math.round(price * 1.2) : price,
+                                        reseller: isResellerSection ? price : Math.round(price * 0.85)
+                                    };
+                                });
+                            } else {
+                                // Fallback: no per-size pricing, use single price
+                                matches.push(p.label);
+                                const prices = extractEnhancedPrices(block, isResellerSection);
+                                if (prices.retail || prices.reseller) {
+                                    detectedPricing[p.label] = {
+                                        retail: prices.retail || prices.reseller || 0,
+                                        reseller: prices.reseller || prices.retail || 0
+                                    };
+                                }
+                            }
+                        } else {
+                            // Non-family patterns (Set Scarf, Set Khimar, etc.) - single price
+                            matches.push(p.label);
+                            const prices = extractEnhancedPrices(block, isResellerSection);
+                            if (prices.retail || prices.reseller) {
+                                detectedPricing[p.label] = {
+                                    retail: prices.retail || prices.reseller || 0,
+                                    reseller: prices.reseller || prices.retail || 0
+                                };
+                            }
                         }
                     }
                 });
