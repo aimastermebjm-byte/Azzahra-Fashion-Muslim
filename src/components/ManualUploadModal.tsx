@@ -1218,9 +1218,19 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             <label className="block text-sm font-bold text-amber-800 mb-2">💰 Modal per Jenis</label>
                                             <p className="text-xs text-amber-600 mb-2">Set modal berbeda untuk tiap jenis (untuk hitung rugi/laba akurat)</p>
                                             <div className="space-y-2">
-                                                {selectedSizes.map(size => (
+                                                {selectedSizes.map((size, sizeIndex) => (
                                                     <div key={size} className="flex items-center gap-2">
-                                                        <span className="text-sm font-medium text-amber-700 w-28 truncate">{size}:</span>
+                                                        <input
+                                                            type="text"
+                                                            value={size}
+                                                            onChange={(e) => {
+                                                                const newSizes = [...selectedSizes];
+                                                                newSizes[sizeIndex] = e.target.value;
+                                                                setSelectedSizes(newSizes);
+                                                            }}
+                                                            onFocus={(e) => e.target.select()}
+                                                            className="w-36 px-2 py-1 text-sm font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded focus:ring-2 focus:ring-amber-500"
+                                                        />
                                                         <input
                                                             type="text"
                                                             inputMode="numeric"
