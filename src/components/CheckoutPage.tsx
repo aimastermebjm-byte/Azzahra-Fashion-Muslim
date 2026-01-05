@@ -664,6 +664,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   const handleSubmitOrder = async () => {
+    console.log('🛒 CHECKOUT DEBUG: handleSubmitOrder called!', {
+      shippingMode,
+      formData,
+      selectedPaymentMethod,
+      cartItems: cartItems.length,
+      totalPrice,
+      loading
+    });
     // Validasi alamat hanya jika mode 'delivery'
     if (shippingMode === 'delivery') {
       if (!formData.name || !formData.phone || !formData.address) {
