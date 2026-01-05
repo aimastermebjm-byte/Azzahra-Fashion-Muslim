@@ -486,11 +486,6 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
     // Handle submit
     const handleSubmit = () => {
-        // DEBUG: Log pricesPerVariant state at submit time
-        console.log('🔥 SUBMIT - pricesPerVariant state:', pricesPerVariant);
-        console.log('🔥 SUBMIT - selectedSizes:', selectedSizes);
-        console.log('🔥 SUBMIT - activeVariantLabels:', activeVariantLabels);
-
         if (!productFormData.name) {
             alert('Nama produk wajib diisi');
             return;

@@ -318,25 +318,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const getPrice = () => {
     // Check for variant-specific pricing
     const productAny = currentProduct as any;
-
-    // DEBUG: Log to see what's available
-    console.log('🔍 getPrice DEBUG:', {
-      hasPricesPerVariant: !!productAny.pricesPerVariant,
-      pricesPerVariant: productAny.pricesPerVariant,
-      selectedSize,
-      selectedColor,
-      variantKey: selectedSize && selectedColor ? `${selectedSize}-${selectedColor}` : null
-    });
-
     if (productAny.pricesPerVariant && selectedSize && selectedColor) {
       const variantKey = `${selectedSize}-${selectedColor}`;
       const variantPricing = productAny.pricesPerVariant[variantKey];
-      console.log('🔍 Looking for key:', variantKey, '-> Found:', variantPricing);
       if (variantPricing?.retail && Number(variantPricing.retail) > 0) {
         const variantPrice = user?.role === 'reseller' && variantPricing.reseller
           ? Number(variantPricing.reseller)
           : Number(variantPricing.retail);
-        console.log('💰 Using variant price:', variantPrice);
         return variantPrice;
       }
     }
