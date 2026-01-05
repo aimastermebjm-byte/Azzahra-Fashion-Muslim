@@ -957,17 +957,14 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 familyKeywords.some(kw => size.toLowerCase().includes(kw))
                                             );
 
-                                            // If family data detected, auto-enable family mode and hide toggle
-                                            if (hasFamilyData && !familyMode) {
-                                                // Auto-set family mode when family sizes detected
-                                                setTimeout(() => setFamilyMode(true), 0);
-                                            }
+                                            // DON'T auto-set familyMode - let user keep normal SIZE_PRESETS visible
+                                            // Family sizes will show as Custom Sizes instead
 
-                                            // Only show toggle if NO family data detected
+                                            // Show indicator if family data detected, but keep as clickable toggle
                                             if (hasFamilyData) {
                                                 return (
-                                                    <span className="px-3 py-1 rounded-lg text-xs font-medium bg-pink-600 text-white">
-                                                        👨‍👩‍👧‍👦 Mode Keluarga (Auto)
+                                                    <span className="px-3 py-1 rounded-lg text-xs font-medium bg-green-600 text-white">
+                                                        ✅ Keluarga Terdeteksi
                                                     </span>
                                                 );
                                             }
