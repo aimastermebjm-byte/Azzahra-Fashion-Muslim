@@ -726,13 +726,13 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     <p className="text-xs text-blue-600 bg-blue-50 p-2 rounded-lg">
                                         💡 <strong>Tap 2x berbeda</strong> untuk tukar posisi. <strong>Pakai panah</strong> untuk geser.
                                     </p>
-                                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                                    <div className="flex gap-3 overflow-x-auto pb-4 px-1 snap-x snap-mandatory md:grid md:grid-cols-5 md:overflow-visible">
                                         {imagePreviews.map((preview, index) => {
                                             const isSelected = selectedSwapIndex === index;
                                             return (
-                                                <div key={index} className="space-y-1">
+                                                <div key={index} className="space-y-2 min-w-[150px] md:min-w-0 snap-center flex-shrink-0">
                                                     <div
-                                                        className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${isSelected ? 'border-purple-500 ring-2 ring-purple-300 scale-105' : 'border-gray-200 hover:border-purple-300'
+                                                        className={`relative cursor-pointer rounded-xl overflow-hidden border-2 shadow-sm transition-all ${isSelected ? 'border-purple-500 ring-2 ring-purple-300 scale-105 z-10' : 'border-gray-200 hover:border-purple-300'
                                                             }`}
                                                         onClick={() => {
                                                             if (selectedSwapIndex === null) {
@@ -764,34 +764,35 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                         <img
                                                             src={preview}
                                                             alt={`Preview ${index + 1}`}
-                                                            className="w-full aspect-[3/4] object-cover"
+                                                            className="w-full aspect-[3/4] object-cover bg-gray-100"
                                                         />
                                                         {isSelected && (
-                                                            <div className="absolute inset-0 bg-purple-500/30 flex items-center justify-center">
-                                                                <span className="text-white text-2xl">✓</span>
+                                                            <div className="absolute inset-0 bg-purple-500/30 flex items-center justify-center animate-pulse">
+                                                                <span className="text-white text-3xl font-bold drop-shadow-md">✓ Swap</span>
                                                             </div>
                                                         )}
 
-                                                        {/* Label badge */}
-                                                        <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded font-bold shadow-sm">
+                                                        {/* Label badge (A, B, C) - Top Left */}
+                                                        <div className="absolute top-2 left-2 bg-black/80 text-white text-sm px-2.5 py-1 rounded-lg font-bold shadow-sm backdrop-blur-sm border border-white/20">
                                                             {variantLabels[index]}
                                                         </div>
 
-                                                        {/* Delete button - Bigger touch target */}
+                                                        {/* Delete button - Top Right */}
                                                         <button
                                                             type="button"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleRemoveImage(index);
                                                             }}
-                                                            className="absolute top-2 right-2 w-8 h-8 bg-red-500 rounded-full text-white text-lg font-bold hover:bg-red-600 transition-colors shadow-md flex items-center justify-center z-20"
+                                                            className="absolute top-2 right-2 w-9 h-9 bg-red-500 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 active:scale-95 transition-all z-20 border-2 border-white"
+                                                            aria-label="Hapus gambar"
                                                         >
-                                                            ×
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                                         </button>
 
-                                                        {/* Variant Toggle Checkbox - Moved to bottom right & Bigger */}
+                                                        {/* Variant Checkbox - Bottom Right */}
                                                         <div
-                                                            className="absolute bottom-2 right-2 z-10 bg-white rounded-lg shadow-md flex items-center justify-center p-2 cursor-pointer hover:bg-gray-50 transition-colors"
+                                                            className="absolute bottom-2 right-2 z-10 bg-white/90 backdrop-blur-sm rounded-lg shadow-md flex items-center justify-center p-2 cursor-pointer border border-gray-100 active:scale-95 transition-all"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 const newFlags = [...isVariant];
@@ -817,8 +818,9 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             ...prev,
                                                             [variantLabels[index]]: e.target.value
                                                         }))}
+                                                        onFocus={(e) => e.target.select()}
                                                         placeholder={`${variantLabels[index]} - Nama`}
-                                                        className="w-full px-1 py-1.5 text-xs text-center border-2 border-purple-200 rounded bg-purple-50 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 placeholder-purple-300"
+                                                        className="w-full px-2 py-2 text-sm text-center border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 placeholder-gray-400 bg-white shadow-sm"
                                                     />
                                                 </div>
                                             );
