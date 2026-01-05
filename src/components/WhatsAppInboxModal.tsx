@@ -404,25 +404,30 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                     const cleanBlock = block.replace(/\s+(dan|&)\s+/gi, ' ').replace(/\n/g, '  ');
 
                     sizes.forEach(size => {
-                        // Pattern 1: Explicit separator (= or :) e.g. "S : 400.000" or "S = 400rb"
+                        // Pattern 1: Explicit separator OR just spaces, but MUST look like a price (Rp, 000, k, rb)
                         // Anti-false positive: Ensure 'L' is not preceded by 'Look' or followed by 'set'
-                        let regexStr = `\\b${size}\\b[^\\d]*?[=:]\\s*[^\\d]*?((?:rp\\.?\\s*)?[\\d.,]+(?:k|rb)?)`;
+
+                        // Regex explanation:
+                        // \b${size}\b       : The size (e.g. "S")
+                        // [^\n]*?           : Skip any text on the same line (lazy)
+                        // ( ... )           : Capture the price
+                        // VALID PRICE FORMATS:
+                        // 1. Rp 310.000     : (?:Rp\.?\s*[\d.,]+)
+                        // 2. 310.000        : (?:[\d.,]+000)
+                        // 3. 310k / 310rb   : (?:[\d.,]+(?:k|rb))
+
+                        let priceRegexPart = `((?:Rp\\.?\\s*[\\d.,]+)|(?:[\\d.,]+000)|(?:[\\d.,]+(?:k|rb)))`;
+                        let regexStr = `\\b${size}\\b[^\\n]*?${priceRegexPart}`;
+
                         if (size === 'L') {
-                            regexStr = `(?<!Look\\s+)\\bL\\b(?!\\s*set)[^\\d]*?[=:]\\s*[^\\d]*?((?:rp\\.?\\s*)?[\\d.,]+(?:k|rb)?)`;
+                            // Special protection for Size 'L' against 'Look l'
+                            regexStr = `(?<!Look\\s+)\\bL\\b(?!\\s*set)[^\\n]*?${priceRegexPart}`;
                         }
 
                         let regex = new RegExp(regexStr, 'i');
                         let match = cleanBlock.match(regex);
 
-                        // Pattern 2: No separator
-                        if (!match) {
-                            let regexStr2 = `\\b${size}\\b\\s+[^\\d=:]*?((?:rp\\.?\\s*)?[\\d.,]+(?:k|rb)?)`;
-                            if (size === 'L') {
-                                regexStr2 = `(?<!Look\\s+)\\bL\\b(?!\\s*set)\\s+[^\\d=:]*?((?:rp\\.?\\s*)?[\\d.,]+(?:k|rb)?)`;
-                            }
-                            regex = new RegExp(regexStr2, 'i');
-                            match = cleanBlock.match(regex);
-                        }
+                        // Fallback: If no match on same line, try slightly stricter match allowing newline only if strictly separated (removed for safety, stick to single line for now to prevent wrong attribution)
 
                         if (match) {
                             const price = parsePrice(match[1]);
