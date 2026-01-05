@@ -228,7 +228,8 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                 const patterns = [
                     // Existing patterns - JANGAN DIUBAH
                     { label: 'Set Scarf', keys: ['set scarf', 'set scraf', 'scarf set'] },
-                    { label: 'Set Khimar', keys: ['set khimar', 'set syari', 'khimar set'] },
+                    { label: 'Set Khimar', keys: ['set khimar', 'khimar set'] },
+                    { label: 'Set Syari', keys: ['set syari', 'syari set'] },
                     { label: 'Gamis Only', keys: ['gamis only', 'dress only'] },
 
                     // Family patterns - Mom Look variations
