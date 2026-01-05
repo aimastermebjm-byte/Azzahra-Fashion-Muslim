@@ -1049,14 +1049,31 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 </button>
                                             ))}
 
-                                            {/* Custom Size Input */}
-                                            <input
-                                                type="text"
-                                                value={customSizeInput}
-                                                onChange={(e) => setCustomSizeInput(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault();
+                                            {/* Custom Size Input with Add Button */}
+                                            <div className="flex items-center gap-1">
+                                                <input
+                                                    type="text"
+                                                    value={customSizeInput}
+                                                    onChange={(e) => setCustomSizeInput(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            const val = customSizeInput.trim();
+                                                            if (val && !selectedSizes.includes(val)) {
+                                                                setSelectedSizes(prev => {
+                                                                    const sizesWithoutAllSize = prev.filter(s => s !== 'All Size');
+                                                                    return [...sizesWithoutAllSize, val];
+                                                                });
+                                                                setCustomSizeInput('');
+                                                            }
+                                                        }
+                                                    }}
+                                                    placeholder="Tambah size..."
+                                                    className="px-3 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 w-28 focus:w-40 transition-all"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
                                                         const val = customSizeInput.trim();
                                                         if (val && !selectedSizes.includes(val)) {
                                                             setSelectedSizes(prev => {
@@ -1065,11 +1082,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             });
                                                             setCustomSizeInput('');
                                                         }
-                                                    }
-                                                }}
-                                                placeholder="+ Custom (Enter)"
-                                                className="px-3 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 w-32 focus:w-56 transition-all"
-                                            />
+                                                    }}
+                                                    className="px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
                                         </div>
                                     ) : (
                                         /* Family Mode - Group Editor */
