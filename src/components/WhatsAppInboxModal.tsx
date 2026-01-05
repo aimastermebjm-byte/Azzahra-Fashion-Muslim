@@ -405,12 +405,22 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
 
                     sizes.forEach(size => {
                         // Pattern 1: Explicit separator (= or :) e.g. "S : 400.000" or "S = 400rb"
-                        let regex = new RegExp(`\\b${size}\\b[^\\d]*?[=:]\\s*[^\\d]*?((?:rp\\.?\\s*)?[\\d.,]+(?:k|rb)?)`, 'i');
+                        // Anti-false positive: Ensure 'L' is not preceded by 'Look' or followed by 'set'
+                        let regexStr = `\\b${size}\\b[^\\d]*?[=:]\\s*[^\\d]*?((?:rp\\.?\\s*)?[\\d.,]+(?:k|rb)?)`;
+                        if (size === 'L') {
+                            regexStr = `(?<!Look\\s+)\\bL\\b(?!\\s*set)[^\\d]*?[=:]\\s*[^\\d]*?((?:rp\\.?\\s*)?[\\d.,]+(?:k|rb)?)`;
+                        }
+
+                        let regex = new RegExp(regexStr, 'i');
                         let match = cleanBlock.match(regex);
 
-                        // Pattern 2: No separator, direct price e.g. "L 210.000", "L dan XL 210.000" (checked due to cleanBlock logic)
+                        // Pattern 2: No separator
                         if (!match) {
-                            regex = new RegExp(`\\b${size}\\b\\s+[^\\d=:]*?((?:rp\\.?\\s*)?[\\d.,]+(?:k|rb)?)`, 'i');
+                            let regexStr2 = `\\b${size}\\b\\s+[^\\d=:]*?((?:rp\\.?\\s*)?[\\d.,]+(?:k|rb)?)`;
+                            if (size === 'L') {
+                                regexStr2 = `(?<!Look\\s+)\\bL\\b(?!\\s*set)\\s+[^\\d=:]*?((?:rp\\.?\\s*)?[\\d.,]+(?:k|rb)?)`;
+                            }
+                            regex = new RegExp(regexStr2, 'i');
                             match = cleanBlock.match(regex);
                         }
 
