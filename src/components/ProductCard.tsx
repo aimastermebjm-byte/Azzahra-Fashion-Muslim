@@ -113,8 +113,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
     return (
       <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 backdrop-blur-md shadow-sm text-[10px] sm:text-xs font-bold ${isReady
-          ? 'bg-emerald-500/95 text-white border border-emerald-400/50'
-          : 'bg-amber-500/95 text-white border border-amber-400/50'
+        ? 'bg-emerald-500/95 text-white border border-emerald-400/50'
+        : 'bg-amber-500/95 text-white border border-amber-400/50'
         }`}>
         {isReady ? 'Ready' : 'PO'} · {totalStock}
       </div>
@@ -189,6 +189,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <div
         className={`bg-white shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 ${isFeatured ? 'ring-2 ring-yellow-400' : ''
           }`}
+        onClick={() => onProductClick(product)}
       >
         <div className="relative aspect-[3/4] bg-white overflow-hidden">
           <img
