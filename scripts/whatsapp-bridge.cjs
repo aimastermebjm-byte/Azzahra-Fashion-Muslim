@@ -109,14 +109,14 @@ Rules:
   * Jika tidak match → default "Gamis"
   
 - nama: IDENTIFIKASI JUDUL UTAMA PRODUK.
-  * Biasanya text KAPITAL sebelum baris "By ...".
-  * ABAIKAN baris "Open PO", "Close PO", "Estimasi".
-  * Format Output: "[JUDUL PRODUK] By [BRAND]" (Satukan dalam 1 kalimat).
+  * Ambil baris kalimat SETELAH info "Open PO/Ready" dan SEBELUM baris "By ...".
+  * TIDAK SELALU KAPITAL. Ambil teks apa adanya.
+  * Format Output: "[JUDUL PRODUK] By [BRAND]"
   * Contoh caption:
     "Open PO
-     ANGGUN RAYYA SERIES
+     Anggun Rayya Series
      By Eldeena"
-    → nama = "ANGGUN RAYYA SERIES By Eldeena"
+    → nama = "Anggun Rayya Series By Eldeena"
   * JANGAN POTONG jadi cuma "By Eldeena". Harus ada judulnya!
   * Ambil sampai bertemu baris detail (Bahan, Harga, Size, dll).
   
