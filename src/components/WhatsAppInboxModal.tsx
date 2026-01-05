@@ -419,6 +419,12 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                 });
             }
 
+            // DEBUG: Log detected data before sending to ManualUploadModal
+            console.log('🔍 FAMILY DETECTION DEBUG:');
+            console.log('   finalSizes:', finalSizes);
+            console.log('   detectedPricing:', JSON.stringify(detectedPricing, null, 2));
+            console.log('   pricesPerVariant:', JSON.stringify(pricesPerVariant, null, 2));
+
             onProcess({
                 step: 'upload', // Start at upload step, collage will be auto-generated in browser
                 images: imageFiles,

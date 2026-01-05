@@ -953,15 +953,22 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                setFamilyMode(!familyMode);
-                                                if (!familyMode) {
-                                                    // Reset to empty when switching to family mode
+                                                const newFamilyMode = !familyMode;
+                                                setFamilyMode(newFamilyMode);
+
+                                                // Only reset sizes if switching TO family mode AND no sizes already set
+                                                // This preserves auto-detected sizes from draft
+                                                if (newFamilyMode && selectedSizes.length === 1 && selectedSizes[0] === 'All Size') {
+                                                    // Switching to family mode from default - clear for manual selection
                                                     setSelectedSizes([]);
-                                                } else {
-                                                    // Reset when switching back
+                                                } else if (!newFamilyMode) {
+                                                    // Switching back to normal mode
                                                     setFamilyGroups({});
-                                                    setSelectedSizes(['All Size']);
+                                                    if (selectedSizes.length === 0) {
+                                                        setSelectedSizes(['All Size']);
+                                                    }
                                                 }
+                                                // If sizes already have data (from draft), DON'T reset!
                                             }}
                                             className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${familyMode
                                                 ? 'bg-pink-600 text-white'
