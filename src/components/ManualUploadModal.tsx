@@ -1278,9 +1278,31 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {selectedSizes.map(size => (
+                                                            {selectedSizes.map((size, sizeIndex) => (
                                                                 <tr key={size}>
-                                                                    <td className="p-3 font-bold border border-green-100 bg-green-50/50">{size}</td>
+                                                                    <td className="p-2 font-bold border border-green-100 bg-green-50/50">
+                                                                        <input
+                                                                            type="text"
+                                                                            value={size}
+                                                                            onChange={(e) => {
+                                                                                const newSizes = [...selectedSizes];
+                                                                                const oldSize = newSizes[sizeIndex];
+                                                                                const newSize = e.target.value;
+                                                                                newSizes[sizeIndex] = newSize;
+                                                                                setSelectedSizes(newSizes);
+
+                                                                                // Also update pricesPerVariant keys
+                                                                                const updatedPrices: typeof pricesPerVariant = {};
+                                                                                Object.entries(pricesPerVariant).forEach(([key, val]) => {
+                                                                                    const newKey = key.replace(`${oldSize}-`, `${newSize}-`);
+                                                                                    updatedPrices[newKey] = val;
+                                                                                });
+                                                                                setPricesPerVariant(updatedPrices);
+                                                                            }}
+                                                                            onFocus={(e) => e.target.select()}
+                                                                            className="w-full px-2 py-1 text-sm font-bold bg-transparent border-0 focus:ring-2 focus:ring-green-500 rounded min-w-[80px]"
+                                                                        />
+                                                                    </td>
                                                                     {activeVariantLabels.map(label => {
                                                                         const key = `${size}-${label}`;
                                                                         return (
@@ -1327,9 +1349,31 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {selectedSizes.map(size => (
+                                                            {selectedSizes.map((size, sizeIndex) => (
                                                                 <tr key={size}>
-                                                                    <td className="p-3 font-bold border border-blue-100 bg-blue-50/50">{size}</td>
+                                                                    <td className="p-2 font-bold border border-blue-100 bg-blue-50/50">
+                                                                        <input
+                                                                            type="text"
+                                                                            value={size}
+                                                                            onChange={(e) => {
+                                                                                const newSizes = [...selectedSizes];
+                                                                                const oldSize = newSizes[sizeIndex];
+                                                                                const newSize = e.target.value;
+                                                                                newSizes[sizeIndex] = newSize;
+                                                                                setSelectedSizes(newSizes);
+
+                                                                                // Also update pricesPerVariant keys
+                                                                                const updatedPrices: typeof pricesPerVariant = {};
+                                                                                Object.entries(pricesPerVariant).forEach(([key, val]) => {
+                                                                                    const newKey = key.replace(`${oldSize}-`, `${newSize}-`);
+                                                                                    updatedPrices[newKey] = val;
+                                                                                });
+                                                                                setPricesPerVariant(updatedPrices);
+                                                                            }}
+                                                                            onFocus={(e) => e.target.select()}
+                                                                            className="w-full px-2 py-1 text-sm font-bold bg-transparent border-0 focus:ring-2 focus:ring-blue-500 rounded min-w-[80px]"
+                                                                        />
+                                                                    </td>
                                                                     {activeVariantLabels.map(label => {
                                                                         const key = `${size}-${label}`;
                                                                         return (
