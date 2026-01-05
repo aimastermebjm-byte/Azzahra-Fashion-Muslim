@@ -583,12 +583,13 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                 sizes: selectedSizes,
                 colors: activeVariantLabels,
                 stock: stockMatrix,
-                // Include per-variant pricing if enabled
-                prices: showPricePerVariant ? pricesPerVariant : null,
+                // Include per-variant pricing if data exists (not just based on UI toggle)
+                prices: Object.keys(pricesPerVariant).length > 0 ? pricesPerVariant : null,
                 names: variantNames // Custom names for checkout
             },
             // Also include at top level for easier access if needed
-            pricesPerVariant: showPricePerVariant ? pricesPerVariant : null
+            // FIX: Save based on data existence, not UI toggle state
+            pricesPerVariant: Object.keys(pricesPerVariant).length > 0 ? pricesPerVariant : null
         };
 
         onSuccess(productData);
