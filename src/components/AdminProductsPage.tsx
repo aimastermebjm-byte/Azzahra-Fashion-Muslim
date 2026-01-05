@@ -130,8 +130,14 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
     weight: '', // Changed from 1000 to empty string
     images: [] as (string | { file: File; preview: string; isUploading: boolean })[],
     variants: { sizes: [] as string[], colors: [] as string[], stock: {} as any },
-    status: 'ready' as 'ready' | 'po'
+    status: 'ready' as 'ready' | 'po',
+    // NEW: Per-variant pricing and names
+    pricesPerVariant: {} as Record<string, { retail: number; reseller: number }>,
+    variantNames: {} as Record<string, string>
   });
+
+  // Toggle for showing price per variant section in edit modal
+  const [showPricePerVariant, setShowPricePerVariant] = useState(false);
 
   // Batch form data
   const [batchFormData, setBatchFormData] = useState({
@@ -502,7 +508,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         weight: '',
         images: [],
         variants: { sizes: [], colors: [], stock: {} },
-        status: 'ready'
+        status: 'ready',
+        pricesPerVariant: {},
+        variantNames: {}
       });
       setShowAddModal(false);
     } catch (error) {
@@ -550,9 +558,14 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         costPrice: parseInt(formData.costPrice) || 0,
         weight: parseInt(formData.weight) || 0,
         // Only update variants if they exist
-        variants: formData.variants.sizes.length > 0 ? formData.variants : undefined,
+        variants: formData.variants.sizes.length > 0 ? {
+          ...formData.variants,
+          names: formData.variantNames // Include variant names in variants object
+        } : undefined,
         stock: formData.variants.sizes.length > 0 ? calculateTotalStock() : undefined,
-        status: formData.status
+        status: formData.status,
+        // NEW: Save per-variant pricing
+        pricesPerVariant: Object.keys(formData.pricesPerVariant).length > 0 ? formData.pricesPerVariant : null
       };
 
       console.log('💾 Updating product in Firestore:', {
@@ -584,6 +597,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
+    const productAny = product as any;
     setFormData({
       name: product.name,
       description: product.description,
@@ -594,8 +608,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
       weight: String(product.weight || ''),
       images: product.images || [],
       variants: (product.variants as any) || { sizes: [], colors: [], stock: {} },
-      status: product.status || 'ready'
+      status: product.status || 'ready',
+      // Load existing per-variant pricing and names
+      pricesPerVariant: productAny.pricesPerVariant || {},
+      variantNames: productAny.variants?.names || productAny.variantNames || {}
     });
+    // Show price per variant section if data exists
+    setShowPricePerVariant(Object.keys(productAny.pricesPerVariant || {}).length > 0);
     setShowEditModal(true);
   };
 
@@ -2165,6 +2184,162 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                     {formData.status === 'ready' ? '✅ Produk siap dikirim' : '⏳ Produk butuh waktu pengerjaan'}
                   </p>
                 </div>
+
+                {/* Per-Variant Pricing Section - Only show if variants exist */}
+                {formData.variants.sizes.length > 0 && formData.variants.colors.length > 0 && (
+                  <div className="border border-orange-200 rounded-xl overflow-hidden bg-white">
+                    <button
+                      type="button"
+                      onClick={() => setShowPricePerVariant(!showPricePerVariant)}
+                      className="w-full px-4 py-3 bg-orange-50 text-left flex justify-between items-center"
+                    >
+                      <span className="text-sm font-medium text-orange-800">
+                        💰 Harga Beda per Size / Varian
+                      </span>
+                      <span className="text-orange-600 text-xs">
+                        {showPricePerVariant ? '▲ Tutup' : '▼ Expand'}
+                      </span>
+                    </button>
+
+                    {showPricePerVariant && (
+                      <div className="p-4 space-y-6">
+                        {/* Variant Names Section */}
+                        <div className="bg-purple-50 p-3 rounded-lg">
+                          <h4 className="text-xs font-bold text-purple-700 mb-2">🏷️ Nama Varian (untuk Checkout)</h4>
+                          <p className="text-xs text-gray-500 mb-3">Beri nama pada varian (A, B, C...) supaya pelanggan tahu isi produk saat checkout.</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {formData.variants.colors.map((color) => (
+                              <div key={color} className="flex items-center space-x-2">
+                                <span className="text-xs font-bold text-purple-600 w-6">{color}</span>
+                                <input
+                                  type="text"
+                                  value={formData.variantNames[color] || ''}
+                                  onChange={(e) => {
+                                    setFormData({
+                                      ...formData,
+                                      variantNames: {
+                                        ...formData.variantNames,
+                                        [color]: e.target.value
+                                      }
+                                    });
+                                  }}
+                                  placeholder={`Nama ${color}`}
+                                  className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-purple-500"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Retail Price Matrix */}
+                        <div>
+                          <h4 className="text-xs font-bold text-green-700 mb-2">Matrix Harga Retail</h4>
+                          <div className="bg-gray-50 rounded-lg p-3 overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b border-gray-200">
+                                  <th className="text-left py-2 px-1 font-medium text-gray-700">Size \ Varian</th>
+                                  {formData.variants.colors.map((color) => (
+                                    <th key={color} className="text-center py-2 px-1 font-medium text-gray-700">
+                                      {color}{formData.variantNames[color] ? ` (${formData.variantNames[color]})` : ''}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {formData.variants.sizes.map((size) => (
+                                  <tr key={size} className="border-b border-gray-100">
+                                    <td className="py-2 px-1 font-medium text-gray-600">{size}</td>
+                                    {formData.variants.colors.map((color) => {
+                                      const key = `${size}-${color}`;
+                                      return (
+                                        <td key={color} className="py-2 px-1 text-center">
+                                          <input
+                                            type="text"
+                                            value={formData.pricesPerVariant[key]?.retail?.toLocaleString('id-ID') || formData.retailPrice}
+                                            onChange={(e) => {
+                                              const numValue = parseInt(e.target.value.replace(/\D/g, '')) || 0;
+                                              setFormData({
+                                                ...formData,
+                                                pricesPerVariant: {
+                                                  ...formData.pricesPerVariant,
+                                                  [key]: {
+                                                    retail: numValue,
+                                                    reseller: formData.pricesPerVariant[key]?.reseller || parseInt(formData.resellerPrice) || 0
+                                                  }
+                                                }
+                                              });
+                                            }}
+                                            className="w-20 px-1 py-1 border border-gray-300 rounded text-center text-xs focus:ring-2 focus:ring-green-500"
+                                          />
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* Reseller Price Matrix */}
+                        <div>
+                          <h4 className="text-xs font-bold text-blue-700 mb-2">Matrix Harga Reseller</h4>
+                          <div className="bg-gray-50 rounded-lg p-3 overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b border-gray-200">
+                                  <th className="text-left py-2 px-1 font-medium text-gray-700">Size \ Varian</th>
+                                  {formData.variants.colors.map((color) => (
+                                    <th key={color} className="text-center py-2 px-1 font-medium text-gray-700">
+                                      {color}{formData.variantNames[color] ? ` (${formData.variantNames[color]})` : ''}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {formData.variants.sizes.map((size) => (
+                                  <tr key={size} className="border-b border-gray-100">
+                                    <td className="py-2 px-1 font-medium text-gray-600">{size}</td>
+                                    {formData.variants.colors.map((color) => {
+                                      const key = `${size}-${color}`;
+                                      return (
+                                        <td key={color} className="py-2 px-1 text-center">
+                                          <input
+                                            type="text"
+                                            value={formData.pricesPerVariant[key]?.reseller?.toLocaleString('id-ID') || formData.resellerPrice}
+                                            onChange={(e) => {
+                                              const numValue = parseInt(e.target.value.replace(/\D/g, '')) || 0;
+                                              setFormData({
+                                                ...formData,
+                                                pricesPerVariant: {
+                                                  ...formData.pricesPerVariant,
+                                                  [key]: {
+                                                    retail: formData.pricesPerVariant[key]?.retail || parseInt(formData.retailPrice) || 0,
+                                                    reseller: numValue
+                                                  }
+                                                }
+                                              });
+                                            }}
+                                            className="w-20 px-1 py-1 border border-gray-300 rounded text-center text-xs focus:ring-2 focus:ring-blue-500"
+                                          />
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-gray-500">
+                          💡 Kosongkan jika harga sama untuk semua varian. Harga yang diisi akan mengganti harga global.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Form Actions */}
                 <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
