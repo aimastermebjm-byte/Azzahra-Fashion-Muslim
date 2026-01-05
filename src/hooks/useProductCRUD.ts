@@ -102,7 +102,9 @@ export const useProductCRUD = (): UseProductCRUDResult => {
         variants: {
           sizes: Array.isArray(productData.variants?.sizes) ? productData.variants.sizes : [],
           colors: Array.isArray(productData.variants?.colors) ? productData.variants.colors : [],
-          stock: (typeof productData.variants?.stock === 'object' && productData.variants.stock !== null) ? productData.variants.stock : {}
+          stock: (typeof productData.variants?.stock === 'object' && productData.variants.stock !== null) ? productData.variants.stock : {},
+          ...(productData.variants?.names ? { names: productData.variants.names } : {}),
+          ...(productData.variants?.prices ? { prices: productData.variants.prices } : {})
         },
         isFeatured: Boolean(productData.isFeatured || productData.featured),
         featured: Boolean(productData.featured || productData.isFeatured),
@@ -115,7 +117,11 @@ export const useProductCRUD = (): UseProductCRUDResult => {
         reviews: 0,
         rating: 0,
         weight: Number(productData.weight || 0),
-        unit: productData.unit || 'pcs'
+        unit: productData.unit || 'pcs',
+        // NEW: Per-variant pricing fields
+        ...(productData.pricesPerVariant ? { pricesPerVariant: productData.pricesPerVariant } : {}),
+        ...(productData.costPricePerSize ? { costPricePerSize: productData.costPricePerSize } : {}),
+        ...(productData.variantNames ? { variantNames: productData.variantNames } : {})
       };
 
       // ATOMIC UPDATE: Use arrayUnion to safely append without reading first
