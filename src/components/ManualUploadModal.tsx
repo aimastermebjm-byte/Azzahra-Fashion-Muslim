@@ -726,105 +726,106 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     <p className="text-xs text-blue-600 bg-blue-50 p-2 rounded-lg">
                                         💡 <strong>Tap 2x berbeda</strong> untuk tukar posisi. <strong>Pakai panah</strong> untuk geser.
                                     </p>
-                                    <div className="flex gap-3 overflow-x-auto pb-4 px-1 snap-x snap-mandatory md:grid md:grid-cols-5 md:overflow-visible">
-                                        {imagePreviews.map((preview, index) => {
-                                            const isSelected = selectedSwapIndex === index;
-                                            return (
-                                                <div key={index} className="space-y-2 min-w-[150px] md:min-w-0 snap-center flex-shrink-0">
-                                                    <div
-                                                        className={`relative cursor-pointer rounded-xl overflow-hidden border-2 shadow-sm transition-all ${isSelected ? 'border-purple-500 ring-2 ring-purple-300 scale-105 z-10' : 'border-gray-200 hover:border-purple-300'
-                                                            }`}
-                                                        onClick={() => {
-                                                            if (selectedSwapIndex === null) {
-                                                                // First tap: select
-                                                                setSelectedSwapIndex(index);
-                                                            } else if (selectedSwapIndex === index) {
-                                                                // Tap same: deselect
-                                                                setSelectedSwapIndex(null);
-                                                            } else {
-                                                                // Second tap: swap
-                                                                const fromIdx = selectedSwapIndex;
-                                                                const newImages = [...images];
-                                                                const newPreviews = [...imagePreviews];
-                                                                [newImages[fromIdx], newImages[index]] = [newImages[index], newImages[fromIdx]];
-                                                                [newPreviews[fromIdx], newPreviews[index]] = [newPreviews[index], newPreviews[fromIdx]];
-                                                                setImages(newImages);
-
-                                                                // Swap isVariant
-                                                                const newIsVariant = [...isVariant];
-                                                                const tempV = newIsVariant[selectedSwapIndex];
-                                                                newIsVariant[selectedSwapIndex] = newIsVariant[index];
-                                                                newIsVariant[index] = tempV;
-                                                                setIsVariant(newIsVariant);
-                                                                setImagePreviews(newPreviews);
-                                                                setSelectedSwapIndex(null);
-                                                            }
-                                                        }}
-                                                    >
-                                                        <img
-                                                            src={preview}
-                                                            alt={`Preview ${index + 1}`}
-                                                            className="w-full aspect-[3/4] object-cover bg-gray-100"
-                                                        />
-                                                        {isSelected && (
-                                                            <div className="absolute inset-0 bg-purple-500/30 flex items-center justify-center animate-pulse">
-                                                                <span className="text-white text-3xl font-bold drop-shadow-md">✓ Swap</span>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Label badge (A, B, C) - Top Left */}
-                                                        <div className="absolute top-2 left-2 bg-black/80 text-white text-sm px-2.5 py-1 rounded-lg font-bold shadow-sm backdrop-blur-sm border border-white/20">
-                                                            {variantLabels[index]}
-                                                        </div>
-
-                                                        {/* Delete button - Top Right */}
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleRemoveImage(index);
-                                                            }}
-                                                            className="absolute top-2 right-2 w-9 h-9 bg-red-500 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 active:scale-95 transition-all z-20 border-2 border-white"
-                                                            aria-label="Hapus gambar"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                                        </button>
-
-                                                        {/* Variant Checkbox - Bottom Right */}
+                                    <div className="overflow-x-auto pb-2">
+                                        <div className="grid grid-cols-5 gap-2 min-w-[500px] md:min-w-0">
+                                            {imagePreviews.map((preview, index) => {
+                                                const isSelected = selectedSwapIndex === index;
+                                                return (
+                                                    <div key={index} className="space-y-1">
                                                         <div
-                                                            className="absolute bottom-2 right-2 z-10 bg-white/90 backdrop-blur-sm rounded-lg shadow-md flex items-center justify-center p-2 cursor-pointer border border-gray-100 active:scale-95 transition-all"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                const newFlags = [...isVariant];
-                                                                for (let i = 0; i < images.length; i++) if (newFlags[i] === undefined) newFlags[i] = true;
-                                                                newFlags[index] = !newFlags[index];
-                                                                setIsVariant(newFlags);
+                                                            className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${isSelected ? 'border-purple-500 ring-2 ring-purple-300 scale-105 z-10' : 'border-gray-200 hover:border-purple-300'
+                                                                }`}
+                                                            onClick={() => {
+                                                                if (selectedSwapIndex === null) {
+                                                                    // First tap: select
+                                                                    setSelectedSwapIndex(index);
+                                                                } else if (selectedSwapIndex === index) {
+                                                                    // Tap same: deselect
+                                                                    setSelectedSwapIndex(null);
+                                                                } else {
+                                                                    // Second tap: swap
+                                                                    const fromIdx = selectedSwapIndex;
+                                                                    const newImages = [...images];
+                                                                    const newPreviews = [...imagePreviews];
+                                                                    [newImages[fromIdx], newImages[index]] = [newImages[index], newImages[fromIdx]];
+                                                                    [newPreviews[fromIdx], newPreviews[index]] = [newPreviews[index], newPreviews[fromIdx]];
+                                                                    setImages(newImages);
+
+                                                                    // Swap isVariant
+                                                                    const newIsVariant = [...isVariant];
+                                                                    const tempV = newIsVariant[selectedSwapIndex];
+                                                                    newIsVariant[selectedSwapIndex] = newIsVariant[index];
+                                                                    newIsVariant[index] = tempV;
+                                                                    setIsVariant(newIsVariant);
+                                                                    setImagePreviews(newPreviews);
+                                                                    setSelectedSwapIndex(null);
+                                                                }
                                                             }}
                                                         >
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={isVariant[index] !== false}
-                                                                readOnly
-                                                                className="w-5 h-5 accent-purple-600 cursor-pointer"
+                                                            <img
+                                                                src={preview}
+                                                                alt={`Preview ${index + 1}`}
+                                                                className="w-full aspect-[3/4] object-cover"
                                                             />
-                                                        </div>
-                                                    </div>
+                                                            {isSelected && (
+                                                                <div className="absolute inset-0 bg-purple-500/30 flex items-center justify-center">
+                                                                    <span className="text-white text-xl font-bold">✓</span>
+                                                                </div>
+                                                            )}
 
-                                                    {/* Editable variant name */}
-                                                    <input
-                                                        type="text"
-                                                        value={variantNames[variantLabels[index]] || ''}
-                                                        onChange={(e) => setVariantNames(prev => ({
-                                                            ...prev,
-                                                            [variantLabels[index]]: e.target.value
-                                                        }))}
-                                                        onFocus={(e) => e.target.select()}
-                                                        placeholder={`${variantLabels[index]} - Nama`}
-                                                        className="w-full px-2 py-2 text-sm text-center border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 placeholder-gray-400 bg-white shadow-sm"
-                                                    />
-                                                </div>
-                                            );
-                                        })}
+                                                            {/* Label badge */}
+                                                            <div className="absolute top-1 left-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm">
+                                                                {variantLabels[index]}
+                                                            </div>
+
+                                                            {/* Delete button - Fixed Size & Position */}
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleRemoveImage(index);
+                                                                }}
+                                                                className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full text-white text-xs font-bold hover:bg-red-600 transition-colors shadow-md flex items-center justify-center z-20"
+                                                            >
+                                                                ×
+                                                            </button>
+
+                                                            {/* Variant Toggle Checkbox - Compact */}
+                                                            <div
+                                                                className="absolute bottom-1 right-1 z-10 bg-white/90 rounded shadow-sm flex items-center justify-center w-5 h-5 cursor-pointer hover:bg-white transition-colors"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const newFlags = [...isVariant];
+                                                                    for (let i = 0; i < images.length; i++) if (newFlags[i] === undefined) newFlags[i] = true;
+                                                                    newFlags[index] = !newFlags[index];
+                                                                    setIsVariant(newFlags);
+                                                                }}
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isVariant[index] !== false}
+                                                                    readOnly
+                                                                    className="w-3.5 h-3.5 accent-purple-600 cursor-pointer"
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Editable variant name */}
+                                                        <input
+                                                            type="text"
+                                                            value={variantNames[variantLabels[index]] || ''}
+                                                            onChange={(e) => setVariantNames(prev => ({
+                                                                ...prev,
+                                                                [variantLabels[index]]: e.target.value
+                                                            }))}
+                                                            onFocus={(e) => e.target.select()}
+                                                            placeholder={`${variantLabels[index]}`}
+                                                            className="w-full px-1 py-1 text-[10px] text-center border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 focus:border-purple-500 bg-gray-50"
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
 
 
