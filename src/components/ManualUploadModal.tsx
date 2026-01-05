@@ -726,7 +726,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     <p className="text-xs text-blue-600 bg-blue-50 p-2 rounded-lg">
                                         💡 <strong>Tap 2x berbeda</strong> untuk tukar posisi. <strong>Pakai panah</strong> untuk geser.
                                     </p>
-                                    <div className="grid grid-cols-5 gap-2">
+                                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                                         {imagePreviews.map((preview, index) => {
                                             const isSelected = selectedSwapIndex === index;
                                             return (
@@ -773,36 +773,38 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                         )}
 
                                                         {/* Label badge */}
-                                                        <div className="absolute top-1 left-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
+                                                        <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded font-bold shadow-sm">
                                                             {variantLabels[index]}
                                                         </div>
 
-                                                        {/* Delete button */}
+                                                        {/* Delete button - Bigger touch target */}
                                                         <button
                                                             type="button"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleRemoveImage(index);
                                                             }}
-                                                            className="absolute top-1 right-1 w-5 h-5 bg-red-500/80 rounded-full text-white text-xs font-bold hover:bg-red-600 transition-colors"
+                                                            className="absolute top-2 right-2 w-8 h-8 bg-red-500 rounded-full text-white text-lg font-bold hover:bg-red-600 transition-colors shadow-md flex items-center justify-center z-20"
                                                         >
                                                             ×
                                                         </button>
 
-                                                        {/* Variant Toggle Checkbox */}
-                                                        <div className="absolute top-1 left-1 z-10 bg-white/80 rounded shadow-sm flex items-center justify-center w-5 h-5 hover:bg-white transition-colors">
+                                                        {/* Variant Toggle Checkbox - Moved to bottom right & Bigger */}
+                                                        <div
+                                                            className="absolute bottom-2 right-2 z-10 bg-white rounded-lg shadow-md flex items-center justify-center p-2 cursor-pointer hover:bg-gray-50 transition-colors"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const newFlags = [...isVariant];
+                                                                for (let i = 0; i < images.length; i++) if (newFlags[i] === undefined) newFlags[i] = true;
+                                                                newFlags[index] = !newFlags[index];
+                                                                setIsVariant(newFlags);
+                                                            }}
+                                                        >
                                                             <input
                                                                 type="checkbox"
                                                                 checked={isVariant[index] !== false}
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                onChange={() => {
-                                                                    const newFlags = [...isVariant];
-                                                                    for (let i = 0; i < images.length; i++) if (newFlags[i] === undefined) newFlags[i] = true;
-                                                                    newFlags[index] = !newFlags[index];
-                                                                    setIsVariant(newFlags);
-                                                                }}
-                                                                className="w-4 h-4 accent-purple-600 cursor-pointer"
-                                                                title="Centang = Varian Utama (Ada Label A/B). Hapus = Detail (Foto Polos)"
+                                                                readOnly
+                                                                className="w-5 h-5 accent-purple-600 cursor-pointer"
                                                             />
                                                         </div>
                                                     </div>
@@ -1210,7 +1212,6 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
                                 {/* Expandable Price per Variant Matrix */}
                                 {/* Show when: multiple sizes OR showPricePerVariant is true (set from draft) */}
-                                {/* Expandable Price per Variant Matrix */}
                                 {/* Always show container so user can toggle it */}
                                 <div className="mb-5 border border-orange-200 rounded-xl overflow-hidden bg-white">
                                     <button
@@ -1218,11 +1219,16 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         onClick={() => setShowPricePerVariant(!showPricePerVariant)}
                                         className="w-full px-4 py-3 bg-orange-50 text-left flex justify-between items-center"
                                     >
-                                        <span className="text-sm font-medium text-orange-800">
-                                            💰 Harga Beda per Size / Varian?
-                                        </span>
-                                        <span className="text-orange-600 text-xs">
-                                            {showPricePerVariant ? '▲ Tutup' : '▼ Expand'}
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-orange-800">
+                                                💰 Harga Khusus Size/Varian?
+                                            </span>
+                                            <span className="text-[10px] text-orange-600 font-normal">
+                                                (Isi jika harga berbeda tiap varian)
+                                            </span>
+                                        </div>
+                                        <span className="text-orange-600">
+                                            {showPricePerVariant ? '▲ Tutup' : '▼ Mulai'}
                                         </span>
                                     </button>
 
@@ -1230,25 +1236,25 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         <div className="p-4 space-y-6">
                                             {/* Retail Price Matrix */}
                                             <div>
-                                                <h4 className="text-xs font-bold text-green-700 mb-2">Matrix Harga Retail</h4>
-                                                <div className="overflow-x-auto">
-                                                    <table className="w-full text-xs">
+                                                <h4 className="text-sm font-bold text-green-700 mb-3">Matrix Harga Retail</h4>
+                                                <div className="overflow-x-auto pb-2">
+                                                    <table className="w-full">
                                                         <thead>
                                                             <tr className="bg-green-50">
-                                                                <th className="px-2 py-1 text-left border border-green-100">Size</th>
+                                                                <th className="p-3 text-left border border-green-100 min-w-[80px]">Size</th>
                                                                 {activeVariantLabels.map(label => (
-                                                                    <th key={label} className="px-2 py-1 text-center border border-green-100">{label}</th>
+                                                                    <th key={label} className="p-3 text-center border border-green-100 min-w-[80px] font-bold text-green-800">{label}</th>
                                                                 ))}
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             {selectedSizes.map(size => (
                                                                 <tr key={size}>
-                                                                    <td className="px-2 py-1 font-bold border border-green-100">{size}</td>
+                                                                    <td className="p-3 font-bold border border-green-100 bg-green-50/50">{size}</td>
                                                                     {activeVariantLabels.map(label => {
                                                                         const key = `${size}-${label}`;
                                                                         return (
-                                                                            <td key={key} className="px-1 py-1 border border-green-100">
+                                                                            <td key={key} className="p-2 border border-green-100">
                                                                                 <input
                                                                                     type="text"
                                                                                     inputMode="numeric"
@@ -1264,7 +1270,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                         }));
                                                                                     }}
                                                                                     onFocus={(e) => e.target.select()}
-                                                                                    className="w-full px-1 py-1 text-center bg-white border border-green-200 rounded text-[10px] focus:ring-1 focus:ring-green-500"
+                                                                                    className="w-full px-2 py-3 text-center bg-white border border-green-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-green-500 shadow-sm min-w-[90px]"
+                                                                                    placeholder="0"
                                                                                 />
                                                                             </td>
                                                                         );
@@ -1278,25 +1285,25 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
                                             {/* Reseller Price Matrix */}
                                             <div>
-                                                <h4 className="text-xs font-bold text-blue-700 mb-2">Matrix Harga Reseller</h4>
-                                                <div className="overflow-x-auto">
-                                                    <table className="w-full text-xs">
+                                                <h4 className="text-sm font-bold text-blue-700 mb-3">Matrix Harga Reseller</h4>
+                                                <div className="overflow-x-auto pb-2">
+                                                    <table className="w-full">
                                                         <thead>
                                                             <tr className="bg-blue-50">
-                                                                <th className="px-2 py-1 text-left border border-blue-100">Size</th>
+                                                                <th className="p-3 text-left border border-blue-100 min-w-[80px]">Size</th>
                                                                 {activeVariantLabels.map(label => (
-                                                                    <th key={label} className="px-2 py-1 text-center border border-blue-100">{label}</th>
+                                                                    <th key={label} className="p-3 text-center border border-blue-100 min-w-[80px] font-bold text-blue-800">{label}</th>
                                                                 ))}
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             {selectedSizes.map(size => (
                                                                 <tr key={size}>
-                                                                    <td className="px-2 py-1 font-bold border border-blue-100">{size}</td>
+                                                                    <td className="p-3 font-bold border border-blue-100 bg-blue-50/50">{size}</td>
                                                                     {activeVariantLabels.map(label => {
                                                                         const key = `${size}-${label}`;
                                                                         return (
-                                                                            <td key={key} className="px-1 py-1 border border-blue-100">
+                                                                            <td key={key} className="p-2 border border-blue-100">
                                                                                 <input
                                                                                     type="text"
                                                                                     inputMode="numeric"
@@ -1312,7 +1319,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                         }));
                                                                                     }}
                                                                                     onFocus={(e) => e.target.select()}
-                                                                                    className="w-full px-1 py-1 text-center bg-white border border-blue-200 rounded text-[10px] focus:ring-1 focus:ring-blue-500"
+                                                                                    className="w-full px-2 py-3 text-center bg-white border border-blue-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-blue-500 shadow-sm min-w-[90px]"
+                                                                                    placeholder="0"
                                                                                 />
                                                                             </td>
                                                                         );
