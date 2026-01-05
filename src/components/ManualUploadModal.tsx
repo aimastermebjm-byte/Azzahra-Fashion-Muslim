@@ -1037,16 +1037,21 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 );
                                             })}
 
-                                            {/* Custom Sizes */}
+                                            {/* Custom Sizes - Only × removes, not the whole button */}
                                             {selectedSizes.filter(s => !SIZE_PRESETS.includes(s)).map((size) => (
-                                                <button
+                                                <div
                                                     key={size}
-                                                    type="button"
-                                                    onClick={() => setSelectedSizes(selectedSizes.filter(s => s !== size))}
-                                                    className="px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-purple-600 text-white shadow-md flex items-center gap-1"
+                                                    className="px-4 py-2 rounded-lg text-sm font-semibold bg-purple-600 text-white shadow-md flex items-center gap-2"
                                                 >
-                                                    {size} <span className="text-purple-200 hover:text-white">×</span>
-                                                </button>
+                                                    <span>{size}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedSizes(selectedSizes.filter(s => s !== size))}
+                                                        className="text-purple-200 hover:text-white hover:bg-purple-800 rounded-full w-5 h-5 flex items-center justify-center"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
                                             ))}
 
                                             {/* Custom Size Input with Add Button */}

@@ -178,10 +178,12 @@ Rules:
   ]
   
   RULES:
-  * MATCH harga Reseller dengan Retail untuk produk yang SAMA (Look l = Mom Look l)
-  * Jika "S dan M = 245.000" → buat 2 entry: Daddy S dan Daddy M dengan harga sama
-  * Konversi harga: "460.000" → 460000, "550k" → 550000, "Rp 310.000" → 310000
-  * HARUS ekstrak SEMUA size dari kedua section (Reseller DAN Retail)`;
+  * MATCH nama produk antara Reseller & Retail walaupun sedikit beda (contoh: "Look l" ≈ "Mom Look l", "Anak cewe" ≈ "Size Chart Anak Girls")
+  * PAIRING HARGA: Jika harga Retail ada tapi Reseller tidak ada (atau sebaliknya), gunakan estimasi (Reseller ≈ Retail * 0.85), tapi PRIORITY ambil dari teks!
+  * STRICT HARGA: Ambil harga persis dari angka di teks. Hati-hati dengan "Rp480.000" (nempel).
+  * COMPLEX FORMAT: "S : pb 90 / ld 72 (3-5 th) = Rp 460.000" → Ambil size "S" dan harga "460000" (abaikan pb/ld/th)
+  * RANGE SIZE: "Boy L dan XL 210.000" → buat 2 item: Boy L (210rb) dan Boy XL (210rb)
+  * HINDARI HALUSINASI: Jangan buat harga 564.000 jika di teks tertulis 470.000. Ambil angka yang tertulis!`;
 
     const result = await visionModel.generateContent(prompt);
     const text = result.response.text();
