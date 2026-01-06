@@ -37,7 +37,7 @@ description: Protocol wajib yang HARUS dipatuhi oleh AI assistant
 
 - [ ] Sudah paham requirement 100%?
 - [ ] User sudah bilang "siap" atau "lanjut"?
-- [ ] Sudah cek branch aktif (Git)?
+- [ ] Sudah cek branch aktif (Git)? **HARUS di `develop`!**
 - [ ] Sudah baca file yang akan di-edit?
 - [ ] Solusi tidak merusak fitur existing?
 
@@ -50,35 +50,51 @@ description: Protocol wajib yang HARUS dipatuhi oleh AI assistant
 - 🔴 **Breaking Changes**: Merubah signature fungsi tanpa update caller.
 - 🔴 **Ignoring Errors**: Mengabaikan pesan error dari terminal/tools.
 - 🔴 **Duplicate Code**: Membuat logic yang sebenarnya sudah ada (DRY).
+- 🔴 **Coding di Main**: JANGAN PERNAH coding langsung di `main`!
 
 ---
 
 ## 🛡️ 4. GIT & BRANCHING STRATEGY (SAFETY TOP!)
 
-### A. Aturan Branch
+### A. Struktur Branch
+```
+main     → Production (SUCI, JANGAN coding di sini!)
+develop  → Development (tempat kerja sehari-hari)
+feature/ → Fitur besar/risky saja (optional)
+```
+
+### B. Aturan Branch
 - **MAIN = ZONA SUCI**: DILARANG coding, commit, atau push langsung ke `main`.
-- **Feature Branch**: Selalu kerja di branch fitur (format: `feature/nama-fitur` atau `fix/nama-bug`).
+- **DEVELOP = Branch Kerja**: Semua coding sehari-hari dilakukan di sini.
+- **Feature Branch (Optional)**: Hanya untuk fitur besar/risky (format: `feature/nama-fitur`).
 
-### B. Branch Safety (Cek Dulu!)
+### C. Branch Safety (Cek Dulu!)
 - **SEBELUM CODING**: Jalankan `git branch --show-current`.
-- **TIDAK MATCH? STOP!**: Jika branch tidak sesuai task, TANYA user dulu. "Boss di branch X, tapi mau buat fitur Y. Bikin branch baru atau pindah?"
-- **AUTO-SWITCH**: Hanya lakukan checkout branch baru setelah diizinkan user.
+- **Harus di `develop`** atau `feature/xxx`. JANGAN di `main`!
+- **Jika di `main`**: Langsung checkout ke `develop` sebelum mulai kerja.
 
-### C. Commit Standards
+### D. Commit Standards
 - **Format**: `type: deskripsi` (feat, fix, refactor, docs).
 - **Contoh**: `feat: add whatsapp chatbot integration`.
 - **Commit kecil**: 1 fitur = 1 commit. NO broken code!
 
-### D. Pull & Push Workflow
+### E. Workflow Harian
+1. **Kerja di `develop`** → commit → push ke `develop`
+2. **Siap production?** → Merge `develop` ke `main` (dengan izin user)
+3. **⚠️ SETELAH MERGE**: Langsung checkout balik ke `develop`!
+4. **Fitur besar?** → Buat `feature/xxx` dari `develop`, selesai hapus branch-nya
+
+### F. Pull & Push Workflow
 - **PULL** dulu dari origin sebelum push untuk menghindari conflict.
-- **PUSH** hanya diperbolehkan ke FEATURE BRANCH.
+- **PUSH** ke `develop` atau `feature/xxx`. TIDAK BOLEH langsung ke `main`.
 
 ---
 
 ## 🚀 5. DEPLOYMENT (VERCEL CONTROL)
 
-- **Preview Deploy**: Push ke feature branch akan memicu Vercel Preview. Berikan link Preview URL ke user setelah push berhasil.
-- **Production Deploy**: Hanya terjadi ketika merge ke `main`. AI dilarang melakukan merge ke `main` tanpa persetujuan eksplisit user.
+- **Preview Deploy**: Push ke `develop` akan memicu Vercel Preview.
+- **Production Deploy**: Hanya terjadi ketika merge ke `main`. 
+- **AI dilarang** melakukan merge ke `main` tanpa persetujuan eksplisit user.
 
 ---
 
@@ -88,7 +104,10 @@ description: Protocol wajib yang HARUS dipatuhi oleh AI assistant
 1. Pahami sepenuhnya -> Verify dengan tools -> Berikan jawaban konkret.
 
 ### When User Requests Code:
-1. Konfirmasi pemahaman -> Tanya kesiapan -> Cek Branch -> Baca file -> Execute.
+1. Konfirmasi pemahaman -> Tanya kesiapan -> **Cek Branch (harus di develop)** -> Baca file -> Execute.
+
+### When Merge to Main:
+1. Minta izin user -> Checkout main -> Pull -> Merge develop -> Push -> **⚠️ CHECKOUT BALIK KE DEVELOP!**
 
 ### When Error Occurs:
 1. Baca error dengan teliti -> Fix root cause -> Test ulang -> Jangan berasumsi.
