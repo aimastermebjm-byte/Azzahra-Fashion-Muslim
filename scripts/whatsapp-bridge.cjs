@@ -140,9 +140,13 @@ Rules:
   * "pashmina" → "Pashmina"
   * JIKA TIDAK ADA kata kunci di judul → SELALU return "Gamis"
   * JANGAN ambil kategori dari baris detail seperti "Dress Bahan Lamora..." (itu bukan kategori!)
-- sizes: 
-  * Jika ada size chart (S, M, L, XL, XXL) → gunakan nama BERSIH. Contoh: ["S", "M", "L", "XL"]
-  * Jika HANYA ada PJ/LD/Lingkar tanpa size chart → return ["All Size"]
+- sizes: EKSTRAK SEMUA SIZE yang tersedia dari deskripsi.
+  * Format umum: "Available Size : S | M | L | XL", "Size S M L XL", "Ukuran: S, M, L"
+  * Jika ada S, M, L, XL, XXL → return array: ["S", "M", "L", "XL"]
+  * HATI-HATI dengan separator: bisa pakai "|", ",", " ", atau "-"
+  * Contoh: "Available Size : S | M | L | XL" → ["S", "M", "L", "XL"]
+  * Contoh: "Size S M L XL XXL" → ["S", "M", "L", "XL", "XXL"]
+  * HANYA return ["All Size"] jika TIDAK ADA size chart (hanya ada PJ/LD/Lingkar)
 - stokPerVarian: 
   * Default adalah 1
   * "1 seri" → 1, "3 seri" → 3
@@ -244,24 +248,48 @@ function addToBuffer(item) {
   // Reset timer setiap ada pesan baru
   clearTimeout(processingTimeout);
 
-  // Set timer: proses setelah 15 detik tidak ada pesan baru
+  // SMART DETECTION: Jika ini adalah TEXT dengan keyword produk (deskripsi),
+  // langsung proses bundle karena ini menandakan akhir dari 1 produk
+  if (item.type === 'text' && item.content) {
+    const textLower = item.content.toLowerCase();
+    const isProductDescription =
+      textLower.includes('by ') ||
+      textLower.includes('harga') ||
+      textLower.includes('open po') ||
+      textLower.includes('reseller') ||
+      textLower.includes('retail') ||
+      item.content.length > 200; // Deskripsi biasanya panjang
+
+    if (isProductDescription && messageBuffer.filter(m => m.type === 'image').length > 0) {
+      console.log('🎯 Product description detected! Snapshotting bundle...');
+
+      // CRITICAL: Ambil snapshot buffer dan KOSONGKAN DULU sebelum proses async
+      const bundleSnapshot = [...messageBuffer];
+      messageBuffer = []; // Buffer langsung kosong untuk produk berikutnya
+
+      processBundleWithData(bundleSnapshot); // Proses dengan data yang sudah di-snapshot
+      return;
+    }
+  }
+
+  // Fallback: Set timer untuk proses setelah PAIRING_WINDOW tidak ada pesan baru
   processingTimeout = setTimeout(() => {
-    processBundle();
+    if (messageBuffer.length > 0) {
+      const bundleSnapshot = [...messageBuffer];
+      messageBuffer = [];
+      processBundleWithData(bundleSnapshot);
+    }
   }, PAIRING_WINDOW);
 }
 
-async function processBundle() {
-  if (messageBuffer.length === 0) return;
+async function processBundleWithData(bundleData) {
+  if (!bundleData || bundleData.length === 0) return;
 
   console.log('⚙️ ===== PROCESSING BUNDLE =====');
-  console.log(`📦 Total items: ${messageBuffer.length}`);
+  console.log(`📦 Total items: ${bundleData.length}`);
 
-  const images = messageBuffer.filter(m => m.type === 'image');
-  const texts = messageBuffer.filter(m => m.type === 'text');
-
-  // Clear buffer immediately
-  const currentBuffer = [...messageBuffer];
-  messageBuffer = [];
+  const images = bundleData.filter(m => m.type === 'image');
+  const texts = bundleData.filter(m => m.type === 'text');
 
   // Combine captions
   const combinedCaption = texts.map(t => t.content).join('\n');

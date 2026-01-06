@@ -163,10 +163,35 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                     category: initialState.productData?.category || 'Gamis', // Default to Gamis
                 }));
 
-                // Set sizes from draft
-                if (initialState.productData?.variants?.sizes) {
-                    setSelectedSizes(initialState.productData.variants.sizes);
+                // Set sizes from draft (with fallback extraction from description)
+                let detectedSizes = initialState.productData?.variants?.sizes || ['All Size'];
+
+                // FALLBACK: Jika hanya "All Size", coba ekstrak dari description
+                if (detectedSizes.length === 1 && detectedSizes[0] === 'All Size' && description) {
+                    const sizePatterns = [
+                        /available\s*size[s]?\s*[:\-]?\s*([SMLX\s\|,\-]+)/i,
+                        /size[s]?\s*[:\-]?\s*([SMLX\s\|,\-]+)/i,
+                        /ukuran\s*[:\-]?\s*([SMLX\s\|,\-]+)/i
+                    ];
+
+                    for (const pattern of sizePatterns) {
+                        const match = description.match(pattern);
+                        if (match) {
+                            const sizeStr = match[1];
+                            const extractedSizes = sizeStr.split(/[\|,\-\s]+/).filter(s =>
+                                ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'].includes(s.trim().toUpperCase())
+                            ).map(s => s.trim().toUpperCase());
+
+                            if (extractedSizes.length > 0) {
+                                console.log('🎯 Frontend extracted sizes from description:', extractedSizes);
+                                detectedSizes = extractedSizes;
+                                break;
+                            }
+                        }
+                    }
                 }
+
+                setSelectedSizes(detectedSizes);
 
                 // Set variant names from draft
                 if ((initialState.productData as any)?.variantNames) {
