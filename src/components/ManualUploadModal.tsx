@@ -1011,27 +1011,31 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                     autoComplete="off"
                                                 />
 
-                                                {/* Custom Dropdown Suggestions */}
+                                                {/* Custom Dropdown Suggestions - SELALU tampilkan SEMUA brand */}
                                                 {showBrandSuggestions && (
-                                                    <div className="absolute z-50 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
-                                                        {brandOptions.filter(b => b.toLowerCase().includes(productFormData.brand.toLowerCase())).length > 0 ? (
-                                                            brandOptions
-                                                                .filter(b => b.toLowerCase().includes(productFormData.brand.toLowerCase()))
-                                                                .map((brand, i) => (
-                                                                    <div
-                                                                        key={i}
-                                                                        className="px-3 py-2 hover:bg-purple-50 cursor-pointer text-gray-700 hover:text-purple-700 transition-colors border-b border-gray-50 last:border-0"
-                                                                        onClick={() => {
-                                                                            setProductFormData(prev => ({ ...prev, brand }));
-                                                                            setShowBrandSuggestions(false);
-                                                                        }}
-                                                                    >
-                                                                        {brand}
-                                                                    </div>
-                                                                ))
-                                                        ) : (
-                                                            <div className="px-3 py-2 text-gray-400 text-sm italic">
-                                                                Ketik untuk membuat merk baru...
+                                                    <div className="absolute z-50 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg mt-1 max-h-60 overflow-y-auto">
+                                                        {brandOptions.map((brand, i) => (
+                                                            <div
+                                                                key={i}
+                                                                className={`px-3 py-2 hover:bg-purple-50 cursor-pointer transition-colors border-b border-gray-50 last:border-0 ${brand.toLowerCase() === productFormData.brand.toLowerCase()
+                                                                        ? 'bg-purple-100 text-purple-700 font-medium'
+                                                                        : 'text-gray-700 hover:text-purple-700'
+                                                                    }`}
+                                                                onClick={() => {
+                                                                    setProductFormData(prev => ({ ...prev, brand }));
+                                                                    setShowBrandSuggestions(false);
+                                                                }}
+                                                            >
+                                                                {brand}
+                                                            </div>
+                                                        ))}
+
+                                                        {/* Create new option - hanya jika brand belum ada */}
+                                                        {productFormData.brand && !brandOptions.some(b => b.toLowerCase() === productFormData.brand.toLowerCase()) && (
+                                                            <div className="px-3 py-2 text-purple-600 bg-purple-50 border-t border-purple-200 cursor-pointer hover:bg-purple-100"
+                                                                onClick={() => setShowBrandSuggestions(false)}
+                                                            >
+                                                                ✨ Buat brand baru: <strong>{productFormData.brand}</strong>
                                                             </div>
                                                         )}
                                                     </div>
