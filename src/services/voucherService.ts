@@ -129,12 +129,19 @@ export const voucherService = {
             return { valid: false, message: 'Kode voucher tidak ditemukan' };
         }
 
-        const doc = snapshot.docs[0];
-        const voucher = { id: doc.id, ...doc.data() } as Voucher;
+        const voucherDocSnapshot = snapshot.docs[0];
+        const voucher = { id: voucherDocSnapshot.id, ...voucherDocSnapshot.data() } as Voucher;
 
         // Check if assigned to this user
-        if (voucher.assignedTo !== userId) {
-            return { valid: false, message: 'Voucher ini bukan milik Anda' };
+        // ✅ CRITICAL FIX: Allow Admin/Owner to use ANY voucher for testing/manual input
+        // Fetch current user role to check permissions
+        const userDocRef = await getDoc(doc(db, 'users', userId));
+        const userRole = userDocRef.exists() ? userDocRef.data().role : 'customer';
+        const isAdminOrOwner = ['admin', 'owner'].includes(userRole);
+
+        if (voucher.assignedTo !== userId && !isAdminOrOwner) {
+            console.warn(`🛑 Voucher Denied: Owner=${voucher.assignedTo}, User=${userId}`);
+            return { valid: false, message: 'Voucher ini milik user lain' };
         }
 
         // Check if already used

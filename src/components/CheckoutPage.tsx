@@ -446,77 +446,44 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   }, [addresses, selectedAddressId, formData.isDropship]);
 
-  // 🔥 CRITICAL FIX: Trigger shipping calculation AFTER addresses are fully loaded
-  useEffect(() => {
-    const defaultAddr = getActiveAddress();
-    const autoCourier = shippingOptions.find(opt => opt.code);
+  // 🔥 UNIFIED shipping calculation effect - ONE useEffect only to prevent infinite loops
+  const [shippingCalculated, setShippingCalculated] = useState(false);
 
-    console.log('🔍 AUTO-CALC DEBUG:', {
-      autoCourier: autoCourier?.code,
-      hasDefaultAddr: !!defaultAddr,
-      shippingCourier: formData.shippingCourier,
-      addressesLoaded: addresses.length > 0,
-      shouldTrigger: !!(autoCourier && defaultAddr && formData.shippingCourier === autoCourier.id && addresses.length > 0)
-    });
-
-    // 🔥 IMPORTANT: Only trigger if we have courier, address, AND addresses are loaded
-    if (autoCourier && defaultAddr && formData.shippingCourier === autoCourier.id && addresses.length > 0) {
-      const weight = calculateTotalWeight();
-      console.log('🚀 AUTO-CALCULATION: Triggering shipping cost for auto-selected courier:', {
-        courier: autoCourier.code,
-        courierId: formData.shippingCourier,
-        hasDefaultAddr: !!defaultAddr,
-        addressesLoaded: addresses.length > 0,
-        weight: weight,
-        cartItemsCount: cartItems.length,
-        hasValidWeight: weight > 0
-      });
-
-      // Only calculate if we have valid weight
-      if (weight <= 0) {
-        console.log('⚠️ SKIP: Weight is 0, waiting for cart items to load...');
-        return;
-      }
-
-      const destinationCandidates = buildDestinationCandidates(defaultAddr);
-
-      // Trigger calculation with longer delay to ensure UI is updated
-      setTimeout(() => {
-        if (autoCourier.code) {
-          calculateShippingCost(autoCourier.code, destinationCandidates, weight);
-        }
-      }, 500); // Longer delay to ensure address UI is fully loaded
-    }
-  }, [formData.shippingCourier, addresses, cartItems, selectedAddressId]); // Also trigger when cart items load with valid weight
-
-  // Optimized shipping calculation - SINGLE useEffect for both courier and address changes
   useEffect(() => {
     const defaultAddr = getActiveAddress();
     const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
 
-    console.log('🔍 SHIPPING DEBUG:', {
-      selectedCourier,
-      hasDefaultAddr: !!defaultAddr,
-      shippingCourier: formData.shippingCourier,
-      courierCode: selectedCourier?.code,
-      defaultAddrData: defaultAddr ? {
-        id: defaultAddr.id,
-        fullAddress: defaultAddr.fullAddress,
-        subdistrictId: defaultAddr.subdistrictId,
-        district: defaultAddr.district,
-        cityId: defaultAddr.cityId
-      } : null
-    });
-
-    // Only calculate if we have both courier and address
-    if (selectedCourier?.code && defaultAddr && formData.shippingCourier) {
-      const weight = calculateTotalWeight();
-      const destinationCandidates = buildDestinationCandidates(defaultAddr);
-
-      // IMMEDIATE calculation - NO DELAY
-      calculateShippingCost(selectedCourier.code, destinationCandidates, weight);
+    // Skip if already calculated for current setup or missing required data
+    if (!selectedCourier?.code || !defaultAddr || addresses.length === 0) {
+      return;
     }
-  }, [formData.shippingCourier, selectedAddressId, addresses]); // Single effect for both changes
+
+    const weight = calculateTotalWeight();
+    if (weight <= 0) {
+      return; // Wait for cart items to load
+    }
+
+    // Skip if we already have shipping cost calculated
+    if (shippingCalculated && formData.shippingCost > 0) {
+      return;
+    }
+
+    const destinationCandidates = buildDestinationCandidates(defaultAddr);
+
+    // Use timeout to debounce and prevent rapid re-calculations
+    const timeoutId = setTimeout(() => {
+      calculateShippingCost(selectedCourier.code!, destinationCandidates, weight);
+      setShippingCalculated(true);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.shippingCourier, selectedAddressId, addresses.length, cartItems.length]);
+
+  // Reset shippingCalculated when courier or address changes
+  useEffect(() => {
+    setShippingCalculated(false);
+  }, [formData.shippingCourier, selectedAddressId]);
+
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -852,19 +819,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 const allowedRoles = ['reseller', 'admin', 'owner'];
                 const userRole = user?.role || 'customer';
                 const isAllowedRole = allowedRoles.includes(userRole);
-
-                // Debug log - remove after testing
-                console.log('🛒 Keep Mode Check:', {
-                  hasPOItems,
-                  userRole,
-                  isAllowedRole,
-                  cartItemsStatuses: cartItems.map((i: any) => ({
-                    name: i.name,
-                    status: i.status,
-                    badge: i.badge,
-                    productStatus: i.productStatus
-                  }))
-                });
 
                 if (!hasPOItems || !isAllowedRole) return null;
 

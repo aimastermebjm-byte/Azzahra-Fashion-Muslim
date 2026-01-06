@@ -3,7 +3,7 @@
     "rules": "firebase.rules"
   },
   "storage": {
-    "rules": "firebase.rules"
+    "rules": "storage.rules"
   },
   "functions": {
     "source": "functions"
