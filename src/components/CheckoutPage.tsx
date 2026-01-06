@@ -316,7 +316,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
       if (shouldPersistCache) {
         localStorage.setItem(cacheKey, JSON.stringify({ data: results, timestamp: Date.now() }));
-        console.log(`💾 ONGKIR CACHE SAVED: ${courierCode} → ${destinationId} (${optimizedWeight}g)`);
       }
 
       setFormData(prev => ({
@@ -326,7 +325,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         shippingETD: cheapestService.etd
       }));
       setShippingCost(cheapestService.cost);
-      console.log(`✅ Ongkir ${courierCode} pakai ${destinationLabel} (${destinationId})`);
       return true;
     };
 
@@ -347,20 +345,17 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
             const now = Date.now();
 
             if (now - timestamp < 30 * 24 * 60 * 60 * 1000 && data?.length) {
-              console.log(`🚀 ONGKIR CACHE HIT: ${courierCode} → ${candidate.id} (${optimizedWeight}g)`);
               resolved = applyShippingResult(data, cacheKey, candidate.id, candidate.label, false);
               if (resolved) break;
             } else if (now - timestamp >= 30 * 24 * 60 * 60 * 1000) {
               localStorage.removeItem(cacheKey);
             }
           } catch (parseError) {
-            console.error('❌ Error parsing ongkir cache:', parseError);
             localStorage.removeItem(cacheKey);
           }
         }
 
         try {
-          console.log(`📡 ONGKIR FETCH: ${courierCode} (${candidate.label}) → ${candidate.id}`);
           const results = await callRajaOngkirDirectAPI(candidate.id);
           resolved = applyShippingResult(results, cacheKey, candidate.id, candidate.label, true);
           if (resolved) {
@@ -368,12 +363,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           }
         } catch (error) {
           lastError = error;
-          console.warn(`⚠️ Ongkir gagal (${candidate.label}):`, error);
         }
       }
 
       if (!resolved) {
-        console.error('❌ Tidak ada kurir yang menjangkau tujuan ini', lastError);
         setShippingError('Tujuan tidak terjangkau untuk kurir ini. Coba ganti kurir atau alamat.');
         setFormData(prev => ({
           ...prev,
@@ -447,13 +440,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   }, [addresses, selectedAddressId, formData.isDropship]);
 
   // 🔥 UNIFIED shipping calculation effect - ONE useEffect only to prevent infinite loops
-  const [shippingCalculated, setShippingCalculated] = useState(false);
+  // Use ref to track last calculation params and prevent duplicate calls
+  const lastShippingCalcRef = React.useRef<string>('');
 
   useEffect(() => {
     const defaultAddr = getActiveAddress();
     const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
 
-    // Skip if already calculated for current setup or missing required data
+    // Skip if missing required data
     if (!selectedCourier?.code || !defaultAddr || addresses.length === 0) {
       return;
     }
@@ -463,27 +457,26 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       return; // Wait for cart items to load
     }
 
-    // Skip if we already have shipping cost calculated
-    if (shippingCalculated && formData.shippingCost > 0) {
+    // Create unique key for this calculation
+    const calcKey = `${selectedCourier.code}_${defaultAddr.subdistrictId || defaultAddr.districtId}_${weight}`;
+
+    // Skip if we already calculated for these exact params
+    if (lastShippingCalcRef.current === calcKey) {
       return;
     }
 
     const destinationCandidates = buildDestinationCandidates(defaultAddr);
 
-    // Use timeout to debounce and prevent rapid re-calculations
+    // Mark as calculated BEFORE calling to prevent race conditions
+    lastShippingCalcRef.current = calcKey;
+
+    // Use timeout to debounce
     const timeoutId = setTimeout(() => {
       calculateShippingCost(selectedCourier.code!, destinationCandidates, weight);
-      setShippingCalculated(true);
     }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [formData.shippingCourier, selectedAddressId, addresses.length, cartItems.length]);
-
-  // Reset shippingCalculated when courier or address changes
-  useEffect(() => {
-    setShippingCalculated(false);
-  }, [formData.shippingCourier, selectedAddressId]);
-
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -501,8 +494,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     // Special handling for courier changes
     if (name === 'shippingCourier') {
-      const selectedCourier = shippingOptions.find(opt => opt.id === value);
-
       // Reset shipping cost first
       setFormData(prev => ({
         ...prev,
@@ -512,11 +503,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         shippingETD: ''
       }));
 
-      // Clear previous results
+      // Clear previous results and reset calc tracker
       setOngkirResults([]);
       setSelectedService(null);
-
-      // NO MANUAL CALCULATION HERE - Let useEffect handle it to avoid double calculation
+      lastShippingCalcRef.current = ''; // Reset to allow new calculation
 
       return; // Exit early to avoid double state update
     }
