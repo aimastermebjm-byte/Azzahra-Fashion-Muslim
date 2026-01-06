@@ -874,7 +874,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
 
       // Prepare Initial State for ManualUploadModal
       setManualUploadInitialState({
-        step: 'details',
+        step: 'upload',
         images: data.images || [],
         collageBlob: collageBlob,
         collageUrl: data.collageUrl,
