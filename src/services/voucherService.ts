@@ -157,8 +157,47 @@ export const voucherService = {
 
         // Check if already used
         if (voucher.status === 'used') {
-            console.log('🎟️ FAIL: Already used');
-            return { valid: false, message: 'Voucher sudah digunakan' };
+            console.log('🎟️ VOUCHER USED: Checking if order was cancelled...');
+
+            // Check if the order that used this voucher was cancelled
+            if (voucher.usedInOrderId) {
+                try {
+                    const orderDocRef = await getDoc(doc(db, 'orders', voucher.usedInOrderId));
+                    if (orderDocRef.exists()) {
+                        const orderStatus = orderDocRef.data().status;
+                        console.log('🎟️ ORDER STATUS:', { orderId: voucher.usedInOrderId, status: orderStatus });
+
+                        if (orderStatus === 'cancelled') {
+                            // Reset voucher to active since order was cancelled
+                            console.log('🎟️ ORDER CANCELLED: Resetting voucher to active');
+                            await updateDoc(doc(db, VOUCHER_COLLECTION, voucher.id), {
+                                status: 'active',
+                                usedAt: null,
+                                usedInOrderId: null
+                            });
+                            // Continue validation - don't return error
+                        } else {
+                            // Order is not cancelled, voucher really is used
+                            console.log('🎟️ FAIL: Already used in active order');
+                            return { valid: false, message: 'Voucher sudah digunakan' };
+                        }
+                    } else {
+                        // Order doesn't exist anymore, reset voucher
+                        console.log('🎟️ ORDER DELETED: Resetting voucher to active');
+                        await updateDoc(doc(db, VOUCHER_COLLECTION, voucher.id), {
+                            status: 'active',
+                            usedAt: null,
+                            usedInOrderId: null
+                        });
+                    }
+                } catch (error) {
+                    console.error('🎟️ Error checking order status:', error);
+                    return { valid: false, message: 'Voucher sudah digunakan' };
+                }
+            } else {
+                console.log('🎟️ FAIL: Already used (no order ID)');
+                return { valid: false, message: 'Voucher sudah digunakan' };
+            }
         }
 
         // Check if expired
