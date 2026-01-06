@@ -155,10 +155,68 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                     }
                 }
 
+                // Auto-match brand dari existing brandOptions (with fuzzy matching)
+                let matchedBrand = initialState.productData?.brand || '';
+                if (matchedBrand) {
+                    // Normalisasi ejaan Indonesia: oe→u, dj→j, tj→c, nj→ny
+                    const normalize = (s: string) => s.toLowerCase()
+                        .replace(/oe/g, 'u')
+                        .replace(/dj/g, 'j')
+                        .replace(/tj/g, 'c')
+                        .replace(/nj/g, 'ny')
+                        .replace(/\s+/g, ''); // Hapus spasi untuk matching
+
+                    const normalizedInput = normalize(matchedBrand);
+
+                    // 1. Coba exact match (case-insensitive)
+                    let existingBrand = brandOptions.find(
+                        b => b.toLowerCase() === matchedBrand.toLowerCase()
+                    );
+
+                    // 2. Coba normalized match (oe=u, dll)
+                    if (!existingBrand) {
+                        existingBrand = brandOptions.find(
+                            b => normalize(b) === normalizedInput
+                        );
+                    }
+
+                    // 3. Coba fuzzy match (typo tolerance: maks 2 huruf beda)
+                    if (!existingBrand) {
+                        // Simple Levenshtein distance
+                        const levenshtein = (a: string, b: string): number => {
+                            if (a.length === 0) return b.length;
+                            if (b.length === 0) return a.length;
+                            const matrix = Array.from({ length: a.length + 1 }, (_, i) =>
+                                Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+                            );
+                            for (let i = 1; i <= a.length; i++) {
+                                for (let j = 1; j <= b.length; j++) {
+                                    matrix[i][j] = a[i - 1] === b[j - 1]
+                                        ? matrix[i - 1][j - 1]
+                                        : Math.min(matrix[i - 1][j - 1], matrix[i][j - 1], matrix[i - 1][j]) + 1;
+                                }
+                            }
+                            return matrix[a.length][b.length];
+                        };
+
+                        // Max 2 typos for brands > 5 chars, max 1 for shorter
+                        const maxDist = normalizedInput.length > 5 ? 2 : 1;
+                        existingBrand = brandOptions.find(b => {
+                            const dist = levenshtein(normalize(b), normalizedInput);
+                            return dist > 0 && dist <= maxDist;
+                        });
+                    }
+
+                    if (existingBrand) {
+                        matchedBrand = existingBrand; // Pakai brand yang sudah ada
+                        console.log('🎯 Brand matched to existing:', matchedBrand);
+                    }
+                }
+
                 setProductFormData(prev => ({
                     ...prev,
                     name: finalName,
-                    brand: initialState.productData?.brand || '',
+                    brand: matchedBrand,
                     description: description,
                     category: initialState.productData?.category || 'Gamis', // Default to Gamis
                 }));
