@@ -6,7 +6,8 @@ import {
   signOut,
   updateProfile,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  sendPasswordResetEmail
 } from '../utils/firebaseClient';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
@@ -210,6 +211,23 @@ export const useFirebaseAuth = () => {
     }
   };
 
+  // Reset password function
+  const resetPassword = async (email: string) => {
+    try {
+      setError(null);
+      setLoading(true);
+      await sendPasswordResetEmail(auth, email);
+      return { success: true, message: 'Email reset password telah dikirim. Cek inbox Anda.' };
+    } catch (err: any) {
+      console.error('❌ Reset password error:', err);
+      const errorMessage = getAuthErrorMessage(err.code);
+      setError(errorMessage);
+      return { success: false, message: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Get user-friendly error message
   const getAuthErrorMessage = (errorCode: string): string => {
     switch (errorCode) {
@@ -240,6 +258,7 @@ export const useFirebaseAuth = () => {
     loginWithGoogle,
     register,
     logout,
+    resetPassword,
     isAuthenticated: !!user
   };
 };
