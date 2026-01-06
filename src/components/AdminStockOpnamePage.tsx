@@ -31,6 +31,9 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
     const [selectedItem, setSelectedItem] = useState<StockOpnameItem | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
 
+    // Detail view state
+    const [viewSession, setViewSession] = useState<StockOpnameSession | null>(null);
+
     // Load sessions on mount
     useEffect(() => {
         loadSessions();
@@ -81,16 +84,27 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
     };
 
     const handleItemClick = (item: StockOpnameItem) => {
-        setSelectedItem(item);
-        setModalOpen(true);
+        // Determine the session we are working with (active or viewed)
+        const session = viewSession || activeSession;
+        if (!session) return;
+
+        // Allow edit if status is 'draft' OR 'pending_approval'
+        const isEditable = session.status === 'draft' || session.status === 'pending_approval';
+
+        if (isEditable) {
+            setSelectedItem(item);
+            setModalOpen(true);
+        }
     };
 
     const handleSaveItem = async (actualStock: number, notes?: string) => {
-        if (!activeSession || !selectedItem) return;
+        // Determine target session
+        const session = viewSession || activeSession;
+        if (!session || !selectedItem) return;
 
         try {
             await stockOpnameService.updateItemCount(
-                activeSession.id,
+                session.id,
                 selectedItem.productId,
                 selectedItem.size,
                 selectedItem.variant,
@@ -99,8 +113,16 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
             );
 
             // Refresh session
-            const updated = await stockOpnameService.getSession(activeSession.id);
-            setActiveSession(updated);
+            const updated = await stockOpnameService.getSession(session.id);
+
+            // Update state based on which view is active
+            if (activeSession?.id === session.id) {
+                setActiveSession(updated);
+            }
+            if (viewSession?.id === session.id) {
+                setViewSession(updated);
+            }
+
             showToast({ message: 'Stok tersimpan', type: 'success' });
         } catch (error) {
             console.error('Error saving item:', error);
@@ -130,9 +152,12 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
     const handleApprove = async (sessionId: string) => {
         if (!user?.uid) return;
 
+        if (!confirm('Apakah Anda yakin ingin menyetujui hasil opname ini? Stok sistem akan diperbarui.')) return;
+
         try {
             await stockOpnameService.approveAndApply(sessionId, user.uid);
             showToast({ message: 'Opname disetujui dan stok diperbarui', type: 'success' });
+            setViewSession(null); // Close detail view
             loadSessions();
         } catch (error) {
             console.error('Error approving:', error);
@@ -147,6 +172,7 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
         try {
             await stockOpnameService.rejectOpname(sessionId, reason);
             showToast({ message: 'Opname ditolak', type: 'success' });
+            setViewSession(null); // Close detail view
             loadSessions();
         } catch (error) {
             console.error('Error rejecting:', error);
@@ -170,11 +196,11 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
         }
     };
 
-    // Filter items
-    const filteredItems = useMemo(() => {
-        if (!activeSession) return [];
+    // Filter items logic shared for both active and view session
+    const getFilteredItems = (session: StockOpnameSession | null) => {
+        if (!session) return [];
 
-        let items = activeSession.items;
+        let items = session.items;
 
         // Search filter
         if (searchQuery) {
@@ -200,7 +226,12 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
         }
 
         return items;
-    }, [activeSession, searchQuery, filter]);
+    };
+
+    const filteredItems = useMemo(() => {
+        // If viewing details, use that session, otherwise use active session
+        return getFilteredItems(viewSession || activeSession);
+    }, [activeSession, viewSession, searchQuery, filter]);
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -230,16 +261,197 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
         }
     };
 
+    // Render detailed session view (Active or View Mode)
+    const renderSessionItems = (session: StockOpnameSession, isReadOnly: boolean = false) => (
+        <div className="space-y-4">
+            {/* Session Info Header (Only in View Mode) */}
+            {isReadOnly && (
+                <div className="bg-white p-4 rounded-lg shadow-sm border border-purple-100">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h2 className="text-lg font-bold text-gray-800">Detail Opname</h2>
+                            <p className="text-sm text-gray-600">
+                                Dibuat oleh: <span className="font-medium">{session.createdByName}</span> pada {new Date(session.createdAt).toLocaleString('id-ID')}
+                            </p>
+                            {session.rejectedReason && (
+                                <p className="text-sm text-red-600 mt-1 font-medium bg-red-50 p-2 rounded">
+                                    Alasan Penolakan: {session.rejectedReason}
+                                </p>
+                            )}
+                        </div>
+                        {getStatusBadge(session.status)}
+                    </div>
+                </div>
+            )}
+
+            {/* Search & Filter */}
+            <div className="flex space-x-2">
+                <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Cari produk..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm"
+                    />
+                </div>
+                <select
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value as FilterType)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                    <option value="all">Semua</option>
+                    <option value="uncounted">Belum Dihitung</option>
+                    <option value="counted">Sudah Dihitung</option>
+                    <option value="difference">Ada Selisih</option>
+                </select>
+            </div>
+
+            {/* Progress */}
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+                <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-gray-600">Progress</span>
+                    <span className="text-sm font-medium">
+                        {session.countedItems} / {session.totalItems}
+                    </span>
+                </div>
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                        className="h-full bg-purple-600 transition-all"
+                        style={{ width: `${(session.countedItems / session.totalItems) * 100}%` }}
+                    />
+                </div>
+                {session.itemsWithDifference > 0 && (
+                    <p className="text-xs text-orange-600 mt-2 font-medium flex items-center">
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        {session.itemsWithDifference} item memiliki selisih stok
+                    </p>
+                )}
+            </div>
+
+            {/* Items Table */}
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead className="bg-gray-50 border-b">
+                            <tr>
+                                <th className="px-3 py-3 text-left font-medium text-gray-600">Produk</th>
+                                <th className="px-2 py-3 text-center font-medium text-gray-600">Size</th>
+                                <th className="px-2 py-3 text-center font-medium text-gray-600">Varian</th>
+                                <th className="px-2 py-3 text-center font-medium text-gray-600">Sistem</th>
+                                <th className="px-2 py-3 text-center font-medium text-gray-600">Fisik</th>
+                                <th className="px-2 py-3 text-center font-medium text-gray-600">Selisih</th>
+                                {isReadOnly && <th className="px-3 py-3 text-left font-medium text-gray-600">Catatan</th>}
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                            {filteredItems.map((item, idx) => {
+                                const isItemEditable = session.status === 'draft' || session.status === 'pending_approval';
+                                return (
+                                    <tr
+                                        key={`${item.productId}-${item.size}-${item.variant}`}
+                                        onClick={() => handleItemClick(item)}
+                                        className={`transition-colors ${isItemEditable ? 'hover:bg-purple-50 cursor-pointer' : ''} ${item.difference !== null && item.difference !== 0 ? 'bg-orange-50' : ''}`}
+                                    >
+                                        <td className="px-3 py-3">
+                                            <div className="flex items-center space-x-2">
+                                                <span className="text-xs text-gray-400">{idx + 1}</span>
+                                                <div>
+                                                    <div className="font-medium truncate max-w-[150px]">{item.productName}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-2 py-3 text-center">{item.size}</td>
+                                        <td className="px-2 py-3 text-center">{item.variant}</td>
+                                        <td className="px-2 py-3 text-center text-blue-600 font-medium">{item.systemStock}</td>
+                                        <td className="px-2 py-3 text-center">
+                                            {item.actualStock !== null ? (
+                                                <span className="font-medium">{item.actualStock}</span>
+                                            ) : (
+                                                <span className="text-gray-400">-</span>
+                                            )}
+                                        </td>
+                                        <td className="px-2 py-3 text-center">{getDifferenceDisplay(item)}</td>
+                                        {isReadOnly && (
+                                            <td className="px-3 py-3 text-gray-500 italic truncate max-w-[150px]">
+                                                {item.notes || '-'}
+                                            </td>
+                                        )}
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+
+                {filteredItems.length === 0 && (
+                    <div className="py-8 text-center text-gray-500">
+                        Tidak ada item ditemukan dengan filter ini
+                    </div>
+                )}
+            </div>
+
+            {/* Actions for Active Session */}
+            {!isReadOnly && (
+                <div className="flex space-x-3">
+                    <button
+                        onClick={() => handleDeleteDraft(session.id)}
+                        className="px-4 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={handleSubmitForApproval}
+                        disabled={session.countedItems === 0}
+                        className="flex-1 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 font-medium"
+                    >
+                        Submit untuk Approval
+                    </button>
+                </div>
+            )}
+
+            {/* Actions for Approval (Owner only in View Mode) */}
+            {isReadOnly && session.status === 'pending_approval' && user?.role === 'owner' && (
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex space-x-3 z-20">
+                    <button
+                        onClick={() => handleReject(session.id)}
+                        className="flex-1 py-3 bg-red-100 text-red-700 font-medium rounded-lg hover:bg-red-200 border border-red-200"
+                    >
+                        Tolak Hasil
+                    </button>
+                    <button
+                        onClick={() => handleApprove(session.id)}
+                        className="flex-[2] py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 shadow-md"
+                    >
+                        Setujui & Perbarui Stok
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 pb-20">
             {/* Header */}
             <div className="bg-white border-b sticky top-0 z-10">
                 <div className="flex items-center p-4">
-                    <button onClick={onBack} className="mr-3 p-2 hover:bg-gray-100 rounded-lg">
+                    <button
+                        onClick={() => {
+                            if (viewSession) {
+                                setViewSession(null);
+                            } else {
+                                onBack();
+                            }
+                        }}
+                        className="mr-3 p-2 hover:bg-gray-100 rounded-lg"
+                    >
                         <ArrowLeft className="w-5 h-5" />
                     </button>
-                    <h1 className="text-lg font-semibold flex-1">Stock Opname</h1>
-                    {!activeSession && (
+                    <h1 className="text-lg font-semibold flex-1">
+                        {viewSession ? 'Detail Hasil Opname' : 'Stock Opname'}
+                    </h1>
+                    {!activeSession && !viewSession && activeTab === 'active' && (
                         <button
                             onClick={handleCreateSession}
                             disabled={creating}
@@ -255,27 +467,29 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                     )}
                 </div>
 
-                {/* Tabs */}
-                <div className="flex border-t">
-                    <button
-                        onClick={() => setActiveTab('active')}
-                        className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'active'
-                            ? 'border-purple-600 text-purple-600'
-                            : 'border-transparent text-gray-500'
-                            }`}
-                    >
-                        Opname Aktif
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('history')}
-                        className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'history'
-                            ? 'border-purple-600 text-purple-600'
-                            : 'border-transparent text-gray-500'
-                            }`}
-                    >
-                        Riwayat
-                    </button>
-                </div>
+                {/* Tabs - hide when viewing details */}
+                {!viewSession && (
+                    <div className="flex border-t">
+                        <button
+                            onClick={() => setActiveTab('active')}
+                            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'active'
+                                ? 'border-purple-600 text-purple-600'
+                                : 'border-transparent text-gray-500'
+                                }`}
+                        >
+                            Opname Aktif
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('history')}
+                            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'history'
+                                ? 'border-purple-600 text-purple-600'
+                                : 'border-transparent text-gray-500'
+                                }`}
+                        >
+                            Riwayat
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Content */}
@@ -284,126 +498,15 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                     <div className="flex items-center justify-center py-12">
                         <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
                     </div>
+                ) : viewSession ? (
+                    // VIEW SESSION DETAILS
+                    renderSessionItems(viewSession, true)
                 ) : activeTab === 'active' ? (
-                    // Active Opname Tab
+                    // ACTIVE TAB
                     activeSession ? (
-                        <div className="space-y-4">
-                            {/* Search & Filter */}
-                            <div className="flex space-x-2">
-                                <div className="flex-1 relative">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        placeholder="Cari produk..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm"
-                                    />
-                                </div>
-                                <select
-                                    value={filter}
-                                    onChange={(e) => setFilter(e.target.value as FilterType)}
-                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                                >
-                                    <option value="all">Semua</option>
-                                    <option value="uncounted">Belum Dihitung</option>
-                                    <option value="counted">Sudah Dihitung</option>
-                                    <option value="difference">Ada Selisih</option>
-                                </select>
-                            </div>
-
-                            {/* Progress */}
-                            <div className="bg-white p-4 rounded-lg shadow-sm">
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="text-sm text-gray-600">Progress</span>
-                                    <span className="text-sm font-medium">
-                                        {activeSession.countedItems} / {activeSession.totalItems}
-                                    </span>
-                                </div>
-                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-purple-600 transition-all"
-                                        style={{ width: `${(activeSession.countedItems / activeSession.totalItems) * 100}%` }}
-                                    />
-                                </div>
-                                {activeSession.itemsWithDifference > 0 && (
-                                    <p className="text-xs text-orange-600 mt-2">
-                                        ⚠️ {activeSession.itemsWithDifference} item ada selisih
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Items Table */}
-                            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-3 py-2 text-left font-medium text-gray-600">Produk</th>
-                                                <th className="px-2 py-2 text-center font-medium text-gray-600">Size</th>
-                                                <th className="px-2 py-2 text-center font-medium text-gray-600">Varian</th>
-                                                <th className="px-2 py-2 text-center font-medium text-gray-600">Sistem</th>
-                                                <th className="px-2 py-2 text-center font-medium text-gray-600">Opname</th>
-                                                <th className="px-2 py-2 text-center font-medium text-gray-600">Selisih</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y">
-                                            {filteredItems.map((item, idx) => (
-                                                <tr
-                                                    key={`${item.productId}-${item.size}-${item.variant}`}
-                                                    onClick={() => handleItemClick(item)}
-                                                    className="hover:bg-purple-50 cursor-pointer transition-colors"
-                                                >
-                                                    <td className="px-3 py-3">
-                                                        <div className="flex items-center space-x-2">
-                                                            <span className="text-xs text-gray-400">{idx + 1}</span>
-                                                            <span className="font-medium truncate max-w-[150px]">{item.productName}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-2 py-3 text-center">{item.size}</td>
-                                                    <td className="px-2 py-3 text-center">{item.variant}</td>
-                                                    <td className="px-2 py-3 text-center text-blue-600 font-medium">{item.systemStock}</td>
-                                                    <td className="px-2 py-3 text-center">
-                                                        {item.actualStock !== null ? (
-                                                            <span className="font-medium">{item.actualStock}</span>
-                                                        ) : (
-                                                            <span className="text-gray-400">-</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-2 py-3 text-center">{getDifferenceDisplay(item)}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                {filteredItems.length === 0 && (
-                                    <div className="py-8 text-center text-gray-500">
-                                        Tidak ada item ditemukan
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex space-x-3">
-                                <button
-                                    onClick={() => handleDeleteDraft(activeSession.id)}
-                                    className="px-4 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={handleSubmitForApproval}
-                                    disabled={activeSession.countedItems === 0}
-                                    className="flex-1 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 font-medium"
-                                >
-                                    Submit untuk Approval
-                                </button>
-                            </div>
-                        </div>
+                        renderSessionItems(activeSession, false)
                     ) : (
-                        // No active session
-                        <div className="bg-white rounded-lg p-8 text-center">
+                        <div className="bg-white rounded-lg p-8 text-center mt-8">
                             <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                             <p className="text-gray-600 mb-4">Belum ada opname aktif</p>
                             <button
@@ -416,7 +519,7 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                         </div>
                     )
                 ) : (
-                    // History Tab
+                    // HISTORY TAB
                     <div className="space-y-3">
                         {sessions.length === 0 ? (
                             <div className="bg-white rounded-lg p-8 text-center">
@@ -424,10 +527,18 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                             </div>
                         ) : (
                             sessions.map((session) => (
-                                <div key={session.id} className="bg-white rounded-lg p-4 shadow-sm">
+                                <div
+                                    key={session.id}
+                                    onClick={() => {
+                                        setFilter('all'); // Reset filter
+                                        setSearchQuery('');
+                                        setViewSession(session);
+                                    }}
+                                    className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-transparent hover:border-purple-100"
+                                >
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
-                                            <p className="font-medium">
+                                            <p className="font-medium text-gray-900">
                                                 Opname {new Date(session.createdAt).toLocaleDateString('id-ID')}
                                             </p>
                                             <p className="text-sm text-gray-500">
@@ -437,59 +548,26 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                                         {getStatusBadge(session.status)}
                                     </div>
 
-                                    <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
-                                        <span>{session.countedItems}/{session.totalItems} item</span>
-                                        {session.itemsWithDifference > 0 && (
-                                            <span className="text-orange-600">
+                                    <div className="flex items-center justify-between mt-3">
+                                        <div className="text-sm text-gray-600">
+                                            <span>{session.countedItems}/{session.totalItems} item</span>
+                                        </div>
+
+                                        {session.itemsWithDifference > 0 ? (
+                                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-md font-medium">
                                                 {session.itemsWithDifference} selisih
+                                            </span>
+                                        ) : (
+                                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-md font-medium">
+                                                Aman
                                             </span>
                                         )}
                                     </div>
 
-                                    {/* Actions for pending approval (Owner only) */}
-                                    {session.status === 'pending_approval' && user?.role === 'owner' && (
-                                        <div className="flex space-x-2 pt-2 border-t">
-                                            <button
-                                                onClick={() => handleApprove(session.id)}
-                                                className="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700"
-                                            >
-                                                <CheckCircle className="w-4 h-4 inline mr-1" /> Setujui
-                                            </button>
-                                            <button
-                                                onClick={() => handleReject(session.id)}
-                                                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
-                                            >
-                                                <AlertCircle className="w-4 h-4 inline mr-1" /> Tolak
-                                            </button>
+                                    {session.status === 'pending_approval' && (
+                                        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-center text-purple-600 text-sm font-medium">
+                                            Lihat Detail untuk Approval →
                                         </div>
-                                    )}
-
-                                    {/* Draft actions */}
-                                    {session.status === 'draft' && (
-                                        <div className="flex space-x-2 pt-2 border-t">
-                                            <button
-                                                onClick={() => {
-                                                    setActiveSession(session);
-                                                    setActiveTab('active');
-                                                }}
-                                                className="flex-1 py-2 bg-purple-600 text-white rounded-lg text-sm"
-                                            >
-                                                Lanjutkan
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteDraft(session.id)}
-                                                className="py-2 px-3 border border-red-300 text-red-600 rounded-lg text-sm"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {/* Rejected reason */}
-                                    {session.status === 'rejected' && session.rejectedReason && (
-                                        <p className="text-sm text-red-600 mt-2">
-                                            Alasan: {session.rejectedReason}
-                                        </p>
                                     )}
                                 </div>
                             ))
