@@ -150,7 +150,14 @@ Rules:
 - stokPerVarian: 
   * Default adalah 1
   * "1 seri" → 1, "3 seri" → 3
-- harga: convert "895k" → 895000, "1.250.000" → 1250000
+- hargaRetail & hargaReseller: EKSTRAK DARI TEKS, JANGAN ESTIMASI!
+  * Format umum:
+    - "Harga Rp. 1.250.000" → hargaRetail: 1250000
+    - "reseller Rp. 1.150.000" → hargaReseller: 1150000
+    - "Retail 565k Reseller 515k" → retail: 565000, reseller: 515000
+  * PRIORITAS: Ambil angka yang TERTULIS di teks!
+  * JANGAN hitung estimasi (misal Retail × 0.9) jika harga sudah ada di teks!
+  * Convert: "1.250.000" → 1250000, "895k" → 895000, "Rp 310.000" → 310000
 - isFamily: true if contains family/couple/ayah/ibu/anak keywords
 
 - setTypes: PENTING! Jika caption berisi BEBERAPA TIPE PRODUK dengan HARGA BERBEDA, ekstrak ke array:

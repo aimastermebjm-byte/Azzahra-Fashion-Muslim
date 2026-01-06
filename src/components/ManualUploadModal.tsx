@@ -243,11 +243,34 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                     }));
                 }
 
-                // Set fixed prices if available
-                if (initialState.productData?.retailPrice || initialState.productData?.resellerPrice) {
+                // Set fixed prices if available (with fallback extraction from description)
+                let retailPrice = initialState.productData?.retailPrice || 0;
+                let resellerPrice = initialState.productData?.resellerPrice || 0;
+
+                // FALLBACK: Jika reseller = retail * 0.9 (estimasi), coba ekstrak dari description
+                if (description && (resellerPrice === 0 || resellerPrice === Math.round(retailPrice * 0.9) || resellerPrice === Math.round(retailPrice * 0.85))) {
+                    // Ekstrak retail: "Harga Rp. 1.250.000" atau "Retail 1.250.000"
+                    const retailMatch = description.match(/(?:harga|retail)[^\d]*(?:rp\.?\s*)?([0-9.,]+)/i);
+                    if (retailMatch) {
+                        const parsed = parseInt(retailMatch[1].replace(/[.,]/g, ''));
+                        if (parsed > 10000) retailPrice = parsed;
+                    }
+
+                    // Ekstrak reseller: "reseller Rp. 1.150.000" atau "Reseller 1.150.000"
+                    const resellerMatch = description.match(/reseller[^\d]*(?:rp\.?\s*)?([0-9.,]+)/i);
+                    if (resellerMatch) {
+                        const parsed = parseInt(resellerMatch[1].replace(/[.,]/g, ''));
+                        if (parsed > 10000) {
+                            resellerPrice = parsed;
+                            console.log('🎯 Frontend extracted reseller price from description:', resellerPrice);
+                        }
+                    }
+                }
+
+                if (retailPrice > 0 || resellerPrice > 0) {
                     setFixedPrices({
-                        retail: initialState.productData.retailPrice,
-                        reseller: initialState.productData.resellerPrice
+                        retail: retailPrice,
+                        reseller: resellerPrice
                     });
                 } else {
                     setFixedPrices(null);
