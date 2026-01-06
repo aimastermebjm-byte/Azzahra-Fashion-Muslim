@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 
@@ -18,25 +18,14 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 console.log('✅ Firebase initialized');
 
-// Initialize Firestore
-export const db = getFirestore(firebaseApp);
+// Initialize Firestore with new cache settings (replaces deprecated enableIndexedDbPersistence)
+export const db = initializeFirestore(firebaseApp, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
+});
+console.log('✅ Firestore initialized with persistent cache');
 
-// Enable Firestore Persistence with multi-tab support
-if (typeof window !== 'undefined') {
-  enableIndexedDbPersistence(db)
-    .then(() => {
-      console.log('✅ Firestore persistence enabled - data available offline');
-    })
-    .catch((err) => {
-      if (err.code === 'failed-precondition') {
-        console.log('⚠️ Multiple tabs open, persistence disabled - will use memory cache');
-      } else if (err.code === 'unimplemented') {
-        console.log('⚠️ Browser doesn\'t support persistence');
-      } else {
-        console.log('⚠️ Persistence error:', err.message);
-      }
-    });
-}
 
 // Initialize other Firebase services
 export const storage = getStorage(firebaseApp);
