@@ -383,7 +383,23 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   // Shipping mode: 'delivery' = kirim ke alamat, 'keep' = atur alamat nanti
-  const [shippingMode, setShippingMode] = useState<'delivery' | 'keep'>('delivery');
+  // Default to 'keep' for reseller/admin/owner (they usually stock products)
+  const userRole = user?.role || 'customer';
+  const defaultMode = ['reseller', 'admin', 'owner'].includes(userRole) ? 'keep' : 'delivery';
+  const [shippingMode, setShippingMode] = useState<'delivery' | 'keep'>(defaultMode);
+
+  // Reset shipping cost when switching to 'keep' mode
+  useEffect(() => {
+    if (shippingMode === 'keep') {
+      setShippingCost(0);
+      setFormData(prev => ({
+        ...prev,
+        shippingCost: 0,
+        shippingService: '',
+        shippingETD: ''
+      }));
+    }
+  }, [shippingMode]);
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -763,7 +779,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   const totalPrice = getTotalPrice();
-  const shippingFee = formData.shippingCost || shippingCost || 0;
+  // Shipping fee is 0 for 'keep' mode (no delivery)
+  const shippingFee = shippingMode === 'keep' ? 0 : (formData.shippingCost || shippingCost || 0);
   const voucherDiscount = appliedVoucher?.discountAmount || 0;
   const finalTotal = Math.max(0, totalPrice + shippingFee - voucherDiscount);
   const cartCount = cartItems?.length || 0;
