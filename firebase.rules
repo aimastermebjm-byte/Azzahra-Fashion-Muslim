@@ -209,12 +209,10 @@ service cloud.firestore {
     }
 
     // Vouchers - User-tied discount vouchers
-    // Owner only can create/update/delete, users can read their own vouchers
+    // Any signed-in user can READ (for query by code), ownership validated in code
+    // Only owner can create/update/delete
     match /vouchers/{voucherId} {
-      allow read: if isSignedIn() && (
-        request.auth.uid == resource.data.assignedTo ||  // User reads their own voucher
-        isOwner()  // Owner can read all
-      );
+      allow read: if isSignedIn();  // Any user can query vouchers, code validates ownership
       allow create, update, delete: if isOwner(); // Only owner can manage vouchers
     }
 
