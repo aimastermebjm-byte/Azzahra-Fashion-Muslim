@@ -117,6 +117,8 @@ export const voucherService = {
 
     // Validate voucher for checkout
     async validateVoucher(code: string, userId: string, orderTotal: number): Promise<VoucherValidationResult> {
+        console.log('🎟️ VALIDATE VOUCHER START:', { code, userId, orderTotal });
+
         // Find voucher by code
         const q = query(
             collection(db, VOUCHER_COLLECTION),
@@ -126,11 +128,19 @@ export const voucherService = {
         const snapshot = await getDocs(q);
 
         if (snapshot.empty) {
+            console.log('🎟️ FAIL: Voucher not found');
             return { valid: false, message: 'Kode voucher tidak ditemukan' };
         }
 
         const voucherDocSnapshot = snapshot.docs[0];
         const voucher = { id: voucherDocSnapshot.id, ...voucherDocSnapshot.data() } as Voucher;
+        console.log('🎟️ VOUCHER FOUND:', {
+            id: voucher.id,
+            code: voucher.code,
+            assignedTo: voucher.assignedTo,
+            status: voucher.status,
+            minPurchase: voucher.minPurchase
+        });
 
         // Check if assigned to this user
         // ✅ CRITICAL FIX: Allow Admin/Owner to use ANY voucher for testing/manual input
@@ -138,30 +148,39 @@ export const voucherService = {
         const userDocRef = await getDoc(doc(db, 'users', userId));
         const userRole = userDocRef.exists() ? userDocRef.data().role : 'customer';
         const isAdminOrOwner = ['admin', 'owner'].includes(userRole);
+        console.log('🎟️ USER CHECK:', { userId, userRole, isAdminOrOwner, voucherOwner: voucher.assignedTo });
 
         if (voucher.assignedTo !== userId && !isAdminOrOwner) {
-            console.warn(`🛑 Voucher Denied: Owner=${voucher.assignedTo}, User=${userId}`);
+            console.log('🎟️ FAIL: Not owner and not admin');
             return { valid: false, message: 'Voucher ini milik user lain' };
         }
 
         // Check if already used
         if (voucher.status === 'used') {
+            console.log('🎟️ FAIL: Already used');
             return { valid: false, message: 'Voucher sudah digunakan' };
         }
 
         // Check if expired
-        if (voucher.validUntil.toDate() < new Date()) {
+        const validUntilDate = voucher.validUntil.toDate();
+        const now = new Date();
+        console.log('🎟️ EXPIRY CHECK:', { validUntil: validUntilDate, now, isExpired: validUntilDate < now });
+        if (validUntilDate < now) {
+            console.log('🎟️ FAIL: Expired');
             return { valid: false, message: 'Voucher sudah kadaluarsa' };
         }
 
         // Check minimum purchase
+        console.log('🎟️ MIN PURCHASE CHECK:', { orderTotal, minPurchase: voucher.minPurchase, passed: orderTotal >= voucher.minPurchase });
         if (orderTotal < voucher.minPurchase) {
+            console.log('🎟️ FAIL: Min purchase not met');
             return {
                 valid: false,
                 message: `Minimum belanja Rp ${voucher.minPurchase.toLocaleString('id-ID')}`
             };
         }
 
+        console.log('🎟️ SUCCESS: Voucher valid!');
         return {
             valid: true,
             message: 'Voucher valid!',
