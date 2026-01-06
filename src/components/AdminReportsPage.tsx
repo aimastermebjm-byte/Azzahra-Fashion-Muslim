@@ -19,6 +19,7 @@ import {
   ProductBuyerReport,
   ProductBuyerSummary
 } from '../services/reportsService';
+import StockHistoryModal from './StockHistoryModal';
 
 interface AdminReportsPageProps {
   onBack: () => void;
@@ -123,6 +124,10 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [showCombinedRekapModal, setShowCombinedRekapModal] = useState(false);
   const [combinedRekapData, setCombinedRekapData] = useState<CombinedBuyerSummary[]>([]);
   const [loadingCombinedRekap, setLoadingCombinedRekap] = useState(false);
+
+  // Stock History Modal State
+  const [showStockHistoryModal, setShowStockHistoryModal] = useState(false);
+  const [selectedStockProduct, setSelectedStockProduct] = useState<any>(null);
 
   // Calculate date range based on filter
   const getDateRange = useMemo(() => {
@@ -1382,9 +1387,19 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     const totalModal = modalPerUnit * stock;
 
                     return (
-                      <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                      <div
+                        key={item.id}
+                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50"
+                        onClick={() => {
+                          setSelectedStockProduct(item);
+                          setShowStockHistoryModal(true);
+                        }}
+                      >
                         <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold text-gray-800 line-clamp-2">{item.name}</h4>
+                          <div>
+                            <h4 className="font-bold text-gray-800 line-clamp-2">{item.name}</h4>
+                            <p className="text-xs text-gray-500 mt-0.5">{item.size} / {item.color}</p>
+                          </div>
                           <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded whitespace-nowrap ml-2">
                             Stok: {stock}
                           </span>
@@ -1411,6 +1426,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   <thead>
                     <tr className="bg-gray-50">
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Warna</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stok</th>
                       {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>}
                       {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Modal</th>}
@@ -1425,10 +1442,23 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                         const totalModal = modalPerUnit * stock;
 
                         return (
-                          <tr key={item.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm font-medium text-gray-900">
+
+                          <tr
+                            key={item.id}
+                            className="hover:bg-gray-50 cursor-pointer"
+                            onClick={() => {
+                              setSelectedStockProduct(item);
+                              setShowStockHistoryModal(true);
+                            }}
+                          >
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900 flex items-center gap-2 group">
                               {item.name}
+                              <div className="opacity-0 group-hover:opacity-100 bg-purple-100 p-1 rounded-full text-purple-600 transition-opacity">
+                                <Package className="w-3 h-3" />
+                              </div>
                             </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">{item.size}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600">{item.color}</td>
                             <td className="px-4 py-3 text-sm text-gray-900">
                               {stock}
                             </td>
@@ -2018,6 +2048,16 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
             </div>
           </div>
         </div>
+      )}
+
+      {/* Stock History Modal */}
+      {showStockHistoryModal && selectedStockProduct && (
+        <StockHistoryModal
+          isOpen={showStockHistoryModal}
+          onClose={() => setShowStockHistoryModal(false)}
+          product={selectedStockProduct}
+          user={user}
+        />
       )}
     </div>
   );

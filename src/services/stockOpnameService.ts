@@ -14,6 +14,7 @@ import {
 import { db } from '../utils/firebaseClient';
 import { StockOpnameSession, StockOpnameItem } from '../types/stockOpname';
 import { Product } from '../types';
+import { stockMutationService } from './stockMutationService';
 
 const COLLECTION_NAME = 'stockOpnameSessions';
 
@@ -223,7 +224,7 @@ export const stockOpnameService = {
     /**
      * Approve and apply stock adjustments
      */
-    async approveAndApply(sessionId: string, approverId: string): Promise<void> {
+    async approveAndApply(sessionId: string, approverId: string, approverName: string): Promise<void> {
         try {
             const session = await this.getSession(sessionId);
             if (!session) throw new Error('Session not found');
@@ -239,6 +240,33 @@ export const stockOpnameService = {
             // Apply stock changes
             for (const item of session.items) {
                 if (item.actualStock === null) continue;
+
+                // Log mutation if there is a difference or just to record the opname checkpoint
+                const difference = item.actualStock - (item.systemStock || 0);
+
+                // Only log if there is a change or force log? Usually only log changes.
+                // But Stock Opname sets a definite checkpoint. Let's log non-zero differences.
+                if (difference !== 0) {
+                    // We intentionally don't await this inside loop to speed up? 
+                    // CHECK: Firestore writes in loop might be slow if not batched. 
+                    // But logMutation is separate addDoc. 
+                    // Ideally we should parallelize or use batch, but logMutation implementation is single addDoc.
+                    // To be safe, we await to ensure order.
+                    await stockMutationService.logMutation({
+                        productId: item.productId,
+                        productName: item.productName,
+                        size: item.size,
+                        variant: item.variant,
+                        previousStock: item.systemStock || 0,
+                        newStock: item.actualStock,
+                        change: difference,
+                        type: 'stock_opname',
+                        referenceId: sessionId,
+                        notes: 'Stock Opname Adjustment',
+                        createdBy: approverId,
+                        performedBy: approverName
+                    });
+                }
 
                 const productIndex = products.findIndex(p => p.id === item.productId);
                 if (productIndex === -1) continue;
@@ -278,6 +306,7 @@ export const stockOpnameService = {
             await updateDoc(doc(db, COLLECTION_NAME, sessionId), {
                 status: 'approved',
                 approvedBy: approverId,
+                approvedByName: approverName, // Optional: save name too
                 approvedAt: Timestamp.fromDate(new Date()),
             });
 

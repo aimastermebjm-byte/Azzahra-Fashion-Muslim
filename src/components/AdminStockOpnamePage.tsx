@@ -155,7 +155,11 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
         if (!confirm('Apakah Anda yakin ingin menyetujui hasil opname ini? Stok sistem akan diperbarui.')) return;
 
         try {
-            await stockOpnameService.approveAndApply(sessionId, user.uid);
+            await stockOpnameService.approveAndApply(
+                sessionId,
+                user.uid,
+                user.displayName || user.name || 'Owner'
+            );
             showToast({ message: 'Opname disetujui dan stok diperbarui', type: 'success' });
             setViewSession(null); // Close detail view
             loadSessions();

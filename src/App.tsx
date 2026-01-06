@@ -27,6 +27,7 @@ import AdminMasterDataPage from './components/AdminMasterDataPage';
 import AdminCacheManagement from './components/AdminCacheManagement';
 import AdminPaymentVerificationPage from './components/AdminPaymentVerificationPage';
 import AdminStockOpnamePage from './components/AdminStockOpnamePage';
+import AdminStockAdjustmentPage from './components/AdminStockAdjustmentPage';
 import AdminVoucherPage from './components/AdminVoucherPage';
 import BottomNavigation from './components/BottomNavigation';
 import InstallPrompt from './components/InstallPrompt';
@@ -41,7 +42,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from './utils/firebaseClient';
 import './utils/forceSyncGlobalIndex'; // Load force sync function to window
 
-type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'admin-cache' | 'admin-financials' | 'admin-master' | 'admin-payment-verification' | 'admin-stock-opname' | 'admin-voucher' | 'ongkir-test';
+type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'admin-cache' | 'admin-financials' | 'admin-master' | 'admin-payment-verification' | 'admin-stock-opname' | 'admin-stock-adjustments' | 'admin-voucher' | 'ongkir-test';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -100,8 +101,9 @@ function AppContent() {
       'admin-master': 'account',
       'admin-payment-verification': 'account',
       'admin-stock-opname': 'account',
+      'admin-stock-adjustments': 'admin-products', // Return to products page
       'admin-voucher': 'account',
-      'ongkir-test': 'home'
+      'ongkir-test': 'account'
     };
     return parentMap[page] || 'home';
   };
@@ -430,6 +432,40 @@ function AppContent() {
       // Transaction completed successfully
       const { validatedItems, cartTotal } = transactionResult;
 
+      // ✅ LOG STOCK MUTATIONS
+      // We do this after transaction to keep transaction fast and avoid dependency issues
+      // Mutations are "history", consistency with stock is critical but strictly speaking can be async
+      try {
+        const { stockMutationService } = await import('./services/stockMutationService');
+
+        // Log in parallel
+        await Promise.all(validatedItems.map(async (item: any) => {
+          try {
+            await stockMutationService.logMutation({
+              productId: item.productId,
+              productName: item.name || 'Product',
+              size: item.variant?.size || '-',
+              variant: item.variant?.color || '-',
+              previousStock: item.currentStock,
+              newStock: item.newStock,
+              change: -item.quantity, // Negative for sales
+              type: 'order',
+              referenceId: orderId,
+              notes: `Order ${orderId}`,
+              createdBy: user.uid,
+              performedBy: user.displayName || 'Customer'
+            });
+          } catch (err) {
+            console.error('Failed to log mutation for item:', item.name, err);
+            // Don't block the order process if log fails
+          }
+        }));
+
+        console.log('✅ Stock mutations logged successfully');
+      } catch (err) {
+        console.error('Failed to init mutation logging:', err);
+      }
+
       console.log('🎉 ATOMIC TRANSACTION SUCCESS:', {
         itemsProcessed: validatedItems.length,
         totalAmount: cartTotal
@@ -596,6 +632,10 @@ function AppContent() {
     setCurrentPage('admin-stock-opname');
   };
 
+  const handleNavigateToAdminStockAdjustments = () => {
+    setCurrentPage('admin-stock-adjustments');
+  };
+
   const handleNavigateToAdminVoucher = () => {
     setCurrentPage('admin-voucher');
   };
@@ -697,7 +737,13 @@ function AppContent() {
           />
         );
       case 'admin-products':
-        return <AdminProductsPage onBack={() => setCurrentPage('account')} user={user} />;
+        return (
+          <AdminProductsPage
+            onBack={() => setCurrentPage('account')}
+            user={user}
+            onNavigateToStockApproval={handleNavigateToAdminStockAdjustments}
+          />
+        );
       case 'admin-orders':
         return (
           <AdminOrdersPage

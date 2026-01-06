@@ -103,13 +103,21 @@ export interface CustomerReport {
 
 export interface InventoryReport {
   id: string;
+  productId: string; // Original product ID for linking
   name: string;
   category: string;
+  size: string;
+  color: string;
   stock: number;
   reserved: number;
   available: number;
   value: number;
   lastUpdated: Date;
+  variants?: {
+    sizes: string[];
+    colors: string[];
+    stock: any;
+  };
 }
 
 export interface CashFlowReport {
@@ -295,7 +303,7 @@ class ReportsService {
         transaction.items.forEach(item => {
           // Use consistent key for both maps - prioritize productId when available
           const key = item.productId || item.name;
-          
+
           if (!key) {
             return;
           }
@@ -304,17 +312,17 @@ class ReportsService {
           if (!productBuyers.has(key)) {
             productBuyers.set(key, new Set());
           }
-          
+
           // Use a more reliable way to identify unique buyers
           // Check if buyer already exists in the set to avoid duplicates
           const buyerKey = `${transaction.customer}_${transaction.phone}`;
           const buyerSet = productBuyers.get(key)!;
-          
+
           // Only add if not already present (handles edge cases)
           if (!Array.from(buyerSet).some(existingBuyer => existingBuyer === buyerKey)) {
             buyerSet.add(buyerKey);
           }
-          
+
 
 
           const profitContribution = (item.total || 0) - (item.modalTotal ?? ((item.modal || 0) * (item.quantity || 0)));
@@ -366,9 +374,9 @@ class ReportsService {
         // Since we changed the key strategy, we need to match the new format
         const lookupKey = product.id.startsWith('id_') ? product.id : `name_${product.name}`;
         const buyerCount = productBuyers.get(lookupKey)?.size || 0;
-        
 
-        
+
+
         return {
           ...product,
           category: inventory?.category || product.category,
@@ -432,28 +440,11 @@ class ReportsService {
     }
   }
 
-  // Get inventory reports
+  // Get inventory reports - Flattened per Size/Color
   static async getInventoryReports(): Promise<InventoryReport[]> {
     try {
       // Get productBatches for inventory data
       const productBatchesSnapshot = await getDocs(query(collection(db, 'productBatches')));
-
-      const calculateVariantStock = (variantStock: any): number => {
-        if (!variantStock || typeof variantStock !== 'object') {
-          return 0;
-        }
-
-        return Object.values(variantStock).reduce((sizeTotal: number, sizeEntry: any) => {
-          if (typeof sizeEntry === 'object') {
-            return sizeTotal + Object.values(sizeEntry).reduce((colorTotal: number, colorEntry: any) => {
-              const value = Number(colorEntry || 0);
-              return colorTotal + (Number.isFinite(value) ? value : 0);
-            }, 0);
-          }
-          const value = Number(sizeEntry || 0);
-          return sizeTotal + (Number.isFinite(value) ? value : 0);
-        }, 0);
-      };
 
       const inventory: InventoryReport[] = [];
 
@@ -462,28 +453,62 @@ class ReportsService {
         const batchProducts = Array.isArray(batchData.products) ? batchData.products : [];
 
         batchProducts.forEach((product: any, index: number) => {
-          const variantStockTotal = calculateVariantStock(product?.variants?.stock);
-          const baseStock = Number(product?.stock || 0);
-          const computedStock = variantStockTotal > 0 ? variantStockTotal : baseStock;
-          const reserved = Number(product?.reserved || 0);
-          const available = Math.max(0, computedStock - reserved);
-          const unitPrice = Number(product?.retailPrice ?? product?.price ?? 0);
-
+          const productId = product?.id || `${batchDoc.id}_${index}`;
+          const productName = product?.name || `Produk ${index + 1}`;
+          const category = product?.category || batchData?.category || 'other';
+          const unitPrice = Number(product?.costPrice ?? product?.purchasePrice ?? 0);
           const productLastUpdated = toMillis(product?.lastModified)
             ?? toMillis(product?.updatedAt)
             ?? toMillis(batchData?.updatedAt)
             ?? Date.now();
 
-          inventory.push({
-            id: product?.id || `${batchDoc.id}_${index}`,
-            name: product?.name || `Produk ${index + 1}`,
-            category: product?.category || batchData?.category || 'other',
-            stock: computedStock,
-            reserved: Number.isFinite(reserved) ? reserved : 0,
-            available,
-            value: computedStock * (Number.isFinite(unitPrice) ? unitPrice : 0),
-            lastUpdated: new Date(productLastUpdated)
-          });
+          const variants = product?.variants;
+          const sizes = variants?.sizes || [];
+          const colors = variants?.colors || [];
+          const stockMap = variants?.stock || {};
+
+          // If product has variants, flatten each size/color combination
+          if (sizes.length > 0 && colors.length > 0) {
+            sizes.forEach((size: string) => {
+              colors.forEach((color: string) => {
+                const variantStock = Number(stockMap?.[size]?.[color] || 0);
+                const reserved = 0; // Reserved not tracked per variant currently
+                const available = Math.max(0, variantStock - reserved);
+
+                inventory.push({
+                  id: `${productId}_${size}_${color}`,
+                  productId: productId,
+                  name: productName,
+                  category,
+                  size,
+                  color,
+                  stock: variantStock,
+                  reserved,
+                  available,
+                  value: variantStock * unitPrice,
+                  lastUpdated: new Date(productLastUpdated),
+                  variants // Keep original for modal link
+                });
+              });
+            });
+          } else {
+            // Fallback: Product without variants - single entry
+            const baseStock = Number(product?.stock || 0);
+            inventory.push({
+              id: productId,
+              productId: productId,
+              name: productName,
+              category,
+              size: '-',
+              color: '-',
+              stock: baseStock,
+              reserved: 0,
+              available: baseStock,
+              value: baseStock * unitPrice,
+              lastUpdated: new Date(productLastUpdated),
+              variants
+            });
+          }
         });
       });
 
@@ -699,7 +724,7 @@ class ReportsService {
       });
 
       // Sort by date (newest first)
-      productTransactions.sort((a, b) => 
+      productTransactions.sort((a, b) =>
         new Date(b.transaction.createdAt).getTime() - new Date(a.transaction.createdAt).getTime()
       );
 
@@ -719,7 +744,7 @@ class ReportsService {
       let filteredBuyers = allBuyers;
       if (filters.searchQuery && filters.searchQuery.trim()) {
         const query = filters.searchQuery.toLowerCase().trim();
-        filteredBuyers = allBuyers.filter(buyer => 
+        filteredBuyers = allBuyers.filter(buyer =>
           buyer.customerName.toLowerCase().includes(query) ||
           buyer.customerPhone.includes(query)
         );
@@ -860,7 +885,7 @@ class ReportsService {
           const itemProductId = item.productId || item.name;
           if (itemProductId === productId) {
             const buyerKey = `${transaction.customer}_${transaction.phone}`;
-            
+
             if (!buyerMap.has(buyerKey)) {
               buyerMap.set(buyerKey, {
                 customerName: transaction.customer,
@@ -871,12 +896,12 @@ class ReportsService {
                 lastPurchaseDate: transaction.date
               });
             }
-            
+
             const buyer = buyerMap.get(buyerKey)!;
             buyer.totalQuantity += item.quantity;
             buyer.totalAmount += item.total;
             buyer.purchaseCount += 1;
-            
+
             // Update last purchase date if this transaction is more recent
             if (new Date(transaction.date) > new Date(buyer.lastPurchaseDate)) {
               buyer.lastPurchaseDate = transaction.date;
@@ -894,8 +919,8 @@ class ReportsService {
 
       return {
         productId,
-        productName: filteredTransactions.length > 0 ? 
-          (filteredTransactions[0].items.find(item => (item.productId || item.name) === productId)?.name || `Produk ${productId}`) : 
+        productName: filteredTransactions.length > 0 ?
+          (filteredTransactions[0].items.find(item => (item.productId || item.name) === productId)?.name || `Produk ${productId}`) :
           `Produk ${productId}`,
         buyers,
         totalBuyers,

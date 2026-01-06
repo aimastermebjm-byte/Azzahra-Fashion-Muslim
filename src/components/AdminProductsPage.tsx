@@ -17,10 +17,12 @@ import { hasAPIKeyWithFallback, loadAPIKeyWithFallback } from '../utils/encrypti
 import AIAutoUploadModal from './AIAutoUploadModal';
 import ManualUploadModal from './ManualUploadModal';
 import WhatsAppInboxModal from './WhatsAppInboxModal';
+import StockHistoryModal from './StockHistoryModal';
 
 interface AdminProductsPageProps {
   onBack: () => void;
   user: any;
+  onNavigateToStockApproval?: () => void;
 }
 
 interface FlashSaleConfig {
@@ -31,7 +33,7 @@ interface FlashSaleConfig {
   productIds: string[];
 }
 
-const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) => {
+const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onNavigateToStockApproval }) => {
   // Use global products context instead of local CRUD
   const { allProducts, loading, error } = useGlobalProducts();
 
@@ -88,6 +90,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
   const [sortBy, setSortBy] = useState('name');
   const [tappedProductId, setTappedProductId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(20);
+
+  // Stock History Modal
+  const [historyModalData, setHistoryModalData] = useState<any>(null);
 
   // Ref for infinite scroll
   const loaderRef = React.useRef<HTMLDivElement>(null);
@@ -1012,15 +1017,28 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         subtitle="Monitor dan kelola katalog produk"
         onBack={onBack}
         variant="surface"
-        actions={user?.role === 'admin' && (
-          <button
-            onClick={handleForceSyncGlobalIndex}
-            disabled={isForceSyncing}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${isForceSyncing ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-          >
-            {isForceSyncing ? 'Syncing…' : 'Sync'}
-          </button>
-        )}
+        actions={
+          <div className="flex gap-2">
+            {user?.role === 'owner' && onNavigateToStockApproval && (
+              <button
+                onClick={onNavigateToStockApproval}
+                className="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-full text-xs font-semibold hover:bg-orange-200 transition-colors flex items-center gap-1"
+              >
+                <Clock className="w-3.5 h-3.5" />
+                Approval
+              </button>
+            )}
+            {user?.role === 'admin' && (
+              <button
+                onClick={handleForceSyncGlobalIndex}
+                disabled={isForceSyncing}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${isForceSyncing ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                {isForceSyncing ? 'Syncing…' : 'Sync'}
+              </button>
+            )}
+          </div>
+        }
       />
 
       {/* Content */}
@@ -1487,6 +1505,19 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
                             <Edit className="w-4 h-4" />
                             <span className="text-xs font-medium">Edit</span>
                           </button>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setHistoryModalData(product);
+                              setTappedProductId(null);
+                            }}
+                            className="w-full bg-purple-600 text-white py-2 px-3 rounded-lg shadow-lg flex items-center justify-center gap-2"
+                          >
+                            <Clock className="w-4 h-4" />
+                            <span className="text-xs font-medium">Kartu Stok</span>
+                          </button>
+
                           {user?.role === 'owner' && (
                             <button
                               onClick={(e) => {
@@ -3140,6 +3171,14 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user }) =
         isOpen={showWhatsAppInbox}
         onClose={() => setShowWhatsAppInbox(false)}
         onProcess={handleWhatsAppProcess}
+      />
+
+      {/* Stock History Modal */}
+      <StockHistoryModal
+        isOpen={!!historyModalData}
+        onClose={() => setHistoryModalData(null)}
+        product={historyModalData}
+        user={user}
       />
     </div >
   );
