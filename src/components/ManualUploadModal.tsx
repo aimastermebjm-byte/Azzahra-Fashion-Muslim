@@ -160,7 +160,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                     name: finalName,
                     brand: initialState.productData?.brand || '',
                     description: description,
-                    category: initialState.productData?.category || categories[0] || 'gamis',
+                    category: initialState.productData?.category || 'Gamis', // Default to Gamis
                 }));
 
                 // Set sizes from draft

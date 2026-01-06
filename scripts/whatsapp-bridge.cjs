@@ -125,8 +125,8 @@ Rules:
   Contoh: "by eR.Ha DAILY" → brand = "eR.Ha"
   Contoh: "by Irish Label Official" → brand = "Irish Label"
   
-- kategori: Detect dari kata PERTAMA. Return PERSIS seperti ini:
-  * "gamis" → "Gamis"
+- kategori: Detect dari JUDUL PRODUK saja (baris nama/judul), BUKAN dari deskripsi detail.
+  * Jika judul/nama mengandung kata: "gamis" → "Gamis"
   * "tunik" → "Tunik"
   * "dress" → "Dress"
   * "hijab"/"kerudung"/"jilbab" → "Hijab"
@@ -138,7 +138,8 @@ Rules:
   * "aksesoris"/"bros"/"kalung" → "Aksesoris"
   * "mukena" → "Mukena"
   * "pashmina" → "Pashmina"
-  * Jika tidak ada kata kunci → "Gamis" (default)
+  * JIKA TIDAK ADA kata kunci di judul → SELALU return "Gamis"
+  * JANGAN ambil kategori dari baris detail seperti "Dress Bahan Lamora..." (itu bukan kategori!)
 - sizes: 
   * Jika ada size chart (S, M, L, XL, XXL) → gunakan nama BERSIH. Contoh: ["S", "M", "L", "XL"]
   * Jika HANYA ada PJ/LD/Lingkar tanpa size chart → return ["All Size"]
