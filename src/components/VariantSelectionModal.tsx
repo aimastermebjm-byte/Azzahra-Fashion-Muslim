@@ -22,6 +22,7 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
     const [selectedSize, setSelectedSize] = useState('');
     const [selectedColor, setSelectedColor] = useState('');
     const [quantity, setQuantity] = useState(1);
+    const [isZoomOpen, setIsZoomOpen] = useState(false);
 
     // Stock calculation logic (reused from ProductDetail)
     const getVariantStock = (size: string, color: string): number => {
@@ -85,7 +86,11 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                         <img
                             src={product.image || product.images?.[0]}
                             alt={product.name}
-                            className="w-16 h-16 rounded-lg object-cover"
+                            className="w-16 h-16 rounded-lg object-cover cursor-zoom-in hover:opacity-80 transition"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsZoomOpen(true);
+                            }}
                         />
                         <div className="flex-1">
                             <h3 className="font-semibold text-sm text-gray-900 line-clamp-2">{product.name}</h3>
@@ -212,6 +217,33 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                     </button>
                 </div>
             </div>
+
+            {/* Image Zoom Modal */}
+            {isZoomOpen && (
+                <div
+                    className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsZoomOpen(false);
+                    }}
+                >
+                    <button
+                        onClick={() => setIsZoomOpen(false)}
+                        className="absolute top-4 right-4 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                    <img
+                        src={product.image || product.images?.[0]}
+                        alt={product.name}
+                        className="max-w-[90%] max-h-[90%] object-contain"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                    <div className="absolute bottom-4 text-white/70 text-sm">
+                        Tap untuk tutup
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
