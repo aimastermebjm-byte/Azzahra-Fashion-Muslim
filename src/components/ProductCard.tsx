@@ -113,7 +113,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
     return (
       <div className={`px-3 py-1 bg-white/95 backdrop-blur-sm border border-[#D4AF37]/50 text-[#D4AF37] text-[10px] font-bold uppercase tracking-wider rounded-full shadow-sm`}>
-        {isReady ? 'READY STOCK' : 'PRE ORDER'} ({totalStock})
+        {isReady ? 'Ready' : 'PO'} ({totalStock})
       </div>
     );
   };
@@ -223,9 +223,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </div>
 
           {/* Main Floating Cart Button - Gold Circle */}
+          {/* ALWAYS VISIBLE on Mobile (opacity-100), Toggle on Desktop (sm:opacity-0 ...) */}
           <button
             onClick={handleAddToCart}
-            className="absolute bottom-3 right-3 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#BF953F] via-[#FCF6BA] to-[#B38728] text-brand-primary shadow-[0_4px_15px_rgba(191,149,63,0.3)] flex items-center justify-center transform translate-y-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:scale-110 active:scale-95 z-10"
+            className="absolute bottom-3 right-3 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#BF953F] via-[#FCF6BA] to-[#B38728] text-brand-primary shadow-[0_4px_15px_rgba(191,149,63,0.3)] flex items-center justify-center transform translate-y-0 sm:translate-y-2 opacity-100 sm:opacity-0 group-hover:opacity-100 sm:group-hover:translate-y-0 transition-all duration-300 hover:scale-110 active:scale-95 z-10"
             title="Add to Cart"
           >
             <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
