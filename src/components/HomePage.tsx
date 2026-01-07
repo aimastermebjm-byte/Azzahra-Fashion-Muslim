@@ -565,29 +565,32 @@ const HomePage: React.FC<HomePageProps> = ({
       {/* Hero Banner - Show when NO Flash Sale - NOOR Style */}
       {flashSaleProducts.length === 0 && !loading && (
         <div className="px-3 sm:px-4 mb-4">
-          <div className="rounded-2xl overflow-hidden shadow-elegant flex bg-brand-surface h-[160px] sm:h-[200px]">
-            {/* Text Content - Left Side */}
-            <div className="flex-1 flex flex-col justify-center p-4 sm:p-6">
-              <h2 className="font-display text-lg sm:text-2xl font-semibold text-brand-primary leading-tight mb-1">
-                Elegance<br />
-                <span className="text-brand-accent">in Modesty.</span>
-              </h2>
-              <p className="text-gray-500 text-[10px] sm:text-xs mb-2 sm:mb-3">Koleksi busana muslim terbaik</p>
-              <button
-                onClick={() => setSelectedCategory('all')}
-                className="w-fit bg-brand-primary text-white px-3 sm:px-5 py-1.5 rounded-lg text-[10px] sm:text-sm font-medium hover:bg-brand-primaryDark transition-all shadow-md"
-              >
-                Lihat Koleksi
-              </button>
-            </div>
+          <div className="rounded-2xl overflow-hidden shadow-elegant relative h-[180px] sm:h-[220px]">
+            {/* Unified Cream Background */}
+            <div className="absolute inset-0 bg-[#F5EDE6]"></div>
 
-            {/* Model Image - Right Side - Fixed width */}
-            <div className="w-[40%] sm:w-[45%] flex-shrink-0">
-              <img
-                src="/hero-model.png"
-                alt="Azzahra Fashion Model"
-                className="w-full h-full object-cover object-[50%_15%]"
-              />
+            {/* Model Image - Right Side */}
+            <img
+              src="/hero-model.png"
+              alt="Azzahra Fashion Model"
+              className="absolute right-0 top-0 h-full w-[55%] sm:w-[50%] object-cover object-[30%_10%]"
+            />
+
+            {/* Text Content - Overlaid on Left */}
+            <div className="absolute inset-0 flex flex-col justify-center p-5 sm:p-8">
+              <div className="max-w-[50%] sm:max-w-[45%]">
+                <h2 className="font-display text-xl sm:text-3xl font-semibold text-brand-primary leading-tight mb-1 sm:mb-2">
+                  Elegance<br />
+                  <span className="text-brand-accent">in Modesty.</span>
+                </h2>
+                <p className="text-gray-600 text-[10px] sm:text-sm mb-2 sm:mb-4">Koleksi busana muslim terbaik</p>
+                <button
+                  onClick={() => setSelectedCategory('all')}
+                  className="bg-brand-primary text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-sm font-medium hover:bg-brand-primaryDark transition-all shadow-md"
+                >
+                  Lihat Koleksi
+                </button>
+              </div>
             </div>
           </div>
         </div>
