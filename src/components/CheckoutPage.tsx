@@ -1412,7 +1412,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       {/* Floating Checkout Button - Fixed Bottom */}
       {!loading && (
         <div className="fixed bottom-0 left-0 right-0 lg:bottom-4 lg:left-4 lg:right-4 z-40">
-          <div className="bg-white/98 backdrop-blur-md shadow-2xl border-t lg:border lg:rounded-2xl border-gray-200 p-4">
+          <div className="bg-white shadow-2xl border-t lg:border lg:rounded-2xl border-gray-200 p-4">
             <div className="flex items-center justify-between gap-4 max-w-6xl mx-auto">
               {/* Total - Kiri */}
               <div className="flex-1 min-w-0">
