@@ -29,11 +29,11 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPage
               onClick={() => onPageChange(item.id)}
               className={`flex-1 flex flex-col items-center py-3 px-2 transition-colors ${isActive
                   ? 'text-brand-accent'
-                  : 'text-gray-400 hover:text-brand-accent'
+                  : 'text-brand-accent/40 hover:text-brand-accent/70'
                 }`}
             >
-              <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-brand-accent' : 'text-gray-400'}`} />
-              <span className={`text-xs font-medium ${isActive ? 'text-brand-accent' : 'text-gray-400'}`}>
+              <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-brand-accent' : 'text-brand-accent/40'}`} />
+              <span className={`text-xs font-medium ${isActive ? 'text-brand-accent' : 'text-brand-accent/40'}`}>
                 {item.label}
               </span>
             </button>

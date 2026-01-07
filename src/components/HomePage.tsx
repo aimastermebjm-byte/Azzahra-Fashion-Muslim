@@ -49,6 +49,7 @@ const HomePage: React.FC<HomePageProps> = ({
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
 
   // Dynamic categories from master
   const [categories, setCategories] = useState<Array<{ id: string; name: string; icon: string }>>([
@@ -392,59 +393,46 @@ const HomePage: React.FC<HomePageProps> = ({
       {/* Header - NOOR Style: Centered Brand, Black BG, Gold Text */}
       <div className="sticky top-0 z-50 bg-brand-primary shadow-lg">
         <div className="px-3 sm:px-4 py-3">
-          {/* Top Row - Centered Brand Name with Action Buttons */}
-          <div className="flex items-center justify-between mb-3">
-            {/* Empty spacer for balance */}
-            <div className="w-20"></div>
+          {/* Top Row - Chat Left, Centered Brand, Actions Right */}
+          <div className="flex items-center justify-between">
+            {/* Left - Chat Button */}
+            <button
+              onClick={() => window.open('https://wa.me/6281952989904?text=Halo%20Admin%20Azzahra%20Fashion%2C%20saya%20ingin%20bertanya', '_blank')}
+              className="p-2.5 bg-brand-accent/20 rounded-xl hover:bg-brand-accent/30 transition-all"
+              title="Hubungi Admin via WhatsApp"
+            >
+              <MessageCircle className="w-5 h-5 text-brand-accent" />
+            </button>
 
             {/* Centered Brand Name - Gold */}
             <div className="text-center">
               <h1 className="font-display text-lg sm:text-xl font-semibold text-brand-accent tracking-wide">
                 AZZAHRA
               </h1>
-              <p className="text-[9px] sm:text-[10px] text-white/80 tracking-widest -mt-0.5">
+              <p className="text-[9px] sm:text-[10px] text-white/70 tracking-widest -mt-0.5">
                 FASHION MUSLIM
               </p>
             </div>
 
-            {/* Action Buttons */}
+            {/* Right - Search & Cart */}
             <div className="flex items-center space-x-2">
-              {/* WhatsApp Button */}
+              {/* Search Toggle Button */}
               <button
-                onClick={() => window.open('https://wa.me/6281952989904?text=Halo%20Admin%20Azzahra%20Fashion%2C%20saya%20ingin%20bertanya', '_blank')}
-                className="relative p-2.5 sm:p-3 
-                           bg-gradient-to-br from-emerald-500 to-emerald-600 
-                           rounded-xl 
-                           shadow-md hover:shadow-lg 
-                           hover:scale-105 
-                           transition-all duration-300"
-                title="Hubungi Admin via WhatsApp"
+                onClick={() => setShowSearch(!showSearch)}
+                className={`p-2.5 rounded-xl transition-all ${showSearch ? 'bg-brand-accent text-white' : 'bg-brand-accent/20 text-brand-accent hover:bg-brand-accent/30'
+                  }`}
               >
-                <MessageCircle className="w-5 h-5 text-white" />
+                <Search className="w-5 h-5" />
               </button>
 
               {/* Cart Button */}
               <button
                 onClick={onCartClick}
-                className="relative p-2.5 sm:p-3 
-                           bg-brand-accent 
-                           rounded-xl 
-                           shadow-md hover:shadow-lg 
-                           hover:scale-105 
-                           transition-all duration-300"
+                className="relative p-2.5 bg-brand-accent rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all"
               >
                 <ShoppingCart className="w-5 h-5 text-white" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 
-                                   bg-brand-primary 
-                                   text-white 
-                                   text-[10px] font-bold 
-                                   rounded-full 
-                                   min-w-[20px] h-5 
-                                   flex items-center justify-center 
-                                   px-1
-                                   shadow-md 
-                                   ring-2 ring-white">
+                  <span className="absolute -top-1.5 -right-1.5 bg-white text-brand-primary text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shadow-md">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
                 )}
@@ -452,48 +440,30 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
           </div>
 
-          {/* Search Bar - Refined */}
-          <div className="relative group">
-            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 z-10">
-              <Search className={`w-4.5 h-4.5 transition-all duration-300 ${searchQuery
-                ? 'text-brand-primary scale-110'
-                : 'text-gray-400 group-focus-within:text-brand-primary'
-                }`} />
-            </div>
-            <input
-              type="text"
-              placeholder="Cari hijab, gamis, atau busana favoritmu..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-11 py-3 
-                         rounded-xl 
-                         bg-brand-surfaceAlt 
-                         border border-brand-border
-                         text-gray-800 font-sans text-sm
-                         placeholder:text-gray-400 
-                         focus:outline-none 
-                         focus:ring-2 
-                         focus:ring-brand-accent/40
-                         focus:border-brand-accent
-                         focus:bg-white 
-                         transition-all duration-300"
-            />
-            {isSearching && (
-              <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
-                <div className="w-4 h-4 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+          {/* Search Bar - Hidden by default, shows on toggle */}
+          {showSearch && (
+            <div className="mt-3 relative group animate-in slide-in-from-top-2 duration-300">
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 z-10">
+                <Search className={`w-4 h-4 transition-all ${searchQuery ? 'text-brand-primary' : 'text-gray-400'}`} />
               </div>
-            )}
-            {searchQuery && !isSearching && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 
-                           text-gray-400 hover:text-gray-600 
-                           transition-colors p-1 hover:bg-white rounded-full"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+              <input
+                type="text"
+                placeholder="Cari hijab, gamis, atau busana..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-brand-surfaceAlt border border-brand-border text-gray-800 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-accent/40 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
