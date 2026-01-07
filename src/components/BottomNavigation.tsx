@@ -27,15 +27,20 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPage
             <button
               key={item.id}
               onClick={() => onPageChange(item.id)}
-              className={`flex-1 flex flex-col items-center py-2.5 px-2 transition-all duration-300 ${isActive
-                  ? 'text-brand-accent'
-                  : 'text-brand-accent/30 hover:text-brand-accent/60'
-                }`}
+              className="flex-1 flex flex-col items-center py-2.5 px-2 transition-all duration-300 group active:scale-95"
             >
-              <div className={`relative ${isActive ? 'drop-shadow-[0_0_8px_rgba(212,175,55,0.8)]' : ''}`}>
-                <Icon className={`w-5 h-5 mb-0.5 transition-all ${isActive ? 'text-brand-accent scale-110' : 'text-brand-accent/30'}`} />
-              </div>
-              <span className={`text-[10px] font-medium transition-all ${isActive ? 'text-brand-accent' : 'text-brand-accent/30'}`}>
+              <Icon
+                className={`w-5 h-5 mb-0.5 transition-all duration-300 ${isActive
+                    ? 'text-brand-accent drop-shadow-[0_0_8px_rgba(212,175,55,0.8)] scale-110'
+                    : 'text-brand-accent/40 group-hover:text-brand-accent group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]'
+                  }`}
+              />
+              <span
+                className={`text-[10px] font-medium transition-all duration-300 ${isActive
+                    ? 'text-brand-accent drop-shadow-[0_0_5px_rgba(212,175,55,0.5)]'
+                    : 'text-brand-accent/40 group-hover:text-brand-accent'
+                  }`}
+              >
                 {item.label}
               </span>
             </button>
