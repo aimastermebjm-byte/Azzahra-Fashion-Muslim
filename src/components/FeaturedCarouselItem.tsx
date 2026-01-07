@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Heart, Plus } from 'lucide-react';
 import { Product } from '../types';
 
@@ -6,15 +6,17 @@ interface FeaturedCarouselItemProps {
     product: Product;
     onProductClick: (product: Product) => void;
     onAddToCart: (product: Product) => void;
+    isWishlisted?: boolean;
+    onToggleWishlist?: (product: Product) => void;
 }
 
 const FeaturedCarouselItem: React.FC<FeaturedCarouselItemProps> = ({
     product,
     onProductClick,
     onAddToCart,
+    isWishlisted = false,
+    onToggleWishlist,
 }) => {
-    const [isLiked, setIsLiked] = useState(false);
-
     return (
         <div
             className="relative min-w-[280px] max-w-[280px] snap-center bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] overflow-hidden group border border-brand-border/30 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
@@ -35,11 +37,11 @@ const FeaturedCarouselItem: React.FC<FeaturedCarouselItemProps> = ({
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
-                        setIsLiked(!isLiked);
+                        if (onToggleWishlist) onToggleWishlist(product);
                     }}
                     className="absolute top-3 right-3 p-2 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 transition-all border border-white/30 text-white"
                 >
-                    <Heart className={`w-5 h-5 transition-all ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+                    <Heart className={`w - 5 h - 5 transition - all ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-white'} `} />
                 </button>
 
                 {/* Badge if Flash Sale */}

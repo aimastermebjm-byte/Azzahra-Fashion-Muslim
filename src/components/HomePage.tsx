@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import FeaturedCarouselItem from './FeaturedCarouselItem';
+import { useWishlist } from '../hooks/useWishlist';
 import { Search, ShoppingCart, Zap, X, Star, ChevronRight } from 'lucide-react';
 import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
@@ -63,6 +64,7 @@ const HomePage: React.FC<HomePageProps> = ({
 
   // 🚀 Product data from GLOBAL state (0 reads - single listener)
   const { allProducts } = useGlobalProducts();
+  const { isInWishlist, toggleWishlist } = useWishlist(user);
 
   // 🔥 MEMOIZED FILTERING: Filter produk tanpa read tambahan
   const featuredProducts = useMemo(() => {
@@ -606,6 +608,8 @@ const HomePage: React.FC<HomePageProps> = ({
                 product={product}
                 onProductClick={onProductClick}
                 onAddToCart={handleAddToCart}
+                isWishlisted={isInWishlist(product.id)}
+                onToggleWishlist={toggleWishlist}
               />
             ))}
           </div>
@@ -619,50 +623,35 @@ const HomePage: React.FC<HomePageProps> = ({
         )}
       </div>
 
-      {/* Categories - Sticky Glassmorphism Style */}
-      <div className="sticky top-[60px] z-30 py-3 mb-4 -mx-2 sm:mx-0">
-        <div className="absolute inset-0 bg-brand-surface/80 backdrop-blur-md border-b border-brand-border/30 shadow-sm"></div>
-        <div className="relative px-4">
-          <div
-            className="flex space-x-2.5 overflow-x-auto pb-0.5 scrollbar-none [&::-webkit-scrollbar]:hidden"
-            style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
-          >
-            {categories.map((category) => {
-              const productCount = category.id === 'all'
-                ? filteredProducts.length
-                : filteredProducts.filter(p => p.category === category.id).length;
+      {/* Categories - Simple Horizontal */}
+      <div className="px-3 sm:px-4 mb-4">
+        <div className="flex space-x-2.5 overflow-x-auto pb-2 scrollbar-none">
+          {categories.map((category) => {
+            const productCount = category.id === 'all'
+              ? filteredProducts.length
+              : filteredProducts.filter(p => p.category === category.id).length;
 
-              const isSelected = selectedCategory === category.id;
+            const isSelected = selectedCategory === category.id;
 
-              return (
-                <button
-                  key={category.id}
-                  onClick={() => {
-                    setSelectedCategory(category.id);
-                    setActiveTab(category.id === 'all' ? 'all' : 'terbaru');
-                  }}
-                  className={`
-flex - shrink - 0 
-                    flex items - center space - x - 2
-px - 5 py - 2
-rounded - full
-text - xs font - medium tracking - wide
-transition - all duration - 300 ease - out
-border
-                    ${isSelected
-                      ? 'bg-brand-primary border-brand-primary text-brand-accent shadow-[0_4px_10px_rgba(0,0,0,0.2)] scale-105' // Active: Black + Gold Shadow
-                      : 'bg-white/40 border-brand-accent/20 text-gray-600 hover:border-brand-accent/50 hover:bg-white/60' // Inactive: Glassy + Thin Gold Border
-                    }
-`}
-                >
-                  <span className={isSelected ? 'font-semibold' : ''}>{category.name}</span>
-                  <span className={`text - [10px] ${isSelected ? 'text-brand-accent/80' : 'text-gray-400'} `}>
-                    {productCount}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+            return (
+              <button
+                key={category.id}
+                onClick={() => {
+                  setSelectedCategory(category.id);
+                  setActiveTab(category.id === 'all' ? 'all' : 'terbaru');
+                }}
+                className={`flex items-center space-x-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all whitespace-nowrap border ${isSelected
+                  ? 'bg-brand-primary border-brand-primary text-brand-accent shadow-md'
+                  : 'bg-white border-gray-200 text-gray-600 hover:border-brand-primary/50'
+                  }`}
+              >
+                <span>{category.name}</span>
+                <span className={`text-[10px] ${isSelected ? 'text-brand-accent/70' : 'text-gray-400'}`}>
+                  {productCount}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
