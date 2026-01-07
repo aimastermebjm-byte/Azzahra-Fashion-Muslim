@@ -1,211 +1,417 @@
-import React from 'react';
-import { ShoppingCart, Zap, Flame, Percent } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShoppingCart, Flame, ArrowLeft, ChevronRight } from 'lucide-react';
 import ProductCard from './ProductCard';
 import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
 import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
-import BackButton from './BackButton';
 
 interface FlashSalePageProps {
-  user: any;
-  onProductClick: (product: any) => void;
-  onCartClick: () => void;
-  onAddToCart: (product: any) => void;
-  flashSaleProducts: any[]; // Data dari unified hook, 0 reads
-  onBack?: () => void;
+    user: any;
+    onProductClick: (product: any) => void;
+    onCartClick: () => void;
+    onAddToCart: (product: any) => void;
+    flashSaleProducts: any[];
+    onBack?: () => void;
 }
 
 const FlashSalePage: React.FC<FlashSalePageProps> = ({
-  user,
-  onProductClick,
-  onCartClick,
-  onAddToCart,
-  flashSaleProducts, // Data dari unified hook, 0 reads
-  onBack
+    user,
+    onProductClick,
+    onCartClick,
+    onAddToCart,
+    flashSaleProducts,
+    onBack
 }) => {
-  const { cartItems } = useRealTimeCartOptimized();
+    const { cartItems } = useRealTimeCartOptimized();
+    const { timeLeft, isFlashSaleActive, loading } = useUnifiedFlashSale();
+    const [mounted, setMounted] = useState(false);
 
-  // 🔥 UNIFIED FLASH SALE: Single source of truth timer
-  const { timeLeft, isFlashSaleActive, flashSaleConfig, loading, error } = useUnifiedFlashSale();
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
-  const handleAddToCart = (product: any) => {
-    onAddToCart(product);
-  };
+    const handleAddToCart = (product: any) => {
+        onAddToCart(product);
+    };
 
-
-  if (!flashSaleProducts) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading flash sale products...</div>
-      </div>
-    );
-  }
-
-  // Show simple message if no flash sale products
-  if (flashSaleProducts.length === 0) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              {onBack && <BackButton onClick={onBack} variant="dark" />}
-              <h1 className="text-xl font-bold text-white">Flash Sale ⚡</h1>
-            </div>
-            <button
-              onClick={onCartClick}
-              className="relative p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
-            >
-              <ShoppingCart className="w-6 h-6 text-white" />
-              {cartItems.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-yellow-400 text-gray-800 text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                  {cartItems.length}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Premium Flash Sale Coming Soon Banner */}
-          <div className="bg-gradient-to-br from-gray-700 via-gray-600 to-gray-500 rounded-2xl p-8 text-center max-w-3xl mx-auto shadow-2xl relative overflow-hidden">
-            {/* Premium animated background pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-4 left-4 w-32 h-32 bg-white rounded-full -ml-16 -mt-16 animate-pulse"></div>
-              <div className="absolute bottom-4 right-4 w-24 h-24 bg-white rounded-full -mr-12 -mb-12 animate-pulse delay-100"></div>
-            </div>
-
-            <div className="relative z-10">
-              <div className="bg-white/20 backdrop-blur-sm p-4 rounded-full w-20 h-20 mx-auto mb-6 shadow-lg">
-                <span className="text-4xl">⏰</span>
-              </div>
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-200 to-white bg-clip-text text-transparent mb-4">
-                Flash Sale Sedang Disiapkan
-              </h2>
-              <p className="text-gray-200 text-lg mb-2">
-                Nantikan Flash Sale Kami Selanjutnya!
-              </p>
-              <p className="text-gray-300 text-sm mb-8">
-                Diskon spesial dan penawaran terbatas akan segera hadir. Pastikan Anda tidak ketinggalan!
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button
-                  onClick={() => window.history.back()}
-                  className="bg-white text-gray-700 px-6 py-3 rounded-full font-bold hover:bg-gray-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  Kembali
-                </button>
-                <button
-                  onClick={() => window.location.href = '/'}
-                  className="bg-purple-600 text-white px-6 py-3 rounded-full font-bold hover:bg-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  Lihat Produk Lainnya
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pb-20">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            {onBack && <BackButton onClick={onBack} variant="dark" />}
-            <h1 className="text-xl font-bold text-white">Flash Sale ⚡</h1>
-          </div>
-          <button
-            onClick={onCartClick}
-            className="relative p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
-          >
-            <ShoppingCart className="w-6 h-6 text-white" />
-            {cartItems.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-yellow-400 text-gray-800 text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                {cartItems.length}
-              </span>
-            )}
-          </button>
-        </div>
-
-        
-        {/* Flash Sale Banner */}
-        <div className="bg-gradient-to-r from-red-600 to-orange-600 rounded-2xl p-8 mb-6 text-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400 rounded-full -mr-16 -mt-16 opacity-20"></div>
-          <div className="absolute bottom-0 left-0 w-40 h-40 bg-yellow-400 rounded-full -ml-20 -mb-20 opacity-20"></div>
-
-          <div className="relative z-10">
-            <div className="flex items-center justify-center mb-4">
-              <Flame className="w-12 h-12 text-yellow-300 mr-3" />
-              <h1 className="text-4xl font-bold text-white">FLASH SALE</h1>
-              <Flame className="w-12 h-12 text-yellow-300 ml-3" />
-            </div>
-            <p className="text-xl text-white/90 mb-6">Diskon Hingga 70%</p>
-
-            {/* Countdown Timer */}
-            {timeLeft && (
-              <div className="bg-black/30 backdrop-blur-sm rounded-xl p-4 mb-4">
-                <p className="text-yellow-300 text-sm mb-2">⏰ Flash Sale Berakhir Dalam</p>
-                <div className="text-3xl font-bold text-white tracking-wider">
-                  {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
+    // -------------------------------------------------------------------------
+    // LOADING STATE
+    // -------------------------------------------------------------------------
+    if (!mounted || loading) {
+        return (
+            <div className="min-h-screen bg-[#050505] flex items-center justify-center relative overflow-hidden">
+                {/* Background Texture */}
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-900 via-black to-black opacity-80"></div>
+                <div className="relative flex flex-col items-center gap-6">
+                    <div className="relative">
+                        <div className="absolute inset-0 rounded-full blur-xl bg-[#D4AF37]/20 animate-pulse"></div>
+                        <div className="w-16 h-16 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin relative z-10"></div>
+                    </div>
+                    <p className="text-[#D4AF37] font-serif tracking-[0.2em] uppercase text-sm animate-pulse">Memuat Flash Sale...</p>
                 </div>
-              </div>
-            )}
-
-            <div className="flex items-center justify-center space-x-4 text-white/80">
-              <div className="flex items-center">
-                <Zap className="w-5 h-5 mr-1" />
-                <span className="text-sm">Terbatas</span>
-              </div>
-              <div className="flex items-center">
-                <Percent className="w-5 h-5 mr-1" />
-                <span className="text-sm">Diskon Spesial</span>
-              </div>
             </div>
-          </div>
-        </div>
+        );
+    }
 
-        <div className="text-center text-white/60 text-sm mb-6">
-          {flashSaleProducts.length} produk flash sale tersedia
-        </div>
+    // -------------------------------------------------------------------------
+    // REUSABLE HEADER (Transparent / Sticky)
+    // -------------------------------------------------------------------------
+    const Header = () => (
+        <div className="sticky top-0 z-50 transition-all duration-300 bg-black/80 backdrop-blur-md border-b border-[#D4AF37]/20">
+            <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    {onBack && (
+                        <button
+                            onClick={onBack}
+                            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors group"
+                        >
+                            <ArrowLeft className="w-6 h-6 text-[#D4AF37] group-hover:-translate-x-1 transition-transform drop-shadow-[0_0_5px_rgba(212,175,55,0.5)]" />
+                        </button>
+                    )}
 
-        {/* Products Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          {flashSaleProducts.map((flashProduct) => {
-            // Convert FlashSaleProduct to Product type
-            const product = {
-              id: flashProduct.id,
-              name: flashProduct.name,
-              price: flashProduct.price,
-              retailPrice: flashProduct.retailPrice || flashProduct.price,
-              resellerPrice: flashProduct.resellerPrice || flashProduct.price * 0.8,
-              costPrice: flashProduct.price * 0.6, // Estimate cost price
-              description: flashProduct.name, // Use name as description
-              stock: flashProduct.stock,
-              images: flashProduct.images,
-              image: flashProduct.image,
-              category: flashProduct.category,
-              status: flashProduct.status as "ready" | "po",
-              createdAt: flashProduct.createdAt,
-              featuredOrder: flashProduct.featuredOrder,
-              variants: flashProduct.variants,
-              isFlashSale: flashProduct.isFlashSale,
-              flashSalePrice: flashProduct.flashSalePrice || flashProduct.price * 0.8
-            };
-            return (
-              <ProductCard
-                key={`flash-${product.id}`}
-                product={product}
-                onProductClick={onProductClick}
-                onAddToCart={handleAddToCart}
-                isFlashSale={true}
-                user={user}
-              />
-            );
-          })}
+                </div>
+                {/* Center Brand Title for Header if needed, or keep simple */}
+                <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
+                    <h1 className="font-serif text-lg font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#BF953F] via-[#FCF6BA] to-[#B38728] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                        AZZAHRA
+                    </h1>
+                </div>
+
+                <button
+                    onClick={onCartClick}
+                    className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5 transition-all group"
+                >
+                    <ShoppingCart className="w-6 h-6 text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.4)] transition-transform group-hover:scale-110" />
+                    {cartItems.length > 0 && (
+                        <span className="absolute top-0 right-0 bg-[#D4AF37] text-black text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center border-2 border-black shadow-lg">
+                            {cartItems.length}
+                        </span>
+                    )}
+                </button>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
+
+    // -------------------------------------------------------------------------
+    // EMPTY STATE (WAITING FLASHSALE) - "The Golden Hour" Mockup Match
+    // -------------------------------------------------------------------------
+    // Design: Deep Pure Black BG + Glassmorphism Center Card with Gold Ring + 3D Icon
+    if (!flashSaleProducts || flashSaleProducts.length === 0) {
+        return (
+            <div className="min-h-screen bg-[#050505] text-white selection:bg-[#D4AF37] selection:text-black font-sans relative overflow-hidden">
+                {/* Background Ambient Gold Glows */}
+                <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] bg-[#D4AF37] rounded-full mix-blend-screen filter blur-[150px] opacity-[0.05] pointer-events-none"></div>
+                <div className="fixed bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-[#B8860B] rounded-full mix-blend-screen filter blur-[120px] opacity-[0.05] pointer-events-none"></div>
+
+                <Header />
+
+                <div className="container mx-auto px-6 py-8 flex flex-col items-center justify-center min-h-[85vh]">
+
+                    {/* THE CARD */}
+                    <div className="relative w-full max-w-sm mx-auto group perspective-1000">
+
+                        {/* 1. Outer Glow Ring (Animated) */}
+                        <div className="absolute -inset-[3px] bg-gradient-to-tr from-[#D4AF37] via-[#F2D785] to-[#996515] rounded-[32px] opacity-70 blur-[10px] group-hover:opacity-100 group-hover:blur-[15px] transition-all duration-700 animate-tilt"></div>
+
+                        {/* 2. The Glass Card Surface */}
+                        <div className="relative bg-[#0F0F0F] rounded-[30px] p-8 flex flex-col items-center text-center overflow-hidden border border-[#D4AF37]/30 shadow-[0_0_50px_-10px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+
+                            {/* Glossy Overlay Reflection */}
+                            <div className="absolute top-0 inset-x-0 h-[100px] bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+
+                            {/* Custom 3D High-Fidelity Golden Clock SVG */}
+                            <div className="relative w-40 h-40 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-700 ease-out mb-8 mt-6">
+                                {/* Ambient Glow */}
+                                <div className="absolute inset-0 bg-[#D4AF37] rounded-full blur-[60px] opacity-25 animate-pulse"></div>
+
+                                <svg width="160" height="160" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-2xl relative z-10">
+                                    <defs>
+                                        <linearGradient id="goldBody" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+                                            <stop offset="0%" stopColor="#8B4513" />
+                                            <stop offset="20%" stopColor="#D4AF37" />
+                                            <stop offset="50%" stopColor="#F9E076" />
+                                            <stop offset="80%" stopColor="#D4AF37" />
+                                            <stop offset="100%" stopColor="#8B4513" />
+                                        </linearGradient>
+                                        <linearGradient id="goldRim" x1="200" y1="0" x2="0" y2="200" gradientUnits="userSpaceOnUse">
+                                            <stop offset="0%" stopColor="#FFF8DC" />
+                                            <stop offset="40%" stopColor="#FDB931" />
+                                            <stop offset="60%" stopColor="#B8860B" />
+                                            <stop offset="100%" stopColor="#FFF8DC" />
+                                        </linearGradient>
+                                        <linearGradient id="goldHand" x1="100" y1="50" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                                            <stop offset="0%" stopColor="#FFF8DC" />
+                                            <stop offset="50%" stopColor="#FDB931" />
+                                            <stop offset="100%" stopColor="#B8860B" />
+                                        </linearGradient>
+                                        <radialGradient id="faceShine" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(100 100) rotate(90) scale(80)">
+                                            <stop offset="0%" stopColor="#333" stopOpacity="0.5" />
+                                            <stop offset="70%" stopColor="#000" stopOpacity="0.8" />
+                                            <stop offset="100%" stopColor="#000" />
+                                        </radialGradient>
+                                        <filter id="innerShadow">
+                                            <feOffset dx="0" dy="4" />
+                                            <feGaussianBlur stdDeviation="4" result="offset-blur" />
+                                            <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse" />
+                                            <feFlood floodColor="black" floodOpacity="0.5" result="color" />
+                                            <feComposite operator="in" in="color" in2="inverse" result="shadow" />
+                                            <feComposite operator="over" in="shadow" in2="SourceGraphic" />
+                                        </filter>
+                                    </defs>
+
+                                    {/* --- 1. Top Crown --- */}
+                                    {/* Ring */}
+                                    <path d="M100 20C92 20 85 13 85 5C85 -3 92 -10 100 -10C108 -10 115 -3 115 5C115 13 108 20 100 20Z" stroke="url(#goldRim)" strokeWidth="6" fill="none" />
+                                    {/* Neck */}
+                                    <rect x="92" y="16" width="16" height="14" fill="url(#goldBody)" />
+                                    {/* Winder */}
+                                    <rect x="88" y="6" width="24" height="10" rx="2" fill="url(#goldRim)" />
+
+                                    {/* --- 2. Pushers (Ears) --- */}
+                                    {/* Left Pusher with Shadow */}
+                                    <g transform="rotate(-40 100 100)">
+                                        <rect x="94" y="10" width="12" height="16" fill="url(#goldBody)" />
+                                        <rect x="92" y="4" width="16" height="8" rx="2" fill="url(#goldRim)" filter="url(#innerShadow)" />
+                                    </g>
+                                    {/* Right Pusher with Shadow */}
+                                    <g transform="rotate(40 100 100)">
+                                        <rect x="94" y="10" width="12" height="16" fill="url(#goldBody)" />
+                                        <rect x="92" y="4" width="16" height="8" rx="2" fill="url(#goldRim)" filter="url(#innerShadow)" />
+                                    </g>
+
+                                    {/* --- 3. Main Body --- */}
+                                    {/* Outer Case (Shadow Support) */}
+                                    <circle cx="100" cy="110" r="82" fill="black" opacity="0.6" filter="url(#innerShadow)" />
+                                    <circle cx="100" cy="110" r="80" fill="url(#goldBody)" />
+
+                                    {/* The Bezel (Chunky Metallic Ring) - 3D Contour */}
+                                    <circle cx="100" cy="110" r="74" stroke="url(#goldRim)" strokeWidth="12" fill="none" filter="url(#innerShadow)" />
+
+                                    {/* Subtle Inset Ring */}
+                                    <circle cx="100" cy="110" r="67" stroke="#332211" strokeWidth="1" />
+
+                                    {/* Face Background */}
+                                    <circle cx="100" cy="110" r="66" fill="url(#faceShine)" />
+
+                                    {/* --- 4. Dial Details --- */}
+                                    {/* Ticks - Applied Gold Markers */}
+                                    {[0, 90, 180, 270].map((deg) => (
+                                        <g key={deg} transform={`rotate(${deg} 100 110)`}>
+                                            <rect x="96" y="55" width="8" height="12" fill="url(#goldRim)" rx="1" />
+                                            {/* Tick Shadow */}
+                                            <rect x="96" y="58" width="8" height="12" fill="black" opacity="0.3" rx="1" transform="translate(1,1)" />
+                                        </g>
+                                    ))}
+
+                                    {/* Inner small ticks */}
+                                    {[...Array(12)].map((_, i) => (
+                                        <rect key={i} x="99" y="50" width="2" height="6" fill="#665" transform={`rotate(${i * 30} 100 110)`} />
+                                    ))}
+
+                                    {/* Sub-dials (Simulated) */}
+                                    <circle cx="75" cy="110" r="12" stroke="#333" strokeWidth="1" fill="none" opacity="0.5" />
+                                    <path d="M75 110 L75 102" stroke="#665" strokeWidth="1" />
+
+                                    <circle cx="125" cy="110" r="12" stroke="#333" strokeWidth="1" fill="none" opacity="0.5" />
+                                    <path d="M125 110 L129 114" stroke="#665" strokeWidth="1" />
+
+                                    {/* --- 5. Hands --- */}
+                                    {/* Hour Hand */}
+                                    <g transform="rotate(45 100 110)">
+                                        <path d="M98 110 L100 70 L102 110 Z" fill="url(#goldHand)" />
+                                        <circle cx="100" cy="110" r="6" fill="url(#goldRim)" />
+                                    </g>
+                                    {/* Minute Hand */}
+                                    <g className="animate-[spin_60s_linear_infinite]" style={{ transformOrigin: "100px 110px" }}>
+                                        <path d="M99 110 L100 50 L101 110 Z" fill="url(#goldRim)" />
+                                    </g>
+                                    {/* Second Hand (Red/Gold Tip) */}
+                                    <g className="animate-[spin_6s_linear_infinite]" style={{ transformOrigin: "100px 110px" }}>
+                                        <path d="M100 110 L100 45" stroke="#CD7F32" strokeWidth="1" />
+                                        <circle cx="100" cy="110" r="2" fill="#CD7F32" />
+                                    </g>
+
+                                    {/* Glossy Overlay (Glass Reflection) */}
+                                    <path d="M100 50 C140 50 165 80 165 110 A 65 65 0 0 1 35 110 C35 70 60 50 100 50" fill="white" fillOpacity="0.08" />
+
+                                    {/* Star Sparkle Top Right */}
+                                    <path d="M165 30 L168 38 L176 41 L168 44 L165 52 L162 44 L154 41 L162 38 Z" fill="#FFF8DC" className="animate-pulse" />
+                                </svg>
+                            </div>
+
+
+                            {/* 4. Typography */}
+                            <h2 className="font-serif text-3xl leading-tight mb-4">
+                                <span className="block text-white/90 text-xl mb-1">Flash Sale</span>
+                                <span className="bg-gradient-to-r from-[#D4AF37] via-[#FFF8DC] to-[#D4AF37] bg-clip-text text-transparent font-bold tracking-wide drop-shadow-[0_2px_10px_rgba(212,175,55,0.3)]">
+                                    Sedang Disiapkan
+                                </span>
+                            </h2>
+
+                            <p className="text-white/40 text-sm mb-8 font-light leading-relaxed px-4">
+                                Koleksi eksklusif dengan harga istimewa akan segera hadir. Waktu terus berjalan.
+                            </p>
+
+                            {/* 5. Button */}
+                            <button
+                                onClick={() => window.location.href = '/'}
+                                className="w-full py-4 rounded-full bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-[#3e2b06] font-bold tracking-wide text-sm uppercase transition-all transform hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(212,175,55,0.6)] active:scale-95 border border-[#FFF8DC]/20 relative overflow-hidden group/btn"
+                            >
+                                <div className="absolute inset-0 bg-white/30 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700 pointer-events-none skew-x-12"></div>
+                                <span className="relative z-10 flex items-center justify-center gap-2">
+                                    Lihat Koleksi Lain <ChevronRight className="w-4 h-4" />
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-[#050505] text-white font-sans overflow-x-hidden pb-24">
+
+            <Header />
+
+            {/* HERO SECTION: Gold Dust & Timer */}
+            <div className="relative pt-8 pb-12 px-4 text-center">
+                {/* Animated Gold Dust Background */}
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 animate-pulse"></div>
+                <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#D4AF37]/10 to-transparent blur-[50px] pointer-events-none"></div>
+
+                {/* FLAMES & TITLE */}
+                <div className="relative z-10 flex items-center justify-center gap-3 mb-8">
+                    <Flame className="w-8 h-8 text-[#FF4500] fill-orange-500 drop-shadow-[0_0_15px_rgba(255,69,0,0.6)] animate-pulse" />
+                    <h1 className="font-serif italic font-black text-4xl sm:text-5xl tracking-tighter">
+                        <span className="bg-gradient-to-b from-[#FFD700] via-[#FDB931] to-[#996515] bg-clip-text text-transparent drop-shadow-[0_2px_0_rgba(139,69,19,1)]">
+                            FLASH SALE
+                        </span>
+                    </h1>
+                    <Flame className="w-8 h-8 text-[#FF4500] fill-orange-500 drop-shadow-[0_0_15px_rgba(255,69,0,0.6)] animate-pulse" />
+                </div>
+
+                {/* COUNTDOWN TIMER TILES */}
+                {timeLeft && (
+                    <div className="relative z-10 flex justify-center gap-3 sm:gap-4 mb-10">
+                        {/* Tile: HOURS */}
+                        <div className="flex flex-col items-center">
+                            <div className="w-20 h-24 sm:w-24 sm:h-28 bg-[#1a1a1a] rounded-[10px] sm:rounded-2xl border-2 border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.3),inset_0_0_20px_rgba(0,0,0,0.8)] flex items-center justify-center relative overflow-hidden">
+                                {/* Glass Reflection Top Half */}
+                                <div className="absolute top-0 inset-x-0 h-[50%] bg-gradient-to-b from-white/10 to-transparent border-b border-white/5"></div>
+                                {/* Inner Glow */}
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#D4AF37]/10 to-transparent"></div>
+
+                                <span className="text-5xl sm:text-6xl font-bold bg-gradient-to-b from-[#FFF8DC] via-[#D4AF37] to-[#B8860B] bg-clip-text text-transparent font-mono tracking-wider relative z-10 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">
+                                    {timeLeft.hours.toString().padStart(2, '0')}
+                                </span>
+                            </div>
+                            <span className="text-[#D4AF37] text-[10px] font-bold tracking-[0.2em] mt-3 uppercase">Jam</span>
+                        </div>
+
+                        {/* Separator - Glowing Dots */}
+                        <div className="h-24 flex flex-col justify-center gap-4">
+                            <div className="w-2 h-2 bg-[#D4AF37] rounded-full shadow-[0_0_10px_#D4AF37] animate-pulse"></div>
+                            <div className="w-2 h-2 bg-[#D4AF37] rounded-full shadow-[0_0_10px_#D4AF37] animate-pulse"></div>
+                        </div>
+
+                        {/* Tile: MINUTES */}
+                        <div className="flex flex-col items-center">
+                            <div className="w-20 h-24 sm:w-24 sm:h-28 bg-[#1a1a1a] rounded-[10px] sm:rounded-2xl border-2 border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.3),inset_0_0_20px_rgba(0,0,0,0.8)] flex items-center justify-center relative overflow-hidden">
+                                {/* Glass Reflection Top Half */}
+                                <div className="absolute top-0 inset-x-0 h-[50%] bg-gradient-to-b from-white/10 to-transparent border-b border-white/5"></div>
+                                {/* Inner Glow */}
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#D4AF37]/10 to-transparent"></div>
+
+                                <span className="text-5xl sm:text-6xl font-bold bg-gradient-to-b from-[#FFF8DC] via-[#D4AF37] to-[#B8860B] bg-clip-text text-transparent font-mono tracking-wider relative z-10 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">
+                                    {timeLeft.minutes.toString().padStart(2, '0')}
+                                </span>
+                            </div>
+                            <span className="text-[#D4AF37] text-[10px] font-bold tracking-[0.2em] mt-3 uppercase">Menit</span>
+                        </div>
+
+                        {/* Separator - Glowing Dots */}
+                        <div className="h-24 flex flex-col justify-center gap-4">
+                            <div className="w-2 h-2 bg-[#D4AF37] rounded-full shadow-[0_0_10px_#D4AF37] animate-pulse"></div>
+                            <div className="w-2 h-2 bg-[#D4AF37] rounded-full shadow-[0_0_10px_#D4AF37] animate-pulse"></div>
+                        </div>
+
+                        {/* Tile: SECONDS */}
+                        <div className="flex flex-col items-center">
+                            <div className="w-20 h-24 sm:w-24 sm:h-28 bg-[#1a1a1a] rounded-[10px] sm:rounded-2xl border-2 border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.3),inset_0_0_20px_rgba(0,0,0,0.8)] flex items-center justify-center relative overflow-hidden group">
+                                {/* Glass Reflection Top Half */}
+                                <div className="absolute top-0 inset-x-0 h-[50%] bg-gradient-to-b from-white/10 to-transparent border-b border-white/5"></div>
+                                {/* Inner Glow Reddish for Seconds */}
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 to-transparent"></div>
+
+                                <span className="text-5xl sm:text-6xl font-bold bg-gradient-to-b from-[#FFF8DC] via-[#D4AF37] to-[#B8860B] bg-clip-text text-transparent font-mono tracking-wider relative z-10 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)] animate-pulse">
+                                    {timeLeft.seconds.toString().padStart(2, '0')}
+                                </span>
+                            </div>
+                            <span className="text-[#D4AF37] text-[10px] font-bold tracking-[0.2em] mt-3 uppercase">Detik</span>
+                        </div>
+                    </div>
+                )}
+
+                <div className="flex items-center justify-center gap-2">
+                    <span className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#D4AF37]/50"></span>
+                    <p className="text-[#D4AF37] font-serif uppercase tracking-widest text-xs relative">
+                        <span className="absolute -top-1 -right-3">✨</span>
+                        Produk Terbatas
+                    </p>
+                    <span className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#D4AF37]/50"></span>
+                </div>
+            </div>
+
+            {/* PRODUCTS GRID */}
+            <div className="container mx-auto px-4">
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {flashSaleProducts.map((flashProduct) => {
+                        // Adapt flash product to standard Product interface for Card
+                        const product = {
+                            id: flashProduct.id,
+                            name: flashProduct.name,
+                            price: flashProduct.price,
+                            retailPrice: flashProduct.retailPrice || flashProduct.price,
+                            resellerPrice: flashProduct.resellerPrice || flashProduct.price * 0.8,
+                            costPrice: flashProduct.price * 0.6,
+                            description: flashProduct.name,
+                            stock: flashProduct.stock,
+                            images: flashProduct.images,
+                            image: flashProduct.image,
+                            category: flashProduct.category,
+                            status: flashProduct.status as "ready" | "po",
+                            createdAt: flashProduct.createdAt,
+                            featuredOrder: flashProduct.featuredOrder,
+                            variants: flashProduct.variants,
+                            isFlashSale: flashProduct.isFlashSale,
+                            flashSalePrice: flashProduct.flashSalePrice || flashProduct.price * 0.8,
+                        };
+
+                        return (
+                            <div
+                                key={`flash-grid-${product.id}`}
+                                className="transform hover:scale-[1.02] transition-all duration-300"
+                            >
+                                {/* 
+                   Using ProductCard with "isFlashSale" prop to trigger the Gold Badge styles
+                   that we implemented in ProductCard.tsx previously.
+                   We might need to check if ProductCard supports the dark theme properly. 
+                   If not, it will just be a white card on black BG, which is also luxury contrast style.
+                */}
+                                <ProductCard
+                                    product={product}
+                                    onProductClick={onProductClick}
+                                    onAddToCart={handleAddToCart}
+                                    isFlashSale={true}
+                                    user={user}
+                                />
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export default FlashSalePage;

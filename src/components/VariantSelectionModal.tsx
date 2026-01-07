@@ -116,7 +116,7 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                                             onClick={() => setSelectedColor(color)}
                                             disabled={colorStock === 0}
                                             className={`flex-shrink-0 min-w-[60px] px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all duration-300 ${selectedColor === color
-                                                ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white border-yellow-600 shadow-lg shadow-yellow-500/50 scale-105'
+                                                ? 'bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-[#5d4008] border-[#B8860B] shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] scale-105'
                                                 : colorStock === 0
                                                     ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                                                     : 'bg-white text-gray-700 border-gray-300 hover:border-yellow-500'
@@ -146,7 +146,7 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                                             onClick={() => setSelectedSize(size)}
                                             disabled={sizeTotalStock === 0}
                                             className={`flex-shrink-0 min-w-[50px] px-3 py-2 rounded-full text-sm font-bold border-2 transition-all duration-300 ${selectedSize === size
-                                                ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white border-yellow-600 shadow-lg shadow-yellow-500/50 scale-105'
+                                                ? 'bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-[#5d4008] border-[#B8860B] shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] scale-105'
                                                 : sizeTotalStock === 0
                                                     ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
                                                     : 'bg-white text-gray-700 border-gray-300 hover:border-yellow-500'
@@ -210,7 +210,7 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                         disabled={!selectedSize || !selectedColor || quantity === 0 || quantity > getSelectedVariantStock()}
                         className={`w-full py-4 rounded-full font-bold text-white transition shadow-lg ${!selectedSize || !selectedColor || quantity === 0 || quantity > getSelectedVariantStock()
                             ? 'bg-gray-300 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 shadow-yellow-500/30'
+                            : 'bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-[#5d4008] shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] hover:shadow-[0_6px_20px_rgba(153,123,44,0.23)] hover:bg-[100%_0]'
                             }`}
                     >
                         {mode === 'addToCart' ? '🛒 Tambah ke Keranjang' : '⚡ Beli Sekarang'}

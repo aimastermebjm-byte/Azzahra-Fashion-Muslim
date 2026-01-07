@@ -528,7 +528,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] bg-clip-text text-transparent">
                     Rp {currentProduct.retailPrice.toLocaleString('id-ID')}
                   </div>
 
@@ -565,7 +565,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             {/* Price Summary */}
             <div className="flex-shrink-0">
               <p className="text-xs text-gray-500">Total</p>
-              <p className="text-lg font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
+              <p className="text-lg font-bold bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] bg-clip-text text-transparent">
                 Rp {totalPrice.toLocaleString('id-ID')}
               </p>
             </div>
@@ -574,14 +574,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             <div className="flex-1 flex gap-2">
               <button
                 onClick={() => setModalMode('addToCart')}
-                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full border-2 border-yellow-500 bg-white text-yellow-600 font-bold text-sm transition hover:bg-yellow-50"
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full border border-[#D4AF37] bg-white text-[#997B2C] font-bold text-sm transition hover:bg-[#FEFAE0] shadow-sm"
               >
                 <ShoppingCart className="h-4 w-4" />
                 Keranjang
               </button>
               <button
                 onClick={() => setModalMode('buyNow')}
-                className="flex-1 flex items-center justify-center px-4 py-2.5 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-bold text-sm shadow-lg transition hover:from-yellow-600 hover:to-yellow-700"
+                className="flex-1 flex items-center justify-center px-4 py-2.5 rounded-full bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-[#5d4008] font-bold text-sm shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] hover:shadow-[0_6px_20px_rgba(153,123,44,0.23)] hover:bg-[100%_0] transition-all transform hover:-translate-y-0.5 active:scale-95"
               >
                 Beli Sekarang
               </button>

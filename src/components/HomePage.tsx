@@ -404,7 +404,7 @@ const HomePage: React.FC<HomePageProps> = ({
               className="p-2.5 transition-all group active:scale-95"
               title="Hubungi Admin via WhatsApp"
             >
-              <svg className="w-6 h-6 text-brand-accent/70 group-hover:text-brand-accent group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)] transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-6 h-6 text-[#D4AF37]/80 group-hover:text-[#D4AF37] group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)] transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
@@ -415,7 +415,7 @@ const HomePage: React.FC<HomePageProps> = ({
               {/* Glow Effect Layer behind text */}
               <div className="absolute inset-0 bg-brand-accent/20 blur-xl rounded-full opacity-30 transform scale-150"></div>
 
-              <h1 className="relative font-display text-2xl sm:text-3xl font-bold tracking-wider bg-gradient-to-tr from-[#BF953F] via-[#FCF6BA] to-[#B38728] bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(212,175,55,0.5)] transform hover:scale-105 transition-transform duration-500 cursor-pointer">
+              <h1 className="relative font-display text-2xl sm:text-3xl font-bold tracking-wider bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(212,175,55,0.5)] transform hover:scale-105 transition-transform duration-500 cursor-pointer">
                 AZZAHRA
               </h1>
               <p className="relative text-[9px] sm:text-[10px] text-[#F0D77A] tracking-[0.4em] font-sans uppercase mt-0.5 ml-1 opacity-90">
@@ -431,8 +431,8 @@ const HomePage: React.FC<HomePageProps> = ({
                 className="p-2.5 transition-all group active:scale-95"
               >
                 <Search className={`w - 6 h - 6 transition - all ${showSearch
-                  ? 'text-brand-accent drop-shadow-[0_0_8px_rgba(212,175,55,0.8)]'
-                  : 'text-brand-accent/70 group-hover:text-brand-accent group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]'
+                  ? 'text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.8)]'
+                  : 'text-[#D4AF37]/80 group-hover:text-[#D4AF37] group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]'
                   } `} />
               </button>
 
@@ -441,7 +441,7 @@ const HomePage: React.FC<HomePageProps> = ({
                 onClick={onCartClick}
                 className="relative p-2.5 transition-all group active:scale-95"
               >
-                <ShoppingCart className="w-6 h-6 text-brand-accent/70 group-hover:text-brand-accent group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)] transition-all" />
+                <ShoppingCart className="w-6 h-6 text-[#D4AF37]/80 group-hover:text-[#D4AF37] group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)] transition-all" />
                 {cartCount > 0 && (
                   <span className="absolute top-1 right-1 bg-brand-accent text-brand-primary text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-0.5 shadow-sm">
                     {cartCount > 99 ? '99+' : cartCount}
@@ -645,8 +645,8 @@ const HomePage: React.FC<HomePageProps> = ({
                   setActiveTab(category.id === 'all' ? 'all' : 'terbaru');
                 }}
                 className={`flex items-center space-x-1.5 px-6 py-2.5 rounded-full text-sm font-display tracking-wide transition-all whitespace-nowrap border ${isSelected
-                  ? 'bg-black border-[#FFD700] text-[#FFD700] shadow-[0_0_15px_rgba(255,215,0,0.3)] drop-shadow-[0_0_2px_rgba(255,215,0,0.5)] font-medium' // Active: Deep Black + Glowing Gold
-                  : 'bg-white border-brand-accent/30 text-gray-500 hover:border-brand-accent hover:text-brand-primary'
+                  ? 'bg-black border-[#D4AF37] text-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.3)] drop-shadow-[0_0_2px_rgba(212,175,55,0.5)] font-medium' // Active: Deep Black + Glowing Gold
+                  : 'bg-white border-[#D4AF37]/30 text-gray-500 hover:border-[#D4AF37] hover:text-[#5d4008]'
                   }`}
               >
                 <span>{category.name}</span>

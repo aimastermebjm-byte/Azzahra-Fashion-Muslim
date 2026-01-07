@@ -16,10 +16,10 @@ const CartPage: React.FC<CartPageProps> = ({
   onCheckout
 }) => {
   const { cartItems, loading, error, updateQuantity: updateCartItem, removeFromCart: removeCartItem, removeBulkFromCart: removeBulkCartItems, getCartTotal } = useRealTimeCartOptimized();
-  
+
   // State untuk checkbox selection
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  
+
   // Select all items by default when cart loads
   React.useEffect(() => {
     if (cartItems.length > 0 && selectedItems.size === 0) {
@@ -57,7 +57,7 @@ const CartPage: React.FC<CartPageProps> = ({
   // Bulk delete selected items
   const handleBulkDelete = async () => {
     if (selectedItems.size === 0) return;
-    
+
     const itemCount = selectedItems.size; // Save count before clearing
     const confirmDelete = window.confirm(`Hapus ${itemCount} produk dari keranjang?`);
     if (!confirmDelete) return;
@@ -66,7 +66,7 @@ const CartPage: React.FC<CartPageProps> = ({
       // Delete all selected items in one Firestore operation (no race condition)
       const itemIdsToDelete = Array.from(selectedItems);
       await removeBulkCartItems(itemIdsToDelete);
-      
+
       // Clear selection after successful delete
       setSelectedItems(new Set());
       console.log(`✅ Berhasil menghapus ${itemCount} produk`);
@@ -201,7 +201,7 @@ const CartPage: React.FC<CartPageProps> = ({
                 Pilih Semua ({cartItems.length} produk)
               </span>
             </label>
-            
+
             {selectedItems.size > 0 && (
               <button
                 onClick={handleBulkDelete}
@@ -280,7 +280,7 @@ const CartPage: React.FC<CartPageProps> = ({
                               <Plus className="w-4 h-4" />
                             </button>
                           </div>
-                          
+
                           {/* Trash button separately */}
                           <button
                             onClick={() => handleRemoveFromCart(item.id)}
@@ -328,7 +328,7 @@ const CartPage: React.FC<CartPageProps> = ({
             <button
               onClick={() => onCheckout(Array.from(selectedItems))}
               disabled={selectedCount === 0}
-              className="btn-brand mt-4 w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-4 w-full rounded-full py-3 font-bold text-[#5d4008] bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] hover:shadow-[0_6px_20px_rgba(153,123,44,0.23)] hover:bg-[100%_0] transition-all transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Checkout ({selectedCount} Produk)
             </button>

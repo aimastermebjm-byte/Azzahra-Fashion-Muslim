@@ -129,7 +129,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <span className="text-base sm:text-lg font-bold text-[#D4AF37]">
               Rp {product.flashSalePrice.toLocaleString('id-ID')}
             </span>
-            <span className="bg-red-50 text-red-600 text-[10px] font-medium px-1.5 py-0.5 rounded border border-red-100">
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${isFlashSale ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-red-50 text-red-600 border-red-100'}`}>
               -{Math.round((1 - product.flashSalePrice / (product.originalRetailPrice || product.retailPrice)) * 100)}%
             </span>
           </div>
@@ -191,8 +191,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <>
       <div
-        className={`relative bg-white rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-brand-border/20 group hover:shadow-[0_10px_30px_rgba(139,75,107,0.1)] transition-all duration-300 cursor-pointer ${isFeatured ? 'ring-1 ring-brand-accent shadow-brand-accent/20' : ''
-          }`}
+        className={`relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${isFlashSale
+            ? 'bg-[#121212] border border-[#D4AF37]/20 shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:border-[#D4AF37]/40 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]'
+            : 'bg-white border border-brand-border/20 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_30px_rgba(139,75,107,0.1)]'
+          } ${isFeatured ? 'ring-1 ring-brand-accent shadow-brand-accent/20' : ''}`}
         onClick={() => onProductClick(product)}
       >
         {/* Image Area */}
@@ -232,7 +234,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Product Info - Minimalist & Left Aligned */}
         <div className="p-3 sm:p-4 text-left">
-          <h3 className="font-display text-base sm:text-lg font-medium text-brand-primary mb-1 line-clamp-2 leading-tight group-hover:text-brand-accent transition-colors">
+          <h3 className={`font-display text-base sm:text-lg font-medium mb-1 line-clamp-2 leading-tight transition-colors ${isFlashSale ? 'text-gray-100 group-hover:text-[#D4AF37]' : 'text-brand-primary group-hover:text-brand-accent'
+            }`}>
             {product.name}
           </h3>
 
