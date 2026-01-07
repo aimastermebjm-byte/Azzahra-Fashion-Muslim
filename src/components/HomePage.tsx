@@ -395,13 +395,15 @@ const HomePage: React.FC<HomePageProps> = ({
         <div className="px-3 sm:px-4 py-3">
           {/* Top Row - Chat Left, Centered Brand, Actions Right */}
           <div className="flex items-center justify-between">
-            {/* Left - Chat Button */}
+            {/* Left - Menu/Chat Button */}
             <button
               onClick={() => window.open('https://wa.me/6281952989904?text=Halo%20Admin%20Azzahra%20Fashion%2C%20saya%20ingin%20bertanya', '_blank')}
               className="p-2.5 bg-brand-accent/20 rounded-xl hover:bg-brand-accent/30 transition-all"
               title="Hubungi Admin via WhatsApp"
             >
-              <MessageCircle className="w-5 h-5 text-brand-accent" />
+              <svg className="w-5 h-5 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
             </button>
 
             {/* Centered Brand Name - Gold */}
