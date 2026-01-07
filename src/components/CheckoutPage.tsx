@@ -838,9 +838,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       <label
-                        className={`flex items-center gap-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${shippingMode === 'delivery'
-                          ? 'border-[#EBC66B] bg-yellow-50/30 shadow-md shadow-yellow-500/10'
-                          : 'border-gray-200 hover:border-yellow-200 hover:shadow-sm'
+                        className={`flex items-center gap-4 p-5 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden ${shippingMode === 'delivery'
+                          ? 'bg-[#FFD700]/10 shadow-lg shadow-yellow-500/20 ring-1 ring-[#D4AF37]/50'
+                          : 'bg-gray-50 hover:bg-gray-100'
                           }`}
                       >
                         <input
@@ -851,14 +851,16 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           onChange={() => setShippingMode('delivery')}
                           className="sr-only"
                         />
-                        <Truck className={`w-7 h-7 ${shippingMode === 'delivery' ? 'text-yellow-500 drop-shadow-md' : 'text-gray-400'}`} />
-                        <p className="font-bold text-gray-900">Kirim</p>
+                        <div className={`p-2 rounded-full transition-colors ${shippingMode === 'delivery' ? 'bg-[#D4AF37]/20' : 'bg-transparent'}`}>
+                          <Truck className={`w-6 h-6 ${shippingMode === 'delivery' ? 'text-[#D4AF37] drop-shadow-[0_0_8px_rgba(255,215,0,0.6)]' : 'text-gray-400'}`} />
+                        </div>
+                        <p className={`font-bold text-lg ${shippingMode === 'delivery' ? 'text-[#B4941F]' : 'text-gray-600'}`}>Kirim</p>
                       </label>
 
                       <label
-                        className={`flex items-center gap-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${shippingMode === 'keep'
-                          ? 'border-[#EBC66B] bg-yellow-50/30 shadow-md shadow-yellow-500/10'
-                          : 'border-gray-200 hover:border-yellow-200 hover:shadow-sm'
+                        className={`flex items-center gap-4 p-5 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden ${shippingMode === 'keep'
+                          ? 'bg-[#FFD700]/10 shadow-lg shadow-yellow-500/20 ring-1 ring-[#D4AF37]/50'
+                          : 'bg-gray-50 hover:bg-gray-100'
                           }`}
                       >
                         <input
@@ -869,8 +871,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           onChange={() => setShippingMode('keep')}
                           className="sr-only"
                         />
-                        <Archive className={`w-7 h-7 ${shippingMode === 'keep' ? 'text-yellow-500 drop-shadow-md' : 'text-gray-400'}`} />
-                        <p className="font-bold text-gray-900">Keep</p>
+                        <div className={`p-2 rounded-full transition-colors ${shippingMode === 'keep' ? 'bg-[#D4AF37]/20' : 'bg-transparent'}`}>
+                          <Archive className={`w-6 h-6 ${shippingMode === 'keep' ? 'text-[#D4AF37] drop-shadow-[0_0_8px_rgba(255,215,0,0.6)]' : 'text-gray-400'}`} />
+                        </div>
+                        <p className={`font-bold text-lg ${shippingMode === 'keep' ? 'text-[#B4941F]' : 'text-gray-600'}`}>Keep</p>
                       </label>
                     </div>
                   </div>
@@ -1426,9 +1430,18 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               {/* Button - Kanan */}
               <button
                 onClick={handleSubmitOrder}
-                className="relative h-12 px-8 rounded-full font-bold text-white text-base bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 shadow-xl shadow-yellow-500/40 transition-all duration-200 active:scale-95 whitespace-nowrap flex-shrink-0 overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/40 before:via-white/10 before:to-transparent before:rounded-full"
+                disabled={loading || (shippingMode === 'delivery' && !selectedAddressId) || !formData.paymentMethodId}
+                className="bg-gradient-to-r from-[#C6A355] via-[#DEBC72] to-[#C6A355] text-white px-8 py-3 rounded-full font-bold text-lg shadow-[0_0_20px_rgba(212,175,55,0.5)] hover:shadow-[0_0_30px_rgba(212,175,55,0.7)] transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none relative overflow-hidden group"
               >
-                <span className="relative z-10">Buat Pesanan</span>
+                <span className="relative z-10 flex items-center gap-2">
+                  {loading ? 'Memproses...' : (
+                    <>
+                      Buat Pesanan
+                    </>
+                  )}
+                </span>
+                {/* Shine Effect */}
+                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/40 to-transparent skew-x-12 translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
               </button>
             </div>
           </div>
