@@ -222,11 +222,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </button>
           </div>
 
-          {/* Main Floating Cart Button - Gold Circle */}
-          {/* ALWAYS VISIBLE on Mobile (opacity-100), Toggle on Desktop (sm:opacity-0 ...) */}
+          {/* Main Floating Cart Button - Gold Circle (Desktop Only) */}
           <button
             onClick={handleAddToCart}
-            className="absolute bottom-3 right-3 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#BF953F] via-[#FCF6BA] to-[#B38728] text-brand-primary shadow-[0_4px_15px_rgba(191,149,63,0.3)] flex items-center justify-center transform translate-y-0 sm:translate-y-2 opacity-100 sm:opacity-0 group-hover:opacity-100 sm:group-hover:translate-y-0 transition-all duration-300 hover:scale-110 active:scale-95 z-10"
+            className="hidden sm:flex absolute bottom-3 right-3 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#BF953F] via-[#FCF6BA] to-[#B38728] text-brand-primary shadow-[0_4px_15px_rgba(191,149,63,0.3)] items-center justify-center transform translate-y-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:scale-110 active:scale-95 z-10"
             title="Add to Cart"
           >
             <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
@@ -235,13 +234,26 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Product Info - Minimalist */}
         <div className="p-3 sm:p-4">
-          <h3 className="font-display text-base sm:text-lg font-medium text-brand-primary mb-1 line-clamp-2 leading-tight group-hover:text-brand-accent transition-colors">
-            {product.name}
-          </h3>
+          <div className="flex justify-between items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-display text-base sm:text-lg font-medium text-brand-primary mb-1 line-clamp-2 leading-tight group-hover:text-brand-accent transition-colors">
+                {product.name}
+              </h3>
 
-          {/* Price Section */}
-          <div className="mt-2">
-            {getPrice()}
+              {/* Price Section */}
+              <div className="mt-2">
+                {getPrice()}
+              </div>
+            </div>
+
+            {/* Mobile Cart Button - Integrated next to info */}
+            <button
+              onClick={handleAddToCart}
+              className="sm:hidden flex-none w-9 h-9 rounded-full bg-brand-primary text-brand-accent flex items-center justify-center shadow-md active:scale-95"
+              title="Add to Cart"
+            >
+              <ShoppingCart className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
