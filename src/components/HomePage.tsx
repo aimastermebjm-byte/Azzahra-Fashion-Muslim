@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Search, ShoppingCart, User, Filter, Star, ArrowUpDown, MessageCircle, X, Zap } from 'lucide-react';
+import { Search, ShoppingCart, Zap, X, Star } from 'lucide-react';
 import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
@@ -398,10 +398,10 @@ const HomePage: React.FC<HomePageProps> = ({
             {/* Left - Menu/Chat Button */}
             <button
               onClick={() => window.open('https://wa.me/6281952989904?text=Halo%20Admin%20Azzahra%20Fashion%2C%20saya%20ingin%20bertanya', '_blank')}
-              className="p-2.5 bg-brand-accent/20 rounded-xl hover:bg-brand-accent/30 transition-all"
+              className="p-2.5 transition-all group active:scale-95"
               title="Hubungi Admin via WhatsApp"
             >
-              <svg className="w-5 h-5 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-6 h-6 text-brand-accent/70 group-hover:text-brand-accent group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)] transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
@@ -417,24 +417,26 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
 
             {/* Right - Search & Cart */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1">
               {/* Search Toggle Button */}
               <button
                 onClick={() => setShowSearch(!showSearch)}
-                className={`p-2.5 rounded-xl transition-all ${showSearch ? 'bg-brand-accent text-white' : 'bg-brand-accent/20 text-brand-accent hover:bg-brand-accent/30'
-                  }`}
+                className="p-2.5 transition-all group active:scale-95"
               >
-                <Search className="w-5 h-5" />
+                <Search className={`w-6 h-6 transition-all ${showSearch
+                  ? 'text-brand-accent drop-shadow-[0_0_8px_rgba(212,175,55,0.8)]'
+                  : 'text-brand-accent/70 group-hover:text-brand-accent group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]'
+                  }`} />
               </button>
 
               {/* Cart Button */}
               <button
                 onClick={onCartClick}
-                className="relative p-2.5 bg-brand-accent rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all"
+                className="relative p-2.5 transition-all group active:scale-95"
               >
-                <ShoppingCart className="w-5 h-5 text-white" />
+                <ShoppingCart className="w-6 h-6 text-brand-accent/70 group-hover:text-brand-accent group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)] transition-all" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-white text-brand-primary text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shadow-md">
+                  <span className="absolute top-1 right-1 bg-brand-accent text-brand-primary text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-0.5 shadow-sm">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
                 )}
