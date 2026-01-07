@@ -612,14 +612,17 @@ const HomePage: React.FC<HomePageProps> = ({
         )}
       </div>
 
-      {/* Categories - Elegant Horizontal Scroll */}
-      <div className="px-3 sm:px-4 mb-4">
-        <div className="bg-white rounded-xl p-1.5 shadow-elegant border border-brand-border">
-          <div className="flex space-x-1.5 overflow-x-auto scrollbar-hide pb-0.5">
+      {/* Categories - Sticky Glassmorphism Style */}
+      <div className="sticky top-[60px] z-30 py-3 mb-4 -mx-2 sm:mx-0">
+        <div className="absolute inset-0 bg-brand-surface/80 backdrop-blur-md border-b border-brand-border/30 shadow-sm"></div>
+        <div className="relative px-4">
+          <div className="flex space-x-2.5 overflow-x-auto scrollbar-hide pb-0.5">
             {categories.map((category) => {
               const productCount = category.id === 'all'
                 ? filteredProducts.length
                 : filteredProducts.filter(p => p.category === category.id).length;
+
+              const isSelected = selectedCategory === category.id;
 
               return (
                 <button
@@ -630,24 +633,22 @@ const HomePage: React.FC<HomePageProps> = ({
                   }}
                   className={`
                     flex-shrink-0 
-                    flex items-center space-x-1.5 
-                    px-3.5 py-2 
-                    rounded-lg 
-                    text-sm font-medium 
-                    transition-all duration-200
-                    ${selectedCategory === category.id
-                      ? 'bg-brand-gradient text-white shadow-brand-button'
-                      : 'text-gray-600 hover:bg-brand-surfaceAlt hover:text-brand-primary'
+                    flex items-center space-x-2
+                    px-5 py-2
+                    rounded-full 
+                    text-xs font-medium tracking-wide
+                    transition-all duration-300 ease-out
+                    border
+                    ${isSelected
+                      ? 'bg-brand-primary border-brand-primary text-brand-accent shadow-[0_4px_10px_rgba(0,0,0,0.2)] scale-105' // Active: Black + Gold Shadow
+                      : 'bg-white/40 border-brand-accent/20 text-gray-600 hover:border-brand-accent/50 hover:bg-white/60' // Inactive: Glassy + Thin Gold Border
                     }
                   `}
                 >
-                  <span className="text-base">{category.icon}</span>
-                  <span>{category.name}</span>
-                  {selectedCategory === category.id && productCount > 0 && (
-                    <span className="ml-0.5 px-1.5 py-0.5 bg-white/25 rounded-md text-[10px] font-bold">
-                      {productCount}
-                    </span>
-                  )}
+                  <span className={isSelected ? 'font-semibold' : ''}>{category.name}</span>
+                  <span className={`text-[10px] ${isSelected ? 'text-brand-accent/80' : 'text-gray-400'}`}>
+                    {productCount}
+                  </span>
                 </button>
               );
             })}
