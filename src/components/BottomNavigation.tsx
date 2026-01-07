@@ -38,7 +38,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPage
                 <Icon
                   className={`w-5 h-5 mb-0.5 transition-all duration-300 ${isActive
                     ? 'text-brand-accent drop-shadow-[0_0_8px_rgba(212,175,55,0.8)] fill-brand-accent/10 scale-110'
-                    : 'text-brand-accent/40 group-hover:text-brand-accent/80'
+                    : 'text-brand-accent/75 group-hover:text-brand-accent'
                     }`}
                   strokeWidth={isActive ? 2.5 : 2}
                 />
@@ -47,7 +47,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPage
               <span
                 className={`text-[9px] font-medium tracking-wide transition-all duration-300 ${isActive
                   ? 'text-brand-accent drop-shadow-[0_0_5px_rgba(212,175,55,0.5)] translate-y-0'
-                  : 'text-brand-accent/40 group-hover:text-brand-accent/80'
+                  : 'text-brand-accent/75 group-hover:text-brand-accent'
                   }`}
               >
                 {item.label}
