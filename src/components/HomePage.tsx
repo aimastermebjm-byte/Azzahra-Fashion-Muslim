@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Search, ShoppingCart, User, Filter, Star, ArrowUpDown, MessageCircle, X } from 'lucide-react';
+import { Search, ShoppingCart, User, Filter, Star, ArrowUpDown, MessageCircle, X, Zap } from 'lucide-react';
 import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
@@ -389,105 +389,108 @@ const HomePage: React.FC<HomePageProps> = ({
 
   return (
     <div className="min-h-screen bg-brand-surface pb-20">
-      {/* Header - Sticky - Premium Glassmorphism */}
-      <div className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-brand-primary/98 via-brand-info/98 to-brand-primary/98 shadow-xl border-b border-white/10">
-        <div className="px-2 sm:px-4 py-3 sm:py-4">
-          {/* Search Bar - Premium */}
-          <div className="flex items-center space-x-2">
-            <div className="flex-1 relative group">
-              {/* Animated Search Icon */}
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
-                <Search className={`w-5 h-5 transition-all duration-300 ${searchQuery
-                    ? 'text-brand-accent scale-110'
-                    : 'text-gray-400 group-focus-within:text-brand-accent group-focus-within:scale-110'
-                  }`} />
+      {/* Header - Elegant Dark Theme with Gold Accents */}
+      <div className="sticky top-0 z-50 bg-brand-primary shadow-lg">
+        <div className="px-3 sm:px-4 py-3">
+          {/* Top Row - Logo & Actions */}
+          <div className="flex items-center justify-between mb-3">
+            {/* Brand Logo */}
+            <div className="flex items-center space-x-2">
+              <div className="w-10 h-10 bg-brand-accent/20 rounded-xl flex items-center justify-center border border-brand-accent/30">
+                <span className="text-brand-accent font-display font-bold text-lg">A</span>
               </div>
-
-              {/* Input Field */}
-              <input
-                type="text"
-                placeholder="Cari hijab, gamis, atau busana favoritmu..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-12 py-3.5 
-                           rounded-2xl 
-                           bg-white shadow-lg 
-                           text-gray-900 
-                           placeholder:text-gray-400 
-                           focus:outline-none 
-                           focus:ring-2 
-                           focus:ring-brand-accent/50 
-                           focus:shadow-2xl 
-                           transition-all duration-300
-                           hover:shadow-xl"
-              />
-
-              {/* Loading Indicator */}
-              {isSearching && (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                  <div className="w-5 h-5 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
-                </div>
-              )}
-
-              {/* Clear Button */}
-              {searchQuery && !isSearching && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 
-                             text-gray-400 hover:text-gray-600 
-                             transition-colors p-1 hover:bg-gray-100 rounded-full"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+              <div>
+                <h1 className="font-display text-lg font-semibold text-white tracking-tight">Azzahra</h1>
+                <p className="text-[10px] text-brand-accent font-medium -mt-0.5">Fashion Muslim</p>
+              </div>
             </div>
 
-            {/* WhatsApp Button - Enhanced with Gradient & Pulse */}
-            <button
-              onClick={() => window.open('https://wa.me/6281952989904?text=Halo%20Admin%20Azzahra%20Fashion%2C%20saya%20ingin%20bertanya', '_blank')}
-              className="relative p-3 sm:p-3.5 
-                         bg-gradient-to-br from-green-500 to-green-600 
-                         rounded-2xl 
-                         shadow-lg hover:shadow-2xl 
-                         hover:scale-105 
-                         transition-all duration-300 
-                         group"
-              title="Hubungi Admin via WhatsApp"
-            >
-              <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:scale-110 transition-transform" />
-              {/* Pulse animation ring */}
-              <span className="absolute inset-0 rounded-2xl bg-green-400/50 animate-ping opacity-20" />
-            </button>
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-2">
+              {/* WhatsApp Button */}
+              <button
+                onClick={() => window.open('https://wa.me/6281952989904?text=Halo%20Admin%20Azzahra%20Fashion%2C%20saya%20ingin%20bertanya', '_blank')}
+                className="relative p-2.5 sm:p-3 
+                           bg-gradient-to-br from-emerald-500 to-emerald-600 
+                           rounded-xl 
+                           shadow-md hover:shadow-lg 
+                           hover:scale-105 
+                           transition-all duration-300"
+                title="Hubungi Admin via WhatsApp"
+              >
+                <MessageCircle className="w-5 h-5 text-white" />
+              </button>
 
-            {/* Cart Button - Premium Badge with Gradient */}
-            <button
-              onClick={onCartClick}
-              className="relative p-3 sm:p-3.5 
-                         bg-gradient-to-br from-brand-accent to-amber-600 
-                         rounded-2xl 
-                         shadow-lg hover:shadow-2xl 
-                         hover:scale-105 
-                         transition-all duration-300 
-                         group"
-            >
-              <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:scale-110 transition-transform" />
+              {/* Cart Button */}
+              <button
+                onClick={onCartClick}
+                className="relative p-2.5 sm:p-3 
+                           bg-brand-gradient-gold 
+                           rounded-xl 
+                           shadow-brand-button hover:shadow-lg 
+                           hover:scale-105 
+                           transition-all duration-300"
+              >
+                <ShoppingCart className="w-5 h-5 text-white" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 
+                                   bg-brand-primary 
+                                   text-white 
+                                   text-[10px] font-bold 
+                                   rounded-full 
+                                   min-w-[20px] h-5 
+                                   flex items-center justify-center 
+                                   px-1
+                                   shadow-md 
+                                   ring-2 ring-white">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
 
-              {/* Premium Badge with Bounce */}
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 
-                                 bg-gradient-to-br from-red-500 to-pink-600 
-                                 text-white 
-                                 text-xs font-bold 
-                                 rounded-full 
-                                 w-6 h-6 
-                                 flex items-center justify-center 
-                                 shadow-lg 
-                                 ring-2 ring-white 
-                                 animate-bounce">
-                  {cartCount > 99 ? '99+' : cartCount}
-                </span>
-              )}
-            </button>
+          {/* Search Bar - Refined */}
+          <div className="relative group">
+            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 z-10">
+              <Search className={`w-4.5 h-4.5 transition-all duration-300 ${searchQuery
+                ? 'text-brand-primary scale-110'
+                : 'text-gray-400 group-focus-within:text-brand-primary'
+                }`} />
+            </div>
+            <input
+              type="text"
+              placeholder="Cari hijab, gamis, atau busana favoritmu..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-11 pr-11 py-3 
+                         rounded-xl 
+                         bg-brand-surfaceAlt 
+                         border border-brand-border
+                         text-gray-800 font-sans text-sm
+                         placeholder:text-gray-400 
+                         focus:outline-none 
+                         focus:ring-2 
+                         focus:ring-brand-accent/40
+                         focus:border-brand-accent
+                         focus:bg-white 
+                         transition-all duration-300"
+            />
+            {isSearching && (
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+                <div className="w-4 h-4 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {searchQuery && !isSearching && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 
+                           text-gray-400 hover:text-gray-600 
+                           transition-colors p-1 hover:bg-white rounded-full"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -497,122 +500,128 @@ const HomePage: React.FC<HomePageProps> = ({
         <BannerCarousel onBannerClick={handleBannerClick} />
       </div>
 
-      {/* Flash Sale Section */}
-      <div className="px-1 sm:px-3 md:px-4 mb-3 sm:mb-6">
-        <div className="bg-brand-gradient rounded-2xl p-5 text-white shadow-brand-card relative overflow-hidden">
-          {/* Premium animated background pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -mr-16 -mt-16 animate-pulse"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full -ml-12 -mb-12 animate-pulse delay-75"></div>
-          </div>
+      {/* Flash Sale Section - ONLY show when products exist */}
+      {flashSaleProducts.length > 0 && (
+        <div className="px-3 sm:px-4 mb-4">
+          <div className="bg-gradient-to-br from-brand-primary via-brand-primaryLight to-brand-accent rounded-2xl p-4 text-white shadow-elegant-lg relative overflow-hidden">
+            <div className="absolute inset-0 opacity-20">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-white/30 rounded-full -mr-20 -mt-20 blur-2xl"></div>
+            </div>
 
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-full shadow-lg">
-                  <span className="text-3xl">⚡</span>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="bg-brand-accent/30 p-2 rounded-lg">
+                    <Zap className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-lg font-semibold text-white">Flash Sale</h2>
+                    <p className="text-white/70 text-xs">Penawaran Terbatas!</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white">
-                    Flash Sale
-                  </h2>
-                  <p className="text-brand-accent text-sm font-medium">
-                    {flashSaleProducts.length > 0 ? 'Diskon Terbatas!' : 'Nantikan Flash Sale Kami Selanjutnya'}
-                  </p>
-                </div>
+                <button
+                  onClick={onNavigateToFlashSale}
+                  className="bg-white text-brand-primary px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-brand-surfaceAlt transition-all shadow-md"
+                >
+                  Lihat Semua
+                </button>
               </div>
-              <button
-                onClick={onNavigateToFlashSale}
-                className="bg-white text-red-500 px-4 py-2 rounded-full text-sm font-bold hover:bg-red-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-              >
-                {flashSaleProducts.length > 0 ? 'Lihat Semua' : 'Lihat Produk'}
-              </button>
-            </div>
-          </div>
 
-          {/* Flash Sale Products */}
-          {loading ? (
-            <div className="grid grid-cols-2 gap-3">
-              {[...Array(2)].map((_, index) => (
-                <div key={`flash-skeleton-${index}`} className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
-                  <div className="w-full h-24 bg-white/20 rounded animate-pulse mb-2"></div>
-                  <div className="h-3 bg-white/20 rounded animate-pulse mb-1"></div>
-                  <div className="h-3 bg-white/20 rounded w-3/4 animate-pulse"></div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {flashSaleProducts
-                .slice(0, 2)
-                .map((flashProduct) => {
+              {/* Flash Sale Products Grid */}
+              <div className="grid grid-cols-2 gap-2">
+                {flashSaleProducts.slice(0, 2).map((flashProduct) => {
                   const discountPercentage = Math.round(((flashProduct.originalRetailPrice || flashProduct.retailPrice) - flashProduct.flashSalePrice) / (flashProduct.originalRetailPrice || flashProduct.retailPrice) * 100);
-
                   return (
                     <div
                       key={`flash-${flashProduct.id}`}
                       onClick={() => onProductClick(flashProduct)}
-                      className="bg-white/10 rounded-lg p-3 backdrop-blur-sm hover:bg-white/20 transition-colors cursor-pointer"
+                      className="bg-white/15 rounded-xl p-2.5 backdrop-blur-sm hover:bg-white/25 transition-all cursor-pointer group"
                     >
                       <div className="relative">
                         <img
                           src={flashProduct.image || flashProduct.images?.[0] || '/placeholder-product.jpg'}
                           alt={flashProduct.name}
-                          className="w-full aspect-[3/4] object-contain bg-white/10 rounded mb-2"
+                          className="w-full aspect-[3/4] object-contain bg-white/10 rounded-lg mb-2 group-hover:scale-[1.02] transition-transform"
                         />
-                        <div className="absolute top-1 right-1 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
+                        <div className="absolute top-1 right-1 bg-white text-brand-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                           -{discountPercentage}%
                         </div>
                       </div>
-                      <h3 className="text-white font-medium text-sm mb-1 truncate">{flashProduct.name}</h3>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-white font-bold text-sm">
+                      <h3 className="text-white font-medium text-xs mb-1 truncate">{flashProduct.name}</h3>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-white font-bold text-sm font-price">
                           Rp {flashProduct.flashSalePrice.toLocaleString('id-ID')}
-                        </span>
-                        <span className="text-red-200 line-through text-xs">
-                          Rp {(flashProduct.originalRetailPrice || flashProduct.retailPrice).toLocaleString('id-ID')}
                         </span>
                       </div>
                     </div>
                   );
                 })}
+              </div>
             </div>
-          )}
-
-          {flashSaleProducts.length === 0 && !loading && (
-            <div className="text-center py-4 text-red-100">
-              <span className="text-3xl">🚫</span>
-              <p className="text-sm mt-1">Tidak ada Flash Sale saat ini</p>
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Hero Banner - Show when NO Flash Sale - NOOR Style */}
+      {flashSaleProducts.length === 0 && !loading && (
+        <div className="px-3 sm:px-4 mb-4">
+          <div className="rounded-2xl overflow-hidden shadow-elegant relative h-[200px] sm:h-[240px] bg-brand-surface">
+            {/* Full Background Image */}
+            <img
+              src="/hero-model.png"
+              alt="Azzahra Fashion Model"
+              className="absolute inset-0 w-full h-full object-cover object-[70%_20%]"
+            />
+
+            {/* Very Subtle Gradient - Only for text area */}
+            <div className="absolute inset-y-0 left-0 w-[60%] bg-gradient-to-r from-brand-surface/95 via-brand-surface/70 to-transparent"></div>
+
+            {/* Text Content - Overlaid on Left */}
+            <div className="absolute inset-0 flex flex-col justify-center p-5 sm:p-8">
+              <div className="max-w-[55%]">
+                <h2 className="font-display text-2xl sm:text-3xl font-semibold text-brand-primary leading-tight mb-2">
+                  Elegance<br />
+                  <span className="text-brand-accent">in Modesty.</span>
+                </h2>
+                <p className="text-gray-600 text-sm mb-4">Temukan koleksi busana muslim terbaik</p>
+                <button
+                  onClick={() => setSelectedCategory('all')}
+                  className="bg-brand-primary text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-brand-primaryDark transition-all shadow-md"
+                >
+                  Lihat Koleksi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Flash Sale Countdown Display removed - using top section only */}
 
-      {/* Featured Products */}
-      <div className="px-1 sm:px-3 md:px-4 mb-3 sm:mb-6">
-        <div className="flex items-center space-x-2 mb-2 px-1 sm:px-0">
-          <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500 fill-current" />
-          <h2 className="text-base sm:text-lg font-bold text-gray-800">Produk Unggulan</h2>
+      {/* Featured Products - Elegant Header */}
+      <div className="px-3 sm:px-4 mb-4">
+        <div className="flex items-center space-x-2 mb-3">
+          <div className="w-8 h-8 bg-brand-accent/20 rounded-lg flex items-center justify-center">
+            <Star className="w-4 h-4 text-brand-accent fill-current" />
+          </div>
+          <h2 className="font-display text-lg font-semibold text-gray-900">Produk Unggulan</h2>
         </div>
 
         {/* Loading skeleton for featured products */}
         {loading ? (
-          <div className="grid grid-cols-2 gap-0.5 sm:gap-2 md:gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {[...Array(2)].map((_, index) => (
-              <div key={`skeleton-${index}`} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="w-full h-48 bg-gray-200 animate-pulse"></div>
-                <div className="p-4">
-                  <div className="h-4 bg-gray-200 rounded mb-2 animate-pulse"></div>
-                  <div className="h-3 bg-gray-200 rounded mb-3 animate-pulse"></div>
-                  <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+              <div key={`skeleton-${index}`} className="bg-white rounded-xl shadow-elegant overflow-hidden">
+                <div className="w-full aspect-[3/4] bg-brand-border animate-pulse"></div>
+                <div className="p-3">
+                  <div className="h-4 bg-brand-border rounded animate-pulse mb-2"></div>
+                  <div className="h-4 bg-brand-border rounded w-2/3 animate-pulse"></div>
                 </div>
               </div>
             ))}
           </div>
         ) : featuredProducts.length > 0 ? (
-          <div className="grid grid-cols-2 gap-0.5 sm:gap-2 md:gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {featuredProducts.map((product) => (
               <ProductCard
                 key={`featured-${product.id}`}
@@ -626,17 +635,19 @@ const HomePage: React.FC<HomePageProps> = ({
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500 bg-white rounded-lg">
-            <Star className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-            <p>Belum ada produk unggulan</p>
+          <div className="text-center py-10 bg-white rounded-xl shadow-elegant">
+            <div className="w-14 h-14 bg-brand-surfaceAlt rounded-full flex items-center justify-center mx-auto mb-3">
+              <Star className="w-7 h-7 text-brand-border" />
+            </div>
+            <p className="text-gray-500 text-sm">Belum ada produk unggulan</p>
           </div>
         )}
       </div>
 
-      {/* Categories - Segmented Control Premium */}
-      <div className="px-1 sm:px-3 md:px-4 mb-4">
-        <div className="bg-white rounded-2xl p-1.5 shadow-lg border border-gray-100">
-          <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
+      {/* Categories - Elegant Horizontal Scroll */}
+      <div className="px-3 sm:px-4 mb-4">
+        <div className="bg-white rounded-xl p-1.5 shadow-elegant border border-brand-border">
+          <div className="flex space-x-1.5 overflow-x-auto scrollbar-hide pb-0.5">
             {categories.map((category) => {
               const productCount = category.id === 'all'
                 ? filteredProducts.length
@@ -651,23 +662,21 @@ const HomePage: React.FC<HomePageProps> = ({
                   }}
                   className={`
                     flex-shrink-0 
-                    flex items-center space-x-2 
-                    px-4 py-2.5 
-                    rounded-xl 
+                    flex items-center space-x-1.5 
+                    px-3.5 py-2 
+                    rounded-lg 
                     text-sm font-medium 
-                    transition-all duration-300
+                    transition-all duration-200
                     ${selectedCategory === category.id
-                      ? 'bg-gradient-to-r from-brand-primary to-brand-info text-white shadow-md scale-105'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-brand-gradient text-white shadow-brand-button'
+                      : 'text-gray-600 hover:bg-brand-surfaceAlt hover:text-brand-primary'
                     }
                   `}
                 >
-                  <span className="text-lg">{category.icon}</span>
+                  <span className="text-base">{category.icon}</span>
                   <span>{category.name}</span>
-
-                  {/* Product count badge on active */}
                   {selectedCategory === category.id && productCount > 0 && (
-                    <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">
+                    <span className="ml-0.5 px-1.5 py-0.5 bg-white/25 rounded-md text-[10px] font-bold">
                       {productCount}
                     </span>
                   )}
@@ -678,156 +687,100 @@ const HomePage: React.FC<HomePageProps> = ({
         </div>
       </div>
 
-      {/* Filters & Sort - Grouped Premium Chips */}
-      <div className="px-1 sm:px-3 md:px-4">
-        <div className="space-y-3 mb-4">
-
-          {/* Sort Options - Premium Pills with Icons */}
-          <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide flex-shrink-0">
-              Urutkan
-            </span>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setSortBy('terbaru')}
-                className={`
-                  flex-shrink-0 px-4 py-2 
-                  rounded-xl 
-                  text-sm font-medium 
-                  transition-all duration-300
-                  ${sortBy === 'terbaru'
-                    ? 'bg-gradient-to-r from-brand-accent to-amber-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }
-                `}
-              >
-                🆕 Terbaru
-              </button>
-              <button
-                onClick={() => setSortBy('termurah')}
-                className={`
-                  flex-shrink-0 px-4 py-2 
-                  rounded-xl 
-                  text-sm font-medium 
-                  transition-all duration-300
-                  ${sortBy === 'termurah'
-                    ? 'bg-gradient-to-r from-brand-accent to-amber-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }
-                `}
-              >
-                💰 Termurah
-              </button>
-            </div>
+      {/* Filters & Sort - Compact Elegant */}
+      <div className="px-3 sm:px-4 mb-4">
+        <div className="flex flex-wrap gap-2">
+          {/* Sort Options */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-medium text-gray-400 uppercase">Urut:</span>
+            <button
+              onClick={() => setSortBy('terbaru')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${sortBy === 'terbaru'
+                ? 'bg-brand-primary text-white shadow-sm'
+                : 'bg-white text-gray-600 border border-brand-border hover:border-brand-accent'
+                }`}
+            >
+              Terbaru
+            </button>
+            <button
+              onClick={() => setSortBy('termurah')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${sortBy === 'termurah'
+                ? 'bg-brand-primary text-white shadow-sm'
+                : 'bg-white text-gray-600 border border-brand-border hover:border-brand-accent'
+                }`}
+            >
+              Termurah
+            </button>
           </div>
 
-          {/* Status Filter - Icon Pills with Pulse Dots */}
-          <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide flex-shrink-0">
-              Status
-            </span>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setStatusFilter('all')}
-                className={`
-                  flex-shrink-0 px-4 py-2 
-                  rounded-xl 
-                  text-sm font-medium 
-                  transition-all duration-300
-                  ${statusFilter === 'all'
-                    ? 'bg-gray-900 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }
-                `}
-              >
-                Semua
-              </button>
-
-              <button
-                onClick={() => setStatusFilter('ready')}
-                className={`
-                  flex-shrink-0 flex items-center space-x-1.5
-                  px-4 py-2 
-                  rounded-xl 
-                  text-sm font-medium 
-                  transition-all duration-300
-                  ${statusFilter === 'ready'
-                    ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md'
-                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                  }
-                `}
-              >
-                <div className={`w-2 h-2 rounded-full ${statusFilter === 'ready' ? 'bg-white' : 'bg-emerald-500'
-                  } animate-pulse`} />
-                <span>Ready Stock</span>
-              </button>
-
-              <button
-                onClick={() => setStatusFilter('po')}
-                className={`
-                  flex-shrink-0 flex items-center space-x-1.5
-                  px-4 py-2 
-                  rounded-xl 
-                  text-sm font-medium 
-                  transition-all duration-300
-                  ${statusFilter === 'po'
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md'
-                    : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
-                  }
-                `}
-              >
-                <div className={`w-2 h-2 rounded-full ${statusFilter === 'po' ? 'bg-white' : 'bg-amber-500'
-                  } animate-pulse`} />
-                <span>Pre Order</span>
-              </button>
-            </div>
+          {/* Status Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-medium text-gray-400 uppercase">Status:</span>
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === 'all'
+                ? 'bg-gray-800 text-white shadow-sm'
+                : 'bg-white text-gray-600 border border-brand-border'
+                }`}
+            >
+              Semua
+            </button>
+            <button
+              onClick={() => setStatusFilter('ready')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === 'ready'
+                ? 'bg-brand-success text-white shadow-sm'
+                : 'bg-brand-successLight text-brand-success border border-brand-success/20'
+                }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${statusFilter === 'ready' ? 'bg-white' : 'bg-brand-success'}`}></span>
+              Ready
+            </button>
+            <button
+              onClick={() => setStatusFilter('po')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === 'po'
+                ? 'bg-brand-warning text-white shadow-sm'
+                : 'bg-brand-warningLight text-brand-warning border border-brand-warning/20'
+                }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${statusFilter === 'po' ? 'bg-white' : 'bg-brand-warning'}`}></span>
+              PO
+            </button>
           </div>
         </div>
       </div>
 
-      {/* All Products - Premium Header */}
-      <div className="px-1 sm:px-3 md:px-4">
-        <div className="flex flex-col space-y-2 mb-3 sm:mb-4">
-          <div className="flex items-center justify-between px-1 sm:px-0 flex-wrap gap-2">
-            <h2 className="text-xl font-bold text-gray-900">
-              {selectedCategory === 'all' ? 'Semua Produk' : categories.find(c => c.id === selectedCategory)?.name}
-            </h2>
-
-            {/* Premium Product Count Badge */}
-            <div className="flex items-center space-x-2 px-3 py-1.5 bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 rounded-xl border border-brand-accent/20">
-              <div className="w-2 h-2 bg-brand-accent rounded-full animate-pulse" />
-              <span className="text-sm font-semibold text-brand-primary">
-                {filteredProducts.length} produk tersedia
-              </span>
-            </div>
+      {/* All Products - Elegant Section */}
+      <div className="px-3 sm:px-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-display text-lg font-semibold text-gray-900">
+            {selectedCategory === 'all' ? 'Semua Koleksi' : categories.find(c => c.id === selectedCategory)?.name}
+          </h2>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-brand-surfaceAlt rounded-lg border border-brand-border">
+            <div className="w-1.5 h-1.5 bg-brand-accent rounded-full animate-pulse"></div>
+            <span className="text-xs font-medium text-brand-primary">{filteredProducts.length} produk</span>
           </div>
-
         </div>
-
+        {/* Product Grid */}
         {isSearching ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
-            <h3 className="text-lg font-semibold text-gray-600 mb-2">Mencari produk...</h3>
-            <p className="text-gray-500">Mohon tunggu sebentar</p>
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-brand-accent border-t-transparent mx-auto mb-4"></div>
+            <p className="text-gray-500 text-sm">Mencari produk...</p>
           </div>
         ) : currentProducts.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
-              <Search className="w-12 h-12 mx-auto" />
+          <div className="text-center py-12 bg-white rounded-xl shadow-elegant">
+            <div className="w-16 h-16 bg-brand-surfaceAlt rounded-full flex items-center justify-center mx-auto mb-4">
+              <Search className="w-8 h-8 text-brand-border" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-600 mb-2">
-              {showSearchResults ? 'Tidak ada hasil pencarian' : 'Produk tidak ditemukan'}
+            <h3 className="font-display text-lg text-gray-700 mb-1">
+              {showSearchResults ? 'Tidak ada hasil' : 'Produk tidak ditemukan'}
             </h3>
-            <p className="text-gray-500">
-              {showSearchResults
-                ? 'Coba kata kunci pencarian lain atau filter berbeda'
-                : 'Coba kata kunci lain atau pilih kategori berbeda'
-              }
+            <p className="text-gray-400 text-sm">
+              {showSearchResults ? 'Coba kata kunci lain' : 'Pilih kategori berbeda'}
             </p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-0.5 sm:gap-2 md:grid-cols-3 md:gap-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
               {currentProducts.map((product) => (
                 <ProductCard
                   key={product.id}
@@ -843,14 +796,11 @@ const HomePage: React.FC<HomePageProps> = ({
             {/* Infinite Scroll Trigger */}
             {hasMore && (
               <div className="mt-6 text-center">
-                <div
-                  ref={loadMoreRef}
-                  className="inline-flex items-center justify-center p-4"
-                >
+                <div ref={loadMoreRef} className="inline-flex items-center justify-center p-4">
                   {loading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500"></div>
-                      <span className="text-gray-600 text-sm">Memuat lebih banyak produk...</span>
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-brand-accent border-t-transparent"></div>
+                      <span className="text-gray-500 text-sm">Memuat...</span>
                     </div>
                   ) : (
                     <div className="h-1"></div>
@@ -862,22 +812,13 @@ const HomePage: React.FC<HomePageProps> = ({
         )}
       </div>
 
-      {/* User Role Info */}
+      {/* User Role Indicator - Subtle */}
       {user && (
-        <div className="fixed bottom-24 right-4 bg-white rounded-lg shadow-lg p-3 border-l-4 border-pink-500">
-          <div className="text-xs text-gray-600">
-            {user.role === 'reseller' ? (
-              <div className="flex items-center space-x-1">
-                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                <span>Harga Reseller Aktif</span>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-1">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                <span>Harga Retail</span>
-              </div>
-            )}
-          </div>
+        <div className="fixed bottom-20 right-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-elegant px-3 py-2 border border-brand-border">
+          <span className="text-[10px] font-medium text-gray-400 uppercase">Login:</span>
+          <span className="text-xs font-semibold text-brand-primary ml-1">
+            {user.role === 'reseller' ? 'Reseller' : user.role === 'customer' ? 'Customer' : user.role}
+          </span>
         </div>
       )}
     </div>

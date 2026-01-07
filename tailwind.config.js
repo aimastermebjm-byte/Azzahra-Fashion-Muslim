@@ -1,58 +1,67 @@
 /** @type {import('tailwindcss').Config} */
-const modernNavy = {
-  50: '#F4F6FB',
-  100: '#E4E8F5',
-  200: '#C8D0EA',
-  300: '#A0B2D8',
-  400: '#5B6B9B',
-  500: '#344066',
-  600: '#0F172A',
-  700: '#0B1220',
-  800: '#080C16',
-  900: '#05070D'
+
+// Elegant Rose Gold Palette
+const roseGold = {
+  50: '#FDF8F5',
+  100: '#FAF0EA',
+  200: '#F5DFD3',
+  300: '#EBCAB8',
+  400: '#D4A574',
+  500: '#C4956A',
+  600: '#A87B52',
+  700: '#8B6344',
+  800: '#6E4D36',
+  900: '#513829'
 };
 
-const modernGold = {
-  50: '#FFF9F0',
-  100: '#FDEFD8',
-  200: '#F9DFAF',
-  300: '#F5CE85',
-  400: '#F0BC5C',
-  500: '#D6A354',
-  600: '#B8873D',
-  700: '#8C642B',
-  800: '#62441C',
-  900: '#3B260F'
+// Deep Burgundy/Rose for text & accents
+const deepRose = {
+  50: '#FCF5F7',
+  100: '#F8E8EC',
+  200: '#F0D0D9',
+  300: '#E4A9B8',
+  400: '#D17B92',
+  500: '#8B4B6B',
+  600: '#743F5A',
+  700: '#5D3248',
+  800: '#472537',
+  900: '#301926'
 };
 
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        'display': ['Playfair Display', 'Georgia', 'serif'],
+        'sans': ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        'price': ['DM Sans', 'Inter', 'sans-serif']
+      },
       animation: {
         'fade-in-scale': 'fadeInScale 0.6s ease-out',
         'slide-up': 'slideUp 0.8s ease-out 0.2s both',
         'fade-in': 'fadeIn 0.8s ease-out both',
         'shimmer': 'shimmer 2s linear infinite',
         'pulse': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'float': 'float 3s ease-in-out infinite',
       },
       keyframes: {
         fadeInScale: {
-          '0%': { 
+          '0%': {
             opacity: '0',
             transform: 'scale(0.8)'
           },
-          '100%': { 
+          '100%': {
             opacity: '1',
             transform: 'scale(1)'
           }
         },
         slideUp: {
-          '0%': { 
+          '0%': {
             opacity: '0',
             transform: 'translateY(30px)'
           },
-          '100%': { 
+          '100%': {
             opacity: '1',
             transform: 'translateY(0)'
           }
@@ -64,38 +73,68 @@ export default {
         shimmer: {
           '0%': { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(300%)' }
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' }
         }
       },
       colors: {
         brand: {
+          // Primary - Dark Navy/Black
           primary: '#0F172A',
           primaryDark: '#070B16',
-          surface: '#F7F4EE',
+          primaryLight: '#1E293B',
+
+          // Surface & Background - Soft Cream
+          surface: '#FDF8F5',
+          surfaceAlt: '#FAF0EA',
           card: '#FFFFFF',
-          border: '#E2DED5',
-          accent: '#D6A354',
-          accentMuted: '#F4E7D3',
-          success: '#2D8A5D',
-          warning: '#C35627',
-          info: '#1C2A44'
+
+          // Border
+          border: '#E8E0D8',
+          borderDark: '#D4C8BC',
+
+          // Accent - Gold
+          accent: '#C9A96E',
+          accentDark: '#A8894F',
+          accentLight: '#E5D4A8',
+          accentMuted: '#F5EDD8',
+
+          // Semantic
+          success: '#4A8B6B',
+          successLight: '#E8F5EE',
+          warning: '#D4874A',
+          warningLight: '#FFF5EB',
+          error: '#C45454',
+          errorLight: '#FDEDED',
+          info: '#5A7B8B'
         },
-        purple: modernNavy,
-        pink: modernGold,
+        rose: deepRose,
+        gold: roseGold,
         slate: {
-          950: '#02040a'
+          950: '#1a1a1a'
         }
       },
       boxShadow: {
-        'brand-card': '0 20px 45px rgba(15, 23, 42, 0.08)'
+        'brand-card': '0 4px 20px rgba(139, 75, 107, 0.08)',
+        'brand-card-hover': '0 12px 40px rgba(139, 75, 107, 0.15)',
+        'brand-button': '0 4px 14px rgba(212, 165, 116, 0.35)',
+        'elegant': '0 2px 15px rgba(0, 0, 0, 0.05)',
+        'elegant-lg': '0 8px 30px rgba(0, 0, 0, 0.08)'
       },
       borderColor: {
-        'brand-border': '#E2DED5'
+        'brand-border': '#F5DFD3'
       },
       backgroundImage: {
-        'brand-gradient': 'linear-gradient(135deg, #0F172A 0%, #1C2A44 55%, #D6A354 100%)',
-        'brand-surface': 'linear-gradient(180deg, #F7F4EE 0%, #FFFFFF 100%)'
+        'brand-gradient': 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #C9A96E 100%)',
+        'brand-gradient-dark': 'linear-gradient(135deg, #070B16 0%, #0F172A 100%)',
+        'brand-gradient-gold': 'linear-gradient(135deg, #C9A96E 0%, #A8894F 100%)',
+        'brand-surface': 'linear-gradient(180deg, #FDF8F5 0%, #FFFFFF 100%)',
+        'hero-pattern': 'radial-gradient(circle at 30% 20%, rgba(201, 169, 110, 0.1) 0%, transparent 50%)'
       }
     }
   },
   plugins: [],
 };
+
