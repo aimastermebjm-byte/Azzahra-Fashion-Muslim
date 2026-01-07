@@ -105,18 +105,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   const getStatusBadge = () => {
     // Ready/PO badge with TOTAL stock count from all variants
-    const totalStock = getTotalVariantStock();
+
 
     // Use status field with fallback to 'ready'
     const displayStatus = product.status || 'ready';
     const isReady = displayStatus === 'ready';
 
     return (
-      <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 backdrop-blur-md shadow-sm text-[10px] sm:text-xs font-bold ${isReady
-        ? 'bg-emerald-500/95 text-white border border-emerald-400/50'
-        : 'bg-amber-500/95 text-white border border-amber-400/50'
-        }`}>
-        {isReady ? 'Ready' : 'PO'} · {totalStock}
+      <div className={`px-3 py-1 bg-white/95 backdrop-blur-sm border border-[#D4AF37]/50 text-[#D4AF37] text-[10px] font-bold uppercase tracking-wider rounded-full shadow-sm`}>
+        {isReady ? 'READY STOCK' : 'PRE ORDER'}
       </div>
     );
   };
@@ -128,16 +125,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
     if (isThisProductInFlashSale) {
       return (
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <div className="flex items-center space-x-2">
-            <span className="text-base sm:text-lg font-bold text-red-600">
+            <span className="text-base sm:text-lg font-bold text-[#D4AF37]">
               Rp {product.flashSalePrice.toLocaleString('id-ID')}
             </span>
-            <span className="bg-red-100 text-red-600 text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+            <span className="bg-red-50 text-red-600 text-[10px] font-medium px-1.5 py-0.5 rounded border border-red-100">
               -{Math.round((1 - product.flashSalePrice / (product.originalRetailPrice || product.retailPrice)) * 100)}%
             </span>
           </div>
-          <div className="text-xs sm:text-sm text-gray-500 line-through">
+          <div className="text-xs text-gray-400 line-through">
             Rp {(product.originalRetailPrice || product.retailPrice).toLocaleString('id-ID')}
           </div>
         </div>
@@ -146,18 +143,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
     return (
       <div className="space-y-1 relative">
-        <div className="text-base sm:text-lg font-bold text-pink-600">
+        <div className="text-base sm:text-lg font-bold text-[#D4AF37]">
           Rp {product.retailPrice.toLocaleString('id-ID')}
         </div>
         <div className="relative">
           {user?.role === 'reseller' ? (
-            <div className="text-xs sm:text-sm text-pink-600">
+            <div className="text-xs font-medium text-brand-primary/80">
               Reseller: Rp {product.resellerPrice.toLocaleString('id-ID')}
             </div>
           ) : (
             <button
               onClick={handleResellerClick}
-              className="text-xs sm:text-sm text-pink-600 hover:text-pink-700 font-medium transition-colors flex items-center space-x-1"
+              className="text-xs font-medium text-gray-400 hover:text-[#D4AF37] transition-colors flex items-center space-x-1"
             >
               <span>Reseller: Rp {product.resellerPrice.toLocaleString('id-ID')}</span>
               <ChevronUp className={`w-3 h-3 transition-transform ${showResellerMenu ? 'rotate-180' : ''}`} />
@@ -187,112 +184,89 @@ const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <>
       <div
-        className={`bg-white shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 ${isFeatured ? 'ring-2 ring-yellow-400' : ''
+        className={`relative bg-white rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-brand-border/20 group hover:shadow-[0_10px_30px_rgba(139,75,107,0.1)] transition-all duration-300 cursor-pointer ${isFeatured ? 'ring-1 ring-brand-accent shadow-brand-accent/20' : ''
           }`}
         onClick={() => onProductClick(product)}
       >
-        <div className="relative aspect-[3/4] bg-white overflow-hidden">
+        {/* Image Area */}
+        <div className="relative aspect-[3/4] bg-gray-50 overflow-hidden">
           <img
             src={product.image || product.images?.[0] || '/placeholder-product.jpg'}
             alt={product.name}
-            className="w-full h-full object-cover hover:scale-110 transition-transform duration-500 ease-out"
+            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             onClick={handleImageClick}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
               const parent = target.parentElement;
               if (parent) {
-                parent.classList.remove('bg-gray-50');
-                parent.classList.add('bg-gradient-to-br', 'from-blue-100', 'to-purple-100');
-                parent.innerHTML = '<div class="flex items-center justify-center h-full w-full text-gray-400 text-center p-4 flex-col"><div class="text-3xl mb-2">📦</div><div class="text-xs font-medium">No Image</div></div>';
+                parent.classList.add('bg-brand-surface');
+                parent.innerHTML = '<div class="flex flex-col items-center justify-center h-full w-full text-brand-border"><span class="text-2xl">📦</span></div>';
               }
             }}
           />
 
-          {/* Status Badge - Back to Top Left */}
-          <div className="absolute top-1 left-1 sm:top-1.5 sm:left-1.5">
+          {/* Status Badge - Luxury Gold Pill */}
+          <div className="absolute top-2 left-2 sm:top-3 sm:left-3">
             {getStatusBadge()}
           </div>
 
-          {/* Zoom Button */}
-          <div className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Floating Action Buttons (Zoom & Cart) */}
+          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
             <button
               onClick={handleImageZoom}
-              type="button"
-              className="bg-black bg-opacity-60 text-white p-1 sm:p-1.5 rounded-full hover:bg-opacity-80 transition-all shadow-lg"
-              title="Klik untuk zoom (Shift+Klik gambar)"
-              aria-label="Zoom gambar"
+              className="w-8 h-8 rounded-full bg-white/90 backdrop-blur text-gray-600 flex items-center justify-center shadow-sm hover:bg-brand-primary hover:text-white transition-colors"
+              title="Zoom"
             >
-              <ZoomIn className="w-3 h-3 sm:w-4 sm:h-4" />
+              <ZoomIn className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Featured Product Star - Moved to Top Right */}
-          {isFeatured && (
-            <div className="absolute top-8 right-1 sm:top-10 sm:right-1.5 bg-yellow-400 text-white p-1 sm:p-1.5 rounded-full shadow-lg">
-              <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
-            </div>
-          )}
-          <div className="absolute bottom-1 right-1 sm:bottom-1.5 sm:right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={handleAddToCart}
-              className="bg-pink-500 text-white p-1.5 sm:p-2 rounded-full hover:bg-pink-600 transition-colors shadow-lg"
-              type="button"
-              aria-label="Tambah ke keranjang"
-              title="Tambah ke keranjang"
-            >
-              <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4" />
-            </button>
-          </div>
-
-          {/* Zoom Hint - Hide on mobile */}
-          <div className="absolute bottom-1 left-1 sm:bottom-1.5 sm:left-1.5 bg-black bg-opacity-60 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block">
-            Shift+Klik untuk zoom
-          </div>
+          {/* Main Floating Cart Button - Gold Circle */}
+          <button
+            onClick={handleAddToCart}
+            className="absolute bottom-3 right-3 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#BF953F] via-[#FCF6BA] to-[#B38728] text-brand-primary shadow-[0_4px_15px_rgba(191,149,63,0.3)] flex items-center justify-center transform translate-y-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:scale-110 active:scale-95 z-10"
+            title="Add to Cart"
+          >
+            <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
+          </button>
         </div>
 
-        <div className="p-2 sm:p-2.5 md:p-3">
-          <h3 className="font-semibold text-sm sm:text-base text-gray-800 mb-2 sm:mb-3 line-clamp-2 group-hover:text-pink-600 transition-colors">
+        {/* Product Info - Minimalist */}
+        <div className="p-3 sm:p-4">
+          <h3 className="font-display text-base sm:text-lg font-medium text-brand-primary mb-1 line-clamp-2 leading-tight group-hover:text-brand-accent transition-colors">
             {product.name}
           </h3>
 
-          {getPrice()}
+          {/* Price Section */}
+          <div className="mt-2">
+            {getPrice()}
+          </div>
         </div>
       </div>
 
-      {/* Zoom Modal */}
       {showZoomModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90"
-          onClick={() => setShowZoomModal(false)}
-        >
-          <div className="relative max-w-4xl max-h-full p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-sm" onClick={() => setShowZoomModal(false)}>
+          {/* Modal Layout remains same, just ensuring z-index is high */}
+          <div className="relative w-full h-full flex items-center justify-center p-4">
             <button
               onClick={() => setShowZoomModal(false)}
-              className="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors z-10"
-              type="button"
-              aria-label="Close zoom modal"
-              title="Tutup zoom modal"
+              className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors"
             >
-              <X className="w-6 h-6" />
+              <X className="w-8 h-8" />
             </button>
 
             <div
-              className="bg-white rounded-lg p-2 max-w-full max-h-[80vh] overflow-hidden relative"
-              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-2xl aspect-[3/4] sm:aspect-auto sm:h-[80vh] bg-transparent flex items-center justify-center overflow-hidden"
+              onClick={e => e.stopPropagation()}
               onWheel={handleZoomWheel}
             >
               <img
                 ref={imageRef}
                 src={product.image || product.images?.[0] || '/placeholder-product.jpg'}
                 alt={product.name}
-                className={`max-w-full max-h-full object-contain cursor-move transition-transform duration-200 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'
-                  }`}
-                style={{
-                  transform: `translate(${zoomPosition.x}px, ${zoomPosition.y}px) scale(${zoomScale})`,
-                  transformOrigin: 'center'
-                }}
-                draggable={false}
+                className={`max-w-full max-h-full object-contain transition-transform duration-100 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                style={{ transform: `translate(${zoomPosition.x}px, ${zoomPosition.y}px) scale(${zoomScale})` }}
                 onMouseDown={handleDragStart}
                 onMouseMove={handleDragMove}
                 onMouseUp={handleDragEnd}
@@ -300,14 +274,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
               />
             </div>
 
-            <div className="text-center mt-4 text-white">
-              <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
-              <p className="text-sm text-gray-300">
-                🔍 Scroll untuk zoom • Drag untuk geser • Klik di luar gambar untuk menutup
-              </p>
-              <p className="text-xs text-gray-400 mt-2">
-                Zoom: {(zoomScale * 100).toFixed(0)}%
-              </p>
+            <div className="absolute bottom-10 left-0 right-0 text-center text-white/50 text-sm pointer-events-none">
+              Scroll/Pinch to Zoom • Drag to Pan
             </div>
           </div>
         </div>
