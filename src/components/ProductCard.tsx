@@ -105,7 +105,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   const getStatusBadge = () => {
     // Ready/PO badge with TOTAL stock count from all variants
-
+    const totalStock = getTotalVariantStock();
 
     // Use status field with fallback to 'ready'
     const displayStatus = product.status || 'ready';
@@ -113,7 +113,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
     return (
       <div className={`px-3 py-1 bg-white/95 backdrop-blur-sm border border-[#D4AF37]/50 text-[#D4AF37] text-[10px] font-bold uppercase tracking-wider rounded-full shadow-sm`}>
-        {isReady ? 'READY STOCK' : 'PRE ORDER'}
+        {isReady ? 'READY STOCK' : 'PRE ORDER'} ({totalStock})
       </div>
     );
   };
