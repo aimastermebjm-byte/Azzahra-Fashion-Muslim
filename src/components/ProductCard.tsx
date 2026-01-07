@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ShoppingCart, ChevronUp, MessageCircle, Star, X, ZoomIn } from 'lucide-react';
+import { ChevronUp, MessageCircle, X, ZoomIn } from 'lucide-react';
 import { Product } from '../types';
 
 interface ProductCardProps {
@@ -122,11 +122,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
     // Use the isFlashSale prop passed from parent (HomePage already knows which products are flash sale)
     const isThisProductInFlashSale = isFlashSale && product.flashSalePrice && product.flashSalePrice > 0;
 
-
     if (isThisProductInFlashSale) {
       return (
-        <div className="space-y-0.5">
-          <div className="flex items-center space-x-2">
+        <div className="space-y-0.5 text-left">
+          <div className="flex items-center gap-2">
             <span className="text-base sm:text-lg font-bold text-[#D4AF37]">
               Rp {product.flashSalePrice.toLocaleString('id-ID')}
             </span>
@@ -142,37 +141,45 @@ const ProductCard: React.FC<ProductCardProps> = ({
     }
 
     return (
-      <div className="space-y-1 relative">
+      <div className="space-y-1.5 text-left">
         <div className="text-base sm:text-lg font-bold text-[#D4AF37]">
           Rp {product.retailPrice.toLocaleString('id-ID')}
         </div>
+
+        {/* Reseller Price Tag */}
         <div className="relative">
           {user?.role === 'reseller' ? (
-            <div className="text-xs font-medium text-brand-primary/80">
-              Reseller: Rp {product.resellerPrice.toLocaleString('id-ID')}
+            <div className="flex items-center gap-1.5 text-xs text-brand-primary/80 bg-brand-surface/50 py-1 px-2 rounded-lg w-fit">
+              <span className="font-medium opacity-70">Reseller:</span>
+              <span className="font-bold">Rp {product.resellerPrice.toLocaleString('id-ID')}</span>
             </div>
           ) : (
             <button
               onClick={handleResellerClick}
-              className="text-xs font-medium text-gray-400 hover:text-[#D4AF37] transition-colors flex items-center space-x-1"
+              className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#D4AF37] transition-colors"
             >
-              <span>Reseller: Rp {product.resellerPrice.toLocaleString('id-ID')}</span>
+              <span>Reseller Price & Info</span>
               <ChevronUp className={`w-3 h-3 transition-transform ${showResellerMenu ? 'rotate-180' : ''}`} />
             </button>
           )}
 
           {/* Dropdown Menu */}
           {showResellerMenu && user?.role !== 'reseller' && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-              <button
-                onClick={handleWhatsAppClick}
-                className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2 rounded-t-lg"
-              >
-                <MessageCircle className="w-4 h-4 text-green-600" />
-                <span>Info Reseller via WhatsApp</span>
-              </button>
-              <div className="text-xs text-gray-500 px-3 pb-2 text-center">
-                Hubungi admin untuk harga reseller
+            <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-20 overflow-hidden">
+              <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 text-[10px] text-gray-500 font-medium uppercase tracking-wider">
+                Harga Member
+              </div>
+              <div className="p-3">
+                <div className="text-sm font-bold text-brand-primary mb-2">
+                  Rp {product.resellerPrice.toLocaleString('id-ID')}
+                </div>
+                <button
+                  onClick={handleWhatsAppClick}
+                  className="w-full px-2 py-1.5 text-xs bg-[#25D366] text-white rounded hover:bg-[#20bd5a] transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <MessageCircle className="w-3 h-3" />
+                  <span>Join Reseller</span>
+                </button>
               </div>
             </div>
           )}
@@ -211,7 +218,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             {getStatusBadge()}
           </div>
 
-          {/* Floating Action Buttons (Zoom & Cart) */}
+          {/* Floating Action Buttons (Zoom) - Cart Removed */}
           <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
             <button
               onClick={handleImageZoom}
@@ -221,46 +228,24 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <ZoomIn className="w-4 h-4" />
             </button>
           </div>
-
-          {/* Main Floating Cart Button - Gold Circle (Desktop Only) */}
-          <button
-            onClick={handleAddToCart}
-            className="hidden sm:flex absolute bottom-3 right-3 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#BF953F] via-[#FCF6BA] to-[#B38728] text-brand-primary shadow-[0_4px_15px_rgba(191,149,63,0.3)] items-center justify-center transform translate-y-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:scale-110 active:scale-95 z-10"
-            title="Add to Cart"
-          >
-            <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
-          </button>
         </div>
 
-        {/* Product Info - Minimalist */}
-        <div className="p-3 sm:p-4">
-          <div className="flex justify-between items-start gap-2">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-display text-base sm:text-lg font-medium text-brand-primary mb-1 line-clamp-2 leading-tight group-hover:text-brand-accent transition-colors">
-                {product.name}
-              </h3>
+        {/* Product Info - Minimalist & Left Aligned */}
+        <div className="p-3 sm:p-4 text-left">
+          <h3 className="font-display text-base sm:text-lg font-medium text-brand-primary mb-1 line-clamp-2 leading-tight group-hover:text-brand-accent transition-colors">
+            {product.name}
+          </h3>
 
-              {/* Price Section */}
-              <div className="mt-2">
-                {getPrice()}
-              </div>
-            </div>
-
-            {/* Mobile Cart Button - Integrated next to info */}
-            <button
-              onClick={handleAddToCart}
-              className="sm:hidden flex-none w-9 h-9 rounded-full bg-brand-primary text-brand-accent flex items-center justify-center shadow-md active:scale-95"
-              title="Add to Cart"
-            >
-              <ShoppingCart className="w-4 h-4" />
-            </button>
+          {/* Price Section */}
+          <div className="pt-1">
+            {getPrice()}
           </div>
         </div>
       </div>
 
       {showZoomModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-sm" onClick={() => setShowZoomModal(false)}>
-          {/* Modal Layout remains same, just ensuring z-index is high */}
+          {/* Modal Layout */}
           <div className="relative w-full h-full flex items-center justify-center p-4">
             <button
               onClick={() => setShowZoomModal(false)}
