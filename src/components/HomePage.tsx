@@ -410,11 +410,15 @@ const HomePage: React.FC<HomePageProps> = ({
             </button>
 
             {/* Centered Brand Name - Gold */}
-            <div className="text-center">
-              <h1 className="font-display text-lg sm:text-xl font-semibold text-brand-accent tracking-wide">
+            {/* Centered Brand Name - Luxury Gold */}
+            <div className="text-center relative">
+              {/* Glow Effect Layer behind text */}
+              <div className="absolute inset-0 bg-brand-accent/20 blur-xl rounded-full opacity-30 transform scale-150"></div>
+
+              <h1 className="relative font-display text-2xl sm:text-3xl font-bold tracking-wider bg-gradient-to-tr from-[#BF953F] via-[#FCF6BA] to-[#B38728] bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(212,175,55,0.5)] transform hover:scale-105 transition-transform duration-500 cursor-pointer">
                 AZZAHRA
               </h1>
-              <p className="text-[9px] sm:text-[10px] text-white/70 tracking-widest -mt-0.5">
+              <p className="relative text-[9px] sm:text-[10px] text-[#F0D77A] tracking-[0.4em] font-sans uppercase mt-0.5 ml-1 opacity-90">
                 FASHION MUSLIM
               </p>
             </div>
