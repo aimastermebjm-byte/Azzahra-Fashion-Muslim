@@ -747,17 +747,7 @@ const HomePage: React.FC<HomePageProps> = ({
           )}
         </div>
 
-        {/* User Role Indicator - Subtle */}
-        {
-          user && (
-            <div className="fixed bottom-20 right-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-elegant px-3 py-2 border border-brand-border">
-              <span className="text-[10px] font-medium text-gray-400 uppercase">Login:</span>
-              <span className="text-xs font-semibold text-brand-primary ml-1">
-                {user.role === 'reseller' ? 'Reseller' : user.role === 'customer' ? 'Customer' : user.role}
-              </span>
-            </div>
-          )
-        }
+
       </div>
     </div>
   );
