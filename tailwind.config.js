@@ -95,10 +95,10 @@ export default {
           border: '#E8E0D8',
           borderDark: '#D4C8BC',
 
-          // Accent - Gold
-          accent: '#C9A96E',
-          accentDark: '#A8894F',
-          accentLight: '#E5D4A8',
+          // Accent - Vibrant Gold
+          accent: '#D4AF37',
+          accentDark: '#B8962E',
+          accentLight: '#F0D77A',
           accentMuted: '#F5EDD8',
 
           // Semantic
