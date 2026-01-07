@@ -641,8 +641,8 @@ const HomePage: React.FC<HomePageProps> = ({
                   setActiveTab(category.id === 'all' ? 'all' : 'terbaru');
                 }}
                 className={`flex items-center space-x-1.5 px-6 py-2.5 rounded-full text-sm font-display tracking-wide transition-all whitespace-nowrap border ${isSelected
-                    ? 'bg-black border-brand-accent text-brand-accent shadow-lg shadow-brand-accent/10' // Active: Black + Gold
-                    : 'bg-white border-brand-accent/30 text-gray-500 hover:border-brand-accent' // Inactive: White + Gold Tint
+                  ? 'bg-black border-brand-accent text-brand-accent shadow-lg shadow-brand-accent/10' // Active: Black + Gold
+                  : 'bg-white border-brand-accent/30 text-gray-500 hover:border-brand-accent' // Inactive: White + Gold Tint
                   }`}
               >
                 <span>{category.name}</span>
@@ -668,7 +668,7 @@ const HomePage: React.FC<HomePageProps> = ({
               className="flex items-center space-x-2 px-5 py-2 bg-gradient-to-r from-[#D4AF37] to-[#E6C665] text-brand-primary font-display font-medium text-sm rounded-full shadow-md shadow-brand-accent/20 active:scale-95 transition-all"
             >
               <ArrowDownUp className="w-4 h-4 text-brand-primary/80" />
-              <span>{sortBy === 'terbaru' ? 'Urutkan' : 'Termurah'}</span>
+              <span>{sortBy === 'terbaru' ? 'Terbaru' : 'Termurah'}</span>
             </button>
           </div>
 
@@ -679,8 +679,8 @@ const HomePage: React.FC<HomePageProps> = ({
                 key={status}
                 onClick={() => setStatusFilter(statusFilter === status ? 'all' : status)}
                 className={`px-6 py-2 rounded-full text-sm font-display tracking-wide transition-all border ${statusFilter === status
-                    ? 'bg-white border-brand-accent text-brand-primary shadow-sm ring-1 ring-brand-accent/20'
-                    : 'bg-gray-50/50 border-gray-200 text-gray-400 hover:border-brand-accent/30'
+                  ? 'bg-white border-brand-accent text-brand-primary shadow-sm ring-1 ring-brand-accent/20'
+                  : 'bg-gray-50/50 border-gray-200 text-gray-400 hover:border-brand-accent/30'
                   }`}
               >
                 {status === 'ready' ? 'Ready Stock' : 'Pre-Order'}
