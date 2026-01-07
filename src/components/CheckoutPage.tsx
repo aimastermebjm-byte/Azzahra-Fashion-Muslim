@@ -1194,17 +1194,23 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 ) : (
                   <div className="space-y-3">
                     {paymentMethods.map((method) => (
-                      <label key={method.id} className={`flex items - center gap - 3 rounded - xl border - 2 px - 4 py - 3 transition cursor - pointer hover: shadow - sm ${formData.paymentMethodId === method.id ? 'border-[#EBC66B] bg-yellow-50/30 shadow-sm' : 'border-gray-200 hover:border-yellow-200'} `}>
+                      <label key={method.id} className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 cursor-pointer relative overflow-hidden group ${formData.paymentMethodId === method.id
+                        ? 'bg-gradient-to-br from-white to-[#FEFAE0] shadow-[0_0_15px_rgba(212,175,55,0.25)]'
+                        : 'bg-white border border-gray-100 hover:border-[#D4AF37]/30 hover:shadow-md'
+                        }`}>
+                        <div className={`flex items-center justify-center h-5 w-5 rounded-full border transition-all duration-300 ${formData.paymentMethodId === method.id ? 'border-[#B8860B] bg-[#B8860B]' : 'border-gray-300 group-hover:border-[#D4AF37]'}`}>
+                          {formData.paymentMethodId === method.id && <div className="h-2 w-2 rounded-full bg-white" />}
+                        </div>
                         <input
                           type="radio"
                           name="paymentMethodId"
                           value={method.id}
                           checked={formData.paymentMethodId === method.id}
                           onChange={handleInputChange}
-                          className="h-4 w-4 border-gray-300 text-yellow-600 focus:ring-yellow-500"
+                          className="sr-only"
                         />
                         <div>
-                          <p className="text-sm font-bold text-gray-900">{method.name}</p>
+                          <p className={`text-sm font-bold transition-colors duration-300 ${formData.paymentMethodId === method.id ? 'text-[#996515]' : 'text-gray-900 group-hover:text-[#996515]'}`}>{method.name}</p>
                           <p className="text-xs text-slate-500">Metode pembayaran toko</p>
                         </div>
                       </label>
