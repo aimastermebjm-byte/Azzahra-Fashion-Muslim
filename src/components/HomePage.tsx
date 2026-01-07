@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Search, ShoppingCart, Zap, X, Star } from 'lucide-react';
+import FeaturedCarouselItem from './FeaturedCarouselItem';
+import { Search, ShoppingCart, Zap, X, Star, ChevronRight } from 'lucide-react';
 import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
@@ -423,10 +424,10 @@ const HomePage: React.FC<HomePageProps> = ({
                 onClick={() => setShowSearch(!showSearch)}
                 className="p-2.5 transition-all group active:scale-95"
               >
-                <Search className={`w-6 h-6 transition-all ${showSearch
+                <Search className={`w - 6 h - 6 transition - all ${showSearch
                   ? 'text-brand-accent drop-shadow-[0_0_8px_rgba(212,175,55,0.8)]'
                   : 'text-brand-accent/70 group-hover:text-brand-accent group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]'
-                  }`} />
+                  } `} />
               </button>
 
               {/* Cart Button */}
@@ -448,7 +449,7 @@ const HomePage: React.FC<HomePageProps> = ({
           {showSearch && (
             <div className="mt-3 relative group animate-in slide-in-from-top-2 duration-300">
               <div className="absolute left-3.5 top-1/2 -translate-y-1/2 z-10">
-                <Search className={`w-4 h-4 transition-all ${searchQuery ? 'text-brand-primary' : 'text-gray-400'}`} />
+                <Search className={`w - 4 h - 4 transition - all ${searchQuery ? 'text-brand-primary' : 'text-gray-400'} `} />
               </div>
               <input
                 type="text"
@@ -509,7 +510,7 @@ const HomePage: React.FC<HomePageProps> = ({
                   const discountPercentage = Math.round(((flashProduct.originalRetailPrice || flashProduct.retailPrice) - flashProduct.flashSalePrice) / (flashProduct.originalRetailPrice || flashProduct.retailPrice) * 100);
                   return (
                     <div
-                      key={`flash-${flashProduct.id}`}
+                      key={`flash - ${flashProduct.id} `}
                       onClick={() => onProductClick(flashProduct)}
                       className="bg-white/15 rounded-xl p-2.5 backdrop-blur-sm hover:bg-white/25 transition-all cursor-pointer group"
                     >
@@ -566,46 +567,52 @@ const HomePage: React.FC<HomePageProps> = ({
 
       {/* Flash Sale Countdown Display removed - using top section only */}
 
-      {/* Featured Products - Elegant Header */}
-      <div className="px-3 sm:px-4 mb-4">
-        <div className="flex items-center space-x-2 mb-3">
-          <div className="w-8 h-8 bg-brand-accent/20 rounded-lg flex items-center justify-center">
-            <Star className="w-4 h-4 text-brand-accent fill-current" />
+      {/* Featured Products - Luxury Carousel */}
+      <div className="px-3 sm:px-4 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <div className="w-1 h-6 bg-brand-accent rounded-full"></div>
+            <h2 className="font-display text-xl font-bold text-brand-primary tracking-wide">Koleksi Unggulan</h2>
           </div>
-          <h2 className="font-display text-lg font-semibold text-gray-900">Produk Unggulan</h2>
+          <button
+            onClick={() => {
+              setSelectedCategory('all');
+              setActiveTab('terbaru');
+            }}
+            className="text-xs text-brand-accent hover:text-brand-accent/80 font-medium tracking-wide flex items-center"
+          >
+            Lihat Semua <ChevronRight className="w-3 h-3 ml-1" />
+          </button>
         </div>
 
-        {/* Loading skeleton for featured products */}
+        {/* Loading skeleton */}
         {loading ? (
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            {[...Array(2)].map((_, index) => (
-              <div key={`skeleton-${index}`} className="bg-white rounded-xl shadow-elegant overflow-hidden">
-                <div className="w-full aspect-[3/4] bg-brand-border animate-pulse"></div>
-                <div className="p-3">
-                  <div className="h-4 bg-brand-border rounded animate-pulse mb-2"></div>
-                  <div className="h-4 bg-brand-border rounded w-2/3 animate-pulse"></div>
+          <div className="flex overflow-x-auto space-x-4 pb-4 scrollbar-none">
+            {[...Array(3)].map((_, index) => (
+              <div key={`skeleton - ${index} `} className="min-w-[280px] bg-white rounded-xl shadow-sm overflow-hidden border border-brand-border/50">
+                <div className="w-full aspect-[3/4] bg-brand-border/20 animate-pulse"></div>
+                <div className="p-4">
+                  <div className="h-4 bg-brand-border/20 rounded animate-pulse mb-2 w-3/4"></div>
+                  <div className="h-4 bg-brand-border/20 rounded animate-pulse w-1/2"></div>
                 </div>
               </div>
             ))}
           </div>
         ) : featuredProducts.length > 0 ? (
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="flex overflow-x-auto gap-4 pb-6 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none snap-x snap-mandatory">
             {featuredProducts.map((product) => (
-              <ProductCard
+              <FeaturedCarouselItem
                 key={`featured-${product.id}`}
                 product={product}
                 onProductClick={onProductClick}
                 onAddToCart={handleAddToCart}
-                user={user}
-                isFeatured={true}
-                isFlashSale={product.isFlashSale}
               />
             ))}
           </div>
         ) : (
-          <div className="text-center py-10 bg-white rounded-xl shadow-elegant">
-            <div className="w-14 h-14 bg-brand-surfaceAlt rounded-full flex items-center justify-center mx-auto mb-3">
-              <Star className="w-7 h-7 text-brand-border" />
+          <div className="text-center py-10 bg-white rounded-xl shadow-sm border border-brand-border/50 mx-3 sm:mx-0">
+            <div className="w-14 h-14 bg-brand-surface rounded-full flex items-center justify-center mx-auto mb-3">
+              <Star className="w-7 h-7 text-brand-accent/50" />
             </div>
             <p className="text-gray-500 text-sm">Belum ada produk unggulan</p>
           </div>
@@ -635,21 +642,21 @@ const HomePage: React.FC<HomePageProps> = ({
                     setActiveTab(category.id === 'all' ? 'all' : 'terbaru');
                   }}
                   className={`
-                    flex-shrink-0 
-                    flex items-center space-x-2
-                    px-5 py-2
-                    rounded-full 
-                    text-xs font-medium tracking-wide
-                    transition-all duration-300 ease-out
-                    border
+flex - shrink - 0 
+                    flex items - center space - x - 2
+px - 5 py - 2
+rounded - full
+text - xs font - medium tracking - wide
+transition - all duration - 300 ease - out
+border
                     ${isSelected
                       ? 'bg-brand-primary border-brand-primary text-brand-accent shadow-[0_4px_10px_rgba(0,0,0,0.2)] scale-105' // Active: Black + Gold Shadow
                       : 'bg-white/40 border-brand-accent/20 text-gray-600 hover:border-brand-accent/50 hover:bg-white/60' // Inactive: Glassy + Thin Gold Border
                     }
-                  `}
+`}
                 >
                   <span className={isSelected ? 'font-semibold' : ''}>{category.name}</span>
-                  <span className={`text-[10px] ${isSelected ? 'text-brand-accent/80' : 'text-gray-400'}`}>
+                  <span className={`text - [10px] ${isSelected ? 'text-brand-accent/80' : 'text-gray-400'} `}>
                     {productCount}
                   </span>
                 </button>
@@ -667,19 +674,19 @@ const HomePage: React.FC<HomePageProps> = ({
             <span className="text-[10px] font-medium text-gray-400 uppercase">Urut:</span>
             <button
               onClick={() => setSortBy('terbaru')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${sortBy === 'terbaru'
+              className={`px - 3 py - 1.5 rounded - lg text - xs font - medium transition - all ${sortBy === 'terbaru'
                 ? 'bg-brand-primary text-white shadow-sm'
                 : 'bg-white text-gray-600 border border-brand-border hover:border-brand-accent'
-                }`}
+                } `}
             >
               Terbaru
             </button>
             <button
               onClick={() => setSortBy('termurah')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${sortBy === 'termurah'
+              className={`px - 3 py - 1.5 rounded - lg text - xs font - medium transition - all ${sortBy === 'termurah'
                 ? 'bg-brand-primary text-white shadow-sm'
                 : 'bg-white text-gray-600 border border-brand-border hover:border-brand-accent'
-                }`}
+                } `}
             >
               Termurah
             </button>
@@ -690,31 +697,31 @@ const HomePage: React.FC<HomePageProps> = ({
             <span className="text-[10px] font-medium text-gray-400 uppercase">Status:</span>
             <button
               onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === 'all'
+              className={`px - 3 py - 1.5 rounded - lg text - xs font - medium transition - all ${statusFilter === 'all'
                 ? 'bg-gray-800 text-white shadow-sm'
                 : 'bg-white text-gray-600 border border-brand-border'
-                }`}
+                } `}
             >
               Semua
             </button>
             <button
               onClick={() => setStatusFilter('ready')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === 'ready'
+              className={`flex items - center gap - 1 px - 3 py - 1.5 rounded - lg text - xs font - medium transition - all ${statusFilter === 'ready'
                 ? 'bg-brand-success text-white shadow-sm'
                 : 'bg-brand-successLight text-brand-success border border-brand-success/20'
-                }`}
+                } `}
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${statusFilter === 'ready' ? 'bg-white' : 'bg-brand-success'}`}></span>
+              <span className={`w - 1.5 h - 1.5 rounded - full ${statusFilter === 'ready' ? 'bg-white' : 'bg-brand-success'} `}></span>
               Ready
             </button>
             <button
               onClick={() => setStatusFilter('po')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === 'po'
+              className={`flex items - center gap - 1 px - 3 py - 1.5 rounded - lg text - xs font - medium transition - all ${statusFilter === 'po'
                 ? 'bg-brand-warning text-white shadow-sm'
                 : 'bg-brand-warningLight text-brand-warning border border-brand-warning/20'
-                }`}
+                } `}
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${statusFilter === 'po' ? 'bg-white' : 'bg-brand-warning'}`}></span>
+              <span className={`w - 1.5 h - 1.5 rounded - full ${statusFilter === 'po' ? 'bg-white' : 'bg-brand-warning'} `}></span>
               PO
             </button>
           </div>
@@ -732,67 +739,63 @@ const HomePage: React.FC<HomePageProps> = ({
             <span className="text-xs font-medium text-brand-primary">{filteredProducts.length} produk</span>
           </div>
         </div>
+
+
         {/* Product Grid */}
-        {isSearching ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-10 w-10 border-2 border-brand-accent border-t-transparent mx-auto mb-4"></div>
-            <p className="text-gray-500 text-sm">Mencari produk...</p>
-          </div>
-        ) : currentProducts.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-xl shadow-elegant">
-            <div className="w-16 h-16 bg-brand-surfaceAlt rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-brand-border" />
-            </div>
-            <h3 className="font-display text-lg text-gray-700 mb-1">
-              {showSearchResults ? 'Tidak ada hasil' : 'Produk tidak ditemukan'}
-            </h3>
-            <p className="text-gray-400 text-sm">
-              {showSearchResults ? 'Coba kata kunci lain' : 'Pilih kategori berbeda'}
-            </p>
-          </div>
-        ) : (
-          <>
+        <div className="mb-20 text-center">
+          {loading ? (
             <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
-              {currentProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onProductClick={onProductClick}
-                  onAddToCart={handleAddToCart}
-                  user={user}
-                  isFlashSale={product.isFlashSale}
-                />
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-white rounded-lg shadow-sm aspect-[3/4] animate-pulse"></div>
               ))}
             </div>
-
-            {/* Infinite Scroll Trigger */}
-            {hasMore && (
-              <div className="mt-6 text-center">
-                <div ref={loadMoreRef} className="inline-flex items-center justify-center p-4">
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-brand-accent border-t-transparent"></div>
-                      <span className="text-gray-500 text-sm">Memuat...</span>
-                    </div>
-                  ) : (
-                    <div className="h-1"></div>
-                  )}
-                </div>
+          ) : currentProducts.length === 0 ? (
+            <div className="py-12 flex flex-col items-center justify-center text-gray-500">
+              <Search className="w-12 h-12 text-gray-300 mb-2" />
+              <p className="text-sm font-medium">Tidak ada produk ditemukan</p>
+              <p className="text-xs text-gray-400 mt-1">
+                {showSearchResults ? 'Coba kata kunci lain' : 'Pilih kategori berbeda'}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
+                {currentProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onProductClick={onProductClick}
+                    onAddToCart={handleAddToCart}
+                    user={user}
+                    isFlashSale={product.isFlashSale}
+                  />
+                ))}
               </div>
-            )}
-          </>
-        )}
-      </div>
 
-      {/* User Role Indicator - Subtle */}
-      {user && (
-        <div className="fixed bottom-20 right-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-elegant px-3 py-2 border border-brand-border">
-          <span className="text-[10px] font-medium text-gray-400 uppercase">Login:</span>
-          <span className="text-xs font-semibold text-brand-primary ml-1">
-            {user.role === 'reseller' ? 'Reseller' : user.role === 'customer' ? 'Customer' : user.role}
-          </span>
+              {/* Infinite Scroll Trigger */}
+              {hasMore && (
+                <div className="mt-6 text-center">
+                  <div ref={loadMoreRef} className="inline-flex items-center justify-center p-4">
+                    <div className="w-6 h-6 border-2 border-brand-accent border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
-      )}
+
+        {/* User Role Indicator - Subtle */}
+        {
+          user && (
+            <div className="fixed bottom-20 right-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-elegant px-3 py-2 border border-brand-border">
+              <span className="text-[10px] font-medium text-gray-400 uppercase">Login:</span>
+              <span className="text-xs font-semibold text-brand-primary ml-1">
+                {user.role === 'reseller' ? 'Reseller' : user.role === 'customer' ? 'Customer' : user.role}
+              </span>
+            </div>
+          )
+        }
+      </div>
     </div>
   );
 };
