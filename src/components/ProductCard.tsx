@@ -192,8 +192,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
     <>
       <div
         className={`relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${isFlashSale
-            ? 'bg-[#121212] border border-[#D4AF37]/20 shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:border-[#D4AF37]/40 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)]'
-            : 'bg-white border border-brand-border/20 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_30px_rgba(139,75,107,0.1)]'
+          ? 'bg-white border-2 border-brand-accent/40 shadow-[0_4px_20px_rgba(212,175,55,0.15)] hover:border-brand-accent hover:shadow-[0_8px_30px_rgba(212,175,55,0.25)]'
+          : 'bg-white border border-brand-border/20 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_30px_rgba(139,75,107,0.1)]'
           } ${isFeatured ? 'ring-1 ring-brand-accent shadow-brand-accent/20' : ''}`}
         onClick={() => onProductClick(product)}
       >

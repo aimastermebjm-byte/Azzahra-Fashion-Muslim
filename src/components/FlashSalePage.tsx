@@ -38,15 +38,15 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
     // -------------------------------------------------------------------------
     if (!mounted || loading) {
         return (
-            <div className="min-h-screen bg-[#050505] flex items-center justify-center relative overflow-hidden">
+            <div className="min-h-screen bg-brand-surface flex items-center justify-center relative overflow-hidden">
                 {/* Background Texture */}
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-900 via-black to-black opacity-80"></div>
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand-surfaceAlt via-brand-surface to-white opacity-80"></div>
                 <div className="relative flex flex-col items-center gap-6">
                     <div className="relative">
-                        <div className="absolute inset-0 rounded-full blur-xl bg-[#D4AF37]/20 animate-pulse"></div>
-                        <div className="w-16 h-16 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin relative z-10"></div>
+                        <div className="absolute inset-0 rounded-full blur-xl bg-brand-accent/20 animate-pulse"></div>
+                        <div className="w-16 h-16 border-4 border-brand-accent border-t-transparent rounded-full animate-spin relative z-10"></div>
                     </div>
-                    <p className="text-[#D4AF37] font-serif tracking-[0.2em] uppercase text-sm animate-pulse">Memuat Flash Sale...</p>
+                    <p className="text-brand-accent font-serif tracking-[0.2em] uppercase text-sm animate-pulse">Memuat Flash Sale...</p>
                 </div>
             </div>
         );
@@ -56,33 +56,34 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
     // REUSABLE HEADER (Transparent / Sticky)
     // -------------------------------------------------------------------------
     const Header = () => (
-        <div className="sticky top-0 z-50 transition-all duration-300 bg-black/80 backdrop-blur-md border-b border-[#D4AF37]/20">
+        <div className="sticky top-0 z-50 transition-all duration-300 bg-brand-surface/95 backdrop-blur-md border-b border-brand-accent/20 shadow-sm">
             <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     {onBack && (
                         <button
                             onClick={onBack}
-                            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors group"
+                            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-brand-accent/10 transition-colors group"
                         >
-                            <ArrowLeft className="w-6 h-6 text-[#D4AF37] group-hover:-translate-x-1 transition-transform drop-shadow-[0_0_5px_rgba(212,175,55,0.5)]" />
+                            <ArrowLeft className="w-6 h-6 text-brand-accent group-hover:-translate-x-1 transition-transform" />
                         </button>
                     )}
 
                 </div>
-                {/* Center Brand Title for Header if needed, or keep simple */}
+                {/* Center Brand Title for Header */}
                 <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
-                    <h1 className="font-serif text-lg font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#BF953F] via-[#FCF6BA] to-[#B38728] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                        AZZAHRA
+                    <h1 className="font-serif text-xl font-bold tracking-widest text-brand-primary">
+                        Azzahra
                     </h1>
+                    <span className="text-[10px] text-brand-accent tracking-[0.15em] -mt-1">Fashion Muslim</span>
                 </div>
 
                 <button
                     onClick={onCartClick}
-                    className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5 transition-all group"
+                    className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-brand-accent/10 transition-all group"
                 >
-                    <ShoppingCart className="w-6 h-6 text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.4)] transition-transform group-hover:scale-110" />
+                    <ShoppingCart className="w-6 h-6 text-brand-accent transition-transform group-hover:scale-110" />
                     {cartItems.length > 0 && (
-                        <span className="absolute top-0 right-0 bg-[#D4AF37] text-black text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center border-2 border-black shadow-lg">
+                        <span className="absolute top-0 right-0 bg-brand-accent text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center border-2 border-brand-surface shadow-lg">
                             {cartItems.length}
                         </span>
                     )}
@@ -97,10 +98,10 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
     // Design: Deep Pure Black BG + Glassmorphism Center Card with Gold Ring + 3D Icon
     if (!flashSaleProducts || flashSaleProducts.length === 0) {
         return (
-            <div className="min-h-screen bg-[#050505] text-white selection:bg-[#D4AF37] selection:text-black font-sans relative overflow-hidden">
+            <div className="min-h-screen bg-brand-surface text-brand-primary selection:bg-brand-accent selection:text-white font-sans relative overflow-hidden">
                 {/* Background Ambient Gold Glows */}
-                <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] bg-[#D4AF37] rounded-full mix-blend-screen filter blur-[150px] opacity-[0.05] pointer-events-none"></div>
-                <div className="fixed bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-[#B8860B] rounded-full mix-blend-screen filter blur-[120px] opacity-[0.05] pointer-events-none"></div>
+                <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] bg-brand-accent rounded-full mix-blend-multiply filter blur-[150px] opacity-[0.08] pointer-events-none"></div>
+                <div className="fixed bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-[#E8D5B5] rounded-full mix-blend-multiply filter blur-[120px] opacity-[0.1] pointer-events-none"></div>
 
                 <Header />
 
@@ -110,13 +111,13 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                     <div className="relative w-full max-w-sm mx-auto group perspective-1000">
 
                         {/* 1. Outer Glow Ring (Animated) */}
-                        <div className="absolute -inset-[3px] bg-gradient-to-tr from-[#D4AF37] via-[#F2D785] to-[#996515] rounded-[32px] opacity-70 blur-[10px] group-hover:opacity-100 group-hover:blur-[15px] transition-all duration-700 animate-tilt"></div>
+                        <div className="absolute -inset-[3px] bg-gradient-to-tr from-brand-accent/50 via-[#F2D785]/30 to-brand-accent/50 rounded-[32px] opacity-70 blur-[10px] group-hover:opacity-100 group-hover:blur-[15px] transition-all duration-700"></div>
 
-                        {/* 2. The Glass Card Surface */}
-                        <div className="relative bg-[#0F0F0F] rounded-[30px] p-8 flex flex-col items-center text-center overflow-hidden border border-[#D4AF37]/30 shadow-[0_0_50px_-10px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+                        {/* 2. The Glass Card Surface - Rose Gold Tint */}
+                        <div className="relative bg-gradient-to-br from-[#FFF9F5] via-white to-[#FDF0E8] rounded-[30px] p-8 flex flex-col items-center text-center overflow-hidden border border-brand-accent/30 shadow-[0_20px_60px_-15px_rgba(212,175,55,0.2)] backdrop-blur-xl">
 
                             {/* Glossy Overlay Reflection */}
-                            <div className="absolute top-0 inset-x-0 h-[100px] bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+                            <div className="absolute top-0 inset-x-0 h-[100px] bg-gradient-to-b from-white/60 to-transparent pointer-events-none"></div>
 
                             {/* Custom 3D High-Fidelity Golden Clock SVG */}
                             <div className="relative w-40 h-40 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-700 ease-out mb-8 mt-6">
@@ -241,22 +242,22 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
 
                             {/* 4. Typography */}
                             <h2 className="font-serif text-3xl leading-tight mb-4">
-                                <span className="block text-white/90 text-xl mb-1">Flash Sale</span>
-                                <span className="bg-gradient-to-r from-[#D4AF37] via-[#FFF8DC] to-[#D4AF37] bg-clip-text text-transparent font-bold tracking-wide drop-shadow-[0_2px_10px_rgba(212,175,55,0.3)]">
+                                <span className="block text-brand-primary/70 text-xl mb-1">Flash Sale</span>
+                                <span className="bg-gradient-to-r from-brand-accent via-[#E8C96B] to-brand-accent bg-clip-text text-transparent font-bold tracking-wide">
                                     Sedang Disiapkan
                                 </span>
                             </h2>
 
-                            <p className="text-white/40 text-sm mb-8 font-light leading-relaxed px-4">
+                            <p className="text-brand-primary/50 text-sm mb-8 font-light leading-relaxed px-4">
                                 Koleksi eksklusif dengan harga istimewa akan segera hadir. Waktu terus berjalan.
                             </p>
 
                             {/* 5. Button */}
                             <button
                                 onClick={() => window.location.href = '/'}
-                                className="w-full py-4 rounded-full bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-[#3e2b06] font-bold tracking-wide text-sm uppercase transition-all transform hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(212,175,55,0.6)] active:scale-95 border border-[#FFF8DC]/20 relative overflow-hidden group/btn"
+                                className="w-full py-4 rounded-full bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-brand-primary font-bold tracking-wide text-sm uppercase transition-all transform hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(212,175,55,0.4)] active:scale-95 border border-brand-accent/30 relative overflow-hidden group/btn"
                             >
-                                <div className="absolute inset-0 bg-white/30 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700 pointer-events-none skew-x-12"></div>
+                                <div className="absolute inset-0 bg-white/40 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700 pointer-events-none skew-x-12"></div>
                                 <span className="relative z-10 flex items-center justify-center gap-2">
                                     Lihat Koleksi Lain <ChevronRight className="w-4 h-4" />
                                 </span>
@@ -269,96 +270,96 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
     }
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white font-sans overflow-x-hidden pb-24">
+        <div className="min-h-screen bg-brand-surface text-brand-primary font-sans overflow-x-hidden pb-24">
 
             <Header />
 
             {/* HERO SECTION: Gold Dust & Timer */}
             <div className="relative pt-8 pb-12 px-4 text-center">
                 {/* Animated Gold Dust Background */}
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 animate-pulse"></div>
-                <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#D4AF37]/10 to-transparent blur-[50px] pointer-events-none"></div>
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10"></div>
+                <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-brand-accent/10 to-transparent blur-[50px] pointer-events-none"></div>
 
                 {/* FLAMES & TITLE */}
                 <div className="relative z-10 flex items-center justify-center gap-3 mb-8">
-                    <Flame className="w-8 h-8 text-[#FF4500] fill-orange-500 drop-shadow-[0_0_15px_rgba(255,69,0,0.6)] animate-pulse" />
+                    <Flame className="w-8 h-8 text-orange-500 fill-orange-400 drop-shadow-lg animate-pulse" />
                     <h1 className="font-serif italic font-black text-4xl sm:text-5xl tracking-tighter">
-                        <span className="bg-gradient-to-b from-[#FFD700] via-[#FDB931] to-[#996515] bg-clip-text text-transparent drop-shadow-[0_2px_0_rgba(139,69,19,1)]">
+                        <span className="bg-gradient-to-b from-brand-accent via-[#E8C96B] to-[#A8894F] bg-clip-text text-transparent">
                             FLASH SALE
                         </span>
                     </h1>
-                    <Flame className="w-8 h-8 text-[#FF4500] fill-orange-500 drop-shadow-[0_0_15px_rgba(255,69,0,0.6)] animate-pulse" />
+                    <Flame className="w-8 h-8 text-orange-500 fill-orange-400 drop-shadow-lg animate-pulse" />
                 </div>
 
                 {/* COUNTDOWN TIMER TILES */}
                 {timeLeft && (
                     <div className="relative z-10 flex justify-center gap-3 sm:gap-4 mb-10">
-                        {/* Tile: HOURS */}
+                        {/* Tile: HOURS - NAVY with GOLD */}
                         <div className="flex flex-col items-center">
-                            <div className="w-20 h-24 sm:w-24 sm:h-28 bg-[#1a1a1a] rounded-[10px] sm:rounded-2xl border-2 border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.3),inset_0_0_20px_rgba(0,0,0,0.8)] flex items-center justify-center relative overflow-hidden">
+                            <div className="w-20 h-24 sm:w-24 sm:h-28 bg-brand-primary rounded-[10px] sm:rounded-2xl border-2 border-brand-accent shadow-[0_8px_20px_rgba(0,0,0,0.2)] flex items-center justify-center relative overflow-hidden">
                                 {/* Glass Reflection Top Half */}
                                 <div className="absolute top-0 inset-x-0 h-[50%] bg-gradient-to-b from-white/10 to-transparent border-b border-white/5"></div>
                                 {/* Inner Glow */}
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#D4AF37]/10 to-transparent"></div>
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-brand-accent/10 to-transparent"></div>
 
-                                <span className="text-5xl sm:text-6xl font-bold bg-gradient-to-b from-[#FFF8DC] via-[#D4AF37] to-[#B8860B] bg-clip-text text-transparent font-mono tracking-wider relative z-10 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">
+                                <span className="text-5xl sm:text-6xl font-bold bg-gradient-to-b from-[#FFF8DC] via-brand-accent to-[#B8860B] bg-clip-text text-transparent font-mono tracking-wider relative z-10">
                                     {timeLeft.hours.toString().padStart(2, '0')}
                                 </span>
                             </div>
-                            <span className="text-[#D4AF37] text-[10px] font-bold tracking-[0.2em] mt-3 uppercase">Jam</span>
+                            <span className="text-brand-accent text-[10px] font-bold tracking-[0.2em] mt-3 uppercase">Jam</span>
                         </div>
 
                         {/* Separator - Glowing Dots */}
                         <div className="h-24 flex flex-col justify-center gap-4">
-                            <div className="w-2 h-2 bg-[#D4AF37] rounded-full shadow-[0_0_10px_#D4AF37] animate-pulse"></div>
-                            <div className="w-2 h-2 bg-[#D4AF37] rounded-full shadow-[0_0_10px_#D4AF37] animate-pulse"></div>
+                            <div className="w-2 h-2 bg-brand-accent rounded-full shadow-[0_0_8px_rgba(212,175,55,0.5)] animate-pulse"></div>
+                            <div className="w-2 h-2 bg-brand-accent rounded-full shadow-[0_0_8px_rgba(212,175,55,0.5)] animate-pulse"></div>
                         </div>
 
                         {/* Tile: MINUTES */}
                         <div className="flex flex-col items-center">
-                            <div className="w-20 h-24 sm:w-24 sm:h-28 bg-[#1a1a1a] rounded-[10px] sm:rounded-2xl border-2 border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.3),inset_0_0_20px_rgba(0,0,0,0.8)] flex items-center justify-center relative overflow-hidden">
+                            <div className="w-20 h-24 sm:w-24 sm:h-28 bg-brand-primary rounded-[10px] sm:rounded-2xl border-2 border-brand-accent shadow-[0_8px_20px_rgba(0,0,0,0.2)] flex items-center justify-center relative overflow-hidden">
                                 {/* Glass Reflection Top Half */}
                                 <div className="absolute top-0 inset-x-0 h-[50%] bg-gradient-to-b from-white/10 to-transparent border-b border-white/5"></div>
                                 {/* Inner Glow */}
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#D4AF37]/10 to-transparent"></div>
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-brand-accent/10 to-transparent"></div>
 
-                                <span className="text-5xl sm:text-6xl font-bold bg-gradient-to-b from-[#FFF8DC] via-[#D4AF37] to-[#B8860B] bg-clip-text text-transparent font-mono tracking-wider relative z-10 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">
+                                <span className="text-5xl sm:text-6xl font-bold bg-gradient-to-b from-[#FFF8DC] via-brand-accent to-[#B8860B] bg-clip-text text-transparent font-mono tracking-wider relative z-10">
                                     {timeLeft.minutes.toString().padStart(2, '0')}
                                 </span>
                             </div>
-                            <span className="text-[#D4AF37] text-[10px] font-bold tracking-[0.2em] mt-3 uppercase">Menit</span>
+                            <span className="text-brand-accent text-[10px] font-bold tracking-[0.2em] mt-3 uppercase">Menit</span>
                         </div>
 
                         {/* Separator - Glowing Dots */}
                         <div className="h-24 flex flex-col justify-center gap-4">
-                            <div className="w-2 h-2 bg-[#D4AF37] rounded-full shadow-[0_0_10px_#D4AF37] animate-pulse"></div>
-                            <div className="w-2 h-2 bg-[#D4AF37] rounded-full shadow-[0_0_10px_#D4AF37] animate-pulse"></div>
+                            <div className="w-2 h-2 bg-brand-accent rounded-full shadow-[0_0_8px_rgba(212,175,55,0.5)] animate-pulse"></div>
+                            <div className="w-2 h-2 bg-brand-accent rounded-full shadow-[0_0_8px_rgba(212,175,55,0.5)] animate-pulse"></div>
                         </div>
 
                         {/* Tile: SECONDS */}
                         <div className="flex flex-col items-center">
-                            <div className="w-20 h-24 sm:w-24 sm:h-28 bg-[#1a1a1a] rounded-[10px] sm:rounded-2xl border-2 border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.3),inset_0_0_20px_rgba(0,0,0,0.8)] flex items-center justify-center relative overflow-hidden group">
+                            <div className="w-20 h-24 sm:w-24 sm:h-28 bg-brand-primary rounded-[10px] sm:rounded-2xl border-2 border-brand-accent shadow-[0_8px_20px_rgba(0,0,0,0.2)] flex items-center justify-center relative overflow-hidden group">
                                 {/* Glass Reflection Top Half */}
                                 <div className="absolute top-0 inset-x-0 h-[50%] bg-gradient-to-b from-white/10 to-transparent border-b border-white/5"></div>
-                                {/* Inner Glow Reddish for Seconds */}
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 to-transparent"></div>
+                                {/* Inner Glow */}
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-brand-accent/10 to-transparent"></div>
 
-                                <span className="text-5xl sm:text-6xl font-bold bg-gradient-to-b from-[#FFF8DC] via-[#D4AF37] to-[#B8860B] bg-clip-text text-transparent font-mono tracking-wider relative z-10 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)] animate-pulse">
+                                <span className="text-5xl sm:text-6xl font-bold bg-gradient-to-b from-[#FFF8DC] via-brand-accent to-[#B8860B] bg-clip-text text-transparent font-mono tracking-wider relative z-10 animate-pulse">
                                     {timeLeft.seconds.toString().padStart(2, '0')}
                                 </span>
                             </div>
-                            <span className="text-[#D4AF37] text-[10px] font-bold tracking-[0.2em] mt-3 uppercase">Detik</span>
+                            <span className="text-brand-accent text-[10px] font-bold tracking-[0.2em] mt-3 uppercase">Detik</span>
                         </div>
                     </div>
                 )}
 
                 <div className="flex items-center justify-center gap-2">
-                    <span className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#D4AF37]/50"></span>
-                    <p className="text-[#D4AF37] font-serif uppercase tracking-widest text-xs relative">
+                    <span className="h-[1px] w-12 bg-gradient-to-r from-transparent to-brand-accent/50"></span>
+                    <p className="text-brand-primary font-serif uppercase tracking-widest text-xs relative">
                         <span className="absolute -top-1 -right-3">✨</span>
                         Produk Terbatas
                     </p>
-                    <span className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#D4AF37]/50"></span>
+                    <span className="h-[1px] w-12 bg-gradient-to-l from-transparent to-brand-accent/50"></span>
                 </div>
             </div>
 
