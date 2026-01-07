@@ -836,15 +836,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       <Truck className="w-5 h-5 text-yellow-700" />
                       Mode Pengiriman
                     </h3>
-                    <p className="text-sm text-yellow-800 bg-[#FFF9E6] p-3 rounded-lg mb-4 border border-[#FBE6A2] flex items-center gap-2">
-                      ⚠️ Keranjang berisi produk <strong>Pre-Order</strong>
-                    </p>
                     <div className="grid grid-cols-2 gap-3">
                       <label
-                        className={`flex items - center gap - 4 p - 5 rounded - xl border - 2 cursor - pointer transition - all duration - 200 ${shippingMode === 'delivery'
-                          ? 'border-yellow-500 bg-yellow-50/50 shadow-md shadow-yellow-500/10'
-                          : 'border-gray-200 hover:border-yellow-400 hover:shadow-sm'
-                          } `}
+                        className={`flex items-center gap-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${shippingMode === 'delivery'
+                          ? 'border-[#EBC66B] bg-yellow-50/30 shadow-md shadow-yellow-500/10'
+                          : 'border-gray-200 hover:border-yellow-200 hover:shadow-sm'
+                          }`}
                       >
                         <input
                           type="radio"
@@ -854,14 +851,15 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           onChange={() => setShippingMode('delivery')}
                           className="sr-only"
                         />
-                        <Truck className={`h - 7 w - 7 ${shippingMode === 'delivery' ? 'text-yellow-600' : 'text-gray-400'} `} />
+                        <Truck className={`w-7 h-7 ${shippingMode === 'delivery' ? 'text-yellow-500 drop-shadow-md' : 'text-gray-400'}`} />
                         <p className="font-bold text-gray-900">Kirim</p>
                       </label>
+
                       <label
-                        className={`flex items - center gap - 4 p - 5 rounded - xl border - 2 cursor - pointer transition - all duration - 200 ${shippingMode === 'keep'
-                          ? 'border-amber-500 bg-amber-50/50 shadow-md shadow-amber-500/10'
-                          : 'border-gray-200 hover:border-amber-400 hover:shadow-sm'
-                          } `}
+                        className={`flex items-center gap-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${shippingMode === 'keep'
+                          ? 'border-[#EBC66B] bg-yellow-50/30 shadow-md shadow-yellow-500/10'
+                          : 'border-gray-200 hover:border-yellow-200 hover:shadow-sm'
+                          }`}
                       >
                         <input
                           type="radio"
@@ -871,17 +869,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           onChange={() => setShippingMode('keep')}
                           className="sr-only"
                         />
-                        <Archive className={`h - 7 w - 7 ${shippingMode === 'keep' ? 'text-amber-600' : 'text-gray-400'} `} />
+                        <Archive className={`w-7 h-7 ${shippingMode === 'keep' ? 'text-yellow-500 drop-shadow-md' : 'text-gray-400'}`} />
                         <p className="font-bold text-gray-900">Keep</p>
                       </label>
                     </div>
-                    {shippingMode === 'keep' && (
-                      <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200">
-                        <p className="text-sm text-amber-800">
-                          📍 Alamat dan kurir bisa diatur nanti di menu <strong>Pesanan Saya</strong> setelah barang ready.
-                        </p>
-                      </div>
-                    )}
                   </div>
                 );
               })()}
@@ -1414,7 +1405,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </div>
             </div>
           </div>
-        )}
+        )
+        }
       </div>
 
       {/* Floating Checkout Button - Fixed Bottom */}
