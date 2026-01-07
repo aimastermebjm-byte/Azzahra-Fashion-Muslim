@@ -158,7 +158,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               onClick={handleResellerClick}
               className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#D4AF37] transition-colors"
             >
-              <span>Reseller Price & Info</span>
+              <span>Info Harga Reseller</span>
               <ChevronUp className={`w-3 h-3 transition-transform ${showResellerMenu ? 'rotate-180' : ''}`} />
             </button>
           )}
@@ -178,7 +178,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   className="w-full px-2 py-1.5 text-xs bg-[#25D366] text-white rounded hover:bg-[#20bd5a] transition-colors flex items-center justify-center gap-1.5"
                 >
                   <MessageCircle className="w-3 h-3" />
-                  <span>Join Reseller</span>
+                  <span>Gabung Reseller</span>
                 </button>
               </div>
             </div>
