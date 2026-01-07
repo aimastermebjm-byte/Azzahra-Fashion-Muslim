@@ -838,9 +838,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       <label
-                        className={`flex items-center gap-4 p-5 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden ${shippingMode === 'delivery'
-                          ? 'bg-[#FFD700]/10 shadow-lg shadow-yellow-500/20 ring-1 ring-[#D4AF37]/50'
-                          : 'bg-gray-50 hover:bg-gray-100'
+                        className={`flex items-center gap-4 p-5 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden group ${shippingMode === 'delivery'
+                          ? 'bg-gradient-to-br from-white to-[#FEFAE0] shadow-[0_0_15px_rgba(212,175,55,0.25)]'
+                          : 'bg-white border border-gray-100 hover:border-[#D4AF37]/30 hover:shadow-md'
                           }`}
                       >
                         <input
@@ -851,16 +851,16 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           onChange={() => setShippingMode('delivery')}
                           className="sr-only"
                         />
-                        <div className={`p-2 rounded-full transition-colors ${shippingMode === 'delivery' ? 'bg-[#D4AF37]/20' : 'bg-transparent'}`}>
-                          <Truck className={`w-6 h-6 ${shippingMode === 'delivery' ? 'text-[#D4AF37] drop-shadow-[0_0_8px_rgba(255,215,0,0.6)]' : 'text-gray-400'}`} />
+                        <div className={`p-2.5 rounded-full transition-all duration-300 ${shippingMode === 'delivery' ? 'bg-gradient-to-br from-[#D4AF37] to-[#B8860B] shadow-inner' : 'bg-gray-50 group-hover:bg-[#D4AF37]/10'}`}>
+                          <Truck className={`w-6 h-6 transition-colors duration-300 ${shippingMode === 'delivery' ? 'text-white' : 'text-gray-400 group-hover:text-[#B8860B]'}`} />
                         </div>
-                        <p className={`font-bold text-lg ${shippingMode === 'delivery' ? 'text-[#B4941F]' : 'text-gray-600'}`}>Kirim</p>
+                        <p className={`font-bold text-lg transition-colors duration-300 ${shippingMode === 'delivery' ? 'text-[#996515]' : 'text-gray-600 group-hover:text-[#996515]'}`}>Kirim</p>
                       </label>
 
                       <label
-                        className={`flex items-center gap-4 p-5 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden ${shippingMode === 'keep'
-                          ? 'bg-[#FFD700]/10 shadow-lg shadow-yellow-500/20 ring-1 ring-[#D4AF37]/50'
-                          : 'bg-gray-50 hover:bg-gray-100'
+                        className={`flex items-center gap-4 p-5 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden group ${shippingMode === 'keep'
+                          ? 'bg-gradient-to-br from-white to-[#FEFAE0] shadow-[0_0_15px_rgba(212,175,55,0.25)]'
+                          : 'bg-white border border-gray-100 hover:border-[#D4AF37]/30 hover:shadow-md'
                           }`}
                       >
                         <input
@@ -871,10 +871,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           onChange={() => setShippingMode('keep')}
                           className="sr-only"
                         />
-                        <div className={`p-2 rounded-full transition-colors ${shippingMode === 'keep' ? 'bg-[#D4AF37]/20' : 'bg-transparent'}`}>
-                          <Archive className={`w-6 h-6 ${shippingMode === 'keep' ? 'text-[#D4AF37] drop-shadow-[0_0_8px_rgba(255,215,0,0.6)]' : 'text-gray-400'}`} />
+                        <div className={`p-2.5 rounded-full transition-all duration-300 ${shippingMode === 'keep' ? 'bg-gradient-to-br from-[#D4AF37] to-[#B8860B] shadow-inner' : 'bg-gray-50 group-hover:bg-[#D4AF37]/10'}`}>
+                          <Archive className={`w-6 h-6 transition-colors duration-300 ${shippingMode === 'keep' ? 'text-white' : 'text-gray-400 group-hover:text-[#B8860B]'}`} />
                         </div>
-                        <p className={`font-bold text-lg ${shippingMode === 'keep' ? 'text-[#B4941F]' : 'text-gray-600'}`}>Keep</p>
+                        <p className={`font-bold text-lg transition-colors duration-300 ${shippingMode === 'keep' ? 'text-[#996515]' : 'text-gray-600 group-hover:text-[#996515]'}`}>Keep</p>
                       </label>
                     </div>
                   </div>
@@ -894,10 +894,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         setEditingAddress(null);
                         setShowAddressModal(true);
                       }}
-                      className="inline-flex items-center gap-2 rounded-full border-2 border-yellow-500 px-4 py-2 text-sm font-bold text-yellow-600 transition hover:bg-yellow-50"
+                      className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold text-white transition-all transform hover:scale-105 active:scale-95 shadow-md bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] hover:bg-[100%_0] border border-[#D4AF37]/20"
                     >
-                      <Plus className="h-4 w-4" />
-                      Tambah Alamat
+                      <Plus className="h-4 w-4 drop-shadow-sm text-[#5d4008]" />
+                      <span className="drop-shadow-sm text-[#5d4008]">Tambah Alamat</span>
                     </button>
                   </div>
 
@@ -1254,9 +1254,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       <button
                         onClick={() => handleApplyVoucher()}
                         disabled={voucherLoading || !voucherCode}
-                        className="px-6 py-2.5 bg-[#EBC66B] hover:bg-[#DDAF4C] text-white rounded-xl text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
+                        className="px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-all transform hover:scale-105 active:scale-95 shadow-md bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] hover:bg-[100%_0] border border-[#D4AF37]/20 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {voucherLoading ? '...' : 'Pakai'}
+                        <span className="drop-shadow-sm text-[#5d4008]">
+                          {voucherLoading ? '...' : 'Pakai'}
+                        </span>
                       </button>
                     </div>
 
@@ -1399,14 +1401,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/50 p-5 text-sm text-gray-700">
-                <h4 className="text-base font-bold text-yellow-700 flex items-center gap-2">💡 Tips Checkout</h4>
-                <ul className="mt-3 space-y-2 list-disc pl-4 text-slate-700">
-                  <li>Pastikan alamat lengkap beserta RT/RW dan patokan lokasi.</li>
-                  <li>Untuk dropship, isi nama & nomor pengirim agar tercetak di resi.</li>
-                  <li>Upload bukti transfer di menu Pesanan setelah pembayaran.</li>
-                </ul>
-              </div>
+
             </div>
           </div>
         )
@@ -1431,9 +1426,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               <button
                 onClick={handleSubmitOrder}
                 disabled={loading || (shippingMode === 'delivery' && !selectedAddressId) || !formData.paymentMethodId}
-                className="bg-gradient-to-r from-[#C6A355] via-[#DEBC72] to-[#C6A355] text-white px-8 py-3 rounded-full font-bold text-lg shadow-[0_0_20px_rgba(212,175,55,0.5)] hover:shadow-[0_0_30px_rgba(212,175,55,0.7)] transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none relative overflow-hidden group"
+                className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-white px-8 py-3 rounded-full font-bold text-lg shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] hover:shadow-[0_6px_20px_rgba(153,123,44,0.23)] hover:bg-[100%_0] transition-all transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none relative overflow-hidden group border border-[#D4AF37]/20"
               >
-                <span className="relative z-10 flex items-center gap-2">
+                <span className="relative z-10 flex items-center gap-2 drop-shadow-sm text-[#5d4008]">
                   {loading ? 'Memproses...' : (
                     <>
                       Buat Pesanan
@@ -1441,7 +1436,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   )}
                 </span>
                 {/* Shine Effect */}
-                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/40 to-transparent skew-x-12 translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
+                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/60 to-transparent skew-x-12 translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
               </button>
             </div>
           </div>
