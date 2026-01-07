@@ -17,24 +17,23 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPage
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
+    <div className="fixed bottom-0 left-0 right-0 bg-brand-primary border-t border-brand-primaryLight shadow-lg">
       <div className="flex">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
-          
+
           return (
             <button
               key={item.id}
               onClick={() => onPageChange(item.id)}
-              className={`flex-1 flex flex-col items-center py-3 px-2 transition-colors ${
-                isActive
-                  ? 'text-pink-600 bg-pink-50'
-                  : 'text-gray-600 hover:text-pink-600 hover:bg-gray-50'
-              }`}
+              className={`flex-1 flex flex-col items-center py-3 px-2 transition-colors ${isActive
+                  ? 'text-brand-accent'
+                  : 'text-gray-400 hover:text-brand-accent'
+                }`}
             >
-              <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-pink-600' : 'text-gray-600'}`} />
-              <span className={`text-xs font-medium ${isActive ? 'text-pink-600' : 'text-gray-600'}`}>
+              <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-brand-accent' : 'text-gray-400'}`} />
+              <span className={`text-xs font-medium ${isActive ? 'text-brand-accent' : 'text-gray-400'}`}>
                 {item.label}
               </span>
             </button>

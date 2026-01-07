@@ -389,20 +389,22 @@ const HomePage: React.FC<HomePageProps> = ({
 
   return (
     <div className="min-h-screen bg-brand-surface pb-20">
-      {/* Header - Elegant Dark Theme with Gold Accents */}
+      {/* Header - NOOR Style: Centered Brand, Black BG, Gold Text */}
       <div className="sticky top-0 z-50 bg-brand-primary shadow-lg">
         <div className="px-3 sm:px-4 py-3">
-          {/* Top Row - Logo & Actions */}
+          {/* Top Row - Centered Brand Name with Action Buttons */}
           <div className="flex items-center justify-between mb-3">
-            {/* Brand Logo */}
-            <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-brand-accent/20 rounded-xl flex items-center justify-center border border-brand-accent/30">
-                <span className="text-brand-accent font-display font-bold text-lg">A</span>
-              </div>
-              <div>
-                <h1 className="font-display text-lg font-semibold text-white tracking-tight">Azzahra</h1>
-                <p className="text-[10px] text-brand-accent font-medium -mt-0.5">Fashion Muslim</p>
-              </div>
+            {/* Empty spacer for balance */}
+            <div className="w-20"></div>
+
+            {/* Centered Brand Name - Gold */}
+            <div className="text-center">
+              <h1 className="font-display text-lg sm:text-xl font-semibold text-brand-accent tracking-wide">
+                AZZAHRA
+              </h1>
+              <p className="text-[9px] sm:text-[10px] text-white/80 tracking-widest -mt-0.5">
+                FASHION MUSLIM
+              </p>
             </div>
 
             {/* Action Buttons */}
@@ -425,9 +427,9 @@ const HomePage: React.FC<HomePageProps> = ({
               <button
                 onClick={onCartClick}
                 className="relative p-2.5 sm:p-3 
-                           bg-brand-gradient-gold 
+                           bg-brand-accent 
                            rounded-xl 
-                           shadow-brand-button hover:shadow-lg 
+                           shadow-md hover:shadow-lg 
                            hover:scale-105 
                            transition-all duration-300"
               >
