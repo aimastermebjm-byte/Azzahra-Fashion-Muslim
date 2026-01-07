@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { MapPin, Phone, User, Package, Copy, Loader2, AlertCircle, Plus, Edit2, Trash2, Gift, Tag, Truck, Archive } from 'lucide-react';
+import { MapPin, Plus, Truck, Archive, CreditCard, ChevronRight, Gift, Tag, Trash2, Edit2, AlertCircle, ShoppingBag, Package, Loader2 } from 'lucide-react';
 import { addressService } from '../services/addressService';
 import AddressForm from './AddressForm';
 import { komerceService, KomerceCostResult } from '../utils/komerceService';
@@ -278,7 +279,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error(`RajaOngkir API Error: ${response.status}`);
+        throw new Error(`RajaOngkir API Error: ${response.status} `);
       }
 
       const data = await response.json();
@@ -336,7 +337,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     try {
       for (const candidate of cleanedCandidates) {
-        const cacheKey = `ongkos_${courierCode}_${candidate.id}_${optimizedWeight}`;
+        const cacheKey = `ongkos_${courierCode}_${candidate.id}_${optimizedWeight} `;
         const cachedData = localStorage.getItem(cacheKey);
 
         if (cachedData) {
@@ -474,7 +475,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
 
     // Create unique key for this calculation
-    const calcKey = `${selectedCourier.code}_${defaultAddr.subdistrictId || defaultAddr.districtId}_${weight}`;
+    const calcKey = `${selectedCourier.code}_${defaultAddr.subdistrictId || defaultAddr.districtId}_${weight} `;
 
     // Skip if we already calculated for these exact params
     if (lastShippingCalcRef.current === calcKey) {
@@ -620,7 +621,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       if (result.valid && result.voucher) {
         setAppliedVoucher(result.voucher);
         setVoucherCode('');
-        showToast({ message: `Voucher ${result.voucher.code} berhasil digunakan! Diskon Rp ${result.voucher.discountAmount.toLocaleString('id-ID')}`, type: 'success' });
+        showToast({ message: `Voucher ${result.voucher.code} berhasil digunakan! Diskon Rp ${result.voucher.discountAmount.toLocaleString('id-ID')} `, type: 'success' });
       } else {
         showToast({ message: result.message || 'Voucher tidak valid', type: 'error' });
       }
@@ -771,7 +772,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     showToast({
       type: 'success',
       title: 'Pesanan berhasil dibuat',
-      message: `ID Pesanan ${newOrderId} siap diproses. Cek detail di menu Pesanan.`
+      message: `ID Pesanan ${newOrderId} siap diproses.Cek detail di menu Pesanan.`
     });
 
     // Redirect to home
@@ -831,16 +832,19 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
-                    <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">📦 Mode Pengiriman</h3>
-                    <p className="text-sm text-amber-700 bg-amber-50 p-2 rounded-lg mb-3">
+                    <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <Truck className="w-5 h-5 text-yellow-700" />
+                      Mode Pengiriman
+                    </h3>
+                    <p className="text-sm text-yellow-800 bg-[#FFF9E6] p-3 rounded-lg mb-4 border border-[#FBE6A2] flex items-center gap-2">
                       ⚠️ Keranjang berisi produk <strong>Pre-Order</strong>
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       <label
-                        className={`flex items-center gap-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${shippingMode === 'delivery'
+                        className={`flex items - center gap - 4 p - 5 rounded - xl border - 2 cursor - pointer transition - all duration - 200 ${shippingMode === 'delivery'
                           ? 'border-yellow-500 bg-yellow-50/50 shadow-md shadow-yellow-500/10'
                           : 'border-gray-200 hover:border-yellow-400 hover:shadow-sm'
-                          }`}
+                          } `}
                       >
                         <input
                           type="radio"
@@ -850,14 +854,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           onChange={() => setShippingMode('delivery')}
                           className="sr-only"
                         />
-                        <Truck className={`h-7 w-7 ${shippingMode === 'delivery' ? 'text-yellow-600' : 'text-gray-400'}`} />
+                        <Truck className={`h - 7 w - 7 ${shippingMode === 'delivery' ? 'text-yellow-600' : 'text-gray-400'} `} />
                         <p className="font-bold text-gray-900">Kirim</p>
                       </label>
                       <label
-                        className={`flex items-center gap-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${shippingMode === 'keep'
+                        className={`flex items - center gap - 4 p - 5 rounded - xl border - 2 cursor - pointer transition - all duration - 200 ${shippingMode === 'keep'
                           ? 'border-amber-500 bg-amber-50/50 shadow-md shadow-amber-500/10'
                           : 'border-gray-200 hover:border-amber-400 hover:shadow-sm'
-                          }`}
+                          } `}
                       >
                         <input
                           type="radio"
@@ -867,7 +871,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           onChange={() => setShippingMode('keep')}
                           className="sr-only"
                         />
-                        <Archive className={`h-7 w-7 ${shippingMode === 'keep' ? 'text-amber-600' : 'text-gray-400'}`} />
+                        <Archive className={`h - 7 w - 7 ${shippingMode === 'keep' ? 'text-amber-600' : 'text-gray-400'} `} />
                         <p className="font-bold text-gray-900">Keep</p>
                       </label>
                     </div>
@@ -886,7 +890,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               {shippingMode === 'delivery' && (
                 <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
                   <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">📍 Alamat Pengiriman</h3>
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-yellow-700" />
+                      Alamat Pengiriman
+                    </h3>
                     <button
                       onClick={() => {
                         setEditingAddress(null);
@@ -907,10 +914,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       {addresses.map((address) => (
                         <label
                           key={address.id}
-                          className={`block rounded-xl border-2 p-4 transition cursor-pointer hover:shadow-sm ${selectedAddressId === address.id
+                          className={`block rounded - xl border - 2 p - 4 transition cursor - pointer hover: shadow - sm ${selectedAddressId === address.id
                             ? 'border-yellow-500 bg-yellow-50/30 shadow-md shadow-yellow-500/10'
                             : 'border-gray-200 hover:border-yellow-400'
-                            }`}
+                            } `}
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
@@ -1030,14 +1037,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       if (!item) return null;
 
                       const itemName = item.name || 'Product';
-                      const itemImage = item.image || `data:image/svg+xml;base64,${btoa('<svg width="80" height="80" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" fill="#f3f4f6"/><text x="40" y="45" text-anchor="middle" fill="#6b7280" font-size="12" font-family="Arial">Product</text></svg>')}`;
+                      const itemImage = item.image || `data: image / svg + xml; base64, ${btoa('<svg width="80" height="80" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" fill="#f3f4f6"/><text x="40" y="45" text-anchor="middle" fill="#6b7280" font-size="12" font-family="Arial">Product</text></svg>')} `;
                       const itemPrice = item.price || 0;
                       const itemQuantity = item.quantity || 1;
                       const variant = item.variant || {};
-                      const productId = item.productId || item.id || `product-${index}`;
+                      const productId = item.productId || item.id || `product - ${index} `;
 
                       return (
-                        <div key={`${productId}-${variant.size || 'default'}-${variant.color || 'default'}`} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white/70 p-3">
+                        <div key={`${productId} -${variant.size || 'default'} -${variant.color || 'default'} `} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white/70 p-3">
                           <img
                             src={itemImage}
                             alt={itemName}
@@ -1175,7 +1182,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
               {/* Payment Method */}
               <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
-                <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">💳 Metode Pembayaran</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-yellow-700" />
+                  Metode Pembayaran
+                </h3>
                 {paymentMethodsLoading ? (
                   <div className="space-y-2">
                     {[...Array(2)].map((_, idx) => (
@@ -1189,7 +1199,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 ) : (
                   <div className="space-y-3">
                     {paymentMethods.map((method) => (
-                      <label key={method.id} className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 transition cursor-pointer hover:shadow-sm ${formData.paymentMethodId === method.id ? 'border-yellow-500 bg-yellow-50/30 shadow-md shadow-yellow-500/10' : 'border-gray-200 hover:border-yellow-400'}`}>
+                      <label key={method.id} className={`flex items - center gap - 3 rounded - xl border - 2 px - 4 py - 3 transition cursor - pointer hover: shadow - sm ${formData.paymentMethodId === method.id ? 'border-[#EBC66B] bg-yellow-50/30 shadow-sm' : 'border-gray-200 hover:border-yellow-200'} `}>
                         <input
                           type="radio"
                           name="paymentMethodId"
@@ -1213,8 +1223,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
               {/* Voucher Section */}
               <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
-                <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                  <Gift className="w-5 h-5 text-green-600" />
+                <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <Gift className="w-5 h-5 text-yellow-700" />
                   Voucher
                 </h3>
 
@@ -1249,7 +1259,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       <button
                         onClick={() => handleApplyVoucher()}
                         disabled={voucherLoading || !voucherCode}
-                        className="px-6 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-xl text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition shadow-md shadow-yellow-500/30"
+                        className="px-6 py-2.5 bg-[#EBC66B] hover:bg-[#DDAF4C] text-white rounded-xl text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
                       >
                         {voucherLoading ? '...' : 'Pakai'}
                       </button>
@@ -1265,10 +1275,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                               key={v.id}
                               onClick={() => handleApplyVoucher(v)}
                               disabled={getTotalPrice() < v.minPurchase}
-                              className={`w-full text-left p-3 rounded-lg border transition ${getTotalPrice() >= v.minPurchase
+                              className={`w - full text - left p - 3 rounded - lg border transition ${getTotalPrice() >= v.minPurchase
                                 ? 'border-purple-200 bg-purple-50 hover:bg-purple-100'
                                 : 'border-slate-200 bg-slate-50 opacity-60'
-                                }`}
+                                } `}
                             >
                               <div className="flex items-center justify-between">
                                 <div>
@@ -1395,8 +1405,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </div>
 
               <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/50 p-5 text-sm text-gray-700">
-                <h4 className="text-base font-bold text-amber-700 flex items-center gap-2">💡 Tips Checkout</h4>
-                <ul className="mt-3 space-y-2 list-disc pl-4">
+                <h4 className="text-base font-bold text-yellow-700 flex items-center gap-2">💡 Tips Checkout</h4>
+                <ul className="mt-3 space-y-2 list-disc pl-4 text-slate-700">
                   <li>Pastikan alamat lengkap beserta RT/RW dan patokan lokasi.</li>
                   <li>Untuk dropship, isi nama & nomor pengirim agar tercetak di resi.</li>
                   <li>Upload bukti transfer di menu Pesanan setelah pembayaran.</li>
