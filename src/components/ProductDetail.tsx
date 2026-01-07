@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { Plus, Minus, ShoppingCart, Heart, Share2, Star, ArrowLeft } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, Heart, Share2, ArrowLeft } from 'lucide-react';
 import { useToast } from './ToastProvider';
 import { Product } from '../types';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
@@ -397,89 +397,88 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-40 sm:pb-32">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-40 bg-white shadow-sm">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-2 px-3 py-3 sm:px-4">
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+    <div className="relative min-h-screen bg-black overflow-x-hidden">
+      {/* IMMERSIVE FULL SCREEN HERO IMAGE - 70% viewport */}
+      <div className="relative h-[70vh] w-full bg-gray-900">
+        <img
+          src={currentProduct.images?.[selectedImageIndex] || currentProduct.image || '/placeholder-currentProduct.jpg'}
+          alt={currentProduct.name}
+          className="w-full h-full object-contain cursor-zoom-in"
+          onClick={handleZoomOpen}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = '/placeholder-currentProduct.jpg';
+          }}
+        />
+
+        {/* Gradient overlays for better readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none" />
+
+        {/* TRANSPARENT FLOATING HEADER (Top overlay) */}
+        <div className="absolute top-0 left-0 right-0 z-50 px-4 py-4">
+          <div className="flex items-center justify-between">
+            {/* Left: Back button */}
             <button
               onClick={onBack}
-              className="rounded-full p-2 text-gray-600 transition hover:bg-gray-100 flex-shrink-0"
+              className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition hover:bg-white/30"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <div className="min-w-0">
-              <h1 className="text-sm font-semibold text-gray-900 truncate">Detail Produk</h1>
-              <p className="text-xs text-gray-500 hidden lg:block">Lihat informasi lengkap produk</p>
+
+            {/* Right: Actions */}
+            <div className="flex items-center gap-2">
+              <button className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition hover:bg-white/30">
+                <Share2 className="h-4 w-4" />
+              </button>
+              <button className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition hover:bg-white/30">
+                <Heart className="h-4 w-4" />
+              </button>
+              <button
+                onClick={onNavigateToCart || (() => { })}
+                className="relative w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center text-white transition hover:from-yellow-600 hover:to-yellow-700 shadow-lg"
+              >
+                <ShoppingCart className="h-4 w-4" />
+                {cartItemCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                    {cartItemCount}
+                  </span>
+                )}
+              </button>
             </div>
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-            <button className="rounded-full border border-gray-200 bg-white p-2 text-gray-600 transition hover:text-brand-primary">
-              <Share2 className="h-4 w-4" />
-            </button>
-            <button className="rounded-full border border-gray-200 bg-white p-2 text-gray-600 transition hover:text-rose-500">
-              <Heart className="h-4 w-4" />
-            </button>
-            <button
-              onClick={onNavigateToCart || (() => { })}
-              className="relative inline-flex items-center gap-1.5 rounded-full bg-brand-primary px-3 py-2 sm:px-4 text-sm font-semibold text-white transition hover:bg-brand-primary/90 whitespace-nowrap"
-            >
-              <ShoppingCart className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden md:inline">Keranjang</span>
-              {cartItemCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
-                  {cartItemCount}
-                </span>
-              )}
-            </button>
           </div>
         </div>
-      </div>
 
-      {/* Product Images */}
-      <div className="bg-white">
-        <div className="relative aspect-[3/4] bg-gray-100 cursor-zoom-in" onClick={handleZoomOpen}>
-          <img
-            src={currentProduct.images?.[selectedImageIndex] || currentProduct.image || '/placeholder-currentProduct.jpg'}
-            alt={currentProduct.name}
-            className="w-full h-full object-contain"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = '/placeholder-currentProduct.jpg';
-            }}
-          />
-
-          {/* Zoom hint */}
-          <div className="absolute bottom-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
-            🔍 Tap untuk zoom
+        {/* Badge overlays on image */}
+        {currentProduct.isFlashSale && (
+          <div className="absolute top-16 left-4 rounded-full bg-red-500 px-3 py-1 text-xs font-bold text-white shadow-lg animate-pulse">
+            FLASH SALE
           </div>
+        )}
+        {currentProduct.status === 'po' && (
+          <div className="absolute top-16 right-4 rounded-full bg-orange-500 px-3 py-1 text-xs font-bold text-white shadow-lg">
+            PRE ORDER
+          </div>
+        )}
 
-          {currentProduct.isFlashSale && (
-            <div className="absolute top-4 left-4 rounded-full bg-red-500 px-4 py-1 text-sm font-semibold text-white shadow-lg">
-              FLASH SALE
-            </div>
-          )}
-
-          {currentProduct.status === 'po' && (
-            <div className="absolute top-4 right-4 rounded-full bg-orange-500 px-4 py-1 text-sm font-semibold text-white shadow-lg">
-              PRE ORDER
-            </div>
-          )}
+        {/* Zoom hint - bottom of hero */}
+        <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full">
+          🔍 Tap untuk zoom
         </div>
 
+        {/* Image Thumbnails (if multiple) - Floating */}
         {currentProduct.images && currentProduct.images.length > 1 && (
-          <div className="flex space-x-2 p-4 overflow-x-auto">
+          <div className="absolute bottom-4 left-4 right-16 flex gap-2 overflow-x-auto scrollbar-hide">
             {currentProduct.images.map((image, index) => (
               <button
                 key={index}
                 onClick={() => setSelectedImageIndex(index)}
-                className={`flex-shrink-0 rounded-2xl border-2 p-1 transition ${selectedImageIndex === index ? 'border-brand-primary shadow' : 'border-transparent'
+                className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition ${selectedImageIndex === index ? 'border-yellow-400 shadow-lg' : 'border-white/40'
                   }`}
               >
                 <img
                   src={image}
                   alt={`${currentProduct.name} ${index + 1}`}
-                  className="h-16 w-16 rounded-xl object-cover"
+                  className="w-full h-full object-cover"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.src = '/placeholder-currentProduct.jpg';
@@ -491,272 +490,203 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         )}
       </div>
 
-      {/* Product Info */}
-      <div className="bg-white mt-2 p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
+      {/* FLOATING INFO SHEET - Overlaps hero with rounded top */}
+      <div className="relative -mt-8 bg-white rounded-t-3xl shadow-2xl pb-32">
+        <div className="px-4 py-6 space-y-6">
+          {/* Product Title & Price */}
+          <div>
             {currentProduct.brand && (
-              <div className="mb-1">
-                <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-semibold rounded uppercase tracking-wide">
-                  {currentProduct.brand}
-                </span>
-              </div>
+              <span className="inline-block px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs font-bold rounded uppercase tracking-wide mb-2">
+                {currentProduct.brand}
+              </span>
             )}
-            <h1 className="text-xl font-bold text-gray-800 mb-2">{currentProduct.name}</h1>
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                ))}
-                <span className="text-sm text-gray-600 ml-1">(4.8)</span>
-              </div>
-              <span className="text-sm text-gray-500">• Terjual 150+</span>
-            </div>
-          </div>
-        </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">{currentProduct.name}</h1>
 
-        <div className="mb-4">
-          {currentProduct.isFlashSale && currentProduct.flashSalePrice > 0 ? (
-            <div className="space-y-1">
-              <div className="flex items-center space-x-2">
-                <span className="text-2xl font-bold text-red-600">
-                  Rp {currentProduct.flashSalePrice.toLocaleString('id-ID')}
-                </span>
-                <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded">
-                  -{Math.round((1 - currentProduct.flashSalePrice / (currentProduct.originalRetailPrice || currentProduct.retailPrice)) * 100)}%
-                </span>
-              </div>
-              <div className="text-lg text-gray-500 line-through">
-                Rp {(currentProduct.originalRetailPrice || currentProduct.retailPrice).toLocaleString('id-ID')}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              <div className="text-2xl font-bold text-pink-600">
-                Rp {getPrice().toLocaleString('id-ID')}
-              </div>
-              {user?.role === 'reseller' ? (
-                <div className="text-sm text-blue-600 font-medium">
-                  Harga Reseller (Retail: Rp {currentProduct.retailPrice.toLocaleString('id-ID')})
-                </div>
-              ) : (
-                <button
-                  onClick={handleResellerPriceClick}
-                  className="text-sm text-green-600 font-medium hover:text-green-700 underline transition-colors"
-                >
-                  💬 Info Harga Reseller?
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Stock and Status Info */}
-        <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
-          <div className="flex items-center space-x-4">
-            <div className="text-sm">
-              <span className="text-gray-600">Total Stok: </span>
-              <span className={`font-semibold ${getTotalStock() > 10 ? 'text-green-600' :
-                getTotalStock() > 0 ? 'text-yellow-600' : 'text-red-600'
-                }`}>
-                {getTotalStock()}
-              </span>
-            </div>
-            <div className="text-sm">
-              <span className="text-gray-600">Status: </span>
-              <span className={`font-semibold ${currentProduct.status === 'ready' ? 'text-green-600' : 'text-orange-600'
-                }`}>
-                {currentProduct.status === 'ready' ? 'Ready Stock' : 'Pre Order'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Variant Stock Display */}
-        {selectedSize && selectedColor && (
-          <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="text-sm">
-              <span className="text-blue-600 font-medium">Stok {selectedSize} - {selectedColor}: </span>
-              <span className={`font-bold ${getSelectedVariantStock() > 5 ? 'text-green-600' :
-                getSelectedVariantStock() > 0 ? 'text-yellow-600' : 'text-red-600'
-                }`}>
-                {getSelectedVariantStock()} pcs
-              </span>
-            </div>
-          </div>
-        )}
-        <div className="border-t pt-4">
-          <p className="text-gray-600 leading-relaxed whitespace-pre-wrap text-left">{currentProduct.description}</p>
-        </div>
-      </div>
-
-      {/* Variants Selection */}
-      {currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0 && (
-        <div className="bg-white mt-2 p-4">
-          {/* Variant/Color Selection - NOW FIRST */}
-          <div className="mb-6">
-            <h3 className="font-semibold text-gray-800 mb-3">Pilih Varian</h3>
-            <div className="flex flex-wrap gap-2">
-              {(currentProduct.variants?.colors || []).map((color) => {
-                const colorStock = selectedSize
-                  ? getVariantStock(selectedSize, color)
-                  : (currentProduct.variants?.sizes || []).reduce((total, size) => total + getVariantStock(size, color), 0);
-
-                return (
-                  <button
-                    key={color}
-                    onClick={() => setSelectedColor(color)}
-                    disabled={colorStock === 0}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition ${selectedColor === color
-                      ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/40'
-                      : colorStock === 0
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-700 border border-gray-200 hover:text-brand-primary'
-                      }`}
-                  >
-                    <span>{color}</span>
-                    <span className="block text-xs font-normal text-gray-500">
-                      {colorStock > 0 ? `${colorStock} pcs` : 'Habis'}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {selectedColor && (
-              <p className="mt-2 text-xs text-gray-500">
-                💡 Stok ukuran ditampilkan untuk varian {selectedColor}
-              </p>
-            )}
-          </div>
-
-          {/* Size Selection - NOW SECOND */}
-          <div className="mb-6">
-            <h3 className="font-semibold text-gray-800 mb-3">Pilih Ukuran</h3>
-            <div className="flex flex-wrap gap-2">
-              {(currentProduct.variants?.sizes || []).map((size) => {
-                // Calculate stock for this size based on selected color or all colors
-                const sizeTotalStock = selectedColor
-                  ? getVariantStock(size, selectedColor)
-                  : (currentProduct.variants?.colors || []).reduce((total, color) => {
-                    return total + getVariantStock(size, color);
-                  }, 0);
-
-                return (
-                  <button
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
-                    disabled={sizeTotalStock === 0}
-                    className={`relative rounded-full px-4 py-2 text-sm font-semibold transition shadow-sm ${selectedSize === size
-                      ? 'bg-brand-primary text-white shadow-brand-card'
-                      : sizeTotalStock === 0
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-700 hover:text-brand-primary border border-gray-200'
-                      }`}
-                  >
-                    <span>{size}</span>
-                    {sizeTotalStock === 0 && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                    )}
-                    {currentProduct.variants.stock && (
-                      <span className="block text-xs font-normal text-gray-500">
-                        {sizeTotalStock > 0 ? `${sizeTotalStock} pcs` : 'Habis'}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Quantity Selection */}
-      <div className="bg-white mt-2 p-4 mb-4">
-        <div className="mb-4">
-          <h3 className="font-semibold text-gray-800 mb-3">Jumlah</h3>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-3 bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-10 h-10 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-              <span className="w-12 text-center font-semibold">{quantity}</span>
-              <button
-                onClick={() => {
-                  const maxStock = getSelectedVariantStock();
-                  if (quantity < maxStock) {
-                    setQuantity(quantity + 1);
-                  }
-                }}
-                disabled={quantity >= getSelectedVariantStock()}
-                className={`w-10 h-10 flex items-center justify-center rounded-md transition-colors ${quantity >= getSelectedVariantStock()
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'hover:bg-gray-200'
-                  }`}
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="text-sm text-gray-600">
-              {selectedSize && selectedColor ? (
-                <>
-                  Stok {selectedSize} - {selectedColor}:{' '}
-                  <span className={`font-semibold ${getSelectedVariantStock() > 5 ? 'text-green-600' :
-                    getSelectedVariantStock() > 0 ? 'text-yellow-600' : 'text-red-600'
-                    }`}>
-                    {getSelectedVariantStock()} pcs
+            {/* Price */}
+            {currentProduct.isFlashSale && currentProduct.flashSalePrice > 0 ? (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-3xl font-bold text-red-600">
+                    Rp {currentProduct.flashSalePrice.toLocaleString('id-ID')}
                   </span>
-                </>
-              ) : (
-                <>
-                  Stok tersedia:{' '}
-                  <span className="font-semibold">{getTotalStock()} pcs</span>
-                </>
+                  <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded font-bold">
+                    -{Math.round((1 - currentProduct.flashSalePrice / (currentProduct.originalRetailPrice || currentProduct.retailPrice)) * 100)}%
+                  </span>
+                </div>
+                <div className="text-lg text-gray-400 line-through">
+                  Rp {(currentProduct.originalRetailPrice || currentProduct.retailPrice).toLocaleString('id-ID')}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
+                  Rp {currentProduct.retailPrice.toLocaleString('id-ID')}
+                </div>
+
+                {/* Reseller Price - Match ProductCard Style */}
+                {user?.role === 'reseller' ? (
+                  <div className="inline-flex items-center gap-2 text-sm bg-yellow-50 border border-yellow-200 py-2 px-3 rounded-lg">
+                    <span className="text-yellow-700 font-medium opacity-80">Reseller:</span>
+                    <span className="text-yellow-800 font-bold">Rp {currentProduct.resellerPrice.toLocaleString('id-ID')}</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleResellerPriceClick}
+                    className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-yellow-600 transition-colors"
+                  >
+                    <span>Info Harga Reseller</span>
+                    <span className="text-xs">▼</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Variant Selection - SCROLLABLE HORIZONTAL */}
+          {currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0 && (
+            <div className="space-y-4">
+              {/* VARIAN (Color/Letter) - Horizontal Scroll */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-800 mb-2">Varian</h3>
+                <div className="relative">
+                  <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    {(currentProduct.variants?.colors || []).map((color) => {
+                      const colorStock = selectedSize
+                        ? getVariantStock(selectedSize, color)
+                        : (currentProduct.variants?.sizes || []).reduce((total, size) => total + getVariantStock(size, color), 0);
+
+                      return (
+                        <button
+                          key={color}
+                          onClick={() => setSelectedColor(color)}
+                          disabled={colorStock === 0}
+                          className={`flex-shrink-0 min-w-[60px] px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all duration-300 ${selectedColor === color
+                            ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white border-yellow-600 shadow-lg shadow-yellow-500/50 scale-105'
+                            : colorStock === 0
+                              ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                              : 'bg-white text-gray-700 border-gray-300 hover:border-yellow-500'
+                            }`}
+                        >
+                          {color}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* Fade indicator */}
+                  {currentProduct.variants?.colors && currentProduct.variants.colors.length > 5 && (
+                    <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none" />
+                  )}
+                </div>
+              </div>
+
+              {/* SIZE - Horizontal Scroll */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-800 mb-2">Ukuran</h3>
+                <div className="relative">
+                  <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    {(currentProduct.variants?.sizes || []).map((size) => {
+                      const sizeTotalStock = selectedColor
+                        ? getVariantStock(size, selectedColor)
+                        : (currentProduct.variants?.colors || []).reduce((total, color) => total + getVariantStock(size, color), 0);
+
+                      return (
+                        <button
+                          key={size}
+                          onClick={() => setSelectedSize(size)}
+                          disabled={sizeTotalStock === 0}
+                          className={`flex-shrink-0 min-w-[50px] px-3 py-2 rounded-full text-sm font-bold border-2 transition-all duration-300 ${selectedSize === size
+                            ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white border-yellow-600 shadow-lg shadow-yellow-500/50 scale-105'
+                            : sizeTotalStock === 0
+                              ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
+                              : 'bg-white text-gray-700 border-gray-300 hover:border-yellow-500'
+                            }`}
+                        >
+                          {size}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* Fade indicator for many sizes */}
+                  {currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 7 && (
+                    <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none" />
+                  )}
+                </div>
+              </div>
+
+              {/* Selected variant stock alert */}
+              {selectedSize && selectedColor && (
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-xs text-blue-700">
+                    📦 Stok <strong>{selectedSize} - {selectedColor}</strong>: <strong className={getSelectedVariantStock() > 5 ? 'text-green-600' : getSelectedVariantStock() > 0 ? 'text-yellow-600' : 'text-red-600'}>{getSelectedVariantStock()} pcs</strong>
+                  </p>
+                </div>
               )}
+            </div>
+          )}
+
+          {/* Quantity Selector - Compact */}
+          <div>
+            <h3 className="text-sm font-bold text-gray-800 mb-2">Jumlah</h3>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-gray-100 rounded-full p-1">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 transition-colors"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <span className="w-10 text-center font-bold">{quantity}</span>
+                <button
+                  onClick={() => {
+                    const maxStock = getSelectedVariantStock();
+                    if (quantity < maxStock) setQuantity(quantity + 1);
+                  }}
+                  disabled={quantity >= getSelectedVariantStock()}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${quantity >= getSelectedVariantStock() ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-200'
+                    }`}
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+              <span className="text-xs text-gray-600">
+                Maks: <strong>{getSelectedVariantStock()}</strong> pcs
+              </span>
             </div>
           </div>
 
-          {/* Stock Warning */}
-          {selectedSize && selectedColor && quantity >= getSelectedVariantStock() && (
-            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-xs text-yellow-700">
-                ⚠️ Maksimal pembelian untuk {selectedSize} - {selectedColor} adalah {getSelectedVariantStock()} pcs
-              </p>
-            </div>
-          )}
+          {/* Description */}
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-bold text-gray-800 mb-2">Deskripsi</h3>
+            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{currentProduct.description}</p>
+          </div>
         </div>
       </div>
 
-      {/* Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white shadow-lg safe-area-inset-bottom">
-        <div className="mx-auto flex max-w-4xl flex-col gap-2 px-3 py-3 sm:px-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* STICKY BOTTOM CTA - Gold Gradient */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-2xl safe-area-inset-bottom">
+        <div className="px-4 py-3 flex items-center gap-3">
+          {/* Price Summary */}
           <div className="flex-shrink-0">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Subtotal</p>
-            <p className="text-xl sm:text-2xl font-bold text-brand-primary">
+            <p className="text-xs text-gray-500">Total</p>
+            <p className="text-lg font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
               Rp {totalPrice.toLocaleString('id-ID')}
             </p>
-            {requiresVariantSelection && (
-              <p className="text-xs text-slate-500 truncate">
-                {isVariantIncomplete ? 'Pilih ukuran dan warna terlebih dahulu' : `${selectedSize} / ${selectedColor}`}
-              </p>
-            )}
           </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:min-w-[400px]">
+
+          {/* Actions */}
+          <div className="flex-1 flex gap-2">
             <button
               onClick={handleAddToCart}
               disabled={isVariantIncomplete}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-brand-primary/30 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary shadow-sm transition hover:bg-brand-primary/5 disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
+              className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full border-2 border-yellow-500 bg-white text-yellow-600 font-bold text-sm transition hover:bg-yellow-50 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <ShoppingCart className="h-4 w-4" />
-              <span className="hidden sm:inline">Tambah ke </span>Keranjang
+              Keranjang
             </button>
             <button
               onClick={handleBuyNow}
               disabled={isVariantIncomplete}
-              className="inline-flex flex-1 items-center justify-center rounded-full bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white shadow-brand-card transition hover:bg-brand-primary/90 disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
+              className="flex-1 flex items-center justify-center px-4 py-2.5 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-bold text-sm shadow-lg transition hover:from-yellow-600 hover:to-yellow-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Beli Sekarang
             </button>
