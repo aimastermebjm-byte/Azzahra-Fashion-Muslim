@@ -17,7 +17,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPage
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-brand-primary border-t border-brand-primaryLight shadow-lg">
+    <div className="fixed bottom-0 left-0 right-0 bg-brand-primary shadow-2xl">
       <div className="flex">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -27,13 +27,15 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPage
             <button
               key={item.id}
               onClick={() => onPageChange(item.id)}
-              className={`flex-1 flex flex-col items-center py-3 px-2 transition-colors ${isActive
+              className={`flex-1 flex flex-col items-center py-2.5 px-2 transition-all duration-300 ${isActive
                   ? 'text-brand-accent'
-                  : 'text-brand-accent/40 hover:text-brand-accent/70'
+                  : 'text-brand-accent/30 hover:text-brand-accent/60'
                 }`}
             >
-              <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-brand-accent' : 'text-brand-accent/40'}`} />
-              <span className={`text-xs font-medium ${isActive ? 'text-brand-accent' : 'text-brand-accent/40'}`}>
+              <div className={`relative ${isActive ? 'drop-shadow-[0_0_8px_rgba(212,175,55,0.8)]' : ''}`}>
+                <Icon className={`w-5 h-5 mb-0.5 transition-all ${isActive ? 'text-brand-accent scale-110' : 'text-brand-accent/30'}`} />
+              </div>
+              <span className={`text-[10px] font-medium transition-all ${isActive ? 'text-brand-accent' : 'text-brand-accent/30'}`}>
                 {item.label}
               </span>
             </button>
