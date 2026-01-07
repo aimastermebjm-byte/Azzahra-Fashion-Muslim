@@ -565,32 +565,24 @@ const HomePage: React.FC<HomePageProps> = ({
       {/* Hero Banner - Show when NO Flash Sale - NOOR Style */}
       {flashSaleProducts.length === 0 && !loading && (
         <div className="px-3 sm:px-4 mb-4">
-          <div className="rounded-2xl overflow-hidden shadow-elegant relative h-[180px] sm:h-[220px]">
-            {/* Unified Cream Background */}
-            <div className="absolute inset-0 bg-[#F5EDE6]"></div>
-
-            {/* Model Image - Right Side */}
+          <div
+            className="rounded-2xl overflow-hidden shadow-elegant relative h-[180px] sm:h-[220px] cursor-pointer"
+            onClick={() => setSelectedCategory('all')}
+          >
+            {/* Full Image Background */}
             <img
               src="/hero-model.png"
               alt="Azzahra Fashion Model"
-              className="absolute right-0 top-0 h-full w-[55%] sm:w-[50%] object-cover object-[30%_10%]"
+              className="absolute inset-0 w-full h-full object-cover object-[60%_15%]"
             />
 
-            {/* Text Content - Overlaid on Left */}
-            <div className="absolute inset-0 flex flex-col justify-center p-5 sm:p-8">
-              <div className="max-w-[50%] sm:max-w-[45%]">
-                <h2 className="font-display text-xl sm:text-3xl font-semibold text-brand-primary leading-tight mb-1 sm:mb-2">
-                  Elegance<br />
-                  <span className="text-brand-accent">in Modesty.</span>
-                </h2>
-                <p className="text-gray-600 text-[10px] sm:text-sm mb-2 sm:mb-4">Koleksi busana muslim terbaik</p>
-                <button
-                  onClick={() => setSelectedCategory('all')}
-                  className="bg-brand-primary text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-sm font-medium hover:bg-brand-primaryDark transition-all shadow-md"
-                >
-                  Lihat Koleksi
-                </button>
-              </div>
+            {/* Text Directly on Image */}
+            <div className="absolute bottom-0 left-0 p-4 sm:p-6">
+              <h2 className="font-display text-xl sm:text-3xl font-semibold text-brand-primary leading-tight drop-shadow-sm">
+                Elegance<br />
+                <span className="text-brand-accent">in Modesty.</span>
+              </h2>
+              <p className="text-gray-700 text-[10px] sm:text-xs mt-1 drop-shadow-sm">Tap untuk lihat koleksi</p>
             </div>
           </div>
         </div>
