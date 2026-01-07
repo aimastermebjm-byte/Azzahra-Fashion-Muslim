@@ -641,8 +641,8 @@ const HomePage: React.FC<HomePageProps> = ({
                   setActiveTab(category.id === 'all' ? 'all' : 'terbaru');
                 }}
                 className={`flex items-center space-x-1.5 px-6 py-2.5 rounded-full text-sm font-display tracking-wide transition-all whitespace-nowrap border ${isSelected
-                  ? 'bg-black border-brand-accent text-brand-accent shadow-lg shadow-brand-accent/10' // Active: Black + Gold
-                  : 'bg-white border-brand-accent/30 text-gray-500 hover:border-brand-accent' // Inactive: White + Gold Tint
+                  ? 'bg-black border-[#FFD700] text-[#FFD700] shadow-[0_0_15px_rgba(255,215,0,0.3)] drop-shadow-[0_0_2px_rgba(255,215,0,0.5)] font-medium' // Active: Deep Black + Glowing Gold
+                  : 'bg-white border-brand-accent/30 text-gray-500 hover:border-brand-accent hover:text-brand-primary'
                   }`}
               >
                 <span>{category.name}</span>
@@ -665,9 +665,9 @@ const HomePage: React.FC<HomePageProps> = ({
           <div className="relative">
             <button
               onClick={() => setSortBy(sortBy === 'terbaru' ? 'termurah' : 'terbaru')}
-              className="flex items-center space-x-2 px-5 py-2 bg-gradient-to-r from-[#D4AF37] to-[#E6C665] text-brand-primary font-display font-medium text-sm rounded-full shadow-md shadow-brand-accent/20 active:scale-95 transition-all"
+              className="flex items-center space-x-2 px-5 py-2 bg-gradient-to-r from-[#D4AF37] via-[#F2D785] to-[#D4AF37] text-black font-display font-medium text-sm rounded-full shadow-[0_0_15px_rgba(212,175,55,0.4)] active:scale-95 transition-all border border-[#FFD700]/30"
             >
-              <ArrowDownUp className="w-4 h-4 text-brand-primary/80" />
+              <ArrowDownUp className="w-4 h-4 text-black/80" />
               <span>{sortBy === 'terbaru' ? 'Terbaru' : 'Termurah'}</span>
             </button>
           </div>
