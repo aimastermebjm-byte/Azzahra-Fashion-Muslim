@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import FeaturedCarouselItem from './FeaturedCarouselItem';
 import { useWishlist } from '../hooks/useWishlist';
-import { Search, ShoppingCart, Zap, X, Star, ChevronRight } from 'lucide-react';
+import { Search, ShoppingCart, Zap, X, Star, ChevronRight, ArrowDownUp } from 'lucide-react';
 import ProductCard from './ProductCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
@@ -640,9 +640,9 @@ const HomePage: React.FC<HomePageProps> = ({
                   setSelectedCategory(category.id);
                   setActiveTab(category.id === 'all' ? 'all' : 'terbaru');
                 }}
-                className={`flex items-center space-x-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all whitespace-nowrap border ${isSelected
-                  ? 'bg-brand-primary border-brand-primary text-brand-accent shadow-md'
-                  : 'bg-white border-gray-200 text-gray-600 hover:border-brand-primary/50'
+                className={`flex items-center space-x-1.5 px-6 py-2.5 rounded-full text-sm font-display tracking-wide transition-all whitespace-nowrap border ${isSelected
+                    ? 'bg-black border-brand-accent text-brand-accent shadow-lg shadow-brand-accent/10' // Active: Black + Gold
+                    : 'bg-white border-brand-accent/30 text-gray-500 hover:border-brand-accent' // Inactive: White + Gold Tint
                   }`}
               >
                 <span>{category.name}</span>
@@ -656,64 +656,38 @@ const HomePage: React.FC<HomePageProps> = ({
       </div>
 
       {/* Filters & Sort - Compact Elegant */}
-      <div className="px-3 sm:px-4 mb-4">
-        <div className="flex flex-wrap gap-2">
-          {/* Sort Options */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-medium text-gray-400 uppercase">Urut:</span>
+
+      {/* Filters & Sort - Split Clean Bar */}
+      <div className="sticky top-[50px] z-20 bg-brand-surface/95 backdrop-blur-sm border-b border-brand-border/30 px-3 sm:px-4 py-3 mb-6 transition-all duration-300">
+        <div className="flex items-center justify-between">
+
+          {/* Left: Sort Dropdown */}
+          <div className="relative">
             <button
-              onClick={() => setSortBy('terbaru')}
-              className={`px - 3 py - 1.5 rounded - lg text - xs font - medium transition - all ${sortBy === 'terbaru'
-                ? 'bg-brand-primary text-white shadow-sm'
-                : 'bg-white text-gray-600 border border-brand-border hover:border-brand-accent'
-                } `}
+              onClick={() => setSortBy(sortBy === 'terbaru' ? 'termurah' : 'terbaru')}
+              className="flex items-center space-x-2 px-5 py-2 bg-gradient-to-r from-[#D4AF37] to-[#E6C665] text-brand-primary font-display font-medium text-sm rounded-full shadow-md shadow-brand-accent/20 active:scale-95 transition-all"
             >
-              Terbaru
-            </button>
-            <button
-              onClick={() => setSortBy('termurah')}
-              className={`px - 3 py - 1.5 rounded - lg text - xs font - medium transition - all ${sortBy === 'termurah'
-                ? 'bg-brand-primary text-white shadow-sm'
-                : 'bg-white text-gray-600 border border-brand-border hover:border-brand-accent'
-                } `}
-            >
-              Termurah
+              <ArrowDownUp className="w-4 h-4 text-brand-primary/80" />
+              <span>{sortBy === 'terbaru' ? 'Urutkan' : 'Termurah'}</span>
             </button>
           </div>
 
-          {/* Status Filter */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-medium text-gray-400 uppercase">Status:</span>
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`px - 3 py - 1.5 rounded - lg text - xs font - medium transition - all ${statusFilter === 'all'
-                ? 'bg-gray-800 text-white shadow-sm'
-                : 'bg-white text-gray-600 border border-brand-border'
-                } `}
-            >
-              Semua
-            </button>
-            <button
-              onClick={() => setStatusFilter('ready')}
-              className={`flex items - center gap - 1 px - 3 py - 1.5 rounded - lg text - xs font - medium transition - all ${statusFilter === 'ready'
-                ? 'bg-brand-success text-white shadow-sm'
-                : 'bg-brand-successLight text-brand-success border border-brand-success/20'
-                } `}
-            >
-              <span className={`w - 1.5 h - 1.5 rounded - full ${statusFilter === 'ready' ? 'bg-white' : 'bg-brand-success'} `}></span>
-              Ready
-            </button>
-            <button
-              onClick={() => setStatusFilter('po')}
-              className={`flex items - center gap - 1 px - 3 py - 1.5 rounded - lg text - xs font - medium transition - all ${statusFilter === 'po'
-                ? 'bg-brand-warning text-white shadow-sm'
-                : 'bg-brand-warningLight text-brand-warning border border-brand-warning/20'
-                } `}
-            >
-              <span className={`w - 1.5 h - 1.5 rounded - full ${statusFilter === 'po' ? 'bg-white' : 'bg-brand-warning'} `}></span>
-              PO
-            </button>
+          {/* Right: Status Filters */}
+          <div className="flex items-center space-x-2">
+            {(['ready', 'po'] as const).map((status) => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(statusFilter === status ? 'all' : status)}
+                className={`px-6 py-2 rounded-full text-sm font-display tracking-wide transition-all border ${statusFilter === status
+                    ? 'bg-white border-brand-accent text-brand-primary shadow-sm ring-1 ring-brand-accent/20'
+                    : 'bg-gray-50/50 border-gray-200 text-gray-400 hover:border-brand-accent/30'
+                  }`}
+              >
+                {status === 'ready' ? 'Ready Stock' : 'Pre-Order'}
+              </button>
+            ))}
           </div>
+
         </div>
       </div>
 
