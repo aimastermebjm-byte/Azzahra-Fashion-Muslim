@@ -123,21 +123,30 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                             {/* Rose-Gold Sparkle Particles Effect */}
                             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 pointer-events-none"></div>
 
-                            {/* 3D Gold Pocket Watch Image - High Quality Asset */}
-                            <div className="relative w-44 h-44 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-700 ease-out mb-6 mt-4">
+                            {/* 3D Gold Pocket Watch Image - Seamlessly Blended */}
+                            <div className="relative w-48 h-48 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-700 ease-out mb-4 mt-2">
                                 {/* Ambient Glow Behind Watch */}
-                                <div className="absolute inset-0 bg-gradient-to-b from-[#D4AF37]/40 via-[#E8C4A8]/30 to-transparent rounded-full blur-[40px] scale-125"></div>
+                                <div className="absolute inset-0 bg-gradient-radial from-[#D4AF37]/30 via-[#E8C4A8]/20 to-transparent rounded-full blur-[50px] scale-150"></div>
 
-                                {/* The 3D Watch Image */}
-                                <img
-                                    src="/gold-pocket-watch.png"
-                                    alt="Gold Pocket Watch"
-                                    className="relative z-10 w-40 h-40 object-contain drop-shadow-[0_10px_30px_rgba(212,175,55,0.4)] animate-float"
-                                />
+                                {/* The 3D Watch Image with Gradient Mask for Seamless Blending */}
+                                <div
+                                    className="relative z-10 w-44 h-44"
+                                    style={{
+                                        maskImage: 'radial-gradient(circle, white 50%, transparent 75%)',
+                                        WebkitMaskImage: 'radial-gradient(circle, white 50%, transparent 75%)'
+                                    }}
+                                >
+                                    <img
+                                        src="/gold-pocket-watch.png"
+                                        alt="Gold Pocket Watch"
+                                        className="w-full h-full object-contain drop-shadow-[0_10px_30px_rgba(212,175,55,0.5)] animate-float"
+                                    />
+                                </div>
 
                                 {/* Sparkle Effects */}
-                                <div className="absolute top-2 right-2 w-2 h-2 bg-white rounded-full animate-pulse opacity-80"></div>
-                                <div className="absolute bottom-4 left-4 w-1.5 h-1.5 bg-[#FFF8DC] rounded-full animate-pulse opacity-60" style={{ animationDelay: '0.5s' }}></div>
+                                <div className="absolute top-4 right-4 w-2 h-2 bg-white rounded-full animate-pulse opacity-90 z-20"></div>
+                                <div className="absolute top-8 left-6 w-1.5 h-1.5 bg-[#FFF8DC] rounded-full animate-pulse opacity-70 z-20" style={{ animationDelay: '0.3s' }}></div>
+                                <div className="absolute bottom-6 right-8 w-1 h-1 bg-[#D4AF37] rounded-full animate-pulse opacity-60 z-20" style={{ animationDelay: '0.6s' }}></div>
                             </div>
 
 
