@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Zap, Package, User } from 'lucide-react';
+import { Home, Tag, ShoppingBag, User } from 'lucide-react';
 
 type Page = 'home' | 'flash-sale' | 'orders' | 'account';
 
@@ -11,14 +11,14 @@ interface BottomNavigationProps {
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPageChange }) => {
   const navItems = [
     { id: 'home' as Page, label: 'Beranda', icon: Home },
-    { id: 'flash-sale' as Page, label: 'Flash Sale', icon: Zap },
-    { id: 'orders' as Page, label: 'Pesanan', icon: Package },
+    { id: 'flash-sale' as Page, label: 'Flash Sale', icon: Tag },
+    { id: 'orders' as Page, label: 'Pesanan', icon: ShoppingBag },
     { id: 'account' as Page, label: 'Pengaturan', icon: User },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-brand-primary shadow-2xl">
-      <div className="flex">
+    <div className="fixed bottom-0 left-0 right-0 bg-brand-primary shadow-[0_-5px_20px_rgba(0,0,0,0.3)] border-t border-white/5 backdrop-blur-md">
+      <div className="flex justify-around items-center h-16 safe-area-bottom">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
@@ -27,18 +27,27 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPage
             <button
               key={item.id}
               onClick={() => onPageChange(item.id)}
-              className="flex-1 flex flex-col items-center py-2.5 px-2 transition-all duration-300 group active:scale-95"
+              className="flex-1 flex flex-col items-center justify-center h-full transition-all duration-300 group active:scale-95"
             >
-              <Icon
-                className={`w-5 h-5 mb-0.5 transition-all duration-300 ${isActive
-                    ? 'text-brand-accent drop-shadow-[0_0_8px_rgba(212,175,55,0.8)] scale-110'
-                    : 'text-brand-accent/40 group-hover:text-brand-accent group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]'
-                  }`}
-              />
+              <div className={`relative p-1.5 rounded-xl transition-all duration-500 ease-out ${isActive ? '-translate-y-1' : ''}`}>
+                {/* Active Indicator Glow Background */}
+                {isActive && (
+                  <div className="absolute inset-0 bg-brand-accent/20 blur-xl rounded-full" />
+                )}
+
+                <Icon
+                  className={`w-5 h-5 mb-0.5 transition-all duration-300 ${isActive
+                    ? 'text-brand-accent drop-shadow-[0_0_8px_rgba(212,175,55,0.8)] fill-brand-accent/10 scale-110'
+                    : 'text-brand-accent/40 group-hover:text-brand-accent/80'
+                    }`}
+                  strokeWidth={isActive ? 2.5 : 2}
+                />
+              </div>
+
               <span
-                className={`text-[10px] font-medium transition-all duration-300 ${isActive
-                    ? 'text-brand-accent drop-shadow-[0_0_5px_rgba(212,175,55,0.5)]'
-                    : 'text-brand-accent/40 group-hover:text-brand-accent'
+                className={`text-[9px] font-medium tracking-wide transition-all duration-300 ${isActive
+                  ? 'text-brand-accent drop-shadow-[0_0_5px_rgba(212,175,55,0.5)] translate-y-0'
+                  : 'text-brand-accent/40 group-hover:text-brand-accent/80'
                   }`}
               >
                 {item.label}
