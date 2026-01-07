@@ -665,7 +665,7 @@ const HomePage: React.FC<HomePageProps> = ({
           <div className="relative">
             <button
               onClick={() => setSortBy(sortBy === 'terbaru' ? 'termurah' : 'terbaru')}
-              className="flex items-center space-x-2 px-5 py-2 bg-gradient-to-r from-[#D4AF37] via-[#F2D785] to-[#D4AF37] text-black font-display font-medium text-sm rounded-full shadow-[0_0_15px_rgba(212,175,55,0.4)] active:scale-95 transition-all border border-[#FFD700]/30"
+              className="flex items-center justify-center space-x-2 w-[140px] px-4 py-2 bg-gradient-to-r from-[#D4AF37] via-[#F2D785] to-[#D4AF37] text-black font-display font-medium text-sm rounded-full shadow-[0_0_15px_rgba(212,175,55,0.4)] active:scale-95 transition-all border border-[#FFD700]/30"
             >
               <ArrowDownUp className="w-4 h-4 text-black/80" />
               <span>{sortBy === 'terbaru' ? 'Terbaru' : 'Termurah'}</span>
