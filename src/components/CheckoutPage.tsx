@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Plus, Truck, Archive, CreditCard, ChevronRight, Gift, Tag, Trash2, Edit2, AlertCircle, ShoppingBag, Package, Loader2 } from 'lucide-react';
+import { MapPin, Plus, Truck, Archive, CreditCard, ChevronRight, Gift, Tag, Trash2, Edit2, AlertCircle, ShoppingBag, Package, Loader2, Check } from 'lucide-react';
 import { addressService } from '../services/addressService';
 import AddressForm from './AddressForm';
 import { komerceService, KomerceCostResult } from '../utils/komerceService';
@@ -894,9 +894,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         setEditingAddress(null);
                         setShowAddressModal(true);
                       }}
-                      className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold text-white transition-all transform hover:scale-105 active:scale-95 shadow-md bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] hover:bg-[100%_0] border border-[#D4AF37]/20"
+                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-white transition-all transform hover:scale-105 active:scale-95 shadow-md bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] hover:bg-[100%_0] border border-[#D4AF37]/20"
                     >
-                      <Plus className="h-4 w-4 drop-shadow-sm text-[#5d4008]" />
+                      <Plus className="h-3 w-3 drop-shadow-sm text-[#5d4008]" />
                       <span className="drop-shadow-sm text-[#5d4008]">Tambah Alamat</span>
                     </button>
                   </div>
@@ -917,6 +917,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
+                                <div className={`flex items-center justify-center h-5 w-5 rounded-full border transition-all duration-300 ${selectedAddressId === address.id ? 'border-[#B8860B] bg-white' : 'border-gray-300 bg-white group-hover:border-[#D4AF37]'}`}>
+                                  {selectedAddressId === address.id && <div className="h-3 w-3 rounded-full bg-[#B8860B] shadow-sm transform scale-110" />}
+                                </div>
                                 <input
                                   type="radio"
                                   name="savedAddress"
@@ -932,7 +935,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                                       cityId: address.cityId || ''
                                     }));
                                   }}
-                                  className="h-4 w-4 text-yellow-600"
+                                  className="sr-only"
                                 />
                                 <span className="text-sm font-bold text-gray-900">{address.name}</span>
                                 {address.isDefault && (
@@ -1198,8 +1201,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         ? 'bg-gradient-to-br from-white to-[#FEFAE0] shadow-[0_0_15px_rgba(212,175,55,0.25)]'
                         : 'bg-white border border-gray-100 hover:border-[#D4AF37]/30 hover:shadow-md'
                         }`}>
-                        <div className={`flex items-center justify-center h-5 w-5 rounded-full border transition-all duration-300 ${formData.paymentMethodId === method.id ? 'border-[#B8860B] bg-[#B8860B]' : 'border-gray-300 group-hover:border-[#D4AF37]'}`}>
-                          {formData.paymentMethodId === method.id && <div className="h-2 w-2 rounded-full bg-white" />}
+                        <div className={`flex items-center justify-center h-5 w-5 rounded-full border transition-all duration-300 ${formData.paymentMethodId === method.id ? 'border-[#B8860B] bg-white' : 'border-gray-300 group-hover:border-[#D4AF37]'}`}>
+                          {formData.paymentMethodId === method.id && <div className="h-3 w-3 rounded-full bg-[#B8860B] shadow-sm transform scale-110" />}
                         </div>
                         <input
                           type="radio"
@@ -1327,12 +1330,15 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 {/* Dropship Option */}
                 <div className="border-t pt-4">
                   <label className="flex items-center space-x-3 mb-4">
+                    <div className={`flex items-center justify-center h-5 w-5 rounded border transition-all duration-300 ${formData.isDropship ? 'border-[#B8860B] bg-[#B8860B]' : 'border-gray-300 bg-white group-hover:border-[#D4AF37]'}`}>
+                      {formData.isDropship && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
+                    </div>
                     <input
                       type="checkbox"
                       name="isDropship"
                       checked={formData.isDropship}
                       onChange={handleInputChange}
-                      className="h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
+                      className="sr-only"
                     />
                     <span className="text-sm font-medium text-slate-700">Kirim sebagai dropship</span>
                   </label>
@@ -1432,7 +1438,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               <button
                 onClick={handleSubmitOrder}
                 disabled={loading || (shippingMode === 'delivery' && !selectedAddressId) || !formData.paymentMethodId}
-                className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-white px-8 py-3 rounded-full font-bold text-lg shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] hover:shadow-[0_6px_20px_rgba(153,123,44,0.23)] hover:bg-[100%_0] transition-all transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none relative overflow-hidden group border border-[#D4AF37]/20"
+                className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-white px-6 py-2.5 rounded-full font-bold text-base shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] hover:shadow-[0_6px_20px_rgba(153,123,44,0.23)] hover:bg-[100%_0] transition-all transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none relative overflow-hidden group border border-[#D4AF37]/20"
               >
                 <span className="relative z-10 flex items-center gap-2 drop-shadow-sm text-[#5d4008]">
                   {loading ? 'Memproses...' : (
