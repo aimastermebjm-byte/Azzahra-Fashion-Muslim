@@ -793,7 +793,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const supportsAutomatic = !!selectedCourierOption?.code;
 
   return (
-    <div className="min-h-screen bg-brand-surface pb-16">
+    <div className="min-h-screen bg-gray-50 pb-16">
       <PageHeader
         title="Checkout"
         subtitle={cartCount > 0 ? `${cartCount} produk siap dikirim` : 'Review detail pesanan sebelum konfirmasi pembayaran'}
@@ -830,16 +830,16 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 if (!hasPOItems || !isAllowedRole) return null;
 
                 return (
-                  <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-3">Mode Pengiriman</h3>
+                  <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
+                    <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">📦 Mode Pengiriman</h3>
                     <p className="text-sm text-amber-700 bg-amber-50 p-2 rounded-lg mb-3">
                       ⚠️ Keranjang berisi produk <strong>Pre-Order</strong>
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       <label
-                        className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${shippingMode === 'delivery'
-                          ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
-                          : 'border-slate-200 hover:border-brand-primary/40'
+                        className={`flex items-center gap-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${shippingMode === 'delivery'
+                          ? 'border-yellow-500 bg-yellow-50/50 shadow-md shadow-yellow-500/10'
+                          : 'border-gray-200 hover:border-yellow-400 hover:shadow-sm'
                           }`}
                       >
                         <input
@@ -850,16 +850,13 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           onChange={() => setShippingMode('delivery')}
                           className="sr-only"
                         />
-                        <Truck className={`h-6 w-6 ${shippingMode === 'delivery' ? 'text-brand-primary' : 'text-slate-400'}`} />
-                        <div>
-                          <p className="font-semibold text-slate-900">Kirim ke Alamat</p>
-                          <p className="text-xs text-slate-500">Pilih kurir & hitung ongkir sekarang</p>
-                        </div>
+                        <Truck className={`h-7 w-7 ${shippingMode === 'delivery' ? 'text-yellow-600' : 'text-gray-400'}`} />
+                        <p className="font-bold text-gray-900">Kirim</p>
                       </label>
                       <label
-                        className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${shippingMode === 'keep'
-                          ? 'border-amber-500 bg-amber-50 shadow-sm'
-                          : 'border-slate-200 hover:border-amber-400'
+                        className={`flex items-center gap-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${shippingMode === 'keep'
+                          ? 'border-amber-500 bg-amber-50/50 shadow-md shadow-amber-500/10'
+                          : 'border-gray-200 hover:border-amber-400 hover:shadow-sm'
                           }`}
                       >
                         <input
@@ -870,11 +867,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           onChange={() => setShippingMode('keep')}
                           className="sr-only"
                         />
-                        <Archive className={`h-6 w-6 ${shippingMode === 'keep' ? 'text-amber-600' : 'text-slate-400'}`} />
-                        <div>
-                          <p className="font-semibold text-slate-900">Keep Saja</p>
-                          <p className="text-xs text-slate-500">Atur alamat & kurir nanti</p>
-                        </div>
+                        <Archive className={`h-7 w-7 ${shippingMode === 'keep' ? 'text-amber-600' : 'text-gray-400'}`} />
+                        <p className="font-bold text-gray-900">Keep</p>
                       </label>
                     </div>
                     {shippingMode === 'keep' && (
@@ -890,15 +884,15 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
               {/* Address Input - Only show when shippingMode is 'delivery' */}
               {shippingMode === 'delivery' && (
-                <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
                   <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-slate-900">Alamat Pengiriman</h3>
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">📍 Alamat Pengiriman</h3>
                     <button
                       onClick={() => {
                         setEditingAddress(null);
                         setShowAddressModal(true);
                       }}
-                      className="inline-flex items-center gap-2 rounded-full border border-brand-primary/30 px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/5"
+                      className="inline-flex items-center gap-2 rounded-full border-2 border-yellow-500 px-4 py-2 text-sm font-bold text-yellow-600 transition hover:bg-yellow-50"
                     >
                       <Plus className="h-4 w-4" />
                       Tambah Alamat
@@ -909,13 +903,13 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   {addressesLoading ? (
                     <ListSkeleton items={3} />
                   ) : addresses.length > 0 ? (
-                    <div className="mb-4 space-y-2">
+                    <div className="mb-4 space-y-3">
                       {addresses.map((address) => (
                         <label
                           key={address.id}
-                          className={`block rounded-2xl border p-3 transition ${selectedAddressId === address.id
-                            ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
-                            : 'border-slate-200 hover:border-brand-primary/40'
+                          className={`block rounded-xl border-2 p-4 transition cursor-pointer hover:shadow-sm ${selectedAddressId === address.id
+                            ? 'border-yellow-500 bg-yellow-50/30 shadow-md shadow-yellow-500/10'
+                            : 'border-gray-200 hover:border-yellow-400'
                             }`}
                         >
                           <div className="flex items-start justify-between gap-4">
@@ -936,11 +930,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                                       cityId: address.cityId || ''
                                     }));
                                   }}
-                                  className="h-4 w-4 text-brand-primary"
+                                  className="h-4 w-4 text-yellow-600"
                                 />
-                                <span className="text-sm font-semibold text-slate-900">{address.name}</span>
+                                <span className="text-sm font-bold text-gray-900">{address.name}</span>
                                 {address.isDefault && (
-                                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
+                                  <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">
                                     Utama
                                   </span>
                                 )}
@@ -956,7 +950,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                                   setEditingAddress(address);
                                   setShowAddressModal(true);
                                 }}
-                                className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:text-brand-primary"
+                                className="rounded-lg border border-gray-300 p-2 text-gray-600 transition hover:border-yellow-500 hover:text-yellow-600"
                               >
                                 <Edit2 className="h-4 w-4" />
                               </button>
@@ -1180,8 +1174,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               )}
 
               {/* Payment Method */}
-              <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">Metode Pembayaran</h3>
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
+                <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">💳 Metode Pembayaran</h3>
                 {paymentMethodsLoading ? (
                   <div className="space-y-2">
                     {[...Array(2)].map((_, idx) => (
@@ -1195,17 +1189,17 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 ) : (
                   <div className="space-y-3">
                     {paymentMethods.map((method) => (
-                      <label key={method.id} className={`flex items-center gap-3 rounded-xl border px-3 py-2 transition ${formData.paymentMethodId === method.id ? 'border-brand-primary bg-brand-primary/5' : 'border-slate-200 bg-white'}`}>
+                      <label key={method.id} className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 transition cursor-pointer hover:shadow-sm ${formData.paymentMethodId === method.id ? 'border-yellow-500 bg-yellow-50/30 shadow-md shadow-yellow-500/10' : 'border-gray-200 hover:border-yellow-400'}`}>
                         <input
                           type="radio"
                           name="paymentMethodId"
                           value={method.id}
                           checked={formData.paymentMethodId === method.id}
                           onChange={handleInputChange}
-                          className="h-4 w-4 border-slate-300 text-brand-primary focus:ring-brand-primary"
+                          className="h-4 w-4 border-gray-300 text-yellow-600 focus:ring-yellow-500"
                         />
                         <div>
-                          <p className="text-sm font-semibold text-slate-800">{method.name}</p>
+                          <p className="text-sm font-bold text-gray-900">{method.name}</p>
                           <p className="text-xs text-slate-500">Metode pembayaran toko</p>
                         </div>
                       </label>
@@ -1218,17 +1212,17 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               {/* Customers will choose auto/manual when ready to pay in OrdersPage */}
 
               {/* Voucher Section */}
-              <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
                 <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                  <Gift className="w-5 h-5 text-purple-600" />
+                  <Gift className="w-5 h-5 text-green-600" />
                   Voucher
                 </h3>
 
                 {appliedVoucher ? (
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+                  <div className="bg-green-50 rounded-xl p-4 border-2 border-green-400 shadow-sm shadow-green-500/10">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-mono font-bold text-purple-700">{appliedVoucher.code}</p>
+                        <p className="font-mono font-bold text-green-700">{appliedVoucher.code}</p>
                         <p className="text-sm text-green-600 font-semibold">
                           -Rp {appliedVoucher.discountAmount.toLocaleString('id-ID')}
                         </p>
@@ -1250,12 +1244,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         value={voucherCode}
                         onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
                         placeholder="Masukkan kode voucher..."
-                        className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono uppercase"
+                        className="flex-1 px-4 py-2.5 border-2 border-gray-300 rounded-xl text-sm font-mono uppercase focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition"
                       />
                       <button
                         onClick={() => handleApplyVoucher()}
                         disabled={voucherLoading || !voucherCode}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+                        className="px-6 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-xl text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition shadow-md shadow-yellow-500/30"
                       >
                         {voucherLoading ? '...' : 'Pakai'}
                       </button>
@@ -1357,16 +1351,16 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
             </div>
             <div className="space-y-6">
               {/* Order Summary - Desktop Sidebar */}
-              <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-lg lg:sticky lg:top-4">
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-lg lg:sticky lg:top-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-slate-500">Total Pembayaran</p>
-                    <p className="text-2xl font-bold text-brand-primary">
+                    <p className="text-2xl font-bold text-orange-600">
                       Rp {displayTotal.toLocaleString('id-ID')}
                     </p>
                     {/* ✅ SIMPLIFIED: No unique code display */}
                   </div>
-                  <div className="rounded-full bg-brand-primary/10 px-3 py-1 text-xs font-semibold text-brand-primary">
+                  <div className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
                     {selectedPaymentMethod?.name || 'Metode belum dipilih'}
                   </div>
                 </div>
@@ -1400,8 +1394,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-dashed border-brand-primary/30 bg-brand-primary/5 p-4 text-sm text-slate-600">
-                <h4 className="text-base font-semibold text-brand-primary">Tips Checkout</h4>
+              <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/50 p-5 text-sm text-gray-700">
+                <h4 className="text-base font-bold text-amber-700 flex items-center gap-2">💡 Tips Checkout</h4>
                 <ul className="mt-3 space-y-2 list-disc pl-4">
                   <li>Pastikan alamat lengkap beserta RT/RW dan patokan lokasi.</li>
                   <li>Untuk dropship, isi nama & nomor pengirim agar tercetak di resi.</li>
@@ -1416,12 +1410,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       {/* Floating Checkout Button - Fixed Bottom */}
       {!loading && (
         <div className="fixed bottom-0 left-0 right-0 lg:bottom-4 lg:left-4 lg:right-4 z-40">
-          <div className="bg-white/98 backdrop-blur-md shadow-2xl border-t lg:border lg:rounded-2xl border-white/40 p-4">
+          <div className="bg-white/98 backdrop-blur-md shadow-2xl border-t lg:border lg:rounded-2xl border-gray-200 p-4">
             <div className="flex items-center justify-between gap-4 max-w-6xl mx-auto">
               {/* Total - Kiri */}
               <div className="flex-1 min-w-0">
                 <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Total Pembayaran</p>
-                <p className="text-xl lg:text-2xl font-bold text-brand-primary truncate">
+                <p className="text-xl lg:text-2xl font-bold text-orange-600 truncate">
                   Rp {displayTotal.toLocaleString('id-ID')}
                 </p>
                 {/* ✅ SIMPLIFIED: No unique code display */}
@@ -1430,9 +1424,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               {/* Button - Kanan */}
               <button
                 onClick={handleSubmitOrder}
-                className="btn-brand px-6 py-3 text-sm font-semibold whitespace-nowrap flex-shrink-0"
+                className="relative h-12 px-8 rounded-full font-bold text-white text-base bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 shadow-xl shadow-yellow-500/40 transition-all duration-200 active:scale-95 whitespace-nowrap flex-shrink-0 overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/40 before:via-white/10 before:to-transparent before:rounded-full"
               >
-                Buat Pesanan
+                <span className="relative z-10">Buat Pesanan</span>
               </button>
             </div>
           </div>
