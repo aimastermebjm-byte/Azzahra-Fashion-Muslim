@@ -565,32 +565,29 @@ const HomePage: React.FC<HomePageProps> = ({
       {/* Hero Banner - Show when NO Flash Sale - NOOR Style */}
       {flashSaleProducts.length === 0 && !loading && (
         <div className="px-3 sm:px-4 mb-4">
-          <div className="rounded-2xl overflow-hidden shadow-elegant relative h-[200px] sm:h-[240px] bg-brand-surface">
-            {/* Full Background Image */}
-            <img
-              src="/hero-model.png"
-              alt="Azzahra Fashion Model"
-              className="absolute inset-0 w-full h-full object-cover object-[70%_20%]"
-            />
+          <div className="rounded-2xl overflow-hidden shadow-elegant flex bg-brand-surface h-[160px] sm:h-[200px]">
+            {/* Text Content - Left Side */}
+            <div className="flex-1 flex flex-col justify-center p-4 sm:p-6">
+              <h2 className="font-display text-lg sm:text-2xl font-semibold text-brand-primary leading-tight mb-1">
+                Elegance<br />
+                <span className="text-brand-accent">in Modesty.</span>
+              </h2>
+              <p className="text-gray-500 text-[10px] sm:text-xs mb-2 sm:mb-3">Koleksi busana muslim terbaik</p>
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className="w-fit bg-brand-primary text-white px-3 sm:px-5 py-1.5 rounded-lg text-[10px] sm:text-sm font-medium hover:bg-brand-primaryDark transition-all shadow-md"
+              >
+                Lihat Koleksi
+              </button>
+            </div>
 
-            {/* Very Subtle Gradient - Only for text area */}
-            <div className="absolute inset-y-0 left-0 w-[60%] bg-gradient-to-r from-brand-surface/95 via-brand-surface/70 to-transparent"></div>
-
-            {/* Text Content - Overlaid on Left */}
-            <div className="absolute inset-0 flex flex-col justify-center p-5 sm:p-8">
-              <div className="max-w-[55%]">
-                <h2 className="font-display text-2xl sm:text-3xl font-semibold text-brand-primary leading-tight mb-2">
-                  Elegance<br />
-                  <span className="text-brand-accent">in Modesty.</span>
-                </h2>
-                <p className="text-gray-600 text-sm mb-4">Temukan koleksi busana muslim terbaik</p>
-                <button
-                  onClick={() => setSelectedCategory('all')}
-                  className="bg-brand-primary text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-brand-primaryDark transition-all shadow-md"
-                >
-                  Lihat Koleksi
-                </button>
-              </div>
+            {/* Model Image - Right Side - Fixed width */}
+            <div className="w-[40%] sm:w-[45%] flex-shrink-0">
+              <img
+                src="/hero-model.png"
+                alt="Azzahra Fashion Model"
+                className="w-full h-full object-cover object-[50%_15%]"
+              />
             </div>
           </div>
         </div>
