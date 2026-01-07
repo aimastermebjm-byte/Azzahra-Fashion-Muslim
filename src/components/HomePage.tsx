@@ -616,7 +616,10 @@ const HomePage: React.FC<HomePageProps> = ({
       <div className="sticky top-[60px] z-30 py-3 mb-4 -mx-2 sm:mx-0">
         <div className="absolute inset-0 bg-brand-surface/80 backdrop-blur-md border-b border-brand-border/30 shadow-sm"></div>
         <div className="relative px-4">
-          <div className="flex space-x-2.5 overflow-x-auto scrollbar-hide pb-0.5">
+          <div
+            className="flex space-x-2.5 overflow-x-auto pb-0.5 scrollbar-none [&::-webkit-scrollbar]:hidden"
+            style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
+          >
             {categories.map((category) => {
               const productCount = category.id === 'all'
                 ? filteredProducts.length
