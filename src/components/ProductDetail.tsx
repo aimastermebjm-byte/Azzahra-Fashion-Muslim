@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { ShoppingCart, Heart, Share2, ArrowLeft } from 'lucide-react';
 import { useToast } from './ToastProvider';
 import { Product } from '../types';
@@ -49,6 +49,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const [pinchCenter, setPinchCenter] = useState({ x: 0, y: 0 });
   const [initialPanPosition, setInitialPanPosition] = useState({ x: 0, y: 0 });
   const zoomRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to top when component mounts (so hero image is visible first)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
 
   // Zoom handlers
   const handleZoomOpen = useCallback(() => {
