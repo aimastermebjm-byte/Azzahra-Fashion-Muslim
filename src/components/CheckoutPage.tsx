@@ -1355,7 +1355,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-slate-500">Total Pembayaran</p>
-                    <p className="text-2xl font-bold text-orange-600">
+                    <p className="text-2xl font-bold text-slate-900">
                       Rp {displayTotal.toLocaleString('id-ID')}
                     </p>
                     {/* ✅ SIMPLIFIED: No unique code display */}
@@ -1415,7 +1415,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
               {/* Total - Kiri */}
               <div className="flex-1 min-w-0">
                 <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Total Pembayaran</p>
-                <p className="text-xl lg:text-2xl font-bold text-orange-600 truncate">
+                <p className="text-xl lg:text-2xl font-bold text-slate-900 truncate">
                   Rp {displayTotal.toLocaleString('id-ID')}
                 </p>
                 {/* ✅ SIMPLIFIED: No unique code display */}
