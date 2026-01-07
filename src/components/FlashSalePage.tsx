@@ -98,10 +98,11 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
     // Design: Deep Pure Black BG + Glassmorphism Center Card with Gold Ring + 3D Icon
     if (!flashSaleProducts || flashSaleProducts.length === 0) {
         return (
-            <div className="min-h-screen bg-brand-surface text-brand-primary selection:bg-brand-accent selection:text-white font-sans relative overflow-hidden">
-                {/* Background Ambient Gold Glows */}
-                <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] bg-brand-accent rounded-full mix-blend-multiply filter blur-[150px] opacity-[0.08] pointer-events-none"></div>
-                <div className="fixed bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-[#E8D5B5] rounded-full mix-blend-multiply filter blur-[120px] opacity-[0.1] pointer-events-none"></div>
+            <div className="min-h-screen bg-gradient-to-b from-[#FDF8F5] via-[#FFF5EE] to-[#FAE8DE] text-brand-primary selection:bg-brand-accent selection:text-white font-sans relative overflow-hidden">
+                {/* Background Ambient Rose-Gold Glows */}
+                <div className="fixed top-[-10%] left-[-10%] w-[400px] h-[400px] bg-[#E8C4A8] rounded-full mix-blend-multiply filter blur-[100px] opacity-20 pointer-events-none"></div>
+                <div className="fixed top-[20%] right-[-15%] w-[350px] h-[350px] bg-[#D4AF37] rounded-full mix-blend-multiply filter blur-[120px] opacity-15 pointer-events-none"></div>
+                <div className="fixed bottom-[-10%] left-[20%] w-[300px] h-[300px] bg-[#F5D0C5] rounded-full mix-blend-multiply filter blur-[100px] opacity-20 pointer-events-none"></div>
 
                 <Header />
 
@@ -110,133 +111,33 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                     {/* THE CARD */}
                     <div className="relative w-full max-w-sm mx-auto group perspective-1000">
 
-                        {/* 1. Outer Glow Ring (Animated) */}
-                        <div className="absolute -inset-[3px] bg-gradient-to-tr from-brand-accent/50 via-[#F2D785]/30 to-brand-accent/50 rounded-[32px] opacity-70 blur-[10px] group-hover:opacity-100 group-hover:blur-[15px] transition-all duration-700"></div>
+                        {/* 1. Outer Glow Ring (Rose-Gold Animated) */}
+                        <div className="absolute -inset-[4px] bg-gradient-to-tr from-[#D4AF37]/60 via-[#F5D0C5]/40 to-[#D4AF37]/60 rounded-[32px] opacity-80 blur-[12px] group-hover:opacity-100 group-hover:blur-[18px] transition-all duration-700"></div>
 
                         {/* 2. The Glass Card Surface - Rose Gold Tint */}
-                        <div className="relative bg-gradient-to-br from-[#FFF9F5] via-white to-[#FDF0E8] rounded-[30px] p-8 flex flex-col items-center text-center overflow-hidden border border-brand-accent/30 shadow-[0_20px_60px_-15px_rgba(212,175,55,0.2)] backdrop-blur-xl">
+                        <div className="relative bg-gradient-to-br from-[#FFF9F5] via-[#FFFAF8] to-[#FDF0E8] rounded-[30px] p-8 flex flex-col items-center text-center overflow-hidden border border-[#E8C4A8]/50 shadow-[0_20px_60px_-15px_rgba(212,175,55,0.25),0_10px_30px_-10px_rgba(232,196,168,0.3)] backdrop-blur-xl">
 
                             {/* Glossy Overlay Reflection */}
-                            <div className="absolute top-0 inset-x-0 h-[100px] bg-gradient-to-b from-white/60 to-transparent pointer-events-none"></div>
+                            <div className="absolute top-0 inset-x-0 h-[120px] bg-gradient-to-b from-white/70 to-transparent pointer-events-none"></div>
 
-                            {/* Custom 3D High-Fidelity Golden Clock SVG */}
-                            <div className="relative w-40 h-40 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-700 ease-out mb-8 mt-6">
-                                {/* Ambient Glow */}
-                                <div className="absolute inset-0 bg-[#D4AF37] rounded-full blur-[60px] opacity-25 animate-pulse"></div>
+                            {/* Rose-Gold Sparkle Particles Effect */}
+                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 pointer-events-none"></div>
 
-                                <svg width="160" height="160" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-2xl relative z-10">
-                                    <defs>
-                                        <linearGradient id="goldBody" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
-                                            <stop offset="0%" stopColor="#8B4513" />
-                                            <stop offset="20%" stopColor="#D4AF37" />
-                                            <stop offset="50%" stopColor="#F9E076" />
-                                            <stop offset="80%" stopColor="#D4AF37" />
-                                            <stop offset="100%" stopColor="#8B4513" />
-                                        </linearGradient>
-                                        <linearGradient id="goldRim" x1="200" y1="0" x2="0" y2="200" gradientUnits="userSpaceOnUse">
-                                            <stop offset="0%" stopColor="#FFF8DC" />
-                                            <stop offset="40%" stopColor="#FDB931" />
-                                            <stop offset="60%" stopColor="#B8860B" />
-                                            <stop offset="100%" stopColor="#FFF8DC" />
-                                        </linearGradient>
-                                        <linearGradient id="goldHand" x1="100" y1="50" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-                                            <stop offset="0%" stopColor="#FFF8DC" />
-                                            <stop offset="50%" stopColor="#FDB931" />
-                                            <stop offset="100%" stopColor="#B8860B" />
-                                        </linearGradient>
-                                        <radialGradient id="faceShine" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(100 100) rotate(90) scale(80)">
-                                            <stop offset="0%" stopColor="#333" stopOpacity="0.5" />
-                                            <stop offset="70%" stopColor="#000" stopOpacity="0.8" />
-                                            <stop offset="100%" stopColor="#000" />
-                                        </radialGradient>
-                                        <filter id="innerShadow">
-                                            <feOffset dx="0" dy="4" />
-                                            <feGaussianBlur stdDeviation="4" result="offset-blur" />
-                                            <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse" />
-                                            <feFlood floodColor="black" floodOpacity="0.5" result="color" />
-                                            <feComposite operator="in" in="color" in2="inverse" result="shadow" />
-                                            <feComposite operator="over" in="shadow" in2="SourceGraphic" />
-                                        </filter>
-                                    </defs>
+                            {/* 3D Gold Pocket Watch Image - High Quality Asset */}
+                            <div className="relative w-44 h-44 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-700 ease-out mb-6 mt-4">
+                                {/* Ambient Glow Behind Watch */}
+                                <div className="absolute inset-0 bg-gradient-to-b from-[#D4AF37]/40 via-[#E8C4A8]/30 to-transparent rounded-full blur-[40px] scale-125"></div>
 
-                                    {/* --- 1. Top Crown --- */}
-                                    {/* Ring */}
-                                    <path d="M100 20C92 20 85 13 85 5C85 -3 92 -10 100 -10C108 -10 115 -3 115 5C115 13 108 20 100 20Z" stroke="url(#goldRim)" strokeWidth="6" fill="none" />
-                                    {/* Neck */}
-                                    <rect x="92" y="16" width="16" height="14" fill="url(#goldBody)" />
-                                    {/* Winder */}
-                                    <rect x="88" y="6" width="24" height="10" rx="2" fill="url(#goldRim)" />
+                                {/* The 3D Watch Image */}
+                                <img
+                                    src="/gold-pocket-watch.png"
+                                    alt="Gold Pocket Watch"
+                                    className="relative z-10 w-40 h-40 object-contain drop-shadow-[0_10px_30px_rgba(212,175,55,0.4)] animate-float"
+                                />
 
-                                    {/* --- 2. Pushers (Ears) --- */}
-                                    {/* Left Pusher with Shadow */}
-                                    <g transform="rotate(-40 100 100)">
-                                        <rect x="94" y="10" width="12" height="16" fill="url(#goldBody)" />
-                                        <rect x="92" y="4" width="16" height="8" rx="2" fill="url(#goldRim)" filter="url(#innerShadow)" />
-                                    </g>
-                                    {/* Right Pusher with Shadow */}
-                                    <g transform="rotate(40 100 100)">
-                                        <rect x="94" y="10" width="12" height="16" fill="url(#goldBody)" />
-                                        <rect x="92" y="4" width="16" height="8" rx="2" fill="url(#goldRim)" filter="url(#innerShadow)" />
-                                    </g>
-
-                                    {/* --- 3. Main Body --- */}
-                                    {/* Outer Case (Shadow Support) */}
-                                    <circle cx="100" cy="110" r="82" fill="black" opacity="0.6" filter="url(#innerShadow)" />
-                                    <circle cx="100" cy="110" r="80" fill="url(#goldBody)" />
-
-                                    {/* The Bezel (Chunky Metallic Ring) - 3D Contour */}
-                                    <circle cx="100" cy="110" r="74" stroke="url(#goldRim)" strokeWidth="12" fill="none" filter="url(#innerShadow)" />
-
-                                    {/* Subtle Inset Ring */}
-                                    <circle cx="100" cy="110" r="67" stroke="#332211" strokeWidth="1" />
-
-                                    {/* Face Background */}
-                                    <circle cx="100" cy="110" r="66" fill="url(#faceShine)" />
-
-                                    {/* --- 4. Dial Details --- */}
-                                    {/* Ticks - Applied Gold Markers */}
-                                    {[0, 90, 180, 270].map((deg) => (
-                                        <g key={deg} transform={`rotate(${deg} 100 110)`}>
-                                            <rect x="96" y="55" width="8" height="12" fill="url(#goldRim)" rx="1" />
-                                            {/* Tick Shadow */}
-                                            <rect x="96" y="58" width="8" height="12" fill="black" opacity="0.3" rx="1" transform="translate(1,1)" />
-                                        </g>
-                                    ))}
-
-                                    {/* Inner small ticks */}
-                                    {[...Array(12)].map((_, i) => (
-                                        <rect key={i} x="99" y="50" width="2" height="6" fill="#665" transform={`rotate(${i * 30} 100 110)`} />
-                                    ))}
-
-                                    {/* Sub-dials (Simulated) */}
-                                    <circle cx="75" cy="110" r="12" stroke="#333" strokeWidth="1" fill="none" opacity="0.5" />
-                                    <path d="M75 110 L75 102" stroke="#665" strokeWidth="1" />
-
-                                    <circle cx="125" cy="110" r="12" stroke="#333" strokeWidth="1" fill="none" opacity="0.5" />
-                                    <path d="M125 110 L129 114" stroke="#665" strokeWidth="1" />
-
-                                    {/* --- 5. Hands --- */}
-                                    {/* Hour Hand */}
-                                    <g transform="rotate(45 100 110)">
-                                        <path d="M98 110 L100 70 L102 110 Z" fill="url(#goldHand)" />
-                                        <circle cx="100" cy="110" r="6" fill="url(#goldRim)" />
-                                    </g>
-                                    {/* Minute Hand */}
-                                    <g className="animate-[spin_60s_linear_infinite]" style={{ transformOrigin: "100px 110px" }}>
-                                        <path d="M99 110 L100 50 L101 110 Z" fill="url(#goldRim)" />
-                                    </g>
-                                    {/* Second Hand (Red/Gold Tip) */}
-                                    <g className="animate-[spin_6s_linear_infinite]" style={{ transformOrigin: "100px 110px" }}>
-                                        <path d="M100 110 L100 45" stroke="#CD7F32" strokeWidth="1" />
-                                        <circle cx="100" cy="110" r="2" fill="#CD7F32" />
-                                    </g>
-
-                                    {/* Glossy Overlay (Glass Reflection) */}
-                                    <path d="M100 50 C140 50 165 80 165 110 A 65 65 0 0 1 35 110 C35 70 60 50 100 50" fill="white" fillOpacity="0.08" />
-
-                                    {/* Star Sparkle Top Right */}
-                                    <path d="M165 30 L168 38 L176 41 L168 44 L165 52 L162 44 L154 41 L162 38 Z" fill="#FFF8DC" className="animate-pulse" />
-                                </svg>
+                                {/* Sparkle Effects */}
+                                <div className="absolute top-2 right-2 w-2 h-2 bg-white rounded-full animate-pulse opacity-80"></div>
+                                <div className="absolute bottom-4 left-4 w-1.5 h-1.5 bg-[#FFF8DC] rounded-full animate-pulse opacity-60" style={{ animationDelay: '0.5s' }}></div>
                             </div>
 
 
@@ -270,15 +171,15 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
     }
 
     return (
-        <div className="min-h-screen bg-brand-surface text-brand-primary font-sans overflow-x-hidden pb-24">
+        <div className="min-h-screen bg-gradient-to-b from-[#FDF8F5] via-[#FFF5EE] to-[#FAE8DE] text-brand-primary font-sans overflow-x-hidden pb-24">
 
             <Header />
 
-            {/* HERO SECTION: Gold Dust & Timer */}
+            {/* HERO SECTION: Rose-Gold Dust & Timer */}
             <div className="relative pt-8 pb-12 px-4 text-center">
-                {/* Animated Gold Dust Background */}
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10"></div>
-                <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-brand-accent/10 to-transparent blur-[50px] pointer-events-none"></div>
+                {/* Rose-Gold Dust Background */}
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-15"></div>
+                <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-[#E8C4A8]/20 via-[#D4AF37]/10 to-transparent blur-[30px] pointer-events-none"></div>
 
                 {/* FLAMES & TITLE */}
                 <div className="relative z-10 flex items-center justify-center gap-3 mb-8">
