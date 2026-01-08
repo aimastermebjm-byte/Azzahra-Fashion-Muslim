@@ -1,0 +1,8 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bottle -->
+  <rect x="12" y="24" width="16" height="32" rx="2" stroke="black" stroke-width="3" fill="none"/>
+  <rect x="16" y="16" width="8" height="8" stroke="black" stroke-width="3" fill="none"/>
+  <!-- Tube -->
+  <path d="M48 56L54 20H36L42 56H48Z" stroke="black" stroke-width="3" fill="none"/>
+  <path d="M45 14V20" stroke="black" stroke-width="3" fill="none"/>
+</svg>

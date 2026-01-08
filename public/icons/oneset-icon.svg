@@ -1,0 +1,7 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Set Celana - Top + Pants -->
+  <!-- Top (Shirt) -->
+  <path d="M22 10L14 18L18 22L22 18V36H42V18L46 22L50 18L42 10H22Z" stroke="black" stroke-width="3" stroke-linejoin="round" fill="none"/>
+  <!-- Pants (Celana) -->
+  <path d="M24 40H40V58L38 58L32 46L26 58H24V40Z" stroke="black" stroke-width="3" stroke-linejoin="round" fill="none"/>
+</svg>

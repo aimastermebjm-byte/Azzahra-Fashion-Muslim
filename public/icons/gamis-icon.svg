@@ -1,0 +1,6 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gamis - Wide Bottom -->
+  <path d="M22 14L14 24L18 28L24 20V58H40V20L46 28L50 24L42 14H22Z" stroke="black" stroke-width="3" stroke-linejoin="round" fill="none"/>
+  <path d="M24 58L16 58L22 24" stroke="black" stroke-width="3" fill="none"/>
+  <path d="M40 58L48 58L42 24" stroke="black" stroke-width="3" fill="none"/>
+</svg>

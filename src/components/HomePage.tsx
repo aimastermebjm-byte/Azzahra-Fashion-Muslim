@@ -249,16 +249,24 @@ const HomePage: React.FC<HomePageProps> = ({
   // Icon Mapping Helper - Returns IMAGE PATH now
   const getCategoryIconPath = (name: string) => {
     const normalize = name.toLowerCase();
-    if (normalize.includes('aksesoris')) return '/icons/accessories-icon.png';
-    if (normalize.includes('hijab') || normalize.includes('khimar')) return '/icons/hijab-icon.png';
-    if (normalize.includes('outer')) return '/icons/outer-icon.png';
-    // Dress vs Gamis
-    if (normalize.includes('dress') || normalize.includes('gown')) return '/icons/dress-icon.png';
-    if (normalize.includes('gamis') || normalize.includes('abaya')) return '/icons/gamis-icon.png';
 
-    // New Categories
-    if (normalize.includes('mukena')) return '/icons/mukena-icon.png';
-    if (normalize.includes('oneset') || normalize.includes('set')) return '/icons/oneset-icon.png';
+    // New Categories (SVGs)
+    if (normalize.includes('skincare') || normalize.includes('skin')) return '/icons/skincare-icon.svg';
+    if (normalize.includes('mukena')) return '/icons/mukena-icon.svg';
+    if (normalize.includes('set rok')) return '/icons/setrok-icon.svg';
+    if (normalize.includes('set dress')) return '/icons/setdress-icon.svg';
+    if (normalize.includes('oneset') || normalize.includes('set celana') || normalize.includes('set')) return '/icons/oneset-icon.svg';
+    if (normalize.includes('aksesoris') || normalize.includes('bros') || normalize.includes('kaos kaki')) return '/icons/accessories-icon.png';
+
+    // Hijab & Khimar
+    if (normalize.includes('khimar')) return '/icons/khimar-icon.svg';
+    if (normalize.includes('hijab') || normalize.includes('pashmina') || normalize.includes('square')) return '/icons/hijab-icon.png';
+
+    if (normalize.includes('outer') || normalize.includes('cardigan') || normalize.includes('jacket') || normalize.includes('coat')) return '/icons/outer-icon.png';
+
+    // Dress vs Gamis
+    if (normalize.includes('dress') || normalize.includes('gown')) return '/icons/dress-icon.svg';
+    if (normalize.includes('gamis') || normalize.includes('abaya') || normalize.includes('kaftan')) return '/icons/gamis-icon.svg';
 
     if (normalize.includes('tunik')) return '/icons/tunik-icon.png';
 

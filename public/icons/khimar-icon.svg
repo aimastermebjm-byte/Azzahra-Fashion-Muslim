@@ -1,0 +1,6 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Khimar - Long Hijab -->
+  <path d="M32 10C24 10 20 16 20 22C20 30 16 40 16 48L32 58L48 48C48 40 44 30 44 22C44 16 40 10 32 10Z" stroke="black" stroke-width="3" stroke-linejoin="round" fill="none"/>
+  <!-- Face opening -->
+  <path d="M26 18C26 18 29 16 32 16C35 16 38 18 38 18" stroke="black" stroke-width="2" fill="none"/>
+</svg>

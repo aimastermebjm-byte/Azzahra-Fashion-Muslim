@@ -1,0 +1,6 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dress - Slimmer/Straight -->
+  <path d="M24 12L16 22L19 25L25 18V56H39V18L45 25L48 22L40 12H24Z" stroke="black" stroke-width="3" stroke-linejoin="round" fill="none"/>
+  <!-- Waist line detail -->
+  <path d="M25 32H39" stroke="black" stroke-width="2" fill="none"/>
+</svg>

@@ -1,0 +1,12 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Mukena - Prayer Set -->
+  <!-- Head part -->
+  <path d="M32 12C26 12 22 18 22 26L18 36L46 36L42 26C42 18 38 12 32 12Z" stroke="black" stroke-width="3" stroke-linejoin="round" fill="none"/>
+  <!-- Face -->
+  <circle cx="32" cy="24" r="5" stroke="black" stroke-width="2" fill="none"/>
+  <!-- Body part (Bottom skirt) -->
+  <path d="M20 40H44V56H20V40Z" stroke="black" stroke-width="3" fill="none"/>
+  <!-- Detail lines -->
+  <path d="M22 36V40" stroke="black" stroke-width="2" fill="none"/>
+  <path d="M42 36V40" stroke="black" stroke-width="2" fill="none"/>
+</svg>
