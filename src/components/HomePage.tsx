@@ -668,27 +668,26 @@ const HomePage: React.FC<HomePageProps> = ({
                 {/* Icon Circle */}
                 <div
                   className={`
-                    w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm
+                    w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border-[1.5px]
                     ${isSelected
-                      ? 'bg-white border-2 border-[#D4AF37] shadow-[0_4px_12px_rgba(212,175,55,0.3)] scale-110'
-                      : 'bg-white border border-gray-100 text-gray-400 group-hover:border-[#D4AF37]/50 shadow-sm'
+                      ? 'bg-white border-[#D4AF37] shadow-[0_4px_12px_rgba(212,175,55,0.3)] scale-110'
+                      : 'bg-white border-gray-200 group-hover:border-[#D4AF37]/50'
                     }
                   `}
                 >
                   {isAllCategory ? (
                     <LayoutGrid
-                      className={`w-6 h-6 transition-all duration-300 ${isSelected ? 'text-[#D4AF37]' : 'text-gray-400'}`}
-                      strokeWidth={1.5}
+                      className={`w-6 h-6 transition-all duration-300 ${isSelected ? 'text-[#D4AF37] stroke-[1.5px]' : 'text-gray-400 stroke-1'}`}
                     />
                   ) : (
                     <img
                       src={iconPath || '/placeholder-icon.png'}
                       alt={category.name}
-                      className={`w-8 h-8 object-contain transition-all duration-300`}
+                      className={`w-9 h-9 object-contain transition-all duration-300`}
                       style={{
                         filter: isSelected
-                          ? 'invert(74%) sepia(26%) saturate(605%) hue-rotate(2deg) brightness(96%) contrast(88%)' // Gold Filter
-                          : 'opacity(0.4)' // Inactive Gray-ish
+                          ? 'none' // Active: Show original GOLD image
+                          : 'grayscale(100%) opacity(0.6)' // Inactive: Turn gold to gray/black
                       }}
                     />
                   )}
