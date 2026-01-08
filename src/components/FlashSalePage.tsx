@@ -108,71 +108,58 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
 
                 <div className="container mx-auto px-6 py-8 flex flex-col items-center justify-center min-h-[85vh]">
 
-                    {/* THE CARD */}
-                    <div className="relative w-full max-w-sm mx-auto group perspective-1000">
+                    {/* THE CARD - EXACT MOCKUP REPLICA */}
+                    <div className="relative w-full max-w-[340px] mx-auto group">
 
-                        {/* 1. Outer Glow Ring (Rose-Gold Animated) */}
-                        <div className="absolute -inset-[4px] bg-gradient-to-tr from-[#D4AF37]/60 via-[#F5D0C5]/40 to-[#D4AF37]/60 rounded-[32px] opacity-80 blur-[12px] group-hover:opacity-100 group-hover:blur-[18px] transition-all duration-700"></div>
+                        {/* Card Shadow/Glow Behind */}
+                        <div className="absolute inset-0 bg-[#D4AF37] rounded-[40px] blur-[30px] opacity-20 transform translate-y-4"></div>
 
-                        {/* 2. The Glass Card Surface - Rose Gold Tint */}
-                        <div className="relative bg-gradient-to-br from-[#FFF9F5] via-[#FFFAF8] to-[#FDF0E8] rounded-[30px] p-8 flex flex-col items-center text-center overflow-hidden border border-[#E8C4A8]/50 shadow-[0_20px_60px_-15px_rgba(212,175,55,0.25),0_10px_30px_-10px_rgba(232,196,168,0.3)] backdrop-blur-xl">
+                        {/* Main Card Surface - Rose Gold Gradient (Vertical Portrait) */}
+                        <div className="relative bg-gradient-to-b from-[#F3E5D8] to-[#E6CDB2] rounded-[40px] p-8 pb-10 flex flex-col items-center text-center overflow-hidden border-[3px] border-white/40 shadow-[0_30px_60px_-10px_rgba(139,69,19,0.15)]">
 
-                            {/* Glossy Overlay Reflection */}
-                            <div className="absolute top-0 inset-x-0 h-[120px] bg-gradient-to-b from-white/70 to-transparent pointer-events-none"></div>
+                            {/* Inner Highlight/Sheen */}
+                            <div className="absolute top-0 inset-x-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent pointer-events-none"></div>
 
-                            {/* Rose-Gold Sparkle Particles Effect */}
-                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 pointer-events-none"></div>
+                            {/* Clock Image Container */}
+                            <div className="relative w-64 h-64 -mt-4 mb-2 flex items-center justify-center">
+                                {/* Back Glow for Clock */}
+                                <div className="absolute inset-0 bg-[#FFF8DC] rounded-full blur-[40px] opacity-60 scale-75"></div>
 
-                            {/* 3D Gold Pocket Watch Image - Seamlessly Blended */}
-                            <div className="relative w-48 h-48 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-700 ease-out mb-4 mt-2">
-                                {/* Ambient Glow Behind Watch */}
-                                <div className="absolute inset-0 bg-gradient-radial from-[#D4AF37]/30 via-[#E8C4A8]/20 to-transparent rounded-full blur-[50px] scale-150"></div>
+                                {/* Clock Image - NO MASK, Full Color Fidelity */}
+                                <img
+                                    src="/gold-pocket-watch.png"
+                                    alt="Gold Pocket Watch"
+                                    className="relative z-10 w-full h-full object-contain drop-shadow-[0_15px_30px_rgba(184,134,11,0.3)]"
+                                />
 
-                                {/* The 3D Watch Image with Gradient Mask for Seamless Blending */}
-                                <div
-                                    className="relative z-10 w-44 h-44"
-                                    style={{
-                                        maskImage: 'radial-gradient(circle, white 50%, transparent 75%)',
-                                        WebkitMaskImage: 'radial-gradient(circle, white 50%, transparent 75%)'
-                                    }}
-                                >
-                                    <img
-                                        src="/gold-pocket-watch.png"
-                                        alt="Gold Pocket Watch"
-                                        className="w-full h-full object-contain drop-shadow-[0_10px_30px_rgba(212,175,55,0.5)] animate-float"
-                                    />
-                                </div>
-
-                                {/* Sparkle Effects */}
-                                <div className="absolute top-4 right-4 w-2 h-2 bg-white rounded-full animate-pulse opacity-90 z-20"></div>
-                                <div className="absolute top-8 left-6 w-1.5 h-1.5 bg-[#FFF8DC] rounded-full animate-pulse opacity-70 z-20" style={{ animationDelay: '0.3s' }}></div>
-                                <div className="absolute bottom-6 right-8 w-1 h-1 bg-[#D4AF37] rounded-full animate-pulse opacity-60 z-20" style={{ animationDelay: '0.6s' }}></div>
+                                {/* Sparkles Overlay */}
+                                <div className="absolute top-10 right-10 w-3 h-3 bg-white rounded-full blur-[1px] animate-pulse"></div>
+                                <div className="absolute bottom-16 left-8 w-2 h-2 bg-[#FFD700] rounded-full blur-[0.5px] animate-pulse delay-75"></div>
+                                <div className="absolute top-6 left-12 w-1.5 h-1.5 bg-white rounded-full animate-pulse delay-150"></div>
                             </div>
 
+                            {/* Typography - Stacked Dark Serif */}
+                            <div className="flex flex-col gap-0 items-center mb-10 w-full relative z-10">
+                                <h2 className="font-serif text-[#0F172A] text-4xl leading-none tracking-tight font-medium drop-shadow-sm">
+                                    Flash Sale
+                                </h2>
+                                <h2 className="font-serif text-[#0F172A] text-4xl leading-tight tracking-tight font-medium drop-shadow-sm">
+                                    Sedang
+                                </h2>
+                                <h2 className="font-serif text-[#0F172A] text-4xl leading-none tracking-tight font-medium drop-shadow-sm">
+                                    Disiapkan
+                                </h2>
+                            </div>
 
-                            {/* 4. Typography */}
-                            {/* 4. Typography - Mockup Style */}
-                            <h2 className="font-serif text-4xl leading-tight mb-3">
-                                <span className="block text-[#1E293B] font-medium text-2xl mb-1 tracking-wide">Flash Sale</span>
-                                <span className="bg-gradient-to-r from-[#B8860B] via-[#D4AF37] to-[#B8860B] bg-clip-text text-transparent font-bold tracking-tight drop-shadow-sm">
-                                    Sedang Disiapkan
-                                </span>
-                            </h2>
-
-                            <p className="text-[#8B4513]/70 text-sm mb-8 font-light leading-relaxed px-4 tracking-wide">
-                                Koleksi eksklusif dengan harga istimewa <br /> akan segera hadir. Waktu terus berjalan.
-                            </p>
-
-                            {/* 5. Button - Metallic Gold Mockup Style */}
+                            {/* Button - Metallic Gold & Rounded */}
                             <button
                                 onClick={() => window.location.href = '/'}
-                                className="w-full py-3.5 rounded-full bg-gradient-to-b from-[#C5A059] via-[#E6C678] to-[#997B2C] text-[#3E2723] font-bold tracking-wide text-sm shadow-[0_4px_15px_rgba(184,134,11,0.3)] border border-[#F3E5AB]/50 hover:shadow-[0_6px_20px_rgba(212,175,55,0.4)] hover:brightness-105 active:scale-[0.98] transition-all duration-300 relative overflow-hidden group/btn"
+                                className="w-full py-4 rounded-full bg-gradient-to-b from-[#C69C6D] via-[#D4AF37] to-[#8B7355] text-[#2A1810] font-bold tracking-wide text-sm shadow-[0_5px_15px_rgba(160,82,45,0.25)] border-t border-white/30 hover:shadow-[0_8px_25px_rgba(160,82,45,0.35)] hover:bg-gradient-to-b hover:from-[#D4AF37] hover:to-[#996515] active:scale-[0.98] transition-all duration-300 group/btn relative overflow-hidden"
                             >
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent translate-x-[-150%] group-hover/btn:translate-x-[150%] transition-transform duration-1000 ease-in-out"></div>
-                                <span className="relative z-10 drop-shadow-sm">
-                                    Lihat Koleksi Lain
-                                </span>
+                                <span className="relative z-10 font-serif tracking-wider text-base">Lihat Koleksi Lain</span>
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-150%] group-hover/btn:translate-x-[150%] transition-transform duration-1000 ease-in-out"></div>
                             </button>
+
                         </div>
                     </div>
                 </div>
