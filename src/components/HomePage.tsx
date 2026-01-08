@@ -670,14 +670,15 @@ const HomePage: React.FC<HomePageProps> = ({
                   className={`
                     w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border-[1.5px]
                     ${isSelected
-                      ? 'bg-white border-[#D4AF37] shadow-[0_4px_12px_rgba(212,175,55,0.3)] scale-110'
-                      : 'bg-white border-gray-200 group-hover:border-[#D4AF37]/50'
+                      ? 'bg-[#D4AF37] border-[#D4AF37] shadow-[0_4px_12px_rgba(212,175,55,0.4)] scale-110' // Active: Solid GOLD Background
+                      : 'bg-white border-gray-200 group-hover:border-[#D4AF37]/50' // Inactive: White Background
                     }
                   `}
                 >
                   {isAllCategory ? (
                     <LayoutGrid
-                      className={`w-6 h-6 transition-all duration-300 ${isSelected ? 'text-[#D4AF37] stroke-[1.5px]' : 'text-gray-400 stroke-1'}`}
+                      className={`w-6 h-6 transition-all duration-300 ${isSelected ? 'text-black/80' : 'text-gray-400'}`}
+                      strokeWidth={1.5}
                     />
                   ) : (
                     <img
@@ -685,9 +686,10 @@ const HomePage: React.FC<HomePageProps> = ({
                       alt={category.name}
                       className={`w-9 h-9 object-contain transition-all duration-300`}
                       style={{
+                        mixBlendMode: 'multiply', // Magic trick: Removes white bg, keeps black lines
                         filter: isSelected
-                          ? 'none' // Active: Show original GOLD image
-                          : 'grayscale(100%) opacity(0.6)' // Inactive: Turn gold to gray/black
+                          ? 'none' // Active: Show original BLACK lines (on Gold bg)
+                          : 'opacity(0.5)' // Inactive: Fade to gray (on White bg)
                       }}
                     />
                   )}
