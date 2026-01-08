@@ -187,36 +187,32 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
 
             <Header />
 
-            {/* HERO SECTION: Active Flash Sale - Sticky Hero */}
-            <div className="sticky top-16 z-40 bg-gradient-to-b from-[#FDF8F5] via-[#FDF8F5] to-[#FDF8F5]/95 backdrop-blur-sm pt-6 pb-6 px-4 text-center shadow-[0_4px_15px_rgba(0,0,0,0.05)]">
+            {/* HERO SECTION: Active Flash Sale - Compact Sticky Hero */}
+            <div className="sticky top-16 z-40 bg-gradient-to-b from-[#FDF8F5] via-[#FDF8F5] to-[#FDF8F5]/95 backdrop-blur-sm pt-3 pb-3 px-4 text-center shadow-[0_4px_15px_rgba(0,0,0,0.05)]">
                 {/* Background Atmosphere */}
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
 
-                {/* HEADER: FLASH SALE with Flames */}
-                <div className="relative z-10 flex items-center justify-center gap-3 mb-8">
-                    <span className="text-3xl sm:text-4xl text-brand-accent animate-pulse filter drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]">🔥</span>
-                    <h1 className="font-serif text-4xl sm:text-5xl font-bold bg-gradient-to-b from-[#D4AF37] via-[#FDB931] to-[#B8860B] bg-clip-text text-transparent drop-shadow-sm tracking-wide transform scale-y-110">
+                {/* HEADER: FLASH SALE with Flames - Compact */}
+                <div className="relative z-10 flex items-center justify-center gap-2 mb-3">
+                    <span className="text-2xl text-brand-accent animate-pulse filter drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]">🔥</span>
+                    <h1 className="font-serif text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] bg-clip-text text-transparent drop-shadow-sm tracking-wide">
                         FLASH SALE
                     </h1>
-                    <span className="text-3xl sm:text-4xl text-brand-accent animate-pulse filter drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]">🔥</span>
+                    <span className="text-2xl text-brand-accent animate-pulse filter drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]">🔥</span>
                 </div>
 
-                {/* TIMER: Navy Blue Tiles with Gold Borders (Mockup Style) */}
+                {/* TIMER: Compact Navy Blue Tiles */}
                 {timeLeft && (
-                    <div className="flex justify-center items-center gap-2 sm:gap-4 mb-10 relative z-10">
+                    <div className="flex justify-center items-center gap-2 mb-3 relative z-10">
                         {/* HOURS */}
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#0F172A] rounded-2xl border-[3px] border-[#D4AF37] shadow-[0_6px_15px_rgba(0,0,0,0.3)] flex items-center justify-center relative overflow-hidden group">
-                                {/* Glossy Effect */}
+                        <div className="flex flex-col items-center gap-1">
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#0F172A] rounded-xl border-2 border-[#D4AF37] shadow-md flex items-center justify-center relative overflow-hidden">
                                 <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent opacity-60"></div>
-                                {/* Inner stroke */}
-                                <div className="absolute inset-[2px] border border-[#D4AF37]/30 rounded-[13px]"></div>
-
-                                <span className="font-serif text-3xl sm:text-4xl font-bold text-[#FDB931] drop-shadow-md z-10">
+                                <span className="font-serif text-xl sm:text-2xl font-bold text-[#FDB931] drop-shadow-md z-10">
                                     {timeLeft.hours.toString().padStart(2, '0')}
                                 </span>
                             </div>
-                            <span className="text-[10px] sm:text-xs font-bold tracking-widest text-[#B8860B] uppercase">JAM</span>
+                            <span className="text-[8px] sm:text-[10px] font-bold tracking-widest text-[#B8860B] uppercase">JAM</span>
                         </div>
 
                         {/* Separator */}
@@ -226,16 +222,14 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                         </div>
 
                         {/* MINUTES */}
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#0F172A] rounded-2xl border-[3px] border-[#D4AF37] shadow-[0_6px_15px_rgba(0,0,0,0.3)] flex items-center justify-center relative overflow-hidden group">
+                        <div className="flex flex-col items-center gap-1">
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#0F172A] rounded-xl border-2 border-[#D4AF37] shadow-md flex items-center justify-center relative overflow-hidden">
                                 <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent opacity-60"></div>
-                                <div className="absolute inset-[2px] border border-[#D4AF37]/30 rounded-[13px]"></div>
-
-                                <span className="font-serif text-3xl sm:text-4xl font-bold text-[#FDB931] drop-shadow-md z-10">
+                                <span className="font-serif text-xl sm:text-2xl font-bold text-[#FDB931] drop-shadow-md z-10">
                                     {timeLeft.minutes.toString().padStart(2, '0')}
                                 </span>
                             </div>
-                            <span className="text-[10px] sm:text-xs font-bold tracking-widest text-[#B8860B] uppercase">MENIT</span>
+                            <span className="text-[8px] sm:text-[10px] font-bold tracking-widest text-[#B8860B] uppercase">MENIT</span>
                         </div>
 
                         {/* Separator */}
@@ -245,27 +239,25 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                         </div>
 
                         {/* SECONDS */}
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#0F172A] rounded-2xl border-[3px] border-[#D4AF37] shadow-[0_6px_15px_rgba(0,0,0,0.3)] flex items-center justify-center relative overflow-hidden group">
+                        <div className="flex flex-col items-center gap-1">
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#0F172A] rounded-xl border-2 border-[#D4AF37] shadow-md flex items-center justify-center relative overflow-hidden">
                                 <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent opacity-60"></div>
-                                <div className="absolute inset-[2px] border border-[#D4AF37]/30 rounded-[13px]"></div>
-
-                                <span className="font-serif text-3xl sm:text-4xl font-bold text-[#FDB931] drop-shadow-md z-10 animate-pulse">
+                                <span className="font-serif text-xl sm:text-2xl font-bold text-[#FDB931] drop-shadow-md z-10 animate-pulse">
                                     {timeLeft.seconds.toString().padStart(2, '0')}
                                 </span>
                             </div>
-                            <span className="text-[10px] sm:text-xs font-bold tracking-widest text-[#B8860B] uppercase">DETIK</span>
+                            <span className="text-[8px] sm:text-[10px] font-bold tracking-widest text-[#B8860B] uppercase">DETIK</span>
                         </div>
                     </div>
                 )}
 
-                {/* PRODUK TERBATAS with Sparkles */}
-                <div className="flex items-center justify-center gap-4 mb-4">
-                    <span className="h-[1px] w-8 sm:w-16 bg-gradient-to-r from-transparent to-[#D4AF37]"></span>
-                    <p className="font-serif text-lg sm:text-xl text-[#8B4513] tracking-wider flex items-center gap-2 uppercase">
-                        PRODUK TERBATAS <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                {/* PRODUK TERBATAS - Compact */}
+                <div className="flex items-center justify-center gap-3">
+                    <span className="h-[1px] w-6 sm:w-12 bg-gradient-to-r from-transparent to-[#D4AF37]"></span>
+                    <p className="font-serif text-sm sm:text-base text-[#8B4513] tracking-wider flex items-center gap-1.5 uppercase">
+                        PRODUK TERBATAS <Sparkles className="w-3 h-3 text-[#D4AF37]" />
                     </p>
-                    <span className="h-[1px] w-8 sm:w-16 bg-gradient-to-l from-transparent to-[#D4AF37]"></span>
+                    <span className="h-[1px] w-6 sm:w-12 bg-gradient-to-l from-transparent to-[#D4AF37]"></span>
                 </div>
             </div>
 
