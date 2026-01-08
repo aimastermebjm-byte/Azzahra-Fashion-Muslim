@@ -47,17 +47,17 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPage
                 <Icon
                   className={`w-7 h-7 mb-0.5 transition-all duration-300 ${isActive
                     ? 'drop-shadow-sm scale-110'
-                    : 'text-slate-400 group-hover:text-[#997B2C]'
+                    : 'text-black group-hover:text-[#997B2C]' // Inactive: Pitch Black
                     }`}
                   stroke={isActive ? "url(#gold-gradient)" : "currentColor"}
                   fill={isActive ? "url(#gold-gradient)" : "none"}
                   fillOpacity={isActive ? 0.2 : 0}
-                  strokeWidth={isActive ? 2.5 : 2}
+                  strokeWidth={isActive ? 2.5 : 2} // Less bold when inactive to distinguish form
                 />
                 <span
                   className={`text-[10px] tracking-wide transition-all duration-300 ${isActive
                     ? 'text-[#997B2C] font-bold'
-                    : 'text-slate-400 group-hover:text-[#997B2C]'
+                    : 'text-slate-900 font-medium group-hover:text-[#997B2C]' // Inactive: Dark Slate & Medium Weight
                     }`}
                 >
                   {item.label}
