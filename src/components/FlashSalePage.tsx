@@ -64,24 +64,27 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                             onClick={onBack}
                             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors group"
                         >
-                            <ArrowLeft className="w-8 h-8 text-slate-900 group-hover:scale-110 transition-transform" />
+                            <ArrowLeft className="w-7 h-7 text-slate-900 group-hover:scale-110 transition-transform" />
                         </button>
                     )}
 
                 </div>
                 {/* Center Brand Title for Header - Black Typography */}
                 <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
-                    <h1 className="font-serif text-3xl font-bold tracking-[0.2em] text-[#0F172A] drop-shadow-sm">
-                        AZZAHRA
+                    <h1
+                        className="font-['Great_Vibes'] text-4xl text-[#0F172A] drop-shadow-sm"
+                        style={{ textShadow: '2px 2px 4px rgba(212, 175, 55, 0.5)' }}
+                    >
+                        Azzahra
                     </h1>
-                    <span className="text-[10px] text-black tracking-[0.3em] -mt-0.5 font-bold uppercase">Fashion Muslim</span>
+                    <span className="text-[10px] text-black tracking-[0.3em] -mt-1 font-bold uppercase font-serif">Fashion Muslim</span>
                 </div>
 
                 <button
                     onClick={onCartClick}
                     className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/10 transition-all group"
                 >
-                    <ShoppingCart className="w-8 h-8 text-slate-900 transition-transform group-hover:scale-110" />
+                    <ShoppingCart className="w-7 h-7 text-slate-900 transition-transform group-hover:scale-110" />
                     {cartItems.length > 0 && (
                         <span className="absolute top-0 right-0 bg-[#0F172A] text-[#EDD686] text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center border-2 border-[#EDD686] shadow-sm">
                             {cartItems.length}

@@ -405,17 +405,20 @@ const HomePage: React.FC<HomePageProps> = ({
               className="p-2 transition-all group active:scale-95 hover:bg-black/5 rounded-full"
               title="Hubungi Admin via WhatsApp"
             >
-              <svg className="w-8 h-8 text-slate-900 group-hover:text-black group-hover:scale-110 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-7 h-7 text-slate-900 group-hover:text-black group-hover:scale-110 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
             {/* Centered Brand Name - Black Serif Typography */}
             <div className="text-center relative -mt-1">
-              <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-[0.2em] text-[#0F172A] drop-shadow-sm cursor-pointer transform hover:scale-105 transition-transform duration-500">
-                AZZAHRA
+              <h1
+                className="font-['Great_Vibes'] text-4xl sm:text-5xl text-[#0F172A] cursor-pointer transform hover:scale-105 transition-transform duration-500"
+                style={{ textShadow: '2px 2px 4px rgba(212, 175, 55, 0.5)' }}
+              >
+                Azzahra
               </h1>
-              <p className="text-[10px] sm:text-xs text-black tracking-[0.3em] font-bold uppercase -mt-0.5">
+              <p className="text-[10px] sm:text-xs text-black tracking-[0.3em] font-bold uppercase -mt-1 font-serif">
                 FASHION MUSLIM
               </p>
             </div>
@@ -427,7 +430,7 @@ const HomePage: React.FC<HomePageProps> = ({
                 onClick={() => setShowSearch(!showSearch)}
                 className="p-2 transition-all group active:scale-95 hover:bg-black/5 rounded-full"
               >
-                <Search className={`w-8 h-8 transition-all ${showSearch
+                <Search className={`w-7 h-7 transition-all ${showSearch
                   ? 'text-black scale-110'
                   : 'text-slate-900 group-hover:text-black'
                   } `} />
@@ -438,7 +441,7 @@ const HomePage: React.FC<HomePageProps> = ({
                 onClick={onCartClick}
                 className="relative p-2 transition-all group active:scale-95 hover:bg-black/5 rounded-full"
               >
-                <ShoppingCart className="w-8 h-8 text-slate-900 group-hover:text-black transition-all" />
+                <ShoppingCart className="w-7 h-7 text-slate-900 group-hover:text-black transition-all" />
                 {cartCount > 0 && (
                   <span className="absolute top-1 right-1 bg-[#0F172A] text-[#EDD686] text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-0.5 border border-[#EDD686] shadow-sm">
                     {cartCount > 99 ? '99+' : cartCount}

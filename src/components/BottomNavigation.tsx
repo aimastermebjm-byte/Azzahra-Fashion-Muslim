@@ -17,8 +17,17 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPage
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] shadow-[0_-5px_20px_rgba(212,175,55,0.3)] border-t border-white/20 backdrop-blur-md z-50">
-      <div className="flex justify-around items-center h-16 safe-area-bottom">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] z-50 pb-safe">
+      {/* Define Gold Gradient for Icons */}
+      <svg width="0" height="0" className="absolute">
+        <linearGradient id="gold-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#997B2C" />
+          <stop offset="50%" stopColor="#EDD686" />
+          <stop offset="100%" stopColor="#997B2C" />
+        </linearGradient>
+      </svg>
+
+      <div className="flex justify-around items-center h-16 w-full max-w-md mx-auto relative">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
@@ -27,31 +36,33 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPage
             <button
               key={item.id}
               onClick={() => onPageChange(item.id)}
-              className="flex-1 flex flex-col items-center justify-center h-full transition-all duration-300 group active:scale-95"
+              className="relative flex-1 flex flex-col items-center justify-center h-full transition-all duration-300 group active:scale-95"
             >
-              <div className={`relative p-1.5 rounded-xl transition-all duration-500 ease-out ${isActive ? '-translate-y-1' : ''}`}>
-                {/* Active Indicator Glow Background - White for contrast on Gold */}
-                {isActive && (
-                  <div className="absolute inset-0 bg-white/20 blur-xl rounded-full" />
-                )}
+              {/* Active Indicator - Subtle Top Border or Glow */}
+              {isActive && (
+                <div className="absolute top-0 w-8 h-0.5 bg-[#997B2C] shadow-[0_2px_8px_rgba(153,123,44,0.5)] rounded-b-lg"></div>
+              )}
 
+              <div className={`relative z-10 flex flex-col items-center transition-transform duration-300 ${isActive ? '-translate-y-0.5' : ''}`}>
                 <Icon
                   className={`w-7 h-7 mb-0.5 transition-all duration-300 ${isActive
-                    ? 'text-black drop-shadow-sm scale-110'
-                    : 'text-slate-800 group-hover:text-black'
+                    ? 'drop-shadow-sm scale-110'
+                    : 'text-slate-400 group-hover:text-[#997B2C]'
                     }`}
+                  stroke={isActive ? "url(#gold-gradient)" : "currentColor"}
+                  fill={isActive ? "url(#gold-gradient)" : "none"}
+                  fillOpacity={isActive ? 0.2 : 0}
                   strokeWidth={isActive ? 2.5 : 2}
                 />
+                <span
+                  className={`text-[10px] tracking-wide transition-all duration-300 ${isActive
+                    ? 'text-[#997B2C] font-bold'
+                    : 'text-slate-400 group-hover:text-[#997B2C]'
+                    }`}
+                >
+                  {item.label}
+                </span>
               </div>
-
-              <span
-                className={`text-[10px] font-medium tracking-wide transition-all duration-300 ${isActive
-                  ? 'text-black font-bold translate-y-0'
-                  : 'text-slate-800 group-hover:text-black'
-                  }`}
-              >
-                {item.label}
-              </span>
             </button>
           );
         })}
