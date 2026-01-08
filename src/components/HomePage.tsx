@@ -62,6 +62,7 @@ const HomePage: React.FC<HomePageProps> = ({
   // Infinite scroll with Intersection Observer
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const collectionsRef = useRef<HTMLDivElement | null>(null);
 
   // 🚀 Product data from GLOBAL state (0 reads - single listener)
   const { allProducts } = useGlobalProducts();
@@ -482,7 +483,7 @@ const HomePage: React.FC<HomePageProps> = ({
       </div>
 
       {/* Banner Carousel */}
-      <div className="p-4">
+      <div className="pb-4 pt-1 px-4">
         <BannerCarousel onBannerClick={handleBannerClick} />
       </div>
 
@@ -552,23 +553,27 @@ const HomePage: React.FC<HomePageProps> = ({
       {flashSaleProducts.length === 0 && !loading && (
         <div className="px-3 sm:px-4 mb-4">
           <div
-            className="rounded-2xl overflow-hidden shadow-elegant relative h-[280px] sm:h-[320px] cursor-pointer"
-            onClick={() => setSelectedCategory('all')}
+            className="rounded-2xl overflow-hidden shadow-elegant relative h-[180px] sm:h-[240px] cursor-pointer bg-[#F5EFE0]"
+            onClick={() => {
+              setSelectedCategory('all');
+              collectionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
           >
-            {/* Full Image Background - Sharp, No Gradient */}
+            {/* Background Image - Cropped to chest, positioned right to avoid text overlap */}
             <img
               src="/hero-luxury-final.png"
               alt="Azzahra Fashion Model"
-              className="absolute inset-0 w-full h-full object-cover object-top"
+              className="absolute top-0 right-0 h-full w-[65%] sm:w-[50%] object-cover"
+              style={{ objectPosition: 'center 40%' }}
             />
 
-            {/* Text Directly on Image */}
-            <div className="absolute bottom-0 left-0 p-4 sm:p-6 z-10 w-full">
-              <h2 className="font-display text-xl sm:text-3xl font-semibold text-brand-primary leading-tight drop-shadow-none">
+            {/* Text Overlay - Vertically centered with proper spacing */}
+            <div className="absolute top-0 left-0 h-full flex flex-col justify-center p-4 sm:p-6 z-10 max-w-[50%]">
+              <h2 className="font-serif text-2xl sm:text-4xl font-semibold text-brand-primary leading-tight italic">
                 Elegance<br />
                 <span className="text-brand-primary">in Modesty.</span>
               </h2>
-              <p className="text-brand-primary/80 text-[10px] sm:text-xs mt-1 font-medium tracking-wide">Tap untuk lihat koleksi</p>
+              <p className="text-brand-primary/80 text-xs sm:text-sm mt-2 font-medium tracking-wide">Tap untuk lihat koleksi</p>
             </div>
           </div>
         </div>
@@ -702,7 +707,7 @@ const HomePage: React.FC<HomePageProps> = ({
       </div>
 
       {/* All Products - Elegant Section */}
-      <div className="px-3 sm:px-4">
+      <div className="px-3 sm:px-4" ref={collectionsRef}>
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-display text-lg font-semibold text-gray-900">
             {selectedCategory === 'all' ? 'Semua Koleksi' : categories.find(c => c.id === selectedCategory)?.name}
