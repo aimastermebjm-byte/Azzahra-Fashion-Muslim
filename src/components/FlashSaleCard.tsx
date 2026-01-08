@@ -1,5 +1,5 @@
 import React from 'react';
-import { Zap } from 'lucide-react';
+import { Tag } from 'lucide-react';
 import { Product } from '../types';
 
 interface FlashSaleCardProps {
@@ -39,7 +39,7 @@ const FlashSaleCard: React.FC<FlashSaleCardProps> = ({
             <div className="absolute top-0 right-0 z-20">
                 <div className="bg-gradient-to-r from-[#B8860B] via-[#D4AF37] to-[#B8860B] text-[#0F172A] px-2.5 py-1 rounded-tr-2xl rounded-bl-xl shadow-md">
                     <span className="text-[10px] font-bold tracking-wider flex items-center gap-1">
-                        <Zap className="w-3 h-3 fill-current" /> SALE
+                        <Tag className="w-3 h-3" /> SALE
                     </span>
                 </div>
             </div>
