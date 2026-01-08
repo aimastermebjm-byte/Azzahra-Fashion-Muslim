@@ -246,15 +246,17 @@ const HomePage: React.FC<HomePageProps> = ({
     loadCategories();
   }, []);
 
-  // Icon Mapping Helper
-  const getCategoryIconComponent = (name: string) => {
+  // Icon Mapping Helper - Returns IMAGE PATH now
+  const getCategoryIconPath = (name: string) => {
     const normalize = name.toLowerCase();
-    if (normalize === 'all' || normalize === 'semua') return LayoutGrid;
-    if (normalize.includes('aksesoris')) return Gem;
-    if (normalize.includes('hijab') || normalize.includes('khimar')) return User;
-    if (normalize.includes('outer')) return Layers;
-    if (['gamis', 'tunik', 'dress', 'abaya'].some(t => normalize.includes(t))) return Shirt;
-    return ShoppingBag;
+    if (normalize.includes('aksesoris')) return '/icons/accessories-icon.png';
+    if (normalize.includes('hijab') || normalize.includes('khimar')) return '/icons/hijab-icon.png';
+    if (normalize.includes('outer')) return '/icons/outer-icon.png';
+    if (['gamis', 'dress', 'abaya'].some(t => normalize.includes(t))) return '/icons/gamis-icon.png';
+    if (normalize.includes('tunik')) return '/icons/tunik-icon.png';
+
+    // Default/All - Use LayoutGrid component as fallback or specific icon if available
+    return null;
   };
 
   const handleAddToCart = (product: Product) => {
@@ -646,12 +648,13 @@ const HomePage: React.FC<HomePageProps> = ({
         )}
       </div>
 
-      {/* Categories - Shopee Style Icons (Dark to Gold) */}
+      {/* Categories - Custom Premium Icons */}
       <div className="px-3 sm:px-4 mb-6">
-        <div className="flex space-x-6 overflow-x-auto pb-4 pt-2 scrollbar-none px-1">
+        <div className="flex space-x-4 overflow-x-auto pb-4 pt-2 scrollbar-none px-1">
           {categories.map((category) => {
             const isSelected = selectedCategory === category.id;
-            const IconComponent = getCategoryIconComponent(category.name);
+            const iconPath = getCategoryIconPath(category.name);
+            const isAllCategory = category.id === 'all';
 
             return (
               <button
@@ -660,26 +663,42 @@ const HomePage: React.FC<HomePageProps> = ({
                   setSelectedCategory(category.id);
                   setActiveTab(category.id === 'all' ? 'all' : 'terbaru');
                 }}
-                className="flex flex-col items-center gap-2 min-w-[60px] group cursor-pointer transition-all duration-300"
+                className="flex flex-col items-center gap-2 min-w-[64px] group cursor-pointer transition-all duration-300 transform active:scale-95"
               >
                 {/* Icon Circle */}
                 <div
                   className={`
-                    w-12 h-12 rounded-full flex items-center justify-center border-[1.5px] transition-all duration-300
+                    w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm
                     ${isSelected
-                      ? 'bg-white border-[#D4AF37] text-[#D4AF37] shadow-[0_0_12px_rgba(212,175,55,0.4)] scale-110'
-                      : 'bg-white border-gray-200 text-gray-400 group-hover:border-[#D4AF37]/50 group-hover:text-[#D4AF37]/70'
+                      ? 'bg-white border-2 border-[#D4AF37] shadow-[0_4px_12px_rgba(212,175,55,0.3)] scale-110'
+                      : 'bg-white border border-gray-100 text-gray-400 group-hover:border-[#D4AF37]/50 shadow-sm'
                     }
                   `}
                 >
-                  <IconComponent className={`w-5 h-5 transition-transform duration-300 ${isSelected ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+                  {isAllCategory ? (
+                    <LayoutGrid
+                      className={`w-6 h-6 transition-all duration-300 ${isSelected ? 'text-[#D4AF37]' : 'text-gray-400'}`}
+                      strokeWidth={1.5}
+                    />
+                  ) : (
+                    <img
+                      src={iconPath || '/placeholder-icon.png'}
+                      alt={category.name}
+                      className={`w-8 h-8 object-contain transition-all duration-300`}
+                      style={{
+                        filter: isSelected
+                          ? 'invert(74%) sepia(26%) saturate(605%) hue-rotate(2deg) brightness(96%) contrast(88%)' // Gold Filter
+                          : 'opacity(0.4)' // Inactive Gray-ish
+                      }}
+                    />
+                  )}
                 </div>
 
                 {/* Label */}
                 <span
                   className={`
                     text-[10px] sm:text-xs font-medium tracking-wide whitespace-nowrap transition-colors duration-300
-                    ${isSelected ? 'text-[#D4AF37] font-semibold' : 'text-gray-500 group-hover:text-[#D4AF37]/70'}
+                    ${isSelected ? 'text-[#D4AF37] font-bold' : 'text-gray-500 group-hover:text-[#D4AF37]'}
                   `}
                 >
                   {category.name}
