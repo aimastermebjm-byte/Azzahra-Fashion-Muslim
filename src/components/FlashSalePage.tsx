@@ -56,34 +56,34 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
     // REUSABLE HEADER (Transparent / Sticky)
     // -------------------------------------------------------------------------
     const Header = () => (
-        <div className="sticky top-0 z-50 transition-all duration-300 bg-brand-surface/95 backdrop-blur-md border-b border-brand-accent/20 shadow-sm">
+        <div className="sticky top-0 z-50 transition-all duration-300 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] shadow-md border-b border-white/20">
             <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     {onBack && (
                         <button
                             onClick={onBack}
-                            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-brand-accent/10 transition-colors group"
+                            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors group"
                         >
-                            <ArrowLeft className="w-6 h-6 text-brand-accent group-hover:-translate-x-1 transition-transform" />
+                            <ArrowLeft className="w-8 h-8 text-slate-900 group-hover:scale-110 transition-transform" />
                         </button>
                     )}
 
                 </div>
-                {/* Center Brand Title for Header */}
+                {/* Center Brand Title for Header - Black Typography */}
                 <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
-                    <h1 className="font-serif text-xl font-bold tracking-widest text-brand-primary">
-                        Azzahra
+                    <h1 className="font-serif text-3xl font-bold tracking-[0.2em] text-[#0F172A] drop-shadow-sm">
+                        AZZAHRA
                     </h1>
-                    <span className="text-[10px] text-brand-accent tracking-[0.15em] -mt-1">Fashion Muslim</span>
+                    <span className="text-[10px] text-black tracking-[0.3em] -mt-0.5 font-bold uppercase">Fashion Muslim</span>
                 </div>
 
                 <button
                     onClick={onCartClick}
-                    className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-brand-accent/10 transition-all group"
+                    className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/10 transition-all group"
                 >
-                    <ShoppingCart className="w-6 h-6 text-brand-accent transition-transform group-hover:scale-110" />
+                    <ShoppingCart className="w-8 h-8 text-slate-900 transition-transform group-hover:scale-110" />
                     {cartItems.length > 0 && (
-                        <span className="absolute top-0 right-0 bg-brand-accent text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center border-2 border-brand-surface shadow-lg">
+                        <span className="absolute top-0 right-0 bg-[#0F172A] text-[#EDD686] text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center border-2 border-[#EDD686] shadow-sm">
                             {cartItems.length}
                         </span>
                     )}
@@ -125,12 +125,20 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                                 {/* Back Glow for Clock */}
                                 <div className="absolute inset-0 bg-[#FFF8DC] rounded-full blur-[40px] opacity-60 scale-75"></div>
 
-                                {/* Clock Image - NO MASK, Full Color Fidelity */}
-                                <img
-                                    src="/gold-pocket-watch.png"
-                                    alt="Gold Pocket Watch"
-                                    className="relative z-10 w-full h-full object-contain drop-shadow-[0_15px_30px_rgba(184,134,11,0.3)]"
-                                />
+                                {/* Clock Image - with Soft Gradient Mask for Perfect Blend */}
+                                <div
+                                    className="relative z-10 w-full h-full"
+                                    style={{
+                                        maskImage: 'radial-gradient(closest-side, black 60%, transparent 95%)',
+                                        WebkitMaskImage: 'radial-gradient(closest-side, black 60%, transparent 95%)'
+                                    }}
+                                >
+                                    <img
+                                        src="/gold-pocket-watch.png"
+                                        alt="Gold Pocket Watch"
+                                        className="w-full h-full object-contain drop-shadow-[0_15px_30px_rgba(184,134,11,0.3)]"
+                                    />
+                                </div>
 
                                 {/* Sparkles Overlay */}
                                 <div className="absolute top-10 right-10 w-3 h-3 bg-white rounded-full blur-[1px] animate-pulse"></div>
@@ -152,12 +160,16 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                             </div>
 
                             {/* Button - Metallic Gold & Rounded */}
+                            {/* 5. Button - Metallic Gold (Match Checkout 'Buat Pesanan') */}
                             <button
                                 onClick={() => window.location.href = '/'}
-                                className="w-full py-4 rounded-full bg-gradient-to-b from-[#C69C6D] via-[#D4AF37] to-[#8B7355] text-[#2A1810] font-bold tracking-wide text-sm shadow-[0_5px_15px_rgba(160,82,45,0.25)] border-t border-white/30 hover:shadow-[0_8px_25px_rgba(160,82,45,0.35)] hover:bg-gradient-to-b hover:from-[#D4AF37] hover:to-[#996515] active:scale-[0.98] transition-all duration-300 group/btn relative overflow-hidden"
+                                className="w-full bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-white py-4 rounded-full font-bold text-base shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] hover:shadow-[0_6px_20px_rgba(153,123,44,0.23)] hover:bg-[100%_0] transition-all transform hover:-translate-y-0.5 active:scale-95 relative overflow-hidden group border border-[#D4AF37]/20"
                             >
-                                <span className="relative z-10 font-serif tracking-wider text-base">Lihat Koleksi Lain</span>
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-150%] group-hover/btn:translate-x-[150%] transition-transform duration-1000 ease-in-out"></div>
+                                <span className="relative z-10 flex items-center justify-center gap-2 drop-shadow-sm text-[#5d4008] font-serif tracking-wider">
+                                    Lihat Koleksi Lain
+                                </span>
+                                {/* Shine Effect */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/60 to-transparent skew-x-12 translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
                             </button>
 
                         </div>

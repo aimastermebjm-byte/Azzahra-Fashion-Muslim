@@ -17,7 +17,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPage
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-brand-primary shadow-[0_-5px_20px_rgba(0,0,0,0.3)] border-t border-white/5 backdrop-blur-md">
+    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] shadow-[0_-5px_20px_rgba(212,175,55,0.3)] border-t border-white/20 backdrop-blur-md z-50">
       <div className="flex justify-around items-center h-16 safe-area-bottom">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -30,24 +30,24 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPage
               className="flex-1 flex flex-col items-center justify-center h-full transition-all duration-300 group active:scale-95"
             >
               <div className={`relative p-1.5 rounded-xl transition-all duration-500 ease-out ${isActive ? '-translate-y-1' : ''}`}>
-                {/* Active Indicator Glow Background */}
+                {/* Active Indicator Glow Background - White for contrast on Gold */}
                 {isActive && (
-                  <div className="absolute inset-0 bg-brand-accent/20 blur-xl rounded-full" />
+                  <div className="absolute inset-0 bg-white/20 blur-xl rounded-full" />
                 )}
 
                 <Icon
-                  className={`w-5 h-5 mb-0.5 transition-all duration-300 ${isActive
-                    ? 'text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.8)] fill-[#D4AF37]/10 scale-110'
-                    : 'text-gray-500 group-hover:text-[#D4AF37]'
+                  className={`w-7 h-7 mb-0.5 transition-all duration-300 ${isActive
+                    ? 'text-black drop-shadow-sm scale-110'
+                    : 'text-slate-800 group-hover:text-black'
                     }`}
                   strokeWidth={isActive ? 2.5 : 2}
                 />
               </div>
 
               <span
-                className={`text-[9px] font-medium tracking-wide transition-all duration-300 ${isActive
-                  ? 'text-[#D4AF37] drop-shadow-[0_0_5px_rgba(212,175,55,0.5)] translate-y-0'
-                  : 'text-gray-500 group-hover:text-[#D4AF37]'
+                className={`text-[10px] font-medium tracking-wide transition-all duration-300 ${isActive
+                  ? 'text-black font-bold translate-y-0'
+                  : 'text-slate-800 group-hover:text-black'
                   }`}
               >
                 {item.label}

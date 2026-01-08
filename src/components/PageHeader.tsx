@@ -17,9 +17,9 @@ interface PageHeaderProps {
 }
 
 const variantClasses: Record<HeaderVariant, string> = {
-  surface: 'bg-brand-surface text-slate-900',
-  card: 'bg-white text-slate-900 shadow-sm',
-  gradient: 'bg-brand-gradient text-white shadow-brand-card'
+  surface: 'bg-brand-surface text-slate-900 border-b border-brand-border/50',
+  card: 'bg-white text-slate-900 shadow-sm border-b border-brand-border/50',
+  gradient: 'bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-slate-900 shadow-lg border-b border-white/20'
 };
 
 const PageHeader: React.FC<PageHeaderProps> = ({
@@ -47,10 +47,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({
       ? 'dark'
       : 'light';
 
-  const subtitleClass = variant === 'gradient' ? 'text-white/80' : 'text-slate-500';
+  const subtitleClass = variant === 'gradient' ? 'text-slate-800 font-medium' : 'text-slate-500';
 
   return (
-    <header className={`rounded-2xl p-4 sm:p-6 ${baseClass} ${className}`}>
+    <header className={`rounded-2xl p-3 sm:p-4 ${baseClass} ${className}`}>
       <div className={`flex flex-col gap-4 ${alignmentClass}`}>
         <div className={`flex flex-col gap-4 ${align === 'between' ? 'lg:flex-row lg:items-center lg:gap-6' : ''}`}>
           <div className={`flex items-start gap-4 ${align === 'center' ? 'justify-center text-center' : ''}`}>

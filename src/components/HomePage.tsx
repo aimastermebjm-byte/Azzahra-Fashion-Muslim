@@ -394,31 +394,28 @@ const HomePage: React.FC<HomePageProps> = ({
   return (
     <div className="min-h-screen bg-brand-surface pb-20">
       {/* Header - NOOR Style: Centered Brand, Black BG, Gold Text */}
-      <div className="sticky top-0 z-50 bg-brand-primary shadow-lg">
-        <div className="px-3 sm:px-4 py-3">
+      {/* Header - Luxury Gold Style (Matches Flash Sale & Bottom Nav) */}
+      <div className="sticky top-0 z-50 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] shadow-lg border-b border-white/20">
+        <div className="px-3 sm:px-4 py-2.5 h-16 flex flex-col justify-center">
           {/* Top Row - Chat Left, Centered Brand, Actions Right */}
           <div className="flex items-center justify-between">
             {/* Left - Menu/Chat Button */}
             <button
               onClick={() => window.open('https://wa.me/6281952989904?text=Halo%20Admin%20Azzahra%20Fashion%2C%20saya%20ingin%20bertanya', '_blank')}
-              className="p-2.5 transition-all group active:scale-95"
+              className="p-2 transition-all group active:scale-95 hover:bg-black/5 rounded-full"
               title="Hubungi Admin via WhatsApp"
             >
-              <svg className="w-6 h-6 text-[#D4AF37]/80 group-hover:text-[#D4AF37] group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)] transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-8 h-8 text-slate-900 group-hover:text-black group-hover:scale-110 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
-            {/* Centered Brand Name - Gold */}
-            {/* Centered Brand Name - Luxury Gold */}
-            <div className="text-center relative">
-              {/* Glow Effect Layer behind text */}
-              <div className="absolute inset-0 bg-brand-accent/20 blur-xl rounded-full opacity-30 transform scale-150"></div>
-
-              <h1 className="relative font-display text-2xl sm:text-3xl font-bold tracking-wider bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(212,175,55,0.5)] transform hover:scale-105 transition-transform duration-500 cursor-pointer">
+            {/* Centered Brand Name - Black Serif Typography */}
+            <div className="text-center relative -mt-1">
+              <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-[0.2em] text-[#0F172A] drop-shadow-sm cursor-pointer transform hover:scale-105 transition-transform duration-500">
                 AZZAHRA
               </h1>
-              <p className="relative text-[9px] sm:text-[10px] text-[#F0D77A] tracking-[0.4em] font-sans uppercase mt-0.5 ml-1 opacity-90">
+              <p className="text-[10px] sm:text-xs text-black tracking-[0.3em] font-bold uppercase -mt-0.5">
                 FASHION MUSLIM
               </p>
             </div>
@@ -428,22 +425,22 @@ const HomePage: React.FC<HomePageProps> = ({
               {/* Search Toggle Button */}
               <button
                 onClick={() => setShowSearch(!showSearch)}
-                className="p-2.5 transition-all group active:scale-95"
+                className="p-2 transition-all group active:scale-95 hover:bg-black/5 rounded-full"
               >
-                <Search className={`w - 6 h - 6 transition - all ${showSearch
-                  ? 'text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.8)]'
-                  : 'text-[#D4AF37]/80 group-hover:text-[#D4AF37] group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]'
+                <Search className={`w-8 h-8 transition-all ${showSearch
+                  ? 'text-black scale-110'
+                  : 'text-slate-900 group-hover:text-black'
                   } `} />
               </button>
 
               {/* Cart Button */}
               <button
                 onClick={onCartClick}
-                className="relative p-2.5 transition-all group active:scale-95"
+                className="relative p-2 transition-all group active:scale-95 hover:bg-black/5 rounded-full"
               >
-                <ShoppingCart className="w-6 h-6 text-[#D4AF37]/80 group-hover:text-[#D4AF37] group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)] transition-all" />
+                <ShoppingCart className="w-8 h-8 text-slate-900 group-hover:text-black transition-all" />
                 {cartCount > 0 && (
-                  <span className="absolute top-1 right-1 bg-brand-accent text-brand-primary text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-0.5 shadow-sm">
+                  <span className="absolute top-1 right-1 bg-[#0F172A] text-[#EDD686] text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-0.5 border border-[#EDD686] shadow-sm">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
                 )}
