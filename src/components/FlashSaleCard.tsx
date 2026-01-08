@@ -35,9 +35,9 @@ const FlashSaleCard: React.FC<FlashSaleCardProps> = ({
             onClick={() => onProductClick(product)}
             className="relative bg-gradient-to-b from-[#FFF8F0] to-[#F5E6D3] rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(139,69,19,0.12)] cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(139,69,19,0.18)] border border-[#E8D4B8]/50"
         >
-            {/* SALE Badge - Top Right */}
-            <div className="absolute top-0 right-0 z-20">
-                <div className="bg-gradient-to-r from-[#B8860B] via-[#D4AF37] to-[#B8860B] text-[#0F172A] px-2.5 py-1 rounded-tr-2xl rounded-bl-xl shadow-md">
+            {/* SALE Badge - Top Right - Aligned with PO badge */}
+            <div className="absolute top-2 right-2 z-20">
+                <div className="bg-gradient-to-r from-[#B8860B] via-[#D4AF37] to-[#B8860B] text-[#0F172A] px-2.5 py-1 rounded-full shadow-md">
                     <span className="text-[10px] font-bold tracking-wider flex items-center gap-1">
                         <Tag className="w-3 h-3" /> SALE
                     </span>
