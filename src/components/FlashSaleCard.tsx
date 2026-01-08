@@ -38,7 +38,7 @@ const FlashSaleCard: React.FC<FlashSaleCardProps> = ({
             <div className="absolute top-0 left-0 z-20">
                 <div className="relative">
                     {/* Ribbon Main */}
-                    <div className="bg-[#0F172A] text-white px-3 py-2 rounded-tl-2xl rounded-br-xl shadow-md">
+                    <div className="bg-[#0F172A] text-[#EDD686] px-3 py-2 rounded-tl-2xl rounded-br-xl shadow-md">
                         <span className="text-lg font-bold">{discountPercent}%</span>
                         <span className="text-[10px] block -mt-1 font-medium tracking-wide">OFF</span>
                     </div>

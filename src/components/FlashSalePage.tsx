@@ -208,7 +208,7 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                         <div className="flex flex-col items-center gap-1">
                             <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#0F172A] rounded-xl border-2 border-[#D4AF37] shadow-md flex items-center justify-center relative overflow-hidden">
                                 <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent opacity-60"></div>
-                                <span className="font-serif text-xl sm:text-2xl font-bold text-[#FDB931] drop-shadow-md z-10">
+                                <span className="font-serif text-xl sm:text-2xl font-bold text-[#EDD686] drop-shadow-md z-10">
                                     {timeLeft.hours.toString().padStart(2, '0')}
                                 </span>
                             </div>
@@ -225,7 +225,7 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                         <div className="flex flex-col items-center gap-1">
                             <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#0F172A] rounded-xl border-2 border-[#D4AF37] shadow-md flex items-center justify-center relative overflow-hidden">
                                 <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent opacity-60"></div>
-                                <span className="font-serif text-xl sm:text-2xl font-bold text-[#FDB931] drop-shadow-md z-10">
+                                <span className="font-serif text-xl sm:text-2xl font-bold text-[#EDD686] drop-shadow-md z-10">
                                     {timeLeft.minutes.toString().padStart(2, '0')}
                                 </span>
                             </div>
@@ -242,7 +242,7 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                         <div className="flex flex-col items-center gap-1">
                             <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#0F172A] rounded-xl border-2 border-[#D4AF37] shadow-md flex items-center justify-center relative overflow-hidden">
                                 <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent opacity-60"></div>
-                                <span className="font-serif text-xl sm:text-2xl font-bold text-[#FDB931] drop-shadow-md z-10 animate-pulse">
+                                <span className="font-serif text-xl sm:text-2xl font-bold text-[#EDD686] drop-shadow-md z-10 animate-pulse">
                                     {timeLeft.seconds.toString().padStart(2, '0')}
                                 </span>
                             </div>
@@ -251,13 +251,13 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                     </div>
                 )}
 
-                {/* PRODUK TERBATAS - Compact */}
-                <div className="flex items-center justify-center gap-3">
-                    <span className="h-[1px] w-6 sm:w-12 bg-gradient-to-r from-transparent to-[#D4AF37]"></span>
-                    <p className="font-serif text-sm sm:text-base text-[#8B4513] tracking-wider flex items-center gap-1.5 uppercase">
-                        PRODUK TERBATAS <Sparkles className="w-3 h-3 text-[#D4AF37]" />
+                {/* PRODUK TERBATAS - Clear & Visible */}
+                <div className="flex items-center justify-center gap-4 mt-1">
+                    <span className="h-[1px] w-10 sm:w-20 bg-gradient-to-r from-transparent to-[#997B2C]"></span>
+                    <p className="font-serif text-lg sm:text-xl text-[#997B2C] tracking-wider flex items-center gap-2 uppercase font-medium">
+                        PRODUK TERBATAS <Sparkles className="w-4 h-4 text-[#EDD686]" />
                     </p>
-                    <span className="h-[1px] w-6 sm:w-12 bg-gradient-to-l from-transparent to-[#D4AF37]"></span>
+                    <span className="h-[1px] w-10 sm:w-20 bg-gradient-to-l from-transparent to-[#997B2C]"></span>
                 </div>
             </div>
 
