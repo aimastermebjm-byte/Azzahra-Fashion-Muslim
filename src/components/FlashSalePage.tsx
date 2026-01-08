@@ -59,7 +59,7 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
     // -------------------------------------------------------------------------
     const Header = () => (
         <div className="sticky top-0 z-50 transition-all duration-300 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] shadow-md border-b border-white/20">
-            <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+            <div className="container mx-auto px-4 h-12 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     {onBack && (
                         <button

@@ -397,7 +397,7 @@ const HomePage: React.FC<HomePageProps> = ({
       {/* Header - NOOR Style: Centered Brand, Black BG, Gold Text */}
       {/* Header - Luxury Gold Style (Matches Flash Sale & Bottom Nav) */}
       <div className="sticky top-0 z-50 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] shadow-lg border-b border-white/20">
-        <div className="px-3 sm:px-4 py-2.5 min-h-[4rem] flex flex-col justify-center transition-all duration-300">
+        <div className="px-3 sm:px-4 py-1.5 min-h-[3rem] flex flex-col justify-center transition-all duration-300">
           {/* Top Row - Chat Left, Centered Brand, Actions Right */}
           <div className="flex items-center justify-between">
             {/* Left - Menu/Chat Button */}
