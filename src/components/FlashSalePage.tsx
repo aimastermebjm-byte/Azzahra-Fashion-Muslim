@@ -72,12 +72,12 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                 {/* Center Brand Title for Header - Black Typography */}
                 <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
                     <h1
-                        className="font-['Great_Vibes'] text-4xl text-[#0F172A] drop-shadow-sm"
+                        className="font-['Berkshire_Swash'] text-4xl text-[#0F172A] drop-shadow-sm pb-1 leading-relaxed tracking-wide"
                         style={{ textShadow: '2px 2px 4px rgba(212, 175, 55, 0.5)' }}
                     >
                         Azzahra
                     </h1>
-                    <span className="text-[10px] text-black tracking-[0.3em] -mt-1 font-bold uppercase font-serif">Fashion Muslim</span>
+                    <span className="text-[10px] text-black tracking-[0.3em] -mt-3 font-bold uppercase font-serif">Fashion Muslim</span>
                 </div>
 
                 <button

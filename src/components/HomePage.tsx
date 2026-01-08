@@ -410,15 +410,17 @@ const HomePage: React.FC<HomePageProps> = ({
               </svg>
             </button>
 
-            {/* Centered Brand Name - Black Serif Typography */}
-            <div className="text-center relative -mt-1">
+            {/* Centered Brand Name - Final Berkshire Swash Production */}
+            <div className="text-center relative -mt-1 flex flex-col items-center">
               <h1
-                className="font-['Great_Vibes'] text-4xl sm:text-5xl text-[#0F172A] cursor-pointer transform hover:scale-105 transition-transform duration-500"
-                style={{ textShadow: '2px 2px 4px rgba(212, 175, 55, 0.5)' }}
+                className="font-['Berkshire_Swash'] text-4xl sm:text-5xl text-[#0F172A] cursor-pointer transform hover:scale-105 transition-transform duration-500 pb-1 leading-relaxed tracking-wide"
+                style={{
+                  textShadow: '2px 2px 4px rgba(212, 175, 55, 0.5)'
+                }}
               >
                 Azzahra
               </h1>
-              <p className="text-[10px] sm:text-xs text-black tracking-[0.3em] font-bold uppercase -mt-1 font-serif">
+              <p className="text-[10px] sm:text-xs text-black tracking-[0.3em] font-bold uppercase -mt-3 font-serif">
                 FASHION MUSLIM
               </p>
             </div>
