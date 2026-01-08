@@ -23,11 +23,9 @@ const FlashSaleCard: React.FC<FlashSaleCardProps> = ({
 
     const handleBuyClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (onAddToCart) {
-            onAddToCart(product);
-        } else {
-            onProductClick(product);
-        }
+        e.preventDefault();
+        // Always open product detail for variant selection
+        onProductClick(product);
     };
 
     return (
