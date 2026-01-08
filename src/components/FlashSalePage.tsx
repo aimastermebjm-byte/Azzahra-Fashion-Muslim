@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Flame, ArrowLeft, Sparkles } from 'lucide-react';
+import { ShoppingCart, Tag, ArrowLeft, Sparkles } from 'lucide-react';
 import FlashSaleCard from './FlashSaleCard';
 import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
 import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
@@ -192,13 +192,13 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                 {/* Background Atmosphere */}
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
 
-                {/* HEADER: FLASH SALE with Flames - Compact */}
+                {/* HEADER: FLASH SALE with Tag Icons - Compact */}
                 <div className="relative z-10 flex items-center justify-center gap-2 mb-3">
-                    <span className="text-2xl text-brand-accent animate-pulse filter drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]">🔥</span>
+                    <Tag className="w-6 h-6 text-[#997B2C] animate-pulse" />
                     <h1 className="font-serif text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] bg-clip-text text-transparent drop-shadow-sm tracking-wide">
                         FLASH SALE
                     </h1>
-                    <span className="text-2xl text-brand-accent animate-pulse filter drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]">🔥</span>
+                    <Tag className="w-6 h-6 text-[#997B2C] animate-pulse" />
                 </div>
 
                 {/* TIMER: Compact Navy Blue Tiles */}
