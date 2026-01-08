@@ -557,18 +557,21 @@ const HomePage: React.FC<HomePageProps> = ({
           >
             {/* Full Image Background */}
             <img
-              src="/hero-model.png"
+              src="/hero-luxury.jpg"
               alt="Azzahra Fashion Model"
-              className="absolute inset-0 w-full h-full object-cover object-[60%_15%]"
+              className="absolute inset-0 w-full h-full object-cover object-top"
             />
 
+            {/* Gradient Overlay for Text Blending - Stronger White at Bottom */}
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent"></div>
+
             {/* Text Directly on Image */}
-            <div className="absolute bottom-0 left-0 p-4 sm:p-6">
-              <h2 className="font-display text-xl sm:text-3xl font-semibold text-brand-primary leading-tight drop-shadow-sm">
+            <div className="absolute bottom-0 left-0 p-4 sm:p-6 z-10 w-full">
+              <h2 className="font-display text-xl sm:text-3xl font-semibold text-brand-primary leading-tight drop-shadow-none">
                 Elegance<br />
-                <span className="text-brand-accent">in Modesty.</span>
+                <span className="text-brand-primary">in Modesty.</span>
               </h2>
-              <p className="text-gray-700 text-[10px] sm:text-xs mt-1 drop-shadow-sm">Tap untuk lihat koleksi</p>
+              <p className="text-brand-primary/80 text-[10px] sm:text-xs mt-1 font-medium tracking-wide">Tap untuk lihat koleksi</p>
             </div>
           </div>
         </div>
@@ -666,34 +669,37 @@ const HomePage: React.FC<HomePageProps> = ({
 
       {/* Filters & Sort - Split Clean Bar */}
       <div className="sticky top-[50px] z-20 bg-brand-surface/95 backdrop-blur-sm border-b border-brand-border/30 px-3 sm:px-4 py-3 mb-6 transition-all duration-300">
-        <div className="flex items-center justify-between">
+        <div className="grid grid-cols-3 gap-2">
+          {/* 1. Sort Button (Always Gold Gradient but toggles label) */}
+          <button
+            onClick={() => setSortBy(sortBy === 'terbaru' ? 'termurah' : 'terbaru')}
+            className="flex items-center justify-center space-x-1 w-full px-2 py-2 bg-gradient-to-r from-[#D4AF37] via-[#F2D785] to-[#D4AF37] text-black font-display font-medium text-xs sm:text-sm rounded-full shadow-[0_0_15px_rgba(212,175,55,0.4)] active:scale-95 transition-all border border-[#FFD700]/30"
+          >
+            <ArrowDownUp className="w-3.5 h-3.5 text-black/80" />
+            <span>{sortBy === 'terbaru' ? 'Terbaru' : 'Termurah'}</span>
+          </button>
 
-          {/* Left: Sort Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setSortBy(sortBy === 'terbaru' ? 'termurah' : 'terbaru')}
-              className="flex items-center justify-center space-x-2 w-[140px] px-4 py-2 bg-gradient-to-r from-[#D4AF37] via-[#F2D785] to-[#D4AF37] text-black font-display font-medium text-sm rounded-full shadow-[0_0_15px_rgba(212,175,55,0.4)] active:scale-95 transition-all border border-[#FFD700]/30"
-            >
-              <ArrowDownUp className="w-4 h-4 text-black/80" />
-              <span>{sortBy === 'terbaru' ? 'Terbaru' : 'Termurah'}</span>
-            </button>
-          </div>
+          {/* 2. Ready Stock Filter */}
+          <button
+            onClick={() => setStatusFilter(statusFilter === 'ready' ? 'all' : 'ready')}
+            className={`flex items-center justify-center w-full px-2 py-2 rounded-full text-xs sm:text-sm font-display font-medium tracking-wide transition-all border ${statusFilter === 'ready'
+              ? 'bg-gradient-to-r from-[#D4AF37] via-[#F2D785] to-[#D4AF37] text-black shadow-[0_0_15px_rgba(212,175,55,0.4)] border-[#FFD700]/30'
+              : 'bg-white border-brand-accent/30 text-gray-400 hover:border-brand-accent hover:text-[#D4AF37]'
+              }`}
+          >
+            Ready
+          </button>
 
-          {/* Right: Status Filters */}
-          <div className="flex items-center space-x-2">
-            {(['ready', 'po'] as const).map((status) => (
-              <button
-                key={status}
-                onClick={() => setStatusFilter(statusFilter === status ? 'all' : status)}
-                className={`px-6 py-2 rounded-full text-sm font-display tracking-wide transition-all border ${statusFilter === status
-                  ? 'bg-white border-brand-accent text-brand-primary shadow-sm ring-1 ring-brand-accent/20'
-                  : 'bg-gray-50/50 border-gray-200 text-gray-400 hover:border-brand-accent/30'
-                  }`}
-              >
-                {status === 'ready' ? 'Ready Stock' : 'Pre-Order'}
-              </button>
-            ))}
-          </div>
+          {/* 3. PO Filter */}
+          <button
+            onClick={() => setStatusFilter(statusFilter === 'po' ? 'all' : 'po')}
+            className={`flex items-center justify-center w-full px-2 py-2 rounded-full text-xs sm:text-sm font-display font-medium tracking-wide transition-all border ${statusFilter === 'po'
+              ? 'bg-gradient-to-r from-[#D4AF37] via-[#F2D785] to-[#D4AF37] text-black shadow-[0_0_15px_rgba(212,175,55,0.4)] border-[#FFD700]/30'
+              : 'bg-white border-brand-accent/30 text-gray-400 hover:border-brand-accent hover:text-[#D4AF37]'
+              }`}
+          >
+            PO
+          </button>
 
         </div>
       </div>
