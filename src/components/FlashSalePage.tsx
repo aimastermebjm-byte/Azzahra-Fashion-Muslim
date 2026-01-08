@@ -187,11 +187,10 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
 
             <Header />
 
-            {/* HERO SECTION: Active Flash Sale - Navy & Gold Luxury Theme */}
-            <div className="relative pt-8 pb-10 px-4 text-center">
+            {/* HERO SECTION: Active Flash Sale - Sticky Hero */}
+            <div className="sticky top-16 z-40 bg-gradient-to-b from-[#FDF8F5] via-[#FDF8F5] to-[#FDF8F5]/95 backdrop-blur-sm pt-6 pb-6 px-4 text-center shadow-[0_4px_15px_rgba(0,0,0,0.05)]">
                 {/* Background Atmosphere */}
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
-                <div className="absolute top-0 inset-x-0 h-48 bg-gradient-to-b from-[#E8C4A8]/20 via-[#D4AF37]/10 to-transparent blur-[40px] pointer-events-none"></div>
 
                 {/* HEADER: FLASH SALE with Flames */}
                 <div className="relative z-10 flex items-center justify-center gap-3 mb-8">
