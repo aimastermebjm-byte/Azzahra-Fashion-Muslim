@@ -47,6 +47,13 @@ const FlashSaleCard: React.FC<FlashSaleCardProps> = ({
                 </div>
             </div>
 
+            {/* Status Badge - Ready/PO with Stock - Top Left */}
+            <div className="absolute top-2 left-2 z-20">
+                <div className={`px-2.5 py-1 bg-white/95 backdrop-blur-sm border border-[#D4AF37]/50 text-[#997B2C] text-[10px] font-bold uppercase tracking-wider rounded-full shadow-sm`}>
+                    {product.status === 'ready' ? 'Ready' : 'PO'} ({product.stock || 0})
+                </div>
+            </div>
+
             {/* Product Image */}
             <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-b from-[#FDFBF7] to-[#F5E6D3]">
                 <img
