@@ -252,7 +252,14 @@ const HomePage: React.FC<HomePageProps> = ({
     if (normalize.includes('aksesoris')) return '/icons/accessories-icon.png';
     if (normalize.includes('hijab') || normalize.includes('khimar')) return '/icons/hijab-icon.png';
     if (normalize.includes('outer')) return '/icons/outer-icon.png';
-    if (['gamis', 'dress', 'abaya'].some(t => normalize.includes(t))) return '/icons/gamis-icon.png';
+    // Dress vs Gamis
+    if (normalize.includes('dress') || normalize.includes('gown')) return '/icons/dress-icon.png';
+    if (normalize.includes('gamis') || normalize.includes('abaya')) return '/icons/gamis-icon.png';
+
+    // New Categories
+    if (normalize.includes('mukena')) return '/icons/mukena-icon.png';
+    if (normalize.includes('oneset') || normalize.includes('set')) return '/icons/oneset-icon.png';
+
     if (normalize.includes('tunik')) return '/icons/tunik-icon.png';
 
     // Default/All - Use LayoutGrid component as fallback or specific icon if available
@@ -668,10 +675,10 @@ const HomePage: React.FC<HomePageProps> = ({
                 {/* Icon Circle */}
                 <div
                   className={`
-                    w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border-[1.5px] relative overflow-hidden
+                    w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm relative overflow-hidden
                     ${isSelected
-                      ? 'bg-gradient-to-br from-[#997B2C] via-[#EDD686] to-[#997B2C] border-[#D4AF37]/20 shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] scale-110' // Active: Premium Metallic Gold Gradient
-                      : 'bg-white border-gray-200 group-hover:border-[#D4AF37]/50' // Inactive: White Background
+                      ? 'bg-gradient-to-br from-[#997B2C] via-[#EDD686] to-[#997B2C] ring-[3px] ring-[#D4AF37] ring-offset-[3px] shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] scale-105' // Active: Gradient + Double Ring
+                      : 'bg-white border-[1.5px] border-gray-200 group-hover:border-[#D4AF37]/50' // Inactive: Simple Border
                     }
                   `}
                 >
@@ -703,8 +710,8 @@ const HomePage: React.FC<HomePageProps> = ({
                 {/* Label */}
                 <span
                   className={`
-                    text-[10px] sm:text-xs font-medium tracking-wide whitespace-nowrap transition-colors duration-300
-                    ${isSelected ? 'text-[#D4AF37] font-bold' : 'text-gray-500 group-hover:text-[#D4AF37]'}
+                    text-xs sm:text-sm tracking-wide whitespace-nowrap transition-colors duration-300 mt-1.5
+                    ${isSelected ? 'text-[#B8860B] font-bold' : 'text-slate-900 font-bold group-hover:text-black'}
                   `}
                 >
                   {category.name}
