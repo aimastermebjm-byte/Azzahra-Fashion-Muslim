@@ -668,23 +668,28 @@ const HomePage: React.FC<HomePageProps> = ({
                 {/* Icon Circle */}
                 <div
                   className={`
-                    w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border-[1.5px]
+                    w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border-[1.5px] relative overflow-hidden
                     ${isSelected
-                      ? 'bg-[#D4AF37] border-[#D4AF37] shadow-[0_4px_12px_rgba(212,175,55,0.4)] scale-110' // Active: Solid GOLD Background
+                      ? 'bg-gradient-to-br from-[#997B2C] via-[#EDD686] to-[#997B2C] border-[#D4AF37]/20 shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] scale-110' // Active: Premium Metallic Gold Gradient
                       : 'bg-white border-gray-200 group-hover:border-[#D4AF37]/50' // Inactive: White Background
                     }
                   `}
                 >
+                  {/* Subtle Shine Effect for Active State */}
+                  {isSelected && (
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent skew-x-12 opacity-50" />
+                  )}
+
                   {isAllCategory ? (
                     <LayoutGrid
-                      className={`w-6 h-6 transition-all duration-300 ${isSelected ? 'text-black/80' : 'text-gray-400'}`}
+                      className={`w-6 h-6 transition-all duration-300 relative z-10 ${isSelected ? 'text-black/80' : 'text-gray-400'}`}
                       strokeWidth={1.5}
                     />
                   ) : (
                     <img
                       src={iconPath || '/placeholder-icon.png'}
                       alt={category.name}
-                      className={`w-9 h-9 object-contain transition-all duration-300`}
+                      className={`w-9 h-9 object-contain transition-all duration-300 relative z-10`}
                       style={{
                         mixBlendMode: 'multiply', // Magic trick: Removes white bg, keeps black lines
                         filter: isSelected
