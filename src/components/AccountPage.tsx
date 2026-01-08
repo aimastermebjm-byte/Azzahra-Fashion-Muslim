@@ -152,77 +152,123 @@ const AccountPage: React.FC<AccountPageProps> = ({
   const roleInfo = getRoleDisplay(user.role);
   const RoleIcon = roleInfo.icon;
 
-  // Reusable User Info Card
-  const renderUserInfo = (title: string = "Informasi Akun") => (
-    <div className="bg-white rounded-lg shadow-sm p-4">
-      <h3 className="font-semibold text-gray-800 mb-4">{title}</h3>
-      <div className="space-y-3">
-        <div className="flex items-center space-x-3">
-          <User className="w-5 h-5 text-gray-400" />
-          <div className="flex-1">
-            <p className="text-sm text-gray-500">Username</p>
-            {isEditingName ? (
-              <div className="flex items-center space-x-2 mt-1">
+  // Reusable User Info Card - Matches Mockup
+  const renderUserInfo = () => (
+    <div className="space-y-3">
+      {/* Info Card with Gold Left Border */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+        <div className="flex">
+          {/* Gold Left Accent */}
+          <div className="w-1.5 bg-gradient-to-b from-[#997B2C] via-[#EDD686] to-[#997B2C]"></div>
+          <div className="flex-1 p-4">
+            {/* Username Row */}
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-xs text-slate-500">Username</p>
+                {isEditingName ? (
+                  <div className="flex items-center space-x-2 mt-1">
+                    <input
+                      type="text"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      className="flex-1 p-1.5 border border-[#D4AF37] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                      autoFocus
+                    />
+                    <button onClick={handleSaveName} disabled={loadingName} className="p-1.5 bg-gradient-to-br from-[#997B2C] to-[#D4AF37] text-white rounded-lg">
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => setIsEditingName(false)} disabled={loadingName} className="p-1.5 bg-gray-100 text-gray-600 rounded-lg">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <p className="font-semibold text-slate-900">{user.name || user.displayName}</p>
+                )}
+              </div>
+              {!isEditingName && (
+                <button onClick={startEditingName} className="p-2 text-[#997B2C] hover:bg-amber-50 rounded-lg transition-colors">
+                  <Edit2 className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            {/* Email Row */}
+            <div className="mb-3">
+              <p className="text-xs text-slate-500">Email</p>
+              <p className="font-semibold text-slate-900">{user.email}</p>
+            </div>
+
+            {/* Phone Row */}
+            <div className="mb-3">
+              <p className="text-xs text-slate-500">Phone</p>
+              <p className="font-semibold text-slate-900">{user.phone || 'Belum diisi'}</p>
+            </div>
+
+            {/* Password Row */}
+            <div>
+              <p className="text-xs text-slate-500">Password</p>
+              <button
+                onClick={() => setShowPasswordForm(!showPasswordForm)}
+                className="font-semibold text-slate-900 hover:text-[#997B2C] transition-colors"
+              >
+                Ubah Password →
+              </button>
+            </div>
+
+            {/* Password Form (expandable) */}
+            {showPasswordForm && (
+              <form onSubmit={handlePasswordChange} className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+                <div className="relative">
+                  <input
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={passwordForm.currentPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                    placeholder="Password Saat Ini"
+                    className="w-full p-2 text-sm border border-gray-300 rounded-lg pr-10"
+                    required
+                  />
+                  <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                    placeholder="Password Baru"
+                    className="w-full p-2 text-sm border border-gray-300 rounded-lg pr-10"
+                    required
+                  />
+                  <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
                 <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  className="flex-1 p-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  autoFocus
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                  placeholder="Konfirmasi Password"
+                  className="w-full p-2 text-sm border border-gray-300 rounded-lg"
+                  required
                 />
-                <button
-                  onClick={handleSaveName}
-                  disabled={loadingName}
-                  className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200"
-                >
-                  <Check className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setIsEditingName(false)}
-                  disabled={loadingName}
-                  className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <p className="font-medium">{user.name || user.displayName}</p>
-                <button
-                  onClick={startEditingName}
-                  className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-              </div>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setShowPasswordForm(false)} className="flex-1 p-2 text-sm border border-gray-300 rounded-lg text-gray-600">Batal</button>
+                  <button type="submit" className="flex-1 p-2 text-sm bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-white rounded-lg font-medium">Simpan</button>
+                </div>
+              </form>
             )}
           </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <Mail className="w-5 h-5 text-gray-400" />
-          <div>
-            <p className="text-sm text-gray-500">Email</p>
-            <p className="font-medium">{user.email}</p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-3">
-          <Phone className="w-5 h-5 text-gray-400" />
-          <div>
-            <p className="text-sm text-gray-500">Telepon</p>
-            <p className="font-medium">{user.phone || 'Belum diisi'}</p>
-          </div>
-        </div>
-        <button
-          onClick={onNavigateToAddressManagement}
-          className="flex items-center space-x-3 w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors"
-        >
-          <MapPin className="w-5 h-5 text-gray-400" />
-          <div className="flex-1">
-            <p className="font-medium">Alamat Saya</p>
-            <p className="text-sm text-gray-500">Kelola alamat pengiriman</p>
-          </div>
-        </button>
       </div>
+
+      {/* Address Management Button - Centered */}
+      <button
+        onClick={onNavigateToAddressManagement}
+        className="w-full py-3 px-4 bg-white border-2 border-[#D4AF37] rounded-xl text-center hover:bg-amber-50 transition-all"
+      >
+        <span className="font-semibold text-[#997B2C]">Address Management</span>
+      </button>
     </div>
   );
 
@@ -475,7 +521,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
         return (
           <div className="space-y-4">
             {/* Basic Info */}
-            {renderUserInfo("Informasi Akun Admin")}
+            {renderUserInfo()}
 
             {/* Admin Features */}
             <div className="bg-white rounded-lg shadow-sm p-4">
@@ -654,92 +700,139 @@ const AccountPage: React.FC<AccountPageProps> = ({
         return (
           <div className="space-y-4">
             {/* Owner Info */}
-            {renderUserInfo("Informasi Akun Owner")}
+            {renderUserInfo()}
 
-            {/* Owner Controls */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <h3 className="font-semibold text-gray-800 mb-4">Kontrol Owner</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={onNavigateToAdminProducts}
-                  className="p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <PackageIcon className="w-6 h-6 mx-auto mb-2" />
-                  <p className="text-sm">Kelola Produk</p>
-                </button>
-                <button
-                  onClick={onNavigateToAdminOrders}
-                  className="p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <Package className="w-6 h-6 mx-auto mb-2" />
-                  <p className="text-sm">Kelola Pesanan</p>
-                </button>
-                <button
-                  onClick={onNavigateToAdminPaymentVerification}
-                  className="p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <CreditCard className="w-6 h-6 mx-auto mb-2" />
-                  <p className="text-sm">Verifikasi Pembayaran</p>
-                </button>
-                <button
-                  onClick={onNavigateToAdminReports}
-                  className="p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <BarChart3 className="w-6 h-6 mx-auto mb-2" />
-                  <p className="text-sm">Laporan</p>
-                </button>
-                <button
-                  onClick={onNavigateToAdminUsers}
-                  className="p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <Users className="w-6 h-6 mx-auto mb-2" />
-                  <p className="text-sm">Kelola User</p>
-                </button>
-                <button
-                  onClick={onNavigateToAdminFinancials}
-                  className="p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <TrendingUp className="w-6 h-6 mx-auto mb-2" />
-                  <p className="text-sm">Biaya & Pendapatan</p>
-                </button>
-                <button
-                  onClick={onNavigateToAdminMaster}
-                  className="p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <Layers className="w-6 h-6 mx-auto mb-2" />
-                  <p className="text-sm">Data Master</p>
-                </button>
-                <button
-                  onClick={onNavigateToAdminStockOpname}
-                  className="p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <ClipboardCheck className="w-6 h-6 mx-auto mb-2" />
-                  <p className="text-sm">Stock Opname</p>
-                </button>
-                <button
-                  onClick={onNavigateToAdminVoucher}
-                  className="p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <Gift className="w-6 h-6 mx-auto mb-2" />
-                  <p className="text-sm">Kelola Voucher</p>
-                </button>
+            {/* Owner Controls - Premium Gold Theme */}
+            <div className="bg-white rounded-xl shadow-sm p-3 border border-gray-100">
+              <h3 className="font-bold text-slate-900 mb-3">Kontrol Owner</h3>
+              {/* 2-Row Scrollable Menu Grid */}
+              <div className="overflow-x-auto pb-2 scrollbar-hide">
+                <div className="grid grid-rows-2 grid-flow-col gap-2" style={{ width: 'max-content' }}>
+                  {/* Kelola Produk */}
+                  <button
+                    onClick={onNavigateToAdminProducts}
+                    className="w-16 p-2 bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-[0_6px_0_0_#d1d5db,0_8px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_4px_0_0_#d4af37,0_6px_25px_rgba(212,175,55,0.35)] hover:-translate-y-0.5 active:shadow-[0_2px_0_0_#997b2c,0_3px_10px_rgba(0,0,0,0.1)] active:translate-y-0.5 transition-all duration-150 group"
+                  >
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-1 group-hover:bg-[radial-gradient(ellipse_at_top_left,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] transition-all relative overflow-hidden">
+                      <PackageIcon className="w-6 h-6 text-slate-800" />
+                    </div>
+                    <p className="text-[10px] font-medium text-slate-700 text-center">Produk</p>
+                  </button>
+
+                  {/* Kelola Pesanan */}
+                  <button
+                    onClick={onNavigateToAdminOrders}
+                    className="w-16 p-2 bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-[0_6px_0_0_#d1d5db,0_8px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_4px_0_0_#d4af37,0_6px_25px_rgba(212,175,55,0.35)] hover:-translate-y-0.5 active:shadow-[0_2px_0_0_#997b2c,0_3px_10px_rgba(0,0,0,0.1)] active:translate-y-0.5 transition-all duration-150 group"
+                  >
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-1 group-hover:bg-[radial-gradient(ellipse_at_top_left,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] transition-all">
+                      <Package className="w-6 h-6 text-slate-800" />
+                    </div>
+                    <p className="text-[10px] font-medium text-slate-700 text-center">Pesanan</p>
+                  </button>
+
+                  {/* Verifikasi Pembayaran */}
+                  <button
+                    onClick={onNavigateToAdminPaymentVerification}
+                    className="w-16 p-2 bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-[0_6px_0_0_#d1d5db,0_8px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_4px_0_0_#d4af37,0_6px_25px_rgba(212,175,55,0.35)] hover:-translate-y-0.5 active:shadow-[0_2px_0_0_#997b2c,0_3px_10px_rgba(0,0,0,0.1)] active:translate-y-0.5 transition-all duration-150 group"
+                  >
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-1 group-hover:bg-[radial-gradient(ellipse_at_top_left,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] transition-all">
+                      <CreditCard className="w-6 h-6 text-slate-800" />
+                    </div>
+                    <p className="text-[10px] font-medium text-slate-700 text-center">Payment</p>
+                  </button>
+
+                  {/* Laporan */}
+                  <button
+                    onClick={onNavigateToAdminReports}
+                    className="w-16 p-2 bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-[0_6px_0_0_#d1d5db,0_8px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_4px_0_0_#d4af37,0_6px_25px_rgba(212,175,55,0.35)] hover:-translate-y-0.5 active:shadow-[0_2px_0_0_#997b2c,0_3px_10px_rgba(0,0,0,0.1)] active:translate-y-0.5 transition-all duration-150 group"
+                  >
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-1 group-hover:bg-[radial-gradient(ellipse_at_top_left,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] transition-all">
+                      <BarChart3 className="w-6 h-6 text-slate-800" />
+                    </div>
+                    <p className="text-[10px] font-medium text-slate-700 text-center">Laporan</p>
+                  </button>
+
+                  {/* Kelola User */}
+                  <button
+                    onClick={onNavigateToAdminUsers}
+                    className="w-16 p-2 bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-[0_6px_0_0_#d1d5db,0_8px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_4px_0_0_#d4af37,0_6px_25px_rgba(212,175,55,0.35)] hover:-translate-y-0.5 active:shadow-[0_2px_0_0_#997b2c,0_3px_10px_rgba(0,0,0,0.1)] active:translate-y-0.5 transition-all duration-150 group"
+                  >
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-1 group-hover:bg-[radial-gradient(ellipse_at_top_left,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] transition-all">
+                      <Users className="w-6 h-6 text-slate-800" />
+                    </div>
+                    <p className="text-[10px] font-medium text-slate-700 text-center">Users</p>
+                  </button>
+
+                  {/* Biaya & Pendapatan */}
+                  <button
+                    onClick={onNavigateToAdminFinancials}
+                    className="w-16 p-2 bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-[0_6px_0_0_#d1d5db,0_8px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_4px_0_0_#d4af37,0_6px_25px_rgba(212,175,55,0.35)] hover:-translate-y-0.5 active:shadow-[0_2px_0_0_#997b2c,0_3px_10px_rgba(0,0,0,0.1)] active:translate-y-0.5 transition-all duration-150 group"
+                  >
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-1 group-hover:bg-[radial-gradient(ellipse_at_top_left,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] transition-all">
+                      <TrendingUp className="w-6 h-6 text-slate-800" />
+                    </div>
+                    <p className="text-[10px] font-medium text-slate-700 text-center">Finance</p>
+                  </button>
+
+                  {/* Data Master */}
+                  <button
+                    onClick={onNavigateToAdminMaster}
+                    className="w-16 p-2 bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-[0_6px_0_0_#d1d5db,0_8px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_4px_0_0_#d4af37,0_6px_25px_rgba(212,175,55,0.35)] hover:-translate-y-0.5 active:shadow-[0_2px_0_0_#997b2c,0_3px_10px_rgba(0,0,0,0.1)] active:translate-y-0.5 transition-all duration-150 group"
+                  >
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-1 group-hover:bg-[radial-gradient(ellipse_at_top_left,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] transition-all">
+                      <Layers className="w-6 h-6 text-slate-800" />
+                    </div>
+                    <p className="text-[10px] font-medium text-slate-700 text-center">Master</p>
+                  </button>
+
+                  {/* Stock Opname */}
+                  <button
+                    onClick={onNavigateToAdminStockOpname}
+                    className="w-16 p-2 bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-[0_6px_0_0_#d1d5db,0_8px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_4px_0_0_#d4af37,0_6px_25px_rgba(212,175,55,0.35)] hover:-translate-y-0.5 active:shadow-[0_2px_0_0_#997b2c,0_3px_10px_rgba(0,0,0,0.1)] active:translate-y-0.5 transition-all duration-150 group"
+                  >
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-1 group-hover:bg-[radial-gradient(ellipse_at_top_left,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] transition-all">
+                      <ClipboardCheck className="w-6 h-6 text-slate-800" />
+                    </div>
+                    <p className="text-[10px] font-medium text-slate-700 text-center">Stock</p>
+                  </button>
+
+                  {/* Kelola Voucher */}
+                  <button
+                    onClick={onNavigateToAdminVoucher}
+                    className="w-16 p-2 bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-[0_6px_0_0_#d1d5db,0_8px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_4px_0_0_#d4af37,0_6px_25px_rgba(212,175,55,0.35)] hover:-translate-y-0.5 active:shadow-[0_2px_0_0_#997b2c,0_3px_10px_rgba(0,0,0,0.1)] active:translate-y-0.5 transition-all duration-150 group"
+                  >
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-1 group-hover:bg-[radial-gradient(ellipse_at_top_left,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] transition-all">
+                      <Gift className="w-6 h-6 text-slate-800" />
+                    </div>
+                    <p className="text-[10px] font-medium text-slate-700 text-center">Voucher</p>
+                  </button>
+
+                  {/* Atur Banner - NEW */}
+                  <button
+                    onClick={() => {/* TODO: Navigate to Banner Management */ }}
+                    className="w-16 p-2 bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-[0_6px_0_0_#d1d5db,0_8px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_4px_0_0_#d4af37,0_6px_25px_rgba(212,175,55,0.35)] hover:-translate-y-0.5 active:shadow-[0_2px_0_0_#997b2c,0_3px_10px_rgba(0,0,0,0.1)] active:translate-y-0.5 transition-all duration-150 group"
+                  >
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-1 group-hover:bg-[radial-gradient(ellipse_at_top_left,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] transition-all">
+                      <svg className="w-6 h-6 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-[10px] font-medium text-slate-700 text-center">Banner</p>
+                  </button>
+                </div>
               </div>
-
-              {/* Owner-only Cache Management */}
               {user?.role === 'owner' && (
-                <div className="mt-4">
-                  <h3 className="font-semibold text-gray-800 mb-3">Owner Tools</h3>
+                <div className="mt-4 pt-4 border-t border-gray-100">
                   <button
                     onClick={onNavigateToAdminCache}
-                    className="w-full p-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors mb-3"
+                    className="w-full p-3 bg-gradient-to-r from-slate-800 to-slate-700 text-white rounded-xl hover:shadow-lg transition-all"
                   >
                     <div className="flex items-center space-x-3">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                       </svg>
                       <div className="flex-1 text-left">
-                        <p className="font-medium">Cache Management</p>
-                        <p className="text-sm opacity-90">Kelola cache ongkir & alamat</p>
+                        <p className="font-medium text-sm">Cache Management</p>
                       </div>
                     </div>
                   </button>
@@ -747,138 +840,40 @@ const AccountPage: React.FC<AccountPageProps> = ({
               )}
             </div>
 
-            {/* Owner Stats */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <h3 className="font-semibold text-gray-800 mb-4">Statistik Bisnis</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-red-50 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-red-600 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Total Revenue</p>
-                  <p className="text-xl font-bold text-red-600">Rp 0</p>
+            {/* Stats & Quick Settings Panel */}
+            <div className="bg-white rounded-xl shadow-sm p-3 border border-gray-100">
+              {/* Stats Row */}
+              <div className="flex items-center justify-around pb-3 border-b border-gray-100">
+                <div className="text-center">
+                  <p className="text-lg font-bold text-slate-900">Rp 0</p>
+                  <p className="text-[10px] text-slate-500">Revenue</p>
                 </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <PackageIcon className="w-6 h-6 text-green-600 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Total Pesanan</p>
-                  <p className="text-xl font-bold text-green-600">0</p>
+                <div className="w-px h-8 bg-gray-200"></div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-slate-900">0</p>
+                  <p className="text-[10px] text-slate-500">Pesanan</p>
                 </div>
               </div>
-            </div>
 
-            {/* Security Settings */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <h3 className="font-semibold text-gray-800 mb-4">Keamanan Owner</h3>
-              <button
-                onClick={() => setShowPasswordForm(!showPasswordForm)}
-                className="w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <Key className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                    <p className="font-medium">Ubah Password</p>
-                    <p className="text-sm text-gray-500">Keamanan akun owner</p>
+              {/* Quick Actions Row - 3D Style */}
+              <div className="grid grid-cols-3 gap-2 pt-3">
+                <button className="p-2 bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-[0_4px_0_0_#d1d5db,0_6px_15px_rgba(0,0,0,0.1)] hover:shadow-[0_3px_0_0_#d4af37,0_4px_20px_rgba(212,175,55,0.3)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#997b2c] active:translate-y-0.5 transition-all duration-150 text-center group">
+                  <div className="w-8 h-8 rounded-md flex items-center justify-center mx-auto mb-0.5 group-hover:bg-[radial-gradient(ellipse_at_top_left,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] transition-all">
+                    <Shield className="w-5 h-5 text-slate-700" />
                   </div>
-                </div>
-              </button>
-
-              {showPasswordForm && (
-                <form onSubmit={handlePasswordChange} className="mt-4 space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Password Saat Ini</label>
-                    <div className="relative">
-                      <input
-                        type={showCurrentPassword ? "text" : "password"}
-                        value={passwordForm.currentPassword}
-                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg pr-10"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                      >
-                        {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Password Baru</label>
-                    <div className="relative">
-                      <input
-                        type={showNewPassword ? "text" : "password"}
-                        value={passwordForm.newPassword}
-                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg pr-10"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                      >
-                        {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Konfirmasi Password Baru</label>
-                    <input
-                      type="password"
-                      value={passwordForm.confirmPassword}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg"
-                      required
-                    />
-                  </div>
-                  <div className="flex space-x-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswordForm(false)}
-                      className="flex-1 p-3 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50"
-                    >
-                      Batal
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                      Simpan
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-
-            {/* Owner Preferences */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <h3 className="font-semibold text-gray-800 mb-4">Pengaturan Owner</h3>
-              <div className="space-y-3">
-                <button className="w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center space-x-3">
-                    <Shield className="w-5 h-5 text-gray-400" />
-                    <div className="flex-1">
-                      <p className="font-medium">Keamanan</p>
-                      <p className="text-sm text-gray-500">Pengaturan keamanan tingkat lanjut</p>
-                    </div>
-                  </div>
+                  <p className="text-[9px] text-slate-600">Keamanan</p>
                 </button>
-                <button className="w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center space-x-3">
-                    <Shield className="w-5 h-5 text-gray-400" />
-                    <div className="flex-1">
-                      <p className="font-medium">Sistem</p>
-                      <p className="text-sm text-gray-500">Konfigurasi aplikasi</p>
-                    </div>
+                <button className="p-2 bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-[0_4px_0_0_#d1d5db,0_6px_15px_rgba(0,0,0,0.1)] hover:shadow-[0_3px_0_0_#d4af37,0_4px_20px_rgba(212,175,55,0.3)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#997b2c] active:translate-y-0.5 transition-all duration-150 text-center group">
+                  <div className="w-8 h-8 rounded-md flex items-center justify-center mx-auto mb-0.5 group-hover:bg-[radial-gradient(ellipse_at_top_left,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] transition-all">
+                    <Shield className="w-5 h-5 text-slate-700" />
                   </div>
+                  <p className="text-[9px] text-slate-600">Sistem</p>
                 </button>
-                <button className="w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center space-x-3">
-                    <RefreshCw className="w-5 h-5 text-gray-400" />
-                    <div className="flex-1">
-                      <p className="font-medium">Backup & Restore</p>
-                      <p className="text-sm text-gray-500">Cadangkan data</p>
-                    </div>
+                <button className="p-2 bg-gradient-to-b from-white to-gray-50 rounded-xl shadow-[0_4px_0_0_#d1d5db,0_6px_15px_rgba(0,0,0,0.1)] hover:shadow-[0_3px_0_0_#d4af37,0_4px_20px_rgba(212,175,55,0.3)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#997b2c] active:translate-y-0.5 transition-all duration-150 text-center group">
+                  <div className="w-8 h-8 rounded-md flex items-center justify-center mx-auto mb-0.5 group-hover:bg-[radial-gradient(ellipse_at_top_left,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] transition-all">
+                    <RefreshCw className="w-5 h-5 text-slate-700" />
                   </div>
+                  <p className="text-[9px] text-slate-600">Backup</p>
                 </button>
               </div>
             </div>
@@ -892,28 +887,35 @@ const AccountPage: React.FC<AccountPageProps> = ({
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header Profile */}
-      <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white p-6">
-        <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-            <User className="w-8 h-8" />
+      {/* Header Profile - Premium Gold Theme */}
+      <div className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-slate-900 p-4 shadow-lg">
+        <div className="flex items-center space-x-3">
+          <div className="w-14 h-14 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/50 shadow-md">
+            <User className="w-7 h-7 text-slate-800" />
           </div>
           <div className="flex-1">
-            <h2 className="text-xl font-bold">{user.name}</h2>
-            <p className="text-pink-100">{user.email}</p>
-            <div className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium mt-2 ${roleInfo.color}`}>
+            <h2 className="text-xl font-bold text-slate-900">{user.name}</h2>
+            <p className="text-slate-700">{user.email}</p>
+            <div className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-bold mt-2 ${user.role === 'owner'
+              ? 'bg-slate-900 text-[#EDD686]'
+              : user.role === 'admin'
+                ? 'bg-purple-100 text-purple-700'
+                : user.role === 'reseller'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-green-100 text-green-700'
+              }`}>
               <RoleIcon className="w-3 h-3" />
-              <span className="text-gray-800">{roleInfo.text}</span>
+              <span>{roleInfo.text}</span>
             </div>
           </div>
         </div>
 
         {/* Points for Reseller */}
         {user.role === 'reseller' && (
-          <div className="mt-4 bg-white/10 rounded-lg p-3">
+          <div className="mt-4 bg-white/20 backdrop-blur-sm rounded-lg p-3 border border-white/30">
             <div className="flex items-center justify-between">
-              <span className="text-sm">Total Poin</span>
-              <span className="text-lg font-bold">{user.points || 0} pts</span>
+              <span className="text-sm text-slate-800">Total Poin</span>
+              <span className="text-lg font-bold text-slate-900">{user.points || 0} pts</span>
             </div>
           </div>
         )}
@@ -926,13 +928,13 @@ const AccountPage: React.FC<AccountPageProps> = ({
 
       {/* Logout */}
       <div className="p-4">
-        <div className="bg-white rounded-lg shadow-sm">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <button
             onClick={handleLogout}
-            className="w-full p-4 flex items-center space-x-3 text-red-600 hover:bg-red-50 transition-colors rounded-lg"
+            className="w-full p-4 flex items-center space-x-3 text-red-500 hover:bg-red-50 transition-colors rounded-xl"
           >
             <LogOut className="w-5 h-5" />
-            <span>Keluar</span>
+            <span className="font-medium">Keluar dari Akun</span>
           </button>
         </div>
       </div>
