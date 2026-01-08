@@ -34,16 +34,16 @@ const FlashSaleCard: React.FC<FlashSaleCardProps> = ({
             onClick={() => onProductClick(product)}
             className="relative bg-gradient-to-b from-[#FFF8F0] to-[#F5E6D3] rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(139,69,19,0.12)] cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(139,69,19,0.18)] border border-[#E8D4B8]/50"
         >
-            {/* Navy Ribbon Badge - "XX% OFF" */}
-            <div className="absolute top-0 left-0 z-20">
+            {/* Navy Ribbon Badge - "XX% OFF" - Top Right */}
+            <div className="absolute top-0 right-0 z-20">
                 <div className="relative">
                     {/* Ribbon Main */}
-                    <div className="bg-[#0F172A] text-[#EDD686] px-3 py-2 rounded-tl-2xl rounded-br-xl shadow-md">
+                    <div className="bg-[#0F172A] text-[#EDD686] px-3 py-2 rounded-tr-2xl rounded-bl-xl shadow-md">
                         <span className="text-lg font-bold">{discountPercent}%</span>
                         <span className="text-[10px] block -mt-1 font-medium tracking-wide">OFF</span>
                     </div>
                     {/* Ribbon Tail */}
-                    <div className="absolute -bottom-2 left-0 w-0 h-0 border-l-[12px] border-l-[#1e293b] border-b-[8px] border-b-transparent"></div>
+                    <div className="absolute -bottom-2 right-0 w-0 h-0 border-r-[12px] border-r-[#1e293b] border-b-[8px] border-b-transparent"></div>
                 </div>
             </div>
 
