@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Tag, ArrowLeft, Sparkles } from 'lucide-react';
+import { ShoppingCart, Tag, ArrowLeft, Sparkles, Search, X } from 'lucide-react';
 import FlashSaleCard from './FlashSaleCard';
 import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
 import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
@@ -23,6 +23,8 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
 }) => {
     const { cartItems } = useRealTimeCartOptimized();
     const { timeLeft, loading } = useUnifiedFlashSale();
+    const [showSearch, setShowSearch] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -80,17 +82,53 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                     <span className="text-[10px] text-black tracking-[0.3em] -mt-3 font-bold uppercase font-serif">Fashion Muslim</span>
                 </div>
 
-                <button
-                    onClick={onCartClick}
-                    className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/10 transition-all group"
-                >
-                    <ShoppingCart className="w-7 h-7 text-slate-900 transition-transform group-hover:scale-110" />
-                    {cartItems.length > 0 && (
-                        <span className="absolute top-0 right-0 bg-[#0F172A] text-[#EDD686] text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center border-2 border-[#EDD686] shadow-sm">
-                            {cartItems.length}
-                        </span>
+                <div className="flex items-center space-x-1">
+                    {/* Search Toggle Button */}
+                    <button
+                        onClick={() => setShowSearch(!showSearch)}
+                        className="p-2 transition-all group active:scale-95 hover:bg-black/10 rounded-full"
+                    >
+                        <Search className={`w-7 h-7 transition-all ${showSearch
+                            ? 'text-black scale-110'
+                            : 'text-slate-900 group-hover:text-black'
+                            } `} />
+                    </button>
+
+                    <button
+                        onClick={onCartClick}
+                        className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/10 transition-all group"
+                    >
+                        <ShoppingCart className="w-7 h-7 text-slate-900 transition-transform group-hover:scale-110" />
+                        {cartItems.length > 0 && (
+                            <span className="absolute top-0 right-0 bg-[#0F172A] text-[#EDD686] text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center border-2 border-[#EDD686] shadow-sm">
+                                {cartItems.length}
+                            </span>
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            {/* Search Bar - Expandable */}
+            <div className={`${showSearch ? 'h-14 opacity-100 mt-2 pb-2' : 'h-0 opacity-0 overflow-hidden'} transition-all duration-300 ease-out px-4 bg-transparent`}>
+                <div className="relative container mx-auto">
+                    <input
+                        type="text"
+                        placeholder="Cari produk flash sale..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-white/90 backdrop-blur-sm border-2 border-white/30 text-slate-800 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] placeholder:text-slate-500 font-sans shadow-inner placeholder:font-medium"
+                        autoFocus={showSearch}
+                    />
+                    <Search className="absolute left-3 top-3 w-5 h-5 text-slate-500" />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 p-1"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
                     )}
-                </button>
+                </div>
             </div>
         </div>
     );
@@ -264,37 +302,39 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
             {/* PRODUCTS GRID */}
             <div className="container mx-auto px-4">
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {flashSaleProducts.map((flashProduct) => {
-                        // Adapt flash product to standard Product interface for Card
-                        const product = {
-                            id: flashProduct.id,
-                            name: flashProduct.name,
-                            price: flashProduct.price,
-                            retailPrice: flashProduct.retailPrice || flashProduct.price,
-                            resellerPrice: flashProduct.resellerPrice || flashProduct.price * 0.8,
-                            costPrice: flashProduct.price * 0.6,
-                            description: flashProduct.name,
-                            stock: flashProduct.stock,
-                            images: flashProduct.images,
-                            image: flashProduct.image,
-                            category: flashProduct.category,
-                            status: flashProduct.status as "ready" | "po",
-                            createdAt: flashProduct.createdAt,
-                            featuredOrder: flashProduct.featuredOrder,
-                            variants: flashProduct.variants,
-                            isFlashSale: flashProduct.isFlashSale,
-                            flashSalePrice: flashProduct.flashSalePrice || flashProduct.price * 0.8,
-                        };
+                    {flashSaleProducts
+                        .filter(p => !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                        .map((flashProduct) => {
+                            // Adapt flash product to standard Product interface for Card
+                            const product = {
+                                id: flashProduct.id,
+                                name: flashProduct.name,
+                                price: flashProduct.price,
+                                retailPrice: flashProduct.retailPrice || flashProduct.price,
+                                resellerPrice: flashProduct.resellerPrice || flashProduct.price * 0.8,
+                                costPrice: flashProduct.price * 0.6,
+                                description: flashProduct.name,
+                                stock: flashProduct.stock,
+                                images: flashProduct.images,
+                                image: flashProduct.image,
+                                category: flashProduct.category,
+                                status: flashProduct.status as "ready" | "po",
+                                createdAt: flashProduct.createdAt,
+                                featuredOrder: flashProduct.featuredOrder,
+                                variants: flashProduct.variants,
+                                isFlashSale: flashProduct.isFlashSale,
+                                flashSalePrice: flashProduct.flashSalePrice || flashProduct.price * 0.8,
+                            };
 
-                        return (
-                            <FlashSaleCard
-                                key={`flash-grid-${product.id}`}
-                                product={product}
-                                onProductClick={onProductClick}
-                                onAddToCart={handleAddToCart}
-                            />
-                        );
-                    })}
+                            return (
+                                <FlashSaleCard
+                                    key={`flash-grid-${product.id}`}
+                                    product={product}
+                                    onProductClick={onProductClick}
+                                    onAddToCart={handleAddToCart}
+                                />
+                            );
+                        })}
                 </div>
             </div>
         </div>
