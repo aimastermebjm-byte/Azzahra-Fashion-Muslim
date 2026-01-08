@@ -251,13 +251,13 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                     </div>
                 )}
 
-                {/* PRODUK TERBATAS - Clear & Visible */}
+                {/* PRODUK TERBATAS - Big & Bold */}
                 <div className="flex items-center justify-center gap-4 mt-1">
-                    <span className="h-[1px] w-10 sm:w-20 bg-gradient-to-r from-transparent to-[#997B2C]"></span>
-                    <p className="font-serif text-lg sm:text-xl text-[#997B2C] tracking-wider flex items-center gap-2 uppercase font-medium">
-                        PRODUK TERBATAS <Sparkles className="w-4 h-4 text-[#EDD686]" />
+                    <span className="h-[2px] w-12 sm:w-24 bg-gradient-to-r from-transparent to-[#997B2C]"></span>
+                    <p className="font-serif text-xl sm:text-2xl text-[#997B2C] tracking-wider flex items-center gap-2 uppercase font-bold">
+                        PRODUK TERBATAS <Sparkles className="w-5 h-5 text-[#EDD686]" />
                     </p>
-                    <span className="h-[1px] w-10 sm:w-20 bg-gradient-to-l from-transparent to-[#997B2C]"></span>
+                    <span className="h-[2px] w-12 sm:w-24 bg-gradient-to-l from-transparent to-[#997B2C]"></span>
                 </div>
             </div>
 
