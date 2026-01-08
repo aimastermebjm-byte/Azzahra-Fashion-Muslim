@@ -738,7 +738,7 @@ const HomePage: React.FC<HomePageProps> = ({
           {/* 1. Sort Button (Always Gold Gradient but toggles label) */}
           <button
             onClick={() => setSortBy(sortBy === 'terbaru' ? 'termurah' : 'terbaru')}
-            className="flex items-center justify-center space-x-1 w-full px-2 py-2 bg-gradient-to-r from-[#D4AF37] via-[#F2D785] to-[#D4AF37] text-black font-display font-medium text-xs sm:text-sm rounded-full shadow-[0_0_15px_rgba(212,175,55,0.4)] active:scale-95 transition-all border border-[#FFD700]/30"
+            className="flex items-center justify-center space-x-1 w-full px-2 py-2 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black font-display font-medium text-xs sm:text-sm rounded-full shadow-[0_0_15px_rgba(153,123,44,0.4)] active:scale-95 transition-all border border-[#EDD686]/30"
           >
             <ArrowDownUp className="w-3.5 h-3.5 text-black/80" />
             <span>{sortBy === 'terbaru' ? 'Terbaru' : 'Termurah'}</span>
@@ -748,8 +748,8 @@ const HomePage: React.FC<HomePageProps> = ({
           <button
             onClick={() => setStatusFilter(statusFilter === 'ready' ? 'all' : 'ready')}
             className={`flex items-center justify-center w-full px-2 py-2 rounded-full text-xs sm:text-sm font-display font-medium tracking-wide transition-all border ${statusFilter === 'ready'
-              ? 'bg-gradient-to-r from-[#D4AF37] via-[#F2D785] to-[#D4AF37] text-black shadow-[0_0_15px_rgba(212,175,55,0.4)] border-[#FFD700]/30'
-              : 'bg-white border-brand-accent/30 text-gray-400 hover:border-brand-accent hover:text-[#D4AF37]'
+              ? 'bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black shadow-[0_0_15px_rgba(153,123,44,0.4)] border-[#EDD686]/30'
+              : 'bg-white border-brand-accent/30 text-gray-400 hover:border-brand-accent hover:text-[#B8860B]'
               }`}
           >
             Ready
@@ -759,8 +759,8 @@ const HomePage: React.FC<HomePageProps> = ({
           <button
             onClick={() => setStatusFilter(statusFilter === 'po' ? 'all' : 'po')}
             className={`flex items-center justify-center w-full px-2 py-2 rounded-full text-xs sm:text-sm font-display font-medium tracking-wide transition-all border ${statusFilter === 'po'
-              ? 'bg-gradient-to-r from-[#D4AF37] via-[#F2D785] to-[#D4AF37] text-black shadow-[0_0_15px_rgba(212,175,55,0.4)] border-[#FFD700]/30'
-              : 'bg-white border-brand-accent/30 text-gray-400 hover:border-brand-accent hover:text-[#D4AF37]'
+              ? 'bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black shadow-[0_0_15px_rgba(153,123,44,0.4)] border-[#EDD686]/30'
+              : 'bg-white border-brand-accent/30 text-gray-400 hover:border-brand-accent hover:text-[#B8860B]'
               }`}
           >
             PO
