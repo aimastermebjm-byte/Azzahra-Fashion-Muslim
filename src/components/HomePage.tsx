@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import FeaturedCarouselItem from './FeaturedCarouselItem';
 import { useWishlist } from '../hooks/useWishlist';
-import { Search, ShoppingCart, Zap, X, Star, ChevronRight, ArrowDownUp } from 'lucide-react';
+import { Search, ShoppingCart, Zap, X, Star, ChevronRight, ArrowDownUp, LayoutGrid, Shirt, Gem, User, ShoppingBag, Layers } from 'lucide-react';
 import ProductCard from './ProductCard';
 import FlashSaleCard from './FlashSaleCard';
 import BannerCarousel from './BannerCarousel';
@@ -245,6 +245,17 @@ const HomePage: React.FC<HomePageProps> = ({
 
     loadCategories();
   }, []);
+
+  // Icon Mapping Helper
+  const getCategoryIconComponent = (name: string) => {
+    const normalize = name.toLowerCase();
+    if (normalize === 'all' || normalize === 'semua') return LayoutGrid;
+    if (normalize.includes('aksesoris')) return Gem;
+    if (normalize.includes('hijab') || normalize.includes('khimar')) return User;
+    if (normalize.includes('outer')) return Layers;
+    if (['gamis', 'tunik', 'dress', 'abaya'].some(t => normalize.includes(t))) return Shirt;
+    return ShoppingBag;
+  };
 
   const handleAddToCart = (product: Product) => {
     onAddToCart(product);
@@ -635,15 +646,12 @@ const HomePage: React.FC<HomePageProps> = ({
         )}
       </div>
 
-      {/* Categories - Simple Horizontal */}
-      <div className="px-3 sm:px-4 mb-4">
-        <div className="flex space-x-2.5 overflow-x-auto pb-2 scrollbar-none">
+      {/* Categories - Shopee Style Icons (Dark to Gold) */}
+      <div className="px-3 sm:px-4 mb-6">
+        <div className="flex space-x-6 overflow-x-auto pb-4 pt-2 scrollbar-none px-1">
           {categories.map((category) => {
-            const productCount = category.id === 'all'
-              ? filteredProducts.length
-              : filteredProducts.filter(p => p.category === category.id).length;
-
             const isSelected = selectedCategory === category.id;
+            const IconComponent = getCategoryIconComponent(category.name);
 
             return (
               <button
@@ -652,14 +660,29 @@ const HomePage: React.FC<HomePageProps> = ({
                   setSelectedCategory(category.id);
                   setActiveTab(category.id === 'all' ? 'all' : 'terbaru');
                 }}
-                className={`flex items-center space-x-1.5 px-6 py-2.5 rounded-full text-sm font-display tracking-wide transition-all whitespace-nowrap border ${isSelected
-                  ? 'bg-black border-[#D4AF37] text-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.3)] drop-shadow-[0_0_2px_rgba(212,175,55,0.5)] font-medium' // Active: Deep Black + Glowing Gold
-                  : 'bg-white border-[#D4AF37]/30 text-gray-500 hover:border-[#D4AF37] hover:text-[#5d4008]'
-                  }`}
+                className="flex flex-col items-center gap-2 min-w-[60px] group cursor-pointer transition-all duration-300"
               >
-                <span>{category.name}</span>
-                <span className={`text-[10px] ${isSelected ? 'text-brand-accent/70' : 'text-gray-400'}`}>
-                  {productCount}
+                {/* Icon Circle */}
+                <div
+                  className={`
+                    w-12 h-12 rounded-full flex items-center justify-center border-[1.5px] transition-all duration-300
+                    ${isSelected
+                      ? 'bg-white border-[#D4AF37] text-[#D4AF37] shadow-[0_0_12px_rgba(212,175,55,0.4)] scale-110'
+                      : 'bg-white border-gray-200 text-gray-400 group-hover:border-[#D4AF37]/50 group-hover:text-[#D4AF37]/70'
+                    }
+                  `}
+                >
+                  <IconComponent className={`w-5 h-5 transition-transform duration-300 ${isSelected ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+                </div>
+
+                {/* Label */}
+                <span
+                  className={`
+                    text-[10px] sm:text-xs font-medium tracking-wide whitespace-nowrap transition-colors duration-300
+                    ${isSelected ? 'text-[#D4AF37] font-semibold' : 'text-gray-500 group-hover:text-[#D4AF37]/70'}
+                  `}
+                >
+                  {category.name}
                 </span>
               </button>
             );
