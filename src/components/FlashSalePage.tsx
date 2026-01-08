@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Flame, ArrowLeft, Sparkles } from 'lucide-react';
-import ProductCard from './ProductCard';
+import FlashSaleCard from './FlashSaleCard';
 import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
 import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
 
@@ -183,7 +183,7 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[#FDF8F5] via-[#FFF5EE] to-[#FAE8DE] text-brand-primary font-sans overflow-x-hidden pb-24">
+        <div className="min-h-screen bg-gradient-to-b from-[#FDF8F5] via-[#FFF5EE] to-[#FAE8DE] text-brand-primary font-sans pb-24">
 
             <Header />
 
@@ -295,24 +295,12 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                         };
 
                         return (
-                            <div
+                            <FlashSaleCard
                                 key={`flash-grid-${product.id}`}
-                                className="transform hover:scale-[1.02] transition-all duration-300"
-                            >
-                                {/* 
-                   Using ProductCard with "isFlashSale" prop to trigger the Gold Badge styles
-                   that we implemented in ProductCard.tsx previously.
-                   We might need to check if ProductCard supports the dark theme properly. 
-                   If not, it will just be a white card on black BG, which is also luxury contrast style.
-                */}
-                                <ProductCard
-                                    product={product}
-                                    onProductClick={onProductClick}
-                                    onAddToCart={handleAddToCart}
-                                    isFlashSale={true}
-                                    user={user}
-                                />
-                            </div>
+                                product={product}
+                                onProductClick={onProductClick}
+                                onAddToCart={handleAddToCart}
+                            />
                         );
                     })}
                 </div>

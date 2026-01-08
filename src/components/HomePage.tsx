@@ -3,6 +3,7 @@ import FeaturedCarouselItem from './FeaturedCarouselItem';
 import { useWishlist } from '../hooks/useWishlist';
 import { Search, ShoppingCart, Zap, X, Star, ChevronRight, ArrowDownUp } from 'lucide-react';
 import ProductCard from './ProductCard';
+import FlashSaleCard from './FlashSaleCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
 import { validateProducts } from '../utils/productUtils';
@@ -730,14 +731,22 @@ const HomePage: React.FC<HomePageProps> = ({
             <>
               <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
                 {currentProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onProductClick={onProductClick}
-                    onAddToCart={handleAddToCart}
-                    user={user}
-                    isFlashSale={product.isFlashSale}
-                  />
+                  product.isFlashSale ? (
+                    <FlashSaleCard
+                      key={product.id}
+                      product={product}
+                      onProductClick={onProductClick}
+                      onAddToCart={handleAddToCart}
+                    />
+                  ) : (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onProductClick={onProductClick}
+                      onAddToCart={handleAddToCart}
+                      user={user}
+                    />
+                  )
                 ))}
               </div>
 
