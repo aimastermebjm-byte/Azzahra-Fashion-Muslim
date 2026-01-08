@@ -59,7 +59,7 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
     // -------------------------------------------------------------------------
     const Header = () => (
         <div className="sticky top-0 z-50 transition-all duration-300 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] shadow-md border-b border-white/20">
-            <div className="container mx-auto px-4 h-12 flex items-center justify-between">
+            <div className="container mx-auto px-4 min-h-[2.5rem] py-0.5 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     {onBack && (
                         <button
@@ -71,8 +71,8 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                     )}
 
                 </div>
-                {/* Center Brand Title for Header - Black Typography */}
-                <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
+                {/* Center Brand Title for Header - Black Typography - MATCH HOME STYLE (Relative) */}
+                <div className="text-center relative -mt-1 flex flex-col items-center">
                     <h1
                         className="font-['Berkshire_Swash'] text-4xl text-[#0F172A] drop-shadow-sm pb-1 leading-relaxed tracking-wide"
                         style={{ textShadow: '2px 2px 4px rgba(212, 175, 55, 0.5)' }}
