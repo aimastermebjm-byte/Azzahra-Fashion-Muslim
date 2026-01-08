@@ -552,7 +552,7 @@ const HomePage: React.FC<HomePageProps> = ({
       {flashSaleProducts.length === 0 && !loading && (
         <div className="px-3 sm:px-4 mb-4">
           <div
-            className="rounded-2xl overflow-hidden shadow-elegant relative h-[180px] sm:h-[220px] cursor-pointer"
+            className="rounded-2xl overflow-hidden shadow-elegant relative h-[280px] sm:h-[320px] cursor-pointer"
             onClick={() => setSelectedCategory('all')}
           >
             {/* Full Image Background - Sharp, No Gradient */}
