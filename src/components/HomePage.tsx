@@ -555,15 +555,12 @@ const HomePage: React.FC<HomePageProps> = ({
             className="rounded-2xl overflow-hidden shadow-elegant relative h-[180px] sm:h-[220px] cursor-pointer"
             onClick={() => setSelectedCategory('all')}
           >
-            {/* Full Image Background */}
+            {/* Full Image Background - Sharp, No Gradient */}
             <img
-              src="/hero-luxury.jpg"
+              src="/hero-luxury-final.png"
               alt="Azzahra Fashion Model"
               className="absolute inset-0 w-full h-full object-cover object-top"
             />
-
-            {/* Gradient Overlay for Text Blending - Stronger White at Bottom */}
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent"></div>
 
             {/* Text Directly on Image */}
             <div className="absolute bottom-0 left-0 p-4 sm:p-6 z-10 w-full">
