@@ -710,40 +710,40 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       <PageHeader
         title="Kelola Pesanan"
         subtitle="Kelola status order, cek bukti bayar, dan tindak lanjuti pengiriman"
-        onBack={onBack}
         variant="gradient"
+        className="pb-24"
       >
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
-            <p className="text-xs uppercase tracking-wide text-white/70">Total Pesanan</p>
-            <p className="mt-1 text-2xl font-bold">{orders.length}</p>
-            <p className="text-xs text-white/70">Semua status</p>
+        <div className="grid grid-cols-4 gap-2">
+          <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-[0_3px_0_0_#E5E7EB] hover:translate-y-[-2px] hover:shadow-[0_5px_0_0_#E5E7EB] transition-all">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Total</p>
+            <p className="mt-0.5 text-xl font-bold text-gray-800">{orders.length}</p>
+            <p className="text-[10px] text-gray-400">Order</p>
           </div>
-          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
-            <p className="text-xs uppercase tracking-wide text-white/70">Menunggu</p>
-            <p className="mt-1 text-2xl font-bold">
+          <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-[0_3px_0_0_#E5E7EB] hover:translate-y-[-2px] hover:shadow-[0_5px_0_0_#E5E7EB] transition-all">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Pending</p>
+            <p className="mt-0.5 text-xl font-bold text-[#D4AF37]">
               {getOrdersByStatus('pending').length + getOrdersByStatus('awaiting_verification').length}
             </p>
-            <p className="text-xs text-white/70">Butuh aksi</p>
+            <p className="text-[10px] text-gray-400">Action</p>
           </div>
-          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
-            <p className="text-xs uppercase tracking-wide text-white/70">Selesai</p>
-            <p className="mt-1 text-2xl font-bold">{getOrdersByStatus('delivered').length}</p>
-            <p className="text-xs text-white/70">Berhasil dikirim</p>
+          <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-[0_3px_0_0_#E5E7EB] hover:translate-y-[-2px] hover:shadow-[0_5px_0_0_#E5E7EB] transition-all">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Selesai</p>
+            <p className="mt-0.5 text-xl font-bold text-green-600">{getOrdersByStatus('delivered').length}</p>
+            <p className="text-[10px] text-gray-400">Sent</p>
           </div>
-          <div className="rounded-2xl border border-white/30 bg-white/15 p-4 text-white">
-            <p className="text-xs uppercase tracking-wide text-white/70">Total Revenue</p>
-            <p className="mt-1 text-2xl font-bold">{Math.round(getTotalRevenue() / 1000)}K</p>
-            <p className="text-xs text-white/70">Perkiraan angka kasar</p>
+          <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-[0_3px_0_0_#E5E7EB] hover:translate-y-[-2px] hover:shadow-[0_5px_0_0_#E5E7EB] transition-all">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Omset</p>
+            <p className="mt-0.5 text-xl font-bold text-gray-800">{Math.round(getTotalRevenue() / 1000)}K</p>
+            <p className="text-[10px] text-gray-400">Est.</p>
           </div>
         </div>
       </PageHeader>
 
       {/* Content */}
-      <div className="p-4 space-y-4">
+      < div className="px-4 pb-20 -mt-12 relative z-10 space-y-4" >
 
         {/* Search and Filter - GOLD THEME */}
-        <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 shine-effect">
+        < div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 shine-effect" >
           <div className="space-y-3">
             {/* First Row - Search */}
             <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3">
@@ -754,7 +754,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   placeholder="Cari pesanan..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-[#E2DED5] rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#997B2C] text-gray-800 placeholder-gray-400"
                 />
               </div>
             </div>
@@ -764,7 +764,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="px-3 py-2 border border-[#E2DED5] rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#997B2C] text-sm text-[#997B2C] font-medium"
               >
                 <option value="all">Semua Status</option>
                 {Object.entries(statusConfig).map(([status, config]) => (
@@ -775,7 +775,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
               <select
                 value={userFilter}
                 onChange={(e) => setUserFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-w-[200px]"
+                className="px-3 py-2 border border-[#E2DED5] rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#997B2C] text-sm text-[#997B2C] font-medium min-w-[200px]"
               >
                 <option value="all">Semua Pelanggan</option>
                 {getUniqueUsers().map((user, index) => (
@@ -786,7 +786,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
               <select
                 value={productFilter}
                 onChange={(e) => setProductFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-w-[150px]"
+                className="px-3 py-2 border border-[#E2DED5] rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#997B2C] text-sm text-[#997B2C] font-medium min-w-[150px]"
               >
                 <option value="all">Semua Produk</option>
                 {getUniqueProducts().map((product, index) => (
@@ -798,10 +798,10 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                 type="date"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="px-3 py-2 border border-[#E2DED5] rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#997B2C] text-sm text-[#997B2C]"
               />
 
-              <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <button className="p-2 border border-[#E2DED5] rounded-lg hover:bg-gray-50 transition-colors text-[#997B2C]">
                 <Download className="w-4 h-4" />
               </button>
 
@@ -822,50 +822,52 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
               )}
             </div>
           </div>
-        </div>
+        </div >
 
         {/* ✨ NEW: Bulk Operations Toolbar - GOLD THEME */}
-        {user?.role === 'owner' && filteredOrders.length > 0 && (
-          <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 mb-4 shine-effect">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedOrderIds.length === filteredOrders.length && filteredOrders.length > 0}
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4 text-brand-primary border-gray-300 rounded focus:ring-brand-primary"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    {selectedOrderIds.length > 0
-                      ? `${selectedOrderIds.length} dipilih`
-                      : 'Pilih Semua'}
-                  </span>
-                </label>
-              </div>
-
-              {selectedOrderIds.length > 0 && (
-                <div className="flex items-center space-x-3">
-                  <button
-                    onClick={handleBulkPaymentAssist}
-                    className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-white rounded-lg hover:shadow-lg transition-all font-bold active:scale-95"
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    <span>Bantu Pembayaran ({selectedOrderIds.length})</span>
-                  </button>
-
-                  <button
-                    onClick={handleBulkDelete}
-                    className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span>Hapus {selectedOrderIds.length} Pesanan</span>
-                  </button>
+        {
+          user?.role === 'owner' && filteredOrders.length > 0 && (
+            <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 mb-4 shine-effect">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedOrderIds.length === filteredOrders.length && filteredOrders.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-5 h-5 text-[#D4AF37] border-gray-300 rounded focus:ring-[#D4AF37]"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      {selectedOrderIds.length > 0
+                        ? `${selectedOrderIds.length} dipilih`
+                        : 'Pilih Semua'}
+                    </span>
+                  </label>
                 </div>
-              )}
+
+                {selectedOrderIds.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleBulkPaymentAssist}
+                      className="flex-1 md:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-[#D4AF37] text-[#997B2C] rounded-lg shadow-[0_2px_0_0_#997B2C] active:shadow-none active:translate-y-1 transition-all font-medium text-sm min-w-[180px]"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      <span>Bantu Pembayaran ({selectedOrderIds.length})</span>
+                    </button>
+
+                    <button
+                      onClick={handleBulkDelete}
+                      className="flex-1 md:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-[#D4AF37] text-[#997B2C] rounded-lg shadow-[0_2px_0_0_#997B2C] active:shadow-none active:translate-y-1 transition-all font-medium text-sm min-w-[180px]"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Hapus {selectedOrderIds.length} Pesanan</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )
+        }
 
         {/* Orders List */}
         <div className="space-y-3">
@@ -891,7 +893,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                           type="checkbox"
                           checked={selectedOrderIds.includes(order.id)}
                           onChange={() => toggleSelectOrder(order.id)}
-                          className="w-4 h-4 text-brand-primary border-gray-300 rounded focus:ring-brand-primary"
+                          className="w-4 h-4 text-[#D4AF37] border-gray-300 rounded focus:ring-[#D4AF37]"
                         />
                       </div>
                     )}
@@ -926,86 +928,42 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         <div className="text-sm text-gray-600">
                           {order.items.length} item • {paymentMethodLabel}
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100">
                           <button
                             onClick={() => handleViewOrder(order)}
-                            className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                            className="px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 transition-colors flex items-center gap-1"
                           >
-                            <Eye className="w-4 h-4" />
-                            <span>Detail</span>
+                            <Eye className="w-3.5 h-3.5" />
+                            Detail
                           </button>
 
-                          {order.status === 'pending' || order.status === 'awaiting_verification' ? (
-                            user?.role === 'owner' ? (
-                              <button
-                                onClick={() => handleVerifyPayment(order)}
-                                className="flex items-center space-x-1 text-green-600 hover:text-green-700 text-sm font-medium"
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                                <span>Verifikasi</span>
-                              </button>
-                            ) : (
-                              <div className="flex items-center space-x-1 text-gray-400 text-sm font-medium">
-                                <CheckCircle className="w-4 h-4" />
-                                <span>Verifikasi (Owner Only)</span>
-                              </div>
-                            )
-                          ) : order.status === 'paid' && (order.paymentProof || order.paymentProofData) ? (
-                            <div className="flex items-center space-x-1 text-blue-600 text-sm font-medium">
-                              <CreditCard className="w-4 h-4" />
-                              <span>Sudah Diverifikasi</span>
-                            </div>
-                          ) : null}
-
-                          {order.status === 'paid' && (
+                          {(order.status === 'pending' || order.status === 'awaiting_verification') && (
                             <button
-                              onClick={() => handleUpdateStatus(order.id, 'processing', order.id)}
-                              className="flex items-center space-x-1 text-purple-600 hover:text-purple-700 text-sm font-medium"
+                              onClick={() => handleVerifyPayment(order)}
+                              className="px-3 py-1.5 rounded-full bg-green-50 text-green-600 text-xs font-medium hover:bg-green-100 transition-colors flex items-center gap-1"
                             >
-                              <Package className="w-4 h-4" />
-                              <span>Proses</span>
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              Verifikasi
                             </button>
                           )}
 
-                          {order.status === 'processing' && (
+                          {!['canceled', 'delivered'].includes(order.status) && (
                             <button
-                              onClick={() => handleUpdateStatus(order.id, 'shipped', order.id)}
-                              className="flex items-center space-x-1 text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                              onClick={() => handleEditOrder(order)}
+                              className="px-3 py-1.5 rounded-full bg-yellow-50 text-yellow-700 text-xs font-medium hover:bg-yellow-100 transition-colors flex items-center gap-1"
                             >
-                              <Truck className="w-4 h-4" />
-                              <span>Kirim</span>
+                              <Edit2 className="w-3.5 h-3.5" />
+                              Edit
                             </button>
                           )}
 
-                          {order.status === 'shipped' && (
-                            <button
-                              onClick={() => handleUpdateStatus(order.id, 'delivered', order.id)}
-                              className="flex items-center space-x-1 text-green-600 hover:text-green-700 text-sm font-medium"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                              <span>Selesai</span>
-                            </button>
-                          )}
-
-                          {/* ✨ NEW: Edit button (Owner only) */}
-                          {user?.role === 'owner' && (
-                            <>
-                              <button
-                                onClick={() => handleEditOrder(order)}
-                                className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                                <span>Edit</span>
-                              </button>
-                              <button
-                                onClick={() => handleDeleteOrder(order.id)}
-                                className="flex items-center space-x-1 text-red-600 hover:text-red-700 text-sm font-medium"
-                              >
-                                <XCircle className="w-4 h-4" />
-                                <span>Hapus</span>
-                              </button>
-                            </>
-                          )}
+                          <button
+                            onClick={() => handleDeleteOrder(order.id)}
+                            className="px-3 py-1.5 rounded-full bg-white border border-[#D4AF37] text-[#997B2C] text-xs font-medium hover:bg-[#F9F5EB] transition-colors flex items-center gap-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Hapus
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -1015,189 +973,190 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             })
           )}
         </div>
-      </div>
+      </div >
 
       {/* Order Detail Modal */}
-      {showDetailModal && selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-800">Detail Pesanan #{selectedOrder.id}</h2>
-                <button
-                  onClick={() => setShowDetailModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Customer Info */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-                  <User className="w-4 h-4 mr-2" />
-                  Informasi Pelanggan
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-600">Nama</p>
-                    <p className="font-medium">{selectedOrder.userName}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600">Email</p>
-                    <p className="font-medium">{selectedOrder.userEmail}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Shipping Info */}
-              <div className="bg-blue-50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-800 flex items-center">
-                    <MapPin className="w-4 h-4 mr-2" />
-                    Informasi Pengiriman
-                    {/* ✨ NEW: Keep mode badge */}
-                    {(selectedOrder as any).shippingMode === 'keep' && !(selectedOrder as any).shippingConfigured && (
-                      <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700">
-                        Belum diatur
-                      </span>
-                    )}
-                  </h3>
-                  {/* ✨ NEW: Edit button for admin/owner */}
+      {
+        showDetailModal && selectedOrder && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-800">Detail Pesanan #{selectedOrder.id}</h2>
                   <button
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      setShippingEditOrder(selectedOrder);
-                    }}
-                    className="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition flex items-center gap-1"
+                    onClick={() => setShowDetailModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    <Edit2 className="w-3 h-3" />
-                    Edit Alamat
+                    <X className="w-5 h-5 text-gray-500" />
                   </button>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <p className="text-gray-600">Nama Penerima</p>
-                    <p className="font-medium">{selectedOrder.shippingInfo?.name || '-'}</p>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Customer Info */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
+                    <User className="w-4 h-4 mr-2" />
+                    Informasi Pelanggan
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-600">Nama</p>
+                      <p className="font-medium">{selectedOrder.userName}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Email</p>
+                      <p className="font-medium">{selectedOrder.userEmail}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-gray-600">No. Telepon</p>
-                    <p className="font-medium flex items-center">
-                      <Phone className="w-3 h-3 mr-1" />
-                      {selectedOrder.shippingInfo?.phone || '-'}
-                    </p>
+                </div>
+
+                {/* Shipping Info */}
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-800 flex items-center">
+                      <MapPin className="w-4 h-4 mr-2" />
+                      Informasi Pengiriman
+                      {/* ✨ NEW: Keep mode badge */}
+                      {(selectedOrder as any).shippingMode === 'keep' && !(selectedOrder as any).shippingConfigured && (
+                        <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700">
+                          Belum diatur
+                        </span>
+                      )}
+                    </h3>
+                    {/* ✨ NEW: Edit button for admin/owner */}
+                    <button
+                      onClick={() => {
+                        setShowDetailModal(false);
+                        setShippingEditOrder(selectedOrder);
+                      }}
+                      className="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition flex items-center gap-1"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      Edit Alamat
+                    </button>
                   </div>
-                  <div>
-                    <p className="text-gray-600">Alamat</p>
-                    <p className="font-medium">{selectedOrder.shippingInfo?.address || '-'}</p>
-                  </div>
-                  {selectedOrder.shippingInfo?.isDropship && (
-                    <div className="mt-2 p-2 bg-yellow-100 rounded">
-                      <p className="text-xs text-yellow-800">
-                        <strong>Dropship:</strong> {selectedOrder.shippingInfo.dropshipName} ({selectedOrder.shippingInfo.dropshipPhone})
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <p className="text-gray-600">Nama Penerima</p>
+                      <p className="font-medium">{selectedOrder.shippingInfo?.name || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">No. Telepon</p>
+                      <p className="font-medium flex items-center">
+                        <Phone className="w-3 h-3 mr-1" />
+                        {selectedOrder.shippingInfo?.phone || '-'}
                       </p>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Order Items */}
-              <div>
-                <h3 className="font-semibold text-gray-800 mb-3">Detail Produk</h3>
-                <div className="space-y-3">
-                  {selectedOrder.items?.map((item: any, index: number) => (
-                    <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                      <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
-                        {(item.productImage || item.image) ? (
-                          <img
-                            src={item.productImage || item.image}
-                            alt={item.productName}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              // Fallback if image fails to load
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              if (target.nextElementSibling) {
-                                (target.nextElementSibling as HTMLElement).style.display = 'flex';
-                              }
-                            }}
-                          />
-                        ) : null}
-                        <Package className="w-8 h-8 text-gray-400" style={{ display: (item.productImage || item.image) ? 'none' : 'flex' }} />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium">
-                          {item.productName}
-                          {item.selectedVariant?.color && ` - ${item.selectedVariant.color}`}
-                          {item.selectedVariant?.size && ` (${item.selectedVariant.size})`}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Qty: {item.quantity} pcs
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Rp {item.price.toLocaleString('id-ID')} × {item.quantity}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-lg">Rp {item.total.toLocaleString('id-ID')}</p>
-                        <p className="text-sm text-gray-600">Subtotal</p>
-                      </div>
+                    <div>
+                      <p className="text-gray-600">Alamat</p>
+                      <p className="font-medium">{selectedOrder.shippingInfo?.address || '-'}</p>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Payment & Total */}
-              <div className="border-t pt-4">
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium">Rp {selectedOrder.totalAmount?.toLocaleString('id-ID')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Ongkos Kirim</span>
-                    <span className="font-medium">Rp {selectedOrder.shippingCost?.toLocaleString('id-ID')}</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold pt-2 border-t">
-                    <span>Total</span>
-                    <span className="text-pink-600">Rp {selectedOrder.finalTotal?.toLocaleString('id-ID')}</span>
+                    {selectedOrder.shippingInfo?.isDropship && (
+                      <div className="mt-2 p-2 bg-yellow-100 rounded">
+                        <p className="text-xs text-yellow-800">
+                          <strong>Dropship:</strong> {selectedOrder.shippingInfo.dropshipName} ({selectedOrder.shippingInfo.dropshipPhone})
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
 
-              {/* Payment Proof Section */}
-              <div className={`${selectedOrder.paymentProof || selectedOrder.paymentProofData ? (selectedOrder.status === 'paid' ? 'bg-blue-50' : 'bg-green-50') : 'bg-gray-50'} rounded-lg p-4`}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-800 flex items-center">
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Bukti Pembayaran {selectedOrder.status === 'paid' && '(Terverifikasi)'}
-                  </h3>
-                  {!selectedOrder.paymentProof && !selectedOrder.paymentProofData && (
-                    <button
-                      onClick={() => handleUploadPaymentProof(selectedOrder)}
-                      className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span>Upload</span>
-                    </button>
-                  )}
+                {/* Order Items */}
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-3">Detail Produk</h3>
+                  <div className="space-y-3">
+                    {selectedOrder.items?.map((item: any, index: number) => (
+                      <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                        <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+                          {(item.productImage || item.image) ? (
+                            <img
+                              src={item.productImage || item.image}
+                              alt={item.productName}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Fallback if image fails to load
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                if (target.nextElementSibling) {
+                                  (target.nextElementSibling as HTMLElement).style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <Package className="w-8 h-8 text-gray-400" style={{ display: (item.productImage || item.image) ? 'none' : 'flex' }} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">
+                            {item.productName}
+                            {item.selectedVariant?.color && ` - ${item.selectedVariant.color}`}
+                            {item.selectedVariant?.size && ` (${item.selectedVariant.size})`}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Qty: {item.quantity} pcs
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Rp {item.price.toLocaleString('id-ID')} × {item.quantity}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium text-lg">Rp {item.total.toLocaleString('id-ID')}</p>
+                          <p className="text-sm text-gray-600">Subtotal</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                {(selectedOrder.paymentProof || selectedOrder.paymentProofData) ? (
-                  <div>
-                    {selectedOrder.paymentProofData ? (
-                      // Display from base64 data (both admin and user uploads)
-                      <div>
-                        <img
-                          src={`data:image/*;base64,${selectedOrder.paymentProofData}`}
-                          alt="Payment Proof"
-                          className="w-full max-w-md rounded-lg border-2 border-green-200"
-                          onClick={() => {
-                            const newWindow = window.open('', '_blank');
-                            if (newWindow) {
-                              newWindow.document.write(`
+                {/* Payment & Total */}
+                <div className="border-t pt-4">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Subtotal</span>
+                      <span className="font-medium">Rp {selectedOrder.totalAmount?.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Ongkos Kirim</span>
+                      <span className="font-medium">Rp {selectedOrder.shippingCost?.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                      <span>Total</span>
+                      <span className="text-pink-600">Rp {selectedOrder.finalTotal?.toLocaleString('id-ID')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Proof Section */}
+                <div className={`${selectedOrder.paymentProof || selectedOrder.paymentProofData ? (selectedOrder.status === 'paid' ? 'bg-blue-50' : 'bg-green-50') : 'bg-gray-50'} rounded-lg p-4`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-800 flex items-center">
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Bukti Pembayaran {selectedOrder.status === 'paid' && '(Terverifikasi)'}
+                    </h3>
+                    {!selectedOrder.paymentProof && !selectedOrder.paymentProofData && (
+                      <button
+                        onClick={() => handleUploadPaymentProof(selectedOrder)}
+                        className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>Upload</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {(selectedOrder.paymentProof || selectedOrder.paymentProofData) ? (
+                    <div>
+                      {selectedOrder.paymentProofData ? (
+                        // Display from base64 data (both admin and user uploads)
+                        <div>
+                          <img
+                            src={`data:image/*;base64,${selectedOrder.paymentProofData}`}
+                            alt="Payment Proof"
+                            className="w-full max-w-md rounded-lg border-2 border-green-200"
+                            onClick={() => {
+                              const newWindow = window.open('', '_blank');
+                              if (newWindow) {
+                                newWindow.document.write(`
                                 <html>
                                   <body style="margin:0;padding:20px;background:#f3f4f6;">
                                     <img src="data:image/*;base64,${selectedOrder.paymentProofData}"
@@ -1206,786 +1165,801 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                                   </body>
                                 </html>
                               `);
-                            }
-                          }}
-                          style={{ cursor: 'pointer' }}
-                        />
-                        <p className="text-xs text-gray-600 mt-2 text-center">
-                          💡 Klik gambar untuk memperbesar
-                        </p>
-                      </div>
-                    ) : selectedOrder.paymentProofUrl ? (
-                      // Display from Storage URL (fallback)
-                      <div>
-                        <img
-                          src={selectedOrder.paymentProofUrl}
-                          alt="Payment Proof"
-                          className="w-full max-w-md rounded-lg border-2 border-green-200"
-                          onClick={() => window.open(selectedOrder.paymentProofUrl, '_blank')}
-                          style={{ cursor: 'pointer' }}
-                        />
-                        <p className="text-xs text-gray-600 mt-2 text-center">
-                          💡 Klik gambar untuk memperbesar
-                        </p>
-                      </div>
-                    ) : (
-                      // Display from text/filename only
-                      <div className="text-sm text-green-800">
-                        <p className="font-medium">📎 File Bukti Pembayaran:</p>
-                        <p className="bg-white p-2 rounded border border-green-200 mt-1">
-                          {selectedOrder.paymentProof}
-                        </p>
-                        <p className="text-xs mt-2 text-gray-600">
-                          (File tersimpan di Firebase Firestore - Gratis!)
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-600 text-center py-4">
-                    <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                    <p>Belum ada bukti pembayaran</p>
-                    <p className="text-xs">Klik tombol "Upload" untuk menambahkan bukti pembayaran</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Payment verification status */}
-              {selectedOrder.status === 'paid' && (
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-800 mb-2 flex items-center">
-                    <CheckCircle className="w-4 h-4 mr-2 text-blue-600" />
-                    Status Pembayaran
-                  </h3>
-                  <p className="text-sm text-blue-800">
-                    ✅ Pembayaran telah diverifikasi pada {new Date(selectedOrder.updatedAt).toLocaleDateString('id-ID', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </p>
+                              }
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          />
+                          <p className="text-xs text-gray-600 mt-2 text-center">
+                            💡 Klik gambar untuk memperbesar
+                          </p>
+                        </div>
+                      ) : selectedOrder.paymentProofUrl ? (
+                        // Display from Storage URL (fallback)
+                        <div>
+                          <img
+                            src={selectedOrder.paymentProofUrl}
+                            alt="Payment Proof"
+                            className="w-full max-w-md rounded-lg border-2 border-green-200"
+                            onClick={() => window.open(selectedOrder.paymentProofUrl, '_blank')}
+                            style={{ cursor: 'pointer' }}
+                          />
+                          <p className="text-xs text-gray-600 mt-2 text-center">
+                            💡 Klik gambar untuk memperbesar
+                          </p>
+                        </div>
+                      ) : (
+                        // Display from text/filename only
+                        <div className="text-sm text-green-800">
+                          <p className="font-medium">📎 File Bukti Pembayaran:</p>
+                          <p className="bg-white p-2 rounded border border-green-200 mt-1">
+                            {selectedOrder.paymentProof}
+                          </p>
+                          <p className="text-xs mt-2 text-gray-600">
+                            (File tersimpan di Firebase Firestore - Gratis!)
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-600 text-center py-4">
+                      <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                      <p>Belum ada bukti pembayaran</p>
+                      <p className="text-xs">Klik tombol "Upload" untuk menambahkan bukti pembayaran</p>
+                    </div>
+                  )}
                 </div>
-              )}
 
-              {/* Notes */}
-              {selectedOrder.notes && (
-                <div className="bg-yellow-50 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-800 mb-2">Catatan</h3>
-                  <p className="text-sm text-gray-700">{selectedOrder.notes}</p>
+                {/* Payment verification status */}
+                {selectedOrder.status === 'paid' && (
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-800 mb-2 flex items-center">
+                      <CheckCircle className="w-4 h-4 mr-2 text-blue-600" />
+                      Status Pembayaran
+                    </h3>
+                    <p className="text-sm text-blue-800">
+                      ✅ Pembayaran telah diverifikasi pada {new Date(selectedOrder.updatedAt).toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                )}
+
+                {/* Notes */}
+                {selectedOrder.notes && (
+                  <div className="bg-yellow-50 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-800 mb-2">Catatan</h3>
+                    <p className="text-sm text-gray-700">{selectedOrder.notes}</p>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-end space-x-3 pt-4 border-t">
+                  <button
+                    onClick={() => setShowDetailModal(false)}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    Tutup
+                  </button>
+                  {/* ✨ NEW: Payment Assistance Button (Owner only, pending orders) */}
+                  {selectedOrder.status === 'pending' && user?.role === 'owner' && (
+                    <button
+                      onClick={() => {
+                        setShowDetailModal(false);
+                        handlePaymentAssist(selectedOrder);
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors flex items-center space-x-2"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      <span>Bantu Pembayaran</span>
+                    </button>
+                  )}
+                  {(selectedOrder.status === 'pending' || selectedOrder.status === 'awaiting_verification') && user?.role === 'owner' && (
+                    <button
+                      onClick={() => {
+                        setShowDetailModal(false);
+                        handleVerifyPayment(selectedOrder);
+                      }}
+                      className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors flex items-center space-x-2"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      <span>Verifikasi Pembayaran</span>
+                    </button>
+                  )}
                 </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t">
-                <button
-                  onClick={() => setShowDetailModal(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  Tutup
-                </button>
-                {/* ✨ NEW: Payment Assistance Button (Owner only, pending orders) */}
-                {selectedOrder.status === 'pending' && user?.role === 'owner' && (
-                  <button
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      handlePaymentAssist(selectedOrder);
-                    }}
-                    className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors flex items-center space-x-2"
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    <span>Bantu Pembayaran</span>
-                  </button>
-                )}
-                {(selectedOrder.status === 'pending' || selectedOrder.status === 'awaiting_verification') && user?.role === 'owner' && (
-                  <button
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      handleVerifyPayment(selectedOrder);
-                    }}
-                    className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors flex items-center space-x-2"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Verifikasi Pembayaran</span>
-                  </button>
-                )}
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Payment Verification Modal */}
-      {showVerificationModal && selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-md w-full">
-            <div className="border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-800">Verifikasi Pembayaran</h2>
-                <button
-                  onClick={() => setShowVerificationModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div className="text-center">
-                <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-3" />
-                <h3 className="font-medium text-gray-800 mb-2">Pesanan #{selectedOrder.id}</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Total: Rp {selectedOrder.finalTotal?.toLocaleString('id-ID')}
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Catatan Verifikasi
-                  </label>
-                  <textarea
-                    value={verificationNotes}
-                    onChange={(e) => setVerificationNotes(e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="Tambahkan catatan jika diperlukan..."
-                  />
+      {
+        showVerificationModal && selectedOrder && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl max-w-md w-full">
+              <div className="border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-800">Verifikasi Pembayaran</h2>
+                  <button
+                    onClick={() => setShowVerificationModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
                 </div>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-800">
-                  <strong>Periksa:</strong> Pastikan bukti pembayaran sudah sesuai dengan jumlah yang dibayarkan.
+              <div className="p-6 space-y-4">
+                <div className="text-center">
+                  <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-3" />
+                  <h3 className="font-medium text-gray-800 mb-2">Pesanan #{selectedOrder.id}</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Total: Rp {selectedOrder.finalTotal?.toLocaleString('id-ID')}
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Catatan Verifikasi
+                    </label>
+                    <textarea
+                      value={verificationNotes}
+                      onChange={(e) => setVerificationNotes(e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder="Tambahkan catatan jika diperlukan..."
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Periksa:</strong> Pastikan bukti pembayaran sudah sesuai dengan jumlah yang dibayarkan.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end space-x-3 pt-4 border-t">
+                  <button
+                    onClick={() => handleConfirmVerification('cancelled')}
+                    className="px-4 py-2 text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
+                  >
+                    Tolak
+                  </button>
+                  <button
+                    onClick={() => handleConfirmVerification('paid')}
+                    className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors flex items-center space-x-2"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Konfirmasi</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Upload Payment Proof Modal */}
+      {
+        showUploadModal && selectedOrderForUpload && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl max-w-md w-full">
+              <div className="border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-800">Upload Bukti Pembayaran</h2>
+                  <button
+                    onClick={() => setShowUploadModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    disabled={uploadingPaymentProof}
+                  >
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="text-center">
+                  <Upload className="w-12 h-12 text-blue-600 mx-auto mb-3" />
+                  <h3 className="font-medium text-gray-800 mb-2">Pesanan #{selectedOrderForUpload.id}</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Total: Rp {selectedOrderForUpload.finalTotal?.toLocaleString('id-ID')}
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Pilih File Bukti Pembayaran
+                    </label>
+                    <input
+                      id="payment-proof-file"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      disabled={uploadingPaymentProof}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Format: JPG, PNG, maksimal 5MB
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Informasi:</strong> Upload bukti pembayaran dari pelanggan jika belum ada.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end space-x-3 pt-4 border-t">
+                  <button
+                    onClick={() => setShowUploadModal(false)}
+                    disabled={uploadingPaymentProof}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={() => document.getElementById('payment-proof-file')?.click()}
+                    disabled={uploadingPaymentProof}
+                    className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {uploadingPaymentProof ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Uploading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        <span>Upload</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Modern Confirmation Modal */}
+      {
+        showConfirmModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full mx-4 shadow-2xl transform transition-all">
+              {/* Header with icon */}
+              <div className={`px-6 py-5 rounded-t-2xl ${confirmModalData.type === 'error' ? 'bg-red-50' :
+                confirmModalData.type === 'success' ? 'bg-green-50' :
+                  confirmModalData.type === 'warning' ? 'bg-yellow-50' : 'bg-blue-50'
+                }`}>
+                <div className="flex items-center space-x-3">
+                  {confirmModalData.type === 'error' && (
+                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                      <X className="w-6 h-6 text-red-600" />
+                    </div>
+                  )}
+                  {confirmModalData.type === 'success' && (
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-6 h-6 text-green-600" />
+                    </div>
+                  )}
+                  {confirmModalData.type === 'warning' && (
+                    <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                      <AlertTriangle className="w-6 h-6 text-yellow-600" />
+                    </div>
+                  )}
+                  {confirmModalData.type === 'info' && (
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Info className="w-6 h-6 text-blue-600" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h3 className={`text-xl font-bold ${confirmModalData.type === 'error' ? 'text-red-800' :
+                      confirmModalData.type === 'success' ? 'text-green-800' :
+                        confirmModalData.type === 'warning' ? 'text-yellow-800' : 'text-blue-800'
+                      }`}>
+                      {confirmModalData.title}
+                    </h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Message */}
+              <div className="px-6 py-5">
+                <p className="text-gray-700 text-base leading-relaxed whitespace-pre-line">
+                  {confirmModalData.message}
                 </p>
               </div>
 
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t">
+              {/* Actions */}
+              <div className="px-6 py-4 bg-gray-50 rounded-b-2xl flex items-center justify-end space-x-3">
+                {confirmModalData.cancelText && (
+                  <button
+                    onClick={() => setShowConfirmModal(false)}
+                    className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-xl font-medium transition-all hover:shadow-md"
+                  >
+                    {confirmModalData.cancelText}
+                  </button>
+                )}
                 <button
-                  onClick={() => handleConfirmVerification('cancelled')}
-                  className="px-4 py-2 text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
+                  onClick={confirmModalData.onConfirm}
+                  className={`px-5 py-2.5 text-white rounded-xl font-medium transition-all hover:shadow-lg transform hover:scale-105 ${confirmModalData.type === 'error' ? 'bg-red-600 hover:bg-red-700' :
+                    confirmModalData.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
+                      confirmModalData.type === 'warning' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
                 >
-                  Tolak
-                </button>
-                <button
-                  onClick={() => handleConfirmVerification('paid')}
-                  className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors flex items-center space-x-2"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>Konfirmasi</span>
+                  {confirmModalData.confirmText}
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {/* Upload Payment Proof Modal */}
-      {showUploadModal && selectedOrderForUpload && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-md w-full">
-            <div className="border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-800">Upload Bukti Pembayaran</h2>
+      {/* ✨ NEW: Edit Order Modal */}
+      {
+        showEditModal && editingOrder && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl z-10">
+                <h3 className="text-xl font-bold text-gray-900">Edit Pesanan #{editingOrder.id}</h3>
                 <button
-                  onClick={() => setShowUploadModal(false)}
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingOrder(null);
+                  }}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  disabled={uploadingPaymentProof}
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
-            </div>
 
-            <div className="p-6 space-y-4">
-              <div className="text-center">
-                <Upload className="w-12 h-12 text-blue-600 mx-auto mb-3" />
-                <h3 className="font-medium text-gray-800 mb-2">Pesanan #{selectedOrderForUpload.id}</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Total: Rp {selectedOrderForUpload.finalTotal?.toLocaleString('id-ID')}
-                </p>
-              </div>
-
-              <div className="space-y-3">
+              {/* Content */}
+              <div className="px-6 py-5 space-y-4">
+                {/* Status */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pilih File Bukti Pembayaran
-                  </label>
-                  <input
-                    id="payment-proof-file"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    disabled={uploadingPaymentProof}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Status Pesanan</label>
+                  <select
+                    value={editingOrder.status}
+                    onChange={(e) => setEditingOrder({ ...editingOrder, status: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  >
+                    <option value="pending">Menunggu Pembayaran</option>
+                    <option value="awaiting_verification">Menunggu Verifikasi</option>
+                    <option value="paid">Dibayar</option>
+                    <option value="processing">Diproses</option>
+                    <option value="shipped">Dikirim</option>
+                    <option value="delivered">Selesai</option>
+                    <option value="cancelled">Dibatalkan</option>
+                  </select>
+                </div>
+
+                {/* Shipping Info */}
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-900 flex items-center space-x-2">
+                    <MapPin className="w-4 h-4" />
+                    <span>Informasi Pengiriman</span>
+                  </h4>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nama Penerima</label>
+                    <input
+                      type="text"
+                      value={editingOrder.shippingInfo?.name || ''}
+                      onChange={(e) => setEditingOrder({
+                        ...editingOrder,
+                        shippingInfo: { ...editingOrder.shippingInfo, name: e.target.value }
+                      })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">No. Telepon</label>
+                    <input
+                      type="text"
+                      value={editingOrder.shippingInfo?.phone || ''}
+                      onChange={(e) => setEditingOrder({
+                        ...editingOrder,
+                        shippingInfo: { ...editingOrder.shippingInfo, phone: e.target.value }
+                      })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap</label>
+                    <textarea
+                      value={editingOrder.shippingInfo?.address || ''}
+                      onChange={(e) => setEditingOrder({
+                        ...editingOrder,
+                        shippingInfo: { ...editingOrder.shippingInfo, address: e.target.value }
+                      })}
+                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Catatan Pesanan</label>
+                  <textarea
+                    value={editingOrder.notes || ''}
+                    onChange={(e) => setEditingOrder({ ...editingOrder, notes: e.target.value })}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    placeholder="Tambahkan catatan (opsional)"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Format: JPG, PNG, maksimal 5MB
-                  </p>
                 </div>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-800">
-                  <strong>Informasi:</strong> Upload bukti pembayaran dari pelanggan jika belum ada.
-                </p>
-              </div>
-
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t">
+              {/* Actions */}
+              <div className="px-6 py-4 bg-gray-50 rounded-b-2xl flex items-center justify-end space-x-3 sticky bottom-0">
                 <button
-                  onClick={() => setShowUploadModal(false)}
-                  disabled={uploadingPaymentProof}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingOrder(null);
+                  }}
+                  className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-xl font-medium transition-all"
                 >
                   Batal
                 </button>
                 <button
-                  onClick={() => document.getElementById('payment-proof-file')?.click()}
-                  disabled={uploadingPaymentProof}
-                  className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleSaveEditOrder}
+                  className="px-5 py-2.5 bg-brand-primary text-white rounded-xl font-medium hover:bg-brand-primary/90 transition-all hover:shadow-lg"
                 >
-                  {uploadingPaymentProof ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Uploading...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4" />
-                      <span>Upload</span>
-                    </>
-                  )}
+                  Simpan Perubahan
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Modern Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 shadow-2xl transform transition-all">
-            {/* Header with icon */}
-            <div className={`px-6 py-5 rounded-t-2xl ${confirmModalData.type === 'error' ? 'bg-red-50' :
-              confirmModalData.type === 'success' ? 'bg-green-50' :
-                confirmModalData.type === 'warning' ? 'bg-yellow-50' : 'bg-blue-50'
-              }`}>
-              <div className="flex items-center space-x-3">
-                {confirmModalData.type === 'error' && (
-                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                    <X className="w-6 h-6 text-red-600" />
-                  </div>
-                )}
-                {confirmModalData.type === 'success' && (
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-6 h-6 text-green-600" />
-                  </div>
-                )}
-                {confirmModalData.type === 'warning' && (
-                  <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <AlertTriangle className="w-6 h-6 text-yellow-600" />
-                  </div>
-                )}
-                {confirmModalData.type === 'info' && (
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Info className="w-6 h-6 text-blue-600" />
-                  </div>
-                )}
-                <div className="flex-1">
-                  <h3 className={`text-xl font-bold ${confirmModalData.type === 'error' ? 'text-red-800' :
-                    confirmModalData.type === 'success' ? 'text-green-800' :
-                      confirmModalData.type === 'warning' ? 'text-yellow-800' : 'text-blue-800'
-                    }`}>
-                    {confirmModalData.title}
-                  </h3>
-                </div>
-              </div>
-            </div>
-
-            {/* Message */}
-            <div className="px-6 py-5">
-              <p className="text-gray-700 text-base leading-relaxed whitespace-pre-line">
-                {confirmModalData.message}
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div className="px-6 py-4 bg-gray-50 rounded-b-2xl flex items-center justify-end space-x-3">
-              {confirmModalData.cancelText && (
-                <button
-                  onClick={() => setShowConfirmModal(false)}
-                  className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-xl font-medium transition-all hover:shadow-md"
-                >
-                  {confirmModalData.cancelText}
-                </button>
-              )}
-              <button
-                onClick={confirmModalData.onConfirm}
-                className={`px-5 py-2.5 text-white rounded-xl font-medium transition-all hover:shadow-lg transform hover:scale-105 ${confirmModalData.type === 'error' ? 'bg-red-600 hover:bg-red-700' :
-                  confirmModalData.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
-                    confirmModalData.type === 'warning' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
-              >
-                {confirmModalData.confirmText}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ✨ NEW: Edit Order Modal */}
-      {showEditModal && editingOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl z-10">
-              <h3 className="text-xl font-bold text-gray-900">Edit Pesanan #{editingOrder.id}</h3>
-              <button
-                onClick={() => {
-                  setShowEditModal(false);
-                  setEditingOrder(null);
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="px-6 py-5 space-y-4">
-              {/* Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status Pesanan</label>
-                <select
-                  value={editingOrder.status}
-                  onChange={(e) => setEditingOrder({ ...editingOrder, status: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                >
-                  <option value="pending">Menunggu Pembayaran</option>
-                  <option value="awaiting_verification">Menunggu Verifikasi</option>
-                  <option value="paid">Dibayar</option>
-                  <option value="processing">Diproses</option>
-                  <option value="shipped">Dikirim</option>
-                  <option value="delivered">Selesai</option>
-                  <option value="cancelled">Dibatalkan</option>
-                </select>
-              </div>
-
-              {/* Shipping Info */}
-              <div className="space-y-3">
-                <h4 className="font-semibold text-gray-900 flex items-center space-x-2">
-                  <MapPin className="w-4 h-4" />
-                  <span>Informasi Pengiriman</span>
-                </h4>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nama Penerima</label>
-                  <input
-                    type="text"
-                    value={editingOrder.shippingInfo?.name || ''}
-                    onChange={(e) => setEditingOrder({
-                      ...editingOrder,
-                      shippingInfo: { ...editingOrder.shippingInfo, name: e.target.value }
-                    })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">No. Telepon</label>
-                  <input
-                    type="text"
-                    value={editingOrder.shippingInfo?.phone || ''}
-                    onChange={(e) => setEditingOrder({
-                      ...editingOrder,
-                      shippingInfo: { ...editingOrder.shippingInfo, phone: e.target.value }
-                    })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap</label>
-                  <textarea
-                    value={editingOrder.shippingInfo?.address || ''}
-                    onChange={(e) => setEditingOrder({
-                      ...editingOrder,
-                      shippingInfo: { ...editingOrder.shippingInfo, address: e.target.value }
-                    })}
-                    rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Catatan Pesanan</label>
-                <textarea
-                  value={editingOrder.notes || ''}
-                  onChange={(e) => setEditingOrder({ ...editingOrder, notes: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                  placeholder="Tambahkan catatan (opsional)"
-                />
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="px-6 py-4 bg-gray-50 rounded-b-2xl flex items-center justify-end space-x-3 sticky bottom-0">
-              <button
-                onClick={() => {
-                  setShowEditModal(false);
-                  setEditingOrder(null);
-                }}
-                className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-xl font-medium transition-all"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleSaveEditOrder}
-                className="px-5 py-2.5 bg-brand-primary text-white rounded-xl font-medium hover:bg-brand-primary/90 transition-all hover:shadow-lg"
-              >
-                Simpan Perubahan
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        )
+      }
 
       {/* ✨ NEW: Payment Assistance - Method Selection Modal */}
-      {showPaymentMethodModal && assistPaymentData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full">
-            <div className="bg-gradient-to-r from-pink-500 to-pink-600 p-4 rounded-t-2xl">
-              <h2 className="text-xl font-bold text-white text-center">
-                💳 Pilih Metode Pembayaran
-              </h2>
-              <p className="text-sm text-white/90 text-center mt-1">
-                {assistPaymentData.orders ? (
-                  `${assistPaymentData.orders.length} Pesanan - Rp ${assistPaymentData.subtotal.toLocaleString('id-ID')}`
-                ) : (
-                  `Pesanan #{assistPaymentData.order.id} - Rp ${assistPaymentData.order.finalTotal.toLocaleString('id-ID')}`
-                )}
-              </p>
-            </div>
+      {
+        showPaymentMethodModal && assistPaymentData && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full">
+              <div className="bg-gradient-to-r from-pink-500 to-pink-600 p-4 rounded-t-2xl">
+                <h2 className="text-xl font-bold text-white text-center">
+                  💳 Pilih Metode Pembayaran
+                </h2>
+                <p className="text-sm text-white/90 text-center mt-1">
+                  {assistPaymentData.orders ? (
+                    `${assistPaymentData.orders.length} Pesanan - Rp ${assistPaymentData.subtotal.toLocaleString('id-ID')}`
+                  ) : (
+                    `Pesanan #{assistPaymentData.order.id} - Rp ${assistPaymentData.order.finalTotal.toLocaleString('id-ID')}`
+                  )}
+                </p>
+              </div>
 
-            <div className="p-4 space-y-3">
-              <button
-                onClick={() => handleAssistChooseMethod('auto')}
-                className="w-full text-left border-2 border-green-500 rounded-xl p-4 hover:shadow-lg transition-all bg-gradient-to-br from-green-50 to-emerald-50"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Check className="w-6 h-6 text-white" />
+              <div className="p-4 space-y-3">
+                <button
+                  onClick={() => handleAssistChooseMethod('auto')}
+                  className="w-full text-left border-2 border-green-500 rounded-xl p-4 hover:shadow-lg transition-all bg-gradient-to-br from-green-50 to-emerald-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Check className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-base font-bold text-gray-900">✨ Verifikasi Otomatis</h3>
+                      <p className="text-sm text-gray-700 mt-0.5">
+                        Generate kode unik untuk customer
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-base font-bold text-gray-900">✨ Verifikasi Otomatis</h3>
-                    <p className="text-sm text-gray-700 mt-0.5">
-                      Generate kode unik untuk customer
-                    </p>
-                  </div>
-                </div>
-              </button>
+                </button>
 
-              <button
-                onClick={() => handleAssistChooseMethod('manual')}
-                className="w-full text-left border-2 border-gray-300 rounded-xl p-4 hover:border-blue-500 hover:shadow-lg transition-all bg-white"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Upload className="w-6 h-6 text-white" />
+                <button
+                  onClick={() => handleAssistChooseMethod('manual')}
+                  className="w-full text-left border-2 border-gray-300 rounded-xl p-4 hover:border-blue-500 hover:shadow-lg transition-all bg-white"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Upload className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-base font-bold text-gray-900">📸 Verifikasi Manual</h3>
+                      <p className="text-sm text-gray-700 mt-0.5">
+                        Upload bukti transfer untuk customer
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-base font-bold text-gray-900">📸 Verifikasi Manual</h3>
-                    <p className="text-sm text-gray-700 mt-0.5">
-                      Upload bukti transfer untuk customer
-                    </p>
-                  </div>
-                </div>
-              </button>
+                </button>
 
-              <button
-                onClick={() => {
-                  setShowPaymentMethodModal(false);
-                  setAssistPaymentData(null);
-                }}
-                className="w-full px-4 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
-              >
-                Batal
-              </button>
+                <button
+                  onClick={() => {
+                    setShowPaymentMethodModal(false);
+                    setAssistPaymentData(null);
+                  }}
+                  className="w-full px-4 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+                >
+                  Batal
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* ✨ NEW: Payment Assistance - Auto Instructions Modal */}
-      {showAutoInstructionsModal && assistPaymentData?.paymentGroup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 rounded-t-2xl">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => {
-                    setShowAutoInstructionsModal(false);
-                    setShowPaymentMethodModal(true);
-                  }}
-                  className="p-2 hover:bg-white/20 rounded-full transition-all"
-                >
-                  <ArrowLeft className="w-5 h-5 text-white" />
-                </button>
-                <h2 className="text-lg font-bold text-white flex-1 text-center">
-                  ✨ Kode Pembayaran Otomatis
-                </h2>
+      {
+        showAutoInstructionsModal && assistPaymentData?.paymentGroup && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 rounded-t-2xl">
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => {
+                      setShowAutoInstructionsModal(false);
+                      setShowPaymentMethodModal(true);
+                    }}
+                    className="p-2 hover:bg-white/20 rounded-full transition-all"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-white" />
+                  </button>
+                  <h2 className="text-lg font-bold text-white flex-1 text-center">
+                    ✨ Kode Pembayaran Otomatis
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setShowAutoInstructionsModal(false);
+                      setAssistPaymentData(null);
+                    }}
+                    className="p-2 hover:bg-white/20 rounded-full transition-all"
+                  >
+                    <X className="w-5 h-5 text-white" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-4 space-y-4">
+                <div className="bg-amber-50 border border-amber-300 rounded-lg p-3">
+                  <p className="text-xs font-bold text-amber-900">
+                    ⚠️ Beritahu customer untuk transfer PERSIS sesuai nominal
+                  </p>
+                </div>
+
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border-2 border-green-300 text-center">
+                  <p className="text-xs font-semibold text-green-800 mb-2">Total Transfer:</p>
+                  <p className="text-4xl font-bold text-green-900 mb-2">
+                    Rp {assistPaymentData.paymentGroup.exactPaymentAmount.toLocaleString('id-ID')}
+                  </p>
+                  <p className="text-xs text-green-700 mb-3">
+                    Rp {assistPaymentData.paymentGroup.originalTotal.toLocaleString('id-ID')} + <span className="font-mono font-bold">{assistPaymentData.paymentGroup.uniquePaymentCode}</span> (kode unik)
+                  </p>
+                  <button
+                    onClick={() => handleAssistCopy(assistPaymentData.paymentGroup.exactPaymentAmount.toString(), 'Nominal')}
+                    className="w-full px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Copy Nominal
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
+
+                  <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-blue-700 font-medium">🏦 BCA - Fahrin</p>
+                      <p className="text-base font-bold text-blue-900 font-mono">0511456494</p>
+                    </div>
+                    <button
+                      onClick={() => handleAssistCopy('0511456494', 'Nomor rekening BCA')}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="border border-cyan-200 rounded-lg p-3 bg-cyan-50 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-cyan-700 font-medium">🏦 BRI - Fahrin</p>
+                      <p className="text-base font-bold text-cyan-900 font-mono">066301000115566</p>
+                    </div>
+                    <button
+                      onClick={() => handleAssistCopy('066301000115566', 'Nomor rekening BRI')}
+                      className="px-3 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-all"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="border border-yellow-200 rounded-lg p-3 bg-yellow-50 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-yellow-700 font-medium">🏦 Mandiri - Fahrin</p>
+                      <p className="text-base font-bold text-yellow-900 font-mono">310011008896</p>
+                    </div>
+                    <button
+                      onClick={() => handleAssistCopy('310011008896', 'Nomor rekening Mandiri')}
+                      className="px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-all"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                  <p className="text-xs text-blue-900">
+                    Beritahu customer untuk transfer sesuai nominal + kode unik, verifikasi otomatis dalam 1-5 menit
+                  </p>
+                </div>
+
                 <button
                   onClick={() => {
                     setShowAutoInstructionsModal(false);
                     setAssistPaymentData(null);
                   }}
-                  className="p-2 hover:bg-white/20 rounded-full transition-all"
+                  className="w-full px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all"
                 >
-                  <X className="w-5 h-5 text-white" />
+                  Selesai
                 </button>
               </div>
-            </div>
-
-            <div className="p-4 space-y-4">
-              <div className="bg-amber-50 border border-amber-300 rounded-lg p-3">
-                <p className="text-xs font-bold text-amber-900">
-                  ⚠️ Beritahu customer untuk transfer PERSIS sesuai nominal
-                </p>
-              </div>
-
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border-2 border-green-300 text-center">
-                <p className="text-xs font-semibold text-green-800 mb-2">Total Transfer:</p>
-                <p className="text-4xl font-bold text-green-900 mb-2">
-                  Rp {assistPaymentData.paymentGroup.exactPaymentAmount.toLocaleString('id-ID')}
-                </p>
-                <p className="text-xs text-green-700 mb-3">
-                  Rp {assistPaymentData.paymentGroup.originalTotal.toLocaleString('id-ID')} + <span className="font-mono font-bold">{assistPaymentData.paymentGroup.uniquePaymentCode}</span> (kode unik)
-                </p>
-                <button
-                  onClick={() => handleAssistCopy(assistPaymentData.paymentGroup.exactPaymentAmount.toString(), 'Nominal')}
-                  className="w-full px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                >
-                  <Copy className="w-4 h-4" />
-                  Copy Nominal
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
-
-                <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-blue-700 font-medium">🏦 BCA - Fahrin</p>
-                    <p className="text-base font-bold text-blue-900 font-mono">0511456494</p>
-                  </div>
-                  <button
-                    onClick={() => handleAssistCopy('0511456494', 'Nomor rekening BCA')}
-                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="border border-cyan-200 rounded-lg p-3 bg-cyan-50 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-cyan-700 font-medium">🏦 BRI - Fahrin</p>
-                    <p className="text-base font-bold text-cyan-900 font-mono">066301000115566</p>
-                  </div>
-                  <button
-                    onClick={() => handleAssistCopy('066301000115566', 'Nomor rekening BRI')}
-                    className="px-3 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-all"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="border border-yellow-200 rounded-lg p-3 bg-yellow-50 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-yellow-700 font-medium">🏦 Mandiri - Fahrin</p>
-                    <p className="text-base font-bold text-yellow-900 font-mono">310011008896</p>
-                  </div>
-                  <button
-                    onClick={() => handleAssistCopy('310011008896', 'Nomor rekening Mandiri')}
-                    className="px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-all"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                <p className="text-xs text-blue-900">
-                  Beritahu customer untuk transfer sesuai nominal + kode unik, verifikasi otomatis dalam 1-5 menit
-                </p>
-              </div>
-
-              <button
-                onClick={() => {
-                  setShowAutoInstructionsModal(false);
-                  setAssistPaymentData(null);
-                }}
-                className="w-full px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all"
-              >
-                Selesai
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* ✨ NEW: Payment Assistance - Manual Upload Modal */}
-      {showManualUploadModal && assistPaymentData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-t-2xl">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => {
-                    setShowManualUploadModal(false);
-                    setShowPaymentMethodModal(true);
-                  }}
-                  className="p-2 hover:bg-white/20 rounded-full transition-all"
-                >
-                  <ArrowLeft className="w-5 h-5 text-white" />
-                </button>
-                <h2 className="text-lg font-bold text-white flex-1 text-center">
-                  📸 Upload untuk Customer
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowManualUploadModal(false);
-                    setAssistPaymentData(null);
-                    setAssistPaymentProof(null);
-                  }}
-                  className="p-2 hover:bg-white/20 rounded-full transition-all"
-                >
-                  <X className="w-5 h-5 text-white" />
-                </button>
+      {
+        showManualUploadModal && assistPaymentData && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-t-2xl">
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => {
+                      setShowManualUploadModal(false);
+                      setShowPaymentMethodModal(true);
+                    }}
+                    className="p-2 hover:bg-white/20 rounded-full transition-all"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-white" />
+                  </button>
+                  <h2 className="text-lg font-bold text-white flex-1 text-center">
+                    📸 Upload untuk Customer
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setShowManualUploadModal(false);
+                      setAssistPaymentData(null);
+                      setAssistPaymentProof(null);
+                    }}
+                    className="p-2 hover:bg-white/20 rounded-full transition-all"
+                  >
+                    <X className="w-5 h-5 text-white" />
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div className="p-4 space-y-4">
-              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200 text-center">
-                <p className="text-xs font-semibold text-blue-800 mb-2">Total Transfer:</p>
-                <p className="text-3xl font-bold text-blue-900 mb-3">
-                  Rp {(assistPaymentData.subtotal || assistPaymentData.order.finalTotal).toLocaleString('id-ID')}
-                </p>
-                {assistPaymentData.orders && assistPaymentData.orders.length > 1 && (
-                  <p className="text-xs text-blue-700 mb-2">
-                    {assistPaymentData.orders.length} pesanan digabung
+              <div className="p-4 space-y-4">
+                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200 text-center">
+                  <p className="text-xs font-semibold text-blue-800 mb-2">Total Transfer:</p>
+                  <p className="text-3xl font-bold text-blue-900 mb-3">
+                    Rp {(assistPaymentData.subtotal || assistPaymentData.order.finalTotal).toLocaleString('id-ID')}
                   </p>
-                )}
+                  {assistPaymentData.orders && assistPaymentData.orders.length > 1 && (
+                    <p className="text-xs text-blue-700 mb-2">
+                      {assistPaymentData.orders.length} pesanan digabung
+                    </p>
+                  )}
+                  <button
+                    onClick={() => handleAssistCopy((assistPaymentData.subtotal || assistPaymentData.order.finalTotal).toString(), 'Nominal')}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 mx-auto"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Copy Nominal
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
+
+                  <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-blue-700 font-medium">🏦 BCA - Fahrin</p>
+                      <p className="text-base font-bold text-blue-900 font-mono">0511456494</p>
+                    </div>
+                    <button
+                      onClick={() => handleAssistCopy('0511456494', 'Nomor rekening BCA')}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="border border-cyan-200 rounded-lg p-3 bg-cyan-50 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-cyan-700 font-medium">🏦 BRI - Fahrin</p>
+                      <p className="text-base font-bold text-cyan-900 font-mono">066301000115566</p>
+                    </div>
+                    <button
+                      onClick={() => handleAssistCopy('066301000115566', 'Nomor rekening BRI')}
+                      className="px-3 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-all"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="border border-yellow-200 rounded-lg p-3 bg-yellow-50 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-yellow-700 font-medium">🏦 Mandiri - Fahrin</p>
+                      <p className="text-base font-bold text-yellow-900 font-mono">310011008896</p>
+                    </div>
+                    <button
+                      onClick={() => handleAssistCopy('310011008896', 'Nomor rekening Mandiri')}
+                      className="px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-all"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block">
+                    <span className="text-xs font-semibold text-gray-900 mb-2 block">
+                      Upload Bukti Transfer (dari Customer):
+                    </span>
+                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-pink-500 transition-all cursor-pointer bg-gray-50">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAssistFileChange}
+                        className="hidden"
+                        id="assist-payment-proof-upload"
+                      />
+                      <label htmlFor="assist-payment-proof-upload" className="cursor-pointer block text-center">
+                        <Upload className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm font-medium text-gray-700">
+                          {assistPaymentProof ? assistPaymentProof.name : 'Klik untuk pilih gambar'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          PNG, JPG, atau JPEG (max 5MB)
+                        </p>
+                      </label>
+                    </div>
+                  </label>
+
+                  {assistPaymentProof && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-2 mt-2">
+                      <p className="text-xs text-green-700 flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        Siap upload: {assistPaymentProof.name}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                  <p className="text-xs text-blue-900">
+                    Upload bukti transfer dari customer, verifikasi dalam 1-24 jam
+                  </p>
+                </div>
+
                 <button
-                  onClick={() => handleAssistCopy((assistPaymentData.subtotal || assistPaymentData.order.finalTotal).toString(), 'Nominal')}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 mx-auto"
+                  onClick={handleAssistSubmitManualPayment}
+                  disabled={!assistPaymentProof}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  <Copy className="w-4 h-4" />
-                  Copy Nominal
+                  <Upload className="w-5 h-5" />
+                  Kirim Bukti Transfer
                 </button>
               </div>
-
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-gray-900">Transfer ke salah satu rekening:</p>
-
-                <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-blue-700 font-medium">🏦 BCA - Fahrin</p>
-                    <p className="text-base font-bold text-blue-900 font-mono">0511456494</p>
-                  </div>
-                  <button
-                    onClick={() => handleAssistCopy('0511456494', 'Nomor rekening BCA')}
-                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="border border-cyan-200 rounded-lg p-3 bg-cyan-50 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-cyan-700 font-medium">🏦 BRI - Fahrin</p>
-                    <p className="text-base font-bold text-cyan-900 font-mono">066301000115566</p>
-                  </div>
-                  <button
-                    onClick={() => handleAssistCopy('066301000115566', 'Nomor rekening BRI')}
-                    className="px-3 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-all"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="border border-yellow-200 rounded-lg p-3 bg-yellow-50 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-yellow-700 font-medium">🏦 Mandiri - Fahrin</p>
-                    <p className="text-base font-bold text-yellow-900 font-mono">310011008896</p>
-                  </div>
-                  <button
-                    onClick={() => handleAssistCopy('310011008896', 'Nomor rekening Mandiri')}
-                    className="px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-all"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block">
-                  <span className="text-xs font-semibold text-gray-900 mb-2 block">
-                    Upload Bukti Transfer (dari Customer):
-                  </span>
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-pink-500 transition-all cursor-pointer bg-gray-50">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAssistFileChange}
-                      className="hidden"
-                      id="assist-payment-proof-upload"
-                    />
-                    <label htmlFor="assist-payment-proof-upload" className="cursor-pointer block text-center">
-                      <Upload className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm font-medium text-gray-700">
-                        {assistPaymentProof ? assistPaymentProof.name : 'Klik untuk pilih gambar'}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        PNG, JPG, atau JPEG (max 5MB)
-                      </p>
-                    </label>
-                  </div>
-                </label>
-
-                {assistPaymentProof && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-2 mt-2">
-                    <p className="text-xs text-green-700 flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4" />
-                      Siap upload: {assistPaymentProof.name}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                <p className="text-xs text-blue-900">
-                  Upload bukti transfer dari customer, verifikasi dalam 1-24 jam
-                </p>
-              </div>
-
-              <button
-                onClick={handleAssistSubmitManualPayment}
-                disabled={!assistPaymentProof}
-                className="w-full px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <Upload className="w-5 h-5" />
-                Kirim Bukti Transfer
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* ✨ NEW: Shipping Edit Modal for Admin/Owner */}
       <ShippingEditModal
@@ -1996,7 +1970,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           setShippingEditOrder(null);
         }}
       />
-    </div>
+    </div >
   );
 };
 

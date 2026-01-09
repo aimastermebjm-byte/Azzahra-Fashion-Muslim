@@ -13,6 +13,10 @@
     --brand-accent-muted: #F4E7D3;
   }
 
+  html {
+    overflow-y: auto;
+  }
+
   body {
     background: var(--brand-surface);
     color: var(--brand-primary);
@@ -20,6 +24,11 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+}
+
+/* Ensure utility classes win over custom components for positioning */
+.sticky.shine-effect {
+  position: sticky;
 }
 
 @layer components {
