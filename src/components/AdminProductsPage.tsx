@@ -1022,7 +1022,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
             {user?.role === 'owner' && onNavigateToStockApproval && (
               <button
                 onClick={onNavigateToStockApproval}
-                className="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-full text-xs font-semibold hover:bg-orange-200 transition-colors flex items-center gap-1"
+                className="bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-white px-3 py-1.5 rounded-full text-xs font-bold hover:shadow-lg transition-all flex items-center gap-1 shadow-[0_2px_0_0_#7A6223]"
               >
                 <Clock className="w-3.5 h-3.5" />
                 Approval
@@ -1045,22 +1045,22 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
       <div className="p-3 space-y-3">
         {/* Stats Cards - Compact 4 columns for mobile */}
         <div className="grid grid-cols-4 gap-2">
-          <div className="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-100">
-            <p className="text-lg font-bold text-blue-600">{products.length}</p>
+          <div className="bg-white rounded-xl p-2 text-center border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] shine-effect">
+            <p className="text-lg font-bold text-[#997B2C]">{products.length}</p>
             <p className="text-[10px] text-gray-500">Produk</p>
           </div>
-          <div className="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-100">
-            <p className="text-lg font-bold text-green-600">
+          <div className="bg-white rounded-xl p-2 text-center border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] shine-effect">
+            <p className="text-lg font-bold text-[#997B2C]">
               {products.reduce((total, product) => total + product.stock, 0)}
             </p>
             <p className="text-[10px] text-gray-500">Stok</p>
           </div>
-          <div className="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-100">
-            <p className="text-lg font-bold text-purple-600">{categories.length}</p>
+          <div className="bg-white rounded-xl p-2 text-center border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] shine-effect">
+            <p className="text-lg font-bold text-[#997B2C]">{categories.length}</p>
             <p className="text-[10px] text-gray-500">Kategori</p>
           </div>
-          <div className="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-100">
-            <p className="text-lg font-bold text-yellow-600">{products.filter(p => p.isFeatured).length}</p>
+          <div className="bg-white rounded-xl p-2 text-center border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] shine-effect">
+            <p className="text-lg font-bold text-[#997B2C]">{products.filter(p => p.isFeatured).length}</p>
             <p className="text-[10px] text-gray-500">Unggulan</p>
           </div>
         </div>
@@ -1120,15 +1120,15 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
             </div>
           </div>
         ) : (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm p-4 border border-blue-200 mb-4">
+          <div className="bg-gradient-to-r from-[#FDF6E3] to-[#FEF9ED] rounded-xl shadow-sm p-4 border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] mb-4 shine-effect">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-100 rounded-full">
-                  <Clock className="w-6 h-6 text-blue-600" />
+                <div className="p-2 bg-gradient-to-r from-[#997B2C] to-[#D4AF37] rounded-full">
+                  <Clock className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-blue-800 text-lg">Siap Mulai Flash Sale?</h3>
-                  <p className="text-sm text-blue-600">
+                  <h3 className="font-bold text-[#997B2C] text-lg">Siap Mulai Flash Sale?</h3>
+                  <p className="text-sm text-[#B8860B]">
                     Pilih produk di tabel bawah, lalu klik "Set Flash Sale" untuk memulai.
                   </p>
                 </div>
@@ -1171,8 +1171,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
           </div>
         )}
 
-        {/* Main Actions - 2 Columns */}
-        <div className="bg-white rounded-lg shadow-sm p-3">
+        {/* Main Actions - 2 Columns - GOLD THEME */}
+        <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-3 shine-effect">
           <div className="grid grid-cols-2 gap-3">
             {/* Tambah Produk */}
             <button
@@ -1180,49 +1180,49 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                 setManualUploadInitialState(null);
                 setShowManualUploadModal(true);
               }}
-              className="bg-blue-600 text-white p-4 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-3"
+              className="bg-gradient-to-r from-[#997B2C] to-[#D4AF37] p-4 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-3 active:scale-95 border-2 border-[#7A6223] shadow-[0_4px_0_0_#7A6223]"
             >
-              <Plus className="w-6 h-6" />
-              <span className="text-base font-semibold">Tambah Produk</span>
+              <Plus className="w-6 h-6 text-slate-900" />
+              <span className="text-base font-extrabold text-slate-900">Tambah Produk</span>
             </button>
 
             {/* Draft Siap Upload */}
             <button
               onClick={() => setShowWhatsAppInbox(true)}
-              className="bg-green-600 text-white p-4 rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center gap-3"
+              className="bg-gradient-to-r from-[#997B2C] to-[#D4AF37] p-4 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-3 active:scale-95 border-2 border-[#7A6223] shadow-[0_4px_0_0_#7A6223]"
             >
-              <MessageCircle className="w-6 h-6" />
-              <span className="text-base font-semibold">Draft Upload</span>
+              <MessageCircle className="w-6 h-6 text-slate-900" />
+              <span className="text-base font-extrabold text-slate-900">Draft Upload</span>
             </button>
           </div>
         </div>
 
-        {/* Product List */}
-        <div className="bg-white rounded-lg shadow-sm p-3">
+        {/* Product List - GOLD THEME */}
+        <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-3 shine-effect">
           {/* Header & Search/Filter - Compact */}
           <div className="space-y-2 mb-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-800">
-                Produk {selectedProducts.length > 0 && <span className="text-blue-600">({selectedProducts.length})</span>}
+              <h2 className="text-sm font-bold text-[#997B2C]">
+                Produk {selectedProducts.length > 0 && <span className="text-[#D4AF37]">({selectedProducts.length})</span>}
               </h2>
             </div>
 
             {/* Search & Filter Row */}
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-[#997B2C] w-3.5 h-3.5" />
                 <input
                   type="text"
                   placeholder="Cari..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-7 pr-2 py-1.5 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] shadow-[0_2px_0_0_#997B2C]"
                 />
               </div>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                className="px-2 py-1.5 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] font-semibold shadow-[0_2px_0_0_#997B2C]"
               >
                 <option value="">Semua</option>
                 {categories.map((category) => (
@@ -1234,7 +1234,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                className="px-2 py-1.5 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] font-semibold shadow-[0_2px_0_0_#997B2C]"
               >
                 <option value="name">Nama</option>
                 <option value="price-asc">Harga ↑</option>
@@ -1247,16 +1247,16 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
             {/* Batch Actions - 2 Columns Like Main Menu */}
             {selectedProducts.length > 0 && (
               <div className="pt-3 border-t space-y-2">
-                <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">
+                <div className="flex items-center justify-between bg-gradient-to-r from-[#FDF6E3] to-[#FEF9ED] p-3 rounded-xl border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C] shine-effect">
                   <div className="flex items-center gap-2">
-                    <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    <span className="bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
                       {selectedProducts.length}
                     </span>
-                    <span className="text-sm font-semibold text-blue-900">Produk Terpilih</span>
+                    <span className="text-sm font-bold bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] bg-clip-text text-transparent animate-shine">Produk Terpilih</span>
                   </div>
                   <button
                     onClick={() => setSelectedProducts([])}
-                    className="bg-white text-red-600 px-3 py-1.5 rounded border border-red-200 shadow-sm text-xs font-bold hover:bg-red-50 flex items-center gap-1 transition-colors"
+                    className="bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-slate-900 px-3 py-1.5 rounded-lg border-2 border-[#7A6223] shadow-[0_2px_0_0_#7A6223] text-xs font-bold hover:shadow-lg flex items-center gap-1 transition-all"
                   >
                     <X className="w-3.5 h-3.5" />
                     Reset Pilihan
@@ -1273,10 +1273,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                         setShowFlashSaleModal(true);
                       }
                     }}
-                    className="bg-red-600 text-white p-3 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                    className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
                   >
-                    <Flame className="w-5 h-5" />
-                    <span className="text-sm font-medium">Flash Sale</span>
+                    <Flame className="w-5 h-5 text-[#997B2C]" />
+                    <span className="text-sm">Flash Sale</span>
                   </button>
                   <button
                     onClick={() => {
@@ -1291,32 +1291,32 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                         updateFeatured();
                       }
                     }}
-                    className="bg-yellow-500 text-white p-3 rounded-lg hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2"
+                    className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
                   >
-                    <Star className="w-5 h-5" />
-                    <span className="text-sm font-medium">Unggulan</span>
+                    <Star className="w-5 h-5 text-[#997B2C]" />
+                    <span className="text-sm">Unggulan</span>
                   </button>
                   <button
                     onClick={() => setShowBatchModal(true)}
-                    className="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                    className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
                   >
-                    <Edit className="w-5 h-5" />
-                    <span className="text-sm font-medium">Edit Massal</span>
+                    <Edit className="w-5 h-5 text-[#997B2C]" />
+                    <span className="text-sm">Edit Massal</span>
                   </button>
                   <button
                     onClick={() => setShowVariantBatchModal(true)}
-                    className="bg-purple-600 text-white p-3 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                    className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
                   >
-                    <Package className="w-5 h-5" />
-                    <span className="text-sm font-medium">Varian</span>
+                    <Package className="w-5 h-5 text-[#997B2C]" />
+                    <span className="text-sm">Varian</span>
                   </button>
                   {user?.role === 'owner' && (
                     <button
                       onClick={handleBulkDelete}
-                      className="bg-red-700 text-white p-3 rounded-lg hover:bg-red-800 transition-colors flex items-center justify-center gap-2 col-span-2"
+                      className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 col-span-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
                     >
-                      <Trash2 className="w-5 h-5" />
-                      <span className="text-sm font-medium">Hapus {selectedProducts.length} Produk</span>
+                      <Trash2 className="w-5 h-5 text-[#997B2C]" />
+                      <span className="text-sm">Hapus {selectedProducts.length} Produk</span>
                     </button>
                   )}
                 </div>
@@ -1368,16 +1368,16 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                         setSelectedProducts(prev => prev.filter(id => !currentPageIds.includes(id)));
                       }
                     }}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="w-4 h-4 rounded border-[#D4AF37] text-[#D4AF37] focus:ring-[#D4AF37] accent-[#D4AF37]"
                   />
-                  <span className="text-gray-600">Pilih Halaman Ini</span>
+                  <span className="text-[#997B2C] font-semibold">Pilih Halaman Ini</span>
                 </label>
                 <div className="text-right">
                   <span className="text-xs text-gray-500 block">
                     {filteredAndSortedProducts.length} produk total
                   </span>
                   {selectedProducts.length > 0 && (
-                    <span className="text-xs font-semibold text-blue-600 block">
+                    <span className="text-xs font-semibold text-[#997B2C] block">
                       {selectedProducts.length} terpilih (Total)
                     </span>
                   )}
@@ -1391,7 +1391,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                 return (
                   <div
                     key={product.id}
-                    className={`relative bg-white rounded-lg border overflow-hidden transition-all ${isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                    className={`relative bg-white rounded-xl border-2 overflow-hidden transition-all shadow-[0_2px_8px_rgba(153,123,44,0.15)] ${isSelected ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/30' : 'border-gray-200'
                       }`}
                     onClick={() => setTappedProductId(isTapped ? null : product.id)}
                   >
@@ -1410,7 +1410,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                             setSelectedProducts(selectedProducts.filter(id => id !== product.id));
                           }
                         }}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white shadow-sm"
+                        className="w-4 h-4 rounded border-[#D4AF37] text-[#D4AF37] focus:ring-[#D4AF37] bg-white shadow-sm accent-[#D4AF37]"
                       />
                     </div>
 
@@ -1500,10 +1500,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                               handleEditProduct(product);
                               setTappedProductId(null);
                             }}
-                            className="w-full bg-blue-600 text-white py-2 px-3 rounded-lg shadow-lg flex items-center justify-center gap-2"
+                            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-2 px-3 rounded-xl shadow-lg flex items-center justify-center gap-2 border-2 border-blue-700 shadow-[0_3px_0_0_#1d4ed8]"
                           >
                             <Edit className="w-4 h-4" />
-                            <span className="text-xs font-medium">Edit</span>
+                            <span className="text-xs font-bold">Edit</span>
                           </button>
 
                           <button
@@ -1512,10 +1512,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                               setHistoryModalData(product);
                               setTappedProductId(null);
                             }}
-                            className="w-full bg-purple-600 text-white py-2 px-3 rounded-lg shadow-lg flex items-center justify-center gap-2"
+                            className="w-full bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-slate-900 py-2 px-3 rounded-xl shadow-lg flex items-center justify-center gap-2 border-2 border-[#7A6223] shadow-[0_3px_0_0_#7A6223]"
                           >
                             <Clock className="w-4 h-4" />
-                            <span className="text-xs font-medium">Kartu Stok</span>
+                            <span className="text-xs font-bold">Kartu Stok</span>
                           </button>
 
                           {user?.role === 'owner' && (
@@ -1525,10 +1525,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                                 handleDeleteProduct(product.id);
                                 setTappedProductId(null);
                               }}
-                              className="w-full bg-red-600 text-white py-2 px-3 rounded-lg shadow-lg flex items-center justify-center gap-2"
+                              className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-2 px-3 rounded-xl shadow-lg flex items-center justify-center gap-2 border-2 border-red-800 shadow-[0_3px_0_0_#7f1d1d]"
                             >
                               <Trash2 className="w-4 h-4" />
-                              <span className="text-xs font-medium">Hapus</span>
+                              <span className="text-xs font-bold">Hapus</span>
                             </button>
                           )}
                         </div>

@@ -102,32 +102,32 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
 
       {/* Content */}
       <div className="p-4 space-y-4">
-        {/* User Stats */}
+        {/* User Stats - GOLD THEME */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-blue-800 mb-1">Total User</h4>
-            <p className="text-2xl font-bold text-blue-600">{users.length}</p>
-            <p className="text-xs text-blue-600">Semua role</p>
+          <div className="bg-white rounded-xl p-4 border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] shine-effect">
+            <h4 className="text-sm font-medium text-[#997B2C] mb-1">Total User</h4>
+            <p className="text-2xl font-bold text-[#997B2C]">{users.length}</p>
+            <p className="text-xs text-gray-500">Semua role</p>
           </div>
-          <div className="bg-green-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-green-800 mb-1">User Aktif</h4>
-            <p className="text-2xl font-bold text-green-600">{users.filter(u => u.status === 'active').length}</p>
-            <p className="text-xs text-green-600">{users.length ? Math.round((users.filter(u => u.status === 'active').length / users.length) * 100) : 0}% aktivasi</p>
+          <div className="bg-white rounded-xl p-4 border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] shine-effect">
+            <h4 className="text-sm font-medium text-[#997B2C] mb-1">User Aktif</h4>
+            <p className="text-2xl font-bold text-[#997B2C]">{users.filter(u => u.status === 'active').length}</p>
+            <p className="text-xs text-gray-500">{users.length ? Math.round((users.filter(u => u.status === 'active').length / users.length) * 100) : 0}% aktivasi</p>
           </div>
-          <div className="bg-purple-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-purple-800 mb-1">Reseller</h4>
-            <p className="text-2xl font-bold text-purple-600">{users.filter(u => u.role === 'reseller').length}</p>
-            <p className="text-xs text-purple-600">Partner bisnis</p>
+          <div className="bg-white rounded-xl p-4 border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] shine-effect">
+            <h4 className="text-sm font-medium text-[#997B2C] mb-1">Reseller</h4>
+            <p className="text-2xl font-bold text-[#997B2C]">{users.filter(u => u.role === 'reseller').length}</p>
+            <p className="text-xs text-gray-500">Partner bisnis</p>
           </div>
-          <div className="bg-orange-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-orange-800 mb-1">User Baru</h4>
-            <p className="text-2xl font-bold text-orange-600">{users.filter(u => u.joinDate)?.length || 0}</p>
-            <p className="text-xs text-orange-600">Berdasar data Firestore</p>
+          <div className="bg-white rounded-xl p-4 border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] shine-effect">
+            <h4 className="text-sm font-medium text-[#997B2C] mb-1">User Baru</h4>
+            <p className="text-2xl font-bold text-[#997B2C]">{users.filter(u => u.joinDate)?.length || 0}</p>
+            <p className="text-xs text-gray-500">Berdasar data Firestore</p>
           </div>
         </div>
 
-        {/* Search and Filter */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
+        {/* Search and Filter - GOLD THEME */}
+        <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 shine-effect">
           <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -191,7 +191,7 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
             const RoleIcon = roleInfo.icon;
 
             return (
-              <div key={userItem.id} className="bg-white rounded-lg shadow-sm p-4">
+              <div key={userItem.id} className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] p-4 shine-effect">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-3">
                     <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">

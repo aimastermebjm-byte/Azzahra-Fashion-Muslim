@@ -99,22 +99,22 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
         <div className="min-h-screen bg-gray-50 pb-20">
             <PageHeader title="Log Pelunasan Otomatis" onBack={onBack} />
 
-            {/* Stats */}
-            <div className="px-4 py-4 bg-white border-b">
+            {/* Stats - GOLD THEME */}
+            <div className="px-4 py-4 bg-white border-b border-[#D4AF37]">
                 <div className="grid grid-cols-4 gap-2">
-                    <div className="bg-green-50 rounded-xl p-3 text-center">
+                    <div className="bg-green-50 rounded-xl p-3 text-center border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
                         <div className="text-2xl font-bold text-green-700">{stats.totalSuccess}</div>
                         <div className="text-xs text-green-600">Berhasil</div>
                     </div>
-                    <div className="bg-red-50 rounded-xl p-3 text-center">
+                    <div className="bg-red-50 rounded-xl p-3 text-center border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
                         <div className="text-2xl font-bold text-red-700">{stats.totalFailed}</div>
                         <div className="text-xs text-red-600">Gagal</div>
                     </div>
-                    <div className="bg-yellow-50 rounded-xl p-3 text-center">
+                    <div className="bg-yellow-50 rounded-xl p-3 text-center border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
                         <div className="text-2xl font-bold text-yellow-700">{stats.totalDryRun}</div>
                         <div className="text-xs text-yellow-600">Test Mode</div>
                     </div>
-                    <div className="bg-blue-50 rounded-xl p-3 text-center">
+                    <div className="bg-blue-50 rounded-xl p-3 text-center border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
                         <div className="text-lg font-bold text-blue-700">
                             {stats.totalAmount > 0 ? `${(stats.totalAmount / 1000000).toFixed(1)}jt` : '0'}
                         </div>
@@ -177,7 +177,7 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                         {(expandedId ? filteredLogs.filter(log => log.id === expandedId) : filteredLogs).map((log) => (
                             <div
                                 key={log.id}
-                                className={`bg-white rounded-xl border shadow-sm overflow-hidden ${expandedId === log.id ? 'ring-2 ring-brand-primary' : ''}`}
+                                className={`bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] overflow-hidden shine-effect ${expandedId === log.id ? 'ring-2 ring-[#D4AF37]' : ''}`}
                             >
                                 {/* Log Header */}
                                 <div

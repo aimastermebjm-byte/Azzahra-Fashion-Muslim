@@ -270,7 +270,7 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
         <div className="space-y-4">
             {/* Session Info Header (Only in View Mode) */}
             {isReadOnly && (
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-purple-100">
+                <div className="bg-white p-4 rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] shine-effect">
                     <div className="flex justify-between items-start">
                         <div>
                             <h2 className="text-lg font-bold text-gray-800">Detail Opname</h2>
@@ -313,7 +313,7 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
             </div>
 
             {/* Progress */}
-            <div className="bg-white p-4 rounded-lg shadow-sm">
+            <div className="bg-white p-4 rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] shine-effect">
                 <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-gray-600">Progress</span>
                     <span className="text-sm font-medium">
@@ -335,7 +335,7 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
             </div>
 
             {/* Items Table */}
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
+            <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] overflow-hidden shine-effect">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead className="bg-gray-50 border-b">
@@ -510,7 +510,7 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                     activeSession ? (
                         renderSessionItems(activeSession, false)
                     ) : (
-                        <div className="bg-white rounded-lg p-8 text-center mt-8">
+                        <div className="bg-white rounded-xl p-8 text-center mt-8 border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] shine-effect">
                             <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                             <p className="text-gray-600 mb-4">Belum ada opname aktif</p>
                             <button
@@ -538,7 +538,7 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                                         setSearchQuery('');
                                         setViewSession(session);
                                     }}
-                                    className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-transparent hover:border-purple-100"
+                                    className="bg-white rounded-xl p-4 border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] hover:shadow-md transition-shadow cursor-pointer shine-effect"
                                 >
                                     <div className="flex justify-between items-start mb-2">
                                         <div>

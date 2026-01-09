@@ -67,13 +67,13 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
       // without losing the older entries that might have been loaded.
       // However, for simplicity and consistency with "dashboard view", we'll just show the latest synced batch
       // unless the user has explicitly loaded more.
-      
+
       // Strategy: 
       // 1. If cursor is null (initial load), replace everything.
       // 2. If cursor exists (user loaded more), we try to merge, BUT realtime usually conflicts with pagination.
       // For this implementation: Realtime updates only affect the top of the list. 
       // We will replace the whole list if it's an initial view to keep it simple and consistent with the cache.
-      
+
       if (!cursor) {
         setEntries(newEntries);
       } else {
@@ -84,7 +84,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
         // For now: Let's stick to "Realtime works best for the top of the list".
         // We won't update if user is deep in history to avoid disruption.
       }
-      
+
       setLoading(entriesLoading);
     }, 20); // Limit 20
 
@@ -97,7 +97,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
         ]);
         setCategories(cats);
         setPaymentMethods(methods);
-        
+
         // Set defaults if not set
         setCategory((prev) => prev || (cats[0]?.id ?? ''));
         setPaymentMethod((prev) => prev || (methods[0]?.id ?? ''));
@@ -121,12 +121,12 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
   // Let's keep it simple: The useEffect handles the subscription. 
   // "Load More" will use listEntries (fetch) and APPEND to the state.
   // We need to be careful not to overwrite "Load More" data with "Realtime" update of just 20 items.
-  
+
   // Modified effect for robust handling:
   useEffect(() => {
     if (!isOwner) return;
 
-    let unsubscribe = () => {};
+    let unsubscribe = () => { };
 
     const init = async () => {
       // Load master data
@@ -150,35 +150,35 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
             toast({ title: 'Gagal sinkronisasi data', variant: 'destructive' });
             return;
           }
-          
+
           setLoading(realTimeLoading);
           // Only update if we are still at the "top" (no pagination active)
           // This ensures user sees live updates. 
           // If they loaded more, we stop live updates to prevent list jumping, 
           // or we could try to merge smart. For now, simple replacement is safest for "Dashboard" feel.
           setEntries(prev => {
-             // If we have way more entries than the limit, it means user clicked load more.
-             // In that case, we might want to only update the first 20... 
-             // or just ignore updates to avoid UI glitch.
-             if (prev.length > 20) return prev; 
-             return realtimeEntries;
+            // If we have way more entries than the limit, it means user clicked load more.
+            // In that case, we might want to only update the first 20... 
+            // or just ignore updates to avoid UI glitch.
+            if (prev.length > 20) return prev;
+            return realtimeEntries;
           });
-          
+
           // Update cursor for the first batch so "Load More" knows where to start
           // Note: onSnapshot doesn't give us the Last Document Cursor easily for pagination 
           // unless we track it manually from the last item in array.
           if (realtimeEntries.length > 0) {
-             // We don't have the DocumentSnapshot object here easily from the service 
-             // unless we change service to return it. 
-             // For now, "Load More" might be slightly broken with this mixed approach 
-             // unless we fix `subscribeToEntries` to return snapshots or we rely on `listEntries` 
-             // to get the first cursor.
-             
-             // FIX: The previous `listEntries` returned `cursor`. 
-             // `subscribeToEntries` returns POJO. 
-             // We might need to fetch the cursor manually or accept that "Realtime" + "Pagination" 
-             // is hard without a more complex hook.
-             // Alternative: Just use realtime for the view. "Load More" fetches older data.
+            // We don't have the DocumentSnapshot object here easily from the service 
+            // unless we change service to return it. 
+            // For now, "Load More" might be slightly broken with this mixed approach 
+            // unless we fix `subscribeToEntries` to return snapshots or we rely on `listEntries` 
+            // to get the first cursor.
+
+            // FIX: The previous `listEntries` returned `cursor`. 
+            // `subscribeToEntries` returns POJO. 
+            // We might need to fetch the cursor manually or accept that "Realtime" + "Pagination" 
+            // is hard without a more complex hook.
+            // Alternative: Just use realtime for the view. "Load More" fetches older data.
           }
         });
       }
@@ -382,9 +382,9 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
       />
 
       <div className="p-4 space-y-4">
-        {/* Ringkasan */}
+        {/* Ringkasan - GOLD THEME */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="rounded-xl bg-white shadow-sm border border-slate-100 p-4">
+          <div className="rounded-xl bg-white border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] p-4 shine-effect">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wide text-slate-500">Pendapatan (P&L)</p>
@@ -395,7 +395,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
               </div>
             </div>
           </div>
-          <div className="rounded-xl bg-white shadow-sm border border-slate-100 p-4">
+          <div className="rounded-xl bg-white border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] p-4 shine-effect">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wide text-slate-500">Biaya (P&L)</p>
@@ -406,7 +406,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
               </div>
             </div>
           </div>
-          <div className="rounded-xl bg-white shadow-sm border border-slate-100 p-4">
+          <div className="rounded-xl bg-white border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] p-4 shine-effect">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wide text-slate-500">Net Laba/Rugi</p>
@@ -421,8 +421,8 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
           </div>
         </div>
 
-        {/* Form */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 space-y-4">
+        {/* Form - GOLD THEME */}
+        <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 space-y-4 shine-effect">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-slate-800">Tambah Transaksi</h3>
             <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -587,8 +587,8 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
           </form>
         </div>
 
-        {/* Filter */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+        {/* Filter - GOLD THEME */}
+        <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 shine-effect">
           <div className="flex items-center gap-2 mb-3 text-slate-700">
             <Filter className="w-4 h-4" />
             <span className="text-sm font-semibold">Filter</span>
@@ -638,8 +638,8 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
           </div>
         </div>
 
-        {/* List */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 space-y-3">
+        {/* List - GOLD THEME */}
+        <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 space-y-3 shine-effect">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-slate-700">
               <Tags className="w-4 h-4" />

@@ -357,8 +357,8 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
     <div className="min-h-screen bg-gray-50 pb-20">
       <PageHeader title="Verifikasi Pembayaran" onBack={onBack} />
 
-      {/* Header Stats */}
-      <div className="px-4 py-4 bg-white border-b">
+      {/* Header Stats - GOLD THEME */}
+      <div className="px-4 py-4 bg-white border-b border-[#D4AF37]">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <div className={`w-3 h-3 rounded-full ${settings?.mode === 'full-auto' ? 'bg-green-500' : 'bg-blue-500'} animate-pulse`} />
@@ -384,7 +384,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
             <div className="flex items-center space-x-2 mb-1">
               <Clock className="w-4 h-4 text-blue-600" />
               <span className="text-xs text-blue-600 font-medium">Pending</span>
@@ -392,7 +392,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
             <div className="text-2xl font-bold text-blue-900">{todayPending}</div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3">
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
             <div className="flex items-center space-x-2 mb-1">
               <CheckCircle className="w-4 h-4 text-green-600" />
               <span className="text-xs text-green-600 font-medium">Verified</span>
@@ -400,7 +400,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
             <div className="text-2xl font-bold text-green-900">{todayVerified.length}</div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3">
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3 border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
             <div className="flex items-center space-x-2 mb-1">
               <TrendingUp className="w-4 h-4 text-purple-600" />
               <span className="text-xs text-purple-600 font-medium">Accuracy</span>

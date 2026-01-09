@@ -742,8 +742,8 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       {/* Content */}
       <div className="p-4 space-y-4">
 
-        {/* Search and Filter */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
+        {/* Search and Filter - GOLD THEME */}
+        <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 shine-effect">
           <div className="space-y-3">
             {/* First Row - Search */}
             <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3">
@@ -824,9 +824,9 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           </div>
         </div>
 
-        {/* ✨ NEW: Bulk Operations Toolbar */}
+        {/* ✨ NEW: Bulk Operations Toolbar - GOLD THEME */}
         {user?.role === 'owner' && filteredOrders.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+          <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 mb-4 shine-effect">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <label className="flex items-center space-x-2 cursor-pointer">
@@ -846,10 +846,9 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
               {selectedOrderIds.length > 0 && (
                 <div className="flex items-center space-x-3">
-                  {/* ✨ NEW: Bulk Payment Assistance Button */}
                   <button
                     onClick={handleBulkPaymentAssist}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-white rounded-lg hover:shadow-lg transition-all font-bold active:scale-95"
                   >
                     <CreditCard className="w-4 h-4" />
                     <span>Bantu Pembayaran ({selectedOrderIds.length})</span>
@@ -883,7 +882,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
               const paymentMethodLabel = (order.paymentMethodName || order.paymentMethod || 'Metode tidak diketahui').trim();
 
               return (
-                <div key={order.id} className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow">
+                <div key={order.id} className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] p-4 hover:shadow-lg transition-shadow shine-effect">
                   <div className="flex items-start space-x-3">
                     {/* ✨ NEW: Checkbox for bulk selection (Owner only) */}
                     {user?.role === 'owner' && (

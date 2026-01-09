@@ -978,8 +978,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       </PageHeader>
 
       <div className="p-4">
-        {/* Report Content */}
-        <div className="bg-white rounded-lg shadow-md">
+        {/* Report Content - GOLD THEME */}
+        <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] shine-effect">
           {/* Ringkasan Laporan */}
           {reportType === 'summary' && (
             <div className="p-4">

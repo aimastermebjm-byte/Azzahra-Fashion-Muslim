@@ -14,12 +14,12 @@ interface AdminMasterDataPageProps {
 const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user }) => {
   const { showToast: toast } = useToast();
   const [activeTab, setActiveTab] = useState<'categories' | 'paymentMethods' | 'productCategories'>('categories');
-  
+
   const [categories, setCategories] = useState<FinancialCategory[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Category Form
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryType, setNewCategoryType] = useState<FinancialType>('expense');
@@ -200,37 +200,34 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
       />
 
       <div className="p-4 space-y-4">
-        {/* Tabs */}
-        <div className="flex gap-2 p-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+        {/* Tabs - GOLD THEME */}
+        <div className="flex gap-2 p-1 bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] overflow-x-auto shine-effect">
           <button
             onClick={() => setActiveTab('categories')}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'categories'
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'categories'
                 ? 'bg-brand-primary text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-50'
-            }`}
+              }`}
           >
             <Tags className="w-4 h-4" />
             Kategori Keuangan
           </button>
           <button
             onClick={() => setActiveTab('paymentMethods')}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'paymentMethods'
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'paymentMethods'
                 ? 'bg-brand-primary text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-50'
-            }`}
+              }`}
           >
             <CreditCard className="w-4 h-4" />
             Metode Pembayaran
           </button>
           <button
             onClick={() => setActiveTab('productCategories')}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'productCategories'
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'productCategories'
                 ? 'bg-brand-primary text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-50'
-            }`}
+              }`}
           >
             <Package className="w-4 h-4" />
             Kategori Produk
@@ -247,213 +244,213 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
         ) : (
           <>
             {activeTab === 'categories' && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-slate-700">
-                <Layers className="w-4 h-4" />
-                <span className="text-sm font-semibold">Daftar Kategori</span>
-              </div>
-              <button
-                onClick={() => setShowAddCategory(!showAddCategory)}
-                className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary hover:text-brand-primary/80"
-              >
-                <Plus className="w-4 h-4" /> Tambah Baru
-              </button>
-            </div>
-
-            {showAddCategory && (
-              <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
-                <p className="text-xs font-semibold text-slate-500 uppercase">Tambah Kategori Baru</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <select
-                    value={newCategoryType}
-                    onChange={(e) => setNewCategoryType(e.target.value as FinancialType)}
-                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
-                  >
-                    <option value="expense">Biaya</option>
-                    <option value="income">Pendapatan</option>
-                  </select>
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
-                    placeholder="Nama Kategori (mis. Gaji Karyawan)"
-                  />
+              <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 shine-effect">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <Layers className="w-4 h-4" />
+                    <span className="text-sm font-semibold">Daftar Kategori</span>
+                  </div>
                   <button
-                    onClick={handleAddCategory}
-                    disabled={!newCategoryName.trim()}
-                    className="rounded-lg bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90 disabled:opacity-50"
+                    onClick={() => setShowAddCategory(!showAddCategory)}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary hover:text-brand-primary/80"
                   >
-                    Simpan
+                    <Plus className="w-4 h-4" /> Tambah Baru
                   </button>
                 </div>
-              </div>
-            )}
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500 mb-2 border-b border-slate-100 pb-1">Biaya</p>
-                <div className="space-y-2">
-                  {expenseCategories.length === 0 && (
-                    <p className="text-xs text-slate-400 py-2">Belum ada kategori biaya</p>
-                  )}
-                  {expenseCategories.map((cat) => (
-                    <div key={cat.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">
-                      <span className="text-slate-800">{cat.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteCategory(cat.id)}
-                        disabled={deletingCategoryId === cat.id}
-                        className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                {showAddCategory && (
+                  <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+                    <p className="text-xs font-semibold text-slate-500 uppercase">Tambah Kategori Baru</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <select
+                        value={newCategoryType}
+                        onChange={(e) => setNewCategoryType(e.target.value as FinancialType)}
+                        className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
                       >
-                        <Trash2 className="w-3 h-3" /> Hapus
+                        <option value="expense">Biaya</option>
+                        <option value="income">Pendapatan</option>
+                      </select>
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                        placeholder="Nama Kategori (mis. Gaji Karyawan)"
+                      />
+                      <button
+                        onClick={handleAddCategory}
+                        disabled={!newCategoryName.trim()}
+                        className="rounded-lg bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90 disabled:opacity-50"
+                      >
+                        Simpan
                       </button>
                     </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500 mb-2 border-b border-slate-100 pb-1">Pendapatan</p>
-                <div className="space-y-2">
-                  {incomeCategories.length === 0 && (
-                    <p className="text-xs text-slate-400 py-2">Belum ada kategori pendapatan</p>
-                  )}
-                  {incomeCategories.map((cat) => (
-                    <div key={cat.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">
-                      <span className="text-slate-800">{cat.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteCategory(cat.id)}
-                        disabled={deletingCategoryId === cat.id}
-                        className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
-                      >
-                        <Trash2 className="w-3 h-3" /> Hapus
-                      </button>
+                  </div>
+                )}
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500 mb-2 border-b border-slate-100 pb-1">Biaya</p>
+                    <div className="space-y-2">
+                      {expenseCategories.length === 0 && (
+                        <p className="text-xs text-slate-400 py-2">Belum ada kategori biaya</p>
+                      )}
+                      {expenseCategories.map((cat) => (
+                        <div key={cat.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">
+                          <span className="text-slate-800">{cat.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCategory(cat.id)}
+                            disabled={deletingCategoryId === cat.id}
+                            className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                          >
+                            <Trash2 className="w-3 h-3" /> Hapus
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500 mb-2 border-b border-slate-100 pb-1">Pendapatan</p>
+                    <div className="space-y-2">
+                      {incomeCategories.length === 0 && (
+                        <p className="text-xs text-slate-400 py-2">Belum ada kategori pendapatan</p>
+                      )}
+                      {incomeCategories.map((cat) => (
+                        <div key={cat.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">
+                          <span className="text-slate-800">{cat.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCategory(cat.id)}
+                            disabled={deletingCategoryId === cat.id}
+                            className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                          >
+                            <Trash2 className="w-3 h-3" /> Hapus
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
             )}
 
             {activeTab === 'paymentMethods' && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-slate-700">
-                <CreditCard className="w-4 h-4" />
-                <span className="text-sm font-semibold">Metode Pembayaran</span>
-              </div>
-              <button
-                onClick={() => setShowAddPaymentMethod(!showAddPaymentMethod)}
-                className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary hover:text-brand-primary/80"
-              >
-                <Plus className="w-4 h-4" /> Tambah Baru
-              </button>
-            </div>
-
-            {showAddPaymentMethod && (
-              <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
-                <p className="text-xs font-semibold text-slate-500 uppercase">Tambah Metode Baru</p>
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={newPaymentMethodName}
-                    onChange={(e) => setNewPaymentMethodName(e.target.value)}
-                    className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
-                    placeholder="Nama Metode (mis. Transfer BCA, QRIS)"
-                  />
+              <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 shine-effect">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <CreditCard className="w-4 h-4" />
+                    <span className="text-sm font-semibold">Metode Pembayaran</span>
+                  </div>
                   <button
-                    onClick={handleAddPaymentMethod}
-                    disabled={!newPaymentMethodName.trim()}
-                    className="rounded-lg bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90 disabled:opacity-50"
+                    onClick={() => setShowAddPaymentMethod(!showAddPaymentMethod)}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary hover:text-brand-primary/80"
                   >
-                    Simpan
+                    <Plus className="w-4 h-4" /> Tambah Baru
                   </button>
                 </div>
-              </div>
-            )}
 
-            {paymentMethods.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-4">Belum ada metode pembayaran tersimpan.</p>
-            ) : (
-              <div className="space-y-2">
-                {paymentMethods.map((method) => (
-                  <div key={method.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">
-                    <span className="text-slate-800 font-medium">{method.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleDeletePaymentMethod(method.id)}
-                      disabled={deletingPaymentMethodId === method.id}
-                      className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
-                    >
-                      <Trash2 className="w-3 h-3" /> Hapus
-                    </button>
+                {showAddPaymentMethod && (
+                  <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+                    <p className="text-xs font-semibold text-slate-500 uppercase">Tambah Metode Baru</p>
+                    <div className="flex gap-3">
+                      <input
+                        type="text"
+                        value={newPaymentMethodName}
+                        onChange={(e) => setNewPaymentMethodName(e.target.value)}
+                        className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                        placeholder="Nama Metode (mis. Transfer BCA, QRIS)"
+                      />
+                      <button
+                        onClick={handleAddPaymentMethod}
+                        disabled={!newPaymentMethodName.trim()}
+                        className="rounded-lg bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90 disabled:opacity-50"
+                      >
+                        Simpan
+                      </button>
+                    </div>
                   </div>
-                ))}
+                )}
+
+                {paymentMethods.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-4">Belum ada metode pembayaran tersimpan.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {paymentMethods.map((method) => (
+                      <div key={method.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">
+                        <span className="text-slate-800 font-medium">{method.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePaymentMethod(method.id)}
+                          disabled={deletingPaymentMethodId === method.id}
+                          className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                        >
+                          <Trash2 className="w-3 h-3" /> Hapus
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
             )}
 
             {activeTab === 'productCategories' && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-slate-700">
-                <Package className="w-4 h-4" />
-                <span className="text-sm font-semibold">Kategori Produk</span>
-              </div>
-              <button
-                onClick={() => setShowAddProductCategory(!showAddProductCategory)}
-                className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary hover:text-brand-primary/80"
-              >
-                <Plus className="w-4 h-4" /> Tambah Baru
-              </button>
-            </div>
-
-            {showAddProductCategory && (
-              <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
-                <p className="text-xs font-semibold text-slate-500 uppercase">Tambah Kategori Produk Baru</p>
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={newProductCategoryName}
-                    onChange={(e) => setNewProductCategoryName(e.target.value)}
-                    className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
-                    placeholder="Nama Kategori (mis. Gamis, Hijab, Aksesoris)"
-                  />
+              <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 shine-effect">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <Package className="w-4 h-4" />
+                    <span className="text-sm font-semibold">Kategori Produk</span>
+                  </div>
                   <button
-                    onClick={handleAddProductCategory}
-                    disabled={!newProductCategoryName.trim()}
-                    className="rounded-lg bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90 disabled:opacity-50"
+                    onClick={() => setShowAddProductCategory(!showAddProductCategory)}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary hover:text-brand-primary/80"
                   >
-                    Simpan
+                    <Plus className="w-4 h-4" /> Tambah Baru
                   </button>
                 </div>
-              </div>
-            )}
 
-            {productCategories.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-4">Belum ada kategori produk tersimpan.</p>
-            ) : (
-              <div className="space-y-2">
-                {productCategories.map((cat) => (
-                  <div key={cat.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">
-                    <span className="text-slate-800 font-medium">{cat.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteProductCategory(cat.id)}
-                      disabled={deletingProductCategoryId === cat.id}
-                      className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
-                    >
-                      <Trash2 className="w-3 h-3" /> Hapus
-                    </button>
+                {showAddProductCategory && (
+                  <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+                    <p className="text-xs font-semibold text-slate-500 uppercase">Tambah Kategori Produk Baru</p>
+                    <div className="flex gap-3">
+                      <input
+                        type="text"
+                        value={newProductCategoryName}
+                        onChange={(e) => setNewProductCategoryName(e.target.value)}
+                        className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                        placeholder="Nama Kategori (mis. Gamis, Hijab, Aksesoris)"
+                      />
+                      <button
+                        onClick={handleAddProductCategory}
+                        disabled={!newProductCategoryName.trim()}
+                        className="rounded-lg bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90 disabled:opacity-50"
+                      >
+                        Simpan
+                      </button>
+                    </div>
                   </div>
-                ))}
+                )}
+
+                {productCategories.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-4">Belum ada kategori produk tersimpan.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {productCategories.map((cat) => (
+                      <div key={cat.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">
+                        <span className="text-slate-800 font-medium">{cat.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProductCategory(cat.id)}
+                          disabled={deletingProductCategoryId === cat.id}
+                          className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                        >
+                          <Trash2 className="w-3 h-3" /> Hapus
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
             )}
           </>
         )}

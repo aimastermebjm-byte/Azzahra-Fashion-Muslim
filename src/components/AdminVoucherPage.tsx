@@ -201,8 +201,8 @@ const AdminVoucherPage: React.FC<AdminVoucherPageProps> = ({ onBack, user }) => 
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-4 sticky top-0 z-10">
+            {/* Header - GOLD THEME */}
+            <div className="bg-gradient-to-r from-[#997B2C] via-[#D4AF37] to-[#997B2C] text-white px-4 py-4 sticky top-0 z-10">
                 <div className="flex items-center gap-3">
                     <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-lg">
                         <ArrowLeft className="w-5 h-5" />
@@ -219,7 +219,7 @@ const AdminVoucherPage: React.FC<AdminVoucherPageProps> = ({ onBack, user }) => 
                 {/* Create Button */}
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-[0_4px_0_0_#7A6223] hover:shadow-lg active:scale-95 transition-all shine-effect"
                 >
                     <Plus className="w-5 h-5" />
                     Buat Voucher Baru
@@ -261,7 +261,7 @@ const AdminVoucherPage: React.FC<AdminVoucherPageProps> = ({ onBack, user }) => 
                     </div>
                 ) : (
                     filteredVouchers.map(voucher => (
-                        <div key={voucher.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                        <div key={voucher.id} className="bg-white rounded-xl p-4 border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] shine-effect">
                             <div className="flex items-start justify-between mb-3">
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">

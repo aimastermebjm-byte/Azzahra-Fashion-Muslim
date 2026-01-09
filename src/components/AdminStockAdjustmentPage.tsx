@@ -73,17 +73,17 @@ const handleReject = async (requestId: string) => {
 
 return (
     <div className="min-h-screen bg-gray-50 pb-20">
-        {/* Header */}
-        <div className="bg-white shadow-sm sticky top-0 z-10 px-4 py-3 flex items-center gap-3">
+        {/* Header - GOLD THEME */}
+        <div className="bg-gradient-to-r from-[#997B2C] via-[#D4AF37] to-[#997B2C] shadow-sm sticky top-0 z-10 px-4 py-3 flex items-center gap-3">
             <button
                 onClick={onBack}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
+                <ArrowLeft className="w-5 h-5 text-white" />
             </button>
             <div>
-                <h1 className="text-lg font-bold text-gray-900">Persetujuan Stok</h1>
-                <p className="text-xs text-gray-500">Menunggu tinjauan Owner</p>
+                <h1 className="text-lg font-bold text-white">Persetujuan Stok</h1>
+                <p className="text-xs text-white/80">Menunggu tinjauan Owner</p>
             </div>
         </div>
 
@@ -103,7 +103,7 @@ return (
                 </div>
             ) : (
                 requests.map((req) => (
-                    <div key={req.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div key={req.id} className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] overflow-hidden shine-effect">
                         {/* Request Header */}
                         <div className="p-4 flex justify-between items-start bg-slate-50 border-b border-gray-100">
                             <div>
