@@ -44,24 +44,52 @@
   }
 }
 
-/* Force refresh on development */
-@media (prefers-reduced-motion: no-preference) {
-  * {
-    animation: none !important;
-    transition: none !important;
-  }
-}
-
 /* Loading states */
 .skeleton {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: .5;
+  }
+}
+
+/* Shine effect for gold buttons */
+.shine-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(120deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0) 30%,
+      rgba(255, 255, 255, 0.4) 50%,
+      rgba(255, 255, 255, 0) 70%,
+      transparent 100%);
+  animation: shine 6s ease-in-out infinite;
+}
+
+@keyframes shine {
+  0% {
+    left: -100%;
+  }
+
+  50%,
+  100% {
+    left: 150%;
   }
 }

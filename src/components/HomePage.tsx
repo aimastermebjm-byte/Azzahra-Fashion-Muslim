@@ -425,7 +425,7 @@ const HomePage: React.FC<HomePageProps> = ({
     <div className="min-h-screen bg-brand-surface pb-20">
       {/* Header - NOOR Style: Centered Brand, Black BG, Gold Text */}
       {/* Header - Luxury Gold Style (Matches Flash Sale & Bottom Nav) */}
-      <div className="sticky top-0 z-50 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] shadow-lg border-b border-white/20">
+      <div className="sticky top-0 z-50 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] shadow-lg border-b border-white/20 shine-effect">
         <div className="px-3 sm:px-4 py-0.5 min-h-[2.5rem] flex flex-col justify-center transition-all duration-300">
           {/* Top Row - Chat Left, Centered Brand, Actions Right */}
           <div className="flex items-center justify-between">
@@ -518,7 +518,7 @@ const HomePage: React.FC<HomePageProps> = ({
       {/* Flash Sale Section - ONLY show when products exist */}
       {flashSaleProducts.length > 0 && (
         <div className="px-3 sm:px-4 mb-4">
-          <div className="bg-gradient-to-br from-brand-primary via-brand-primaryLight to-brand-accent rounded-2xl p-4 text-white shadow-elegant-lg relative overflow-hidden">
+          <div className="bg-gradient-to-br from-brand-primary via-brand-primaryLight to-brand-accent rounded-2xl p-4 text-white shadow-elegant-lg relative overflow-hidden shine-effect">
             <div className="absolute inset-0 opacity-20">
               <div className="absolute top-0 right-0 w-40 h-40 bg-white/30 rounded-full -mr-20 -mt-20 blur-2xl"></div>
             </div>
@@ -685,7 +685,7 @@ const HomePage: React.FC<HomePageProps> = ({
                   className={`
                     w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm relative overflow-hidden
                     ${isSelected
-                      ? 'bg-gradient-to-br from-[#997B2C] via-[#EDD686] to-[#997B2C] ring-[3px] ring-[#D4AF37] ring-offset-[3px] shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] scale-105' // Active: Gradient + Double Ring
+                      ? 'bg-gradient-to-br from-[#997B2C] via-[#EDD686] to-[#997B2C] ring-[3px] ring-[#D4AF37] ring-offset-[3px] shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] scale-105 shine-effect' // Active: Gradient + Double Ring
                       : 'bg-white border-[1.5px] border-gray-200 group-hover:border-[#D4AF37]/50' // Inactive: Simple Border
                     }
                   `}
@@ -738,7 +738,7 @@ const HomePage: React.FC<HomePageProps> = ({
           {/* 1. Sort Button (Always Gold Gradient but toggles label) */}
           <button
             onClick={() => setSortBy(sortBy === 'terbaru' ? 'termurah' : 'terbaru')}
-            className="flex items-center justify-center space-x-1 w-full px-2 py-2 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black font-display font-medium text-xs sm:text-sm rounded-full shadow-[0_0_15px_rgba(153,123,44,0.4)] active:scale-95 transition-all border border-[#EDD686]/30"
+            className="flex items-center justify-center space-x-1 w-full px-2 py-2 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black font-display font-medium text-xs sm:text-sm rounded-full shadow-[0_0_15px_rgba(153,123,44,0.4)] active:scale-95 transition-all border border-[#EDD686]/30 shine-effect"
           >
             <ArrowDownUp className="w-3.5 h-3.5 text-black/80" />
             <span>{sortBy === 'terbaru' ? 'Terbaru' : 'Termurah'}</span>
@@ -748,7 +748,7 @@ const HomePage: React.FC<HomePageProps> = ({
           <button
             onClick={() => setStatusFilter(statusFilter === 'ready' ? 'all' : 'ready')}
             className={`flex items-center justify-center w-full px-2 py-2 rounded-full text-xs sm:text-sm font-display font-medium tracking-wide transition-all border ${statusFilter === 'ready'
-              ? 'bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black shadow-[0_0_15px_rgba(153,123,44,0.4)] border-[#EDD686]/30'
+              ? 'bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black shadow-[0_0_15px_rgba(153,123,44,0.4)] border-[#EDD686]/30 shine-effect'
               : 'bg-white border-brand-accent/30 text-gray-400 hover:border-brand-accent hover:text-[#B8860B]'
               }`}
           >
@@ -759,7 +759,7 @@ const HomePage: React.FC<HomePageProps> = ({
           <button
             onClick={() => setStatusFilter(statusFilter === 'po' ? 'all' : 'po')}
             className={`flex items-center justify-center w-full px-2 py-2 rounded-full text-xs sm:text-sm font-display font-medium tracking-wide transition-all border ${statusFilter === 'po'
-              ? 'bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black shadow-[0_0_15px_rgba(153,123,44,0.4)] border-[#EDD686]/30'
+              ? 'bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black shadow-[0_0_15px_rgba(153,123,44,0.4)] border-[#EDD686]/30 shine-effect'
               : 'bg-white border-brand-accent/30 text-gray-400 hover:border-brand-accent hover:text-[#B8860B]'
               }`}
           >

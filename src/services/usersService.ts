@@ -7,6 +7,7 @@ export interface AdminUser {
   email: string;
   phone?: string;
   role: string;
+  gender?: 'male' | 'female'; // Added gender field
   status: string;
   joinDate?: string;
   totalOrders?: number;

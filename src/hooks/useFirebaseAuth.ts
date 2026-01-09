@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import {
   auth,
@@ -9,14 +10,19 @@ import {
   signInWithPopup,
   sendPasswordResetEmail
 } from '../utils/firebaseClient';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 
 interface User {
   uid: string;
   email: string;
   displayName?: string;
+  photoURL?: string;
   role?: 'customer' | 'reseller' | 'admin' | 'owner';
+  phone?: string;
+  gender?: 'male' | 'female'; // Added gender
+  status?: string;
+  points?: number;
 }
 
 export const useFirebaseAuth = () => {
@@ -24,27 +30,77 @@ export const useFirebaseAuth = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Listen to auth state changes
+  // Determine user role based on email (Fallback)
+  const determineUserRole = (email: string): 'customer' | 'reseller' | 'admin' | 'owner' => {
+    const lowerEmail = email.toLowerCase();
+    if (lowerEmail === 'v4hrin@gmail.com' || lowerEmail.includes('owner')) return 'owner';
+    if (lowerEmail.includes('admin')) return 'admin';
+    if (lowerEmail.includes('reseller')) return 'reseller';
+    return 'customer';
+  };
+
+  // Listen to auth state changes & Firestore Realtime Updates
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
-      setLoading(false);
+    let unsubscribeFirestore: (() => void) | null = null;
+
+    const unsubscribeAuth = auth.onAuthStateChanged(async (firebaseUser) => {
+      // Clean up previous Firestore listener if exists
+      if (unsubscribeFirestore) {
+        unsubscribeFirestore();
+        unsubscribeFirestore = null;
+      }
 
       if (firebaseUser) {
-        // Convert Firebase user to our app user format
-        const appUser: User = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email || '',
-          displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
-          // For now, we'll determine role based on email
-          role: determineUserRole(firebaseUser.email || '')
-        };
-        setUser(appUser);
+        // Subscribe to Firestore User Document
+        const userRef = doc(db, 'users', firebaseUser.uid);
+
+        unsubscribeFirestore = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            // Merge Auth data with Firestore data
+            const appUser: User = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              displayName: data.name || data.displayName || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
+              photoURL: firebaseUser.photoURL || '',
+              role: data.role || determineUserRole(firebaseUser.email || ''),
+              phone: data.phone || data.phoneNumber || '',
+              gender: data.gender || 'male', // Default to male if not set
+              status: data.status || 'active',
+              points: Number(data.points || data.resellerPoints || 0)
+            };
+            setUser(appUser);
+          } else {
+            // No firestore document yet, fall back to Auth data
+            // This handles new users before profile is created/synced
+            const role = determineUserRole(firebaseUser.email || '');
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
+              photoURL: firebaseUser.photoURL || '',
+              role: role,
+              phone: '',
+              status: 'active',
+              points: 0
+            });
+          }
+          setLoading(false);
+        }, (err) => {
+          console.error('❌ Error listening to user profile:', err);
+          setLoading(false);
+        });
+
       } else {
         setUser(null);
+        setLoading(false);
       }
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeFirestore) unsubscribeFirestore();
+    };
   }, []);
 
   // Save user profile to Firestore
@@ -56,25 +112,14 @@ export const useFirebaseAuth = () => {
         email: firebaseUser.email,
         displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
         role: role,
-        createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 
+      // Use setDoc with merge to avoid overwriting existing data fields (like phone)
       await setDoc(userRef, userData, { merge: true });
     } catch (error) {
       console.error('❌ Error saving user profile:', error);
     }
-  };
-
-  // Determine user role based on email
-  const determineUserRole = (email: string): 'customer' | 'reseller' | 'admin' | 'owner' => {
-    const lowerEmail = email.toLowerCase();
-
-    // Specific email addresses for owner
-    if (lowerEmail === 'v4hrin@gmail.com' || lowerEmail.includes('owner')) return 'owner';
-    if (lowerEmail.includes('admin')) return 'admin';
-    if (lowerEmail.includes('reseller')) return 'reseller';
-    return 'customer';
   };
 
   // Login function
@@ -87,27 +132,18 @@ export const useFirebaseAuth = () => {
       const firebaseUser = userCredential.user;
 
       if (firebaseUser) {
+        // We rely on the useEffect listener to set the user state
+        // But we trigger a profile save to ensure document exists
         const role = determineUserRole(firebaseUser.email || '');
-        const appUser: User = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email || '',
-          displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
-          role: role
-        };
-
-        // Save user profile to Firestore
         await saveUserProfile(firebaseUser, role);
-
-        setUser(appUser);
-        return appUser;
+        return firebaseUser;
       }
     } catch (err: any) {
       console.error('❌ Firebase login error:', err);
       setError(getAuthErrorMessage(err.code));
       throw err;
-    } finally {
-      setLoading(false);
     }
+    // setLoading(false) handled by listener
   };
 
   // Register function
@@ -120,31 +156,18 @@ export const useFirebaseAuth = () => {
       const firebaseUser = userCredential.user;
 
       if (firebaseUser && displayName) {
-        // Update display name
         await updateProfile(firebaseUser, { displayName });
       }
 
       if (firebaseUser) {
         const userRole = (role as 'customer' | 'reseller' | 'admin' | 'owner') || determineUserRole(firebaseUser.email || '');
-        const appUser: User = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email || '',
-          displayName: displayName || firebaseUser.email?.split('@')[0] || '',
-          role: userRole
-        };
-
-        // Save user profile to Firestore
         await saveUserProfile(firebaseUser, userRole);
-
-        setUser(appUser);
-        return appUser;
+        return firebaseUser;
       }
     } catch (err: any) {
       console.error('❌ Firebase registration error:', err);
       setError(getAuthErrorMessage(err.code));
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -152,7 +175,7 @@ export const useFirebaseAuth = () => {
   const logout = async () => {
     try {
       await signOut(auth);
-      setUser(null);
+      // setUser(null) handled by listener
     } catch (err: any) {
       console.error('❌ Firebase logout error:', err);
       setError(getAuthErrorMessage(err.code));
@@ -170,33 +193,20 @@ export const useFirebaseAuth = () => {
       const firebaseUser = result.user;
 
       if (firebaseUser) {
-        // Check if user exists in Firestore
+        // Check if user exists to preserve role
         const userRef = doc(db, 'users', firebaseUser.uid);
         const userDoc = await getDoc(userRef);
 
         let role: 'customer' | 'reseller' | 'admin' | 'owner' = 'customer';
-
         if (userDoc.exists()) {
-          // Use existing role from Firestore
-          role = userDoc.data().role || 'customer';
+          role = userDoc.data().role as any || 'customer';
         } else {
-          // New user - determine role based on email
           role = determineUserRole(firebaseUser.email || '');
         }
 
-        const appUser: User = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email || '',
-          displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
-          role: role
-        };
-
-        // Save/update user profile to Firestore
         await saveUserProfile(firebaseUser, role);
-
-        setUser(appUser);
-        console.log('✅ Google login successful:', appUser.email);
-        return appUser;
+        console.log('✅ Google login successful:', firebaseUser.email);
+        return firebaseUser;
       }
     } catch (err: any) {
       console.error('❌ Google login error:', err);
@@ -206,8 +216,6 @@ export const useFirebaseAuth = () => {
         setError(getAuthErrorMessage(err.code));
       }
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 

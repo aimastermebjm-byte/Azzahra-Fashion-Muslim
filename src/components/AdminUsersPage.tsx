@@ -1,5 +1,6 @@
+
 import React, { useEffect, useMemo, useState } from 'react';
-import { Users, Search, Filter, Plus, Eye, Edit, Trash2, Shield, Award, AlertCircle, RefreshCcw } from 'lucide-react';
+import { Users, Search, Filter, Plus, Eye, Edit, Trash2, Shield, Award, AlertCircle, RefreshCcw, X, Check, Save } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { usersService, AdminUser } from '../services/usersService';
 
@@ -15,6 +16,17 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Edit State
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    phone: '',
+    role: 'customer',
+    status: 'active',
+    gender: 'male' // Added User Gender
+  });
+  const [isSaving, setIsSaving] = useState(false);
 
   // Initial load: cache first, then subscribe
   useEffect(() => {
@@ -45,6 +57,33 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
       return matchesSearch && matchesRole && matchesStatus;
     });
   }, [users, searchQuery, roleFilter, statusFilter]);
+
+  const handleEditClick = (userToEdit: AdminUser) => {
+    setEditingUser(userToEdit);
+    setEditForm({
+      name: userToEdit.name || '',
+      phone: userToEdit.phone || '',
+      role: userToEdit.role || 'customer',
+      status: userToEdit.status || 'active',
+      gender: userToEdit.gender || 'male' // Load existing gender
+    });
+  };
+
+  const handleSaveUser = async () => {
+    if (!editingUser) return;
+
+    try {
+      setIsSaving(true);
+      await usersService.updateUser(editingUser.id, editForm);
+      setEditingUser(null);
+      // Optional: Show success alert or toast here
+    } catch (err) {
+      console.error(err);
+      alert('Gagal update user');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -170,9 +209,8 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
                       <span>{roleInfo.label}</span>
                     </div>
                     <div className="mt-1">
-                      <span className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
-                        userItem.status === 'active' ? 'text-green-600 bg-green-100' : 'text-gray-600 bg-gray-100'
-                      }`}>
+                      <span className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${userItem.status === 'active' ? 'text-green-600 bg-green-100' : 'text-gray-600 bg-gray-100'
+                        }`}>
                         <span className="w-2 h-2 bg-current rounded-full"></span>
                         <span>{userItem.status === 'active' ? 'Aktif' : 'Non-aktif'}</span>
                       </span>
@@ -209,7 +247,10 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
                     <button className="p-1 text-blue-600 hover:text-blue-700 transition-colors">
                       <Eye className="w-4 h-4" />
                     </button>
-                    <button className="p-1 text-green-600 hover:text-green-700 transition-colors">
+                    <button
+                      onClick={() => handleEditClick(userItem)}
+                      className="p-1 text-green-600 hover:text-green-700 transition-colors"
+                    >
                       <Edit className="w-4 h-4" />
                     </button>
                     {user?.role === 'owner' && (
@@ -224,6 +265,106 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
           })}
         </div>
       </div>
+
+      {/* MODAL EDIT USER */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="font-bold text-lg text-slate-800">Edit User</h3>
+              <button onClick={() => setEditingUser(null)} className="p-1 hover:bg-gray-200 rounded-full transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="Nama User"
+                />
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nomor Telepon</label>
+                <input
+                  type="text"
+                  value={editForm.phone}
+                  onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="08xxxxxxxxxx"
+                />
+              </div>
+
+              {/* Role */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <select
+                  value={editForm.role}
+                  onChange={e => setEditForm({ ...editForm, role: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="customer">Customer</option>
+                  <option value="reseller">Reseller</option>
+                  <option value="admin">Admin</option>
+                  <option value="owner">Owner</option>
+                </select>
+              </div>
+
+              {/* Gender (New) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Jenis Kelamin</label>
+                <select
+                  value={(editForm as any).gender || 'male'}
+                  onChange={e => setEditForm({ ...editForm, gender: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="male">Laki-laki (Peci)</option>
+                  <option value="female">Perempuan (Hijab)</option>
+                </select>
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={editForm.status}
+                  onChange={e => setEditForm({ ...editForm, status: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="active">Aktif</option>
+                  <option value="inactive">Non-aktif</option>
+                  <option value="banned">Banned</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-100 flex gap-3 bg-gray-50">
+              <button
+                onClick={() => setEditingUser(null)}
+                disabled={isSaving}
+                className="flex-1 py-2 px-4 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSaveUser}
+                disabled={isSaving}
+                className="flex-1 py-2 px-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+              >
+                {isSaving ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Simpan Perubahan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

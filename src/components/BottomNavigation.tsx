@@ -40,7 +40,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, onPage
             >
               {/* Active Indicator - Subtle Top Border or Glow */}
               {isActive && (
-                <div className="absolute top-0 w-8 h-0.5 bg-[#997B2C] shadow-[0_2px_8px_rgba(153,123,44,0.5)] rounded-b-lg"></div>
+                <div className="absolute top-0 w-8 h-1 bg-[#997B2C] shadow-[0_2px_8px_rgba(153,123,44,0.5)] rounded-b-lg shine-effect"></div>
               )}
 
               <div className={`relative z-10 flex flex-col items-center transition-transform duration-300 ${isActive ? '-translate-y-0.5' : ''}`}>

@@ -410,7 +410,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex-shrink-0 px-4 py-2 rounded-full text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 border ${activeTab === tab.id
-                ? 'bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black shadow-[0_4px_10px_rgba(153,123,44,0.3)] border-[#EDD686]/50 scale-105'
+                ? 'bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black shadow-[0_4px_10px_rgba(153,123,44,0.3)] border-[#EDD686]/50 scale-105 shine-effect'
                 : 'bg-white text-gray-500 border-gray-200 hover:border-[#D4AF37]/50 hover:text-[#B8860B]'
                 }`}
             >
@@ -470,7 +470,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                 {isPending && (
                   <div className="px-4 pt-4">
                     <label className="flex items-center cursor-pointer group">
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isSelected ? 'bg-[#D4AF37] border-[#D4AF37]' : 'border-gray-300 group-hover:border-[#D4AF37]'}`}>
+                      <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isSelected ? 'bg-[#D4AF37] border-[#D4AF37] shine-effect' : 'border-gray-300 group-hover:border-[#D4AF37]'}`}>
                         {isSelected && <Check className="w-3.5 h-3.5 text-black" strokeWidth={3} />}
                       </div>
                       <input
@@ -605,7 +605,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                         }
                         handlePayNow(order);
                       }}
-                      className="w-full mt-4 px-4 py-2.5 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black rounded-xl hover:shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] transition-all font-bold text-sm shadow-sm"
+                      className="w-full mt-4 px-4 py-2.5 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black rounded-xl hover:shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] transition-all font-bold text-sm shadow-sm shine-effect"
                     >
                       {order.status === 'awaiting_verification' ? 'Upload Ulang Bukti' : 'Bayar Sekarang'}
                     </button>
@@ -665,7 +665,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                       disabled={hasUnconfiguredKeep}
                       className={`flex-1 px-6 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${hasUnconfiguredKeep
                         ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
-                        : 'bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] hover:scale-[1.02] hover:shadow-[0_6px_20px_rgba(153,123,44,0.23)]'
+                        : 'bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] hover:scale-[1.02] hover:shadow-[0_6px_20px_rgba(153,123,44,0.23)] shine-effect'
                         }`}
                     >
                       <CreditCard className="w-5 h-5" />
@@ -684,7 +684,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full">
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] p-4 rounded-t-2xl shadow-md">
+            <div className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] p-4 rounded-t-2xl shadow-md shine-effect">
               <h2 className="text-xl font-bold text-slate-900 text-center">
                 💳 Pilih Metode Pembayaran
               </h2>
@@ -697,7 +697,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
               {/* Auto Verification Option - Premium Gold (Recommended) */}
               <button
                 onClick={() => handleChooseMethod('auto')}
-                className="w-full text-left border-2 border-[#D4AF37] rounded-xl p-4 hover:shadow-lg transition-all bg-gradient-to-br from-yellow-50 to-amber-50 relative overflow-hidden"
+                className="w-full text-left border-2 border-[#D4AF37] rounded-xl p-4 hover:shadow-lg transition-all bg-gradient-to-br from-yellow-50 to-amber-50 relative overflow-hidden shine-effect"
               >
                 {/* Recommended Badge */}
                 <div className="absolute top-0 right-0 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">
@@ -755,7 +755,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             {/* Header - Gold Theme */}
-            <div className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] p-4 rounded-t-2xl shadow-md">
+            <div className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] p-4 rounded-t-2xl shadow-md shine-effect">
               <div className="flex items-center justify-between">
                 <button
                   onClick={handleBackFromInstructions}
