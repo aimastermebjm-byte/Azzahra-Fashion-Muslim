@@ -797,7 +797,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
 
   const handleFlashSaleEnd = async () => {
     try {
-      // Remove flash sale from all products
+      // STOP session first (more responsive)
+      await stopUnifiedFlashSale();
+
+      // Then remove flash sale from all products
       const flashSaleProducts = products.filter(p => p.isFlashSale);
       for (const product of flashSaleProducts) {
         await updateProduct(product.id, {
@@ -806,7 +809,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
         });
       }
 
-      await stopUnifiedFlashSale();
+      alert('✅ Flash Sale berhasil dihentikan!');
     } catch (error) {
       console.error('Error ending flash sale:', error);
       alert('Gagal menghentikan flash sale');
@@ -1010,6 +1013,25 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
     }
   };
 
+  // ✨ NEW: Featured Products Management
+  const handleRemoveFeatured = async (productId: string) => {
+    await updateProduct(productId, { isFeatured: false });
+  };
+
+  const handleRemoveAllFeatured = async () => {
+    if (!confirm('Hapus semua produk dari Unggulan?')) return;
+    const featuredProducts = products.filter(p => p.isFeatured);
+    for (const product of featuredProducts) {
+      await updateProduct(product.id, { isFeatured: false });
+    }
+    alert('✅ Semua produk unggulan berhasil dihapus!');
+  };
+
+  // ✨ NEW: Remove single product from Flash Sale
+  const handleRemoveFromFlashSale = async (productId: string) => {
+    await updateProduct(productId, { isFlashSale: false, flashSalePrice: 0 });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <PageHeader
@@ -1065,6 +1087,82 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
           </div>
         </div>
 
+        {/* ✨ NEW: Dashboard Produk Unggulan */}
+        {products.filter(p => p.isFeatured).length > 0 && (
+          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-[#D4AF37] rounded-xl p-4 shadow-[0_3px_0_0_#997B2C] shine-effect">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-[#997B2C] flex items-center gap-2">
+                <Star className="w-5 h-5 text-[#D4AF37]" />
+                Produk Unggulan ({products.filter(p => p.isFeatured).length})
+              </h3>
+              <button
+                onClick={handleRemoveAllFeatured}
+                className="text-red-600 text-xs font-medium hover:text-red-700 transition-colors"
+              >
+                Hapus Semua
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+              {products.filter(p => p.isFeatured).map(product => (
+                <div key={product.id} className="flex items-center gap-2 bg-white p-2 rounded-lg border border-[#E2DED5]">
+                  <img
+                    src={product.images?.[0] || '/placeholder.png'}
+                    alt={product.name}
+                    className="w-10 h-10 rounded object-cover"
+                  />
+                  <span className="flex-1 text-sm truncate text-gray-700">{product.name}</span>
+                  <button
+                    onClick={() => handleRemoveFeatured(product.id)}
+                    className="text-red-500 hover:text-red-700 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ✨ NEW: Dashboard Flash Sale Products */}
+        {isFlashSaleActive && products.filter(p => p.isFlashSale).length > 0 && (
+          <div className="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-400 rounded-xl p-4 shadow-[0_3px_0_0_#DC2626]">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-red-700 flex items-center gap-2">
+                <Flame className="w-5 h-5 text-red-500" />
+                Produk Flash Sale ({products.filter(p => p.isFlashSale).length})
+              </h3>
+              <button
+                onClick={handleFlashSaleEnd}
+                className="text-red-600 text-xs font-medium hover:text-red-700 transition-colors"
+              >
+                Stop Flash Sale
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+              {products.filter(p => p.isFlashSale).map(product => (
+                <div key={product.id} className="flex items-center gap-2 bg-white p-2 rounded-lg border border-red-200">
+                  <img
+                    src={product.images?.[0] || '/placeholder.png'}
+                    alt={product.name}
+                    className="w-10 h-10 rounded object-cover"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate text-gray-700">{product.name}</p>
+                    <p className="text-xs text-red-600 font-medium">
+                      Rp{product.flashSalePrice?.toLocaleString('id-ID')}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveFromFlashSale(product.id)}
+                    className="text-red-500 hover:text-red-700 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {user?.role === 'admin' && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
