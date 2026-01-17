@@ -90,12 +90,27 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
         setIsSubmitting(true);
         try {
             let finalImageUrl = formData.imageUrl;
+            let fileToUpload = imageFile;
 
-            // Upload image to Firebase Storage if new file selected
-            if (imageFile) {
+            // Handle AI-generated blob URLs - convert to File first
+            if (!imageFile && formData.imageUrl && formData.imageUrl.startsWith('blob:')) {
+                try {
+                    console.log('Converting AI blob URL to File...');
+                    const response = await fetch(formData.imageUrl);
+                    const blob = await response.blob();
+                    fileToUpload = new File([blob], `ai_banner_${Date.now()}.png`, { type: 'image/png' });
+                    console.log('✅ Blob converted to File:', fileToUpload.name);
+                } catch (blobError) {
+                    console.error('Failed to convert blob:', blobError);
+                    throw new Error('Gagal memproses gambar AI. Coba generate ulang.');
+                }
+            }
+
+            // Upload image to Firebase Storage if new file selected or AI blob converted
+            if (fileToUpload) {
                 const timestamp = Date.now();
-                const storageRef = ref(storage, `banners/${timestamp}_${imageFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`);
-                await uploadBytes(storageRef, imageFile);
+                const storageRef = ref(storage, `banners/${timestamp}_${fileToUpload.name.replace(/[^a-zA-Z0-9.]/g, '_')}`);
+                await uploadBytes(storageRef, fileToUpload);
                 finalImageUrl = await getDownloadURL(storageRef);
             }
 
