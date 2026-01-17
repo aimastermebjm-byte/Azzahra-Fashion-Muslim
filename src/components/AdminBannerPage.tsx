@@ -176,12 +176,22 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
                     console.log('✅ Compression complete:', `${(fileToUpload.size / 1024 / 1024).toFixed(2)}MB`);
                 }
 
-                // Upload to Firebase Storage
-                const timestamp = Date.now();
-                const storageRef = ref(storage, `banners/${timestamp}_${fileToUpload.name.replace(/[^a-zA-Z0-9.]/g, '_')}`);
-                await uploadBytes(storageRef, fileToUpload);
-                finalImageUrl = await getDownloadURL(storageRef);
-                console.log('✅ Uploaded to Storage:', finalImageUrl);
+                // Upload to Firebase Storage with detailed error handling
+                try {
+                    const timestamp = Date.now();
+                    const fileName = `banners/${timestamp}_${fileToUpload.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+                    console.log('📤 Uploading to Storage:', fileName, `(${(fileToUpload.size / 1024).toFixed(1)}KB)`);
+
+                    const storageRef = ref(storage, fileName);
+                    const uploadResult = await uploadBytes(storageRef, fileToUpload);
+                    console.log('✅ Upload complete:', uploadResult.metadata.fullPath);
+
+                    finalImageUrl = await getDownloadURL(storageRef);
+                    console.log('✅ Download URL obtained:', finalImageUrl);
+                } catch (storageError: any) {
+                    console.error('❌ Storage upload failed:', storageError);
+                    throw new Error(`Gagal upload ke Storage: ${storageError.message || storageError.code || 'Unknown error'}`);
+                }
             } else if (formData.imageUrl && !formData.imageUrl.startsWith('blob:') && !formData.imageUrl.startsWith('data:')) {
                 // Existing URL (for editing) - use as is
                 finalImageUrl = formData.imageUrl;
