@@ -751,7 +751,11 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             <div className="absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br from-[#D4AF37]/20 to-transparent rounded-full blur-2xl group-hover:bg-[#D4AF37]/30 transition-all duration-500" />
             <div className="relative z-10">
               <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Omset</p>
-              <p className="text-2xl font-bold text-gray-800">{Math.round(getTotalRevenue() / 1000)}K</p>
+              <p className="text-2xl font-bold text-gray-800">
+                {getTotalRevenue() >= 1000000
+                  ? `${(getTotalRevenue() / 1000000).toFixed(1)}jt`
+                  : `${Math.round(getTotalRevenue() / 1000)}K`}
+              </p>
               <p className="text-[10px] text-gray-400 mt-1">Estimasi</p>
             </div>
           </div>
