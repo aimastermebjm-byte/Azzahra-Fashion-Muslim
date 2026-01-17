@@ -1278,19 +1278,23 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                 setManualUploadInitialState(null);
                 setShowManualUploadModal(true);
               }}
-              className="bg-gradient-to-r from-[#997B2C] to-[#D4AF37] p-4 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-3 active:scale-95 border-2 border-[#7A6223] shadow-[0_4px_0_0_#7A6223]"
+              className="bg-white p-4 rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C] hover:shadow-[0_6px_0_0_#997B2C] active:shadow-[0_2px_0_0_#997B2C] active:translate-y-0.5 transition-all flex items-center justify-center gap-3 group"
             >
-              <Plus className="w-6 h-6 text-slate-900" />
-              <span className="text-base font-extrabold text-slate-900">Tambah Produk</span>
+              <div className="w-10 h-10 rounded-full bg-[radial-gradient(ellipse_at_center,_#EDD686_0%,_#D4AF37_50%,_#997B2C_100%)] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                <Plus className="w-6 h-6 text-white drop-shadow-sm" />
+              </div>
+              <span className="text-base font-extrabold text-slate-900 group-hover:text-[#D4AF37] transition-colors">Tambah Produk</span>
             </button>
 
             {/* Draft Siap Upload */}
             <button
               onClick={() => setShowWhatsAppInbox(true)}
-              className="bg-gradient-to-r from-[#997B2C] to-[#D4AF37] p-4 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-3 active:scale-95 border-2 border-[#7A6223] shadow-[0_4px_0_0_#7A6223]"
+              className="bg-white p-4 rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C] hover:shadow-[0_6px_0_0_#997B2C] active:shadow-[0_2px_0_0_#997B2C] active:translate-y-0.5 transition-all flex items-center justify-center gap-3 group"
             >
-              <MessageCircle className="w-6 h-6 text-slate-900" />
-              <span className="text-base font-extrabold text-slate-900">Draft Upload</span>
+              <div className="w-10 h-10 rounded-full bg-[radial-gradient(ellipse_at_center,_#EDD686_0%,_#D4AF37_50%,_#997B2C_100%)] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                <MessageCircle className="w-6 h-6 text-white drop-shadow-sm" />
+              </div>
+              <span className="text-base font-extrabold text-slate-900 group-hover:text-[#D4AF37] transition-colors">Draft Upload</span>
             </button>
           </div>
         </div>
@@ -1677,7 +1681,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -1688,7 +1692,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     required
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
                   >
                     {categories.map((category) => (
                       <option key={category} value={category}>
@@ -2012,7 +2016,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                           <tr className="border-b border-gray-200">
                             <th className="text-left py-2 px-2 font-medium text-gray-700">Ukuran \ Warna</th>
                             {formData.variants.colors.map((color, index) => (
-                              <th key={index} className="text-center py-2 px-2 font-medium text-gray-700">
+                              <th key={index} className="text-center py-2 px-2 font-bold text-[#997B2C]">
                                 {color}
                               </th>
                             ))}
@@ -2116,7 +2120,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                       required
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37]"
                     >
                       {categories.map((category) => (
                         <option key={category} value={category}>
@@ -2399,7 +2403,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                                                 }
                                               });
                                             }}
-                                            className="w-20 px-1 py-1 border border-gray-300 rounded text-center text-xs focus:ring-2 focus:ring-green-500"
+                                            className="w-20 px-1 py-1 border border-gray-300 rounded text-center text-xs focus:ring-2 focus:ring-[#D4AF37]"
                                           />
                                         </td>
                                       );
@@ -2413,7 +2417,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
 
                         {/* Reseller Price Matrix */}
                         <div>
-                          <h4 className="text-xs font-bold text-blue-700 mb-2">Matrix Harga Reseller</h4>
+                          <h4 className="text-xs font-bold text-[#997B2C] mb-2">Matrix Harga Reseller</h4>
                           <div className="bg-gray-50 rounded-lg p-3 overflow-x-auto">
                             <table className="w-full text-xs">
                               <thead>
@@ -2450,7 +2454,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                                                 }
                                               });
                                             }}
-                                            className="w-20 px-1 py-1 border border-gray-300 rounded text-center text-xs focus:ring-2 focus:ring-blue-500"
+                                            className="w-20 px-1 py-1 border border-gray-300 rounded text-center text-xs focus:ring-2 focus:ring-[#D4AF37]"
                                           />
                                         </td>
                                       );
@@ -2484,7 +2488,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="px-4 py-2 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all"
                   >
                     Simpan Perubahan
                   </button>
@@ -2552,8 +2556,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     </label>
                     <select
                       value={batchFormData.category}
-                      onChange={(e) => setBatchFormData({ ...batchFormData, category: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37]"
                     >
                       <option value="">-- Tidak Diubah --</option>
                       {categories.map((category) => (
@@ -2574,7 +2577,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                       value={batchFormData.retailPrice || ''}
                       onChange={(e) => setBatchFormData({ ...batchFormData, retailPrice: parseInt(e.target.value) || 0 })}
                       placeholder="Kosongkan jika tidak ingin mengubah"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
                     />
                   </div>
 
@@ -2588,7 +2591,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                       value={batchFormData.stock || ''}
                       onChange={(e) => setBatchFormData({ ...batchFormData, stock: parseInt(e.target.value) || 0 })}
                       placeholder="Kosongkan jika tidak ingin mengubah"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
                     />
                   </div>
 
@@ -2599,7 +2602,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     <select
                       value={batchFormData.status || ''}
                       onChange={(e) => setBatchFormData({ ...batchFormData, status: e.target.value as 'ready' | 'po' | '' })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37]"
                     >
                       <option value="">-- Tidak Diubah --</option>
                       <option value="ready">Ready Stock</option>
@@ -2621,7 +2624,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                           setBatchFormData({ ...batchFormData, isFeatured: value === 'true' });
                         }
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37]"
                     >
                       <option value="">-- Pilih Aksi --</option>
                       <option value="false">Hapus dari Unggulan</option>
@@ -2643,7 +2646,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                   </button>
                   <button
                     onClick={handleBatchUpdate}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="px-4 py-2 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white rounded-lg hover:shadow-lg transition-all font-bold shadow-[0_2px_0_0_#7a6223]"
                   >
                     Simpan Perubahan
                   </button>
@@ -2662,7 +2665,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
               <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-gray-800 flex items-center space-x-2">
-                    <Package className="w-5 h-5 text-purple-600" />
+                    <Package className="w-5 h-5 text-[#997B2C]" />
                     <span>Edit Varian Massal ({selectedProducts.length} Produk)</span>
                   </h2>
                   <button
@@ -2738,7 +2741,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                         sizes: [...variantBatchFormData.sizes, newSize]
                       });
                     }}
-                    className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
+                    className="px-3 py-1 bg-[#D4AF37]/10 text-[#997B2C] rounded-lg hover:bg-[#D4AF37]/20 transition-colors text-sm"
                   >
                     + Tambah Ukuran
                   </button>
@@ -2793,7 +2796,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                         colors: [...variantBatchFormData.colors, newColor]
                       });
                     }}
-                    className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
+                    className="px-3 py-1 bg-[#D4AF37]/10 text-[#997B2C] rounded-lg hover:bg-[#D4AF37]/20 transition-colors text-sm"
                   >
                     + Tambah Warna
                   </button>
@@ -2812,7 +2815,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                       ...variantBatchFormData,
                       stockPerVariant: parseInt(e.target.value) || 0
                     })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37]"
                     placeholder="Masukkan stok per varian"
                   />
                   <p className="text-sm text-gray-600 mt-1">
@@ -2829,10 +2832,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-gray-200">
-                            <th className="text-left py-2 px-2 font-medium text-gray-700">Ukuran \ Warna</th>
+                          <tr className="bg-[#D4AF37]/10 border-b border-[#D4AF37]/20">
+                            <th className="text-left py-2 px-2 font-bold text-[#997B2C]">Ukuran \ Warna</th>
                             {variantBatchFormData.colors.map((color, index) => (
-                              <th key={index} className="text-center py-2 px-2 font-medium text-gray-700">
+                              <th key={index} className="text-center py-2 px-2 font-bold text-[#997B2C]">
                                 {color}
                               </th>
                             ))}
@@ -2844,7 +2847,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                               <td className="py-2 px-2 font-medium text-gray-600">{size}</td>
                               {variantBatchFormData.colors.map((color, colorIndex) => (
                                 <td key={colorIndex} className="py-2 px-2 text-center">
-                                  <span className="inline-block bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-medium">
+                                  <span className="inline-block bg-[#D4AF37]/10 text-[#997B2C] px-2 py-1 rounded text-xs font-medium">
                                     {variantBatchFormData.stockPerVariant}
                                   </span>
                                 </td>
@@ -2874,7 +2877,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                   </button>
                   <button
                     onClick={handleVariantBatchUpdate}
-                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                    className="bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all flex items-center space-x-2 font-bold shadow-[0_2px_0_0_#7a6223]"
                   >
                     <Package className="w-4 h-4" />
                     <span>Update Varian</span>
@@ -2894,7 +2897,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
               <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-gray-800 flex items-center space-x-2">
-                    <Flame className="w-6 h-6 text-red-600" />
+                    <Flame className="w-6 h-6 text-[#D4AF37]" />
                     <span>Konfigurasi Flash Sale</span>
                   </h2>
                   <button
@@ -2908,9 +2911,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
 
               <div className="p-6 space-y-6">
                 {/* Product Selection Info (Replacing selector) */}
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-sm text-blue-800">
-                  <div className="flex items-center gap-2 mb-3 border-b border-blue-200 pb-2">
-                    <Star className="w-4 h-4 text-blue-600" />
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm text-gray-800">
+                  <div className="flex items-center gap-2 mb-3 border-b border-gray-200 pb-2">
+                    <Star className="w-4 h-4 text-[#D4AF37]" />
                     <span className="font-semibold">Konfirmasi Produk Terpilih: {flashSaleFormData.productIds.length} item</span>
                   </div>
 
@@ -2919,14 +2922,14 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     {products
                       .filter(p => flashSaleFormData.productIds.includes(p.id))
                       .map(p => (
-                        <div key={p.id} className="flex justify-between items-center text-xs bg-white p-2 rounded border border-blue-100 shadow-sm">
+                        <div key={p.id} className="flex justify-between items-center text-xs bg-white p-2 rounded border border-gray-200 shadow-sm">
                           <div className="flex items-center gap-2 overflow-hidden">
                             {p.images.length > 0 && (
                               <img src={p.image || p.images[0]} alt="" className="w-6 h-6 object-cover rounded" />
                             )}
                             <span className="truncate font-medium">{p.name}</span>
                           </div>
-                          <span className="font-mono text-blue-700 whitespace-nowrap ml-2">
+                          <span className="font-mono text-[#997B2C] whitespace-nowrap ml-2">
                             Rp {p.retailPrice.toLocaleString('id-ID')}
                           </span>
                         </div>
@@ -2949,7 +2952,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                       type="datetime-local"
                       value={flashSaleFormData.startTime}
                       onChange={(e) => setFlashSaleFormData({ ...flashSaleFormData, startTime: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -2961,7 +2964,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                       type="datetime-local"
                       value={flashSaleFormData.endTime}
                       onChange={(e) => setFlashSaleFormData({ ...flashSaleFormData, endTime: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -2975,7 +2978,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     value={flashSaleFormData.flashSaleDiscount || ''}
                     onChange={(e) => setFlashSaleFormData({ ...flashSaleFormData, flashSaleDiscount: parseInt(e.target.value) || 0 })}
                     placeholder="Masukkan jumlah diskon"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
                   />
                 </div>
 
@@ -3000,7 +3003,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     {flashSaleFormData.productIds.length > 0 && (
                       <button
                         onClick={handleFlashSaleStart}
-                        className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                        className="bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all flex items-center space-x-2 font-bold shadow-[0_2px_0_0_#7a6223]"
                       >
                         <Flame className="w-4 h-4" />
                         <span>Mulai Flash Sale</span>
@@ -3053,7 +3056,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                 const collageUrl = uploadedImages[0];
 
                 // Calculate total stock from variants
-                const totalStock = productData.totalStock || Object.values(productData.stockPerVariant).reduce((sum: number, stock) => sum + parseInt(stock || '0'), 0);
+                const totalStock = productData.totalStock || Object.values(productData.stockPerVariant).reduce((sum: number, stock: any) => {
+                  const val = typeof stock === 'object' ? 0 : (parseInt(String(stock)) || 0);
+                  return sum + val;
+                }, 0);
 
                 // Create product with all new fields
                 const newProduct = {

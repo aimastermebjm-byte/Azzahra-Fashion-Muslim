@@ -57,7 +57,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
     const unsubscribe = financialService.subscribeToEntries(({ entries: newEntries, loading: entriesLoading, error }) => {
       if (error) {
         console.error('Failed to load financial data', error);
-        toast({ title: 'Gagal memuat data', description: 'Periksa koneksi atau izin akses owner.', variant: 'destructive' });
+        toast({ title: 'Gagal memuat data', message: 'Periksa koneksi atau izin akses owner.', type: 'error' });
         setLoading(false);
         return;
       }
@@ -147,7 +147,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
       if (!cursor) {
         unsubscribe = financialService.subscribeToEntries(({ entries: realtimeEntries, loading: realTimeLoading, error }) => {
           if (error) {
-            toast({ title: 'Gagal sinkronisasi data', variant: 'destructive' });
+            toast({ title: 'Gagal sinkronisasi data', message: 'Terjadi kesalahan saat memuat data terbaru', type: 'error' });
             return;
           }
 
@@ -238,10 +238,10 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
       setCategory(created.id);
       setNewCategoryName('');
       setShowAddCategory(false);
-      toast({ title: 'Kategori ditambahkan', description: created.name, variant: 'success' });
+      toast({ title: 'Kategori ditambahkan', message: created.name, type: 'success' });
     } catch (err) {
       console.error('Failed to add category', err);
-      toast({ title: 'Gagal menambah kategori', variant: 'destructive' });
+      toast({ title: 'Gagal menambah kategori', message: 'Terjadi kesalahan sistem', type: 'error' });
     }
   };
 
@@ -253,11 +253,11 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
       setPaymentMethod(created.id);
       setNewPaymentMethodName('');
       setShowAddPaymentMethod(false);
-      toast({ title: 'Metode ditambahkan', description: created.name, variant: 'success' });
+      toast({ title: 'Metode ditambahkan', message: created.name, type: 'success' });
     } catch (err) {
       console.error('Failed to add payment method', err);
       const message = err instanceof Error ? err.message : 'Periksa koneksi atau izin akses.';
-      toast({ title: 'Gagal menambah metode', description: message, variant: 'destructive' });
+      toast({ title: 'Gagal menambah metode', message: message, type: 'error' });
     }
   };
 
@@ -265,15 +265,15 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
     e.preventDefault();
     const parsedAmount = parseAmount(amount);
     if (!parsedAmount || parsedAmount <= 0) {
-      toast({ title: 'Nominal tidak valid', description: 'Isi nominal lebih dari 0', variant: 'destructive' });
+      toast({ title: 'Nominal tidak valid', message: 'Isi nominal lebih dari 0', type: 'error' });
       return;
     }
     if (!category) {
-      toast({ title: 'Kategori wajib', description: 'Pilih atau buat kategori', variant: 'destructive' });
+      toast({ title: 'Kategori wajib', message: 'Pilih atau buat kategori', type: 'error' });
       return;
     }
     if (!paymentMethod) {
-      toast({ title: 'Metode pembayaran wajib', description: 'Pilih atau buat metode pembayaran', variant: 'destructive' });
+      toast({ title: 'Metode pembayaran wajib', message: 'Pilih atau buat metode pembayaran', type: 'error' });
       return;
     }
 
@@ -281,7 +281,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
     try {
       const catObj = categories.find(c => c.id === category);
       if (catObj && catObj.type !== type) {
-        toast({ title: 'Kategori tidak sesuai', description: 'Kategori harus sejenis dengan tipe transaksi', variant: 'destructive' });
+        toast({ title: 'Kategori tidak sesuai', message: 'Kategori harus sejenis dengan tipe transaksi', type: 'error' });
         setSubmitting(false);
         return;
       }
@@ -303,10 +303,10 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
       setAmount('');
       setNote('');
       setIncludeInPnL(true);
-      toast({ title: 'Tersimpan', description: `${type === 'income' ? 'Pendapatan' : 'Biaya'} berhasil dicatat` });
+      toast({ title: 'Tersimpan', message: `${type === 'income' ? 'Pendapatan' : 'Biaya'} berhasil dicatat` });
     } catch (err) {
       console.error('Failed to add entry', err);
-      toast({ title: 'Gagal menyimpan', description: 'Periksa koneksi atau izin owner', variant: 'destructive' });
+      toast({ title: 'Gagal menyimpan', message: 'Periksa koneksi atau izin owner', type: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -322,7 +322,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
       setHasMore(result.hasMore);
     } catch (err) {
       console.error('Failed to load more entries', err);
-      toast({ title: 'Gagal memuat data', variant: 'destructive' });
+      toast({ title: 'Gagal memuat data', message: 'Gagal memuat lebih banyak data', type: 'error' });
     } finally {
       setLoadingMore(false);
     }
@@ -344,10 +344,10 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
     try {
       await financialService.deleteEntry(entryId);
       setEntries((prev) => prev.filter((e) => e.id !== entryId));
-      toast({ title: 'Entri dihapus' });
+      toast({ title: 'Entri dihapus', message: 'Data berhasil dihapus dari sistem' });
     } catch (err) {
       console.error('Failed to delete entry', err);
-      toast({ title: 'Gagal menghapus', variant: 'destructive' });
+      toast({ title: 'Gagal menghapus', message: 'Tidak dapat menghapus entri', type: 'error' });
     }
   };
 
@@ -449,7 +449,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
                 min={0}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37] text-slate-800"
                 placeholder="0"
                 required
               />
@@ -461,7 +461,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37] text-slate-800"
                 >
                   <option value="">Pilih kategori</option>
                   {categories
@@ -484,13 +484,13 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
                     type="text"
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
-                    className="flex-1 rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37] text-slate-800"
                     placeholder={`Nama kategori ${type === 'income' ? 'pendapatan' : 'biaya'}`}
                   />
                   <button
                     type="button"
                     onClick={handleAddCategory}
-                    className="rounded-lg bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90"
+                    className="rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#997B2C] px-3 py-2 text-sm font-bold text-white hover:shadow-md transition-all"
                   >
                     Simpan
                   </button>
@@ -504,7 +504,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37] text-slate-800"
                 >
                   <option value="">Pilih metode</option>
                   {paymentMethods.map((method) => (
@@ -525,13 +525,13 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
                     type="text"
                     value={newPaymentMethodName}
                     onChange={(e) => setNewPaymentMethodName(e.target.value)}
-                    className="flex-1 rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37] text-slate-800"
                     placeholder="Nama metode (mis. Transfer BCA)"
                   />
                   <button
                     type="button"
                     onClick={handleAddPaymentMethod}
-                    className="rounded-lg bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90"
+                    className="rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#997B2C] px-3 py-2 text-sm font-bold text-white hover:shadow-md transition-all"
                   >
                     Simpan
                   </button>
@@ -557,7 +557,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37] text-slate-800"
                 rows={2}
                 placeholder="Opsional"
               />
@@ -569,7 +569,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
                 type="checkbox"
                 checked={includeInPnL}
                 onChange={(e) => setIncludeInPnL(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
+                className="h-4 w-4 rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]"
               />
               <label htmlFor="include-pnl" className="text-sm text-slate-700">Hitung ke Laba/Rugi</label>
             </div>
@@ -578,7 +578,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-4 py-2 text-white font-semibold hover:bg-brand-primary/90 disabled:opacity-70"
+                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#997B2C] px-4 py-2 text-white font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-70"
               >
                 {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                 Simpan

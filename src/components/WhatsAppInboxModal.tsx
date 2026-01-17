@@ -574,16 +574,25 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-green-500 to-green-600 text-white rounded-t-xl">
-                    <div className="flex items-center gap-3">
-                        <Package className="w-6 h-6" />
+                {/* Header - Gold Theme */}
+                <div className="flex items-center justify-between p-4 border-b border-[#D4AF37] bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-slate-900 rounded-t-xl shadow-md relative overflow-hidden">
+                    {/* Shine Effect */}
+                    <div className="absolute inset-0 bg-white/20 translate-x-[-100%] animate-shine" />
+
+                    <div className="flex items-center gap-3 relative z-10">
+                        <div className="p-2 bg-slate-900/10 rounded-full">
+                            <Package className="w-6 h-6 text-slate-900" />
+                        </div>
                         <div>
-                            <h2 className="text-lg font-bold">Draft Siap Upload</h2>
-                            <p className="text-sm text-green-100">Klik untuk edit & upload</p>
+                            <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">Draft Siap Upload</h2>
+                            <p className="text-sm text-slate-800 font-medium opacity-80">Klik untuk edit & upload</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-full transition-colors">
-                        <X className="w-5 h-5" />
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-white/20 rounded-full transition-colors relative z-10 text-slate-900"
+                    >
+                        <X className="w-6 h-6" />
                     </button>
                 </div>
 
@@ -591,7 +600,7 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                 <div className="overflow-y-auto flex-1 p-4 bg-gray-50">
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
-                            <Loader className="w-8 h-8 animate-spin text-green-500" />
+                            <Loader className="w-8 h-8 animate-spin text-[#D4AF37]" />
                         </div>
                     ) : drafts.length === 0 ? (
                         <div className="text-center py-12 text-gray-500">
@@ -605,7 +614,7 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                                 <div
                                     key={draft.id}
                                     onClick={() => !processingDraftId && handleDraftClick(draft)}
-                                    className={`bg-white rounded-xl border p-4 cursor-pointer transition-all hover:shadow-md hover:border-green-300 ${processingDraftId === draft.id ? 'opacity-50 pointer-events-none' : ''
+                                    className={`bg-white rounded-xl border p-4 cursor-pointer transition-all hover:shadow-md hover:border-[#D4AF37] ${processingDraftId === draft.id ? 'opacity-50 pointer-events-none' : ''
                                         }`}
                                 >
                                     <div className="flex gap-4">
@@ -636,13 +645,13 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                                                 {draft.name || 'Produk Tanpa Nama'}
                                             </h3>
                                             <div className="flex flex-wrap gap-2 mt-1 text-xs">
-                                                <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
+                                                <span className="bg-[#D4AF37]/10 text-[#997B2C] px-2 py-0.5 rounded font-medium">
                                                     {draft.category}
                                                 </span>
-                                                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                                <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded border border-gray-200">
                                                     {draft.rawImages?.length || draft.variantCount} gambar
                                                 </span>
-                                                <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                                <span className="bg-[#D4AF37]/10 text-[#D4AF37] font-bold px-2 py-0.5 rounded">
                                                     Rp {(draft.retailPrice || 0).toLocaleString('id-ID')}
                                                 </span>
                                             </div>
@@ -654,7 +663,7 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                                         {/* Actions */}
                                         <div className="flex flex-col gap-2">
                                             {processingDraftId === draft.id ? (
-                                                <Loader className="w-5 h-5 animate-spin text-green-500" />
+                                                <Loader className="w-5 h-5 animate-spin text-[#D4AF37]" />
                                             ) : (
                                                 <>
                                                     <button
@@ -664,7 +673,7 @@ const WhatsAppInboxModal: React.FC<WhatsAppInboxModalProps> = ({ isOpen, onClose
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
-                                                    <div className="p-2 text-green-500">
+                                                    <div className="p-2 text-[#D4AF37]">
                                                         <ArrowRight className="w-4 h-4" />
                                                     </div>
                                                 </>

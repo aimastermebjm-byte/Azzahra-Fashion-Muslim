@@ -131,7 +131,7 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                             key={f}
                             onClick={() => setFilter(f)}
                             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${filter === f
-                                ? 'bg-brand-primary text-white'
+                                ? 'bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white shadow-sm font-bold'
                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                         >
@@ -151,7 +151,7 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
             <div className="px-4 py-4 space-y-3">
                 {loading ? (
                     <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4AF37] mx-auto"></div>
                         <p className="text-gray-500 mt-4">Memuat log...</p>
                     </div>
                 ) : filteredLogs.length === 0 ? (
@@ -168,7 +168,7 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                         {expandedId && (
                             <button
                                 onClick={() => setExpandedId(null)}
-                                className="mb-3 flex items-center gap-2 text-sm text-brand-primary font-medium hover:underline"
+                                className="mb-3 flex items-center gap-2 text-sm text-[#997B2C] font-medium hover:underline"
                             >
                                 ← Kembali ke Daftar ({filteredLogs.length} log)
                             </button>
@@ -192,7 +192,7 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                                                     Order: {log.orderId}
                                                 </div>
                                                 {/* Customer Name */}
-                                                <div className="text-sm text-brand-primary font-medium">
+                                                <div className="text-sm text-[#997B2C] font-bold">
                                                     👤 {log.customerName || log.senderName || 'Unknown'}
                                                 </div>
                                                 <div className="text-sm text-gray-600">

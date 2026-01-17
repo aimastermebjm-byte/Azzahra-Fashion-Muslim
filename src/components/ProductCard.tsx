@@ -142,7 +142,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
     return (
       <div className="space-y-1.5 text-left">
-        <div className="text-base sm:text-lg font-bold text-[#D4AF37]">
+        <div className="text-lg sm:text-xl font-bold text-slate-900">
           Rp {product.retailPrice.toLocaleString('id-ID')}
         </div>
 

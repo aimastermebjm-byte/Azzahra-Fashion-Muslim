@@ -17,10 +17,24 @@ export interface Order {
   shippingCost: number;
   finalTotal: number;
   notes?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | any;
+  updatedAt: string | any;
   timestamp: number;
   paymentProof?: string;
+  paymentProofData?: string;
+  paymentProofUrl?: string;
+  paymentMethodId?: string | null;
+  paymentMethodName?: string | null;
+
+  // ✨ NEW: Unique Payment Code System
+  verificationMode?: 'auto' | 'manual';
+  uniquePaymentCode?: number;
+  exactPaymentAmount?: number;
+  originalAmount?: number;
+
+  // ✨ NEW: Payment Group System
+  paymentGroupId?: string | null;
+  groupPaymentAmount?: number | null;
 }
 
 export const useFirebaseOrders = () => {
@@ -40,7 +54,7 @@ export const useFirebaseOrders = () => {
           return;
         }
 
-        
+
         // Set up real-time listener for orders (tanpa orderBy sementara)
         const ordersRef = collection(db, 'orders');
         const q = query(
@@ -62,7 +76,7 @@ export const useFirebaseOrders = () => {
               });
             });
 
-                        setOrders(loadedOrders);
+            setOrders(loadedOrders);
             setLoading(false);
             setError(null);
           },
@@ -72,7 +86,7 @@ export const useFirebaseOrders = () => {
             setLoading(false);
 
             // Fallback to ordersService
-              try {
+            try {
               const fallbackOrders = await ordersService.getUserOrders();
               setOrders(fallbackOrders);
               setError(null);

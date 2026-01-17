@@ -817,6 +817,8 @@ class ReportsService {
     unpaidTransactions: number;
     unpaidAmount: number;
     averageTransaction: number;
+    totalProfit: number;
+    profitMargin: number;
   }> {
     try {
       const transactions = await this.getTransactions(filters);
@@ -833,6 +835,8 @@ class ReportsService {
         .reduce((sum, t) => sum + t.total, 0);
 
       const averageTransaction = totalRevenue > 0 ? totalRevenue / totalTransactions : 0;
+      const totalProfit = totalRevenue - totalExpenses;
+      const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
 
       return {
         totalTransactions,
@@ -842,7 +846,9 @@ class ReportsService {
         paidTransactions,
         unpaidTransactions,
         unpaidAmount,
-        averageTransaction
+        averageTransaction,
+        totalProfit,
+        profitMargin
       };
     } catch (error) {
       console.error('Error getting summary stats:', error);

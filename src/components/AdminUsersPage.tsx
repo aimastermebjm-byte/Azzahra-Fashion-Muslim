@@ -93,7 +93,7 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
         onBack={onBack}
         variant="gradient"
         actions={(
-          <button className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-white/90">
+          <button className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-[#997B2C] hover:text-[#997B2C]/80 transition hover:bg-white/90 shadow-md">
             <Plus className="w-4 h-4" />
             Tambah User
           </button>
@@ -136,13 +136,13 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
                 placeholder="Cari user..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-[#E2DED5] rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#997B2C] text-slate-800 placeholder-gray-400"
               />
             </div>
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-[#E2DED5] rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#997B2C] text-sm text-[#997B2C] font-medium"
             >
               <option value="all">Semua Role</option>
               <option value="customer">Customer</option>
@@ -153,14 +153,14 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-[#E2DED5] rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#997B2C] text-sm text-[#997B2C] font-medium"
             >
               <option value="all">Semua Status</option>
               <option value="active">Aktif</option>
               <option value="inactive">Non-aktif</option>
               <option value="banned">Banned</option>
             </select>
-            <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            <button className="p-2 border border-[#E2DED5] rounded-lg hover:bg-[#D4AF37]/10 text-[#997B2C] transition-colors">
               <Filter className="w-4 h-4" />
             </button>
           </div>
@@ -194,8 +194,8 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
               <div key={userItem.id} className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] p-4 shine-effect">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-                      <Users className="w-6 h-6 text-blue-600" />
+                    <div className="w-12 h-12 bg-gradient-to-br from-[#D4AF37]/20 to-[#997B2C]/10 rounded-full flex items-center justify-center">
+                      <Users className="w-6 h-6 text-[#997B2C]" />
                     </div>
                     <div>
                       <p className="font-semibold text-lg">{userItem.name}</p>
@@ -285,7 +285,7 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
                   type="text"
                   value={editForm.name}
                   onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] outline-none"
                   placeholder="Nama User"
                 />
               </div>
@@ -297,7 +297,7 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
                   type="text"
                   value={editForm.phone}
                   onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] outline-none"
                   placeholder="08xxxxxxxxxx"
                 />
               </div>
@@ -356,7 +356,7 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
               <button
                 onClick={handleSaveUser}
                 disabled={isSaving}
-                className="flex-1 py-2 px-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                className="flex-1 py-2 px-4 bg-gradient-to-r from-[#D4AF37] to-[#997B2C] text-white font-bold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
               >
                 {isSaving ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Simpan Perubahan

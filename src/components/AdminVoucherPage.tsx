@@ -219,7 +219,7 @@ const AdminVoucherPage: React.FC<AdminVoucherPageProps> = ({ onBack, user }) => 
                 {/* Create Button */}
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="w-full py-3 bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-[0_4px_0_0_#7A6223] hover:shadow-lg active:scale-95 transition-all shine-effect"
+                    className="w-full py-3 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-[0_4px_0_0_#7A6223] hover:shadow-lg active:scale-95 transition-all shine-effect"
                 >
                     <Plus className="w-5 h-5" />
                     Buat Voucher Baru
@@ -228,19 +228,19 @@ const AdminVoucherPage: React.FC<AdminVoucherPageProps> = ({ onBack, user }) => 
                 {/* Search & Filter */}
                 <div className="flex gap-2">
                     <div className="flex-1 relative">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#997B2C]" />
                         <input
                             type="text"
                             placeholder="Cari kode atau nama user..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37]"
                         />
                     </div>
                     <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value as any)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37]"
                     >
                         <option value="all">Semua</option>
                         <option value="active">Aktif</option>
@@ -265,7 +265,7 @@ const AdminVoucherPage: React.FC<AdminVoucherPageProps> = ({ onBack, user }) => 
                             <div className="flex items-start justify-between mb-3">
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-mono font-bold text-purple-600 text-lg">{voucher.code}</span>
+                                        <span className="font-mono font-bold text-[#997B2C] text-lg">{voucher.code}</span>
                                         {getStatusBadge(voucher.status)}
                                     </div>
                                     <p className="text-sm text-gray-600 flex items-center gap-1">
@@ -452,7 +452,7 @@ const AdminVoucherPage: React.FC<AdminVoucherPageProps> = ({ onBack, user }) => 
                             <button
                                 onClick={handleCreateVoucher}
                                 disabled={creating || createForm.selectedUsers.length === 0}
-                                className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold disabled:opacity-50"
+                                className="w-full py-3 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white rounded-xl font-bold dark:shadow-[0_4px_0_0_#7A6223] disabled:opacity-50 hover:shadow-lg transition-all"
                             >
                                 {creating ? 'Membuat...' : `Buat & Kirim ${createForm.selectedUsers.length > 0 ? createForm.selectedUsers.length : ''} Voucher`}
                             </button>

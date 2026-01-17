@@ -341,7 +341,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
       <div className="min-h-screen bg-gray-50">
         <PageHeader title="Verifikasi Pembayaran" onBack={onBack} />
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4AF37]"></div>
         </div>
       </div>
     );
@@ -361,8 +361,8 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
       <div className="px-4 py-4 bg-white border-b border-[#D4AF37]">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${settings?.mode === 'full-auto' ? 'bg-green-500' : 'bg-blue-500'} animate-pulse`} />
-            <span className="text-sm font-medium text-gray-700">
+            <div className={`w-3 h-3 rounded-full ${settings?.mode === 'full-auto' ? 'bg-[#D4AF37]' : 'bg-[#997B2C]'} animate-pulse`} />
+            <span className="text-sm font-bold text-gray-700">
               Mode: {settings?.mode === 'full-auto' ? 'Full Otomatis' : 'Semi-Otomatis'}
             </span>
           </div>
@@ -372,100 +372,101 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center space-x-1"
               title="Lihat Log Pelunasan"
             >
-              <FileText className="w-5 h-5 text-gray-600" />
+              <FileText className="w-5 h-5 text-[#997B2C]" />
             </button>
             <button
               onClick={() => setShowSettings(true)}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <SettingsIcon className="w-5 h-5 text-gray-600" />
+              <SettingsIcon className="w-5 h-5 text-[#997B2C]" />
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
-            <div className="flex items-center space-x-2 mb-1">
-              <Clock className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-blue-600 font-medium">Pending</span>
-            </div>
-            <div className="text-2xl font-bold text-blue-900">{todayPending}</div>
+          <div className="flex items-center space-x-2 mb-1">
+            <Clock className="w-4 h-4 text-blue-600" />
+            <span className="text-xs text-blue-600 font-bold">Pending</span>
           </div>
+          <div className="text-2xl font-bold text-blue-900">{todayPending}</div>
+        </div>
 
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
-            <div className="flex items-center space-x-2 mb-1">
-              <CheckCircle className="w-4 h-4 text-green-600" />
-              <span className="text-xs text-green-600 font-medium">Verified</span>
-            </div>
-            <div className="text-2xl font-bold text-green-900">{todayVerified.length}</div>
+        <div className="bg-gradient-to-br from-[#D4AF37]/20 to-[#997B2C]/10 rounded-xl p-3 border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
+          <div className="flex items-center space-x-2 mb-1">
+            <CheckCircle className="w-4 h-4 text-[#997B2C]" />
+            <span className="text-xs text-[#997B2C] font-bold">Verified</span>
           </div>
+          <div className="text-2xl font-bold text-[#997B2C]">{todayVerified.length}</div>
+        </div>
 
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3 border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
-            <div className="flex items-center space-x-2 mb-1">
-              <TrendingUp className="w-4 h-4 text-purple-600" />
-              <span className="text-xs text-purple-600 font-medium">Accuracy</span>
-            </div>
-            <div className="text-2xl font-bold text-purple-900">
-              {todayVerified.length > 0 ? '95%' : '-'}
-            </div>
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3 border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
+          <div className="flex items-center space-x-2 mb-1">
+            <TrendingUp className="w-4 h-4 text-purple-600" />
+            <span className="text-xs text-purple-600 font-medium">Accuracy</span>
+          </div>
+          <div className="text-2xl font-bold text-purple-900">
+            {todayVerified.length > 0 ? '95%' : '-'}
           </div>
         </div>
       </div>
 
+
       {/* Search Bar */}
       <div className="px-4 py-3 bg-white border-b">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#997B2C]" />
           <input
             type="text"
             placeholder="Cari nama, jumlah, atau bank..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37]"
           />
         </div>
       </div>
 
       {/* ✨ NEW: Test Helper - Pending Orders with Auto Verification */}
-      {pendingOrders.filter(o => o.verificationMode === 'auto' && o.status === 'pending').length > 0 && (
-        <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-blue-200">
-          <div className="mb-2 flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-semibold text-blue-900">🧪 Test Helper - Orders Menunggu Pembayaran</h4>
-              <p className="text-xs text-blue-600">Klik "Test Match" untuk simulate transfer dari order ini</p>
+      {
+        pendingOrders.filter(o => o.verificationMode === 'auto' && o.status === 'pending').length > 0 && (
+          <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-blue-200">
+            <div className="mb-2 flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-semibold text-blue-900">🧪 Test Helper - Orders Menunggu Pembayaran</h4>
+                <p className="text-xs text-blue-600">Klik "Test Match" untuk simulate transfer dari order ini</p>
+              </div>
+            </div>
+            <div className="space-y-2 mt-3">
+              {pendingOrders
+                .filter(o => o.verificationMode === 'auto' && o.status === 'pending')
+                .slice(0, 3)
+                .map(order => (
+                  <div key={order.id} className="bg-white rounded-lg p-3 shadow-sm border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-gray-900">#{order.id}</p>
+                        <p className="text-xs text-gray-600">{order.shippingInfo?.name || order.userName}</p>
+                        <p className="text-lg font-bold text-blue-600 mt-1">
+                          Rp {(order.exactPaymentAmount || order.finalTotal).toLocaleString('id-ID')}
+                        </p>
+                        {order.uniquePaymentCode && (
+                          <p className="text-xs text-green-600 mt-0.5">
+                            ✨ Kode Unik: {order.uniquePaymentCode}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleCreateTestDetection(order)}
+                        className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all whitespace-nowrap"
+                      >
+                        🧪 Test Match
+                      </button>
+                    </div>
+                  </div>
+                ))}
             </div>
           </div>
-          <div className="space-y-2 mt-3">
-            {pendingOrders
-              .filter(o => o.verificationMode === 'auto' && o.status === 'pending')
-              .slice(0, 3)
-              .map(order => (
-                <div key={order.id} className="bg-white rounded-lg p-3 shadow-sm border border-blue-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">#{order.id}</p>
-                      <p className="text-xs text-gray-600">{order.shippingInfo?.name || order.userName}</p>
-                      <p className="text-lg font-bold text-blue-600 mt-1">
-                        Rp {(order.exactPaymentAmount || order.finalTotal).toLocaleString('id-ID')}
-                      </p>
-                      {order.uniquePaymentCode && (
-                        <p className="text-xs text-green-600 mt-0.5">
-                          ✨ Kode Unik: {order.uniquePaymentCode}
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleCreateTestDetection(order)}
-                      className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all whitespace-nowrap"
-                    >
-                      🧪 Test Match
-                    </button>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Detections List */}
       <div className="px-4 py-4 space-y-4">
@@ -480,8 +481,8 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
             </p>
 
             {/* Initialize System Button - Always show in empty state for now */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 max-w-md mx-auto mt-4">
-              <div className="text-sm text-blue-700 mb-3">
+            <div className="bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-xl p-4 max-w-md mx-auto mt-4">
+              <div className="text-sm text-[#997B2C] mb-3 font-medium">
                 💡 System belum diinisialisasi atau belum ada data. Klik tombol di bawah untuk setup awal & add mock data untuk testing.
               </div>
               <div className="text-xs text-gray-500 mb-2">
@@ -490,7 +491,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
               <button
                 onClick={handleInitializeSystem}
                 disabled={initializing}
-                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 mx-auto"
+                className="px-6 py-3 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 mx-auto shadow-[0_2px_0_0_#7a6223]"
               >
                 {initializing ? (
                   <>
@@ -551,7 +552,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
                     <div className="text-xs font-medium text-gray-500 mb-1">
                       🎯 Matched Order:
                     </div>
-                    <div className="text-lg font-bold text-brand-primary mb-1">
+                    <div className="text-lg font-bold text-[#997B2C] mb-1">
                       {matchedOrder.id}
                     </div>
                     <div className="text-sm text-gray-700">
@@ -600,7 +601,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
                   {matchedOrder && (
                     <button
                       onClick={() => handleMarkAsPaid(detection)}
-                      className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center space-x-2"
+                      className="flex-1 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white px-4 py-3 rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center space-x-2 shadow-[0_2px_0_0_#7a6223]"
                     >
                       <CheckCircle className="w-5 h-5" />
                       <span>Verifikasi & Lunasi</span>
@@ -634,25 +635,29 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
       </div>
 
       {/* Settings Modal */}
-      {showSettings && settings && (
-        <SettingsModal
-          settings={settings}
-          onSave={handleUpdateSettings}
-          onClose={() => setShowSettings(false)}
-        />
-      )}
+      {
+        showSettings && settings && (
+          <SettingsModal
+            settings={settings}
+            onSave={handleUpdateSettings}
+            onClose={() => setShowSettings(false)}
+          />
+        )
+      }
 
       {/* Screenshot Modal */}
-      {showScreenshot && selectedDetection && (
-        <ScreenshotModal
-          detection={selectedDetection}
-          onClose={() => {
-            setShowScreenshot(false);
-            setSelectedDetection(null);
-          }}
-        />
-      )}
-    </div>
+      {
+        showScreenshot && selectedDetection && (
+          <ScreenshotModal
+            detection={selectedDetection}
+            onClose={() => {
+              setShowScreenshot(false);
+              setSelectedDetection(null);
+            }}
+          />
+        )
+      }
+    </div >
   );
 };
 
@@ -810,7 +815,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onSave, onClose
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 px-4 py-3 bg-brand-primary text-white rounded-xl font-semibold hover:bg-brand-primary-dark"
+            className="flex-1 px-4 py-3 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white rounded-xl font-bold hover:shadow-lg transition-all"
           >
             Simpan
           </button>

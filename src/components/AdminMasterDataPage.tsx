@@ -205,8 +205,8 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
           <button
             onClick={() => setActiveTab('categories')}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'categories'
-                ? 'bg-brand-primary text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-50'
+              ? 'bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white shadow-sm font-bold'
+              : 'text-slate-600 hover:bg-slate-50'
               }`}
           >
             <Tags className="w-4 h-4" />
@@ -215,8 +215,8 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
           <button
             onClick={() => setActiveTab('paymentMethods')}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'paymentMethods'
-                ? 'bg-brand-primary text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-50'
+              ? 'bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white shadow-sm font-bold'
+              : 'text-slate-600 hover:bg-slate-50'
               }`}
           >
             <CreditCard className="w-4 h-4" />
@@ -225,8 +225,8 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
           <button
             onClick={() => setActiveTab('productCategories')}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'productCategories'
-                ? 'bg-brand-primary text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-50'
+              ? 'bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white shadow-sm font-bold'
+              : 'text-slate-600 hover:bg-slate-50'
               }`}
           >
             <Package className="w-4 h-4" />
@@ -252,7 +252,7 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
                   </div>
                   <button
                     onClick={() => setShowAddCategory(!showAddCategory)}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary hover:text-brand-primary/80"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-[#997B2C] hover:text-[#997B2C]/80"
                   >
                     <Plus className="w-4 h-4" /> Tambah Baru
                   </button>
@@ -265,7 +265,7 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
                       <select
                         value={newCategoryType}
                         onChange={(e) => setNewCategoryType(e.target.value as FinancialType)}
-                        className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                        className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/60"
                       >
                         <option value="expense">Biaya</option>
                         <option value="income">Pendapatan</option>
@@ -274,13 +274,13 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
                         type="text"
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
-                        className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                        className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/60"
                         placeholder="Nama Kategori (mis. Gaji Karyawan)"
                       />
                       <button
                         onClick={handleAddCategory}
                         disabled={!newCategoryName.trim()}
-                        className="rounded-lg bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90 disabled:opacity-50"
+                        className="rounded-lg bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] px-3 py-2 text-sm font-bold text-white hover:shadow-lg transition-all disabled:opacity-50"
                       >
                         Simpan
                       </button>
@@ -344,7 +344,7 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
                   </div>
                   <button
                     onClick={() => setShowAddPaymentMethod(!showAddPaymentMethod)}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary hover:text-brand-primary/80"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-[#997B2C] hover:text-[#997B2C]/80"
                   >
                     <Plus className="w-4 h-4" /> Tambah Baru
                   </button>
@@ -358,13 +358,13 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
                         type="text"
                         value={newPaymentMethodName}
                         onChange={(e) => setNewPaymentMethodName(e.target.value)}
-                        className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                        className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/60"
                         placeholder="Nama Metode (mis. Transfer BCA, QRIS)"
                       />
                       <button
                         onClick={handleAddPaymentMethod}
                         disabled={!newPaymentMethodName.trim()}
-                        className="rounded-lg bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90 disabled:opacity-50"
+                        className="rounded-lg bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] px-3 py-2 text-sm font-bold text-white hover:shadow-lg transition-all disabled:opacity-50"
                       >
                         Simpan
                       </button>
@@ -403,7 +403,7 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
                   </div>
                   <button
                     onClick={() => setShowAddProductCategory(!showAddProductCategory)}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary hover:text-brand-primary/80"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-[#997B2C] hover:text-[#997B2C]/80"
                   >
                     <Plus className="w-4 h-4" /> Tambah Baru
                   </button>
@@ -417,13 +417,13 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
                         type="text"
                         value={newProductCategoryName}
                         onChange={(e) => setNewProductCategoryName(e.target.value)}
-                        className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/60"
+                        className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/60"
                         placeholder="Nama Kategori (mis. Gamis, Hijab, Aksesoris)"
                       />
                       <button
                         onClick={handleAddProductCategory}
                         disabled={!newProductCategoryName.trim()}
-                        className="rounded-lg bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-primary/90 disabled:opacity-50"
+                        className="rounded-lg bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] px-3 py-2 text-sm font-bold text-white hover:shadow-lg transition-all disabled:opacity-50"
                       >
                         Simpan
                       </button>

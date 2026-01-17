@@ -297,13 +297,13 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                         placeholder="Cari produk..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#D4AF37]"
                     />
                 </div>
                 <select
                     value={filter}
                     onChange={(e) => setFilter(e.target.value as FilterType)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#D4AF37]"
                 >
                     <option value="all">Semua</option>
                     <option value="uncounted">Belum Dihitung</option>
@@ -322,7 +322,7 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                 </div>
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
-                        className="h-full bg-purple-600 transition-all"
+                        className="h-full bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] transition-all"
                         style={{ width: `${(session.countedItems / session.totalItems) * 100}%` }}
                     />
                 </div>
@@ -338,15 +338,15 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
             <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] overflow-hidden shine-effect">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                        <thead className="bg-gray-50 border-b">
+                        <thead className="bg-[#D4AF37]/10 border-b border-[#D4AF37]/20">
                             <tr>
-                                <th className="px-3 py-3 text-left font-medium text-gray-600">Produk</th>
-                                <th className="px-2 py-3 text-center font-medium text-gray-600">Size</th>
-                                <th className="px-2 py-3 text-center font-medium text-gray-600">Varian</th>
-                                <th className="px-2 py-3 text-center font-medium text-gray-600">Sistem</th>
-                                <th className="px-2 py-3 text-center font-medium text-gray-600">Fisik</th>
-                                <th className="px-2 py-3 text-center font-medium text-gray-600">Selisih</th>
-                                {isReadOnly && <th className="px-3 py-3 text-left font-medium text-gray-600">Catatan</th>}
+                                <th className="px-3 py-3 text-left font-bold text-[#997B2C]">Produk</th>
+                                <th className="px-2 py-3 text-center font-bold text-[#997B2C]">Size</th>
+                                <th className="px-2 py-3 text-center font-bold text-[#997B2C]">Varian</th>
+                                <th className="px-2 py-3 text-center font-bold text-[#997B2C]">Sistem</th>
+                                <th className="px-2 py-3 text-center font-bold text-[#997B2C]">Fisik</th>
+                                <th className="px-2 py-3 text-center font-bold text-[#997B2C]">Selisih</th>
+                                {isReadOnly && <th className="px-3 py-3 text-left font-bold text-[#997B2C]">Catatan</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y">
@@ -356,7 +356,7 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                                     <tr
                                         key={`${item.productId}-${item.size}-${item.variant}`}
                                         onClick={() => handleItemClick(item)}
-                                        className={`transition-colors ${isItemEditable ? 'hover:bg-purple-50 cursor-pointer' : ''} ${item.difference !== null && item.difference !== 0 ? 'bg-orange-50' : ''}`}
+                                        className={`transition-colors ${isItemEditable ? 'hover:bg-[#D4AF37]/10 cursor-pointer' : ''} ${item.difference !== null && item.difference !== 0 ? 'bg-orange-50' : ''}`}
                                     >
                                         <td className="px-3 py-3">
                                             <div className="flex items-center space-x-2">
@@ -408,7 +408,7 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                     <button
                         onClick={handleSubmitForApproval}
                         disabled={session.countedItems === 0}
-                        className="flex-1 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 font-medium"
+                        className="flex-1 py-3 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white rounded-lg hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:shadow-none font-bold"
                     >
                         Submit untuk Approval
                     </button>
@@ -459,7 +459,7 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                         <button
                             onClick={handleCreateSession}
                             disabled={creating}
-                            className="flex items-center space-x-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400"
+                            className="flex items-center space-x-1 px-3 py-2 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-70 shadow-[0_2px_0_0_#7a6223]"
                         >
                             {creating ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -477,8 +477,8 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                         <button
                             onClick={() => setActiveTab('active')}
                             className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'active'
-                                ? 'border-purple-600 text-purple-600'
-                                : 'border-transparent text-gray-500'
+                                ? 'border-[#D4AF37] text-[#997B2C] font-bold'
+                                : 'border-transparent text-gray-500 hover:text-[#997B2C]'
                                 }`}
                         >
                             Opname Aktif
@@ -486,8 +486,8 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                         <button
                             onClick={() => setActiveTab('history')}
                             className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'history'
-                                ? 'border-purple-600 text-purple-600'
-                                : 'border-transparent text-gray-500'
+                                ? 'border-[#D4AF37] text-[#997B2C] font-bold'
+                                : 'border-transparent text-gray-500 hover:text-[#997B2C]'
                                 }`}
                         >
                             Riwayat
@@ -500,7 +500,7 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
             <div className="p-4">
                 {loading ? (
                     <div className="flex items-center justify-center py-12">
-                        <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+                        <Loader2 className="w-8 h-8 animate-spin text-[#D4AF37]" />
                     </div>
                 ) : viewSession ? (
                     // VIEW SESSION DETAILS
@@ -516,7 +516,7 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                             <button
                                 onClick={handleCreateSession}
                                 disabled={creating}
-                                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400"
+                                className="px-6 py-3 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white rounded-lg hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-70 font-bold"
                             >
                                 {creating ? 'Memuat...' : 'Mulai Opname Baru'}
                             </button>
@@ -569,7 +569,7 @@ const AdminStockOpnamePage: React.FC<AdminStockOpnamePageProps> = ({ onBack, use
                                     </div>
 
                                     {session.status === 'pending_approval' && (
-                                        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-center text-purple-600 text-sm font-medium">
+                                        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-center text-[#997B2C] text-sm font-bold">
                                             Lihat Detail untuk Approval →
                                         </div>
                                     )}

@@ -160,7 +160,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           onRefreshProducts();
         }
       },
-      { type: 'error', confirmText: 'Ya, Hapus Semua', cancelText: 'Batal' }
+      { type: 'warning', confirmText: 'Ya, Hapus Semua', cancelText: 'Batal' }
     );
   };
 
@@ -225,14 +225,14 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     awaiting_verification: { label: 'Menunggu Verifikasi', icon: Clock, color: 'text-yellow-600 bg-yellow-100' },
     paid: { label: 'Dibayar', icon: CheckCircle, color: 'text-blue-600 bg-blue-100' },
     processing: { label: 'Diproses', icon: Package, color: 'text-purple-600 bg-purple-100' },
-    shipped: { label: 'Dikirim', icon: Truck, color: 'text-indigo-600 bg-indigo-100' },
-    delivered: { label: 'Selesai', icon: CheckCircle, color: 'text-green-600 bg-green-100' },
-    cancelled: { label: 'Dibatalkan', icon: XCircle, color: 'text-red-600 bg-red-100' }
+    shipped: { label: 'Dikirim', icon: Truck, color: 'text-indigo-900 bg-indigo-100 border border-indigo-200' },
+    delivered: { label: 'Selesai', icon: CheckCircle, color: 'text-[#997B2C] bg-[#D4AF37]/10 border border-[#D4AF37]/20' },
+    cancelled: { label: 'Dibatalkan', icon: XCircle, color: 'text-red-900 bg-red-100 border border-red-200' }
   };
 
   // Get unique users for filter
   const getUniqueUsers = () => {
-    const users = new Set();
+    const users = new Set<string>();
     orders.forEach(order => {
       if (order.userName && order.userEmail) {
         users.add(`${order.userName} (${order.userEmail})`);
@@ -243,7 +243,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
   // Get unique products for filter
   const getUniqueProducts = () => {
-    const products = new Set();
+    const products = new Set<string>();
     orders.forEach(order => {
       if (order.items) {
         order.items.forEach((item: any) => {
@@ -702,7 +702,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       } else {
         deleteOrder(orderId);
       }
-    }, { type: 'error', confirmText: 'Ya, Hapus', cancelText: 'Batal' });
+    }, { type: 'warning', confirmText: 'Ya, Hapus', cancelText: 'Batal' });
   };
 
   return (
@@ -710,31 +710,50 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       <PageHeader
         title="Kelola Pesanan"
         subtitle="Kelola status order, cek bukti bayar, dan tindak lanjuti pengiriman"
-        variant="gradient"
+        onBack={onBack}
         className="pb-24"
       >
-        <div className="grid grid-cols-4 gap-2">
-          <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-[0_3px_0_0_#E5E7EB] hover:translate-y-[-2px] hover:shadow-[0_5px_0_0_#E5E7EB] transition-all">
-            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Total</p>
-            <p className="mt-0.5 text-xl font-bold text-gray-800">{orders.length}</p>
-            <p className="text-[10px] text-gray-400">Order</p>
+        <div className="grid grid-cols-4 gap-4">
+          {/* Card 1: Total Orders */}
+          <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 relative overflow-hidden group hover:shadow-[0_6px_0_0_#997B2C,0_12px_24px_rgba(153,123,44,0.25)] hover:-translate-y-1 transition-all duration-300 shine-effect">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br from-[#D4AF37]/20 to-transparent rounded-full blur-2xl group-hover:bg-[#D4AF37]/30 transition-all duration-500" />
+            <div className="relative z-10">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Total</p>
+              <p className="text-2xl font-bold text-gray-800">{orders.length}</p>
+              <p className="text-[10px] text-gray-400 mt-1">Order Masuk</p>
+            </div>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-[0_3px_0_0_#E5E7EB] hover:translate-y-[-2px] hover:shadow-[0_5px_0_0_#E5E7EB] transition-all">
-            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Pending</p>
-            <p className="mt-0.5 text-xl font-bold text-[#D4AF37]">
-              {getOrdersByStatus('pending').length + getOrdersByStatus('awaiting_verification').length}
-            </p>
-            <p className="text-[10px] text-gray-400">Action</p>
+
+          {/* Card 2: Pending Actions */}
+          <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 relative overflow-hidden group hover:shadow-[0_6px_0_0_#997B2C,0_12px_24px_rgba(153,123,44,0.25)] hover:-translate-y-1 transition-all duration-300 shine-effect">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br from-[#D4AF37]/20 to-transparent rounded-full blur-2xl group-hover:bg-[#D4AF37]/30 transition-all duration-500" />
+            <div className="relative z-10">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Pending</p>
+              <p className="text-2xl font-bold text-[#D4AF37]">
+                {getOrdersByStatus('pending').length + getOrdersByStatus('awaiting_verification').length}
+              </p>
+              <p className="text-[10px] text-gray-400 mt-1">Butuh Tindakan</p>
+            </div>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-[0_3px_0_0_#E5E7EB] hover:translate-y-[-2px] hover:shadow-[0_5px_0_0_#E5E7EB] transition-all">
-            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Selesai</p>
-            <p className="mt-0.5 text-xl font-bold text-green-600">{getOrdersByStatus('delivered').length}</p>
-            <p className="text-[10px] text-gray-400">Sent</p>
+
+          {/* Card 3: Selesai */}
+          <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 relative overflow-hidden group hover:shadow-[0_6px_0_0_#997B2C,0_12px_24px_rgba(153,123,44,0.25)] hover:-translate-y-1 transition-all duration-300 shine-effect">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br from-[#D4AF37]/20 to-transparent rounded-full blur-2xl group-hover:bg-[#D4AF37]/30 transition-all duration-500" />
+            <div className="relative z-10">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Selesai</p>
+              <p className="text-2xl font-bold text-green-600">{getOrdersByStatus('delivered').length}</p>
+              <p className="text-[10px] text-gray-400 mt-1">Terkirim Sukses</p>
+            </div>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-[0_3px_0_0_#E5E7EB] hover:translate-y-[-2px] hover:shadow-[0_5px_0_0_#E5E7EB] transition-all">
-            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Omset</p>
-            <p className="mt-0.5 text-xl font-bold text-gray-800">{Math.round(getTotalRevenue() / 1000)}K</p>
-            <p className="text-[10px] text-gray-400">Est.</p>
+
+          {/* Card 4: Omset */}
+          <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 relative overflow-hidden group hover:shadow-[0_6px_0_0_#997B2C,0_12px_24px_rgba(153,123,44,0.25)] hover:-translate-y-1 transition-all duration-300 shine-effect">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br from-[#D4AF37]/20 to-transparent rounded-full blur-2xl group-hover:bg-[#D4AF37]/30 transition-all duration-500" />
+            <div className="relative z-10">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Omset</p>
+              <p className="text-2xl font-bold text-gray-800">{Math.round(getTotalRevenue() / 1000)}K</p>
+              <p className="text-[10px] text-gray-400 mt-1">Estimasi</p>
+            </div>
           </div>
         </div>
       </PageHeader>
@@ -918,7 +937,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             <StatusIcon className="w-3 h-3" />
                             <span>{statusInfo.label}</span>
                           </div>
-                          <p className="text-lg font-semibold text-pink-600 mt-1">
+                          <p className="text-lg font-bold text-[#997B2C] mt-1">
                             Rp {order.finalTotal.toLocaleString('id-ID')}
                           </p>
                         </div>
@@ -928,10 +947,10 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         <div className="text-sm text-gray-600">
                           {order.items.length} item • {paymentMethodLabel}
                         </div>
-                        <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100">
+                        <div className="mt-4 grid grid-cols-2 lg:flex lg:flex-row items-center gap-2 pt-3 border-t border-gray-100">
                           <button
                             onClick={() => handleViewOrder(order)}
-                            className="px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 transition-colors flex items-center gap-1"
+                            className="px-2.5 py-1.5 rounded-full bg-gradient-to-r from-[#F9F5EB] to-[#FEF9E7] border border-[#D4AF37]/30 text-[#997B2C] text-xs font-semibold hover:border-[#D4AF37] hover:shadow-md transition-all flex items-center justify-center gap-1 whitespace-nowrap"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             Detail
@@ -940,7 +959,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                           {(order.status === 'pending' || order.status === 'awaiting_verification') && (
                             <button
                               onClick={() => handleVerifyPayment(order)}
-                              className="px-3 py-1.5 rounded-full bg-green-50 text-green-600 text-xs font-medium hover:bg-green-100 transition-colors flex items-center gap-1"
+                              className="px-2.5 py-1.5 rounded-full bg-white border border-[#D4AF37] text-[#997B2C] text-xs font-semibold hover:bg-[#F9F5EB] hover:shadow-md transition-all flex items-center justify-center gap-1 whitespace-nowrap"
                             >
                               <CheckCircle className="w-3.5 h-3.5" />
                               Verifikasi
@@ -950,7 +969,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                           {!['canceled', 'delivered'].includes(order.status) && (
                             <button
                               onClick={() => handleEditOrder(order)}
-                              className="px-3 py-1.5 rounded-full bg-yellow-50 text-yellow-700 text-xs font-medium hover:bg-yellow-100 transition-colors flex items-center gap-1"
+                              className="px-2.5 py-1.5 rounded-full bg-white border border-[#D4AF37] text-[#997B2C] text-xs font-semibold hover:bg-[#F9F5EB] hover:shadow-md transition-all flex items-center justify-center gap-1 whitespace-nowrap"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                               Edit
@@ -959,7 +978,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
                           <button
                             onClick={() => handleDeleteOrder(order.id)}
-                            className="px-3 py-1.5 rounded-full bg-white border border-[#D4AF37] text-[#997B2C] text-xs font-medium hover:bg-[#F9F5EB] transition-colors flex items-center gap-1"
+                            className="px-2.5 py-1.5 rounded-full bg-white border border-[#D4AF37] text-[#997B2C] text-xs font-semibold hover:bg-[#F9F5EB] hover:shadow-md transition-all flex items-center justify-center gap-1 whitespace-nowrap"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             Hapus
@@ -1030,7 +1049,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         setShowDetailModal(false);
                         setShippingEditOrder(selectedOrder);
                       }}
-                      className="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition flex items-center gap-1"
+                      className="text-xs px-3 py-1 bg-[#D4AF37]/10 text-[#997B2C] rounded-lg hover:bg-[#D4AF37]/20 transition flex items-center gap-1"
                     >
                       <Edit2 className="w-3 h-3" />
                       Edit Alamat
@@ -1136,7 +1155,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     {!selectedOrder.paymentProof && !selectedOrder.paymentProofData && (
                       <button
                         onClick={() => handleUploadPaymentProof(selectedOrder)}
-                        className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        className="flex items-center space-x-1 text-[#997B2C] hover:text-[#D4AF37] text-sm font-bold"
                       >
                         <Upload className="w-4 h-4" />
                         <span>Upload</span>
@@ -1251,7 +1270,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         setShowDetailModal(false);
                         handlePaymentAssist(selectedOrder);
                       }}
-                      className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors flex items-center space-x-2"
+                      className="px-4 py-2 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white hover:shadow-lg rounded-lg transition-all flex items-center space-x-2"
                     >
                       <CreditCard className="w-4 h-4" />
                       <span>Bantu Pembayaran</span>
@@ -1263,7 +1282,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         setShowDetailModal(false);
                         handleVerifyPayment(selectedOrder);
                       }}
-                      className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors flex items-center space-x-2"
+                      className="px-4 py-2 bg-gradient-to-r from-[#D4AF37] to-[#997B2C] text-white hover:shadow-lg rounded-lg transition-all flex items-center space-x-2"
                     >
                       <CheckCircle className="w-4 h-4" />
                       <span>Verifikasi Pembayaran</span>
@@ -1295,7 +1314,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
               <div className="p-6 space-y-4">
                 <div className="text-center">
-                  <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-3" />
+                  <CheckCircle className="w-12 h-12 text-[#997B2C] mx-auto mb-3" />
                   <h3 className="font-medium text-gray-800 mb-2">Pesanan #{selectedOrder.id}</h3>
                   <p className="text-sm text-gray-600 mb-4">
                     Total: Rp {selectedOrder.finalTotal?.toLocaleString('id-ID')}
@@ -1311,14 +1330,14 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                       value={verificationNotes}
                       onChange={(e) => setVerificationNotes(e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
                       placeholder="Tambahkan catatan jika diperlukan..."
                     />
                   </div>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <p className="text-sm text-blue-800">
+                <div className="bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-lg p-3">
+                  <p className="text-sm text-[#997B2C]">
                     <strong>Periksa:</strong> Pastikan bukti pembayaran sudah sesuai dengan jumlah yang dibayarkan.
                   </p>
                 </div>
@@ -1332,7 +1351,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   </button>
                   <button
                     onClick={() => handleConfirmVerification('paid')}
-                    className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors flex items-center space-x-2"
+                    className="px-4 py-2 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white hover:shadow-lg rounded-lg transition-all flex items-center space-x-2"
                   >
                     <Check className="w-4 h-4" />
                     <span>Konfirmasi</span>
@@ -1436,7 +1455,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
               {/* Header with icon */}
               <div className={`px-6 py-5 rounded-t-2xl ${confirmModalData.type === 'error' ? 'bg-red-50' :
                 confirmModalData.type === 'success' ? 'bg-green-50' :
-                  confirmModalData.type === 'warning' ? 'bg-yellow-50' : 'bg-blue-50'
+                  confirmModalData.type === 'warning' ? 'bg-[#D4AF37]/10' : 'bg-[#D4AF37]/5'
                 }`}>
                 <div className="flex items-center space-x-3">
                   {confirmModalData.type === 'error' && (
@@ -1450,19 +1469,19 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     </div>
                   )}
                   {confirmModalData.type === 'warning' && (
-                    <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                      <AlertTriangle className="w-6 h-6 text-yellow-600" />
+                    <div className="w-12 h-12 bg-[#D4AF37]/20 rounded-full flex items-center justify-center">
+                      <AlertTriangle className="w-6 h-6 text-[#997B2C]" />
                     </div>
                   )}
                   {confirmModalData.type === 'info' && (
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Info className="w-6 h-6 text-blue-600" />
+                    <div className="w-12 h-12 bg-[#D4AF37]/20 rounded-full flex items-center justify-center">
+                      <Info className="w-6 h-6 text-[#997B2C]" />
                     </div>
                   )}
                   <div className="flex-1">
                     <h3 className={`text-xl font-bold ${confirmModalData.type === 'error' ? 'text-red-800' :
                       confirmModalData.type === 'success' ? 'text-green-800' :
-                        confirmModalData.type === 'warning' ? 'text-yellow-800' : 'text-blue-800'
+                        confirmModalData.type === 'warning' ? 'text-[#997B2C]' : 'text-[#997B2C]'
                       }`}>
                       {confirmModalData.title}
                     </h3>
@@ -1491,7 +1510,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   onClick={confirmModalData.onConfirm}
                   className={`px-5 py-2.5 text-white rounded-xl font-medium transition-all hover:shadow-lg transform hover:scale-105 ${confirmModalData.type === 'error' ? 'bg-red-600 hover:bg-red-700' :
                     confirmModalData.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
-                      confirmModalData.type === 'warning' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-blue-600 hover:bg-blue-700'
+                      'bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)]'
                     }`}
                 >
                   {confirmModalData.confirmText}
@@ -1529,7 +1548,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   <select
                     value={editingOrder.status}
                     onChange={(e) => setEditingOrder({ ...editingOrder, status: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
                   >
                     <option value="pending">Menunggu Pembayaran</option>
                     <option value="awaiting_verification">Menunggu Verifikasi</option>
@@ -1557,7 +1576,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         ...editingOrder,
                         shippingInfo: { ...editingOrder.shippingInfo, name: e.target.value }
                       })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
                     />
                   </div>
 
@@ -1570,7 +1589,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         ...editingOrder,
                         shippingInfo: { ...editingOrder.shippingInfo, phone: e.target.value }
                       })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
                     />
                   </div>
 
@@ -1583,7 +1602,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         shippingInfo: { ...editingOrder.shippingInfo, address: e.target.value }
                       })}
                       rows={3}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -1595,7 +1614,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     value={editingOrder.notes || ''}
                     onChange={(e) => setEditingOrder({ ...editingOrder, notes: e.target.value })}
                     rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
                     placeholder="Tambahkan catatan (opsional)"
                   />
                 </div>
@@ -1614,7 +1633,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                 </button>
                 <button
                   onClick={handleSaveEditOrder}
-                  className="px-5 py-2.5 bg-brand-primary text-white rounded-xl font-medium hover:bg-brand-primary/90 transition-all hover:shadow-lg"
+                  className="px-5 py-2.5 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white rounded-xl font-bold hover:shadow-lg transition-all"
                 >
                   Simpan Perubahan
                 </button>
@@ -1629,7 +1648,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         showPaymentMethodModal && assistPaymentData && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl max-w-md w-full">
-              <div className="bg-gradient-to-r from-pink-500 to-pink-600 p-4 rounded-t-2xl">
+              <div className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] p-4 rounded-t-2xl shadow-lg">
                 <h2 className="text-xl font-bold text-white text-center">
                   💳 Pilih Metode Pembayaran
                 </h2>
@@ -1643,46 +1662,55 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
               </div>
 
               <div className="p-4 space-y-3">
+                {/* Verifikasi Otomatis Button */}
                 <button
                   onClick={() => handleAssistChooseMethod('auto')}
-                  className="w-full text-left border-2 border-green-500 rounded-xl p-4 hover:shadow-lg transition-all bg-gradient-to-br from-green-50 to-emerald-50"
+                  className="w-full text-left border-2 border-[#D4AF37] rounded-xl p-4 hover:shadow-lg transition-all bg-gradient-to-br from-yellow-50 to-amber-50 relative overflow-hidden shine-effect"
                 >
+                  {/* Recommended Badge */}
+                  <div className="absolute top-0 right-0 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">
+                    REKOMENDASI
+                  </div>
+
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Check className="w-6 h-6 text-white" />
+                    <div className="w-12 h-12 bg-gradient-to-br from-[#997B2C] via-[#EDD686] to-[#997B2C] rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                      <Check className="w-6 h-6 text-black" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-base font-bold text-gray-900">✨ Verifikasi Otomatis</h3>
-                      <p className="text-sm text-gray-700 mt-0.5">
-                        Generate kode unik untuk customer
+                      <h3 className="text-base font-bold text-slate-900">⚡ Verifikasi Otomatis</h3>
+                      <p className="text-sm text-slate-600 mt-0.5">
+                        Cepat (1-5 menit), bayar sesuai angka + kode unik
                       </p>
                     </div>
                   </div>
                 </button>
 
+                {/* Verifikasi Manual Button */}
                 <button
                   onClick={() => handleAssistChooseMethod('manual')}
-                  className="w-full text-left border-2 border-gray-300 rounded-xl p-4 hover:border-blue-500 hover:shadow-lg transition-all bg-white"
+                  className="w-full text-left border-2 border-gray-200 rounded-xl p-4 hover:border-[#D4AF37] hover:shadow-md transition-all bg-white"
                 >
+
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Upload className="w-6 h-6 text-white" />
+                    <div className="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Upload className="w-6 h-6 text-slate-600" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-base font-bold text-gray-900">📸 Verifikasi Manual</h3>
-                      <p className="text-sm text-gray-700 mt-0.5">
-                        Upload bukti transfer untuk customer
+                      <h3 className="text-base font-bold text-slate-700">📸 Verifikasi Manual</h3>
+                      <p className="text-sm text-slate-500 mt-0.5">
+                        Upload bukti transfer, verifikasi 1-24 jam
                       </p>
                     </div>
                   </div>
                 </button>
 
+                {/* Cancel Button */}
                 <button
                   onClick={() => {
                     setShowPaymentMethodModal(false);
                     setAssistPaymentData(null);
                   }}
-                  className="w-full px-4 py-2.5 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+                  className="w-full px-4 py-2.5 border border-gray-200 text-slate-500 rounded-xl font-medium hover:bg-gray-50 transition-all text-sm"
                 >
                   Batal
                 </button>
@@ -1697,7 +1725,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         showAutoInstructionsModal && assistPaymentData?.paymentGroup && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 rounded-t-2xl">
+              <div className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] p-4 rounded-t-2xl shadow-lg">
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => {
@@ -1732,15 +1760,15 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border-2 border-green-300 text-center">
                   <p className="text-xs font-semibold text-green-800 mb-2">Total Transfer:</p>
-                  <p className="text-4xl font-bold text-green-900 mb-2">
+                  <p className="text-4xl font-bold text-[#997B2C] mb-2">
                     Rp {assistPaymentData.paymentGroup.exactPaymentAmount.toLocaleString('id-ID')}
                   </p>
-                  <p className="text-xs text-green-700 mb-3">
-                    Rp {assistPaymentData.paymentGroup.originalTotal.toLocaleString('id-ID')} + <span className="font-mono font-bold">{assistPaymentData.paymentGroup.uniquePaymentCode}</span> (kode unik)
+                  <p className="text-xs text-gray-700 mb-3">
+                    Rp {assistPaymentData.paymentGroup.originalTotal.toLocaleString('id-ID')} + <span className="font-mono font-bold text-[#997B2C]">{assistPaymentData.paymentGroup.uniquePaymentCode}</span> (kode unik)
                   </p>
                   <button
                     onClick={() => handleAssistCopy(assistPaymentData.paymentGroup.exactPaymentAmount.toString(), 'Nominal')}
-                    className="w-full px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                    className="w-full px-4 py-2 bg-gradient-to-r from-[#D4AF37] to-[#997B2C] text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
                   >
                     <Copy className="w-4 h-4" />
                     Copy Nominal
@@ -1801,7 +1829,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     setShowAutoInstructionsModal(false);
                     setAssistPaymentData(null);
                   }}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all"
+                  className="w-full px-6 py-3 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white rounded-xl font-bold hover:shadow-lg transition-all"
                 >
                   Selesai
                 </button>
@@ -1816,7 +1844,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         showManualUploadModal && assistPaymentData && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-t-2xl">
+              <div className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] p-4 rounded-t-2xl shadow-lg">
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => {
@@ -1844,9 +1872,9 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
               </div>
 
               <div className="p-4 space-y-4">
-                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200 text-center">
-                  <p className="text-xs font-semibold text-blue-800 mb-2">Total Transfer:</p>
-                  <p className="text-3xl font-bold text-blue-900 mb-3">
+                <div className="bg-[#D4AF37]/5 rounded-xl p-4 border border-[#D4AF37]/20 text-center">
+                  <p className="text-xs font-semibold text-[#997B2C] mb-2">Total Transfer:</p>
+                  <p className="text-3xl font-bold text-[#997B2C] mb-3">
                     Rp {(assistPaymentData.subtotal || assistPaymentData.order.finalTotal).toLocaleString('id-ID')}
                   </p>
                   {assistPaymentData.orders && assistPaymentData.orders.length > 1 && (
@@ -1856,7 +1884,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   )}
                   <button
                     onClick={() => handleAssistCopy((assistPaymentData.subtotal || assistPaymentData.order.finalTotal).toString(), 'Nominal')}
-                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 mx-auto"
+                    className="px-4 py-2 bg-gradient-to-r from-[#D4AF37] to-[#997B2C] text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 mx-auto"
                   >
                     <Copy className="w-4 h-4" />
                     Copy Nominal
@@ -1911,7 +1939,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     <span className="text-xs font-semibold text-gray-900 mb-2 block">
                       Upload Bukti Transfer (dari Customer):
                     </span>
-                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-pink-500 transition-all cursor-pointer bg-gray-50">
+                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-[#D4AF37] transition-all cursor-pointer bg-gray-50">
                       <input
                         type="file"
                         accept="image/*"
@@ -1950,7 +1978,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                 <button
                   onClick={handleAssistSubmitManualPayment}
                   disabled={!assistPaymentProof}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full px-6 py-3 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   <Upload className="w-5 h-5" />
                   Kirim Bukti Transfer

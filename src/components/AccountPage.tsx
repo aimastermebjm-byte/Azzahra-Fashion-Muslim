@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { User, LogOut, Package, CreditCard, ChevronRight, MapPin, Shield, Star, RefreshCw, Layers, TrendingUp, Gift, Users, BarChart3, Eye, EyeOff, Key, ClipboardCheck, Crown, Heart, Award } from 'lucide-react';
+import { User, LogOut, Package, CreditCard, ChevronRight, MapPin, Shield, Star, RefreshCw, Layers, TrendingUp, Gift, Users, BarChart3, Eye, EyeOff, Key, ClipboardCheck, Crown, Heart, Award, ShoppingBag, Settings } from 'lucide-react';
 import { useToast } from './ToastProvider';
 
 // Import assets - v2 (White Background for Multiply Blend)
@@ -433,8 +433,8 @@ const AccountPage: React.FC<AccountPageProps> = ({
                   onClick={onNavigateToAdminOrders}
                   className="p-3 bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] hover:shadow-[0_2px_0_0_#7a6223,0_3px_15px_rgba(153,123,44,0.25)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#7a6223] active:translate-y-0.5 transition-all duration-150 shine-effect"
                 >
-                  <Package className="w-6 h-6 mx-auto mb-1" style={{ stroke: 'url(#gold-icon-gradient)', fill: 'none' }} />
-                  <p className="text-[10px] font-bold text-slate-900 text-center leading-tight">Orders</p>
+                  <ShoppingBag className="w-6 h-6 mx-auto mb-1" style={{ stroke: 'url(#gold-icon-gradient)', fill: 'none' }} />
+                  <p className="text-[10px] font-bold text-slate-900 text-center leading-tight">Pesanan</p>
                 </button>
 
                 {/* Verifikasi Pembayaran */}
@@ -452,7 +452,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                   className="p-3 bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] hover:shadow-[0_2px_0_0_#7a6223,0_3px_15px_rgba(153,123,44,0.25)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#7a6223] active:translate-y-0.5 transition-all duration-150 shine-effect"
                 >
                   <BarChart3 className="w-6 h-6 mx-auto mb-1" style={{ stroke: 'url(#gold-icon-gradient)', fill: 'none' }} />
-                  <p className="text-[10px] font-bold text-slate-900 text-center leading-tight">Reports</p>
+                  <p className="text-[10px] font-bold text-slate-900 text-center leading-tight">Laporan</p>
                 </button>
 
                 {/* Kelola User */}
@@ -553,7 +553,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
                 </button>
                 <button className="p-2.5 bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] hover:shadow-[0_2px_0_0_#7a6223,0_3px_15px_rgba(153,123,44,0.25)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#7a6223] active:translate-y-0.5 transition-all duration-150 shine-effect">
                   <div className="flex flex-col items-center">
-                    <Shield className="w-5 h-5 text-[#997B2C] mb-1" />
+                    <Settings className="w-5 h-5 text-[#997B2C] mb-1" />
                     <p className="text-[10px] font-bold text-slate-900 leading-tight">Sistem</p>
                   </div>
                 </button>

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PageHeader from './PageHeader';
 import {
-  Download, Calendar, BarChart3, PieChart, TrendingUp, TrendingDown, Package, Users,
-  FileText, DollarSign, Truck, Filter, Eye, CheckCircle, XCircle,
-  ShoppingCart, ArrowUpRight, ArrowDownRight, Box, Wallet, PiggyBank,
-  CreditCard, Search, ChevronDown, User
+  Download, BarChart3, TrendingUp, Package, Users,
+  DollarSign, CheckCircle, XCircle,
+  ArrowUpRight, ArrowDownRight,
+  Search, ChevronDown
 } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
@@ -101,8 +101,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
   // Separate loading states for lazy loading
   const [loadingProducts, setLoadingProducts] = useState(false);
-  const [loadingInventory, setLoadingInventory] = useState(false);
-  const [loadingCashFlow, setLoadingCashFlow] = useState(false);
+
 
   // Fast initial state - only show loading for critical data
   const [initialLoadingComplete, setInitialLoadingComplete] = useState(false);
@@ -246,7 +245,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
   // Load inventory report
   const loadInventoryReport = async () => {
-    setLoadingInventory(true);
+
     try {
       const inventoryData = await ReportsService.getInventoryReports();
       setInventory(inventoryData);
@@ -254,7 +253,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       console.error('Error loading inventory report:', error);
       setInventory([]);
     } finally {
-      setLoadingInventory(false);
+
     }
   };
 
@@ -362,7 +361,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
   // Load cash flow report
   const loadCashFlowReport = async () => {
-    setLoadingCashFlow(true);
+
     try {
       const { start, end } = getDateRange;
       const cashFlowData = await ReportsService.getCashFlowReports({
@@ -376,7 +375,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       console.error('Error loading cash flow report:', error);
       setCashFlow([]);
     } finally {
-      setLoadingCashFlow(false);
+
     }
   };
 
@@ -468,12 +467,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   };
 
   // Open buyers modal
-  const openBuyersModal = (product: ProductReport) => {
-    setSelectedProduct(product);
-    setBuyersPage(1); // Reset to first page
-    setShowBuyersModal(true);
-    loadProductBuyers(product, 1);
-  };
+
 
   // Close buyers modal
   const closeBuyersModal = () => {
@@ -659,18 +653,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   }, [filteredTransactions]);
 
   // Calculate profit/loss
-  const profitLossStats = useMemo(() => {
-    const totalIncome = cashFlow.filter(c => c.type === 'income').reduce((sum, c) => sum + c.amount, 0);
-    const totalExpense = cashFlow.filter(c => c.type === 'expense').reduce((sum, c) => sum + c.amount, 0);
-    const profit = totalIncome - totalExpense;
 
-    return {
-      totalIncome,
-      totalExpense,
-      profit,
-      profitMargin: totalIncome > 0 ? (profit / totalIncome) * 100 : 0
-    };
-  }, [cashFlow]);
+
 
   const financialBreakdown = useMemo(() => {
     // Filter cashflow for P&L (only entries with includeInPnL = true)
@@ -781,7 +765,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     return (
       <div className="min-h-screen bg-brand-surface flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-accent mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#D4AF37] mx-auto mb-4"></div>
           <p className="text-gray-600 font-medium">Memuat data...</p>
         </div>
       </div>
@@ -831,7 +815,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
               <select
                 value={reportType}
                 onChange={(e) => setReportType(e.target.value as any)}
-                className="w-full appearance-none rounded-xl border border-white/30 bg-white/95 px-4 py-3 pr-10 text-sm font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer"
+                className="w-full appearance-none rounded-xl border border-white/30 bg-white/95 px-4 py-3 pr-10 text-sm font-semibold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer"
               >
                 <option value="summary">📈 Ringkasan Laporan</option>
                 <option value="sales">📊 Laporan Penjualan</option>
@@ -842,7 +826,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 {isOwner && <option value="profitloss">📈 Laporan Rugi Laba</option>}
                 <option value="detail">👁 Laporan Detail</option>
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-primary pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#997B2C] pointer-events-none" />
             </div>
           </div>
         </div>
@@ -855,7 +839,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value as any)}
-              className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/50"
             >
               <option value="hari_ini">Hari ini</option>
               <option value="kemaren">Kemarin</option>
@@ -869,14 +853,14 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-xs text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+                  className="rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-xs text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/40"
                   placeholder="Dari"
                 />
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-xs text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+                  className="rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-xs text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/40"
                   placeholder="Sampai"
                 />
               </div>
@@ -890,7 +874,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/50"
               >
                 <option value="all">Semua Status</option>
                 <option value="lunas">Lunas</option>
@@ -906,7 +890,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
               <select
                 value={customerFilter}
                 onChange={(e) => setCustomerFilter(e.target.value)}
-                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/50"
               >
                 <option value="">Semua Pelanggan</option>
                 {users.map((usr) => (
@@ -925,7 +909,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
               <select
                 value={paymentMethodFilter}
                 onChange={(e) => setPaymentMethodFilter(e.target.value as any)}
-                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/50"
               >
                 <option value="all">Semua Metode</option>
                 {paymentMethods.map((method) => (
@@ -942,7 +926,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-brand-primary focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-bold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/50"
               >
                 <option value="all">Semua Kategori</option>
                 {productCategories.map((cat) => (
@@ -998,8 +982,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                         {filteredTransactions.length} transaksi
                       </p>
                     </div>
-                    <div className="bg-brand-accentMuted p-3 rounded-2xl">
-                      <DollarSign className="w-6 h-6 text-brand-primary" />
+                    <div className="bg-[#D4AF37]/10 p-3 rounded-2xl">
+                      <DollarSign className="w-6 h-6 text-[#997B2C]" />
                     </div>
                   </div>
                 </div>
@@ -1047,8 +1031,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                       </p>
                       <p className="text-xs text-gray-500">per transaksi</p>
                     </div>
-                    <div className="bg-brand-accentMuted p-3 rounded-2xl">
-                      <TrendingUp className="w-6 h-6 text-brand-primary" />
+                    <div className="bg-[#D4AF37]/10 p-3 rounded-2xl">
+                      <TrendingUp className="w-6 h-6 text-[#997B2C]" />
                     </div>
                   </div>
                 </div>
@@ -1165,7 +1149,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   {selectedProducts.length > 0 && (
                     <button
                       onClick={openCombinedRekapModal}
-                      className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary-dark transition-colors flex items-center"
+                      className="px-4 py-2 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white rounded-lg hover:shadow-lg transition-all flex items-center font-bold"
                     >
                       <Users className="w-4 h-4 mr-2" />
                       Lihat Rekap Pembeli Terpilih ({selectedProducts.length})
@@ -1202,11 +1186,11 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                                 type="checkbox"
                                 checked={selectedProducts.some(p => p.id === product.id)}
                                 onChange={() => toggleProductSelection(product)}
-                                className="mt-1 h-5 w-5 text-brand-primary rounded focus:ring-brand-primary border-gray-300"
+                                className="mt-1 h-5 w-5 text-[#997B2C] rounded focus:ring-[#D4AF37] border-gray-300"
                               />
                               <div className="flex-1">
                                 <p className="font-bold text-gray-800 line-clamp-2">{product.name}</p>
-                                <p className="text-xs text-brand-primary mt-1">{product.totalSold} terjual</p>
+                                <p className="text-xs text-[#997B2C] mt-1">{product.totalSold} terjual</p>
                               </div>
                             </div>
 
@@ -1248,7 +1232,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                                   selectAllProducts();
                                 }
                               }}
-                              className="h-4 w-4 text-brand-primary rounded focus:ring-brand-primary border-gray-300"
+                              className="h-4 w-4 text-[#997B2C] rounded focus:ring-[#D4AF37] border-gray-300"
                             />
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
@@ -1272,7 +1256,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                                     type="checkbox"
                                     checked={selectedProducts.some(p => p.id === product.id)}
                                     onChange={() => toggleProductSelection(product)}
-                                    className="h-4 w-4 text-brand-primary rounded focus:ring-brand-primary border-gray-300"
+                                    className="h-4 w-4 text-[#997B2C] rounded focus:ring-[#D4AF37] border-gray-300"
                                   />
                                 </td>
                                 <td className="px-4 py-3 text-sm font-medium text-gray-900">
@@ -1534,7 +1518,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   </div>
                   <div className="flex items-center justify-between border-t pt-3">
                     <span className="text-gray-600">Saldo Akhir</span>
-                    <span className="text-lg font-bold text-brand-primary">{formatCurrency(cashflowRecap.saldoAkhir)}</span>
+                    <span className="text-lg font-bold text-[#997B2C]">{formatCurrency(cashflowRecap.saldoAkhir)}</span>
                   </div>
                 </div>
               </div>
@@ -1705,7 +1689,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
 
                     <div className="flex justify-between items-center">
                       <span className="font-semibold text-gray-700">Total</span>
-                      <span className="font-bold text-brand-primary text-lg">{formatCurrency(transaction.total)}</span>
+                      <span className="font-bold text-[#997B2C] text-lg">{formatCurrency(transaction.total)}</span>
                     </div>
                   </div>
                 ))}
@@ -1824,7 +1808,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   value={buyerSearchQuery}
                   onChange={(e) => handleBuyerSearchChange(e.target.value)}
                   placeholder="Cari berdasarkan nama atau nomor telepon..."
-                  className="block w-full pl-10 pr-20 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pl-10 pr-20 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-[#D4AF37] focus:border-[#D4AF37] sm:text-sm"
                 />
                 {buyerSearchQuery && (
                   <button
@@ -1837,7 +1821,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <button
                   onClick={() => handleBuyerSearchChange('')}
                   className={`absolute inset-y-0 right-0 px-3 flex items-center transition-colors ${isFilterActive
-                    ? 'text-blue-600 hover:text-blue-700 bg-blue-50 rounded-r-md border-l-4 border-l-blue-500'
+                    ? 'text-[#997B2C] hover:text-[#997B2C]/80 bg-[#D4AF37]/10 rounded-r-md border-l-4 border-l-[#D4AF37]'
                     : 'text-gray-500 hover:text-gray-700'
                     }`}
                   title={isFilterActive ? "Hapus Filter" : "Filter"}
@@ -1850,7 +1834,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
             <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 200px)' }}>
               {loadingBuyers ? (
                 <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-blue-600 mb-4"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-[#D4AF37] mb-4"></div>
                   <p className="text-gray-600 font-medium">Memuat data pembeli...</p>
                 </div>
               ) : productBuyers.length === 0 ? (
@@ -1864,7 +1848,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   {buyerSearchQuery && (
                     <button
                       onClick={() => handleBuyerSearchChange('')}
-                      className="mt-2 text-blue-600 hover:text-blue-800 text-sm"
+                      className="mt-2 text-[#997B2C] hover:text-[#997B2C]/80 text-sm"
                     >
                       Hapus filter
                     </button>

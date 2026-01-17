@@ -32,6 +32,7 @@ import AdminVoucherPage from './components/AdminVoucherPage';
 import BottomNavigation from './components/BottomNavigation';
 import InstallPrompt from './components/InstallPrompt';
 import PaymentAutoVerifier from './components/PaymentAutoVerifier';
+import OrderExpirationChecker from './components/OrderExpirationChecker';
 import { OngkirTestPage } from './pages/OngkirTestPage';
 import { useUnifiedProducts } from './hooks/useUnifiedProducts';
 import { useFirebaseAuth } from './hooks/useFirebaseAuth';
@@ -519,8 +520,38 @@ function AppContent() {
         // ✅ CRITICAL: Use finalTotal from CheckoutPage (includes unique code if auto mode)
         finalTotal: finalTotalToUse,
         notes: orderData.notes || '',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        // ✨ AUTO-EXPIRE: Add user role and expiration fields
+        userRole: user.role || 'customer',
+        hasReadyStockItems: validatedItems.some((item: any) => item.status === 'ready' || !item.status),
+        expiryNotified: false
       };
+
+      // ✨ AUTO-EXPIRE: Calculate expiresAt based on role and product type
+      const userRole = user.role || 'customer';
+      const hasReadyStock = orderRecord.hasReadyStockItems;
+
+      if (userRole === 'customer') {
+        // Customer: 6 hours to pay
+        orderRecord.expiresAt = Date.now() + (6 * 60 * 60 * 1000);
+      } else if (['reseller', 'admin', 'owner'].includes(userRole)) {
+        if (hasReadyStock) {
+          // Reseller with ready stock: 1 day to pay
+          orderRecord.expiresAt = Date.now() + (24 * 60 * 60 * 1000);
+        } else {
+          // Reseller with PO only: No limit
+          orderRecord.expiresAt = null;
+        }
+      } else {
+        // Default: 6 hours
+        orderRecord.expiresAt = Date.now() + (6 * 60 * 60 * 1000);
+      }
+
+      console.log('⏰ AUTO-EXPIRE: Order expiration set:', {
+        userRole,
+        hasReadyStock,
+        expiresAt: orderRecord.expiresAt ? new Date(orderRecord.expiresAt).toISOString() : 'No limit'
+      });
 
       // ✅ FIXED: Only add unique payment code fields if they exist (Firebase doesn't accept undefined)
       if (orderData.verificationMode) {
@@ -830,6 +861,8 @@ function AppContent() {
       <div className="min-h-screen bg-brand-surface text-slate-900">
         {/* 🤖 PaymentAutoVerifier - MUST be inside AppContent to access user auth */}
         {user?.role === 'owner' && <PaymentAutoVerifier />}
+        {/* ⏰ OrderExpirationChecker - Auto-expire unpaid orders */}
+        {user && <OrderExpirationChecker userId={user.uid} />}
         {renderCurrentPage()}
         {!showLogin && !currentPage.startsWith('admin-') && ['home', 'flash-sale', 'orders', 'account'].includes(currentPage) && (
           <BottomNavigation currentPage={currentPage} onPageChange={setCurrentPage} />

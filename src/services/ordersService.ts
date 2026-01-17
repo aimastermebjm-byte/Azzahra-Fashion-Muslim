@@ -34,6 +34,12 @@ export interface Order {
   // ✨ NEW: Payment Group System (for batch payments)
   paymentGroupId?: string;             // Reference to payment group (if part of batch payment)
   groupPaymentAmount?: number;         // Total amount for the payment group
+
+  // ✨ NEW: Auto-Expire Order System
+  userRole?: 'customer' | 'reseller' | 'admin' | 'owner'; // Role saat order dibuat
+  expiresAt?: number | null;           // Timestamp kapan order expired (null = no limit)
+  hasReadyStockItems?: boolean;        // True jika ada item ready stock
+  expiryNotified?: boolean;            // True jika sudah kirim notifikasi 15 menit
 }
 
 class OrdersService {
@@ -290,7 +296,8 @@ class OrdersService {
         paymentProof: paymentProofName,
         paymentProofData: paymentProofData, // Base64 image data
         paymentProofUrl: '', // Empty since we use base64
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
+        expiresAt: null // ✨ STOP expiration timer when proof is uploaded
       };
 
       if (status) {

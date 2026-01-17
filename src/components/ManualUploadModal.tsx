@@ -1018,8 +1018,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             <div
                                                                 key={i}
                                                                 className={`px-3 py-2 hover:bg-purple-50 cursor-pointer transition-colors border-b border-gray-50 last:border-0 ${brand.toLowerCase() === productFormData.brand.toLowerCase()
-                                                                        ? 'bg-purple-100 text-purple-700 font-medium'
-                                                                        : 'text-gray-700 hover:text-purple-700'
+                                                                    ? 'bg-purple-100 text-purple-700 font-medium'
+                                                                    : 'text-gray-700 hover:text-purple-700'
                                                                     }`}
                                                                 onClick={() => {
                                                                     setProductFormData(prev => ({ ...prev, brand }));
@@ -1077,10 +1077,10 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                             )}
 
                             {/* Settings Panel */}
-                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
+                            <div className="bg-gradient-to-r from-[#D4AF37]/5 to-[#997B2C]/5 rounded-xl p-4 border border-[#D4AF37]/20">
                                 <div className="flex items-center gap-2 mb-4">
-                                    <Settings className="w-6 h-6 text-purple-600" />
-                                    <h3 className="text-lg font-bold text-purple-800">Parameter Produk</h3>
+                                    <Settings className="w-6 h-6 text-[#997B2C]" />
+                                    <h3 className="text-lg font-bold text-[#997B2C]">Parameter Produk</h3>
                                 </div>
 
                                 {/* Size Preset - MULTI SELECT with Smart Toggle */}
@@ -1124,8 +1124,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                         }
                                                     }}
                                                     className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${familyMode
-                                                        ? 'bg-pink-600 text-white'
-                                                        : 'bg-gray-100 text-gray-600 hover:bg-pink-100 hover:text-pink-600'
+                                                        ? 'bg-[#997B2C] text-white'
+                                                        : 'bg-gray-100 text-gray-600 hover:bg-[#D4AF37]/10 hover:text-[#997B2C]'
                                                         }`}
                                                 >
                                                     👨‍👩‍👧‍👦 Mode Keluarga
@@ -1161,7 +1161,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             }
                                                         }}
                                                         className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${isSelected
-                                                            ? 'bg-purple-600 text-white shadow-md'
+                                                            ? 'bg-gradient-to-br from-[#EDD686] to-[#D4AF37] text-slate-900 shadow-md transform scale-105'
                                                             : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
                                                             }`}
                                                     >
@@ -1174,13 +1174,13 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             {selectedSizes.filter(s => !SIZE_PRESETS.includes(s)).map((size) => (
                                                 <div
                                                     key={size}
-                                                    className="px-4 py-2 rounded-lg text-sm font-semibold bg-purple-600 text-white shadow-md flex items-center gap-2"
+                                                    className="px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-br from-[#EDD686] to-[#D4AF37] text-slate-900 shadow-md flex items-center gap-2"
                                                 >
                                                     <span>{size}</span>
                                                     <button
                                                         type="button"
                                                         onClick={() => setSelectedSizes(selectedSizes.filter(s => s !== size))}
-                                                        className="text-purple-200 hover:text-white hover:bg-purple-800 rounded-full w-5 h-5 flex items-center justify-center"
+                                                        className="text-slate-700 hover:text-red-600 hover:bg-white/50 rounded-full w-5 h-5 flex items-center justify-center transition-colors"
                                                     >
                                                         ×
                                                     </button>
@@ -1207,7 +1207,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                         }
                                                     }}
                                                     placeholder="Tambah size..."
-                                                    className="px-3 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 w-28 focus:w-40 transition-all"
+                                                    className="px-3 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] w-28 focus:w-40 transition-all font-medium"
                                                 />
                                                 <button
                                                     type="button"
@@ -1221,7 +1221,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             setCustomSizeInput('');
                                                         }
                                                     }}
-                                                    className="px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700"
+                                                    className="px-3 py-2 bg-[#997B2C] text-white rounded-lg text-sm font-bold hover:bg-[#D4AF37] transition-colors"
                                                 >
                                                     +
                                                 </button>
@@ -1229,14 +1229,14 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         </div>
                                     ) : (
                                         /* Family Mode - Group Editor */
-                                        <div className="space-y-3 p-3 bg-pink-50 border border-pink-200 rounded-xl">
-                                            <p className="text-xs text-pink-600">Tambah grup ukuran untuk setiap anggota keluarga</p>
+                                        <div className="space-y-3 p-3 bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-xl">
+                                            <p className="text-xs text-[#997B2C]">Tambah grup ukuran untuk setiap anggota keluarga</p>
 
                                             {/* Existing Groups */}
                                             {Object.entries(familyGroups).map(([groupName, sizes]) => (
                                                 <div key={groupName} className="bg-white rounded-lg p-3 border border-pink-100">
                                                     <div className="flex items-center justify-between mb-2">
-                                                        <span className="font-semibold text-pink-800">{groupName}</span>
+                                                        <span className="font-semibold text-[#997B2C]">{groupName}</span>
                                                         <button
                                                             type="button"
                                                             onClick={() => {
@@ -1271,8 +1271,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                         }));
                                                                     }}
                                                                     className={`px-2 py-1 rounded text-xs font-medium transition-all ${isSelected
-                                                                        ? 'bg-pink-600 text-white'
-                                                                        : 'bg-pink-100 text-pink-700 hover:bg-pink-200'
+                                                                        ? 'bg-[#997B2C] text-white'
+                                                                        : 'bg-[#D4AF37]/10 text-[#997B2C] hover:bg-[#D4AF37]/20'
                                                                         }`}
                                                                 >
                                                                     {size}
@@ -1295,7 +1295,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                 [groupName]: [] // Start with empty sizes, user picks
                                                             }));
                                                         }}
-                                                        className="px-3 py-2 border-2 border-dashed border-pink-300 rounded-lg text-xs font-medium text-pink-600 hover:bg-pink-100 transition-all"
+                                                        className="px-3 py-2 border-2 border-dashed border-[#D4AF37]/40 rounded-lg text-xs font-bold text-[#997B2C] hover:bg-[#D4AF37]/10 transition-all"
                                                     >
                                                         + {groupName}
                                                     </button>
@@ -1304,7 +1304,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
                                             {/* Summary */}
                                             {selectedSizes.length > 0 && (
-                                                <div className="text-xs text-pink-700 mt-2">
+                                                <div className="text-xs text-[#997B2C] mt-2">
                                                     📦 Total varian: <strong>{selectedSizes.length} size × {activeVariantLabels.length} warna = {selectedSizes.length * activeVariantLabels.length} kombinasi</strong>
                                                 </div>
                                             )}
@@ -1323,7 +1323,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             onChange={(e) => setUploadSettings(prev => ({ ...prev, stockPerVariant: parseFormattedNumber(e.target.value) }))}
                                             onFocus={(e) => e.target.select()}
                                             placeholder="Masukkan stok"
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg font-semibold focus:ring-2 focus:ring-purple-500"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg font-semibold focus:ring-2 focus:ring-[#D4AF37]"
                                         />
                                     </div>
 
@@ -1336,12 +1336,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }))}
                                             onFocus={(e) => e.target.select()}
                                             placeholder="100.000"
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl text-lg font-bold focus:ring-2 focus:ring-purple-500"
+                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl text-lg font-bold focus:ring-2 focus:ring-[#D4AF37]"
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-bold text-blue-700 mb-1">Harga Reseller (Otomatis)</label>
+                                        <label className="block text-sm font-bold text-[#997B2C] mb-1">Harga Reseller (Otomatis)</label>
                                         <input
                                             type="text"
                                             inputMode="numeric"
@@ -1351,12 +1351,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 reseller: parseFormattedNumber(e.target.value)
                                             }))}
                                             onFocus={(e) => e.target.select()}
-                                            className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl text-lg font-bold text-blue-700 bg-blue-50 focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-4 py-3 border-2 border-[#D4AF37]/30 rounded-xl text-lg font-bold text-[#997B2C] bg-[#D4AF37]/5 focus:ring-2 focus:ring-[#D4AF37]"
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-bold text-green-700 mb-1">Harga Retail (Otomatis)</label>
+                                        <label className="block text-sm font-bold text-[#997B2C] mb-1">Harga Retail (Otomatis)</label>
                                         <input
                                             type="text"
                                             inputMode="numeric"
@@ -1366,7 +1366,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 retail: parseFormattedNumber(e.target.value)
                                             }))}
                                             onFocus={(e) => e.target.select()}
-                                            className="w-full px-4 py-3 border-2 border-green-200 rounded-xl text-lg font-bold text-green-700 bg-green-50 focus:ring-2 focus:ring-green-500"
+                                            className="w-full px-4 py-3 border-2 border-[#D4AF37]/30 rounded-xl text-lg font-bold text-[#997B2C] bg-[#D4AF37]/5 focus:ring-2 focus:ring-[#D4AF37]"
                                         />
                                     </div>
 
@@ -1411,21 +1411,21 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 {/* Expandable Price per Variant Matrix */}
                                 {/* Show when: multiple sizes OR showPricePerVariant is true (set from draft) */}
                                 {/* Always show container so user can toggle it */}
-                                <div className="mb-5 border border-orange-200 rounded-xl overflow-hidden bg-white">
+                                <div className="mb-5 border border-[#D4AF37]/30 rounded-xl overflow-hidden bg-white shadow-sm">
                                     <button
                                         type="button"
                                         onClick={() => setShowPricePerVariant(!showPricePerVariant)}
-                                        className="w-full px-4 py-3 bg-orange-50 text-left flex justify-between items-center"
+                                        className="w-full px-4 py-3 bg-gradient-to-r from-[#D4AF37]/10 to-transparent text-left flex justify-between items-center hover:bg-[#D4AF37]/20 transition-colors"
                                     >
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-orange-800">
+                                            <span className="text-sm font-bold text-slate-900">
                                                 💰 Harga Khusus Size/Varian?
                                             </span>
-                                            <span className="text-[10px] text-orange-600 font-normal">
+                                            <span className="text-[10px] text-slate-500 font-normal">
                                                 (Isi jika harga berbeda tiap varian)
                                             </span>
                                         </div>
-                                        <span className="text-orange-600">
+                                        <span className="text-slate-600 font-bold">
                                             {showPricePerVariant ? '▲ Tutup' : '▼ Mulai'}
                                         </span>
                                     </button>
@@ -1434,21 +1434,24 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         <div className="p-4 space-y-6">
                                             {/* Retail Price Matrix */}
                                             <div>
-                                                <h4 className="text-sm font-bold text-green-700 mb-3">Matrix Harga Retail</h4>
+                                                <h4 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                                    <span className="w-1 h-4 bg-[#D4AF37] rounded-full"></span>
+                                                    Matrix Harga Retail
+                                                </h4>
                                                 <div className="overflow-x-auto pb-2">
                                                     <table className="w-full">
                                                         <thead>
-                                                            <tr className="bg-green-50">
-                                                                <th className="p-3 text-left border border-green-100 min-w-[80px]">Size</th>
+                                                            <tr className="bg-[#D4AF37]/10">
+                                                                <th className="p-3 text-left border border-[#D4AF37]/20 min-w-[80px] text-slate-900">Size</th>
                                                                 {activeVariantLabels.map(label => (
-                                                                    <th key={label} className="p-3 text-center border border-green-100 min-w-[80px] font-bold text-green-800">{label}</th>
+                                                                    <th key={label} className="p-3 text-center border border-[#D4AF37]/20 min-w-[80px] font-bold text-slate-900">{label}</th>
                                                                 ))}
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             {selectedSizes.map((size, sizeIndex) => (
                                                                 <tr key={size}>
-                                                                    <td className="p-2 font-bold border border-green-100 bg-green-50/50">
+                                                                    <td className="p-2 font-bold border border-[#D4AF37]/20 bg-slate-50">
                                                                         <input
                                                                             type="text"
                                                                             value={size}
@@ -1468,13 +1471,13 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                 setPricesPerVariant(updatedPrices);
                                                                             }}
                                                                             onFocus={(e) => e.target.select()}
-                                                                            className="w-full px-2 py-1 text-sm font-bold bg-transparent border-0 focus:ring-2 focus:ring-green-500 rounded min-w-[80px]"
+                                                                            className="w-full px-2 py-1 text-sm font-bold bg-transparent border-0 focus:ring-2 focus:ring-[#D4AF37] rounded min-w-[80px] text-slate-900"
                                                                         />
                                                                     </td>
                                                                     {activeVariantLabels.map(label => {
                                                                         const key = `${size}-${label}`;
                                                                         return (
-                                                                            <td key={key} className="p-2 border border-green-100">
+                                                                            <td key={key} className="p-2 border border-[#D4AF37]/20">
                                                                                 <input
                                                                                     type="text"
                                                                                     inputMode="numeric"
@@ -1490,7 +1493,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                         }));
                                                                                     }}
                                                                                     onFocus={(e) => e.target.select()}
-                                                                                    className="w-full px-2 py-3 text-center bg-white border border-green-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-green-500 shadow-sm min-w-[90px]"
+                                                                                    className="w-full px-2 py-3 text-center bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-[#D4AF37] shadow-sm min-w-[90px] text-slate-900"
                                                                                     placeholder="0"
                                                                                 />
                                                                             </td>
@@ -1504,22 +1507,26 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             </div>
 
                                             {/* Reseller Price Matrix */}
+                                            {/* Reseller Price Matrix */}
                                             <div>
-                                                <h4 className="text-sm font-bold text-blue-700 mb-3">Matrix Harga Reseller</h4>
+                                                <h4 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                                    <span className="w-1 h-4 bg-[#997B2C] rounded-full"></span>
+                                                    Matrix Harga Reseller
+                                                </h4>
                                                 <div className="overflow-x-auto pb-2">
                                                     <table className="w-full">
                                                         <thead>
-                                                            <tr className="bg-blue-50">
-                                                                <th className="p-3 text-left border border-blue-100 min-w-[80px]">Size</th>
+                                                            <tr className="bg-[#997B2C]/10">
+                                                                <th className="p-3 text-left border border-[#997B2C]/20 min-w-[80px] text-slate-900">Size</th>
                                                                 {activeVariantLabels.map(label => (
-                                                                    <th key={label} className="p-3 text-center border border-blue-100 min-w-[80px] font-bold text-blue-800">{label}</th>
+                                                                    <th key={label} className="p-3 text-center border border-[#997B2C]/20 min-w-[80px] font-bold text-slate-900">{label}</th>
                                                                 ))}
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             {selectedSizes.map((size, sizeIndex) => (
                                                                 <tr key={size}>
-                                                                    <td className="p-2 font-bold border border-blue-100 bg-blue-50/50">
+                                                                    <td className="p-2 font-bold border border-[#997B2C]/20 bg-slate-50">
                                                                         <input
                                                                             type="text"
                                                                             value={size}
@@ -1539,13 +1546,13 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                 setPricesPerVariant(updatedPrices);
                                                                             }}
                                                                             onFocus={(e) => e.target.select()}
-                                                                            className="w-full px-2 py-1 text-sm font-bold bg-transparent border-0 focus:ring-2 focus:ring-blue-500 rounded min-w-[80px]"
+                                                                            className="w-full px-2 py-1 text-sm font-bold bg-transparent border-0 focus:ring-2 focus:ring-[#997B2C] rounded min-w-[80px] text-slate-900"
                                                                         />
                                                                     </td>
                                                                     {activeVariantLabels.map(label => {
                                                                         const key = `${size}-${label}`;
                                                                         return (
-                                                                            <td key={key} className="p-2 border border-blue-100">
+                                                                            <td key={key} className="p-2 border border-[#997B2C]/20">
                                                                                 <input
                                                                                     type="text"
                                                                                     inputMode="numeric"
@@ -1561,7 +1568,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                         }));
                                                                                     }}
                                                                                     onFocus={(e) => e.target.select()}
-                                                                                    className="w-full px-2 py-3 text-center bg-white border border-blue-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-blue-500 shadow-sm min-w-[90px]"
+                                                                                    className="w-full px-2 py-3 text-center bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-[#997B2C] shadow-sm min-w-[90px] text-slate-900"
                                                                                     placeholder="0"
                                                                                 />
                                                                             </td>
@@ -1579,16 +1586,16 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                             </div>
 
                             {/* Pricing Rules Editor (Moved Retail Markup Inside) */}
-                            <div className="mb-5 border border-blue-200 rounded-xl overflow-hidden bg-white">
+                            <div className="mb-5 border border-[#D4AF37]/30 rounded-xl overflow-hidden bg-white shadow-sm">
                                 <button
                                     type="button"
                                     onClick={() => setShowPricingRules(!showPricingRules)}
-                                    className="w-full px-4 py-3 bg-blue-50 text-left flex justify-between items-center"
+                                    className="w-full px-4 py-3 bg-gradient-to-r from-[#D4AF37]/10 to-transparent text-left flex justify-between items-center hover:bg-[#D4AF37]/20 transition-colors"
                                 >
-                                    <span className="text-sm font-medium text-blue-800">
+                                    <span className="text-sm font-medium text-slate-900">
                                         ⚙️ Aturan Harga & Markup
                                     </span>
-                                    <span className="text-blue-600 text-xs">
+                                    <span className="text-slate-500 text-xs">
                                         {showPricingRules ? '▲ Tutup' : '▼ Setup'}
                                     </span>
                                 </button>
@@ -1661,7 +1668,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             </div>
                                                         </div>
                                                         <div>
-                                                            <label className="block text-[10px] text-blue-600 font-bold">+ Markup Reseller (Cuan)</label>
+                                                            <label className="block text-[10px] text-[#997B2C] font-bold">+ Markup Reseller (Cuan)</label>
                                                             <input
                                                                 type="text"
                                                                 value={formatThousands(rule.retailMarkup)}
@@ -1670,7 +1677,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     newRules[index] = { ...rule, retailMarkup: parseFormattedNumber(e.target.value) };
                                                                     setUploadSettings(prev => ({ ...prev, pricingRules: newRules }));
                                                                 }}
-                                                                className="w-full px-2 py-2 text-base font-bold text-blue-700 bg-blue-50 border border-blue-300 rounded"
+                                                                className="w-full px-2 py-2 text-base font-bold text-[#997B2C] bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded"
                                                             />
                                                         </div>
                                                     </div>
@@ -1941,19 +1948,19 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             value={formatThousands(retailPrice)}
                                             onChange={(e) => setFixedPrices(prev => ({ ...prev, retail: parseFormattedNumber(e.target.value) }))}
                                             onFocus={(e) => e.target.select()}
-                                            className="w-full px-4 py-3 border-2 border-green-400 rounded-xl text-lg font-bold text-green-700 bg-green-50 focus:ring-2 focus:ring-green-500"
+                                            className="w-full px-4 py-3 border-2 border-[#D4AF37]/50 rounded-xl text-lg font-bold text-[#997B2C] bg-[#D4AF37]/5 focus:ring-2 focus:ring-[#D4AF37]"
                                             placeholder="0"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-bold text-blue-700 mb-1">Harga Reseller</label>
+                                        <label className="block text-sm font-bold text-[#997B2C] mb-1">Harga Reseller</label>
                                         <input
                                             type="text"
                                             inputMode="numeric"
                                             value={formatThousands(resellerPrice)}
                                             onChange={(e) => setFixedPrices(prev => ({ ...prev, reseller: parseFormattedNumber(e.target.value) }))}
                                             onFocus={(e) => e.target.select()}
-                                            className="w-full px-4 py-3 border-2 border-blue-400 rounded-xl text-lg font-bold text-blue-700 bg-blue-50 focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-4 py-3 border-2 border-[#D4AF37]/50 rounded-xl text-lg font-bold text-[#997B2C] bg-[#D4AF37]/5 focus:ring-2 focus:ring-[#D4AF37]"
                                             placeholder="0"
                                         />
                                     </div>
@@ -1970,7 +1977,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             <button
                                                 type="button"
                                                 onClick={() => setShowPricePerVariant(!showPricePerVariant)}
-                                                className="w-full px-3 py-2 bg-orange-50 rounded-lg text-left flex justify-between items-center border border-orange-200"
+                                                className="w-full px-3 py-2 bg-[#D4AF37]/10 rounded-lg text-left flex justify-between items-center border border-[#D4AF37]/30"
                                             >
                                                 <span className="text-xs font-medium text-orange-800">
                                                     💰 Harga Beda per Size / Varian?
@@ -1984,11 +1991,11 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 <div className="mt-3 p-4 bg-white rounded-lg border border-orange-200 space-y-5">
                                                     {/* Retail Price Matrix */}
                                                     <div>
-                                                        <h4 className="text-sm font-bold text-green-700 mb-3">💚 Matrix Harga Retail</h4>
+                                                        <h4 className="text-sm font-bold text-[#997B2C] mb-3">💰 Matrix Harga Retail</h4>
                                                         <div className="overflow-x-auto -mx-2 px-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
                                                             <table className="w-full text-sm min-w-[320px]">
                                                                 <thead>
-                                                                    <tr className="bg-green-50">
+                                                                    <tr className="bg-[#D4AF37]/20">
                                                                         <th className="px-2 py-1 text-left border border-green-100">Size</th>
                                                                         {activeVariantLabels.map(label => (
                                                                             <th key={label} className="px-2 py-1 text-center border border-green-100">{label}</th>
@@ -2018,7 +2025,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                                 }));
                                                                                             }}
                                                                                             onFocus={(e) => e.target.select()}
-                                                                                            className="w-full px-2 py-2 text-center bg-white border border-green-300 rounded text-sm font-medium focus:ring-2 focus:ring-green-500"
+                                                                                            className="w-full px-2 py-2 text-center bg-white border border-[#D4AF37]/30 rounded text-sm font-medium focus:ring-2 focus:ring-[#D4AF37]"
                                                                                         />
                                                                                     </td>
                                                                                 );
@@ -2032,11 +2039,11 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
                                                     {/* Reseller Price Matrix */}
                                                     <div>
-                                                        <h4 className="text-sm font-bold text-blue-700 mb-3">💙 Matrix Harga Reseller</h4>
+                                                        <h4 className="text-sm font-bold text-[#997B2C] mb-3">💰 Matrix Harga Reseller</h4>
                                                         <div className="overflow-x-auto -mx-2 px-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
                                                             <table className="w-full text-sm min-w-[320px]">
                                                                 <thead>
-                                                                    <tr className="bg-blue-50">
+                                                                    <tr className="bg-[#D4AF37]/20">
                                                                         <th className="px-2 py-2 text-left border border-blue-100 font-bold">Size</th>
                                                                         {activeVariantLabels.map(label => (
                                                                             <th key={label} className="px-2 py-2 text-center border border-blue-100 font-bold min-w-[80px]">{label}</th>
@@ -2066,7 +2073,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                                 }));
                                                                                             }}
                                                                                             onFocus={(e) => e.target.select()}
-                                                                                            className="w-full px-2 py-2 text-center bg-white border border-blue-300 rounded text-sm font-medium focus:ring-2 focus:ring-blue-500"
+                                                                                            className="w-full px-2 py-2 text-center bg-white border border-[#D4AF37]/30 rounded text-sm font-medium focus:ring-2 focus:ring-[#D4AF37]"
                                                                                         />
                                                                                     </td>
                                                                                 );
