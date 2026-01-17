@@ -18,12 +18,12 @@ export const geminiImageService = {
         const enhancedPrompt = `High quality professional fashion banner, wide aspect ratio 3:1, photorealistic, cinematic lighting, elegant, minimalist: ${prompt}`;
 
         try {
-            console.log('Attempting Native Generation with gemini-2.0-flash');
+            console.log('Attempting Native Generation with gemini-2.5-flash-image');
             const genAI = new GoogleGenerativeAI(API_KEY);
 
-            // STRICT MODE: Only use Gemini Native
-            // Using 'gemini-2.0-flash' as requested by user
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+            // STRICT MODE: Only use Gemini Native Image Model
+            // Using 'gemini-2.5-flash-image' for native image generation
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
 
             const result = await model.generateContent(enhancedPrompt);
             const response = result.response;

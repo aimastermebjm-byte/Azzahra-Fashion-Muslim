@@ -7,3 +7,5 @@ service-account.json
 .wwebjs_cache
 .wwebjs_auth/
 .wwebjs_cache/
+.vercel
+.env*.local
