@@ -75,6 +75,70 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
         }
     };
 
+    // Compress image using canvas - max 2MB, resize if needed
+    const compressImage = async (file: File, maxSizeMB: number = 2): Promise<File> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let { width, height } = img;
+
+                // Max dimensions for banner (1200x400 is ideal for 3:1 ratio)
+                const maxWidth = 1200;
+                const maxHeight = 400;
+
+                // Scale down if too large
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+                if (height > maxHeight) {
+                    width = (width * maxHeight) / height;
+                    height = maxHeight;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error('Canvas context not available'));
+                    return;
+                }
+
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Start with quality 0.9, reduce until under maxSizeMB
+                let quality = 0.9;
+                const tryCompress = () => {
+                    canvas.toBlob(
+                        (blob) => {
+                            if (!blob) {
+                                reject(new Error('Failed to compress image'));
+                                return;
+                            }
+
+                            console.log(`📸 Compressed: ${(blob.size / 1024 / 1024).toFixed(2)}MB at quality ${quality}`);
+
+                            if (blob.size > maxSizeMB * 1024 * 1024 && quality > 0.3) {
+                                quality -= 0.1;
+                                tryCompress();
+                            } else {
+                                const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+                                resolve(compressedFile);
+                            }
+                        },
+                        'image/jpeg',
+                        quality
+                    );
+                };
+                tryCompress();
+            };
+            img.onerror = () => reject(new Error('Failed to load image for compression'));
+            img.src = URL.createObjectURL(file);
+        });
+    };
+
     // Handle Form Submit
     const handleSubmit = async () => {
         if (!formData.title) {
@@ -89,7 +153,7 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
 
         setIsSubmitting(true);
         try {
-            let finalImageUrl = formData.imageUrl;
+            let finalImageUrl = '';  // Start empty, only use Storage URL
             let fileToUpload = imageFile;
 
             // Handle AI-generated blob URLs - convert to File first
@@ -99,19 +163,30 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
                     const response = await fetch(formData.imageUrl);
                     const blob = await response.blob();
                     fileToUpload = new File([blob], `ai_banner_${Date.now()}.png`, { type: 'image/png' });
-                    console.log('✅ Blob converted to File:', fileToUpload.name);
+                    console.log('✅ Blob converted to File:', fileToUpload.name, `(${(fileToUpload.size / 1024 / 1024).toFixed(2)}MB)`);
                 } catch (blobError) {
                     console.error('Failed to convert blob:', blobError);
                     throw new Error('Gagal memproses gambar AI. Coba generate ulang.');
                 }
             }
 
-            // Upload image to Firebase Storage if new file selected or AI blob converted
+            // Compress image if file exists and is larger than 2MB
             if (fileToUpload) {
+                if (fileToUpload.size > 2 * 1024 * 1024) {
+                    console.log('🔄 Compressing large image...');
+                    fileToUpload = await compressImage(fileToUpload, 2);
+                    console.log('✅ Compression complete:', `${(fileToUpload.size / 1024 / 1024).toFixed(2)}MB`);
+                }
+
+                // Upload to Firebase Storage
                 const timestamp = Date.now();
                 const storageRef = ref(storage, `banners/${timestamp}_${fileToUpload.name.replace(/[^a-zA-Z0-9.]/g, '_')}`);
                 await uploadBytes(storageRef, fileToUpload);
                 finalImageUrl = await getDownloadURL(storageRef);
+                console.log('✅ Uploaded to Storage:', finalImageUrl);
+            } else if (formData.imageUrl && !formData.imageUrl.startsWith('blob:') && !formData.imageUrl.startsWith('data:')) {
+                // Existing URL (for editing) - use as is
+                finalImageUrl = formData.imageUrl;
             }
 
             if (editingId) {
