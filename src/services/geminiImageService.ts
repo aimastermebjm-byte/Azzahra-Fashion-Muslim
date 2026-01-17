@@ -14,8 +14,11 @@ export const geminiImageService = {
             throw new Error('API Key Gemini tidak ditemukan. Mohon konfigurasi VITE_GEMINI_API_KEY.');
         }
 
-        // Enhance prompt for banner context
-        const enhancedPrompt = `High quality professional fashion banner, wide aspect ratio 3:1, photorealistic, cinematic lighting, elegant, minimalist: ${prompt}`;
+        // Enhanced prompt specifically for HORIZONTAL BANNER format
+        const enhancedPrompt = `Create a HORIZONTAL WIDE promotional banner image (landscape orientation, extremely wide aspect ratio like 3:1 or 4:1). 
+The banner should be suitable for website header/carousel. Style: professional, elegant, high-end fashion brand aesthetic, cinematic lighting, minimalist.
+Content: ${prompt}
+IMPORTANT: The image MUST be horizontal/landscape, NOT square, NOT portrait. Wide banner format.`;
 
         try {
             console.log('Attempting Native Generation with gemini-2.5-flash-image');

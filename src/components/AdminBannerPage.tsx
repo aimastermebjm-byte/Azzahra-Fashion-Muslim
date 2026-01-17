@@ -75,7 +75,7 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
         }
     };
 
-    // Compress image using canvas - max 2MB, resize if needed
+    // Compress image using canvas - max 2MB, scale down proportionally (NO CROP)
     const compressImage = async (file: File, maxSizeMB: number = 2): Promise<File> => {
         return new Promise((resolve, reject) => {
             const img = new Image();
@@ -83,19 +83,17 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
                 const canvas = document.createElement('canvas');
                 let { width, height } = img;
 
-                // Max dimensions for banner (1200x400 is ideal for 3:1 ratio)
-                const maxWidth = 1200;
-                const maxHeight = 400;
+                // Only limit max width for file size - NO HEIGHT LIMIT to avoid cropping
+                const maxWidth = 1600;
 
-                // Scale down if too large
+                // Scale down proportionally if width exceeds max (keeps aspect ratio intact)
                 if (width > maxWidth) {
-                    height = (height * maxWidth) / width;
+                    const scale = maxWidth / width;
                     width = maxWidth;
+                    height = height * scale;
                 }
-                if (height > maxHeight) {
-                    width = (width * maxHeight) / height;
-                    height = maxHeight;
-                }
+
+                console.log(`📐 Resize to: ${Math.round(width)}x${Math.round(height)} (original: ${img.width}x${img.height})`);
 
                 canvas.width = width;
                 canvas.height = height;
