@@ -38,6 +38,8 @@ export interface Transaction {
     total: number;
     modal?: number; // costPrice per unit
     modalTotal?: number; // total modal for this item
+    brand?: string | null; // brand from productBatches
+    category?: string | null; // category from productBatches
   }[];
   subtotal: number;
   shippingCost: number;
@@ -237,7 +239,9 @@ class ReportsService {
             price: unitPrice,
             total: unitPrice * quantity,
             modal: costPrice,
-            modalTotal: costPrice * quantity
+            modalTotal: costPrice * quantity,
+            brand: product?.brand || product?.merk || null,
+            category: product?.category || null
           };
         }) || [];
 

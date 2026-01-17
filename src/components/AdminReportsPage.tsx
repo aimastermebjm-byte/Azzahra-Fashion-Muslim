@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PageHeader from './PageHeader';
 import {
-  Download, BarChart3, TrendingUp, Package, Users,
-  DollarSign, CheckCircle, XCircle,
+  Download, Package, Users,
   ArrowUpRight, ArrowDownRight,
-  Search, ChevronDown
+  Search, ChevronDown, XCircle
 } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
@@ -20,6 +19,10 @@ import {
   ProductBuyerSummary
 } from '../services/reportsService';
 import StockHistoryModal from './StockHistoryModal';
+import {
+  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 
 interface AdminReportsPageProps {
   onBack: () => void;
@@ -748,6 +751,78 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     }).format(amount);
   };
 
+  // Chart color palette
+  const CHART_COLORS = ['#D4AF37', '#997B2C', '#EDD686', '#B8860B', '#DAA520', '#FFD700', '#8B7355', '#CD853F'];
+
+  // Aggregate daily sales data for chart
+  const dailySalesData = useMemo(() => {
+    if (filteredTransactions.length === 0) return [];
+
+    const dailyMap: Record<string, { date: string, nilai: number, jumlah: number }> = {};
+
+    for (const transaction of filteredTransactions) {
+      const dateKey = transaction.date; // Assuming date is already in YYYY-MM-DD format
+      if (!dailyMap[dateKey]) {
+        dailyMap[dateKey] = { date: dateKey, nilai: 0, jumlah: 0 };
+      }
+      dailyMap[dateKey].nilai += transaction.subtotal;
+      dailyMap[dateKey].jumlah += transaction.items?.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0) || 1;
+    }
+
+    return Object.values(dailyMap)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-14) // Last 14 days
+      .map(d => ({
+        ...d,
+        tanggal: new Date(d.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })
+      }));
+  }, [filteredTransactions]);
+
+  // Aggregate monthly sales data for chart
+  const monthlySalesData = useMemo(() => {
+    if (filteredTransactions.length === 0) return [];
+
+    const monthlyMap: Record<string, { month: string, nilai: number, jumlah: number }> = {};
+
+    for (const transaction of filteredTransactions) {
+      const date = new Date(transaction.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthLabel = date.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
+
+      if (!monthlyMap[monthKey]) {
+        monthlyMap[monthKey] = { month: monthLabel, nilai: 0, jumlah: 0 };
+      }
+      monthlyMap[monthKey].nilai += transaction.subtotal;
+      monthlyMap[monthKey].jumlah += transaction.items?.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0) || 1;
+    }
+
+    return Object.entries(monthlyMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6) // Last 6 months
+      .map(([_, data]) => data);
+  }, [filteredTransactions]);
+
+  // Aggregate sales by brand/category for pie chart
+  const salesByBrandData = useMemo(() => {
+    if (filteredTransactions.length === 0) return [];
+
+    const brandMap: Record<string, number> = {};
+
+    for (const transaction of filteredTransactions) {
+      if (transaction.items) {
+        for (const item of transaction.items) {
+          const brand = item.brand || 'Tanpa Brand';
+          brandMap[brand] = (brandMap[brand] || 0) + (item.total || item.price * item.quantity);
+        }
+      }
+    }
+
+    return Object.entries(brandMap)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8); // Top 8 brands
+  }, [filteredTransactions]);
+
   // Export functionality
   const exportToCSV = (data: any[], filename: string) => {
     // Simple CSV export
@@ -799,255 +874,329 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const reportInfo = getReportInfo();
 
   return (
-    <div className="min-h-screen bg-brand-surface">
+    <div className="min-h-screen bg-gray-50">
       <PageHeader
         title={reportInfo.title}
         subtitle={reportInfo.subtitle}
         onBack={onBack}
-        variant="gradient"
-        align="between"
-      >
-        {/* Report Type Selector Dropdown */}
-        <div className="mb-4">
-          <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
-            <label className="text-xs uppercase tracking-wide text-white/70 mb-2 block">Jenis Laporan</label>
+      />
+
+      <div className="p-4 space-y-4">
+        {/* Filters Section - 3D Gold Cards */}
+        <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 shine-effect">
+          {/* Report Type Selector */}
+          <div className="mb-4">
+            <label className="text-xs uppercase tracking-wide text-gray-500 font-bold mb-2 block">Jenis Laporan</label>
             <div className="relative">
               <select
                 value={reportType}
                 onChange={(e) => setReportType(e.target.value as any)}
-                className="w-full appearance-none rounded-xl border border-white/30 bg-white/95 px-4 py-3 pr-10 text-sm font-semibold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer"
+                className="w-full appearance-none rounded-xl border-2 border-[#D4AF37] bg-white px-4 py-3 pr-10 text-base font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 cursor-pointer"
               >
-                <option value="summary">📈 Ringkasan Laporan</option>
-                <option value="sales">📊 Laporan Penjualan</option>
-                <option value="products">📦 Laporan Produk Terjual</option>
-                <option value="invoice">📄 Laporan Invoice</option>
-                <option value="inventory">📦 Laporan Persediaan</option>
-                {isOwner && <option value="cashflow">💰 Laporan Arus Kas</option>}
-                {isOwner && <option value="profitloss">📈 Laporan Rugi Laba</option>}
-                <option value="detail">👁 Laporan Detail</option>
+                <option value="summary">Ringkasan Laporan</option>
+                <option value="sales">Laporan Penjualan</option>
+                <option value="products">Laporan Produk Terjual</option>
+                <option value="invoice">Laporan Invoice</option>
+                <option value="inventory">Laporan Persediaan</option>
+                {isOwner && <option value="cashflow">Laporan Arus Kas</option>}
+                {isOwner && <option value="profitloss">Laporan Rugi Laba</option>}
+                <option value="detail">Laporan Detail</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#997B2C] pointer-events-none" />
             </div>
           </div>
-        </div>
 
-        {/* Filters - Compact Dropdown Style */}
-        <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
-          {/* Periode Filter */}
-          <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
-            <label className="text-xs uppercase tracking-wide text-white/70 mb-2 block">Periode</label>
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value as any)}
-              className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/50"
-            >
-              <option value="hari_ini">Hari ini</option>
-              <option value="kemaren">Kemarin</option>
-              <option value="bulan_ini">Bulan ini</option>
-              <option value="bulan_kemaren">Bulan lalu</option>
-              <option value="custom">Custom Range</option>
-            </select>
-            {dateFilter === 'custom' && (
-              <div className="mt-2 grid gap-2">
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-xs text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/40"
-                  placeholder="Dari"
-                />
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-xs text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/40"
-                  placeholder="Sampai"
-                />
+          {/* Filters Grid */}
+          <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
+            {/* Periode Filter */}
+            <div>
+              <label className="text-xs uppercase tracking-wide text-gray-500 font-bold mb-2 block">Periode</label>
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value as any)}
+                className="w-full rounded-xl border-2 border-[#D4AF37] bg-white px-3 py-2 text-sm font-semibold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
+              >
+                <option value="hari_ini">Hari ini</option>
+                <option value="kemaren">Kemarin</option>
+                <option value="bulan_ini">Bulan ini</option>
+                <option value="bulan_kemaren">Bulan lalu</option>
+                <option value="custom">Custom Range</option>
+              </select>
+              {dateFilter === 'custom' && (
+                <div className="mt-2 grid gap-2">
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
+                    placeholder="Dari"
+                  />
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
+                    placeholder="Sampai"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Status Filter - Only for sales/invoice */}
+            {(reportType === 'sales' || reportType === 'invoice' || reportType === 'detail') && (
+              <div>
+                <label className="text-xs uppercase tracking-wide text-gray-500 font-bold mb-2 block">Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as any)}
+                  className="w-full rounded-xl border-2 border-[#D4AF37] bg-white px-3 py-2 text-sm font-semibold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
+                >
+                  <option value="all">Semua Status</option>
+                  <option value="lunas">Lunas</option>
+                  <option value="belum_lunas">Belum Lunas</option>
+                </select>
               </div>
             )}
-          </div>
 
-          {/* Status Filter - Only for sales/invoice */}
-          {(reportType === 'sales' || reportType === 'invoice' || reportType === 'detail') && (
-            <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
-              <label className="text-xs uppercase tracking-wide text-white/70 mb-2 block">Status</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/50"
+            {/* Customer Filter - Only for sales/invoice/detail */}
+            {(reportType === 'sales' || reportType === 'invoice' || reportType === 'detail') && (
+              <div>
+                <label className="text-xs uppercase tracking-wide text-gray-500 font-bold mb-2 block">Pilih Pelanggan</label>
+                <select
+                  value={customerFilter}
+                  onChange={(e) => setCustomerFilter(e.target.value)}
+                  className="w-full rounded-xl border-2 border-[#D4AF37] bg-white px-3 py-2 text-sm font-semibold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
+                >
+                  <option value="">Semua Pelanggan</option>
+                  {users.map((usr) => (
+                    <option key={usr.id} value={usr.name || usr.email}>
+                      {usr.name || usr.email} {usr.phone && `(${usr.phone})`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Payment Method Filter - Only for cashflow */}
+            {reportType === 'cashflow' && (
+              <div>
+                <label className="text-xs uppercase tracking-wide text-gray-500 font-bold mb-2 block">Metode Pembayaran</label>
+                <select
+                  value={paymentMethodFilter}
+                  onChange={(e) => setPaymentMethodFilter(e.target.value as any)}
+                  className="w-full rounded-xl border-2 border-[#D4AF37] bg-white px-3 py-2 text-sm font-semibold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
+                >
+                  <option value="all">Semua Metode</option>
+                  {paymentMethods.map((method) => (
+                    <option key={method.id} value={method.id}>{method.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Category Filter - Only for products/inventory */}
+            {(reportType === 'products' || reportType === 'inventory') && (
+              <div>
+                <label className="text-xs uppercase tracking-wide text-gray-500 font-bold mb-2 block">Kategori Produk</label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full rounded-xl border-2 border-[#D4AF37] bg-white px-3 py-2 text-sm font-bold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
+                >
+                  <option value="all">Semua Kategori</option>
+                  {productCategories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => exportToCSV(filteredTransactions, `laporan_${reportType}.csv`)}
+                className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#EDD686] via-[#D4AF37] to-[#997B2C] px-3 py-2 text-xs font-semibold text-white hover:shadow-lg transition"
               >
-                <option value="all">Semua Status</option>
-                <option value="lunas">Lunas</option>
-                <option value="belum_lunas">Belum Lunas</option>
-              </select>
-            </div>
-          )}
-
-          {/* Customer Filter - Only for sales/invoice/detail */}
-          {(reportType === 'sales' || reportType === 'invoice' || reportType === 'detail') && (
-            <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
-              <label className="text-xs uppercase tracking-wide text-white/70 mb-2 block">Pilih Pelanggan</label>
-              <select
-                value={customerFilter}
-                onChange={(e) => setCustomerFilter(e.target.value)}
-                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/50"
+                <Download className="h-4 w-4" />
+                <span>Export</span>
+              </button>
+              <button
+                onClick={() => {
+                  setStatusFilter('all');
+                  setCustomerFilter('');
+                  setDateFilter('bulan_ini');
+                  setPaymentMethodFilter('all');
+                  setCategoryFilter('all');
+                }}
+                className="rounded-xl border-2 border-[#D4AF37] px-3 py-2 text-xs font-semibold text-[#997B2C] transition hover:bg-[#D4AF37]/10"
               >
-                <option value="">Semua Pelanggan</option>
-                {users.map((usr) => (
-                  <option key={usr.id} value={usr.name || usr.email}>
-                    {usr.name || usr.email} {usr.phone && `(${usr.phone})`}
-                  </option>
-                ))}
-              </select>
+                Reset
+              </button>
             </div>
-          )}
-
-          {/* Payment Method Filter - Only for cashflow */}
-          {reportType === 'cashflow' && (
-            <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
-              <label className="text-xs uppercase tracking-wide text-white/70 mb-2 block">Metode Pembayaran</label>
-              <select
-                value={paymentMethodFilter}
-                onChange={(e) => setPaymentMethodFilter(e.target.value as any)}
-                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-semibold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/50"
-              >
-                <option value="all">Semua Metode</option>
-                {paymentMethods.map((method) => (
-                  <option key={method.id} value={method.id}>{method.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Category Filter - Only for products/inventory */}
-          {(reportType === 'products' || reportType === 'inventory') && (
-            <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white">
-              <label className="text-xs uppercase tracking-wide text-white/70 mb-2 block">Kategori Produk</label>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full rounded-xl border border-white/30 bg-white/95 px-3 py-2 text-sm font-bold text-[#997B2C] focus:outline-none focus:ring-2 focus:ring-white/50"
-              >
-                <option value="all">Semua Kategori</option>
-                {productCategories.map((cat) => (
-                  <option key={cat.id} value={cat.name}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white flex flex-col gap-2">
-            <button
-              onClick={() => exportToCSV(filteredTransactions, `laporan_${reportType}.csv`)}
-              className="flex items-center justify-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-xs font-semibold text-white hover:bg-white/25 transition"
-            >
-              <Download className="h-4 w-4" />
-              <span>Export</span>
-            </button>
-            <button
-              onClick={() => {
-                setStatusFilter('all');
-                setCustomerFilter('');
-                setDateFilter('bulan_ini');
-                setPaymentMethodFilter('all');
-                setCategoryFilter('all');
-              }}
-              className="rounded-xl border border-white/30 px-3 py-2 text-xs font-semibold text-white/80 transition hover:border-white hover:text-white"
-            >
-              Reset
-            </button>
           </div>
         </div>
-      </PageHeader>
-
-      <div className="p-4">
-        {/* Report Content - GOLD THEME */}
+        {/* Report Content - 3D Gold Theme */}
         <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] shine-effect">
           {/* Ringkasan Laporan */}
           {reportType === 'summary' && (
             <div className="p-4">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Ringkasan Performa Bisnis</h3>
 
-              {/* Summary Cards */}
+              {/* Summary Cards - 3D Gold Theme */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="card-elevated p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-500 text-sm">Total Penjualan</p>
-                      <p className="text-xl font-bold text-gray-800">
-                        {formatCurrency(summaryStats.totalSales)}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {filteredTransactions.length} transaksi
-                      </p>
-                    </div>
-                    <div className="bg-[#D4AF37]/10 p-3 rounded-2xl">
-                      <DollarSign className="w-6 h-6 text-[#997B2C]" />
-                    </div>
+                <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-5 relative overflow-hidden group hover:shadow-[0_6px_0_0_#997B2C,0_12px_24px_rgba(153,123,44,0.25)] hover:-translate-y-1 transition-all duration-300 shine-effect">
+                  <div className="absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br from-[#D4AF37]/20 to-transparent rounded-full blur-2xl group-hover:bg-[#D4AF37]/30 transition-all duration-500" />
+                  <div className="relative z-10">
+                    <p className="text-gray-500 text-sm">Total Penjualan</p>
+                    <p className="text-xl font-bold text-gray-800">
+                      {formatCurrency(summaryStats.totalSales)}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {filteredTransactions.length} transaksi
+                    </p>
                   </div>
                 </div>
 
-                <div className="card-elevated p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-500 text-sm">Lunas</p>
-                      <p className="text-xl font-bold text-brand-success">
-                        {summaryStats.lunasCount}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {formatCurrency(summaryStats.totalSales - summaryStats.totalBelumLunas)}
-                      </p>
-                    </div>
-                    <div className="bg-brand-success/10 p-3 rounded-2xl">
-                      <CheckCircle className="w-6 h-6 text-brand-success" />
-                    </div>
+                <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-5 relative overflow-hidden group hover:shadow-[0_6px_0_0_#997B2C,0_12px_24px_rgba(153,123,44,0.25)] hover:-translate-y-1 transition-all duration-300 shine-effect">
+                  <div className="absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br from-[#D4AF37]/20 to-transparent rounded-full blur-2xl group-hover:bg-[#D4AF37]/30 transition-all duration-500" />
+                  <div className="relative z-10">
+                    <p className="text-gray-500 text-sm">Lunas</p>
+                    <p className="text-xl font-bold text-green-600">
+                      {summaryStats.lunasCount}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {formatCurrency(summaryStats.totalSales - summaryStats.totalBelumLunas)}
+                    </p>
                   </div>
                 </div>
 
-                <div className="card-elevated p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-500 text-sm">Belum Lunas</p>
-                      <p className="text-xl font-bold text-brand-warning">
-                        {summaryStats.belumLunasCount}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {formatCurrency(summaryStats.totalBelumLunas)}
-                      </p>
-                    </div>
-                    <div className="bg-brand-warning/10 p-3 rounded-2xl">
-                      <XCircle className="w-6 h-6 text-brand-warning" />
-                    </div>
+                <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-5 relative overflow-hidden group hover:shadow-[0_6px_0_0_#997B2C,0_12px_24px_rgba(153,123,44,0.25)] hover:-translate-y-1 transition-all duration-300 shine-effect">
+                  <div className="absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br from-[#D4AF37]/20 to-transparent rounded-full blur-2xl group-hover:bg-[#D4AF37]/30 transition-all duration-500" />
+                  <div className="relative z-10">
+                    <p className="text-gray-500 text-sm">Belum Lunas</p>
+                    <p className="text-xl font-bold text-amber-600">
+                      {summaryStats.belumLunasCount}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {formatCurrency(summaryStats.totalBelumLunas)}
+                    </p>
                   </div>
                 </div>
 
-                <div className="card-elevated p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-500 text-sm">Rata-rata</p>
-                      <p className="text-xl font-bold text-gray-800">
-                        {formatCurrency(summaryStats.averageTransaction)}
-                      </p>
-                      <p className="text-xs text-gray-500">per transaksi</p>
-                    </div>
-                    <div className="bg-[#D4AF37]/10 p-3 rounded-2xl">
-                      <TrendingUp className="w-6 h-6 text-[#997B2C]" />
-                    </div>
+                <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-5 relative overflow-hidden group hover:shadow-[0_6px_0_0_#997B2C,0_12px_24px_rgba(153,123,44,0.25)] hover:-translate-y-1 transition-all duration-300 shine-effect">
+                  <div className="absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br from-[#D4AF37]/20 to-transparent rounded-full blur-2xl group-hover:bg-[#D4AF37]/30 transition-all duration-500" />
+                  <div className="relative z-10">
+                    <p className="text-gray-500 text-sm">Rata-rata</p>
+                    <p className="text-xl font-bold text-gray-800">
+                      {formatCurrency(summaryStats.averageTransaction)}
+                    </p>
+                    <p className="text-xs text-gray-500">per transaksi</p>
                   </div>
                 </div>
               </div>
 
-              {/* Sales Chart */}
-              <div className="card-elevated p-6 mt-6">
-                <h4 className="text-base font-semibold text-gray-800 mb-4">Grafik Penjualan</h4>
-                <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                  <div className="text-center">
-                    <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">Grafik penjualan akan ditampilkan di sini</p>
-                    <p className="text-xs text-gray-400 mt-1">Implementasi Chart.js atau Recharts sedang dalam proses</p>
+              {/* Daily Sales Chart */}
+              <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-6 mt-6 shine-effect">
+                <h4 className="text-base font-bold text-gray-800 mb-4">📊 Penjualan Harian (14 Hari Terakhir)</h4>
+                {dailySalesData.length > 0 ? (
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={dailySalesData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                        <XAxis dataKey="tanggal" tick={{ fontSize: 11 }} stroke="#6B7280" />
+                        <YAxis yAxisId="left" tickFormatter={(v) => `${(v / 1000000).toFixed(1)}jt`} tick={{ fontSize: 10 }} stroke="#D4AF37" />
+                        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} stroke="#997B2C" />
+                        <Tooltip
+                          formatter={(value: any, name: any) => [
+                            name === 'nilai' ? `Rp ${(value || 0).toLocaleString('id-ID')}` : `${value || 0} pcs`,
+                            name === 'nilai' ? 'Nilai' : 'Jumlah'
+                          ]}
+                          labelStyle={{ fontWeight: 'bold' }}
+                          contentStyle={{ borderRadius: 8, border: '2px solid #D4AF37' }}
+                        />
+                        <Legend />
+                        <Bar yAxisId="left" dataKey="nilai" name="Nilai (Rp)" fill="#D4AF37" radius={[4, 4, 0, 0]} />
+                        <Bar yAxisId="right" dataKey="jumlah" name="Jumlah (pcs)" fill="#997B2C" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
-                </div>
+                ) : (
+                  <div className="h-48 flex items-center justify-center bg-gray-50 rounded-xl">
+                    <p className="text-gray-400">Belum ada data penjualan</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Monthly Sales Chart */}
+              <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-6 mt-6 shine-effect">
+                <h4 className="text-base font-bold text-gray-800 mb-4">📈 Tren Penjualan Bulanan</h4>
+                {monthlySalesData.length > 0 ? (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={monthlySalesData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                        <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#6B7280" />
+                        <YAxis tickFormatter={(v) => `${(v / 1000000).toFixed(1)}jt`} tick={{ fontSize: 10 }} stroke="#D4AF37" />
+                        <Tooltip
+                          formatter={(value: any) => [`Rp ${(value || 0).toLocaleString('id-ID')}`, 'Nilai']}
+                          contentStyle={{ borderRadius: 8, border: '2px solid #D4AF37' }}
+                        />
+                        <Legend />
+                        <Line type="monotone" dataKey="nilai" name="Nilai (Rp)" stroke="#D4AF37" strokeWidth={3} dot={{ fill: '#D4AF37', r: 5 }} activeDot={{ r: 8, fill: '#997B2C' }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-48 flex items-center justify-center bg-gray-50 rounded-xl">
+                    <p className="text-gray-400">Belum ada data bulanan</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Sales by Brand/Category Pie Chart */}
+              <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-6 mt-6 shine-effect">
+                <h4 className="text-base font-bold text-gray-800 mb-4">🏷️ Penjualan per Brand</h4>
+                {salesByBrandData.length > 0 ? (
+                  <div className="h-72 flex flex-col md:flex-row items-center">
+                    <div className="w-full md:w-1/2 h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={salesByBrandData}
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={80}
+                            fill="#D4AF37"
+                            dataKey="value"
+                            nameKey="name"
+                            label={({ name, percent }: any) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                            labelLine={false}
+                          >
+                            {salesByBrandData.map((_, index) => (
+                              <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value: any) => `Rp ${(value || 0).toLocaleString('id-ID')}`} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="w-full md:w-1/2 space-y-2 mt-4 md:mt-0">
+                      {salesByBrandData.map((item, index) => (
+                        <div key={item.name} className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
+                            <span className="text-gray-700 font-medium">{item.name}</span>
+                          </div>
+                          <span className="font-bold text-gray-800">Rp {item.value.toLocaleString('id-ID')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-48 flex items-center justify-center bg-gray-50 rounded-xl">
+                    <p className="text-gray-400">Belum ada data kategori</p>
+                  </div>
+                )}
               </div>
             </div>
           )}

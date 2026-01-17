@@ -378,7 +378,7 @@ const AdminFinancialPage: React.FC<AdminFinancialPageProps> = ({ onBack, user })
         title="Biaya & Pendapatan"
         subtitle="Catat biaya, pendapatan, dan tandai untuk Laba/Rugi"
         onBack={onBack}
-        variant="gradient"
+
       />
 
       <div className="p-4 space-y-4">

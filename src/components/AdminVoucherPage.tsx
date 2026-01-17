@@ -201,15 +201,15 @@ const AdminVoucherPage: React.FC<AdminVoucherPageProps> = ({ onBack, user }) => 
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header - GOLD THEME */}
-            <div className="bg-gradient-to-r from-[#997B2C] via-[#D4AF37] to-[#997B2C] text-white px-4 py-4 sticky top-0 z-10">
+            {/* Header - Clean White */}
+            <div className="bg-white border-b px-4 py-4 sticky top-0 z-10">
                 <div className="flex items-center gap-3">
-                    <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-lg">
-                        <ArrowLeft className="w-5 h-5" />
+                    <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-lg">
+                        <ArrowLeft className="w-5 h-5 text-gray-700" />
                     </button>
                     <div>
-                        <h1 className="text-lg font-bold">Kelola Voucher</h1>
-                        <p className="text-xs text-white/80">{vouchers.length} voucher total</p>
+                        <h1 className="text-lg font-bold text-gray-900">Kelola Voucher</h1>
+                        <p className="text-xs text-gray-500">{vouchers.length} voucher total</p>
                     </div>
                 </div>
             </div>

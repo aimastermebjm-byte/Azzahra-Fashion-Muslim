@@ -181,10 +181,12 @@ const HomePage: React.FC<HomePageProps> = ({
   }, [searchQuery, selectedCategory, statusFilter, sortBy, user?.role, searchProducts]);
 
   const handleBannerClick = (banner: any) => {
-    if (banner.type === 'flashsale') {
+    if (banner.actionType === 'flash_sale') {
       if (onNavigateToFlashSale) {
         onNavigateToFlashSale();
       }
+    } else if (banner.actionType === 'url' && banner.actionData?.url) {
+      window.open(banner.actionData.url, '_blank');
     }
   };
 

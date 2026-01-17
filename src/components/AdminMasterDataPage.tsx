@@ -196,7 +196,7 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
         title="Data Master"
         subtitle="Kelola kategori keuangan dan metode pembayaran"
         onBack={onBack}
-        variant="gradient"
+
       />
 
       <div className="p-4 space-y-4">

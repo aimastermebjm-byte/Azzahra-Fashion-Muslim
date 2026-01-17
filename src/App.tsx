@@ -29,6 +29,7 @@ import AdminPaymentVerificationPage from './components/AdminPaymentVerificationP
 import AdminStockOpnamePage from './components/AdminStockOpnamePage';
 import AdminStockAdjustmentPage from './components/AdminStockAdjustmentPage';
 import AdminVoucherPage from './components/AdminVoucherPage';
+import AdminBannerPage from './components/AdminBannerPage';
 import BottomNavigation from './components/BottomNavigation';
 import InstallPrompt from './components/InstallPrompt';
 import PaymentAutoVerifier from './components/PaymentAutoVerifier';
@@ -43,7 +44,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from './utils/firebaseClient';
 import './utils/forceSyncGlobalIndex'; // Load force sync function to window
 
-type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'admin-cache' | 'admin-financials' | 'admin-master' | 'admin-payment-verification' | 'admin-stock-opname' | 'admin-stock-adjustments' | 'admin-voucher' | 'ongkir-test';
+type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'admin-cache' | 'admin-financials' | 'admin-master' | 'admin-payment-verification' | 'admin-stock-opname' | 'admin-stock-adjustments' | 'admin-voucher' | 'admin-banner' | 'ongkir-test';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -104,6 +105,7 @@ function AppContent() {
       'admin-stock-opname': 'account',
       'admin-stock-adjustments': 'admin-products', // Return to products page
       'admin-voucher': 'account',
+      'admin-banner': 'account',
       'ongkir-test': 'account'
     };
     return parentMap[page] || 'home';
@@ -671,6 +673,10 @@ function AppContent() {
     setCurrentPage('admin-voucher');
   };
 
+  const handleNavigateToAdminBanner = () => {
+    setCurrentPage('admin-banner');
+  };
+
 
 
   const renderCurrentPage = () => {
@@ -758,6 +764,7 @@ function AppContent() {
             onNavigateToAddressManagement={() => setCurrentPage('address-management')}
             onNavigateToAdminStockOpname={handleNavigateToAdminStockOpname}
             onNavigateToAdminVoucher={handleNavigateToAdminVoucher}
+            onNavigateToAdminBanner={handleNavigateToAdminBanner}
           />
         );
       case 'address-management':
@@ -798,6 +805,10 @@ function AppContent() {
       case 'admin-cache':
         return <AdminCacheManagement onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-financials':
+        return <AdminFinancialPage onBack={() => setCurrentPage('account')} user={user} />;
+      case 'admin-banner':
+        return <AdminBannerPage onBack={() => setCurrentPage('account')} user={user} />;
+      case 'admin-master':
         return <AdminFinancialPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-master':
         return <AdminMasterDataPage onBack={() => setCurrentPage('account')} user={user} />;

@@ -21,6 +21,7 @@ interface AccountPageProps {
   onNavigateToAdminStockOpname?: () => void;
   onNavigateToAdminVoucher?: () => void;
   onNavigateToAddressManagement?: () => void;
+  onNavigateToAdminBanner?: () => void;
 }
 
 const AccountPage: React.FC<AccountPageProps> = ({
@@ -36,7 +37,8 @@ const AccountPage: React.FC<AccountPageProps> = ({
   onNavigateToAdminPaymentVerification,
   onNavigateToAdminStockOpname,
   onNavigateToAdminVoucher,
-  onNavigateToAddressManagement
+  onNavigateToAddressManagement,
+  onNavigateToAdminBanner
 }) => {
   const { showToast } = useToast();
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -500,9 +502,8 @@ const AccountPage: React.FC<AccountPageProps> = ({
                   <p className="text-[10px] font-bold text-slate-900 text-center leading-tight">Voucher</p>
                 </button>
 
-                {/* Atur Banner - NEW */}
                 <button
-                  onClick={() => {/* TODO: Navigate to Banner Management */ }}
+                  onClick={onNavigateToAdminBanner}
                   className="p-3 bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] hover:shadow-[0_2px_0_0_#7a6223,0_3px_15px_rgba(153,123,44,0.25)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#7a6223] active:translate-y-0.5 transition-all duration-150 shine-effect"
                 >
                   <svg className="w-6 h-6 mx-auto mb-1" style={{ stroke: 'url(#gold-icon-gradient)', fill: 'none' }} viewBox="0 0 24 24">

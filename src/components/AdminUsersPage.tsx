@@ -74,7 +74,7 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
 
     try {
       setIsSaving(true);
-      await usersService.updateUser(editingUser.id, editForm);
+      await usersService.updateUser(editingUser.id, editForm as any);
       setEditingUser(null);
       // Optional: Show success alert or toast here
     } catch (err) {
@@ -85,13 +85,26 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
     }
   };
 
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!window.confirm(`Apakah Anda yakin ingin menghapus user "${userName}"? Tindakan ini tidak dapat dibatalkan.`)) {
+      return;
+    }
+
+    try {
+      await usersService.deleteUser(userId);
+      // Optional: Toast success
+    } catch (err) {
+      console.error(err);
+      alert('Gagal menghapus user');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <PageHeader
         title="Kelola Pengguna"
         subtitle="Pantau role, status, dan aktivitas pelanggan/reseller"
         onBack={onBack}
-        variant="gradient"
         actions={(
           <button className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-[#997B2C] hover:text-[#997B2C]/80 transition hover:bg-white/90 shadow-md">
             <Plus className="w-4 h-4" />
@@ -225,7 +238,7 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
                   </div>
                   <div className="text-center p-2 bg-gray-50 rounded">
                     <p className="text-xs text-gray-600">Total Belanja</p>
-                    <p className="font-semibold">Rp {userItem.totalSpent.toLocaleString('id-ID')}</p>
+                    <p className="font-semibold">Rp {(userItem.totalSpent || 0).toLocaleString('id-ID')}</p>
                   </div>
                   {userItem.role === 'reseller' && (
                     <div className="text-center p-2 bg-blue-50 rounded">
@@ -254,7 +267,11 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
                       <Edit className="w-4 h-4" />
                     </button>
                     {user?.role === 'owner' && (
-                      <button className="p-1 text-red-600 hover:text-red-700 transition-colors">
+                      <button
+                        onClick={() => handleDeleteUser(userItem.id, userItem.name)}
+                        className="p-1 text-red-600 hover:text-red-700 transition-colors"
+                        title="Hapus User"
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}

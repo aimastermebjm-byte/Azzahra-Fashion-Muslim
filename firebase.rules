@@ -227,5 +227,11 @@ service cloud.firestore {
       allow update: if isSignedIn() && request.auth.uid == resource.data.userId; // User marks as read
       allow delete: if isOwner();
     }
+
+    // Banners - Public read for homepage, Admin/Owner managed
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow write: if isAdminOrOwner();
+    }
   }
 }

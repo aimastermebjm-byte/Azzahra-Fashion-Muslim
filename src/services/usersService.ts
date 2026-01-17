@@ -94,7 +94,8 @@ export const usersService = {
               totalOrders: Number(data.totalOrders || 0),
               totalSpent: Number(data.totalSpent || 0),
               points: Number(data.points || data.resellerPoints || 0),
-              lastLoginAt: data.lastLoginAt || ''
+              lastLoginAt: data.lastLoginAt || '',
+              gender: data.gender || 'male'
             });
           });
 
@@ -135,7 +136,8 @@ export const usersService = {
           totalOrders: Number(data.totalOrders || 0),
           totalSpent: Number(data.totalSpent || 0),
           points: Number(data.points || data.resellerPoints || 0),
-          lastLoginAt: data.lastLoginAt || ''
+          lastLoginAt: data.lastLoginAt || '',
+          gender: data.gender || 'male'
         });
       });
       writeCache(users);
@@ -159,6 +161,17 @@ export const usersService = {
       console.log('✅ User updated successfully:', userId);
     } catch (err) {
       console.error('❌ Error updating user:', err);
+      throw err;
+    }
+  },
+
+  async deleteUser(userId: string): Promise<void> {
+    try {
+      const { deleteDoc, doc } = await import('firebase/firestore');
+      await deleteDoc(doc(db, 'users', userId));
+      console.log('✅ User deleted successfully:', userId);
+    } catch (err) {
+      console.error('❌ Error deleting user:', err);
       throw err;
     }
   }
