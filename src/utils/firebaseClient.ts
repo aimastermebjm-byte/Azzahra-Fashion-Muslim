@@ -3,15 +3,16 @@ import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager
 import { getStorage } from 'firebase/storage';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 
-// Firebase configuration
+// Firebase configuration with HARDCODED FALLBACK values
+// This ensures the app works even without Vercel env vars
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'azzahra-fashion-muslim-ab416.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'azzahra-fashion-muslim-ab416',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'azzahra-fashion-muslim-ab416.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '822661485961',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:822661485961:web:4603488d8bef0119f3fd58',
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-NZSXEKPQER'
 };
 
 // Initialize Firebase
