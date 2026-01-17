@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, X, Check, Package } from 'lucide-react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../utils/firebaseClient';
-
-interface Product {
-    id: string;
-    name: string;
-    price: number;
-    imageUrl?: string;
-    category?: string;
-    brand?: string;
-}
+import { Search, X, Check, Package, Loader2 } from 'lucide-react';
+import { useGlobalProducts } from '../hooks/useGlobalProducts';
 
 interface ProductSelectorModalProps {
     isOpen: boolean;
@@ -25,49 +15,17 @@ const ProductSelectorModal: React.FC<ProductSelectorModalProps> = ({
     onSelect,
     initialSelectedIds = []
 }) => {
-    const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState(false);
+    // Use the global products hook that's already working in the app
+    const { allProducts, loading } = useGlobalProducts();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(initialSelectedIds));
 
     useEffect(() => {
         if (isOpen) {
-            loadProducts();
             setSelectedIds(new Set(initialSelectedIds));
+            setSearchQuery('');
         }
-    }, [isOpen]);
-
-    const loadProducts = async () => {
-        setLoading(true);
-        try {
-            const snapshot = await getDocs(collection(db, 'productBatches'));
-            const allProducts: Product[] = [];
-
-            snapshot.docs.forEach(doc => {
-                const data = doc.data();
-                if (Array.isArray(data.products)) {
-                    data.products.forEach((p: any) => {
-                        if (p.id && p.name) {
-                            allProducts.push({
-                                id: p.id,
-                                name: p.name,
-                                price: Number(p.retailPrice || p.price || 0),
-                                imageUrl: p.image || p.images?.[0],
-                                category: p.category,
-                                brand: p.brand || p.merk
-                            });
-                        }
-                    });
-                }
-            });
-
-            setProducts(allProducts);
-        } catch (error) {
-            console.error('Error loading products:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    }, [isOpen, initialSelectedIds]);
 
     const toggleSelection = (productId: string) => {
         const newSelected = new Set(selectedIds);
@@ -84,7 +42,7 @@ const ProductSelectorModal: React.FC<ProductSelectorModalProps> = ({
         onClose();
     };
 
-    const filteredProducts = products.filter(p =>
+    const filteredProducts = allProducts.filter(p =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.brand?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -120,7 +78,17 @@ const ProductSelectorModal: React.FC<ProductSelectorModalProps> = ({
                 {/* List */}
                 <div className="flex-1 overflow-y-auto p-2">
                     {loading ? (
-                        <div className="text-center py-10">Memuat produk...</div>
+                        <div className="flex flex-col items-center justify-center py-10">
+                            <Loader2 className="w-8 h-8 animate-spin text-[#D4AF37] mb-2" />
+                            <p className="text-gray-500">Memuat produk...</p>
+                        </div>
+                    ) : filteredProducts.length === 0 ? (
+                        <div className="text-center py-10">
+                            <Package className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                            <p className="text-gray-500">
+                                {searchQuery ? 'Tidak ada produk yang cocok' : 'Belum ada produk'}
+                            </p>
+                        </div>
                     ) : (
                         <div className="grid grid-cols-1 gap-2">
                             {filteredProducts.map(product => {
@@ -130,8 +98,8 @@ const ProductSelectorModal: React.FC<ProductSelectorModalProps> = ({
                                         key={product.id}
                                         onClick={() => toggleSelection(product.id)}
                                         className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-all ${isSelected
-                                                ? 'border-[#D4AF37] bg-[#D4AF37]/10'
-                                                : 'border-gray-200 hover:border-[#D4AF37]/50'
+                                            ? 'border-[#D4AF37] bg-[#D4AF37]/10'
+                                            : 'border-gray-200 hover:border-[#D4AF37]/50'
                                             }`}
                                     >
                                         <div className={`w-5 h-5 rounded border flex items-center justify-center ${isSelected ? 'bg-[#D4AF37] border-[#D4AF37]' : 'border-gray-300'
@@ -139,8 +107,8 @@ const ProductSelectorModal: React.FC<ProductSelectorModalProps> = ({
                                             {isSelected && <Check className="w-3 h-3 text-white" />}
                                         </div>
 
-                                        {product.imageUrl ? (
-                                            <img src={product.imageUrl} alt={product.name} className="w-10 h-10 object-cover rounded" />
+                                        {product.image ? (
+                                            <img src={product.image} alt={product.name} className="w-10 h-10 object-cover rounded" />
                                         ) : (
                                             <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
                                                 <Package className="w-5 h-5 text-gray-400" />
@@ -150,7 +118,7 @@ const ProductSelectorModal: React.FC<ProductSelectorModalProps> = ({
                                         <div className="flex-1 min-w-0">
                                             <p className="font-medium text-sm truncate">{product.name}</p>
                                             <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                <span>Rp {product.price.toLocaleString('id-ID')}</span>
+                                                <span>Rp {(product.retailPrice || product.price || 0).toLocaleString('id-ID')}</span>
                                                 {product.brand && <span>• {product.brand}</span>}
                                             </div>
                                         </div>
