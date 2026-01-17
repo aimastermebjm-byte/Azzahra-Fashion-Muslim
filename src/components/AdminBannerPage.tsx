@@ -187,6 +187,11 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
                 finalImageUrl = formData.imageUrl;
             }
 
+            // CRITICAL: Validate that we have a valid image URL before saving
+            if (!finalImageUrl || finalImageUrl.startsWith('blob:') || finalImageUrl.startsWith('data:')) {
+                throw new Error('Gagal upload gambar ke Storage. ImageUrl tidak valid.');
+            }
+
             if (editingId) {
                 // Update
                 await bannerService.updateBanner(editingId, {
