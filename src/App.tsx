@@ -536,8 +536,8 @@ function AppContent() {
         orderRecord.expiresAt = Date.now() + (6 * 60 * 60 * 1000);
       } else if (['reseller', 'admin', 'owner'].includes(userRole)) {
         if (hasReadyStock) {
-          // Reseller with ready stock: 1 day to pay
-          orderRecord.expiresAt = Date.now() + (24 * 60 * 60 * 1000);
+          // Reseller with ready stock: 2 days to pay
+          orderRecord.expiresAt = Date.now() + (48 * 60 * 60 * 1000);
         } else {
           // Reseller with PO only: No limit
           orderRecord.expiresAt = null;
