@@ -1,4 +1,4 @@
-import { collection, getDocs, query, limit, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 
 export interface AdminUser {
@@ -70,9 +70,10 @@ export const usersService = {
     try {
       // Optimization: Limit users to 50 latest for dashboard view
       // If store grows large, this prevents reading 1000+ users on load
+      // Note: Removed orderBy to include users without createdAt field
+      // Sorting is now done client-side after fetch
       const q = query(
         collection(db, 'users'),
-        orderBy('createdAt', 'desc'),
         limit(limitCount)
       );
 
