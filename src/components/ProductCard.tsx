@@ -9,6 +9,7 @@ interface ProductCardProps {
   isFlashSale?: boolean;
   isFeatured?: boolean;
   user?: any;
+  collectionDiscount?: number; // Virtual discount from collection (Rupiah)
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
@@ -17,7 +18,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onAddToCart,
   isFlashSale = false,
   isFeatured = false,
-  user
+  user,
+  collectionDiscount = 0
 }) => {
 
   const [showResellerMenu, setShowResellerMenu] = useState(false);
@@ -118,6 +120,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     );
   };
 
+
   const getPrice = () => {
     // Use the isFlashSale prop passed from parent (HomePage already knows which products are flash sale)
     const isThisProductInFlashSale = isFlashSale && product.flashSalePrice && product.flashSalePrice > 0;
@@ -136,6 +139,33 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <div className="text-xs text-gray-400 line-through">
             Rp {(product.originalRetailPrice || product.retailPrice).toLocaleString('id-ID')}
           </div>
+        </div>
+      );
+    }
+
+    // Collection Discount (Virtual - not stored in product price)
+    if (collectionDiscount > 0) {
+      const discountedRetail = Math.max(0, product.retailPrice - collectionDiscount);
+      const discountedReseller = Math.max(0, (product.resellerPrice || product.retailPrice * 0.8) - collectionDiscount);
+
+      return (
+        <div className="space-y-0.5 text-left">
+          <div className="flex items-center gap-2">
+            <span className="text-base sm:text-lg font-bold text-[#D4AF37]">
+              Rp {discountedRetail.toLocaleString('id-ID')}
+            </span>
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-green-500/20 text-green-600 border-green-500/30">
+              -Rp {collectionDiscount.toLocaleString('id-ID')}
+            </span>
+          </div>
+          <div className="text-xs text-gray-400 line-through">
+            Rp {product.retailPrice.toLocaleString('id-ID')}
+          </div>
+          {user?.role === 'reseller' && (
+            <div className="text-xs text-[#D4AF37]">
+              Reseller: Rp {discountedReseller.toLocaleString('id-ID')}
+            </div>
+          )}
         </div>
       );
     }

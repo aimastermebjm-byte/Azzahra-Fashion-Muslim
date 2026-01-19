@@ -7,6 +7,7 @@ export interface Collection {
     description?: string;   // Optional description
     productIds: string[];   // Array of product IDs in this collection
     isActive: boolean;
+    discountAmount?: number; // Virtual discount amount in Rupiah
     createdAt: Date;
     updatedAt: Date;
 }
@@ -16,4 +17,6 @@ export interface CreateCollectionInput {
     description?: string;
     productIds: string[];
     isActive: boolean;
+    discountAmount?: number; // Virtual discount amount
 }
+

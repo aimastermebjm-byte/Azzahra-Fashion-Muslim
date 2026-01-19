@@ -56,6 +56,9 @@ export interface Product {
   cleanupNote?: string; // Tambahan dari data aktual
   migrationDate?: string; // Tambahan dari data aktual
   migrationNote?: string; // Tambahan dari data aktual
+
+  // Virtual Discount System
+  collectionId?: string; // ID of collection this product belongs to (for virtual discount)
 };
 
 // Product interface untuk produk individual (legacy - digunakan jika perlu

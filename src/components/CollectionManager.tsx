@@ -102,16 +102,33 @@ const CollectionManager: React.FC<CollectionManagerProps> = ({
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Yakin ingin menghapus koleksi "${name}"?`)) return;
+        if (!confirm(`Yakin ingin menghapus koleksi "${name}"?\n\nHarga produk dalam koleksi ini akan kembali normal.`)) return;
 
         try {
+            // Get collection to find products
+            const collection = collections.find(c => c.id === id);
+
+            // Clear collectionId from all products in this collection
+            if (collection && collection.productIds) {
+                console.log(`🧹 Clearing collectionId from ${collection.productIds.length} products...`);
+                for (const pid of collection.productIds) {
+                    try {
+                        await onUpdateProduct(pid, { collectionId: undefined } as any);
+                    } catch (err) {
+                        console.error(`Failed to clear collectionId from product ${pid}:`, err);
+                    }
+                }
+            }
+
             await collectionService.deleteCollection(id);
             setCollections(prev => prev.filter(c => c.id !== id));
+            alert('✅ Koleksi dihapus. Harga produk kembali normal.');
         } catch (error) {
             console.error('Error deleting collection:', error);
             alert('Gagal menghapus koleksi');
         }
     };
+
 
     const handleSave = async () => {
         if (!formData.name.trim()) {
@@ -121,41 +138,39 @@ const CollectionManager: React.FC<CollectionManagerProps> = ({
 
         setProcessing(true);
         try {
-            // 1. Create/Update Collection
-            let collectionId = editingId;
+            // Prepare collection data with discount amount
+            const collectionData = {
+                ...formData,
+                discountAmount: applyDiscount ? discountAmount : 0
+            };
 
+            let newCollectionId = editingId;
+
+            // 1. Create/Update Collection (with discountAmount)
             if (mode === 'create') {
-                collectionId = await collectionService.createCollection(formData);
+                newCollectionId = await collectionService.createCollection(collectionData);
             } else if (mode === 'edit' && editingId) {
-                await collectionService.updateCollection(editingId, formData);
+                await collectionService.updateCollection(editingId, collectionData);
             }
 
-            // 2. Apply Discount (if enabled)
-            if (applyDiscount && discountAmount > 0 && formData.productIds.length > 0) {
-                console.log(`Applying discount of Rp ${discountAmount} to ${formData.productIds.length} products`);
+            // 2. Link products to collection via collectionId (VIRTUAL - no price change)
+            if (newCollectionId && formData.productIds.length > 0) {
+                console.log(`📦 Linking ${formData.productIds.length} products to collection ${newCollectionId}`);
 
-                let successCount = 0;
                 for (const pid of formData.productIds) {
-                    const product = products.find(p => p.id === pid);
-                    if (product) {
-                        try {
-                            const newRetail = Math.max(0, product.retailPrice - discountAmount);
-                            const newReseller = Math.max(0, (product.resellerPrice || product.retailPrice * 0.8) - discountAmount);
-
-                            await onUpdateProduct(pid, {
-                                retailPrice: newRetail,
-                                resellerPrice: newReseller,
-                                originalRetailPrice: product.originalRetailPrice || product.retailPrice,
-                                originalResellerPrice: product.originalResellerPrice || product.resellerPrice
-                            });
-                            successCount++;
-                        } catch (err) {
-                            console.error(`Failed to update price for product ${pid}`, err);
-                        }
+                    try {
+                        // Only update collectionId, NOT prices
+                        await onUpdateProduct(pid, {
+                            collectionId: newCollectionId
+                        });
+                    } catch (err) {
+                        console.error(`Failed to link product ${pid}:`, err);
                     }
                 }
+            }
 
-                alert(`Koleksi disimpan & Diskon diterapkan ke ${successCount} produk!`);
+            if (applyDiscount && discountAmount > 0) {
+                alert(`✅ Koleksi berhasil disimpan!\n💰 Diskon Rp ${discountAmount.toLocaleString('id-ID')} akan otomatis tampil di produk.\n\nHapus koleksi = harga kembali normal.`);
             } else {
                 alert('Koleksi berhasil disimpan!');
             }

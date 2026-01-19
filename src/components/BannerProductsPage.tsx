@@ -103,17 +103,6 @@ const BannerProductsPage: React.FC<BannerProductsPageProps> = ({
                 </div>
             </div>
 
-
-            {/* DEBUG INFO - Temp for troubleshooting */}
-            <div className="bg-black text-xs text-green-400 font-mono p-2 overflow-x-auto m-2 rounded">
-                <div><strong>DEBUG INFO:</strong></div>
-                <div>Action: {banner.actionType}</div>
-                <div>Collection ID: {banner.actionData?.collectionId || 'UNDEFINED'}</div>
-                <div>Loading: {loading ? 'YES' : 'NO'}</div>
-                <div>Display Products: {displayProducts.length}</div>
-                <div>All Products: {allProducts.length}</div>
-            </div>
-
             {/* Product Grid */}
             <div className="px-4 py-6 mb-20">
                 {loading ? (
@@ -141,6 +130,7 @@ const BannerProductsPage: React.FC<BannerProductsPageProps> = ({
                                 onProductClick={onProductClick}
                                 onAddToCart={onAddToCart}
                                 user={user}
+                                collectionDiscount={collectionInfo?.discountAmount || 0}
                             />
                         ))}
                     </div>
