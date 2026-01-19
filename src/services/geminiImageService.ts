@@ -14,13 +14,12 @@ export const geminiImageService = {
             throw new Error('API Key Gemini tidak ditemukan. Mohon konfigurasi VITE_GEMINI_API_KEY.');
         }
 
-        // Enhanced prompt specifically for HORIZONTAL BANNER format
-        const enhancedPrompt = `Create a WIDE PANORAMIC promotional banner image (landscape 16:9 or wider). 
+        const enhancedPrompt = `Create a WIDE PANORAMIC promotional banner image (Aspect Ratio: 16:9). 
 The banner should be suitable for website header/carousel. 
 CRITICAL COMPOSITION: Keep the main subject/text CENTERED horizontally and vertically. The top and bottom 20% will be cropped, so ensure all important elements are in the MIDDLE HORIZONTAL STRIP.
 Style: professional, elegant, high-end fashion brand aesthetic, cinematic lighting, minimalist.
 Content: ${prompt}
-IMPORTANT: Output MUST be landscape.`;
+IMPORTANT: Output MUST be landscape 16:9 wide format.`;
 
         try {
             console.log('Attempting Native Generation with gemini-2.5-flash-image');
@@ -28,13 +27,7 @@ IMPORTANT: Output MUST be landscape.`;
 
             // STRICT MODE: Only use Gemini Native Image Model
             // Using 'gemini-2.5-flash-image' for native image generation
-            const model = genAI.getGenerativeModel({
-                model: "gemini-2.5-flash-image",
-                generationConfig: {
-                    // @ts-ignore - aspectRatio is supported by newer API/models but types might differ
-                    aspectRatio: "16:9" // Request widest supported standard aspect ratio
-                }
-            });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
 
             const result = await model.generateContent(enhancedPrompt);
             const response = result.response;
