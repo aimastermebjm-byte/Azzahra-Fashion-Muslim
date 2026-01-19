@@ -18,6 +18,7 @@ import AIAutoUploadModal from './AIAutoUploadModal';
 import ManualUploadModal from './ManualUploadModal';
 import WhatsAppInboxModal from './WhatsAppInboxModal';
 import StockHistoryModal from './StockHistoryModal';
+import { collectionService } from '../services/collectionService';
 
 interface AdminProductsPageProps {
   onBack: () => void;
@@ -90,6 +91,13 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
   const [sortBy, setSortBy] = useState('name');
   const [tappedProductId, setTappedProductId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(20);
+
+  // NEW: Discount and Collection Modal States
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const [collectionName, setCollectionName] = useState('');
+  const [collectionDescription, setCollectionDescription] = useState('');
 
   // Stock History Modal
   const [historyModalData, setHistoryModalData] = useState<any>(null);
@@ -948,6 +956,79 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
     }
   };
 
+  // NEW: Bulk discount handler
+  const handleApplyDiscount = async () => {
+    if (selectedProducts.length === 0) {
+      alert('Pilih setidaknya satu produk');
+      return;
+    }
+
+    if (discountAmount <= 0) {
+      alert('Masukkan jumlah diskon yang valid');
+      return;
+    }
+
+    try {
+      console.log(`💰 Menerapkan diskon Rp${discountAmount.toLocaleString('id-ID')} untuk ${selectedProducts.length} produk...`);
+
+      for (const productId of selectedProducts) {
+        const product = products.find(p => p.id === productId);
+        if (product) {
+          const newRetailPrice = Math.max(0, product.retailPrice - discountAmount);
+          const newResellerPrice = Math.max(0, (product.resellerPrice || product.retailPrice * 0.8) - discountAmount);
+
+          await updateProduct(productId, {
+            retailPrice: newRetailPrice,
+            resellerPrice: newResellerPrice,
+            // Store original prices for reference
+            originalRetailPrice: product.originalRetailPrice || product.retailPrice,
+            originalResellerPrice: product.originalResellerPrice || product.resellerPrice,
+          });
+        }
+      }
+
+      setSelectedProducts([]);
+      setShowDiscountModal(false);
+      setDiscountAmount(0);
+      alert(`✅ Berhasil menerapkan diskon Rp${discountAmount.toLocaleString('id-ID')} untuk ${selectedProducts.length} produk`);
+    } catch (error) {
+      console.error('Error applying discount:', error);
+      alert('Gagal menerapkan diskon. Silakan coba lagi.');
+    }
+  };
+
+  // NEW: Create collection handler
+  const handleCreateCollection = async () => {
+    if (selectedProducts.length === 0) {
+      alert('Pilih setidaknya satu produk');
+      return;
+    }
+
+    if (!collectionName.trim()) {
+      alert('Masukkan nama koleksi');
+      return;
+    }
+
+    try {
+      console.log(`📁 Membuat koleksi "${collectionName}" dengan ${selectedProducts.length} produk...`);
+
+      await collectionService.createCollection({
+        name: collectionName.trim(),
+        description: collectionDescription.trim(),
+        productIds: selectedProducts
+      });
+
+      setSelectedProducts([]);
+      setShowCollectionModal(false);
+      setCollectionName('');
+      setCollectionDescription('');
+      alert(`✅ Koleksi "${collectionName}" berhasil dibuat dengan ${selectedProducts.length} produk!`);
+    } catch (error) {
+      console.error('Error creating collection:', error);
+      alert('Gagal membuat koleksi. Silakan coba lagi.');
+    }
+  };
+
   // Bulk variant update function
   const handleVariantBatchUpdate = async () => {
     if (selectedProducts.length === 0) {
@@ -1412,10 +1493,24 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     <Package className="w-5 h-5 text-[#997B2C]" />
                     <span className="text-sm">Varian</span>
                   </button>
+                  <button
+                    onClick={() => setShowDiscountModal(true)}
+                    className="bg-white text-green-600 p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-green-400 shadow-[0_3px_0_0_#16a34a] shine-effect"
+                  >
+                    <span className="text-lg">💰</span>
+                    <span className="text-sm">Diskon</span>
+                  </button>
+                  <button
+                    onClick={() => setShowCollectionModal(true)}
+                    className="bg-white text-blue-600 p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-blue-400 shadow-[0_3px_0_0_#2563eb] shine-effect"
+                  >
+                    <span className="text-lg">📁</span>
+                    <span className="text-sm">Koleksi</span>
+                  </button>
                   {user?.role === 'owner' && (
                     <button
                       onClick={handleBulkDelete}
-                      className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 col-span-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
+                      className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
                     >
                       <Trash2 className="w-5 h-5 text-[#997B2C]" />
                       <span className="text-sm">Hapus {selectedProducts.length} Produk</span>
@@ -3284,6 +3379,108 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
         product={historyModalData}
         user={user}
       />
+
+      {/* NEW: Discount Modal */}
+      {showDiscountModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-bold text-gray-900">💰 Terapkan Diskon</h3>
+              <button onClick={() => setShowDiscountModal(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <p className="text-sm text-gray-600">
+                Terapkan potongan harga untuk <span className="font-bold text-green-600">{selectedProducts.length} produk</span> terpilih.
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Jumlah Diskon (Rp)</label>
+                <input
+                  type="number"
+                  value={discountAmount}
+                  onChange={(e) => setDiscountAmount(parseInt(e.target.value) || 0)}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none text-lg font-bold"
+                  placeholder="100000"
+                />
+              </div>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
+                ⚠️ Harga retail dan reseller akan dikurangi sebesar Rp{discountAmount.toLocaleString('id-ID')}
+              </div>
+            </div>
+            <div className="p-4 border-t flex gap-3">
+              <button
+                onClick={() => setShowDiscountModal(false)}
+                className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleApplyDiscount}
+                className="flex-1 py-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600"
+              >
+                Terapkan Diskon
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NEW: Collection Modal */}
+      {showCollectionModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-bold text-gray-900">📁 Buat Koleksi</h3>
+              <button onClick={() => setShowCollectionModal(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <p className="text-sm text-gray-600">
+                Simpan <span className="font-bold text-blue-600">{selectedProducts.length} produk</span> terpilih ke dalam koleksi.
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nama Koleksi *</label>
+                <input
+                  type="text"
+                  value={collectionName}
+                  onChange={(e) => setCollectionName(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
+                  placeholder="Contoh: Mukena Favorit"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi (opsional)</label>
+                <textarea
+                  value={collectionDescription}
+                  onChange={(e) => setCollectionDescription(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none resize-none"
+                  rows={2}
+                  placeholder="Deskripsi singkat koleksi..."
+                />
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
+                💡 Koleksi ini dapat digunakan saat membuat Banner untuk menampilkan produk secara otomatis.
+              </div>
+            </div>
+            <div className="p-4 border-t flex gap-3">
+              <button
+                onClick={() => setShowCollectionModal(false)}
+                className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleCreateCollection}
+                className="flex-1 py-3 rounded-xl bg-blue-500 text-white font-bold hover:bg-blue-600"
+              >
+                Buat Koleksi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div >
   );
 };

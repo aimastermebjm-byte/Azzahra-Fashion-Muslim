@@ -6,9 +6,10 @@ export interface Banner {
     isActive: boolean;
 
     // Action Configuration
-    actionType: 'products' | 'flash_sale' | 'url' | 'none';
+    actionType: 'products' | 'collection' | 'flash_sale' | 'url' | 'none';
     actionData: {
         productIds?: string[]; // For actionType = 'products'
+        collectionId?: string; // For actionType = 'collection'
         url?: string; // For actionType = 'url'
     };
 
@@ -24,9 +25,10 @@ export interface Banner {
 export interface CreateBannerInput {
     title: string;
     imageUrl: string;
-    actionType: 'products' | 'flash_sale' | 'url' | 'none';
+    actionType: 'products' | 'collection' | 'flash_sale' | 'url' | 'none';
     actionData: {
         productIds?: string[];
+        collectionId?: string;
         url?: string;
     };
     startDate?: Date | null;

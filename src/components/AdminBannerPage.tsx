@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Plus, Image as ImageIcon, Trash2,
     Move, Power, Calendar, Link as LinkIcon,
-    ShoppingBag, Zap, Loader2, ArrowUp, ArrowDown, Sparkles, Download
+    ShoppingBag, Zap, Loader2, ArrowUp, ArrowDown, Sparkles, Download, Folder, Tag
 } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { Banner, CreateBannerInput } from '../types/banner';
@@ -12,6 +12,8 @@ import { storage } from '../utils/firebaseClient';
 import { useToast } from './ToastProvider';
 import ProductSelectorModal from './ProductSelectorModal';
 import AIBannerModal from './AIBannerModal';
+import { collectionService } from '../services/collectionService';
+import { Collection } from '../types/collection';
 
 interface AdminBannerPageProps {
     onBack: () => void;
@@ -27,6 +29,7 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showProductSelector, setShowProductSelector] = useState(false);
     const [showAIModal, setShowAIModal] = useState(false);
+    const [collections, setCollections] = useState<Collection[]>([]);
 
     // Form State
     const [formData, setFormData] = useState<CreateBannerInput>({
@@ -41,10 +44,21 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
-    // Load Banners
+    // Load Banners & Collections
     useEffect(() => {
         loadBanners();
+        loadCollections();
     }, []);
+
+    const loadCollections = async () => {
+        try {
+            const data = await collectionService.getAllCollections();
+            setCollections(data);
+        } catch (error) {
+            console.error('Error loading collections:', error);
+            // Don't show toast for this to avoid clutter, just log it
+        }
+    };
 
     const loadBanners = async () => {
         setLoading(true);
@@ -709,6 +723,7 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
                                     {[
                                         { id: 'none', label: 'Tidak Ada', icon: Move },
                                         { id: 'products', label: 'Buka Produk', icon: ShoppingBag },
+                                        { id: 'collection', label: 'Buka Koleksi', icon: Folder },
                                         { id: 'flash_sale', label: 'Flash Sale', icon: Zap },
                                         { id: 'url', label: 'Link URL', icon: LinkIcon },
                                     ].map((type) => (
@@ -726,6 +741,41 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Collection Selector */}
+                            {formData.actionType === 'collection' && (
+                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                                    <label className="block text-sm font-bold text-blue-900 mb-2">
+                                        Pilih Koleksi Produk
+                                    </label>
+                                    <select
+                                        value={formData.actionData.collectionId || ''}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            actionData: { ...formData.actionData, collectionId: e.target.value }
+                                        })}
+                                        className="w-full px-4 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-800"
+                                    >
+                                        <option value="">-- Pilih Koleksi --</option>
+                                        {collections.map(col => (
+                                            <option key={col.id} value={col.id}>
+                                                {col.name} ({col.productIds.length} Produk)
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {formData.actionData.collectionId && (
+                                        <div className="mt-2 text-xs text-blue-700 flex items-center gap-1">
+                                            <Tag className="w-3 h-3" />
+                                            Koleksi terpilih akan menampilkan produk-produk di dalamnya secara otomatis.
+                                        </div>
+                                    )}
+                                    {collections.length === 0 && (
+                                        <div className="mt-2 text-xs text-red-500 italic">
+                                            Belum ada koleksi. Buat koleksi dulu di menu "Kelola Produk" {'>'} "Edit Massal".
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Action Config */}
                             {formData.actionType === 'products' && (
