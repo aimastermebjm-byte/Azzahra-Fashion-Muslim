@@ -54,15 +54,25 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   // Collection Discount State (Virtual discount from collection)
   const [collectionDiscount, setCollectionDiscount] = useState(0);
 
-  // Fetch collection discount if product has collectionId
+  // Fetch collection discount - check sessionStorage first (from BannerProductsPage), then try product.collectionId
   useEffect(() => {
     const fetchCollectionDiscount = async () => {
+      // First try sessionStorage (set by BannerProductsPage when clicking from collection)
+      const storedDiscount = sessionStorage.getItem('activeCollectionDiscount');
+      if (storedDiscount) {
+        const discount = Number(storedDiscount);
+        console.log('💰 ProductDetail: Using sessionStorage discount:', discount);
+        setCollectionDiscount(discount);
+        return; // Found it!
+      }
+
+      // Fallback: try fetching from collectionId on product
       const productAny = initialProduct as any;
       if (productAny.collectionId) {
         try {
           const collection = await collectionService.getCollectionById(productAny.collectionId);
           if (collection && collection.discountAmount) {
-            console.log('💰 ProductDetail: Collection discount found:', collection.discountAmount);
+            console.log('💰 ProductDetail: Collection discount from DB:', collection.discountAmount);
             setCollectionDiscount(collection.discountAmount);
           }
         } catch (err) {
@@ -71,6 +81,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       }
     };
     fetchCollectionDiscount();
+
+    // Cleanup sessionStorage on unmount
+    return () => {
+      sessionStorage.removeItem('activeCollectionDiscount');
+    };
   }, [initialProduct]);
 
   // Scroll to top when component mounts (so hero image is visible first)

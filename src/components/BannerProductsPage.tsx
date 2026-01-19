@@ -28,6 +28,17 @@ const BannerProductsPage: React.FC<BannerProductsPageProps> = ({
     const [loading, setLoading] = React.useState(false);
     const [collectionInfo, setCollectionInfo] = React.useState<Collection | null>(null);
 
+    // Wrapper to store collectionDiscount in sessionStorage before navigating
+    const handleProductClick = (product: Product) => {
+        if (collectionInfo?.discountAmount) {
+            sessionStorage.setItem('activeCollectionDiscount', String(collectionInfo.discountAmount));
+            console.log('💰 Stored collectionDiscount in sessionStorage:', collectionInfo.discountAmount);
+        } else {
+            sessionStorage.removeItem('activeCollectionDiscount');
+        }
+        onProductClick(product);
+    };
+
     // Fetch products based on banner action
     React.useEffect(() => {
         const fetchProducts = async () => {
@@ -127,7 +138,7 @@ const BannerProductsPage: React.FC<BannerProductsPageProps> = ({
                             <ProductCard
                                 key={product.id}
                                 product={product}
-                                onProductClick={onProductClick}
+                                onProductClick={handleProductClick}
                                 onAddToCart={onAddToCart}
                                 user={user}
                                 collectionDiscount={collectionInfo?.discountAmount || 0}
