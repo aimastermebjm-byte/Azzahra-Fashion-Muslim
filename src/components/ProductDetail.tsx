@@ -5,6 +5,7 @@ import { Product } from '../types';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
 import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
 import VariantSelectionModal from './VariantSelectionModal';
+import { collectionService } from '../services/collectionService';
 
 interface ProductDetailProps {
   currentProduct: Product;
@@ -49,6 +50,28 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const [pinchCenter, setPinchCenter] = useState({ x: 0, y: 0 });
   const [initialPanPosition, setInitialPanPosition] = useState({ x: 0, y: 0 });
   const zoomRef = useRef<HTMLDivElement>(null);
+
+  // Collection Discount State (Virtual discount from collection)
+  const [collectionDiscount, setCollectionDiscount] = useState(0);
+
+  // Fetch collection discount if product has collectionId
+  useEffect(() => {
+    const fetchCollectionDiscount = async () => {
+      const productAny = initialProduct as any;
+      if (productAny.collectionId) {
+        try {
+          const collection = await collectionService.getCollectionById(productAny.collectionId);
+          if (collection && collection.discountAmount) {
+            console.log('💰 ProductDetail: Collection discount found:', collection.discountAmount);
+            setCollectionDiscount(collection.discountAmount);
+          }
+        } catch (err) {
+          console.error('Error fetching collection for discount:', err);
+        }
+      }
+    };
+    fetchCollectionDiscount();
+  }, [initialProduct]);
 
   // Scroll to top when component mounts (so hero image is visible first)
   useEffect(() => {
@@ -525,6 +548,37 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                   <div className="text-lg text-gray-400 line-through">
                     Rp {(currentProduct.originalRetailPrice || currentProduct.retailPrice).toLocaleString('id-ID')}
                   </div>
+                </div>
+              ) : collectionDiscount > 0 ? (
+                // Collection Discount Display
+                <div className="space-y-2">
+                  {(() => {
+                    const baseRetail = currentProduct.originalRetailPrice || currentProduct.retailPrice;
+                    const baseReseller = currentProduct.originalResellerPrice || currentProduct.resellerPrice || baseRetail * 0.8;
+                    const discountedRetail = Math.max(0, baseRetail - collectionDiscount);
+                    const discountedReseller = Math.max(0, baseReseller - collectionDiscount);
+                    return (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <span className="text-3xl font-bold text-[#D4AF37]">
+                            Rp {discountedRetail.toLocaleString('id-ID')}
+                          </span>
+                          <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded font-bold">
+                            -Rp {collectionDiscount.toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                        <div className="text-lg text-gray-400 line-through">
+                          Rp {baseRetail.toLocaleString('id-ID')}
+                        </div>
+                        {user?.role === 'reseller' && (
+                          <div className="inline-flex items-center gap-2 text-sm bg-yellow-50 border border-yellow-200 py-2 px-3 rounded-lg">
+                            <span className="text-yellow-700 font-medium opacity-80">Reseller:</span>
+                            <span className="text-yellow-800 font-bold">Rp {discountedReseller.toLocaleString('id-ID')}</span>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               ) : (
                 <div className="space-y-2">
