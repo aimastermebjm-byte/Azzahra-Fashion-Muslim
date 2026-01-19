@@ -30,6 +30,7 @@ import AdminStockOpnamePage from './components/AdminStockOpnamePage';
 import AdminStockAdjustmentPage from './components/AdminStockAdjustmentPage';
 import AdminVoucherPage from './components/AdminVoucherPage';
 import AdminBannerPage from './components/AdminBannerPage';
+import BannerProductsPage from './components/BannerProductsPage';
 import BottomNavigation from './components/BottomNavigation';
 import InstallPrompt from './components/InstallPrompt';
 import PaymentAutoVerifier from './components/PaymentAutoVerifier';
@@ -44,7 +45,9 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from './utils/firebaseClient';
 import './utils/forceSyncGlobalIndex'; // Load force sync function to window
 
-type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'admin-cache' | 'admin-financials' | 'admin-master' | 'admin-payment-verification' | 'admin-stock-opname' | 'admin-stock-adjustments' | 'admin-voucher' | 'admin-banner' | 'ongkir-test';
+import { Banner } from './types/banner';
+
+type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'admin-cache' | 'admin-financials' | 'admin-master' | 'admin-payment-verification' | 'admin-stock-opname' | 'admin-stock-adjustments' | 'admin-voucher' | 'admin-banner' | 'banner-products' | 'ongkir-test';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -52,6 +55,7 @@ function AppContent() {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
   const [selectedCartItemIds, setSelectedCartItemIds] = useState<string[]>([]);
+  const [selectedBanner, setSelectedBanner] = useState<Banner | null>(null);
 
   // Firebase Authentication
   const { user, login, logout } = useFirebaseAuth();
@@ -106,6 +110,7 @@ function AppContent() {
       'admin-stock-adjustments': 'admin-products', // Return to products page
       'admin-voucher': 'account',
       'admin-banner': 'account',
+      'banner-products': 'home',
       'ongkir-test': 'account'
     };
     return parentMap[page] || 'home';
@@ -624,6 +629,12 @@ function AppContent() {
     setCurrentPage('flash-sale');
   };
 
+  const handleBannerClick = (banner: Banner) => {
+    console.log('🖼️ App: Banner clicked, navigating to products:', banner.title);
+    setSelectedBanner(banner);
+    setCurrentPage('banner-products');
+  };
+
   const handleNavigateToOngkirTest = () => {
     setCurrentPage('ongkir-test');
   };
@@ -732,7 +743,31 @@ function AppContent() {
             onAddToCart={handleQuickAddToCart}
             onNavigateToFlashSale={handleNavigateToFlashSale}
             onRefreshProducts={refresh}
-            featuredProducts={featuredProducts}
+            onBannerClick={handleBannerClick}
+          />
+        );
+      case 'banner-products':
+        return selectedBanner ? (
+          <BannerProductsPage
+            banner={selectedBanner}
+            allProducts={products}
+            user={user}
+            onBack={() => setCurrentPage('home')}
+            onProductClick={handleProductClick}
+            onAddToCart={handleQuickAddToCart}
+          />
+        ) : (
+          <HomePage
+            user={user}
+            products={products}
+            loading={loading}
+            onProductClick={handleProductClick}
+            onLoginRequired={handleLoginRequired}
+            onCartClick={handleCartClick}
+            onAddToCart={handleQuickAddToCart}
+            onNavigateToFlashSale={handleNavigateToFlashSale}
+            onRefreshProducts={refresh}
+            onBannerClick={handleBannerClick}
           />
         );
       case 'flash-sale':

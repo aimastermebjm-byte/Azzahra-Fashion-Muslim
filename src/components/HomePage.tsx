@@ -6,6 +6,7 @@ import ProductCard from './ProductCard';
 import FlashSaleCard from './FlashSaleCard';
 import BannerCarousel from './BannerCarousel';
 import { Product } from '../types';
+import { Banner } from '../types/banner';
 import { validateProducts } from '../utils/productUtils';
 import { cartServiceOptimized } from '../services/cartServiceOptimized';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
@@ -25,6 +26,7 @@ interface HomePageProps {
   hasMore?: boolean;
   onRefreshProducts?: () => void;
   searchProducts?: (params: any) => Promise<any>;
+  onBannerClick?: (banner: Banner) => void;
 }
 
 const HomePage: React.FC<HomePageProps> = ({
@@ -39,7 +41,8 @@ const HomePage: React.FC<HomePageProps> = ({
   onLoadMore,
   hasMore = true,
   onRefreshProducts,
-  searchProducts
+  searchProducts,
+  onBannerClick
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -181,12 +184,17 @@ const HomePage: React.FC<HomePageProps> = ({
   }, [searchQuery, selectedCategory, statusFilter, sortBy, user?.role, searchProducts]);
 
   const handleBannerClick = (banner: any) => {
+    console.log('🖼️ Banner clicked:', banner.title, 'Action:', banner.actionType);
+
     if (banner.actionType === 'flash_sale') {
       if (onNavigateToFlashSale) {
         onNavigateToFlashSale();
       }
     } else if (banner.actionType === 'url' && banner.actionData?.url) {
       window.open(banner.actionData.url, '_blank');
+    } else if (banner.actionType === 'products' && onBannerClick) {
+      // Navigate to product list with banner's selected products
+      onBannerClick(banner);
     }
   };
 
