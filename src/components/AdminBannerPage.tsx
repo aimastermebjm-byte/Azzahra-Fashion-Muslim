@@ -155,16 +155,33 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
             let fileToUpload = imageFile;
 
             // Handle AI-generated blob URLs - convert to File first
+            console.log('🔍 DEBUG - imageFile:', imageFile ? 'exists' : 'null');
+            console.log('🔍 DEBUG - formData.imageUrl:', formData.imageUrl?.substring(0, 50) + '...');
+
             if (!imageFile && formData.imageUrl && formData.imageUrl.startsWith('blob:')) {
                 try {
-                    console.log('Converting AI blob URL to File...');
+                    console.log('🔄 Converting AI blob URL to File...');
+                    console.log('🔍 Full blob URL:', formData.imageUrl);
+
                     const response = await fetch(formData.imageUrl);
+                    console.log('🔍 Fetch response status:', response.status, response.ok);
+
+                    if (!response.ok) {
+                        throw new Error(`Blob fetch failed: ${response.status}`);
+                    }
+
                     const blob = await response.blob();
-                    fileToUpload = new File([blob], `ai_banner_${Date.now()}.png`, { type: 'image/png' });
+                    console.log('🔍 Blob size:', blob.size, 'type:', blob.type);
+
+                    if (blob.size === 0) {
+                        throw new Error('Blob is empty (0 bytes)');
+                    }
+
+                    fileToUpload = new File([blob], `ai_banner_${Date.now()}.png`, { type: blob.type || 'image/png' });
                     console.log('✅ Blob converted to File:', fileToUpload.name, `(${(fileToUpload.size / 1024 / 1024).toFixed(2)}MB)`);
-                } catch (blobError) {
-                    console.error('Failed to convert blob:', blobError);
-                    throw new Error('Gagal memproses gambar AI. Coba generate ulang.');
+                } catch (blobError: any) {
+                    console.error('❌ Failed to convert blob:', blobError);
+                    throw new Error(`Gagal memproses gambar AI: ${blobError.message}. Coba generate ulang.`);
                 }
             }
 
