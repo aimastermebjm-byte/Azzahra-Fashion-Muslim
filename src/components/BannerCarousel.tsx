@@ -63,7 +63,7 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ onBannerClick }) => {
             <img
               src={banner.imageUrl}
               alt={banner.title}
-              className="w-full h-full object-cover object-top cursor-pointer hover:scale-105 transition-transform duration-[2000ms]"
+              className="w-full h-full object-cover object-center cursor-pointer hover:scale-105 transition-transform duration-[2000ms]"
             />
 
             {/* Optional Overlay for Text visibility (if needed in future) */}

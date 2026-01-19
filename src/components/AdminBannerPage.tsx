@@ -94,9 +94,9 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
                     cropWidth = imgHeight * targetRatio;
                     offsetX = (imgWidth - cropWidth) / 2;
                 } else {
-                    // Image is taller than target - crop height from BOTTOM (keep TOP where text usually is)
+                    // Image is taller than target - crop height (from center)
                     cropHeight = imgWidth / targetRatio;
-                    offsetY = 0; // Keep top, crop bottom
+                    offsetY = (imgHeight - cropHeight) / 2;
                 }
 
                 // Output dimensions (max 1600px wide)
