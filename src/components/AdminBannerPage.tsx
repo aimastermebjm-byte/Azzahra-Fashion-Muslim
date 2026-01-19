@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Plus, Image as ImageIcon, Trash2,
     Move, Power, Calendar, Link as LinkIcon,
-    ShoppingBag, Zap, Loader2, ArrowUp, ArrowDown, Sparkles
+    ShoppingBag, Zap, Loader2, ArrowUp, ArrowDown, Sparkles, Download
 } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { Banner, CreateBannerInput } from '../types/banner';
@@ -607,6 +607,22 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
                                                 >
                                                     <Sparkles className="w-3 h-3" />
                                                     Ganti via AI
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        // Download current image
+                                                        const link = document.createElement('a');
+                                                        link.href = formData.imageUrl;
+                                                        link.download = `banner_${Date.now()}.png`;
+                                                        document.body.appendChild(link);
+                                                        link.click();
+                                                        document.body.removeChild(link);
+                                                        showToast({ message: 'Gambar didownload!', type: 'success' });
+                                                    }}
+                                                    className="bg-green-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-green-700 text-xs flex items-center gap-1 shadow-lg"
+                                                >
+                                                    <Download className="w-3 h-3" />
+                                                    Download
                                                 </button>
                                             </div>
                                         </>
