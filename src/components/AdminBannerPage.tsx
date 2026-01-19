@@ -158,30 +158,51 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
             console.log('🔍 DEBUG - imageFile:', imageFile ? 'exists' : 'null');
             console.log('🔍 DEBUG - formData.imageUrl:', formData.imageUrl?.substring(0, 50) + '...');
 
+            // Handle BLOB URLs
             if (!imageFile && formData.imageUrl && formData.imageUrl.startsWith('blob:')) {
                 try {
-                    console.log('🔄 Converting AI blob URL to File...');
-                    console.log('🔍 Full blob URL:', formData.imageUrl);
-
+                    console.log('🔄 Converting blob URL to File...');
                     const response = await fetch(formData.imageUrl);
-                    console.log('🔍 Fetch response status:', response.status, response.ok);
-
-                    if (!response.ok) {
-                        throw new Error(`Blob fetch failed: ${response.status}`);
-                    }
+                    if (!response.ok) throw new Error(`Blob fetch failed: ${response.status}`);
 
                     const blob = await response.blob();
-                    console.log('🔍 Blob size:', blob.size, 'type:', blob.type);
-
-                    if (blob.size === 0) {
-                        throw new Error('Blob is empty (0 bytes)');
-                    }
+                    if (blob.size === 0) throw new Error('Blob is empty (0 bytes)');
 
                     fileToUpload = new File([blob], `ai_banner_${Date.now()}.png`, { type: blob.type || 'image/png' });
                     console.log('✅ Blob converted to File:', fileToUpload.name, `(${(fileToUpload.size / 1024 / 1024).toFixed(2)}MB)`);
                 } catch (blobError: any) {
                     console.error('❌ Failed to convert blob:', blobError);
-                    throw new Error(`Gagal memproses gambar AI: ${blobError.message}. Coba generate ulang.`);
+                    throw new Error(`Gagal memproses gambar: ${blobError.message}`);
+                }
+            }
+
+            // Handle DATA URLs (base64 from AI generation)
+            if (!imageFile && !fileToUpload && formData.imageUrl && formData.imageUrl.startsWith('data:')) {
+                try {
+                    console.log('🔄 Converting base64 data URL to File...');
+
+                    // Extract base64 data and mime type
+                    const [header, base64Data] = formData.imageUrl.split(',');
+                    const mimeMatch = header.match(/data:([^;]+);/);
+                    const mimeType = mimeMatch ? mimeMatch[1] : 'image/png';
+
+                    // Decode base64 to binary
+                    const binaryString = atob(base64Data);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+
+                    const blob = new Blob([bytes], { type: mimeType });
+                    console.log('🔍 Created blob from base64:', blob.size, 'bytes, type:', mimeType);
+
+                    if (blob.size === 0) throw new Error('Decoded blob is empty');
+
+                    fileToUpload = new File([blob], `ai_banner_${Date.now()}.png`, { type: mimeType });
+                    console.log('✅ Base64 converted to File:', fileToUpload.name, `(${(fileToUpload.size / 1024 / 1024).toFixed(2)}MB)`);
+                } catch (dataError: any) {
+                    console.error('❌ Failed to convert data URL:', dataError);
+                    throw new Error(`Gagal memproses gambar base64: ${dataError.message}`);
                 }
             }
 
