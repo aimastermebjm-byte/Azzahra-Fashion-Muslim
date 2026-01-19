@@ -587,35 +587,7 @@ const HomePage: React.FC<HomePageProps> = ({
         </div>
       )}
 
-      {/* Hero Banner - Show when NO Flash Sale - NOOR Style */}
-      {flashSaleProducts.length === 0 && !loading && (
-        <div className="px-3 sm:px-4 mb-4">
-          <div
-            className="rounded-2xl overflow-hidden shadow-elegant relative h-[180px] sm:h-[240px] cursor-pointer bg-[#F5EFE0]"
-            onClick={() => {
-              setSelectedCategory('all');
-              collectionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }}
-          >
-            {/* Background Image - Cropped to chest, positioned right to avoid text overlap */}
-            <img
-              src="/hero-luxury-final.png"
-              alt="Azzahra Fashion Model"
-              className="absolute top-0 right-0 h-full w-[65%] sm:w-[50%] object-cover"
-              style={{ objectPosition: 'center 40%' }}
-            />
-
-            {/* Text Overlay - Vertically centered with proper spacing */}
-            <div className="absolute top-0 left-0 h-full flex flex-col justify-center p-4 sm:p-6 z-10 max-w-[50%]">
-              <h2 className="font-serif text-2xl sm:text-4xl font-semibold text-brand-primary leading-tight italic">
-                Elegance<br />
-                <span className="text-brand-primary">in Modesty.</span>
-              </h2>
-              <p className="text-brand-primary/80 text-xs sm:text-sm mt-2 font-medium tracking-wide">Tap untuk lihat koleksi</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Static Hero Banner removed - now using managed BannerCarousel only */}
 
       {/* Flash Sale Countdown Display removed - using top section only */}
 
