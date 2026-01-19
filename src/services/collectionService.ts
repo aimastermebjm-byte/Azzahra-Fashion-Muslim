@@ -48,6 +48,7 @@ export const collectionService = {
                     description: data.description || '',
                     productIds: data.productIds || [],
                     isActive: data.isActive ?? true,
+                    discountAmount: data.discountAmount || 0,
                     createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
                     updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
                 } as Collection;
@@ -69,12 +70,14 @@ export const collectionService = {
             }
 
             const data = snapshot.data();
+            console.log('📦 Collection data from Firestore:', data);
             return {
                 id: snapshot.id,
                 name: data.name,
                 description: data.description || '',
                 productIds: data.productIds || [],
                 isActive: data.isActive ?? true,
+                discountAmount: data.discountAmount || 0,
                 createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
                 updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
             } as Collection;
