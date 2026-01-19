@@ -677,15 +677,18 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               setQuantity(qty);
 
               // Create product with discounted price if collection discount is active
-              let productWithPrice = currentProduct;
+              let productWithPrice: any = currentProduct;
               if (collectionDiscount > 0) {
                 const baseRetail = currentProduct.originalRetailPrice || currentProduct.retailPrice;
                 const baseReseller = currentProduct.originalResellerPrice || currentProduct.resellerPrice || baseRetail * 0.8;
+                const discountedPrice = Math.max(0, baseRetail - collectionDiscount);
                 productWithPrice = {
                   ...currentProduct,
-                  retailPrice: Math.max(0, baseRetail - collectionDiscount),
+                  price: discountedPrice, // Cart service checks this first!
+                  retailPrice: discountedPrice,
                   resellerPrice: Math.max(0, baseReseller - collectionDiscount),
                 };
+                console.log('💰 ProductDetail: Passing discounted price to cart:', discountedPrice);
               }
 
               // Execute the appropriate action
