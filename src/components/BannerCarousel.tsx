@@ -50,7 +50,7 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ onBannerClick }) => {
   if (loading || banners.length === 0) return null;
 
   return (
-    <div className="relative w-full aspect-[3/1] md:aspect-[3.5/1] overflow-hidden rounded-2xl shadow-md group">
+    <div className="relative w-full aspect-[2/1] md:aspect-[2.5/1] overflow-hidden rounded-2xl shadow-md group">
       {/* Slides */}
       <div className="relative w-full h-full">
         {banners.map((banner, index) => (
