@@ -384,9 +384,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   // Shipping mode: 'delivery' = kirim ke alamat, 'keep' = atur alamat nanti
-  // Default to 'keep' for reseller/admin/owner (they usually stock products)
-  const userRole = user?.role || 'customer';
-  const defaultMode = ['reseller', 'admin', 'owner'].includes(userRole) ? 'keep' : 'delivery';
+  // Default to 'keep' ONLY if ALL items are PO (pre-order)
+  // Ready stock items should default to 'delivery' for all roles including owner/reseller
+  const hasPOItems = cartItems.some(item => item.status === 'po');
+  const hasReadyItems = cartItems.some(item => item.status !== 'po');
+
+  // If mixed (PO + Ready) or only Ready → default to 'delivery' (calculate shipping)
+  // If only PO → default to 'keep' (no shipping calculation needed)
+  const defaultMode = (hasPOItems && !hasReadyItems) ? 'keep' : 'delivery';
   const [shippingMode, setShippingMode] = useState<'delivery' | 'keep'>(defaultMode);
 
   // Reset shipping cost when switching to 'keep' mode
