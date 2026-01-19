@@ -9,6 +9,7 @@ interface VariantSelectionModalProps {
     mode: 'addToCart' | 'buyNow';
     onConfirm: (variant: { size: string; color: string }, quantity: number) => void;
     user: any;
+    collectionDiscount?: number;
 }
 
 const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
@@ -17,7 +18,8 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
     product,
     mode,
     onConfirm,
-    user
+    user,
+    collectionDiscount = 0
 }) => {
     const [selectedSize, setSelectedSize] = useState('');
     const [selectedColor, setSelectedColor] = useState('');
@@ -37,6 +39,12 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
 
     // Price calculation (same as ProductDetail)
     const getPrice = () => {
+        // Apply collection discount if active
+        if (collectionDiscount > 0) {
+            const baseRetail = product.originalRetailPrice || product.retailPrice;
+            return Math.max(0, baseRetail - collectionDiscount);
+        }
+
         const productAny = product as any;
         if (productAny.pricesPerVariant && selectedSize && selectedColor) {
             const variantKey = `${selectedSize}-${selectedColor}`;

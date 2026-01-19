@@ -385,7 +385,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
   const requiresVariantSelection = Boolean(currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0);
   const isVariantIncomplete = requiresVariantSelection && (!selectedSize || !selectedColor);
-  const totalPrice = getPrice() * quantity;
+
+  // Apply collection discount to total price
+  const basePrice = getPrice();
+  const baseRetail = currentProduct.originalRetailPrice || currentProduct.retailPrice;
+  const effectivePrice = collectionDiscount > 0 ? Math.max(0, baseRetail - collectionDiscount) : basePrice;
+  const totalPrice = effectivePrice * quantity;
 
   const getOriginalPrice = () => {
     return user?.role === 'reseller' ? currentProduct.resellerPrice : currentProduct.retailPrice;
@@ -682,6 +687,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               setModalMode(null);
             }}
             user={user}
+            collectionDiscount={collectionDiscount}
           />
         )}
 
