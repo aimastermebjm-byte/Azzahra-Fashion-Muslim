@@ -75,70 +75,6 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
         }
     };
 
-    // Crop image to fit carousel aspect ratio (2:1) for perfect display
-    const cropToAspectRatio = async (file: File, targetRatio: number = 2): Promise<File> => {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const { width: imgWidth, height: imgHeight } = img;
-                const imgRatio = imgWidth / imgHeight;
-
-                let cropWidth = imgWidth;
-                let cropHeight = imgHeight;
-                let offsetX = 0;
-                let offsetY = 0;
-
-                if (imgRatio > targetRatio) {
-                    // Image is wider than target - crop width
-                    cropWidth = imgHeight * targetRatio;
-                    offsetX = (imgWidth - cropWidth) / 2;
-                } else {
-                    // Image is taller than target - crop height (from center)
-                    cropHeight = imgWidth / targetRatio;
-                    offsetY = (imgHeight - cropHeight) / 2;
-                }
-
-                // Output dimensions (max 1600px wide)
-                const outputWidth = Math.min(cropWidth, 1600);
-                const outputHeight = outputWidth / targetRatio;
-
-                canvas.width = outputWidth;
-                canvas.height = outputHeight;
-
-                const ctx = canvas.getContext('2d');
-                if (!ctx) {
-                    reject(new Error('Canvas context not available'));
-                    return;
-                }
-
-                // Draw cropped region
-                ctx.drawImage(
-                    img,
-                    offsetX, offsetY, cropWidth, cropHeight,  // Source crop
-                    0, 0, outputWidth, outputHeight           // Destination
-                );
-
-                console.log(`🖼️ Cropped to ${targetRatio}:1 ratio - ${outputWidth}x${outputHeight}`);
-
-                canvas.toBlob(
-                    (blob) => {
-                        if (!blob) {
-                            reject(new Error('Failed to crop image'));
-                            return;
-                        }
-                        const croppedFile = new File([blob], file.name, { type: 'image/jpeg' });
-                        resolve(croppedFile);
-                    },
-                    'image/jpeg',
-                    0.92
-                );
-            };
-            img.onerror = () => reject(new Error('Failed to load image for cropping'));
-            img.src = URL.createObjectURL(file);
-        });
-    };
-
     // Compress image using canvas - max 2MB, scale down proportionally (NO CROP)
     const compressImage = async (file: File, maxSizeMB: number = 2): Promise<File> => {
         return new Promise((resolve, reject) => {
@@ -268,12 +204,6 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
                     console.error('❌ Failed to convert data URL:', dataError);
                     throw new Error(`Gagal memproses gambar base64: ${dataError.message}`);
                 }
-            }
-
-            // Crop to 2:1 aspect ratio to fit carousel frame perfectly
-            if (fileToUpload) {
-                console.log('🖼️ Cropping to 2:1 aspect ratio for carousel...');
-                fileToUpload = await cropToAspectRatio(fileToUpload, 2);
             }
 
             // Compress image if file exists and is larger than 2MB

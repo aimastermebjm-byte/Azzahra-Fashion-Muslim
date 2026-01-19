@@ -60,10 +60,17 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ onBannerClick }) => {
               }`}
             onClick={() => onBannerClick && onBannerClick(banner)}
           >
+            {/* 1. Blurred Background Layer (Fills the frame) */}
+            <div
+              className="absolute inset-0 bg-cover bg-center blur-xl opacity-50 scale-110"
+              style={{ backgroundImage: `url(${banner.imageUrl})` }}
+            />
+
+            {/* 2. Main Image Layer (Shows full image without crop) */}
             <img
               src={banner.imageUrl}
               alt={banner.title}
-              className="w-full h-full object-cover object-center cursor-pointer hover:scale-105 transition-transform duration-[2000ms]"
+              className="relative w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform duration-[2000ms] z-10"
             />
 
             {/* Optional Overlay for Text visibility (if needed in future) */}
