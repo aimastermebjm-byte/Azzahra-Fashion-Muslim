@@ -676,11 +676,23 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               setSelectedColor(variant.color);
               setQuantity(qty);
 
+              // Create product with discounted price if collection discount is active
+              let productWithPrice = currentProduct;
+              if (collectionDiscount > 0) {
+                const baseRetail = currentProduct.originalRetailPrice || currentProduct.retailPrice;
+                const baseReseller = currentProduct.originalResellerPrice || currentProduct.resellerPrice || baseRetail * 0.8;
+                productWithPrice = {
+                  ...currentProduct,
+                  retailPrice: Math.max(0, baseRetail - collectionDiscount),
+                  resellerPrice: Math.max(0, baseReseller - collectionDiscount),
+                };
+              }
+
               // Execute the appropriate action
               if (modalMode === 'addToCart') {
-                onAddToCart(currentProduct, variant, qty);
+                onAddToCart(productWithPrice, variant, qty);
               } else {
-                onBuyNow(currentProduct, variant, qty);
+                onBuyNow(productWithPrice, variant, qty);
               }
 
               // Close modal
