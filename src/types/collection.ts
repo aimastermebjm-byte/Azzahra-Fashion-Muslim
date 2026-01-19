@@ -15,4 +15,5 @@ export interface CreateCollectionInput {
     name: string;
     description?: string;
     productIds: string[];
+    isActive: boolean;
 }

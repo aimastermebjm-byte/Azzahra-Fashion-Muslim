@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Plus, Edit, Search, X, Trash2, Clock, Flame, Star, MessageCircle } from 'lucide-react';
-import { collection, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import PageHeader from './PageHeader';
 import { Product } from '../types';
@@ -19,6 +19,7 @@ import ManualUploadModal from './ManualUploadModal';
 import WhatsAppInboxModal from './WhatsAppInboxModal';
 import StockHistoryModal from './StockHistoryModal';
 import { collectionService } from '../services/collectionService';
+import CollectionManager from './CollectionManager';
 
 interface AdminProductsPageProps {
   onBack: () => void;
@@ -178,6 +179,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
     productIds: []
   });
 
+  // Collection Manager State
+  const [showCollectionManager, setShowCollectionManager] = useState(false);
   const [isForceSyncing, setIsForceSyncing] = useState(false);
   const [forceSyncMessage, setForceSyncMessage] = useState<string | null>(null);
 
@@ -997,6 +1000,18 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
     }
   };
 
+  // NEW: Handler for CollectionManager to update products (e.g. apply discount)
+  const handleCollectionUpdateProduct = async (productId: string, data: Partial<Product>) => {
+    try {
+      const docRef = doc(db, 'productBatches', productId);
+      // @ts-ignore
+      await updateDoc(docRef, data);
+    } catch (error) {
+      console.error('Error updating product from collection manager:', error);
+      throw error;
+    }
+  };
+
   // NEW: Create collection handler
   const handleCreateCollection = async () => {
     if (selectedProducts.length === 0) {
@@ -1350,9 +1365,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
           </div>
         )}
 
-        {/* Main Actions - 2 Columns - GOLD THEME */}
+        {/* Main Actions - 3 Columns - GOLD THEME */}
         <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-3 shine-effect">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {/* Tambah Produk */}
             <button
               onClick={() => {
@@ -1376,6 +1391,17 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                 <MessageCircle className="w-6 h-6 text-white drop-shadow-sm" />
               </div>
               <span className="text-base font-extrabold text-slate-900 group-hover:text-[#D4AF37] transition-colors">Draft Upload</span>
+            </button>
+
+            {/* Kelola Koleksi */}
+            <button
+              onClick={() => setShowCollectionManager(true)}
+              className="bg-white p-4 rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C] hover:shadow-[0_6px_0_0_#997B2C] active:shadow-[0_2px_0_0_#997B2C] active:translate-y-0.5 transition-all flex items-center justify-center gap-3 group"
+            >
+              <div className="w-10 h-10 rounded-full bg-[radial-gradient(ellipse_at_center,_#EDD686_0%,_#D4AF37_50%,_#997B2C_100%)] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                <span className="text-2xl">📁</span>
+              </div>
+              <span className="text-base font-extrabold text-slate-900 group-hover:text-[#D4AF37] transition-colors">Koleksi</span>
             </button>
           </div>
         </div>
@@ -1500,13 +1526,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     <span className="text-lg">💰</span>
                     <span className="text-sm">Diskon</span>
                   </button>
-                  <button
-                    onClick={() => setShowCollectionModal(true)}
-                    className="bg-white text-blue-600 p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-blue-400 shadow-[0_3px_0_0_#2563eb] shine-effect"
-                  >
-                    <span className="text-lg">📁</span>
-                    <span className="text-sm">Koleksi</span>
-                  </button>
+
+                  {/* Collection button moved to main toolbar */}
                   {user?.role === 'owner' && (
                     <button
                       onClick={handleBulkDelete}
@@ -1749,427 +1770,428 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
       </div>
 
       {/* Add Product Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-800">Tambah Produk Baru</h2>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleAddProduct} className="p-6 space-y-6">
-              {/* Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nama Produk *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kategori *
-                  </label>
-                  <select
-                    required
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+      {
+        showAddModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-800">Tambah Produk Baru</h2>
+                  <button
+                    onClick={() => setShowAddModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Deskripsi
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* Product Images */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  📷 Gambar Produk
-                </label>
-                <div className="space-y-4">
-                  {/* File Upload Input */}
+              <form onSubmit={handleAddProduct} className="p-6 space-y-6">
+                {/* Basic Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">
-                      Upload Gambar dari Device (opsional)
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nama Produk *
                     </label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                      💡 Bisa pilih multiple gambar (JPG, PNG, WebP). Maksimal 5MB per gambar.
-                    </p>
                   </div>
-
-                  {/* Image Preview */}
-                  {formData.images.length > 0 && (
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-2">
-                        Gambar yang Ditambahkan ({formData.images.length})
-                      </label>
-                      <div className="grid grid-cols-4 gap-2">
-                        {formData.images.map((image, index) => {
-                          const isFileObject = typeof image === 'object';
-                          const imageSrc = isFileObject ? (image as any).preview : (image as string);
-
-                          return (
-                            <div key={index} className="relative group">
-                              <img
-                                src={imageSrc}
-                                alt={`Preview ${index + 1} `}
-                                className="w-full h-24 object-cover rounded-lg border border-gray-200"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.src = '/placeholder-product.jpg';
-                                }}
-                              />
-                              {isFileObject && (image as any).isUploading && (
-                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-                                  <div className="text-white text-xs">⏳ Uploading...</div>
-                                </div>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setFormData({
-                                    ...formData,
-                                    images: formData.images.filter((_, i) => i !== index)
-                                  });
-                                }}
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                              <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-                                {index + 1}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        💡 Gambar pertama akan menjadi gambar utama produk
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Placeholder Info */}
-                  {formData.images.length === 0 && (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-                      <div className="text-gray-400 mb-2">
-                        <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-1">Belum ada gambar produk</p>
-                      <p className="text-xs text-gray-500">
-                        Upload gambar dari device atau lanjutkan tanpa gambar (gambar placeholder akan digunakan)
-                      </p>
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Kategori *
+                    </label>
+                    <select
+                      required
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+                    >
+                      {categories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
 
-              {/* Pricing */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Harga Jual (Rp) *
+                    Deskripsi
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Product Images */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📷 Gambar Produk
+                  </label>
+                  <div className="space-y-4">
+                    {/* File Upload Input */}
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Upload Gambar dari Device (opsional)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageUpload}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        💡 Bisa pilih multiple gambar (JPG, PNG, WebP). Maksimal 5MB per gambar.
+                      </p>
+                    </div>
+
+                    {/* Image Preview */}
+                    {formData.images.length > 0 && (
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-2">
+                          Gambar yang Ditambahkan ({formData.images.length})
+                        </label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {formData.images.map((image, index) => {
+                            const isFileObject = typeof image === 'object';
+                            const imageSrc = isFileObject ? (image as any).preview : (image as string);
+
+                            return (
+                              <div key={index} className="relative group">
+                                <img
+                                  src={imageSrc}
+                                  alt={`Preview ${index + 1} `}
+                                  className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = '/placeholder-product.jpg';
+                                  }}
+                                />
+                                {isFileObject && (image as any).isUploading && (
+                                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                                    <div className="text-white text-xs">⏳ Uploading...</div>
+                                  </div>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData({
+                                      ...formData,
+                                      images: formData.images.filter((_, i) => i !== index)
+                                    });
+                                  }}
+                                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                                <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                                  {index + 1}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          💡 Gambar pertama akan menjadi gambar utama produk
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Placeholder Info */}
+                    {formData.images.length === 0 && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                        <div className="text-gray-400 mb-2">
+                          <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">Belum ada gambar produk</p>
+                        <p className="text-xs text-gray-500">
+                          Upload gambar dari device atau lanjutkan tanpa gambar (gambar placeholder akan digunakan)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Pricing */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Harga Jual (Rp) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      placeholder="0"
+                      value={formData.retailPrice}
+                      onChange={(e) => setFormData({ ...formData, retailPrice: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Harga Reseller (Rp)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={formData.resellerPrice}
+                      onChange={(e) => setFormData({ ...formData, resellerPrice: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Harga Modal (Rp)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={formData.costPrice}
+                      onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Weight */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Berat Produk (gram) *
                   </label>
                   <input
                     type="number"
                     required
-                    min="0"
-                    placeholder="0"
-                    value={formData.retailPrice}
-                    onChange={(e) => setFormData({ ...formData, retailPrice: e.target.value })}
+                    min="1"
+                    step="1"
+                    placeholder="1000"
+                    value={formData.weight}
+                    onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Berat produk dalam gram (contoh: 1000 = 1kg)</p>
                 </div>
+
+                {/* Product Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Harga Reseller (Rp)
+                    Kondisi Produk *
                   </label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={formData.resellerPrice}
-                    onChange={(e) => setFormData({ ...formData, resellerPrice: e.target.value })}
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as 'ready' | 'po' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Harga Modal (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={formData.costPrice}
-                    onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              {/* Weight */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Berat Produk (gram) *
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  step="1"
-                  placeholder="1000"
-                  value={formData.weight}
-                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <p className="text-xs text-gray-500 mt-1">Berat produk dalam gram (contoh: 1000 = 1kg)</p>
-              </div>
-
-              {/* Product Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Kondisi Produk *
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'ready' | 'po' })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="ready">Ready Stock</option>
-                  <option value="po">Pre-Order (PO)</option>
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.status === 'ready' ? '✅ Produk siap dikirim' : '⏳ Produk butuh waktu pengerjaan'}
-                </p>
-              </div>
-
-              {/* Variant Management */}
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="block text-sm font-medium text-gray-700">
-                      📏 Ukuran Produk
-                    </label>
-                    <button
-                      type="button"
-                      onClick={addSize}
-                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm"
-                    >
-                      + Tambah Ukuran
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.variants.sizes.map((size, index) => (
-                      <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
-                        <input
-                          type="text"
-                          value={size}
-                          onChange={(e) => {
-                            const newSizes = [...formData.variants.sizes];
-                            newSizes[index] = e.target.value;
-                            const oldSize = formData.variants.sizes[index];
-                            const newStock = { ...formData.variants.stock };
-                            if (oldSize !== e.target.value && newStock[oldSize]) {
-                              newStock[e.target.value] = newStock[oldSize];
-                              delete newStock[oldSize];
-                            }
-                            setFormData({
-                              ...formData,
-                              variants: {
-                                ...formData.variants,
-                                sizes: newSizes,
-                                stock: newStock
-                              }
-                            });
-                          }}
-                          className="px-2 py-1 border border-gray-300 rounded text-sm"
-                          placeholder="contoh: S, M, L"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeSize(size)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  {formData.variants.sizes.length === 0 && (
-                    <p className="text-sm text-gray-500">Tambahkan ukuran untuk mulai mengelola varian</p>
-                  )}
+                  >
+                    <option value="ready">Ready Stock</option>
+                    <option value="po">Pre-Order (PO)</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.status === 'ready' ? '✅ Produk siap dikirim' : '⏳ Produk butuh waktu pengerjaan'}
+                  </p>
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="block text-sm font-medium text-gray-700">
-                      🎨 Warna Produk
-                    </label>
-                    <button
-                      type="button"
-                      onClick={addColor}
-                      className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
-                    >
-                      + Tambah Warna
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.variants.colors.map((color, index) => (
-                      <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
-                        <input
-                          type="text"
-                          value={color}
-                          onChange={(e) => {
-                            const newColors = [...formData.variants.colors];
-                            const oldColor = formData.variants.colors[index];
-                            newColors[index] = e.target.value;
-
-                            const newStock = Object.keys(formData.variants.stock).reduce((acc, size) => {
-                              acc[size] = { ...formData.variants.stock[size] };
-                              if (oldColor !== e.target.value && acc[size][oldColor] !== undefined) {
-                                acc[size][e.target.value] = acc[size][oldColor];
-                                delete acc[size][oldColor];
-                              }
-                              return acc;
-                            }, {} as any);
-
-                            setFormData({
-                              ...formData,
-                              variants: {
-                                ...formData.variants,
-                                colors: newColors,
-                                stock: newStock
-                              }
-                            });
-                          }}
-                          className="px-2 py-1 border border-gray-300 rounded text-sm"
-                          placeholder="contoh: Merah, Biru"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeColor(color)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  {formData.variants.colors.length === 0 && (
-                    <p className="text-sm text-gray-500">Tambahkan warna untuk mulai mengelola varian</p>
-                  )}
-                </div>
-
-                {/* Stock Matrix */}
-                {formData.variants.sizes.length > 0 && formData.variants.colors.length > 0 && (
+                {/* Variant Management */}
+                <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      📦 Stok per Varian
-                    </label>
-                    <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-gray-200">
-                            <th className="text-left py-2 px-2 font-medium text-gray-700">Ukuran \ Warna</th>
-                            {formData.variants.colors.map((color, index) => (
-                              <th key={index} className="text-center py-2 px-2 font-bold text-[#997B2C]">
-                                {color}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {formData.variants.sizes.map((size, sizeIndex) => (
-                            <tr key={sizeIndex} className="border-b border-gray-100">
-                              <td className="py-2 px-2 font-medium text-gray-600">{size}</td>
-                              {formData.variants.colors.map((color, colorIndex) => (
-                                <td key={colorIndex} className="py-2 px-2 text-center">
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    placeholder="0"
-                                    value={formData.variants.stock[size]?.[color] || ''}
-                                    onChange={(e) => updateVariantStock(size, color, e.target.value)}
-                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  />
-                                </td>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="block text-sm font-medium text-gray-700">
+                        📏 Ukuran Produk
+                      </label>
+                      <button
+                        type="button"
+                        onClick={addSize}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm"
+                      >
+                        + Tambah Ukuran
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.variants.sizes.map((size, index) => (
+                        <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
+                          <input
+                            type="text"
+                            value={size}
+                            onChange={(e) => {
+                              const newSizes = [...formData.variants.sizes];
+                              newSizes[index] = e.target.value;
+                              const oldSize = formData.variants.sizes[index];
+                              const newStock = { ...formData.variants.stock };
+                              if (oldSize !== e.target.value && newStock[oldSize]) {
+                                newStock[e.target.value] = newStock[oldSize];
+                                delete newStock[oldSize];
+                              }
+                              setFormData({
+                                ...formData,
+                                variants: {
+                                  ...formData.variants,
+                                  sizes: newSizes,
+                                  stock: newStock
+                                }
+                              });
+                            }}
+                            className="px-2 py-1 border border-gray-300 rounded text-sm"
+                            placeholder="contoh: S, M, L"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeSize(size)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    {formData.variants.sizes.length === 0 && (
+                      <p className="text-sm text-gray-500">Tambahkan ukuran untuk mulai mengelola varian</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="block text-sm font-medium text-gray-700">
+                        🎨 Warna Produk
+                      </label>
+                      <button
+                        type="button"
+                        onClick={addColor}
+                        className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm"
+                      >
+                        + Tambah Warna
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.variants.colors.map((color, index) => (
+                        <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
+                          <input
+                            type="text"
+                            value={color}
+                            onChange={(e) => {
+                              const newColors = [...formData.variants.colors];
+                              const oldColor = formData.variants.colors[index];
+                              newColors[index] = e.target.value;
+
+                              const newStock = Object.keys(formData.variants.stock).reduce((acc, size) => {
+                                acc[size] = { ...formData.variants.stock[size] };
+                                if (oldColor !== e.target.value && acc[size][oldColor] !== undefined) {
+                                  acc[size][e.target.value] = acc[size][oldColor];
+                                  delete acc[size][oldColor];
+                                }
+                                return acc;
+                              }, {} as any);
+
+                              setFormData({
+                                ...formData,
+                                variants: {
+                                  ...formData.variants,
+                                  colors: newColors,
+                                  stock: newStock
+                                }
+                              });
+                            }}
+                            className="px-2 py-1 border border-gray-300 rounded text-sm"
+                            placeholder="contoh: Merah, Biru"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeColor(color)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    {formData.variants.colors.length === 0 && (
+                      <p className="text-sm text-gray-500">Tambahkan warna untuk mulai mengelola varian</p>
+                    )}
+                  </div>
+
+                  {/* Stock Matrix */}
+                  {formData.variants.sizes.length > 0 && formData.variants.colors.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        📦 Stok per Varian
+                      </label>
+                      <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-gray-200">
+                              <th className="text-left py-2 px-2 font-medium text-gray-700">Ukuran \ Warna</th>
+                              {formData.variants.colors.map((color, index) => (
+                                <th key={index} className="text-center py-2 px-2 font-bold text-[#997B2C]">
+                                  {color}
+                                </th>
                               ))}
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {formData.variants.sizes.map((size, sizeIndex) => (
+                              <tr key={sizeIndex} className="border-b border-gray-100">
+                                <td className="py-2 px-2 font-medium text-gray-600">{size}</td>
+                                {formData.variants.colors.map((color, colorIndex) => (
+                                  <td key={colorIndex} className="py-2 px-2 text-center">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      placeholder="0"
+                                      value={formData.variants.stock[size]?.[color] || ''}
+                                      onChange={(e) => updateVariantStock(size, color, e.target.value)}
+                                      className="w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between">
+                        <p className="text-sm text-gray-600">
+                          Total Stok: <span className="font-semibold text-blue-600">{calculateTotalStock()} pcs</span>
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          💡 Total stok akan dihitung otomatis dari semua varian
+                        </p>
+                      </div>
                     </div>
-                    <div className="mt-3 flex items-center justify-between">
-                      <p className="text-sm text-gray-600">
-                        Total Stok: <span className="font-semibold text-blue-600">{calculateTotalStock()} pcs</span>
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        💡 Total stok akan dihitung otomatis dari semua varian
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
 
-              {/* Form Actions */}
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Tambah Produk
-                </button>
-              </div>
-            </form>
+                {/* Form Actions */}
+                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Tambah Produk
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )
+        )
       }
 
       {/* Edit Product Modal */}
@@ -3381,106 +3403,62 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
       />
 
       {/* NEW: Discount Modal */}
-      {showDiscountModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-900">💰 Terapkan Diskon</h3>
-              <button onClick={() => setShowDiscountModal(false)} className="text-gray-500 hover:text-gray-700">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-4 space-y-4">
-              <p className="text-sm text-gray-600">
-                Terapkan potongan harga untuk <span className="font-bold text-green-600">{selectedProducts.length} produk</span> terpilih.
-              </p>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Jumlah Diskon (Rp)</label>
-                <input
-                  type="number"
-                  value={discountAmount}
-                  onChange={(e) => setDiscountAmount(parseInt(e.target.value) || 0)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none text-lg font-bold"
-                  placeholder="100000"
-                />
+      {
+        showDiscountModal && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
+              <div className="p-4 border-b flex justify-between items-center">
+                <h3 className="text-lg font-bold text-gray-900">💰 Terapkan Diskon</h3>
+                <button onClick={() => setShowDiscountModal(false)} className="text-gray-500 hover:text-gray-700">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
-                ⚠️ Harga retail dan reseller akan dikurangi sebesar Rp{discountAmount.toLocaleString('id-ID')}
+              <div className="p-4 space-y-4">
+                <p className="text-sm text-gray-600">
+                  Terapkan potongan harga untuk <span className="font-bold text-green-600">{selectedProducts.length} produk</span> terpilih.
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Jumlah Diskon (Rp)</label>
+                  <input
+                    type="number"
+                    value={discountAmount}
+                    onChange={(e) => setDiscountAmount(parseInt(e.target.value) || 0)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none text-lg font-bold"
+                    placeholder="100000"
+                  />
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
+                  ⚠️ Harga retail dan reseller akan dikurangi sebesar Rp{discountAmount.toLocaleString('id-ID')}
+                </div>
               </div>
-            </div>
-            <div className="p-4 border-t flex gap-3">
-              <button
-                onClick={() => setShowDiscountModal(false)}
-                className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleApplyDiscount}
-                className="flex-1 py-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600"
-              >
-                Terapkan Diskon
-              </button>
+              <div className="p-4 border-t flex gap-3">
+                <button
+                  onClick={() => setShowDiscountModal(false)}
+                  className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleApplyDiscount}
+                  className="flex-1 py-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600"
+                >
+                  Terapkan Diskon
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {/* NEW: Collection Modal */}
-      {showCollectionModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-900">📁 Buat Koleksi</h3>
-              <button onClick={() => setShowCollectionModal(false)} className="text-gray-500 hover:text-gray-700">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-4 space-y-4">
-              <p className="text-sm text-gray-600">
-                Simpan <span className="font-bold text-blue-600">{selectedProducts.length} produk</span> terpilih ke dalam koleksi.
-              </p>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nama Koleksi *</label>
-                <input
-                  type="text"
-                  value={collectionName}
-                  onChange={(e) => setCollectionName(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
-                  placeholder="Contoh: Mukena Favorit"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi (opsional)</label>
-                <textarea
-                  value={collectionDescription}
-                  onChange={(e) => setCollectionDescription(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none resize-none"
-                  rows={2}
-                  placeholder="Deskripsi singkat koleksi..."
-                />
-              </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
-                💡 Koleksi ini dapat digunakan saat membuat Banner untuk menampilkan produk secara otomatis.
-              </div>
-            </div>
-            <div className="p-4 border-t flex gap-3">
-              <button
-                onClick={() => setShowCollectionModal(false)}
-                className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleCreateCollection}
-                className="flex-1 py-3 rounded-xl bg-blue-500 text-white font-bold hover:bg-blue-600"
-              >
-                Buat Koleksi
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Collection Manager (Replaces old Collection Modal) */}
+      <CollectionManager
+        isOpen={showCollectionManager}
+        onClose={() => setShowCollectionManager(false)}
+        products={allProducts}
+        onUpdateProduct={handleCollectionUpdateProduct}
+      />
+
+
     </div >
   );
 };
