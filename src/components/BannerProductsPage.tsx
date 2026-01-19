@@ -33,13 +33,21 @@ const BannerProductsPage: React.FC<BannerProductsPageProps> = ({
         const fetchProducts = async () => {
             setLoading(true);
             try {
+                console.log('🖼️ BannerProductsPage loading products for:', {
+                    title: banner.title,
+                    actionType: banner.actionType,
+                    actionData: banner.actionData
+                });
+
                 if (banner.actionType === 'products' && banner.actionData?.productIds) {
                     const products = allProducts.filter(p => banner.actionData.productIds?.includes(p.id));
                     setDisplayProducts(products);
                     setCollectionInfo(null);
                 } else if (banner.actionType === 'collection' && banner.actionData?.collectionId) {
+                    console.log('📦 Fetching collection:', banner.actionData.collectionId);
                     // Check if we already have the collection info to avoid refetching if banner didn't change
                     const collection = await collectionService.getCollectionById(banner.actionData.collectionId);
+                    console.log('✅ Collection response:', collection);
                     if (collection) {
                         setCollectionInfo(collection);
                         const products = allProducts.filter(p => collection.productIds?.includes(p.id));

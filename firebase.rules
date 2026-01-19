@@ -233,5 +233,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdminOrOwner();
     }
+    // Product Collections - Public read for banners/filters, Admin/Owner managed
+    match /collections/{collectionId} {
+      allow read: if true;
+      allow write: if isAdminOrOwner();
+    }
+
   }
 }

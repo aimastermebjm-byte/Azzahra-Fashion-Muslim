@@ -342,34 +342,8 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
                 showToast({ message: 'Banner berhasil dibuat', type: 'success' });
             }
 
-            // Auto-download to local as backup
-            try {
-                if (fileToUpload) {
-                    // Method 1: Download from local Blob (Fastest, no CORS)
-                    console.log('💾 Auto-downloading from local blob...');
-                    const url = URL.createObjectURL(fileToUpload);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `banner_${Date.now()}.jpg`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url); // Clean up
-                    console.log('✅ Banner auto-downloaded (Blob method)');
-                } else if (finalImageUrl) {
-                    // Method 2: Download from URL (Fallback)
-                    const link = document.createElement('a');
-                    link.href = finalImageUrl;
-                    link.download = `banner_${Date.now()}.jpg`;
-                    link.target = '_blank'; // Open in new tab if download blocked
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    console.log('✅ Banner download triggered (URL method)');
-                }
-            } catch (downloadErr) {
-                console.warn('⚠️ Auto-download failed:', downloadErr);
-            }
+            // Auto-download removed manually to prevent user confusion
+            // User can use the "Download" button in the preview if needed/
 
             setShowCreateModal(false);
             resetForm();
