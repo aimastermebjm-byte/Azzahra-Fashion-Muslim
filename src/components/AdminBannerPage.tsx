@@ -94,9 +94,9 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
                     cropWidth = imgHeight * targetRatio;
                     offsetX = (imgWidth - cropWidth) / 2;
                 } else {
-                    // Image is taller than target - crop height (from center)
+                    // Image is taller than target - crop height from BOTTOM (keep TOP where text usually is)
                     cropHeight = imgWidth / targetRatio;
-                    offsetY = (imgHeight - cropHeight) / 2;
+                    offsetY = 0; // Keep top, crop bottom
                 }
 
                 // Output dimensions (max 1600px wide)
@@ -324,6 +324,19 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
                     imageUrl: finalImageUrl
                 }, user.uid);
                 showToast({ message: 'Banner berhasil dibuat', type: 'success' });
+            }
+
+            // Auto-download to local as backup
+            try {
+                const link = document.createElement('a');
+                link.href = finalImageUrl;
+                link.download = `banner_${Date.now()}.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                console.log('✅ Banner auto-downloaded to local');
+            } catch (downloadErr) {
+                console.warn('⚠️ Auto-download failed:', downloadErr);
             }
 
             setShowCreateModal(false);
