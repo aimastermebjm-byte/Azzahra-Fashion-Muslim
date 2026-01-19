@@ -1003,9 +1003,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
   // NEW: Handler for CollectionManager to update products (e.g. apply discount)
   const handleCollectionUpdateProduct = async (productId: string, data: Partial<Product>) => {
     try {
-      const docRef = doc(db, 'productBatches', productId);
-      // @ts-ignore
-      await updateDoc(docRef, data);
+      // Use the proper updateProduct from useProductCRUD which handles batch array
+      const success = await updateProduct(productId, data);
+      if (!success) {
+        throw new Error('Failed to update product');
+      }
     } catch (error) {
       console.error('Error updating product from collection manager:', error);
       throw error;
