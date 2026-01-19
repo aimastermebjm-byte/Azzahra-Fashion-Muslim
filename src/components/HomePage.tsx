@@ -192,8 +192,8 @@ const HomePage: React.FC<HomePageProps> = ({
       }
     } else if (banner.actionType === 'url' && banner.actionData?.url) {
       window.open(banner.actionData.url, '_blank');
-    } else if (banner.actionType === 'products' && onBannerClick) {
-      // Navigate to product list with banner's selected products
+    } else if ((banner.actionType === 'products' || banner.actionType === 'collection') && onBannerClick) {
+      // Navigate to product list with banner's selected products OR collection
       onBannerClick(banner);
     }
   };
