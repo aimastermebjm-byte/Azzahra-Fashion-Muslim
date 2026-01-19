@@ -63,7 +63,7 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ onBannerClick }) => {
             <img
               src={banner.imageUrl}
               alt={banner.title}
-              className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-[2000ms]"
+              className="w-full h-full object-contain bg-[#F5EFE0] cursor-pointer hover:scale-105 transition-transform duration-[2000ms]"
             />
 
             {/* Optional Overlay for Text visibility (if needed in future) */}
@@ -101,8 +101,8 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ onBannerClick }) => {
                 setCurrentSlide(index);
               }}
               className={`w-2 h-2 rounded-full transition-all ${index === currentSlide
-                  ? 'bg-white w-6'
-                  : 'bg-white/50 hover:bg-white/80'
+                ? 'bg-white w-6'
+                : 'bg-white/50 hover:bg-white/80'
                 }`}
             />
           ))}
