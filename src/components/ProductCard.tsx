@@ -145,8 +145,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
     // Collection Discount (Virtual - not stored in product price)
     if (collectionDiscount > 0) {
-      const discountedRetail = Math.max(0, product.retailPrice - collectionDiscount);
-      const discountedReseller = Math.max(0, (product.resellerPrice || product.retailPrice * 0.8) - collectionDiscount);
+      // Use originalRetailPrice as base (in case retailPrice was corrupted by old discount system)
+      const baseRetail = product.originalRetailPrice || product.retailPrice;
+      const baseReseller = product.originalResellerPrice || product.resellerPrice || baseRetail * 0.8;
+
+      const discountedRetail = Math.max(0, baseRetail - collectionDiscount);
+      const discountedReseller = Math.max(0, baseReseller - collectionDiscount);
 
       return (
         <div className="space-y-0.5 text-left">
@@ -159,7 +163,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </span>
           </div>
           <div className="text-xs text-gray-400 line-through">
-            Rp {product.retailPrice.toLocaleString('id-ID')}
+            Rp {baseRetail.toLocaleString('id-ID')}
           </div>
           {user?.role === 'reseller' && (
             <div className="text-xs text-[#D4AF37]">
