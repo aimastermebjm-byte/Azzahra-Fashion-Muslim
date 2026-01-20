@@ -385,29 +385,30 @@ Mohon segera melakukan pembayaran ya Kak. Terima kasih 🙏`;
         <style>
           @page { size: 58mm auto; margin: 0; }
           body { 
-            font-family: 'Courier New', monospace; 
+            font-family: sans-serif; 
             margin: 0; 
             padding: 5px; 
-            width: 48mm; /* Printable area for 58mm paper */
-            font-size: 10px;
+            width: 48mm; 
+            font-size: 12px;
             color: black;
           }
           .label-container { 
             border-bottom: 2px dashed #000; 
-            padding-bottom: 15px; 
-            margin-bottom: 15px; 
+            padding-bottom: 20px; 
+            margin-bottom: 20px; 
             page-break-inside: avoid;
           }
           .header { 
             text-align: center;
             margin-bottom: 10px;
-            border-bottom: 1px solid #000;
-            padding-bottom: 5px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
           }
           .header h1 { 
             margin: 0; 
-            font-size: 14px; 
-            font-weight: bold; 
+            font-size: 16px; 
+            font-weight: 800; 
+            text-transform: uppercase;
           }
           .info-table {
             width: 100%;
@@ -415,39 +416,44 @@ Mohon segera melakukan pembayaran ya Kak. Terima kasih 🙏`;
           }
           .info-table td {
             vertical-align: top;
-            padding-bottom: 4px;
-            font-size: 11px;
-            font-weight: bold;
-            line-height: 1.3;
+            padding-bottom: 6px;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #000;
           }
           .label-col {
-            width: 60px;
+            width: 55px;
             white-space: nowrap;
+            font-weight: normal;
+            font-size: 11px;
+            color: #333;
           }
           .sep-col {
-            width: 10px;
+            width: 8px;
             text-align: center;
           }
           .value-col {
             word-wrap: break-word;
+            font-weight: 600; /* Agak tebal tapi tidak over */
+            font-size: 13px; /* Diperbesar */
           }
           .dropship-badge {
-            border: 1px solid #000;
-            padding: 2px 4px;
+            border: 2px solid #000;
+            padding: 4px;
             font-weight: bold;
-            font-size: 10px;
+            font-size: 12px;
             display: inline-block;
-            margin-top: 5px;
+            margin-top: 8px;
             text-align: center;
             width: 100%;
             box-sizing: border-box;
           }
           .footer { 
-            font-size: 9px; 
+            font-size: 10px; 
             text-align: center; 
-            margin-top: 10px;
+            margin-top: 15px;
             border-top: 1px dashed #000;
-            padding-top: 5px;
+            padding-top: 8px;
           }
           @media print {
             body { padding: 0; width: 100%; }
@@ -460,8 +466,7 @@ Mohon segera melakukan pembayaran ya Kak. Terima kasih 🙏`;
         ${ordersList.map(o => `
           <div class="label-container">
             <div class="header">
-              <img src="${window.location.origin}/azzahra-logo.jpg" alt="Azzahra Fashion Muslim" style="max-width: 100%; height: auto; max-height: 50px; display: block; margin: 0 auto 5px;" />
-              <div style="font-size: 10px; font-weight: bold; letter-spacing: 1px;">AZZAHRA FASHION MUSLIM</div>
+              <h1>AZZAHRA FASHION</h1>
             </div>
             
             <table class="info-table">
