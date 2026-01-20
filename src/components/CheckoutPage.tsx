@@ -384,14 +384,20 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   // Shipping mode: 'delivery' = kirim ke alamat, 'keep' = atur alamat nanti
-  // Default to 'keep' ONLY if ALL items are PO (pre-order)
-  // Ready stock items should default to 'delivery' for all roles including owner/reseller
+  // RULES:
+  // 1. Ready stock (ALL roles) → ALWAYS 'delivery', NO 'keep' option
+  // 2. PO + Customer → ALWAYS 'delivery', NO 'keep' option
+  // 3. PO + Owner/Reseller → CAN CHOOSE 'keep' or 'delivery', default 'keep'
+  const userRole = user?.role || 'customer';
   const hasPOItems = cartItems.some(item => item.status === 'po');
   const hasReadyItems = cartItems.some(item => item.status !== 'po');
+  const isOwnerOrReseller = ['owner', 'reseller'].includes(userRole);
 
-  // If mixed (PO + Ready) or only Ready → default to 'delivery' (calculate shipping)
-  // If only PO → default to 'keep' (no shipping calculation needed)
-  const defaultMode = (hasPOItems && !hasReadyItems) ? 'keep' : 'delivery';
+  // Only owner/reseller with ONLY PO items can see the 'keep' option
+  const canShowKeepOption = isOwnerOrReseller && hasPOItems && !hasReadyItems;
+
+  // Default mode: 'keep' only for owner/reseller with PO only, otherwise always 'delivery'
+  const defaultMode = canShowKeepOption ? 'keep' : 'delivery';
   const [shippingMode, setShippingMode] = useState<'delivery' | 'keep'>(defaultMode);
 
   // Reset shipping cost when switching to 'keep' mode
@@ -828,12 +834,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   (item.badge && item.badge.toLowerCase() === 'po')
                 );
 
-                // Only show for reseller, admin, owner roles
-                const allowedRoles = ['reseller', 'admin', 'owner'];
-                const userRole = user?.role || 'customer';
-                const isAllowedRole = allowedRoles.includes(userRole);
-
-                if (!hasPOItems || !isAllowedRole) return null;
+                // Use the canShowKeepOption flag defined at component level
+                if (!canShowKeepOption) return null;
 
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
