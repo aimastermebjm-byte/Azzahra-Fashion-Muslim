@@ -349,7 +349,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
   //  NEW: Print Label Function (Single)
   const handlePrintLabel = (order: any) => {
-    // Prepare print data
+    // Prepare full address
     const fullAddress = [
       order.shippingInfo?.address,
       order.shippingInfo?.subdistrict ? `Kel. ${order.shippingInfo.subdistrict}` : '',
@@ -358,33 +358,25 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       order.shippingInfo?.provinceName
     ].filter(Boolean).join(', ');
 
-    // Format nota untuk printer 58mm (32 karakter per baris)
-    const notaText = [
-      '================================',
-      '         AZZAHRA FASHION        ',
-      '================================',
-      `Kepada : ${order.shippingInfo?.name || order.userName || '-'}`,
-      `Telp   : ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
-      `Alamat : ${fullAddress || '-'}`,
-      '--------------------------------',
-      `Item   : ${order.items?.map((item: any) => `${item.productName} x${item.quantity}`).join(', ') || '-'}`,
-      `Ekspedisi: ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
-      '--------------------------------',
-      `Order #${order.id}`,
-      '================================'
-    ].join('\n');
+    // Prepare JSON data for Android (Android will format for 32-char printer)
+    const printData = {
+      name: order.shippingInfo?.name || order.userName || '-',
+      phone: order.shippingInfo?.phone || (order as any).phone || '-',
+      address: fullAddress || order.shippingInfo?.address || '-',
+      items: order.items?.map((item: any) => `${item.productName} x${item.quantity}`).join(', ') || '-',
+      courier: order.shippingInfo?.courier?.toUpperCase() || 'JNE',
+      orderId: order.id
+    };
 
-    // Check if on mobile (Android) - try custom URL scheme first
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    if (isMobile) {
-      // Use custom URL scheme for Android native app
-      const printUrl = `azzahra-print://print?data=${encodeURIComponent(notaText)}`;
-      window.location.href = printUrl;
+    // Check if AndroidPrint interface is available (running in native app WebView)
+    if (typeof (window as any).AndroidPrint !== 'undefined') {
+      // Call Android native print - 1-click direct print!
+      (window as any).AndroidPrint.printLabel(JSON.stringify(printData));
+      showModernAlert('Print', 'Mengirim ke printer...', 'success');
       return;
     }
 
-    // Fallback to browser print for desktop
+    // Fallback to browser print for desktop/browser
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       showModernAlert('Error', 'Pop-up terblokir. Izinkan pop-up untuk mencetak label.', 'error');

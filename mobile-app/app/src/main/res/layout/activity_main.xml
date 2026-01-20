@@ -19,7 +19,27 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <!-- TAB 1: SYNC PEMBAYARAN -->
+            <!-- TAB 1: WEB VIEW (PWA) -->
+            <LinearLayout
+                android:id="@+id/tabWeb"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+                
+                <ProgressBar
+                    android:id="@+id/webProgress"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:visibility="gone"/>
+
+                <android.webkit.WebView
+                    android:id="@+id/webView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </LinearLayout>
+
+            <!-- TAB 2: SYNC PEMBAYARAN (OWNER ONLY) -->
             <LinearLayout
                 android:id="@+id/tabSync"
                 android:layout_width="match_parent"
@@ -57,9 +77,9 @@
                 <ListView
                     android:id="@+id/appList"
                     android:layout_width="match_parent"
-                    android:layout_height="150dp"
+                    android:layout_height="120dp"
                     android:background="#F0F0F0"
-                    android:layout_marginBottom="12dp"/>
+                    android:layout_marginBottom="8dp"/>
 
                 <ListView
                     android:id="@+id/logListView"
@@ -69,7 +89,7 @@
                     android:background="#EEEEEE"/>
             </LinearLayout>
 
-            <!-- TAB 2: PRINTER BLUETOOTH -->
+            <!-- TAB 3: SETTINGS & PRINTER -->
             <LinearLayout
                 android:id="@+id/tabPrinter"
                 android:layout_width="match_parent"
@@ -80,16 +100,44 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="PRINTER BLUETOOTH"
+                    android:text="PENGATURAN &amp; PRINTER"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     android:layout_marginBottom="16dp"/>
+
+                <!-- URL SETTINGS -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Web URL PWA:"
+                    android:textStyle="bold"/>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="16dp">
+                    <EditText
+                        android:id="@+id/etWebUrl"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="https://..."
+                        android:textSize="14sp"/>
+                    <Button
+                        android:id="@+id/btnSaveUrl"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Simpan"
+                        android:textSize="12sp"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#CCCCCC" android:layout_marginBottom="16dp"/>
 
                 <TextView
                     android:id="@+id/txtPrinterStatus"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Status: Not Connected"
+                    android:text="Status Printer: Not Connected"
                     android:textColor="#F44336"
                     android:layout_marginBottom="16dp"/>
 
@@ -113,17 +161,17 @@
                     android:id="@+id/btnTestPrint"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Tes Print Nota"
+                    android:text="Tes Print"
                     android:backgroundTint="#FF9800"
                     android:enabled="false"/>
-
-                <TextView
+                    
+                <Button
+                    android:id="@+id/btnLogout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="*Pastikan Bluetooth HP Aktif\n*Pilih printer dari daftar di atas"
-                    android:textSize="12sp"
+                    android:text="Logout"
                     android:layout_marginTop="8dp"
-                    android:textColor="#757575"/>
+                    style="@style/Widget.MaterialComponents.Button.TextButton"/>
             </LinearLayout>
 
         </FrameLayout>

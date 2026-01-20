@@ -1,12 +1,12 @@
 package com.azzahra.sync;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -20,23 +20,25 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -45,28 +47,24 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
 
     private TextView statusText, txtPrinterStatus;
     private ListView appListView, logListView, printerListView;
-    private EditText searchApps;
+    private EditText searchApps, etWebUrl;
     private View statusIndicator;
-    private Button btnGrantNotif, btnBatteryIgnore, btnAppNotif, btnScanPrinter, btnTestPrint;
+    private Button btnGrantNotif, btnBatteryIgnore, btnAppNotif, btnScanPrinter, btnTestPrint, btnSaveUrl, btnLogout;
     private SharedPreferences prefs;
     private Set<String> selectedPackages;
     private List<AppInfo> allAppInfos = new ArrayList<>();
@@ -75,13 +73,12 @@ public class MainActivity extends AppCompatActivity {
     private AppAdapter appAdapter;
     private TabHost tabHost;
 
-    // Bluetooth Variables
-    private BluetoothAdapter bluetoothAdapter;
+    // WebView & Printer
+    private WebView webView;
+    private ProgressBar webProgress;
+    private BluetoothPrinterManager printerManager;
     private List<BluetoothDevice> printerDevices = new ArrayList<>();
     private ArrayAdapter<String> printerAdapter;
-    private BluetoothSocket bluetoothSocket;
-    private OutputStream outputStream;
-    private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
     private final BroadcastReceiver logReceiver = new BroadcastReceiver() {
         @Override
@@ -110,30 +107,37 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         initUI();
         initTabs();
+        initWebView();
         checkUserRole();
-        handleIntent(getIntent());
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     private void initUI() {
         prefs = getSharedPreferences("AzzahraPrefs", MODE_PRIVATE);
         selectedPackages = new HashSet<>(prefs.getStringSet("selected_packages", new HashSet<>()));
 
+        // Sync UI
         statusText = findViewById(R.id.statusText);
         appListView = findViewById(R.id.appList);
         logListView = findViewById(R.id.logListView);
         searchApps = findViewById(R.id.searchApps);
         statusIndicator = findViewById(R.id.statusIndicator);
-        
         btnGrantNotif = findViewById(R.id.btnGrantNotif);
         btnBatteryIgnore = findViewById(R.id.btnBatteryIgnore);
         btnAppNotif = findViewById(R.id.btnAppNotif);
 
-        // Printer UI
+        // Web & Printer UI
+        webView = findViewById(R.id.webView);
+        webProgress = findViewById(R.id.webProgress);
+        etWebUrl = findViewById(R.id.etWebUrl);
+        btnSaveUrl = findViewById(R.id.btnSaveUrl);
+        btnLogout = findViewById(R.id.btnLogout);
         txtPrinterStatus = findViewById(R.id.txtPrinterStatus);
         btnScanPrinter = findViewById(R.id.btnScanPrinter);
         btnTestPrint = findViewById(R.id.btnTestPrint);
         printerListView = findViewById(R.id.printerList);
 
+        // Setup Adapters
         logAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, logEntries) {
             @NonNull @Override public View getView(int position, @Nullable View v, @NonNull ViewGroup parent) {
                 TextView tv = (TextView) super.getView(position, v, parent);
@@ -142,6 +146,14 @@ public class MainActivity extends AppCompatActivity {
         };
         logListView.setAdapter(logAdapter);
 
+        printerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, new ArrayList<>());
+        printerListView.setAdapter(printerAdapter);
+
+        // Printer Manager
+        printerManager = new BluetoothPrinterManager(this);
+        printerManager.autoConnect();
+
+        // Listeners
         btnGrantNotif.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)));
         btnBatteryIgnore.setOnClickListener(v -> {
             Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
@@ -149,19 +161,42 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        findViewById(R.id.btnClearLog).setOnClickListener(v -> {
-            logEntries.clear(); 
-            logAdapter.notifyDataSetChanged();
+        findViewById(R.id.btnClearLog).setOnClickListener(v -> { logEntries.clear(); logAdapter.notifyDataSetChanged(); });
+        
+        btnSaveUrl.setOnClickListener(v -> {
+            String url = etWebUrl.getText().toString().trim();
+            if (!url.startsWith("http")) url = "https://" + url;
+            prefs.edit().putString("pwa_url", url).apply();
+            webView.loadUrl(url);
+            Toast.makeText(this, "URL disimpan & memuat ulang...", Toast.LENGTH_SHORT).show();
         });
 
-        // Printer Logic
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        printerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, new ArrayList<>());
-        printerListView.setAdapter(printerAdapter);
+        btnLogout.setOnClickListener(v -> {
+            FirebaseAuth.getInstance().signOut();
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+        });
 
         btnScanPrinter.setOnClickListener(v -> scanPrinters());
-        printerListView.setOnItemClickListener((p, v, pos, id) -> connectToPrinter(printerDevices.get(pos)));
-        btnTestPrint.setOnClickListener(v -> printData("TES PRINT AZZAHRA SYNC\nPrinter Bluetooth 58mm\nStatus: OK!\n\n\n\n"));
+        printerListView.setOnItemClickListener((p, v, pos, id) -> {
+            BluetoothDevice device = printerDevices.get(pos);
+            new Thread(() -> {
+                try {
+                    printerManager.connect(device.getAddress());
+                    runOnUiThread(() -> {
+                        txtPrinterStatus.setText("Status: CONNECTED (" + device.getName() + ")");
+                        txtPrinterStatus.setTextColor(Color.parseColor("#4CAF50"));
+                        btnTestPrint.setEnabled(true);
+                    });
+                } catch (Exception e) {
+                    runOnUiThread(() -> Toast.makeText(this, "Gagal konek: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                }
+            }).start();
+        });
+
+        btnTestPrint.setOnClickListener(v -> {
+            try { printerManager.print("TES PRINT AZZAHRA SYNC\nPrinter 58mm OK!\n\n\n"); } catch (Exception e) {}
+        });
 
         loadAppList();
         searchApps.addTextChangedListener(new TextWatcher() {
@@ -169,45 +204,60 @@ public class MainActivity extends AppCompatActivity {
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) { if (appAdapter != null) appAdapter.getFilter().filter(s); }
             @Override public void afterTextChanged(Editable s) {}
         });
-        
+
         triggerStartServices();
     }
 
     private void initTabs() {
         tabHost = findViewById(android.R.id.tabhost);
         tabHost.setup();
+        tabHost.addTab(tabHost.newTabSpec("Web").setIndicator("HOME").setContent(R.id.tabWeb));
+        tabHost.addTab(tabHost.newTabSpec("Sync").setIndicator("SYNC").setContent(R.id.tabSync));
+        tabHost.addTab(tabHost.newTabSpec("Printer").setIndicator("SETTINGS").setContent(R.id.tabPrinter));
+    }
 
-        TabHost.TabSpec spec1 = tabHost.newTabSpec("Sync");
-        spec1.setContent(R.id.tabSync);
-        spec1.setIndicator("SYNC");
-        tabHost.addTab(spec1);
+    @SuppressLint("SetJavaScriptEnabled")
+    private void initWebView() {
+        WebSettings ws = webView.getSettings();
+        ws.setJavaScriptEnabled(true);
+        ws.setDomStorageEnabled(true);
+        ws.setDatabaseEnabled(true);
+        ws.setAllowFileAccess(true);
+        ws.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        
+        webView.setWebViewClient(new WebViewClient());
+        webView.setWebChromeClient(new WebChromeClient() {
+            public void onProgressChanged(WebView view, int newProgress) {
+                webProgress.setProgress(newProgress);
+                webProgress.setVisibility(newProgress == 100 ? View.GONE : View.VISIBLE);
+            }
+        });
 
-        TabHost.TabSpec spec2 = tabHost.newTabSpec("Printer");
-        spec2.setContent(R.id.tabPrinter);
-        spec2.setIndicator("PRINTER");
-        tabHost.addTab(spec2);
+        // REGISTER JAVASCRIPT INTERFACE SESUAI SPEK AGENT PWA
+        webView.addJavascriptInterface(new PrintBridge(this, printerManager), "AndroidPrint");
+
+        String savedUrl = prefs.getString("pwa_url", "https://azzahra-fashion-muslim.vercel.app");
+        etWebUrl.setText(savedUrl);
+        webView.loadUrl(savedUrl);
     }
 
     private void checkUserRole() {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) return;
-
         FirebaseFirestore.getInstance().collection("users").document(uid).get()
             .addOnSuccessListener(doc -> {
                 String role = doc.getString("role");
                 if ("admin".equalsIgnoreCase(role)) {
-                    // JIKA ADMIN, SEMBUNYIKAN TAB SYNC
-                    tabHost.getTabWidget().getChildAt(0).setVisibility(View.GONE);
-                    tabHost.setCurrentTab(1); // Langsung ke tab printer
-                    Toast.makeText(this, "Mode Admin: Printer Only", Toast.LENGTH_SHORT).show();
+                    // ADMIN HANYA LIHAT WEB & SETTINGS
+                    tabHost.getTabWidget().getChildAt(1).setVisibility(View.GONE);
                 }
             });
     }
 
     private void scanPrinters() {
-        if (bluetoothAdapter == null) return;
-        if (!bluetoothAdapter.isEnabled()) {
-            Toast.makeText(this, "Nyalakan Bluetooth dulu Boss!", Toast.LENGTH_SHORT).show();
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        if (adapter == null || !adapter.isEnabled()) {
+            Toast.makeText(this, "Nyalakan Bluetooth HP!", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -220,75 +270,13 @@ public class MainActivity extends AppCompatActivity {
 
         printerDevices.clear();
         printerAdapter.clear();
-        Set<BluetoothDevice> paired = bluetoothAdapter.getBondedDevices();
-        if (paired.size() > 0) {
-            for (BluetoothDevice device : paired) {
-                printerDevices.add(device);
-                printerAdapter.add(device.getName() + "\n" + device.getAddress());
-            }
+        Set<BluetoothDevice> paired = adapter.getBondedDevices();
+        for (BluetoothDevice device : paired) {
+            printerDevices.add(device);
+            printerAdapter.add(device.getName() + "\n" + device.getAddress());
         }
         printerAdapter.notifyDataSetChanged();
-        if (printerDevices.isEmpty()) Toast.makeText(this, "Tidak ada printer tersambung (Pairing dulu di Bluetooth HP)", Toast.LENGTH_LONG).show();
-    }
-
-    private void connectToPrinter(BluetoothDevice device) {
-        new Thread(() -> {
-            try {
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) return;
-                
-                if (bluetoothSocket != null) bluetoothSocket.close();
-                bluetoothSocket = device.createRfcommSocketToServiceRecord(SPP_UUID);
-                bluetoothSocket.connect();
-                outputStream = bluetoothSocket.getOutputStream();
-
-                runOnUiThread(() -> {
-                    txtPrinterStatus.setText("Status: CONNECTED (" + device.getName() + ")");
-                    txtPrinterStatus.setTextColor(Color.parseColor("#4CAF50"));
-                    btnTestPrint.setEnabled(true);
-                    Toast.makeText(this, "Printer Terkoneksi!", Toast.LENGTH_SHORT).show();
-                });
-            } catch (IOException e) {
-                runOnUiThread(() -> Toast.makeText(this, "Gagal Konek: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-            }
-        }).start();
-    }
-
-    private void printData(String data) {
-        if (outputStream == null) return;
-        new Thread(() -> {
-            try {
-                // ESC/POS Commands (Reset & Align Center)
-                outputStream.write(new byte[]{0x1B, 0x40}); 
-                outputStream.write(data.getBytes());
-                outputStream.write(new byte[]{0x0A, 0x0A, 0x0A}); // Paper Feed
-            } catch (IOException e) {
-                runOnUiThread(() -> Toast.makeText(this, "Gagal Print: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-            }
-        }).start();
-    }
-
-    // HANDLER UNTUK DEEP LINK DARI PWA
-    private void handleIntent(Intent intent) {
-        if (intent == null || intent.getData() == null) return;
-        Uri data = intent.getData();
-        if ("azzahra-print".equals(data.getScheme())) {
-            String textToPrint = data.getQueryParameter("data");
-            if (textToPrint != null) {
-                tabHost.setCurrentTab(1);
-                if (outputStream != null) {
-                    printData(textToPrint + "\n\n\n\n");
-                    Toast.makeText(this, "Mencetak nota...", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(this, "Printer belum konek! Hubungkan dulu di Tab Printer.", Toast.LENGTH_LONG).show();
-                }
-            }
-        }
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        handleIntent(intent);
+        if (printerDevices.isEmpty()) Toast.makeText(this, "Pairing printer dulu di pengaturan Bluetooth HP!", Toast.LENGTH_LONG).show();
     }
 
     private void triggerStartServices() {
@@ -311,13 +299,26 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
-    private static class AppInfo {
-        String name, packageName; Drawable icon; boolean selected;
-        AppInfo(String n, String p, Drawable i, boolean s) { this.name = n; this.packageName = p; this.icon = i; this.selected = s; }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        checkPermissions();
+        IntentFilter f = new IntentFilter("com.azzahra.sync.NEW_LOG");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) registerReceiver(logReceiver, f, Context.RECEIVER_EXPORTED);
+        else registerReceiver(logReceiver, f);
     }
 
+    @Override protected void onPause() { super.onPause(); unregisterReceiver(logReceiver); }
+
+    private void checkPermissions() {
+        boolean listenerOk = NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName());
+        statusText.setText(listenerOk ? "Status: ACTIVE" : "Status: OFF");
+        statusIndicator.setBackgroundResource(listenerOk ? R.drawable.circle_green : R.drawable.circle_red);
+    }
+
+    private static class AppInfo { String name, packageName; Drawable icon; boolean selected; AppInfo(String n, String p, Drawable i, boolean s) { this.name = n; this.packageName = p; this.icon = i; this.selected = s; } }
     private class AppAdapter extends ArrayAdapter<AppInfo> {
-        private List<AppInfo> original; private List<AppInfo> filtered;
+        private List<AppInfo> original, filtered;
         AppAdapter(Context c, List<AppInfo> a) { super(c, 0, a); this.original = new ArrayList<>(a); this.filtered = a; }
         @Override public int getCount() { return filtered.size(); }
         @Nullable @Override public AppInfo getItem(int p) { return filtered.get(p); }
@@ -329,10 +330,7 @@ public class MainActivity extends AppCompatActivity {
             ((ImageView)v.findViewById(R.id.appIcon)).setImageDrawable(app.icon);
             CheckBox cb = v.findViewById(R.id.appCheck);
             cb.setOnCheckedChangeListener(null); cb.setChecked(selectedPackages.contains(app.packageName));
-            cb.setOnCheckedChangeListener((bv, isChecked) -> {
-                if (isChecked) selectedPackages.add(app.packageName); else selectedPackages.remove(app.packageName);
-                prefs.edit().putStringSet("selected_packages", new HashSet<>(selectedPackages)).apply();
-            });
+            cb.setOnCheckedChangeListener((bv, isChecked) -> { if (isChecked) selectedPackages.add(app.packageName); else selectedPackages.remove(app.packageName); prefs.edit().putStringSet("selected_packages", new HashSet<>(selectedPackages)).apply(); });
             v.setOnClickListener(view -> cb.performClick()); return v;
         }
         @NonNull @Override public android.widget.Filter getFilter() {
@@ -349,24 +347,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        checkPermissions();
-        IntentFilter f = new IntentFilter("com.azzahra.sync.NEW_LOG");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) registerReceiver(logReceiver, f, Context.RECEIVER_EXPORTED);
-        else registerReceiver(logReceiver, f);
-    }
-
-    @Override protected void onPause() { super.onPause(); unregisterReceiver(logReceiver); }
-
-    private void checkPermissions() {
-        boolean listenerOk = NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName());
-        statusText.setText(listenerOk ? "Status: ACTIVE" : "Status: OFF (Setup Permissions)");
-        statusIndicator.setBackgroundResource(listenerOk ? R.drawable.circle_green : R.drawable.circle_red);
-        btnGrantNotif.setText(listenerOk ? "1. Listener: OK" : "1. Setup Listener Permission");
-
-        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        boolean batteryOk = pm.isIgnoringBatteryOptimizations(getPackageName());
-        btnBatteryIgnore.setText(batteryOk ? "2. Battery: OK" : "2. Disable Battery Optimization");
+    public void onBackPressed() {
+        if (webView.canGoBack()) webView.goBack();
+        else super.onBackPressed();
     }
 }
