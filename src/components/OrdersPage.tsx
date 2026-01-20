@@ -32,27 +32,17 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   const [shippingEditOrder, setShippingEditOrder] = useState<any>(null);
   const [bulkAddressMode, setBulkAddressMode] = useState(false); // For applying address to all selected Keep orders
 
-  // ✨ Toggle order selection - PREVENT mixing addressed/unaddressed orders
+  // ✨ Toggle order selection - PREVENT mixing orders needing address with orders not needing address
   const handleToggleOrderSelection = (orderId: string) => {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
-    const isKeepMode = (order as any).shippingMode === 'keep';
-    const hasAddress = (order as any).shippingConfigured === true;
+    // Helper: Check if order NEEDS address setup (keep mode + not configured)
+    const needsAddressSetup = (o: any) => {
+      return o.shippingMode === 'keep' && !o.shippingConfigured;
+    };
 
-    // If currently no selection, allow any selection
-    if (selectedOrderIds.length === 0) {
-      // If selecting order with address, show info toast
-      if (isKeepMode && hasAddress) {
-        showToast({
-          type: 'info',
-          title: 'Pesanan Siap Bayar',
-          message: 'Pesanan ini sudah ada alamat, siap untuk pembayaran.'
-        });
-      }
-      setSelectedOrderIds([orderId]);
-      return;
-    }
+    const currentOrderNeedsAddress = needsAddressSetup(order);
 
     // If deselecting, just remove
     if (selectedOrderIds.includes(orderId)) {
@@ -60,34 +50,41 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       return;
     }
 
-    // Check if mixing addressed with unaddressed orders
+    // If currently no selection, allow any selection
+    if (selectedOrderIds.length === 0) {
+      // If selecting order that doesn't need address, show info toast
+      if (!currentOrderNeedsAddress) {
+        showToast({
+          type: 'info',
+          title: 'Pesanan Siap Bayar',
+          message: 'Pesanan ini sudah siap untuk pembayaran.'
+        });
+      }
+      setSelectedOrderIds([orderId]);
+      return;
+    }
+
+    // Check current selection type
     const currentlySelectedOrders = orders.filter(o => selectedOrderIds.includes(o.id));
-    const currentHasAddressed = currentlySelectedOrders.some(
-      (o: any) => o.shippingMode === 'keep' && o.shippingConfigured === true
-    );
-    const currentHasUnaddressed = currentlySelectedOrders.some(
-      (o: any) => o.shippingMode === 'keep' && !o.shippingConfigured
-    );
+    const currentSelectionHasNeedsAddress = currentlySelectedOrders.some(o => needsAddressSetup(o));
+    const currentSelectionHasReady = currentlySelectedOrders.some(o => !needsAddressSetup(o));
 
-    const newOrderHasAddress = isKeepMode && hasAddress;
-    const newOrderNoAddress = isKeepMode && !hasAddress;
-
-    // Prevent mixing: if selecting addressed order but current selection has unaddressed
-    if (newOrderHasAddress && currentHasUnaddressed) {
+    // Prevent mixing: order needing address with orders already ready
+    if (currentOrderNeedsAddress && currentSelectionHasReady) {
       showToast({
         type: 'warning',
         title: 'Tidak bisa digabung',
-        message: 'Pesanan dengan alamat tidak bisa digabung dengan pesanan tanpa alamat. Selesaikan atur alamat dulu.'
+        message: 'Pesanan yang belum ada alamat tidak bisa digabung dengan pesanan yang sudah siap bayar.'
       });
       return;
     }
 
-    // Prevent mixing: if selecting unaddressed order but current selection has addressed
-    if (newOrderNoAddress && currentHasAddressed) {
+    // Prevent mixing: order already ready with orders needing address
+    if (!currentOrderNeedsAddress && currentSelectionHasNeedsAddress) {
       showToast({
         type: 'warning',
         title: 'Tidak bisa digabung',
-        message: 'Pesanan tanpa alamat tidak bisa digabung dengan pesanan yang sudah ada alamat.'
+        message: 'Pesanan yang sudah siap bayar tidak bisa digabung dengan pesanan yang belum ada alamat.'
       });
       return;
     }
