@@ -80,6 +80,30 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
         }
     };
 
+    // Auto-select default address when loaded
+    useEffect(() => {
+        if (addresses.length > 0 && !selectedAddressId) {
+            // Only auto-select if current address is empty or "Keep"
+            const isAddressEmpty = !formData.address || formData.address.trim() === '' ||
+                formData.address.includes('Belum ditentukan') ||
+                formData.address.includes('Belum diatur');
+
+            if (isAddressEmpty) {
+                const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
+                if (defaultAddr) {
+                    console.log('🤖 Auto-selecting default address:', defaultAddr);
+                    handleSelectAddress(defaultAddr);
+                }
+            } else {
+                // Try to sync selected ID if address matches
+                const matchingAddr = addresses.find(a => a.fullAddress === formData.address || a.address === formData.address);
+                if (matchingAddr) {
+                    setSelectedAddressId(matchingAddr.id);
+                }
+            }
+        }
+    }, [addresses]); // Run when addresses are loaded
+
     const handleSelectAddress = (address: any) => {
         console.log('📍 Selected address:', address);
         setSelectedAddressId(address.id);
@@ -545,8 +569,8 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={loading}
-                        className="flex-1 py-3 rounded-xl bg-brand-primary text-white font-semibold hover:bg-brand-primary/90 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                        disabled={loading || !selectedAddressId || (formData.shippingCost <= 0 && !isManualCourier)}
+                        className="flex-1 py-3 rounded-xl bg-brand-primary text-white font-semibold hover:bg-brand-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         {loading ? (
                             <>
@@ -558,6 +582,9 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
                         )}
                     </button>
                 </div>
+                <p className="px-5 pb-4 text-xs text-center text-slate-500">
+                    Pastikan detail alamat dan biaya ongkir sudah benar sebelum menyimpan.
+                </p>
             </div>
         </div>
     );
