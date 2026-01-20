@@ -36,7 +36,6 @@ public class NotificationService extends NotificationListenerService {
         super.onCreate();
         db = FirebaseFirestore.getInstance();
         
-        // OPTIMASI: Memastikan Firestore siap kirim data meskipun sinyal naik turun
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
                 .setPersistenceEnabled(true)
                 .setCacheSizeBytes(FirebaseFirestoreSettings.CACHE_SIZE_UNLIMITED)
@@ -76,6 +75,26 @@ public class NotificationService extends NotificationListenerService {
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) return;
+
+        // PROTEKSI LEVEL SISTEM: Cek Role User sebelum memproses notifikasi
+        db.collection("users").document(currentUser.getUid()).get().addOnSuccessListener(documentSnapshot -> {
+            if (documentSnapshot.exists()) {
+                String role = documentSnapshot.getString("role");
+                // JIKA ROLE BUKAN OWNER, MATIKAN SISTEM PEMBAYARAN!
+                if (!"owner".equalsIgnoreCase(role)) {
+                    Log.d("AzzahraLog", "Access Denied: Admin account detected. Payment sync disabled.");
+                    return; 
+                }
+                
+                // JIKA OWNER, LANJUTKAN PROSES SEPERTI BIASA
+                processNotification(sbn);
+            }
+        }).addOnFailureListener(e -> Log.e("AzzahraLog", "Failed to check role", e));
+    }
+
+    private void processNotification(StatusBarNotification sbn) {
         try {
             String pkg = sbn.getPackageName();
             Set<String> selected = prefs.getStringSet("selected_packages", new HashSet<>());
@@ -93,42 +112,35 @@ public class NotificationService extends NotificationListenerService {
 
                 if (fullContent.isEmpty()) return;
 
-                // Unique ID untuk mencegah duplikasi dalam waktu singkat
                 String uniqueId = pkg + "_" + fullContent.replaceAll("[^a-zA-Z0-9]", "");
                 
                 if (!isDiag) {
                     long now = System.currentTimeMillis();
                     if (processedHistory.containsKey(uniqueId) && (now - processedHistory.get(uniqueId) < DUPLICATE_TIMEOUT)) {
-                        return; // Abaikan jika baru saja diproses
+                        return;
                     }
                     processedHistory.put(uniqueId, now);
-                    
-                    // Bersihkan history lama agar tidak memory leak (setiap 50 data)
-                    if (processedHistory.size() > 50) {
-                        processedHistory.clear(); 
-                    }
+                    if (processedHistory.size() > 50) processedHistory.clear();
                 }
 
-                process(pkg, fullContent, isDiag, uniqueId);
+                processContent(pkg, fullContent, isDiag, uniqueId);
             }
         } catch (Exception err) {
-            Log.e("AzzahraLog", "Error onNotificationPosted", err);
+            Log.e("AzzahraLog", "Error in processNotification", err);
         }
     }
 
-    private void process(String pkg, String fullText, boolean isDiag, String docId) {
+    private void processContent(String pkg, String fullText, boolean isDiag, String docId) {
         String low = fullText.toLowerCase();
         if (isDiag) {
             updateUILog("DIAGNOSTIC OK: " + fullText);
             return;
         }
         
-        // FILTER UTAMA: Harus mengandung kata 'masuk' atau 'pemasukan'
         if (low.contains("masuk") || low.contains("pemasukan")) {
             long amt = extractAmount(fullText);
             
             if (amt > 0) {
-                // FILTER NOMINAL UNIK: Abaikan kelipatan 500
                 if (amt % 500 == 0) {
                     updateUILog("ℹ️ Bulat diabaikan: Rp " + String.format("%,d", amt));
                     return;
@@ -136,8 +148,6 @@ public class NotificationService extends NotificationListenerService {
                 vibrate();
                 updateUILog("💰 TERDETEKSI: Rp " + String.format("%,d", amt));
                 sendToFirebase(pkg, amt, fullText, docId);
-            } else {
-                Log.d("AzzahraLog", "Nominal tidak ditemukan pada: " + fullText);
             }
         }
     }
@@ -145,28 +155,22 @@ public class NotificationService extends NotificationListenerService {
     private long extractAmount(String text) {
         String low = text.toLowerCase();
         try {
-            // Pola 1: Rp atau IDR diikuti angka (Contoh: Rp 12.345 atau IDR 12,345)
             Pattern p1 = Pattern.compile("(rp|idr)\\s*([0-9.,]+)");
             Matcher m1 = p1.matcher(low);
             if (m1.find()) return parseCleanAmount(m1.group(2));
 
-            // Pola 2: Angka ribuan murni (Contoh: 12.345,00 atau 12,345)
             Pattern p2 = Pattern.compile("([0-9]{1,3}([.,][0-9]{3})+)");
             Matcher m2 = p2.matcher(low);
             if (m2.find()) return parseCleanAmount(m2.group());
 
-            // Pola 3: Angka panjang murni (Contoh: 100123)
             Pattern p3 = Pattern.compile("\\b[0-9]{4,12}\\b");
             Matcher m3 = p3.matcher(low);
             if (m3.find()) return parseCleanAmount(m3.group());
-        } catch (Exception e) {
-            Log.e("AzzahraLog", "Extract error", e);
-        }
+        } catch (Exception e) {}
         return 0;
     }
 
     private long parseCleanAmount(String raw) {
-        // Hapus sen/angka dibelakang koma (.00 atau ,00)
         if (raw.endsWith(".00") || raw.endsWith(",00")) raw = raw.substring(0, raw.length() - 3);
         String clean = raw.replaceAll("[^0-9]", "");
         return clean.isEmpty() ? 0 : Long.parseLong(clean);
@@ -199,12 +203,8 @@ public class NotificationService extends NotificationListenerService {
         d.put("timestamp", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date()));
         d.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
 
-        // Menggunakan set dengan Merge untuk memastikan data terkirim/terupdate tanpa error
         db.collection("paymentDetectionsPending").document(docId).set(d)
             .addOnSuccessListener(aVoid -> updateUILog("☁️ SYNC BERHASIL: Rp " + String.format("%,d", amt)))
-            .addOnFailureListener(e -> {
-                updateUILog("❌ SYNC GAGAL: " + e.getMessage());
-                Log.e("AzzahraLog", "Firebase Error: ", e);
-            });
+            .addOnFailureListener(e -> updateUILog("❌ SYNC GAGAL: " + e.getMessage()));
     }
 }

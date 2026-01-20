@@ -18,6 +18,19 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- IZIN PRINTER BLUETOOTH -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_ADMIN"
+        android:maxSdkVersion="30" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
     <!-- Although the *SdkVersion is captured in gradle build files, this is required for non gradle builds -->
     <!-- <uses-sdk android:minSdkVersion="14" /> -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -63,8 +76,19 @@
         </activity>
         <activity
             android:name="com.azzahra.sync.MainActivity"
-            android:exported="false"
-            android:label="@string/app_name" />
+            android:exported="true"
+            android:label="@string/app_name" >
+
+            <!-- JEMBATAN CETAK DARI PWA / WEBSITE -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="azzahra-print" />
+            </intent-filter>
+        </activity>
 
         <service
             android:name="com.azzahra.sync.NotificationService"

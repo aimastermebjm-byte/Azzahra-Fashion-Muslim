@@ -349,6 +349,35 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
   //  NEW: Print Label Function (Single)
   const handlePrintLabel = (order: any) => {
+    // Check if running in Android WebView with native print capability
+    if (typeof (window as any).AndroidPrint !== 'undefined') {
+      // Prepare data for native Android print
+      const fullAddress = [
+        order.shippingInfo?.address,
+        order.shippingInfo?.subdistrict ? `Kel. ${order.shippingInfo.subdistrict}` : '',
+        order.shippingInfo?.district ? `Kec. ${order.shippingInfo.district}` : '',
+        order.shippingInfo?.cityName || '',
+        order.shippingInfo?.provinceName
+      ].filter(Boolean).join(', ');
+
+      const printData = {
+        name: order.shippingInfo?.name || order.userName || '-',
+        phone: order.shippingInfo?.phone || (order as any).phone || '-',
+        address: fullAddress || order.shippingInfo?.address || '-',
+        items: order.items?.map((item: any) =>
+          `${item.productName} x${item.quantity}`
+        ).join(', ') || '-',
+        courier: order.shippingInfo?.courier?.toUpperCase() || 'JNE',
+        orderId: order.id
+      };
+
+      // Call native Android print - 1-click direct print!
+      (window as any).AndroidPrint.printLabel(JSON.stringify(printData));
+      showModernAlert('Print', 'Mengirim ke printer...', 'success');
+      return;
+    }
+
+    // Fallback to browser print for desktop/other browsers
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       showModernAlert('Error', 'Pop-up terblokir. Izinkan pop-up untuk mencetak label.', 'error');

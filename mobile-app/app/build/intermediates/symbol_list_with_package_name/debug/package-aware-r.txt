@@ -3235,8 +3235,8 @@ id btnBatteryIgnore
 id btnClearLog
 id btnGrantNotif
 id btnLogin
-id btnRefresh
-id btnTestNotif
+id btnScanPrinter
+id btnTestPrint
 id buttonPanel
 id cache_measures
 id callMeasure
@@ -3497,6 +3497,7 @@ id pin
 id position
 id postLayout
 id pressed
+id printerList
 id progress_circular
 id progress_horizontal
 id radio
@@ -3575,6 +3576,8 @@ id submenuarrow
 id submit_area
 id supportScrollUp
 id tabMode
+id tabPrinter
+id tabSync
 id tag_accessibility_actions
 id tag_accessibility_clickable_spans
 id tag_accessibility_heading
@@ -3620,6 +3623,7 @@ id transition_position
 id transition_scene_layoutid_cache
 id transition_transform
 id triangle
+id txtPrinterStatus
 id unchecked
 id uniform
 id unlabeled

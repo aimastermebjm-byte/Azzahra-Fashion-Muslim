@@ -6,8 +6,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TabHost;
+import android.widget.TabWidget;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,7 +23,7 @@ import java.lang.String;
 
 public final class ActivityMainBinding implements ViewBinding {
   @NonNull
-  private final LinearLayout rootView;
+  private final TabHost rootView;
 
   @NonNull
   public final ListView appList;
@@ -38,13 +41,16 @@ public final class ActivityMainBinding implements ViewBinding {
   public final Button btnGrantNotif;
 
   @NonNull
-  public final Button btnRefresh;
+  public final Button btnScanPrinter;
 
   @NonNull
-  public final Button btnTestNotif;
+  public final Button btnTestPrint;
 
   @NonNull
   public final ListView logListView;
+
+  @NonNull
+  public final ListView printerList;
 
   @NonNull
   public final EditText searchApps;
@@ -55,28 +61,55 @@ public final class ActivityMainBinding implements ViewBinding {
   @NonNull
   public final TextView statusText;
 
-  private ActivityMainBinding(@NonNull LinearLayout rootView, @NonNull ListView appList,
+  @NonNull
+  public final LinearLayout tabPrinter;
+
+  @NonNull
+  public final LinearLayout tabSync;
+
+  @NonNull
+  public final FrameLayout tabcontent;
+
+  @NonNull
+  public final TabHost tabhost;
+
+  @NonNull
+  public final TabWidget tabs;
+
+  @NonNull
+  public final TextView txtPrinterStatus;
+
+  private ActivityMainBinding(@NonNull TabHost rootView, @NonNull ListView appList,
       @NonNull Button btnAppNotif, @NonNull Button btnBatteryIgnore, @NonNull Button btnClearLog,
-      @NonNull Button btnGrantNotif, @NonNull Button btnRefresh, @NonNull Button btnTestNotif,
-      @NonNull ListView logListView, @NonNull EditText searchApps, @NonNull View statusIndicator,
-      @NonNull TextView statusText) {
+      @NonNull Button btnGrantNotif, @NonNull Button btnScanPrinter, @NonNull Button btnTestPrint,
+      @NonNull ListView logListView, @NonNull ListView printerList, @NonNull EditText searchApps,
+      @NonNull View statusIndicator, @NonNull TextView statusText, @NonNull LinearLayout tabPrinter,
+      @NonNull LinearLayout tabSync, @NonNull FrameLayout tabcontent, @NonNull TabHost tabhost,
+      @NonNull TabWidget tabs, @NonNull TextView txtPrinterStatus) {
     this.rootView = rootView;
     this.appList = appList;
     this.btnAppNotif = btnAppNotif;
     this.btnBatteryIgnore = btnBatteryIgnore;
     this.btnClearLog = btnClearLog;
     this.btnGrantNotif = btnGrantNotif;
-    this.btnRefresh = btnRefresh;
-    this.btnTestNotif = btnTestNotif;
+    this.btnScanPrinter = btnScanPrinter;
+    this.btnTestPrint = btnTestPrint;
     this.logListView = logListView;
+    this.printerList = printerList;
     this.searchApps = searchApps;
     this.statusIndicator = statusIndicator;
     this.statusText = statusText;
+    this.tabPrinter = tabPrinter;
+    this.tabSync = tabSync;
+    this.tabcontent = tabcontent;
+    this.tabhost = tabhost;
+    this.tabs = tabs;
+    this.txtPrinterStatus = txtPrinterStatus;
   }
 
   @Override
   @NonNull
-  public LinearLayout getRoot() {
+  public TabHost getRoot() {
     return rootView;
   }
 
@@ -131,21 +164,27 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
-      id = R.id.btnRefresh;
-      Button btnRefresh = ViewBindings.findChildViewById(rootView, id);
-      if (btnRefresh == null) {
+      id = R.id.btnScanPrinter;
+      Button btnScanPrinter = ViewBindings.findChildViewById(rootView, id);
+      if (btnScanPrinter == null) {
         break missingId;
       }
 
-      id = R.id.btnTestNotif;
-      Button btnTestNotif = ViewBindings.findChildViewById(rootView, id);
-      if (btnTestNotif == null) {
+      id = R.id.btnTestPrint;
+      Button btnTestPrint = ViewBindings.findChildViewById(rootView, id);
+      if (btnTestPrint == null) {
         break missingId;
       }
 
       id = R.id.logListView;
       ListView logListView = ViewBindings.findChildViewById(rootView, id);
       if (logListView == null) {
+        break missingId;
+      }
+
+      id = R.id.printerList;
+      ListView printerList = ViewBindings.findChildViewById(rootView, id);
+      if (printerList == null) {
         break missingId;
       }
 
@@ -167,9 +206,42 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
-      return new ActivityMainBinding((LinearLayout) rootView, appList, btnAppNotif,
-          btnBatteryIgnore, btnClearLog, btnGrantNotif, btnRefresh, btnTestNotif, logListView,
-          searchApps, statusIndicator, statusText);
+      id = R.id.tabPrinter;
+      LinearLayout tabPrinter = ViewBindings.findChildViewById(rootView, id);
+      if (tabPrinter == null) {
+        break missingId;
+      }
+
+      id = R.id.tabSync;
+      LinearLayout tabSync = ViewBindings.findChildViewById(rootView, id);
+      if (tabSync == null) {
+        break missingId;
+      }
+
+      id = android.R.id.tabcontent;
+      FrameLayout tabcontent = ViewBindings.findChildViewById(rootView, id);
+      if (tabcontent == null) {
+        break missingId;
+      }
+
+      TabHost tabhost = (TabHost) rootView;
+
+      id = android.R.id.tabs;
+      TabWidget tabs = ViewBindings.findChildViewById(rootView, id);
+      if (tabs == null) {
+        break missingId;
+      }
+
+      id = R.id.txtPrinterStatus;
+      TextView txtPrinterStatus = ViewBindings.findChildViewById(rootView, id);
+      if (txtPrinterStatus == null) {
+        break missingId;
+      }
+
+      return new ActivityMainBinding((TabHost) rootView, appList, btnAppNotif, btnBatteryIgnore,
+          btnClearLog, btnGrantNotif, btnScanPrinter, btnTestPrint, logListView, printerList,
+          searchApps, statusIndicator, statusText, tabPrinter, tabSync, tabcontent, tabhost, tabs,
+          txtPrinterStatus);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

@@ -1,75 +1,131 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<TabHost xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/tabhost"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="12dp">
-        <View android:id="@+id/statusIndicator" android:layout_width="20dp" android:layout_height="20dp" android:background="@drawable/circle_red" android:layout_marginEnd="12dp"/>
-        <TextView android:id="@+id/statusText" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Status: OFF" android:textSize="16sp" android:textStyle="bold"/>
-        <Button android:id="@+id/btnClearLog" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Clear Log" android:textSize="10sp" style="@style/Widget.MaterialComponents.Button.TextButton"/>
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TabWidget
+            android:id="@android:id/tabs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <FrameLayout
+            android:id="@android:id/tabcontent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <!-- TAB 1: SYNC PEMBAYARAN -->
+            <LinearLayout
+                android:id="@+id/tabSync"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+                    <View android:id="@+id/statusIndicator" android:layout_width="20dp" android:layout_height="20dp" android:background="@drawable/circle_red" android:layout_marginEnd="12dp"/>
+                    <TextView android:id="@+id/statusText" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Status: OFF" android:textSize="16sp" android:textStyle="bold"/>
+                    <Button android:id="@+id/btnClearLog" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Clear Log" android:textSize="10sp" style="@style/Widget.MaterialComponents.Button.TextButton"/>
+                </LinearLayout>
+
+                <Button android:id="@+id/btnGrantNotif" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="1. Setup Listener Permission" android:textSize="12sp" android:layout_marginBottom="4dp"/>
+                
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="8dp">
+                    <Button android:id="@+id/btnBatteryIgnore" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="2. Battery" android:textSize="10sp" android:layout_marginEnd="4dp"/>
+                    <Button android:id="@+id/btnAppNotif" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="3. App Notif" android:textSize="10sp"/>
+                </LinearLayout>
+
+                <EditText
+                    android:id="@+id/searchApps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Search apps..."
+                    android:padding="8dp"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="8dp"/>
+
+                <ListView
+                    android:id="@+id/appList"
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:background="#F0F0F0"
+                    android:layout_marginBottom="12dp"/>
+
+                <ListView
+                    android:id="@+id/logListView"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:background="#EEEEEE"/>
+            </LinearLayout>
+
+            <!-- TAB 2: PRINTER BLUETOOTH -->
+            <LinearLayout
+                android:id="@+id/tabPrinter"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="PRINTER BLUETOOTH"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="16dp"/>
+
+                <TextView
+                    android:id="@+id/txtPrinterStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Status: Not Connected"
+                    android:textColor="#F44336"
+                    android:layout_marginBottom="16dp"/>
+
+                <Button
+                    android:id="@+id/btnScanPrinter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Cari Printer Bluetooth"
+                    android:backgroundTint="#2196F3"/>
+
+                <ListView
+                    android:id="@+id/printerList"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:background="#F9F9F9"/>
+
+                <Button
+                    android:id="@+id/btnTestPrint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Tes Print Nota"
+                    android:backgroundTint="#FF9800"
+                    android:enabled="false"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="*Pastikan Bluetooth HP Aktif\n*Pilih printer dari daftar di atas"
+                    android:textSize="12sp"
+                    android:layout_marginTop="8dp"
+                    android:textColor="#757575"/>
+            </LinearLayout>
+
+        </FrameLayout>
     </LinearLayout>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Required Permissions (Step by Step):"
-        android:textStyle="bold"
-        android:layout_marginBottom="4dp"/>
-
-    <Button android:id="@+id/btnGrantNotif" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="1. Setup Listener Permission" android:layout_marginBottom="4dp"/>
-    <Button android:id="@+id/btnBatteryIgnore" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="2. Disable Battery Optimization" android:layout_marginBottom="4dp"/>
-    <Button android:id="@+id/btnAppNotif" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="3. App Notification Permission" android:layout_marginBottom="8dp"/>
-    
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-        <Button android:id="@+id/btnTestNotif" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Diagnostic" android:backgroundTint="#607D8B" android:layout_marginEnd="4dp"/>
-        <Button android:id="@+id/btnRefresh" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Refresh" android:backgroundTint="#4CAF50"/>
-    </LinearLayout>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Select Apps to Monitor:"
-        android:textStyle="bold"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="4dp"/>
-
-    <EditText
-        android:id="@+id/searchApps"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Search application..."
-        android:background="@android:drawable/editbox_background"
-        android:padding="8dp"
-        android:textSize="14sp"
-        android:layout_marginBottom="8dp"/>
-
-    <ListView
-        android:id="@+id/appList"
-        android:layout_width="match_parent"
-        android:layout_height="120dp"
-        android:background="#F0F0F0"
-        android:layout_marginBottom="12dp"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Diagnostic Console (Click detail):"
-        android:textStyle="bold"
-        android:layout_marginBottom="4dp"/>
-
-    <ListView
-        android:id="@+id/logListView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="#EEEEEE"
-        android:divider="#CCCCCC"
-        android:dividerHeight="1dp"/>
-</LinearLayout>
+</TabHost>

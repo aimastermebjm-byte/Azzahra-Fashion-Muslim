@@ -12,6 +12,13 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    
+    <!-- IZIN PRINTER BLUETOOTH -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
         android:allowBackup="true"
@@ -40,7 +47,15 @@
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
-            android:exported="false" />
+            android:exported="true">
+            <!-- JEMBATAN CETAK DARI PWA / WEBSITE -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="azzahra-print" />
+            </intent-filter>
+        </activity>
 
         <service
             android:name=".NotificationService"
