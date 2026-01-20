@@ -325,19 +325,16 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     if (!formattedPhone.startsWith('62')) formattedPhone = '62' + formattedPhone;
 
     const totalBill = eligible.reduce((acc, curr) => acc + curr.finalTotal, 0);
-    const orderList = eligible.map(o => `- Order #${o.id} (Rp ${o.finalTotal.toLocaleString('id-ID')})`).join('\n');
 
-    const message = `Halo Kak ${firstOrder.userName || 'Pelanggan'},
+    // Explicitly use %0A for newlines to ensure reliable URL construction
+    const orderList = eligible.map(o => `- Order #${o.id} (Rp ${o.finalTotal.toLocaleString('id-ID')})`).join('%0A');
 
-Berikut rekap tagihan untuk ${eligible.length} pesanan Kakak di Azzahra Fashion Muslim:
+    const header = `Halo Kak ${firstOrder.userName || 'Pelanggan'},%0A%0ABerikut rekap tagihan untuk ${eligible.length} pesanan Kakak di Azzahra Fashion Muslim:`;
+    const footer = `*TOTAL TAGIHAN: Rp ${totalBill.toLocaleString('id-ID')}*%0A%0AMohon segera melakukan pembayaran ya Kak. Terima kasih 🙏`;
 
-${orderList}
+    const fullMessage = `${header}%0A%0A${orderList}%0A%0A${footer}`;
 
-*TOTAL TAGIHAN: Rp ${totalBill.toLocaleString('id-ID')}*
-
-Mohon segera melakukan pembayaran ya Kak. Terima kasih 🙏`;
-
-    window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
+    window.open(`https://wa.me/${formattedPhone}?text=${fullMessage}`, '_blank');
   };
 
   // ✨ NEW: Print Label Function (Single)
