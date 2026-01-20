@@ -298,7 +298,46 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
     const message = `Halo Kak ${order.userName || 'Pelanggan'},%0A%0ABerikut tagihan untuk pesanan Kakak di Azzahra Fashion Muslim:%0ANo. Pesanan: *#${order.id}*%0ATotal Tagihan: *Rp ${order.finalTotal.toLocaleString('id-ID')}*%0A%0AMohon segera melakukan pembayaran ya Kak. Terima kasih 🙏`;
 
-    window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+    window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message.replace(/%0A/g, '\n'))}`, '_blank');
+  };
+
+  // ✨ NEW: Bulk WhatsApp Billing (Aggregated)
+  const handleBulkWhatsAppBilling = () => {
+    const selected = orders.filter(o => selectedOrderIds.includes(o.id));
+    const eligible = selected.filter(o => ['pending', 'awaiting_verification'].includes(o.status));
+
+    if (eligible.length === 0) {
+      showModernAlert('Peringatan', 'Pilih pesanan status Pending/Menunggu Verifikasi.', 'warning');
+      return;
+    }
+
+    // Group by phone number to ensure we only message one user at a time or warn
+    const uniqueUsers = new Set(eligible.map(o => (o.shippingInfo?.phone || (o as any).phone || '').replace(/\D/g, '')));
+    if (uniqueUsers.size > 1) {
+      showModernAlert('Peringatan', 'Fitur Tagih Gabungan hanya bisa digunakan untuk 1 customer (no. hp sama). Mohon filter per user dulu.', 'warning');
+      return;
+    }
+
+    const firstOrder = eligible[0];
+    const phone = firstOrder.shippingInfo?.phone || (firstOrder as any).phone;
+    let formattedPhone = phone.replace(/\D/g, '');
+    if (formattedPhone.startsWith('0')) formattedPhone = '62' + formattedPhone.substring(1);
+    if (!formattedPhone.startsWith('62')) formattedPhone = '62' + formattedPhone;
+
+    const totalBill = eligible.reduce((acc, curr) => acc + curr.finalTotal, 0);
+    const orderList = eligible.map(o => `- Order #${o.id} (Rp ${o.finalTotal.toLocaleString('id-ID')})`).join('\n');
+
+    const message = `Halo Kak ${firstOrder.userName || 'Pelanggan'},
+
+Berikut rekap tagihan untuk ${eligible.length} pesanan Kakak di Azzahra Fashion Muslim:
+
+${orderList}
+
+*TOTAL TAGIHAN: Rp ${totalBill.toLocaleString('id-ID')}*
+
+Mohon segera melakukan pembayaran ya Kak. Terima kasih 🙏`;
+
+    window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   // ✨ NEW: Print Label Function (Single)
@@ -1083,26 +1122,34 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                 </div>
 
                 {selectedOrderIds.length > 0 && (
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full md:w-auto mt-3 md:mt-0">
                     <button
                       onClick={handleBulkPaymentAssist}
-                      className="flex-1 md:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-[#D4AF37] text-[#997B2C] rounded-lg shadow-[0_2px_0_0_#997B2C] active:shadow-none active:translate-y-1 transition-all font-medium text-sm min-w-[180px]"
+                      className="flex-1 md:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-[#D4AF37] text-[#997B2C] rounded-lg shadow-[0_2px_0_0_#997B2C] active:shadow-none active:translate-y-1 transition-all font-medium text-sm"
                     >
                       <CreditCard className="w-4 h-4" />
                       <span>Bantu Pembayaran ({selectedOrderIds.length})</span>
                     </button>
 
                     <button
+                      onClick={handleBulkWhatsAppBilling}
+                      className="flex-1 md:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 bg-green-50 border border-green-500 text-green-700 rounded-lg shadow-[0_2px_0_0_#15803d] active:shadow-none active:translate-y-1 transition-all font-medium text-sm"
+                    >
+                      <Phone className="w-4 h-4" />
+                      <span>Tagih ({selectedOrderIds.length})</span>
+                    </button>
+
+                    <button
                       onClick={handleBulkDelete}
-                      className="flex-1 md:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-[#D4AF37] text-[#997B2C] rounded-lg shadow-[0_2px_0_0_#997B2C] active:shadow-none active:translate-y-1 transition-all font-medium text-sm min-w-[180px]"
+                      className="flex-1 md:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-[#D4AF37] text-[#997B2C] rounded-lg shadow-[0_2px_0_0_#997B2C] active:shadow-none active:translate-y-1 transition-all font-medium text-sm"
                     >
                       <Trash2 className="w-4 h-4" />
-                      <span>Hapus {selectedOrderIds.length} Pesanan</span>
+                      <span>Hapus</span>
                     </button>
 
                     <button
                       onClick={handleBulkPrintLabel}
-                      className="flex-1 md:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-[#D4AF37] text-[#997B2C] rounded-lg shadow-[0_2px_0_0_#997B2C] active:shadow-none active:translate-y-1 transition-all font-medium text-sm min-w-[180px]"
+                      className="flex-1 md:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-[#D4AF37] text-[#997B2C] rounded-lg shadow-[0_2px_0_0_#997B2C] active:shadow-none active:translate-y-1 transition-all font-medium text-sm"
                     >
                       <Printer className="w-4 h-4" />
                       <span>Print Label ({selectedOrderIds.length})</span>
