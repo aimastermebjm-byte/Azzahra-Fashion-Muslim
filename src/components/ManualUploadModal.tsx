@@ -438,6 +438,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
     // Show price per size/variant panel (expandable)
     const [showPricePerVariant, setShowPricePerVariant] = useState(false);
+    // Show cost per size section (collapsed by default)
+    const [showCostPerSize, setShowCostPerSize] = useState(false);
     // Show stock matrix (expandable) - collapsed by default in step 2
     const [showStockMatrix, setShowStockMatrix] = useState(false);
     // Key format: "Size-Label" (e.g., "S-A", "XL-B")
@@ -532,27 +534,24 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     }, [resellerPrice, uploadSettings.retailMarkup, fixedPrices]);
 
     // Auto-initialize pricesPerVariant when sizes, variants, or base prices change
-    // IMPORTANT: Don't overwrite values that already exist (e.g., from draft)
+    // UPDATED: Always sync with current retailPrice/resellerPrice (don't keep old draft values)
     React.useEffect(() => {
         setPricesPerVariant(prev => {
-            const next = { ...prev };
-            let hasChanges = false;
+            const next: typeof prev = {};
 
             selectedSizes.forEach(size => {
                 activeVariantLabels.forEach(label => {
                     const key = `${size}-${label}`;
-                    // Only add if key doesn't exist (preserve user edits)
-                    if (!next[key]) {
-                        next[key] = {
-                            retail: retailPrice,
-                            reseller: resellerPrice
-                        };
-                        hasChanges = true;
-                    }
+                    // Always use current retailPrice/resellerPrice as default
+                    // This ensures matrix follows global price set above
+                    next[key] = {
+                        retail: retailPrice,
+                        reseller: resellerPrice
+                    };
                 });
             });
 
-            return hasChanges ? next : prev;
+            return next;
         });
     }, [selectedSizes, activeVariantLabels, retailPrice, resellerPrice]);
 
@@ -1373,37 +1372,48 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     {/* Modal per Jenis (Size Type) - Only show if multiple sizes */}
                                     {selectedSizes.length > 1 && (
                                         <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                                            <label className="block text-sm font-bold text-amber-800 mb-2">💰 Modal per Jenis</label>
-                                            <p className="text-xs text-amber-600 mb-2">Set modal berbeda untuk tiap jenis (untuk hitung rugi/laba akurat)</p>
-                                            <div className="space-y-2">
-                                                {selectedSizes.map((size, sizeIndex) => (
-                                                    <div key={size} className="flex items-center gap-2">
-                                                        <input
-                                                            type="text"
-                                                            value={size}
-                                                            onChange={(e) => {
-                                                                const newSizes = [...selectedSizes];
-                                                                newSizes[sizeIndex] = e.target.value;
-                                                                setSelectedSizes(newSizes);
-                                                            }}
-                                                            onFocus={(e) => e.target.select()}
-                                                            className="w-36 px-2 py-1 text-sm font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded focus:ring-2 focus:ring-amber-500"
-                                                        />
-                                                        <input
-                                                            type="text"
-                                                            inputMode="numeric"
-                                                            value={formatThousands(costPricePerSize[size] || uploadSettings.costPrice)}
-                                                            onChange={(e) => {
-                                                                const val = parseFormattedNumber(e.target.value);
-                                                                setCostPricePerSize(prev => ({ ...prev, [size]: val }));
-                                                            }}
-                                                            onFocus={(e) => e.target.select()}
-                                                            placeholder={formatThousands(uploadSettings.costPrice)}
-                                                            className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowCostPerSize(!showCostPerSize)}
+                                                className="w-full flex items-center justify-between text-left"
+                                            >
+                                                <div>
+                                                    <label className="block text-sm font-bold text-amber-800">💰 Modal per Jenis</label>
+                                                    <p className="text-xs text-amber-600">Set modal berbeda untuk tiap jenis (untuk hitung rugi/laba akurat)</p>
+                                                </div>
+                                                <span className="text-amber-700 text-sm font-bold">{showCostPerSize ? '▲ Tutup' : '▼ Buka'}</span>
+                                            </button>
+                                            {showCostPerSize && (
+                                                <div className="space-y-2 mt-3 pt-3 border-t border-amber-200">
+                                                    {selectedSizes.map((size, sizeIndex) => (
+                                                        <div key={size} className="flex items-center gap-2">
+                                                            <input
+                                                                type="text"
+                                                                value={size}
+                                                                onChange={(e) => {
+                                                                    const newSizes = [...selectedSizes];
+                                                                    newSizes[sizeIndex] = e.target.value;
+                                                                    setSelectedSizes(newSizes);
+                                                                }}
+                                                                onFocus={(e) => e.target.select()}
+                                                                className="w-36 px-2 py-1 text-sm font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded focus:ring-2 focus:ring-amber-500"
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                inputMode="numeric"
+                                                                value={formatThousands(costPricePerSize[size] || uploadSettings.costPrice)}
+                                                                onChange={(e) => {
+                                                                    const val = parseFormattedNumber(e.target.value);
+                                                                    setCostPricePerSize(prev => ({ ...prev, [size]: val }));
+                                                                }}
+                                                                onFocus={(e) => e.target.select()}
+                                                                placeholder={formatThousands(uploadSettings.costPrice)}
+                                                                className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -1918,26 +1928,35 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     {/* Modal per Jenis (Size Type) - Only show if multiple sizes */}
                                     {selectedSizes.length > 1 && (
                                         <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                                            <label className="block text-sm font-bold text-amber-800 mb-2">💰 Modal per Jenis</label>
-                                            <div className="space-y-2">
-                                                {selectedSizes.map(size => (
-                                                    <div key={size} className="flex items-center gap-2">
-                                                        <span className="text-sm font-medium text-amber-700 w-28 truncate">{size}:</span>
-                                                        <input
-                                                            type="text"
-                                                            inputMode="numeric"
-                                                            value={formatThousands(costPricePerSize[size] || uploadSettings.costPrice)}
-                                                            onChange={(e) => {
-                                                                const val = parseFormattedNumber(e.target.value);
-                                                                setCostPricePerSize(prev => ({ ...prev, [size]: val }));
-                                                            }}
-                                                            onFocus={(e) => e.target.select()}
-                                                            placeholder={formatThousands(uploadSettings.costPrice)}
-                                                            className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowCostPerSize(!showCostPerSize)}
+                                                className="w-full flex items-center justify-between text-left"
+                                            >
+                                                <label className="block text-sm font-bold text-amber-800">💰 Modal per Jenis</label>
+                                                <span className="text-amber-700 text-sm font-bold">{showCostPerSize ? '▲ Tutup' : '▼ Buka'}</span>
+                                            </button>
+                                            {showCostPerSize && (
+                                                <div className="space-y-2 mt-3 pt-3 border-t border-amber-200">
+                                                    {selectedSizes.map(size => (
+                                                        <div key={size} className="flex items-center gap-2">
+                                                            <span className="text-sm font-medium text-amber-700 w-28 truncate">{size}:</span>
+                                                            <input
+                                                                type="text"
+                                                                inputMode="numeric"
+                                                                value={formatThousands(costPricePerSize[size] || uploadSettings.costPrice)}
+                                                                onChange={(e) => {
+                                                                    const val = parseFormattedNumber(e.target.value);
+                                                                    setCostPricePerSize(prev => ({ ...prev, [size]: val }));
+                                                                }}
+                                                                onFocus={(e) => e.target.select()}
+                                                                placeholder={formatThousands(uploadSettings.costPrice)}
+                                                                className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                     <div>
