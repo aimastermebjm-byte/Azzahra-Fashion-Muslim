@@ -285,6 +285,12 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
   // ✨ NEW: WhatsApp Billing Function
   const handleWhatsAppBilling = (order: any) => {
+    // SMART FEATURE: If this order is part of a selection (checked), use Bulk Billing instead
+    if (selectedOrderIds.includes(order.id) && selectedOrderIds.length > 1) {
+      handleBulkWhatsAppBilling();
+      return;
+    }
+
     if (!order.shippingInfo?.phone && !order.phone) {
       showModernAlert('Error', 'Nomor telepon tidak tersedia', 'error');
       return;
