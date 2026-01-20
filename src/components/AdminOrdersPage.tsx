@@ -370,42 +370,27 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             font-size: 14px; 
             font-weight: bold; 
           }
-          .courier-info { 
-            font-size: 12px; 
-            font-weight: bold; 
-            margin-top: 5px;
+          .info-table {
+            width: 100%;
+            border-collapse: collapse;
           }
-          .section { margin-bottom: 10px; }
-          .label-title { 
-            font-size: 9px; 
+          .info-table td {
+            vertical-align: top;
+            padding-bottom: 4px;
+            font-size: 11px;
             font-weight: bold;
-            text-transform: uppercase; 
-            margin-bottom: 2px;
-            border-bottom: 1px solid #ccc;
-            display: inline-block;
+            line-height: 1.3;
           }
-          .label-content { 
-            font-size: 12px; 
-            font-weight: bold; 
-            line-height: 1.3; 
+          .label-col {
+            width: 60px;
+            white-space: nowrap;
+          }
+          .sep-col {
+            width: 10px;
+            text-align: center;
+          }
+          .value-col {
             word-wrap: break-word;
-          }
-          .recipient-address { 
-            font-size: 11px; 
-            white-space: pre-wrap; 
-            margin-top: 2px;
-            line-height: 1.2;
-          }
-          .sender-info { 
-            font-size: 10px; 
-            border-top: 1px solid #000; 
-            padding-top: 5px; 
-            margin-top: 10px; 
-          }
-          .footer { 
-            font-size: 9px; 
-            text-align: center; 
-            margin-top: 10px;
           }
           .dropship-badge {
             border: 1px solid #000;
@@ -414,6 +399,16 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             font-size: 10px;
             display: inline-block;
             margin-top: 5px;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .footer { 
+            font-size: 9px; 
+            text-align: center; 
+            margin-top: 10px;
+            border-top: 1px dashed #000;
+            padding-top: 5px;
           }
           @media print {
             body { padding: 0; width: 100%; }
@@ -427,27 +422,46 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           <div class="label-container">
             <div class="header">
               <h1>AZZAHRA FASHION</h1>
-              <div class="courier-info">
-                ${(o.shippingCourier || 'JNE').toUpperCase()} - ${o.shippingService || 'REG'}
-              </div>
             </div>
             
-            <div class="section">
-              <div class="label-title">KEPADA:</div>
-              <div class="label-content">${o.shippingInfo?.name || o.userName}</div>
-              <div class="label-content">${o.shippingInfo?.phone || o.phone || '-'}</div>
-              <div class="recipient-address">${o.shippingInfo?.address || 'Alamat belum diatur'}</div>
-              ${o.shippingInfo?.notes ? `<div style="font-size:10px; margin-top:4px; font-style:italic;">Note: ${o.shippingInfo.notes}</div>` : ''}
-              ${o.shippingInfo?.isDropship ? `<div class="dropship-badge">DROPSHIP</div>` : ''}
-            </div>
+            <table class="info-table">
+              <tr>
+                <td class="label-col">Nama</td>
+                <td class="sep-col">:</td>
+                <td class="value-col">${o.shippingInfo?.name || o.userName}</td>
+              </tr>
+              <tr>
+                <td class="label-col">Telp</td>
+                <td class="sep-col">:</td>
+                <td class="value-col">${o.shippingInfo?.phone || o.phone || '-'}</td>
+              </tr>
+              <tr>
+                <td class="label-col">Alamat</td>
+                <td class="sep-col">:</td>
+                <td class="value-col">
+                  ${o.shippingInfo?.address || 'Alamat belum diatur'}
+                  ${o.shippingInfo?.notes ? `<br><span style="font-weight:normal; font-style:italic;">(${o.shippingInfo.notes})</span>` : ''}
+                </td>
+              </tr>
+              <tr>
+                <td class="label-col">Pesanan</td>
+                <td class="sep-col">:</td>
+                <td class="value-col">
+                  ${o.items.map((item: any) => `- ${item.productName} (${item.quantity}x)`).join('<br>')}
+                </td>
+              </tr>
+              <tr>
+                <td class="label-col">Expedisi</td>
+                <td class="sep-col">:</td>
+                <td class="value-col">${(o.shippingCourier || 'JNE').toUpperCase()} - ${o.shippingService || 'REG'}</td>
+              </tr>
+            </table>
 
-            <div class="section sender-info">
-              <div class="label-title">DARI:</div>
-              <div class="label-content" style="font-size:11px;">
-                ${o.shippingInfo?.isDropship ? o.shippingInfo.dropshipName : 'Azzahra Fashion Muslim'}<br>
-                ${o.shippingInfo?.isDropship ? o.shippingInfo.dropshipPhone : '0812-3456-7890'}
+            ${o.shippingInfo?.isDropship ? `
+              <div class="dropship-badge">
+                DROPSHIP: ${o.shippingInfo.dropshipName} (${o.shippingInfo.dropshipPhone})
               </div>
-            </div>
+            ` : ''}
 
             <div class="footer">
               #${o.id}<br>
