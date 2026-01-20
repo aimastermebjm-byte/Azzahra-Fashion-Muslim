@@ -728,18 +728,27 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         shippingCost: null,
         shippingService: '',
         shippingETD: ''
-      } : {
-        name: formData.name,
-        phone: formData.phone,
-        address: formData.address,
-        isDropship: formData.isDropship,
-        dropshipName: formData.dropshipName,
-        dropshipPhone: formData.dropshipPhone,
-        courier: formData.shippingCourier,
-        shippingCost: formData.shippingCost > 0 ? formData.shippingCost : null,
-        shippingService: formData.shippingService,
-        shippingETD: formData.shippingETD
-      },
+      } : (() => {
+        const activeAddr = getActiveAddress();
+        return {
+          name: formData.name,
+          phone: formData.phone,
+          address: formData.address,
+          // ✨ NEW: Add provincial address fields for print label
+          provinceName: activeAddr?.provinceName || '',
+          cityName: activeAddr?.cityName || '',
+          district: activeAddr?.district || '',
+          subdistrict: activeAddr?.subdistrict || '',
+          postalCode: activeAddr?.postalCode || '',
+          isDropship: formData.isDropship,
+          dropshipName: formData.dropshipName,
+          dropshipPhone: formData.dropshipPhone,
+          courier: formData.shippingCourier,
+          shippingCost: formData.shippingCost > 0 ? formData.shippingCost : null,
+          shippingService: formData.shippingService,
+          shippingETD: formData.shippingETD
+        };
+      })(),
       // ✨ NEW: Shipping mode fields
       shippingMode: shippingMode,
       shippingConfigured: shippingMode === 'delivery', // true jika sudah lengkap
