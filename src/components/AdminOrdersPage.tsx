@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Clock, CheckCircle, Truck, XCircle, Eye, Search, Filter, Calendar, Download, X, Upload, CreditCard, MapPin, Phone, Mail, Edit2, Check, User, AlertTriangle, Info, Trash2, Copy, ArrowLeft } from 'lucide-react';
+import { Package, Clock, CheckCircle, Truck, XCircle, Eye, Search, Filter, Calendar, Download, X, Upload, CreditCard, MapPin, Phone, Mail, Edit2, Check, User, AlertTriangle, Info, Trash2, Copy, ArrowLeft, Printer } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { useFirebaseAdminOrders } from '../hooks/useFirebaseAdminOrders';
 import { ordersService } from '../services/ordersService';
@@ -45,6 +45,9 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
   // ✨ NEW: Shipping edit state for admin/owner
   const [shippingEditOrder, setShippingEditOrder] = useState<any>(null);
+
+  // ✨ NEW: Unaddressed Orders Filter
+  const [showUnaddressedOnly, setShowUnaddressedOnly] = useState(false);
 
   // Modern confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -270,8 +273,142 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     const matchesProduct = productFilter === 'all' ||
       (order.items && order.items.some((item: any) => item.productName === productFilter));
 
-    return matchesSearch && matchesStatus && matchesUser && matchesProduct;
+    // ✨ NEW: Unaddressed Filter Logic
+    // Show if: shippingMode is 'keep' AND not configured (legacy) OR shippingConfigured is explicitly false/undefined
+    const matchesUnaddressed = !showUnaddressedOnly || (
+      ((order as any).shippingMode === 'keep' && !(order as any).shippingConfigured) ||
+      (!(order as any).shippingConfigured && !order.shippingInfo?.address)
+    );
+
+    return matchesSearch && matchesStatus && matchesUser && matchesProduct && matchesUnaddressed;
   });
+
+  // ✨ NEW: WhatsApp Billing Function
+  const handleWhatsAppBilling = (order: any) => {
+    if (!order.shippingInfo?.phone && !order.phone) {
+      showModernAlert('Error', 'Nomor telepon tidak tersedia', 'error');
+      return;
+    }
+
+    const phone = order.shippingInfo?.phone || order.phone;
+    // Format phone: remove 0 or +62, add 62
+    let formattedPhone = phone.replace(/\D/g, '');
+    if (formattedPhone.startsWith('0')) formattedPhone = '62' + formattedPhone.substring(1);
+    if (!formattedPhone.startsWith('62')) formattedPhone = '62' + formattedPhone;
+
+    const message = `Halo Kak ${order.userName || 'Pelanggan'},%0A%0ABerikut tagihan untuk pesanan Kakak di Azzahra Fashion Muslim:%0ANo. Pesanan: *#${order.id}*%0ATotal Tagihan: *Rp ${order.finalTotal.toLocaleString('id-ID')}*%0A%0AMohon segera melakukan pembayaran ya Kak. Terima kasih 🙏`;
+
+    window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+  };
+
+  // ✨ NEW: Print Label Function (Single)
+  const handlePrintLabel = (order: any) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showModernAlert('Error', 'Pop-up terblokir. Izinkan pop-up untuk mencetak label.', 'error');
+      return;
+    }
+
+    const htmlContent = generateShippingLabelHtml([order]);
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
+  // ✨ NEW: Print Label Function (Bulk)
+  const handleBulkPrintLabel = () => {
+    const selected = orders.filter(o => selectedOrderIds.includes(o.id));
+    // Filter only eligible orders (paid, processing, shipped, delivered)
+    const eligible = selected.filter(o => ['paid', 'processing', 'shipped', 'delivered'].includes(o.status));
+
+    if (eligible.length === 0) {
+      showModernAlert('Peringatan', 'Pilih pesanan yang sudah lunas/diproses untuk dicetak labelnya.', 'warning');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showModernAlert('Error', 'Pop-up terblokir. Izinkan pop-up untuk mencetak label.', 'error');
+      return;
+    }
+
+    const htmlContent = generateShippingLabelHtml(eligible);
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
+  // Helper to generate Label HTML
+  const generateShippingLabelHtml = (ordersList: any[]) => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Cetak Label Pengiriman</title>
+        <style>
+          @page { size: A6; margin: 0; }
+          body { font-family: sans-serif; margin: 0; padding: 10px; }
+          .label-container { 
+            border: 2px solid #000; 
+            padding: 10px; 
+            margin-bottom: 20px; 
+            page-break-inside: avoid;
+            max-width: 100mm; /* A6 width approx */
+            height: 140mm; /* A6 height approx */
+            box-sizing: border-box;
+            position: relative;
+          }
+          .header { border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+          .header h1 { margin: 0; font-size: 16px; font-weight: bold; }
+          .courier-info { text-align: right; font-size: 12px; font-weight: bold; }
+          .section { margin-bottom: 15px; }
+          .label-title { font-size: 10px; color: #555; text-transform: uppercase; margin-bottom: 2px; }
+          .label-content { font-size: 14px; font-weight: bold; line-height: 1.4; }
+          .recipient-address { font-size: 13px; white-space: pre-wrap; }
+          .sender-info { font-size: 12px; border-top: 1px dashed #ccc; padding-top: 5px; margin-top: 10px; }
+          .footer { position: absolute; bottom: 10px; left: 10px; right: 10px; font-size: 10px; text-align: center; color: #777; }
+          @media print {
+            body { padding: 0; }
+            .label-container { border: none; page-break-after: always; height: 100vh; margin-bottom: 0; }
+            .label-container:last-child { page-break-after: auto; }
+          }
+        </style>
+      </head>
+      <body onload="window.print()">
+        ${ordersList.map(o => `
+          <div class="label-container">
+            <div class="header">
+              <h1>AZZAHRA</h1>
+              <div class="courier-info">
+                ${(o.shippingCourier || 'JNE').toUpperCase()}<br>
+                ${o.shippingService || 'REG'}
+              </div>
+            </div>
+            
+            <div class="section">
+              <div class="label-title">Penerima:</div>
+              <div class="label-content">${o.shippingInfo?.name || o.userName}</div>
+              <div class="label-content">${o.shippingInfo?.phone || o.phone || '-'}</div>
+              <div class="recipient-address mt-1">${o.shippingInfo?.address || 'Alamat belum diatur'}</div>
+              ${o.shippingInfo?.notes ? `<div style="font-size:11px; margin-top:4px; font-style:italic;">Catatan: ${o.shippingInfo.notes}</div>` : ''}
+              ${o.shippingInfo?.isDropship ? `<div style="font-size:12px; margin-top:4px; font-weight:bold; border:1px solid #000; padding:2px; display:inline-block;">DROPSHIP</div>` : ''}
+            </div>
+
+            <div class="section sender-info">
+              <div class="label-title">Pengirim:</div>
+              <div class="label-content">
+                ${o.shippingInfo?.isDropship ? o.shippingInfo.dropshipName : 'Azzahra Fashion Muslim'}<br>
+                ${o.shippingInfo?.isDropship ? o.shippingInfo.dropshipPhone : '0812-3456-7890'}
+              </div>
+            </div>
+
+            <div class="footer">
+              Order ID: #${o.id} • ${new Date(o.createdAt).toLocaleDateString('id-ID')}
+            </div>
+          </div>
+        `).join('')}
+      </body>
+      </html>
+    `;
+  };
 
   const handleViewOrder = (order: any) => {
     setSelectedOrder(order);
@@ -828,6 +965,18 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                 <Download className="w-4 h-4" />
               </button>
 
+              {/* ✨ NEW: Unaddressed Filter Button */}
+              <button
+                onClick={() => setShowUnaddressedOnly(!showUnaddressedOnly)}
+                className={`flex items-center space-x-2 px-3 py-2 border rounded-lg transition-colors text-sm font-medium ${showUnaddressedOnly
+                  ? 'bg-amber-100 border-amber-300 text-amber-800'
+                  : 'border-[#E2DED5] text-gray-600 hover:bg-gray-50'
+                  }`}
+              >
+                <MapPin className="w-4 h-4" />
+                <span>Belum Atur Alamat</span>
+              </button>
+
               {/* Reset Filters Button */}
               {(statusFilter !== 'all' || userFilter !== 'all' || productFilter !== 'all' || searchQuery || dateFilter) && (
                 <button
@@ -884,6 +1033,14 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     >
                       <Trash2 className="w-4 h-4" />
                       <span>Hapus {selectedOrderIds.length} Pesanan</span>
+                    </button>
+
+                    <button
+                      onClick={handleBulkPrintLabel}
+                      className="flex-1 md:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-[#D4AF37] text-[#997B2C] rounded-lg shadow-[0_2px_0_0_#997B2C] active:shadow-none active:translate-y-1 transition-all font-medium text-sm min-w-[180px]"
+                    >
+                      <Printer className="w-4 h-4" />
+                      <span>Print Label ({selectedOrderIds.length})</span>
                     </button>
                   </div>
                 )}
@@ -952,6 +1109,28 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                           {order.items.length} item • {paymentMethodLabel}
                         </div>
                         <div className="mt-4 grid grid-cols-2 lg:flex lg:flex-row items-center gap-2 pt-3 border-t border-gray-100">
+                          {/* ✨ NEW: Atur Alamat Button for Unaddressed Orders */}
+                          {(!order.shippingConfigured || (order.shippingMode === 'keep' && !order.shippingInfo?.address)) && (
+                            <button
+                              onClick={() => setShippingEditOrder(order)}
+                              className="px-2.5 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold hover:bg-amber-100 transition-all flex items-center justify-center gap-1 whitespace-nowrap animate-pulse"
+                            >
+                              <MapPin className="w-3.5 h-3.5" />
+                              Atur Alamat
+                            </button>
+                          )}
+
+                          {/* ✨ NEW: WhatsApp Billing Button for Pending/Unpaid */}
+                          {(order.status === 'pending' || order.status === 'awaiting_verification') && (
+                            <button
+                              onClick={() => handleWhatsAppBilling(order)}
+                              className="px-2.5 py-1.5 rounded-full bg-green-50 border border-green-200 text-green-700 text-xs font-semibold hover:bg-green-100 transition-all flex items-center justify-center gap-1 whitespace-nowrap"
+                            >
+                              <Phone className="w-3.5 h-3.5" />
+                              Tagih
+                            </button>
+                          )}
+
                           <button
                             onClick={() => handleViewOrder(order)}
                             className="px-2.5 py-1.5 rounded-full bg-gradient-to-r from-[#F9F5EB] to-[#FEF9E7] border border-[#D4AF37]/30 text-[#997B2C] text-xs font-semibold hover:border-[#D4AF37] hover:shadow-md transition-all flex items-center justify-center gap-1 whitespace-nowrap"
@@ -959,6 +1138,17 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             <Eye className="w-3.5 h-3.5" />
                             Detail
                           </button>
+
+                          {/* ✨ NEW: Print Label Button for Paid/Processed */}
+                          {['paid', 'processing', 'shipped', 'delivered'].includes(order.status) && (
+                            <button
+                              onClick={() => handlePrintLabel(order)}
+                              className="px-2.5 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-100 transition-all flex items-center justify-center gap-1 whitespace-nowrap"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                              Label
+                            </button>
+                          )}
 
                           {(order.status === 'pending' || order.status === 'awaiting_verification') && (
                             <button
