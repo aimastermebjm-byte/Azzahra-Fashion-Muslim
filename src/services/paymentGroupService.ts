@@ -61,20 +61,26 @@ class PaymentGroupService {
       let attempts = 0;
       const MAX_ATTEMPTS = 10;
 
-      // 🛡️ Collision Check Loop
-      // Ensure the generated exactAmount is not currently used by any other PENDING payment
+      // 🛡️ GLOBAL Collision Check Loop
+      // Ensure the generated exactAmount is not currently used by ANY PENDING payment
+      // Check BOTH: Payment Groups AND Individual Orders
       while (!isUnique && attempts < MAX_ATTEMPTS) {
         attempts++;
         uniqueCode = generateUniquePaymentCode();
         exactAmount = data.originalTotal + uniqueCode;
 
-        // Check if this amount is already taken
+        // Check 1: Payment Groups with same exact amount
         const existingGroup = await this.getPaymentGroupByAmount(exactAmount);
 
-        if (!existingGroup) {
+        // Check 2: Individual Orders with same exact amount (NEW!)
+        const existingOrder = await this.getOrderByExactAmount(exactAmount);
+
+        if (!existingGroup && !existingOrder) {
           isUnique = true;
+          console.log(`✅ Unique amount confirmed: ${exactAmount} (Code: ${uniqueCode})`);
         } else {
-          console.warn(`⚠️ Collision detected for amount ${exactAmount}. Retrying (${attempts}/${MAX_ATTEMPTS})...`);
+          const collisionSource = existingGroup ? 'PaymentGroup' : 'Order';
+          console.warn(`⚠️ Collision with ${collisionSource} for amount ${exactAmount}. Retrying (${attempts}/${MAX_ATTEMPTS})...`);
         }
       }
 
@@ -192,6 +198,37 @@ class PaymentGroupService {
       } as PaymentGroup;
     } catch (error) {
       console.error('❌ Error getting payment group by amount:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 🆕 Get order by exact payment amount (for collision check)
+   * Only returns PENDING orders (not paid/cancelled)
+   */
+  async getOrderByExactAmount(exactAmount: number): Promise<any | null> {
+    try {
+      const ordersRef = collection(db, 'orders');
+      const q = query(
+        ordersRef,
+        where('exactPaymentAmount', '==', exactAmount),
+        where('status', '==', 'pending')
+      );
+
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        return null;
+      }
+
+      // Return first match
+      const orderDoc = snapshot.docs[0];
+      return {
+        id: orderDoc.id,
+        ...orderDoc.data()
+      };
+    } catch (error) {
+      console.error('❌ Error getting order by exact amount:', error);
       return null;
     }
   }
