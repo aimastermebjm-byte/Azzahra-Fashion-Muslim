@@ -473,12 +473,12 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       </head>
       <body onload="window.print()">
         ${ordersList.map(o => {
-      // Construct Full Address
+      // Construct Full Address - use correct field names
       const fullAddress = [
         o.shippingInfo?.address,
-        o.shippingInfo?.subdistrictName ? `Kel. ${o.shippingInfo.subdistrictName}` : '',
-        o.shippingInfo?.districtName ? `Kec. ${o.shippingInfo.districtName}` : '',
-        o.shippingInfo?.cityName ? `${o.shippingInfo.cityName}` : '',
+        o.shippingInfo?.subdistrict ? `Kel. ${o.shippingInfo.subdistrict}` : '',
+        o.shippingInfo?.district ? `Kec. ${o.shippingInfo.district}` : '',
+        o.shippingInfo?.cityName || '',
         o.shippingInfo?.provinceName,
         o.shippingInfo?.postalCode
       ].filter(Boolean).join(', ');
