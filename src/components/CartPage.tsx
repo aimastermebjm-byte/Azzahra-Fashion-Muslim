@@ -317,10 +317,11 @@ const CartPage: React.FC<CartPageProps> = ({
                 <span>{formatCurrency(orderSubtotal)}</span>
               </div>
             </div>
+            {/* Hide on mobile - fixed bottom bar has checkout button */}
             <button
               onClick={() => onCheckout(Array.from(selectedItems))}
               disabled={selectedCount === 0}
-              className="mt-4 w-full rounded-full py-3 font-bold text-[#5d4008] bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] hover:shadow-[0_6px_20px_rgba(153,123,44,0.23)] hover:bg-[100%_0] transition-all transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="hidden lg:block mt-4 w-full rounded-full py-3 font-bold text-[#5d4008] bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] hover:shadow-[0_6px_20px_rgba(153,123,44,0.23)] hover:bg-[100%_0] transition-all transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Checkout ({selectedCount} Produk)
             </button>
