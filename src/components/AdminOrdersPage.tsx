@@ -336,7 +336,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     printWindow.document.close();
   };
 
-  // Helper to generate Label HTML
+  // Helper to generate Label HTML for 58mm Thermal Printer
   const generateShippingLabelHtml = (ordersList: any[]) => {
     return `
       <!DOCTYPE html>
@@ -344,30 +344,80 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       <head>
         <title>Cetak Label Pengiriman</title>
         <style>
-          @page { size: A6; margin: 0; }
-          body { font-family: sans-serif; margin: 0; padding: 10px; }
-          .label-container { 
-            border: 2px solid #000; 
-            padding: 10px; 
-            margin-bottom: 20px; 
-            page-break-inside: avoid;
-            max-width: 100mm; /* A6 width approx */
-            height: 140mm; /* A6 height approx */
-            box-sizing: border-box;
-            position: relative;
+          @page { size: 58mm auto; margin: 0; }
+          body { 
+            font-family: 'Courier New', monospace; 
+            margin: 0; 
+            padding: 5px; 
+            width: 48mm; /* Printable area for 58mm paper */
+            font-size: 10px;
+            color: black;
           }
-          .header { border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-          .header h1 { margin: 0; font-size: 16px; font-weight: bold; }
-          .courier-info { text-align: right; font-size: 12px; font-weight: bold; }
-          .section { margin-bottom: 15px; }
-          .label-title { font-size: 10px; color: #555; text-transform: uppercase; margin-bottom: 2px; }
-          .label-content { font-size: 14px; font-weight: bold; line-height: 1.4; }
-          .recipient-address { font-size: 13px; white-space: pre-wrap; }
-          .sender-info { font-size: 12px; border-top: 1px dashed #ccc; padding-top: 5px; margin-top: 10px; }
-          .footer { position: absolute; bottom: 10px; left: 10px; right: 10px; font-size: 10px; text-align: center; color: #777; }
+          .label-container { 
+            border-bottom: 2px dashed #000; 
+            padding-bottom: 15px; 
+            margin-bottom: 15px; 
+            page-break-inside: avoid;
+          }
+          .header { 
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+          }
+          .header h1 { 
+            margin: 0; 
+            font-size: 14px; 
+            font-weight: bold; 
+          }
+          .courier-info { 
+            font-size: 12px; 
+            font-weight: bold; 
+            margin-top: 5px;
+          }
+          .section { margin-bottom: 10px; }
+          .label-title { 
+            font-size: 9px; 
+            font-weight: bold;
+            text-transform: uppercase; 
+            margin-bottom: 2px;
+            border-bottom: 1px solid #ccc;
+            display: inline-block;
+          }
+          .label-content { 
+            font-size: 12px; 
+            font-weight: bold; 
+            line-height: 1.3; 
+            word-wrap: break-word;
+          }
+          .recipient-address { 
+            font-size: 11px; 
+            white-space: pre-wrap; 
+            margin-top: 2px;
+            line-height: 1.2;
+          }
+          .sender-info { 
+            font-size: 10px; 
+            border-top: 1px solid #000; 
+            padding-top: 5px; 
+            margin-top: 10px; 
+          }
+          .footer { 
+            font-size: 9px; 
+            text-align: center; 
+            margin-top: 10px;
+          }
+          .dropship-badge {
+            border: 1px solid #000;
+            padding: 2px 4px;
+            font-weight: bold;
+            font-size: 10px;
+            display: inline-block;
+            margin-top: 5px;
+          }
           @media print {
-            body { padding: 0; }
-            .label-container { border: none; page-break-after: always; height: 100vh; margin-bottom: 0; }
+            body { padding: 0; width: 100%; }
+            .label-container { page-break-after: always; border-bottom: none; }
             .label-container:last-child { page-break-after: auto; }
           }
         </style>
@@ -376,32 +426,32 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         ${ordersList.map(o => `
           <div class="label-container">
             <div class="header">
-              <h1>AZZAHRA</h1>
+              <h1>AZZAHRA FASHION</h1>
               <div class="courier-info">
-                ${(o.shippingCourier || 'JNE').toUpperCase()}<br>
-                ${o.shippingService || 'REG'}
+                ${(o.shippingCourier || 'JNE').toUpperCase()} - ${o.shippingService || 'REG'}
               </div>
             </div>
             
             <div class="section">
-              <div class="label-title">Penerima:</div>
+              <div class="label-title">KEPADA:</div>
               <div class="label-content">${o.shippingInfo?.name || o.userName}</div>
               <div class="label-content">${o.shippingInfo?.phone || o.phone || '-'}</div>
-              <div class="recipient-address mt-1">${o.shippingInfo?.address || 'Alamat belum diatur'}</div>
-              ${o.shippingInfo?.notes ? `<div style="font-size:11px; margin-top:4px; font-style:italic;">Catatan: ${o.shippingInfo.notes}</div>` : ''}
-              ${o.shippingInfo?.isDropship ? `<div style="font-size:12px; margin-top:4px; font-weight:bold; border:1px solid #000; padding:2px; display:inline-block;">DROPSHIP</div>` : ''}
+              <div class="recipient-address">${o.shippingInfo?.address || 'Alamat belum diatur'}</div>
+              ${o.shippingInfo?.notes ? `<div style="font-size:10px; margin-top:4px; font-style:italic;">Note: ${o.shippingInfo.notes}</div>` : ''}
+              ${o.shippingInfo?.isDropship ? `<div class="dropship-badge">DROPSHIP</div>` : ''}
             </div>
 
             <div class="section sender-info">
-              <div class="label-title">Pengirim:</div>
-              <div class="label-content">
+              <div class="label-title">DARI:</div>
+              <div class="label-content" style="font-size:11px;">
                 ${o.shippingInfo?.isDropship ? o.shippingInfo.dropshipName : 'Azzahra Fashion Muslim'}<br>
                 ${o.shippingInfo?.isDropship ? o.shippingInfo.dropshipPhone : '0812-3456-7890'}
               </div>
             </div>
 
             <div class="footer">
-              Order ID: #${o.id} • ${new Date(o.createdAt).toLocaleDateString('id-ID')}
+              #${o.id}<br>
+              ${new Date(o.createdAt).toLocaleDateString('id-ID')}
             </div>
           </div>
         `).join('')}
