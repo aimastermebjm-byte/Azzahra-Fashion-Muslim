@@ -392,7 +392,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             margin: 0; 
             padding: 5px; 
             width: 48mm; 
-            font-size: 12px;
+            font-size: 14px; /* Increased from 12px */
             color: black;
           }
           .label-container { 
@@ -403,15 +403,16 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           }
           .header { 
             text-align: center;
-            margin-bottom: 10px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 8px;
+            margin-bottom: 12px;
+            border-bottom: 3px solid #000; /* Thicker line */
+            padding-bottom: 10px;
           }
           .header h1 { 
             margin: 0; 
-            font-size: 16px; 
+            font-size: 20px; /* Increased from 16px */
             font-weight: 800; 
             text-transform: uppercase;
+            line-height: 1.1;
           }
           .info-table {
             width: 100%;
@@ -419,16 +420,16 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           }
           .info-table td {
             vertical-align: top;
-            padding-bottom: 6px;
-            font-size: 12px;
-            line-height: 1.4;
+            padding-bottom: 8px;
+            font-size: 14px; /* Increased from 12px */
+            line-height: 1.3;
             color: #000;
           }
           .label-col {
             width: 55px;
             white-space: nowrap;
             font-weight: normal;
-            font-size: 11px;
+            font-size: 13px; /* Increased from 11px */
             color: #333;
           }
           .sep-col {
@@ -437,16 +438,16 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           }
           .value-col {
             word-wrap: break-word;
-            font-weight: 600; /* Agak tebal tapi tidak over */
-            font-size: 13px; /* Diperbesar */
+            font-weight: 700; 
+            font-size: 16px; /* Increased from 13px */
           }
           .dropship-badge {
-            border: 2px solid #000;
-            padding: 4px;
-            font-weight: bold;
-            font-size: 12px;
+            border: 3px solid #000;
+            padding: 6px;
+            font-weight: 800;
+            font-size: 14px; /* Increased from 12px */
             display: inline-block;
-            margin-top: 8px;
+            margin-top: 10px;
             text-align: center;
             width: 100%;
             box-sizing: border-box;
