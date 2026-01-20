@@ -54,22 +54,14 @@ const CartPage: React.FC<CartPageProps> = ({
     }
   };
 
-  // Bulk delete selected items
+  // Bulk delete selected items - NO CONFIRM needed (user can add back easily)
   const handleBulkDelete = async () => {
     if (selectedItems.size === 0) return;
 
-    const itemCount = selectedItems.size; // Save count before clearing
-    const confirmDelete = window.confirm(`Hapus ${itemCount} produk dari keranjang?`);
-    if (!confirmDelete) return;
-
     try {
-      // Delete all selected items in one Firestore operation (no race condition)
       const itemIdsToDelete = Array.from(selectedItems);
       await removeBulkCartItems(itemIdsToDelete);
-
-      // Clear selection after successful delete
       setSelectedItems(new Set());
-      console.log(`✅ Berhasil menghapus ${itemCount} produk`);
     } catch (error) {
       console.error('❌ Failed to bulk delete:', error);
     }

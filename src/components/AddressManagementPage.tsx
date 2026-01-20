@@ -42,10 +42,7 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
   };
 
   const handleDeleteAddress = async (id: string) => {
-    if (!window.confirm('Apakah Anda yakin ingin menghapus alamat ini?')) {
-      return;
-    }
-
+    // No confirm needed - user can add address back easily
     try {
       await addressService.deleteAddress(id);
       showToast({
@@ -53,7 +50,7 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
         title: 'Alamat dihapus',
         message: 'Alamat berhasil dihapus dari daftar kamu.'
       });
-      } catch (error) {
+    } catch (error) {
       console.error('❌ Error deleting address:', error);
       showToast({
         type: 'error',
@@ -71,7 +68,7 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
         title: 'Alamat utama diperbarui',
         message: 'Alamat ini sekarang menjadi alamat utama.'
       });
-      } catch (error) {
+    } catch (error) {
       console.error('❌ Error setting default address:', error);
       showToast({
         type: 'error',
@@ -106,7 +103,7 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
           isDefault: addressData.isDefault,
           updatedAt: new Date().toISOString()
         });
-        } else {
+      } else {
         // Add new address
         await addressService.saveAddress({
           name: addressData.name,
@@ -123,7 +120,7 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
           postalCode: addressData.postalCode,
           isDefault: addressData.isDefault
         });
-        }
+      }
 
       showToast({
         type: 'success',
@@ -149,8 +146,8 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
   const headerSubtitle = loading
     ? 'Memuat alamat tersimpan...'
     : addressCount > 0
-    ? `${addressCount} alamat tersimpan`
-    : 'Belum ada alamat tersimpan';
+      ? `${addressCount} alamat tersimpan`
+      : 'Belum ada alamat tersimpan';
 
   if (showAddForm) {
     const formTitle = editingAddress ? 'Edit Alamat' : 'Tambah Alamat Baru';

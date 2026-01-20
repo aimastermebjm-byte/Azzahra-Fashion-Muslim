@@ -598,13 +598,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   const handleDeleteAddress = (id: string) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus alamat ini?')) {
-      deleteAddress(id);
-      if (selectedAddressId === id) {
-        const newDefault = getDefaultAddress();
-        if (newDefault) {
-          handleAddressSelect(newDefault.id);
-        }
+    // No confirm needed - user can add address back easily
+    deleteAddress(id);
+    if (selectedAddressId === id) {
+      const newDefault = getDefaultAddress();
+      if (newDefault) {
+        handleAddressSelect(newDefault.id);
       }
     }
   };
