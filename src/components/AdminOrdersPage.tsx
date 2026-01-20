@@ -421,7 +421,8 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         ${ordersList.map(o => `
           <div class="label-container">
             <div class="header">
-              <h1>AZZAHRA FASHION</h1>
+              <img src="${window.location.origin}/azzahra-logo.jpg" alt="Azzahra Fashion Muslim" style="max-width: 100%; height: auto; max-height: 50px; display: block; margin: 0 auto 5px;" />
+              <div style="font-size: 10px; font-weight: bold; letter-spacing: 1px;">AZZAHRA FASHION MUSLIM</div>
             </div>
             
             <table class="info-table">
