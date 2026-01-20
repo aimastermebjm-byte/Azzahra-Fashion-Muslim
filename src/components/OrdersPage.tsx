@@ -32,13 +32,68 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   const [shippingEditOrder, setShippingEditOrder] = useState<any>(null);
   const [bulkAddressMode, setBulkAddressMode] = useState(false); // For applying address to all selected Keep orders
 
-  // ✨ NEW: Toggle order selection
+  // ✨ Toggle order selection - PREVENT mixing addressed/unaddressed orders
   const handleToggleOrderSelection = (orderId: string) => {
-    setSelectedOrderIds(prev =>
-      prev.includes(orderId)
-        ? prev.filter(id => id !== orderId)
-        : [...prev, orderId]
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    const isKeepMode = (order as any).shippingMode === 'keep';
+    const hasAddress = (order as any).shippingConfigured === true;
+
+    // If currently no selection, allow any selection
+    if (selectedOrderIds.length === 0) {
+      // If selecting order with address, show info toast
+      if (isKeepMode && hasAddress) {
+        showToast({
+          type: 'info',
+          title: 'Pesanan Siap Bayar',
+          message: 'Pesanan ini sudah ada alamat, siap untuk pembayaran.'
+        });
+      }
+      setSelectedOrderIds([orderId]);
+      return;
+    }
+
+    // If deselecting, just remove
+    if (selectedOrderIds.includes(orderId)) {
+      setSelectedOrderIds(prev => prev.filter(id => id !== orderId));
+      return;
+    }
+
+    // Check if mixing addressed with unaddressed orders
+    const currentlySelectedOrders = orders.filter(o => selectedOrderIds.includes(o.id));
+    const currentHasAddressed = currentlySelectedOrders.some(
+      (o: any) => o.shippingMode === 'keep' && o.shippingConfigured === true
     );
+    const currentHasUnaddressed = currentlySelectedOrders.some(
+      (o: any) => o.shippingMode === 'keep' && !o.shippingConfigured
+    );
+
+    const newOrderHasAddress = isKeepMode && hasAddress;
+    const newOrderNoAddress = isKeepMode && !hasAddress;
+
+    // Prevent mixing: if selecting addressed order but current selection has unaddressed
+    if (newOrderHasAddress && currentHasUnaddressed) {
+      showToast({
+        type: 'warning',
+        title: 'Tidak bisa digabung',
+        message: 'Pesanan dengan alamat tidak bisa digabung dengan pesanan tanpa alamat. Selesaikan atur alamat dulu.'
+      });
+      return;
+    }
+
+    // Prevent mixing: if selecting unaddressed order but current selection has addressed
+    if (newOrderNoAddress && currentHasAddressed) {
+      showToast({
+        type: 'warning',
+        title: 'Tidak bisa digabung',
+        message: 'Pesanan tanpa alamat tidak bisa digabung dengan pesanan yang sudah ada alamat.'
+      });
+      return;
+    }
+
+    // Allow selection
+    setSelectedOrderIds(prev => [...prev, orderId]);
   };
 
   // ✨ NEW: Select all pending orders
