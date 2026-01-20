@@ -30,12 +30,12 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedOrderForUpload, setSelectedOrderForUpload] = useState<any>(null);
 
-  // âœ¨ NEW: Bulk operations state
+  //  NEW: Bulk operations state
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState<any>(null);
 
-  // âœ¨ NEW: Payment assistance state (for Owner to help customer)
+  //  NEW: Payment assistance state (for Owner to help customer)
   const [showPaymentAssistModal, setShowPaymentAssistModal] = useState(false);
   const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
   const [showAutoInstructionsModal, setShowAutoInstructionsModal] = useState(false);
@@ -43,10 +43,10 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   const [assistPaymentData, setAssistPaymentData] = useState<any>(null);
   const [assistPaymentProof, setAssistPaymentProof] = useState<File | null>(null);
 
-  // âœ¨ NEW: Shipping edit state for admin/owner
+  //  NEW: Shipping edit state for admin/owner
   const [shippingEditOrder, setShippingEditOrder] = useState<any>(null);
 
-  // âœ¨ NEW: Unaddressed Orders Filter
+  //  NEW: Unaddressed Orders Filter
   const [showUnaddressedOnly, setShowUnaddressedOnly] = useState(false);
 
   // Modern confirmation modal state
@@ -102,7 +102,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     return await ordersService.deleteOrder(orderId);
   };
 
-  // âœ¨ NEW: Bulk operations functions
+  //  NEW: Bulk operations functions
   const toggleSelectOrder = (orderId: string) => {
     setSelectedOrderIds(prev =>
       prev.includes(orderId)
@@ -273,7 +273,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     const matchesProduct = productFilter === 'all' ||
       (order.items && order.items.some((item: any) => item.productName === productFilter));
 
-    // âœ¨ NEW: Unaddressed Filter Logic
+    //  NEW: Unaddressed Filter Logic
     // Show if: shippingMode is 'keep' AND not configured (legacy) OR shippingConfigured is explicitly false/undefined
     const matchesUnaddressed = !showUnaddressedOnly || (
       ((order as any).shippingMode === 'keep' && !(order as any).shippingConfigured) ||
@@ -283,7 +283,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     return matchesSearch && matchesStatus && matchesUser && matchesProduct && matchesUnaddressed;
   });
 
-  // âœ¨ NEW: WhatsApp Billing Function
+  //  NEW: WhatsApp Billing Function
   const handleWhatsAppBilling = (order: any) => {
     // SMART FEATURE: If this order is part of a selection (checked), use Bulk Billing instead
     if (selectedOrderIds.includes(order.id) && selectedOrderIds.length > 1) {
@@ -302,12 +302,12 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     if (formattedPhone.startsWith('0')) formattedPhone = '62' + formattedPhone.substring(1);
     if (!formattedPhone.startsWith('62')) formattedPhone = '62' + formattedPhone;
 
-    const message = `Halo Kak ${order.userName || 'Pelanggan'},%0A%0ABerikut tagihan untuk pesanan Kakak di Azzahra Fashion Muslim:%0ANo. Pesanan: *#${order.id}*%0ATotal Tagihan: *Rp ${order.finalTotal.toLocaleString('id-ID')}*%0A%0AMohon segera melakukan pembayaran ya Kak. Terima kasih ðŸ™`;
+    const message = `Halo Kak ${order.userName || 'Pelanggan'},\n\nBerikut tagihan untuk pesanan Kakak di Azzahra Fashion Muslim:\nNo. Pesanan: *#${order.id}*\nTotal Tagihan: *Rp ${order.finalTotal.toLocaleString('id-ID')}*\n\nMohon segera melakukan pembayaran ya Kak. Terima kasih `;
 
-    window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message.replace(/%0A/g, '\n'))}`, '_blank');
+    window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  // âœ¨ NEW: Bulk WhatsApp Billing (Aggregated)
+  //  NEW: Bulk WhatsApp Billing (Aggregated)
   const handleBulkWhatsAppBilling = () => {
     const selected = orders.filter(o => selectedOrderIds.includes(o.id));
     const eligible = selected.filter(o => ['pending', 'awaiting_verification'].includes(o.status));
@@ -339,7 +339,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     }).join('\n');
 
     const header = `Halo Kak ${firstOrder.userName || 'Pelanggan'},\n\nBerikut rekap tagihan untuk ${eligible.length} pesanan Kakak di Azzahra Fashion Muslim:`;
-    const footer = `*TOTAL TAGIHAN: Rp ${totalBill.toLocaleString('id-ID')}*\n\nMohon segera melakukan pembayaran ya Kak. Terima kasih ðŸ™`;
+    const footer = `*TOTAL TAGIHAN: Rp ${totalBill.toLocaleString('id-ID')}*\n\nMohon segera melakukan pembayaran ya Kak. Terima kasih `;
 
     // Construct full message and encode
     const fullMessage = `${header}\n\n${orderList}\n\n${footer}`;
@@ -347,7 +347,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(fullMessage)}`, '_blank');
   };
 
-  // âœ¨ NEW: Print Label Function (Single)
+  //  NEW: Print Label Function (Single)
   const handlePrintLabel = (order: any) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -360,7 +360,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     printWindow.document.close();
   };
 
-  // âœ¨ NEW: Print Label Function (Bulk)
+  //  NEW: Print Label Function (Bulk)
   const handleBulkPrintLabel = () => {
     const selected = orders.filter(o => selectedOrderIds.includes(o.id));
     // Filter only eligible orders (paid, processing, shipped, delivered)
@@ -599,7 +599,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
             const result = await checkAndUpgradeRole(selectedOrder.userId, orderItems);
             if (result.upgraded) {
-              console.log('ðŸŽ‰ User upgraded to Reseller:', result.reason);
+              console.log('Ž‰ User upgraded to Reseller:', result.reason);
 
               // Queue WhatsApp notification for upgrade
               const customerPhone = selectedOrder.shippingInfo?.phone || selectedOrder.phone;
@@ -618,17 +618,17 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             // Non-blocking: don't fail the payment verification if upgrade fails
           }
         } else {
-          console.log('ðŸ”„ CANCELLING ORDER - Status will be set to:', status);
+          console.log('”„ CANCELLING ORDER - Status will be set to:', status);
           await updateOrderStatus(selectedOrder.id, status);
 
           // After cancelling, refresh products and navigate to home
-          console.log('âœ… Order cancelled, refreshing products...');
+          console.log('… Order cancelled, refreshing products...');
           if (onRefreshProducts) {
             onRefreshProducts();
           }
 
           if (onNavigateToHome) {
-            console.log('ðŸ  Navigating to home after order cancellation...');
+            console.log('  Navigating to home after order cancellation...');
             setTimeout(() => {
               onNavigateToHome();
             }, 1000); // Small delay to ensure products are refreshed
@@ -650,7 +650,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     setShowUploadModal(true);
   };
 
-  // âœ¨ NEW: Payment Assistance Handlers (Owner helps customer)
+  //  NEW: Payment Assistance Handlers (Owner helps customer)
   // Single order assistance
   const handlePaymentAssist = async (order: any) => {
     // Check if order already has payment group
@@ -691,7 +691,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     setShowPaymentMethodModal(true);
   };
 
-  // âœ¨ NEW: Bulk payment assistance (multiple orders)
+  //  NEW: Bulk payment assistance (multiple orders)
   const handleBulkPaymentAssist = async () => {
     if (selectedOrderIds.length === 0) {
       showModernAlert('Peringatan', 'Pilih minimal 1 pesanan untuk dibantu pembayaran', 'warning');
@@ -911,7 +911,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           const newStatus = selectedOrderForUpload.status === 'pending' ? 'awaiting_verification' : selectedOrderForUpload.status;
           await updateOrderPayment(selectedOrderForUpload.id, base64Data, newStatus);
 
-          showModernAlert('Berhasil', 'âœ… Bukti pembayaran berhasil diupload! Status diubah menjadi "Menunggu Verifikasi".', 'success');
+          showModernAlert('Berhasil', '… Bukti pembayaran berhasil diupload! Status diubah menjadi "Menunggu Verifikasi".', 'success');
           setShowUploadModal(false);
           setSelectedOrderForUpload(null);
 
@@ -940,9 +940,9 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       // Get order data first to restore stock before deleting
       const order = orders.find(o => o.id === orderId);
       if (order) {
-        console.log('ðŸ”„ RESTORING STOCK BEFORE DELETING ORDER:', orderId);
+        console.log('”„ RESTORING STOCK BEFORE DELETING ORDER:', orderId);
         ordersService.restoreStockForOrderManually(order).then(() => {
-          console.log('âœ… Stock restored, deleting order:', orderId);
+          console.log('… Stock restored, deleting order:', orderId);
           deleteOrder(orderId);
 
           // Trigger event untuk refresh otomatis di semua device
@@ -952,12 +952,12 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
           // Refresh products and navigate to home
           if (onRefreshProducts) {
-            console.log('ðŸ”„ Refreshing products after stock restoration...');
+            console.log('”„ Refreshing products after stock restoration...');
             onRefreshProducts();
           }
 
           if (onNavigateToHome) {
-            console.log('ðŸ  Navigating to home page...');
+            console.log('  Navigating to home page...');
             setTimeout(() => {
               onNavigateToHome();
             }, 1000); // Small delay to ensure products are refreshed
@@ -1101,12 +1101,12 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                 <Download className="w-4 h-4" />
               </button>
 
-              {/* âœ¨ NEW: Unaddressed Filter Button */}
+              {/*  NEW: Unaddressed Filter Button */}
               <button
                 onClick={() => setShowUnaddressedOnly(!showUnaddressedOnly)}
                 className={`flex items - center space - x - 2 px - 3 py - 2 border rounded - lg transition - colors text - sm font - medium ${showUnaddressedOnly
-                    ? 'bg-amber-100 border-amber-300 text-amber-800'
-                    : 'border-[#E2DED5] text-gray-600 hover:bg-gray-50'
+                  ? 'bg-amber-100 border-amber-300 text-amber-800'
+                  : 'border-[#E2DED5] text-gray-600 hover:bg-gray-50'
                   } `}
               >
                 <MapPin className="w-4 h-4" />
@@ -1132,7 +1132,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           </div>
         </div >
 
-        {/* âœ¨ NEW: Bulk Operations Toolbar - GOLD THEME */}
+        {/*  NEW: Bulk Operations Toolbar - GOLD THEME */}
         {
           user?.role === 'owner' && filteredOrders.length > 0 && (
             <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 mb-4 shine-effect">
@@ -1210,7 +1210,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
               return (
                 <div key={order.id} className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] p-4 hover:shadow-lg transition-shadow shine-effect">
                   <div className="flex items-start space-x-3">
-                    {/* âœ¨ NEW: Checkbox for bulk selection (Owner only) */}
+                    {/*  NEW: Checkbox for bulk selection (Owner only) */}
                     {user?.role === 'owner' && (
                       <div className="pt-1">
                         <input
@@ -1253,7 +1253,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                           {order.items.length} item â€¢ {paymentMethodLabel}
                         </div>
                         <div className="mt-4 grid grid-cols-2 lg:flex lg:flex-row items-center gap-2 pt-3 border-t border-gray-100">
-                          {/* âœ¨ NEW: Atur Alamat Button for Unaddressed Orders */}
+                          {/*  NEW: Atur Alamat Button for Unaddressed Orders */}
                           {(!order.shippingConfigured || (order.shippingMode === 'keep' && !order.shippingInfo?.address)) && (
                             <button
                               onClick={() => setShippingEditOrder(order)}
@@ -1264,7 +1264,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             </button>
                           )}
 
-                          {/* âœ¨ NEW: WhatsApp Billing Button for Pending/Unpaid */}
+                          {/*  NEW: WhatsApp Billing Button for Pending/Unpaid */}
                           {(order.status === 'pending' || order.status === 'awaiting_verification') && (
                             <button
                               onClick={() => handleWhatsAppBilling(order)}
@@ -1283,7 +1283,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             Detail
                           </button>
 
-                          {/* âœ¨ NEW: Print Label Button for Paid/Processed */}
+                          {/*  NEW: Print Label Button for Paid/Processed */}
                           {['paid', 'processing', 'shipped', 'delivered'].includes(order.status) && (
                             <button
                               onClick={() => handlePrintLabel(order)}
@@ -1374,14 +1374,14 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     <h3 className="font-semibold text-gray-800 flex items-center">
                       <MapPin className="w-4 h-4 mr-2" />
                       Informasi Pengiriman
-                      {/* âœ¨ NEW: Keep mode badge */}
+                      {/*  NEW: Keep mode badge */}
                       {(selectedOrder as any).shippingMode === 'keep' && !(selectedOrder as any).shippingConfigured && (
                         <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700">
                           Belum diatur
                         </span>
                       )}
                     </h3>
-                    {/* âœ¨ NEW: Edit button for admin/owner */}
+                    {/*  NEW: Edit button for admin/owner */}
                     <button
                       onClick={() => {
                         setShowDetailModal(false);
@@ -1527,7 +1527,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             style={{ cursor: 'pointer' }}
                           />
                           <p className="text-xs text-gray-600 mt-2 text-center">
-                            ðŸ’¡ Klik gambar untuk memperbesar
+                            ’¡ Klik gambar untuk memperbesar
                           </p>
                         </div>
                       ) : selectedOrder.paymentProofUrl ? (
@@ -1541,13 +1541,13 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             style={{ cursor: 'pointer' }}
                           />
                           <p className="text-xs text-gray-600 mt-2 text-center">
-                            ðŸ’¡ Klik gambar untuk memperbesar
+                            ’¡ Klik gambar untuk memperbesar
                           </p>
                         </div>
                       ) : (
                         // Display from text/filename only
                         <div className="text-sm text-green-800">
-                          <p className="font-medium">ðŸ“Ž File Bukti Pembayaran:</p>
+                          <p className="font-medium">“Ž File Bukti Pembayaran:</p>
                           <p className="bg-white p-2 rounded border border-green-200 mt-1">
                             {selectedOrder.paymentProof}
                           </p>
@@ -1575,7 +1575,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         Status Pembayaran
                       </h3>
                       <p className="text-sm text-blue-800">
-                        âœ… Pembayaran telah diverifikasi pada {new Date(selectedOrder.updatedAt).toLocaleDateString('id-ID', {
+                        … Pembayaran telah diverifikasi pada {new Date(selectedOrder.updatedAt).toLocaleDateString('id-ID', {
                           day: 'numeric',
                           month: 'long',
                           year: 'numeric',
@@ -1605,7 +1605,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   >
                     Tutup
                   </button>
-                  {/* âœ¨ NEW: Payment Assistance Button (Owner only, pending orders) */}
+                  {/*  NEW: Payment Assistance Button (Owner only, pending orders) */}
                   {selectedOrder.status === 'pending' && user?.role === 'owner' && (
                     <button
                       onClick={() => {
@@ -1863,7 +1863,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         )
       }
 
-      {/* âœ¨ NEW: Edit Order Modal */}
+      {/*  NEW: Edit Order Modal */}
       {
         showEditModal && editingOrder && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1985,14 +1985,14 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         )
       }
 
-      {/* âœ¨ NEW: Payment Assistance - Method Selection Modal */}
+      {/*  NEW: Payment Assistance - Method Selection Modal */}
       {
         showPaymentMethodModal && assistPaymentData && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl max-w-md w-full">
               <div className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] p-4 rounded-t-2xl shadow-lg">
                 <h2 className="text-xl font-bold text-white text-center">
-                  ðŸ’³ Pilih Metode Pembayaran
+                  ’³ Pilih Metode Pembayaran
                 </h2>
                 <p className="text-sm text-white/90 text-center mt-1">
                   {assistPaymentData.orders ? (
@@ -2038,7 +2038,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                       <Upload className="w-6 h-6 text-slate-600" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-base font-bold text-slate-700">ðŸ“¸ Verifikasi Manual</h3>
+                      <h3 className="text-base font-bold text-slate-700">“¸ Verifikasi Manual</h3>
                       <p className="text-sm text-slate-500 mt-0.5">
                         Upload bukti transfer, verifikasi 1-24 jam
                       </p>
@@ -2062,7 +2062,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         )
       }
 
-      {/* âœ¨ NEW: Payment Assistance - Auto Instructions Modal */}
+      {/*  NEW: Payment Assistance - Auto Instructions Modal */}
       {
         showAutoInstructionsModal && assistPaymentData?.paymentGroup && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -2079,7 +2079,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     <ArrowLeft className="w-5 h-5 text-white" />
                   </button>
                   <h2 className="text-lg font-bold text-white flex-1 text-center">
-                    âœ¨ Kode Pembayaran Otomatis
+                    Kode Pembayaran Otomatis
                   </h2>
                   <button
                     onClick={() => {
@@ -2122,7 +2122,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
                   <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-blue-700 font-medium">ðŸ¦ BCA - Fahrin</p>
+                      <p className="text-xs text-blue-700 font-medium">¦ BCA - Fahrin</p>
                       <p className="text-base font-bold text-blue-900 font-mono">0511456494</p>
                     </div>
                     <button
@@ -2135,7 +2135,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
                   <div className="border border-cyan-200 rounded-lg p-3 bg-cyan-50 flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-cyan-700 font-medium">ðŸ¦ BRI - Fahrin</p>
+                      <p className="text-xs text-cyan-700 font-medium">¦ BRI - Fahrin</p>
                       <p className="text-base font-bold text-cyan-900 font-mono">066301000115566</p>
                     </div>
                     <button
@@ -2148,7 +2148,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
                   <div className="border border-yellow-200 rounded-lg p-3 bg-yellow-50 flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-yellow-700 font-medium">ðŸ¦ Mandiri - Fahrin</p>
+                      <p className="text-xs text-yellow-700 font-medium">¦ Mandiri - Fahrin</p>
                       <p className="text-base font-bold text-yellow-900 font-mono">310011008896</p>
                     </div>
                     <button
@@ -2181,7 +2181,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         )
       }
 
-      {/* âœ¨ NEW: Payment Assistance - Manual Upload Modal */}
+      {/*  NEW: Payment Assistance - Manual Upload Modal */}
       {
         showManualUploadModal && assistPaymentData && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -2198,7 +2198,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     <ArrowLeft className="w-5 h-5 text-white" />
                   </button>
                   <h2 className="text-lg font-bold text-white flex-1 text-center">
-                    ðŸ“¸ Upload untuk Customer
+                    “¸ Upload untuk Customer
                   </h2>
                   <button
                     onClick={() => {
@@ -2238,7 +2238,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
                   <div className="border border-blue-200 rounded-lg p-3 bg-blue-50 flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-blue-700 font-medium">ðŸ¦ BCA - Fahrin</p>
+                      <p className="text-xs text-blue-700 font-medium">¦ BCA - Fahrin</p>
                       <p className="text-base font-bold text-blue-900 font-mono">0511456494</p>
                     </div>
                     <button
@@ -2251,7 +2251,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
                   <div className="border border-cyan-200 rounded-lg p-3 bg-cyan-50 flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-cyan-700 font-medium">ðŸ¦ BRI - Fahrin</p>
+                      <p className="text-xs text-cyan-700 font-medium">¦ BRI - Fahrin</p>
                       <p className="text-base font-bold text-cyan-900 font-mono">066301000115566</p>
                     </div>
                     <button
@@ -2264,7 +2264,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
                   <div className="border border-yellow-200 rounded-lg p-3 bg-yellow-50 flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-yellow-700 font-medium">ðŸ¦ Mandiri - Fahrin</p>
+                      <p className="text-xs text-yellow-700 font-medium">¦ Mandiri - Fahrin</p>
                       <p className="text-base font-bold text-yellow-900 font-mono">310011008896</p>
                     </div>
                     <button
@@ -2331,7 +2331,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         )
       }
 
-      {/* âœ¨ NEW: Shipping Edit Modal for Admin/Owner */}
+      {/*  NEW: Shipping Edit Modal for Admin/Owner */}
       <ShippingEditModal
         isOpen={!!shippingEditOrder}
         onClose={() => setShippingEditOrder(null)}
