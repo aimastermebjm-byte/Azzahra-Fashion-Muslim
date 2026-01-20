@@ -345,6 +345,33 @@ const CartPage: React.FC<CartPageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Fixed Bottom Checkout Bar - Shopee Style */}
+      {cartCount > 0 && (
+        <div className="fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+            {/* Left: Selected count & Total */}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-slate-500 truncate">
+                {selectedCount} produk dipilih
+              </p>
+              <p className="text-base sm:text-lg font-bold text-slate-900">
+                {formatCurrency(orderSubtotal)}
+              </p>
+            </div>
+
+            {/* Right: Checkout Button */}
+            <button
+              onClick={() => onCheckout(Array.from(selectedItems))}
+              disabled={selectedCount === 0}
+              className="flex-shrink-0 px-6 sm:px-8 py-3 rounded-full font-bold text-[#5d4008] bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] shadow-[0_4px_14px_0_rgba(153,123,44,0.39)] hover:shadow-[0_6px_20px_rgba(153,123,44,0.23)] transition-all transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="hidden sm:inline">Checkout ({selectedCount})</span>
+              <span className="sm:hidden">Checkout</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
