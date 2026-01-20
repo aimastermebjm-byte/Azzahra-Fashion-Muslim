@@ -35,7 +35,7 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
     const [loadingShipping, setLoadingShipping] = useState(false);
     const [addresses, setAddresses] = useState<any[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState<string>('');
-    const [selectedCityId, setSelectedCityId] = useState<string>(''); // For auto shipping calc
+    // selectedCityId removed - using Unified Shipping Calculation
     const [shippingError, setShippingError] = useState('');
     const [shippingService, setShippingService] = useState('');
     const [shippingETD, setShippingETD] = useState('');
@@ -84,12 +84,9 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
         console.log('📍 Selected address:', address);
         setSelectedAddressId(address.id);
 
-        // Save destination ID for shipping calculation (prioritize subdistrictId > districtId > cityId)
-        const destId = address.subdistrictId || address.subdistrict_id ||
-            address.districtId || address.district_id ||
-            address.cityId || address.city_id || '';
-        console.log('🏙️ Destination ID for shipping:', destId);
-        setSelectedCityId(destId);
+        // Prioritas kalkulasi ongkir ditangani oleh useEffect 'Unified shipping calculation'
+        // yang akan otomatis mendeteksi subdistrict/district dari address object
+        // Tidak perlu set manual destId disini.
 
         // Build address string from available fields, filter out undefined/empty values
         const addressParts = [
@@ -102,12 +99,13 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
 
         const fullAddressString = addressParts.join(', ');
 
+        // Update form data - shippingCost akan di-update oleh useEffect setelah calculate
         setFormData(prev => ({
             ...prev,
             name: address.recipientName || address.name || address.label || '',
             phone: address.phone || address.phoneNumber || '',
             address: fullAddressString,
-            shippingCost: 0 // Reset shipping cost when address changes
+            shippingCost: 0 // Reset, akan di-calculate otomatis oleh useEffect
         }));
 
         setShippingError('');
@@ -115,70 +113,134 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
         setShippingETD('');
     };
 
-    // Auto-calculate shipping when cityId and courier are selected
-    useEffect(() => {
-        if (!selectedCityId || !formData.courier) return;
+    // 🔥 UNIFIED shipping calculation (Adapted from CheckoutPage)
+    const lastShippingCalcRef = React.useRef<string>('');
 
+    // Calculate total weight with smart rounding
+    const calculateTotalWeight = () => {
+        // Handle single order or bulk orders
+        const targetOrders = bulkOrders && bulkOrders.length > 0 ? bulkOrders : [order];
+
+        const totalGrams = targetOrders.reduce((total, ord) => {
+            const orderItems = ord.items || [];
+            return total + orderItems.reduce((subTotal: number, item: any) => {
+                const itemWeight = item.product?.weight || item.weight || 1000;
+                return subTotal + (item.quantity * itemWeight);
+            }, 0);
+        }, 0);
+
+        return totalGrams || 1000; // Fallback 1kg
+    };
+
+    const buildDestinationCandidates = (addressData: any) => {
+        const candidates: { id: string; label: string }[] = [];
+        const normalizeId = (value?: string | number | null) => value ? String(value).trim() : '';
+
+        // Prioritize specific IDs from the address object
+        const subdistrictId = normalizeId(addressData.subdistrictId || addressData.subdistrict_id);
+        const districtId = normalizeId(addressData.districtId || addressData.district_id);
+        // cityId removed - strictly following CheckoutPage logic
+
+        if (subdistrictId) candidates.push({ id: subdistrictId, label: 'Kelurahan/Desa' });
+        if (districtId) candidates.push({ id: districtId, label: 'Kecamatan' });
+        // CheckoutPage doesn't add cityId usually, but we can keep it as fallback if needed
+        // BUT strict adherence to CheckoutPage means we trust subdistrict/district first
+
+        return candidates.filter((c, i, self) => c.id && self.findIndex(t => t.id === c.id) === i);
+    };
+
+    // Auto-calculate shipping
+    useEffect(() => {
+        // Skip if no courier selected or manual courier
         const selectedCourier = shippingOptions.find(opt => opt.id === formData.courier);
-        if (!selectedCourier?.code) {
-            // Manual courier - don't auto-calculate
-            setShippingError('Kurir lokal - isi ongkir manual');
+        if (!selectedCourier?.code || !selectedAddressId) return;
+
+        // Get address data
+        const currentAddress = addresses.find(a => a.id === selectedAddressId);
+        if (!currentAddress) return;
+
+        const weight = calculateTotalWeight();
+
+        // Create candidates (Subdistrict -> District)
+        const candidates = buildDestinationCandidates(currentAddress);
+        if (candidates.length === 0) {
+            setShippingError('Alamat belum lengkap (Kecamatan/Kelurahan tidak ditemukan)');
             return;
         }
 
-        const calculateShipping = async () => {
+        // Unique key for preventing loops
+        const primaryCandidateId = candidates[0].id;
+        const calcKey = `${selectedCourier.code}_${primaryCandidateId}_${weight}`;
+
+        if (lastShippingCalcRef.current === calcKey) return;
+        lastShippingCalcRef.current = calcKey;
+
+        const calculate = async () => {
             setLoadingShipping(true);
             setShippingError('');
 
+            let resolved = false;
+
             try {
-                // Origin: Banjarmasin city ID (same as CheckoutPage)
-                const origin = '2425';
-                const weight = 1000; // Default 1kg
+                // Try each candidate (Subdistrict first, then District)
+                for (const candidate of candidates) {
+                    console.log(`🚚 Trying shipping calculation: ${selectedCourier.code} to ${candidate.label} (${candidate.id})`);
 
-                console.log(`🚚 Calculating shipping (cached): ${selectedCourier.code} to ${selectedCityId}`);
+                    try {
+                        const response = await fetch('/api/rajaongkir/cost', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                origin: '2425', // Banjarmasin
+                                destination: candidate.id,
+                                weight: weight,
+                                courier: selectedCourier.code,
+                                price: 'lowest'
+                            })
+                        });
 
-                // Call RajaOngkir CACHED API (same as CheckoutPage for cache hit)
-                const response = await fetch('/api/rajaongkir/cost-cached', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        origin: origin,
-                        destination: selectedCityId,
-                        weight: weight,
-                        courier: selectedCourier.code,
-                        price: 'lowest'
-                    })
-                });
+                        if (!response.ok) continue;
 
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.status}`);
+                        const data = await response.json();
+                        if (data.meta?.status === 'success' && data.data?.length > 0) {
+                            // Found valid results!
+                            const cheapest = data.data.reduce((min: any, r: any) =>
+                                (r.price || r.cost) < (min.price || min.cost) ? r : min, data.data[0]);
+
+                            const cost = cheapest.price || cheapest.cost || 0;
+
+                            // Batch update state
+                            setFormData(prev => ({
+                                ...prev,
+                                shippingCost: cost
+                            }));
+                            setShippingService(cheapest.service || cheapest.service_name || '');
+                            setShippingETD(cheapest.etd || '');
+
+                            console.log(`✅ Shipping found using ${candidate.label}: ${cost}`);
+                            resolved = true;
+                            break; // Stop checking other candidates
+                        }
+                    } catch (e) {
+                        console.warn(`Failed calc for ${candidate.label}:`, e);
+                    }
                 }
 
-                const data = await response.json();
-
-                if (data.meta?.status === 'success' && data.data?.length > 0) {
-                    // Get cheapest option
-                    const cheapest = data.data.reduce((min: any, r: any) =>
-                        (r.price || r.cost) < (min.price || min.cost) ? r : min, data.data[0]);
-
-                    const cost = cheapest.price || cheapest.cost || 0;
-                    setFormData(prev => ({ ...prev, shippingCost: cost }));
-                    setShippingService(cheapest.service || cheapest.service_name || '');
-                    setShippingETD(cheapest.etd || '');
-                    console.log(`✅ Shipping cost: ${cost} (${cheapest.service})`);
-                } else {
-                    setShippingError('Tidak ada layanan tersedia');
+                if (!resolved) {
+                    setShippingError('Tidak ada layanan pengiriman tersedia untuk lokasi ini');
+                    setFormData(prev => ({ ...prev, shippingCost: 0 }));
                 }
-            } catch (error: any) {
-                console.error('❌ Shipping calculation failed:', error);
-                setShippingError('Gagal hitung ongkir - isi manual');
+
             } finally {
                 setLoadingShipping(false);
             }
         };
 
-        calculateShipping();
-    }, [selectedCityId, formData.courier]);
+        // Debounce
+        const timer = setTimeout(calculate, 300);
+        return () => clearTimeout(timer);
+
+    }, [formData.courier, selectedAddressId, addresses]); // Dependencies match CheckoutPage logic more closely
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
