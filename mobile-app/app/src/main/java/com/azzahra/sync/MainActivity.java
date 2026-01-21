@@ -246,13 +246,6 @@ public class MainActivity extends AppCompatActivity {
         webView.loadUrl(savedUrl);
     }
 
-    private void printText(String text) {
-        if (printerManager.isConnected()) {
-            try { printerManager.print(text); } catch (Exception e) {}
-        } else {
-            Toast.makeText(this, "Printer belum konek!", Toast.LENGTH_SHORT).show();
-        }
-    }
 
     private void checkUserRole() {
         String uid = FirebaseAuth.getInstance().getUid();
@@ -300,7 +293,51 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
-    @Override protected void onResume() { super.onResume(); checkPermissions(); IntentFilter f = new IntentFilter("com.azzahra.sync.NEW_LOG"); if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) registerReceiver(logReceiver, f, Context.RECEIVER_EXPORTED); else registerReceiver(logReceiver, f); }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        checkPermissions();
+        IntentFilter f = new IntentFilter("com.azzahra.sync.NEW_LOG");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) registerReceiver(logReceiver, f, Context.RECEIVER_EXPORTED);
+        else registerReceiver(logReceiver, f);
+
+        // Smart Auto-Connect: Hanya jika BELUM konek, supaya tidak spam command saat printing
+        if (printerManager != null && !printerManager.isConnected()) {
+            new android.os.Handler().postDelayed(() -> printerManager.autoConnect(), 1500);
+        }
+    }
+
+    private void printText(String text) {
+        if (!printerManager.isConnected()) {
+             printerManager.autoConnect();
+             Toast.makeText(this, "Menyambungkan Printer...", Toast.LENGTH_SHORT).show();
+             return;
+        }
+
+        new Thread(() -> {
+            try {
+                // 1. Initialize & Set Font B (42 chars/line) for WIDER layout
+                // ESC @ = Reset, ESC ! 1 = Font B (9x17)
+                printerManager.write(new byte[]{0x1B, 0x40, 0x1B, 0x21, 0x01});
+                Thread.sleep(200);
+
+                // 2. Buffer Logic: Split lines to prevent Buffer Overflow (Red Blinking)
+                String[] lines = text.split("\n");
+                for (String line : lines) {
+                    // Send line + newline using GBK
+                    printerManager.write((line + "\n").getBytes("GBK"));
+                    // Delay per line to let printer process
+                    Thread.sleep(50);
+                }
+
+                // 3. Feed & Reset Font
+                printerManager.write(new byte[]{0x0A, 0x0A, 0x0A});
+                printerManager.write(new byte[]{0x1B, 0x21, 0x00}); // Reset to Normal
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
     @Override protected void onPause() { super.onPause(); unregisterReceiver(logReceiver); }
     private void checkPermissions() { boolean listenerOk = NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName()); statusIndicator.setBackgroundResource(listenerOk ? R.drawable.circle_green : R.drawable.circle_red); }
     private static class AppInfo { String name, packageName; Drawable icon; boolean selected; AppInfo(String n, String p, Drawable i, boolean s) { this.name = n; this.packageName = p; this.icon = i; this.selected = s; } }

@@ -46,8 +46,13 @@ public class BluetoothPrinterManager {
         outputStream.write(new byte[]{0x1B, 0x40});
         // Print Text
         outputStream.write(text.getBytes("GBK"));
-        // Feed Paper (3 lines)
         outputStream.write(new byte[]{0x0A, 0x0A, 0x0A});
+        outputStream.flush();
+    }
+
+    public void write(byte[] data) throws IOException {
+        if (outputStream == null) throw new IOException("Printer not connected");
+        outputStream.write(data);
         outputStream.flush();
     }
 

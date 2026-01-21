@@ -403,13 +403,13 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       const notaText = [
         headerTitle, // Title first (Store Name or Dropship Name)
         headerPhone,
-        '--------------------------------',
-        `Kpd    : ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
+        '------------------------------------------', // 42 chars for Font B
+        `Kpd    : ${order.shippingInfo?.name?.substring(0, 25) || order.userName?.substring(0, 25) || '-'}`,
         `Telp   : ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
-        `Alamat : ${fullAddress.substring(0, 100)}`, // Limit address length
-        '--------------------------------',
+        `Alamat : ${fullAddress.substring(0, 120)}`, // Limit address length
+        '------------------------------------------',
         itemsText,
-        '--------------------------------',
+        '------------------------------------------',
         `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
         `Order ID  : #${order.id}\n`
       ].filter(Boolean).join('\n');
@@ -482,13 +482,13 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           return [
             headerTitle,
             headerPhone,
-            '--------------------------------',
-            `Kpd    : ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
+            '------------------------------------------',
+            `Kpd    : ${order.shippingInfo?.name?.substring(0, 25) || order.userName?.substring(0, 25) || '-'}`,
             `Telp   : ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
-            `Alamat : ${fullAddress.substring(0, 100)}`,
-            '--------------------------------',
+            `Alamat : ${fullAddress.substring(0, 120)}`,
+            '------------------------------------------',
             itemsText,
-            '--------------------------------',
+            '------------------------------------------',
             `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
             `Order ID  : #${order.id}`,
             '\n\n' // Separator per order
