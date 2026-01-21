@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Loader2, AlertCircle } from 'lucide-react';
+import { MapPin, Loader2 } from 'lucide-react';
 
 // Types for address data
 interface Province {
@@ -146,8 +146,6 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [loadingSubdistricts, setLoadingSubdistricts] = useState(false);
-  const [error, setError] = useState('');
-
   const [errors, setErrors] = useState<Partial<Address>>({});
 
   // In-memory cache to reduce API calls within browser session
@@ -496,15 +494,6 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <div className="flex items-center text-red-800">
-            <AlertCircle className="w-4 h-4 mr-2" />
-            <span className="text-sm">{error}</span>
-          </div>
-        </div>
-      )}
-
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Nama Lengkap *

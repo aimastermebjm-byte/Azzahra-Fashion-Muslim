@@ -112,24 +112,18 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
         // yang akan otomatis mendeteksi subdistrict/district dari address object
         // Tidak perlu set manual destId disini.
 
-        // Build address string from available fields, filter out undefined/empty values
-        const addressParts = [
-            address.address || address.fullAddress || address.addressLine || address.detail || '',
-            address.subDistrict || address.kelurahan || '',
-            address.district || address.kecamatan || '',
-            address.city || address.kota || address.regency || '',
-            address.province || address.provinsi || ''
-        ].filter(part => part && part.trim() !== '');
+        // ✅ FIX: Only take the street/detail part (fullAddress or address)
+        // Do NOT append subdistrict, city, etc. because they are already in dedicated fields
+        // and the print generator will append them manually.
+        const streetDetail = address.fullAddress || address.address || address.addressLine || address.detail || '';
 
-        const fullAddressString = addressParts.join(', ');
-
-        // Update form data - shippingCost akan di-update oleh useEffect setelah calculate
+        // Update form data
         setFormData(prev => ({
             ...prev,
             name: address.recipientName || address.name || address.label || '',
             phone: address.phone || address.phoneNumber || '',
-            address: fullAddressString,
-            shippingCost: 0 // Reset, akan di-calculate otomatis oleh useEffect
+            address: streetDetail,
+            shippingCost: 0 // Reset, will be calculated by effect
         }));
 
         setShippingError('');
