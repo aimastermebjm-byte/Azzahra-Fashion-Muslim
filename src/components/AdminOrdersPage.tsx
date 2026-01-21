@@ -374,14 +374,19 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
 
       // Determine Header based on Dropship status (Robust Check)
-      // If dropshipName exists, use it regardless of isDropship flag
-      const isDropship = order.isDropship || (order.dropshipName && order.dropshipName.length > 0);
-      const headerTitle = isDropship && order.dropshipName
-        ? order.dropshipName.toUpperCase().substring(0, 30)
+      // Check both nested shippingInfo and top-level for compatibility
+      const isDropship = order.shippingInfo?.isDropship || order.isDropship ||
+        (order.shippingInfo?.dropshipName && order.shippingInfo.dropshipName.length > 0) ||
+        (order.dropshipName && order.dropshipName.length > 0);
+
+      const dName = order.shippingInfo?.dropshipName || order.dropshipName;
+      const headerTitle = isDropship && dName
+        ? dName.toUpperCase().substring(0, 30)
         : 'AZZAHRA FASHION MUSLIM';
 
-      const headerPhone = isDropship && order.dropshipPhone
-        ? `\nTelepon: ${order.dropshipPhone}`
+      const dPhone = order.shippingInfo?.dropshipPhone || order.dropshipPhone;
+      const headerPhone = isDropship && dPhone
+        ? `\nTelepon: ${dPhone}`
         : '';
 
       const notaText = [
@@ -454,13 +459,18 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             return `${pName} x${item.quantity}`;
           }).join('\n') || '-';
 
-          const isDropship = order.isDropship || (order.dropshipName && order.dropshipName.length > 0);
-          const headerTitle = isDropship && order.dropshipName
-            ? order.dropshipName.toUpperCase().substring(0, 30)
+          const isDropship = order.shippingInfo?.isDropship || order.isDropship ||
+            (order.shippingInfo?.dropshipName && order.shippingInfo.dropshipName.length > 0) ||
+            (order.dropshipName && order.dropshipName.length > 0);
+
+          const dName = order.shippingInfo?.dropshipName || order.dropshipName;
+          const headerTitle = isDropship && dName
+            ? dName.toUpperCase().substring(0, 30)
             : 'AZZAHRA FASHION MUSLIM';
 
-          const headerPhone = isDropship && order.dropshipPhone
-            ? `\nTelepon: ${order.dropshipPhone}`
+          const dPhone = order.shippingInfo?.dropshipPhone || order.dropshipPhone;
+          const headerPhone = isDropship && dPhone
+            ? `\nTelepon: ${dPhone}`
             : '';
 
           return [
