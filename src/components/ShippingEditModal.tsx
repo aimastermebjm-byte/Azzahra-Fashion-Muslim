@@ -306,6 +306,9 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
                 // Calculate new final total for each order
                 const newFinalTotal = (targetOrder.totalAmount || 0) + formData.shippingCost - (targetOrder.voucherDiscount || 0);
 
+                // Get full address details to save
+                const selectedAddr = addresses.find(a => a.id === selectedAddressId);
+
                 // Update order in Firestore
                 await ordersService.updateOrder(targetOrder.id, {
                     shippingInfo: {
@@ -318,7 +321,13 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
                         dropshipName: formData.dropshipName,
                         dropshipPhone: formData.dropshipPhone,
                         shippingService: '',
-                        shippingETD: ''
+                        shippingETD: '',
+                        // Save FULL address details for Print Label
+                        provinceName: selectedAddr?.province || selectedAddr?.provinsi || '',
+                        cityName: selectedAddr?.city || selectedAddr?.kota || selectedAddr?.regency || '',
+                        district: selectedAddr?.district || selectedAddr?.kecamatan || '',
+                        subdistrict: selectedAddr?.subDistrict || selectedAddr?.kelurahan || '',
+                        postalCode: selectedAddr?.postalCode || ''
                     },
                     shippingCost: formData.shippingCost,
                     finalTotal: Math.max(0, newFinalTotal),

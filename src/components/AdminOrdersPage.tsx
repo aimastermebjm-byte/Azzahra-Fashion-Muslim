@@ -431,6 +431,48 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       return;
     }
 
+    // Check if on mobile (Android) - try custom URL scheme first
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      // Aggregate all orders into one long text
+      const bulkText = eligible.map(order => {
+        const fullAddress = [
+          order.shippingInfo?.address,
+          order.shippingInfo?.subdistrict ? `Kel. ${order.shippingInfo.subdistrict}` : '',
+          order.shippingInfo?.district ? `Kec. ${order.shippingInfo.district}` : '',
+          order.shippingInfo?.cityName || '',
+          order.shippingInfo?.provinceName
+        ].filter(Boolean).join(', ');
+
+        return [
+          '================================',
+          '         AZZAHRA FASHION        ',
+          '================================',
+          `Kepada : ${order.shippingInfo?.name || order.userName || '-'}`,
+          `Telp   : ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
+          `Alamat : ${fullAddress || '-'}`,
+          '--------------------------------',
+          `Item   : ${order.items?.map((item: any) => `${item.productName} x${item.quantity}`).join(', ') || '-'}`,
+          `Ekspedisi: ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
+          '--------------------------------',
+          `Order #${order.id}`,
+          '================================',
+          '\n\n' // Add spacing between orders
+        ].join('\n');
+      }).join('\n');
+
+      // Use custom URL scheme for Android native app with Base64 encoding
+      const base64Data = btoa(bulkText);
+      const printUrl = `azzahra-print://print?data=${base64Data}`;
+
+      // Attempt to open deep link
+      window.location.href = printUrl;
+      showModernAlert('Print', `Mencetak ${eligible.length} label...`, 'success');
+      return;
+    }
+
+    // Fallback to browser print for desktop/browser
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       showModernAlert('Error', 'Pop-up terblokir. Izinkan pop-up untuk mencetak label.', 'error');

@@ -55,14 +55,44 @@ public class BluetoothPrinterManager {
         return socket != null && socket.isConnected();
     }
 
+    // Listener Interface
+    public interface StatusListener {
+        void onStatusChanged(String status);
+    }
+    private StatusListener listener;
+
+    public void setListener(StatusListener listener) {
+        this.listener = listener;
+    }
+
+    private void updateStatus(String status) {
+        if (listener != null) listener.onStatusChanged(status);
+    }
+
     public void autoConnect() {
         String lastAddr = prefs.getString("last_address", null);
         if (lastAddr != null && !isConnected()) {
             new Thread(() -> {
-                try { connect(lastAddr); } catch (Exception e) {
-                    Log.e("Printer", "AutoConnect failed: " + e.getMessage());
+                updateStatus("Mencoba Auto-Connect...");
+                int retry = 0;
+                while (retry < 3) {
+                    try {
+                        connect(lastAddr);
+                        if (isConnected()) {
+                            updateStatus("Terhubung ke Printer ✅");
+                            return; // Success
+                        }
+                    } catch (Exception e) {
+                        retry++;
+                        updateStatus("Gagal Connect (" + retry + "/3)...");
+                        try { Thread.sleep(1000); } catch (Exception ignored) {}
+                    }
                 }
+                updateStatus("Gagal Auto-Connect. Cek Printer.");
             }).start();
+        } else {
+            if (isConnected()) updateStatus("Printer Sudah Terhubung ✅");
+            else updateStatus("Belum ada Printer Tersimpan");
         }
     }
 }

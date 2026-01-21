@@ -104,7 +104,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         initUI();
         initTabs();
-        initWebView();
         checkUserRole();
 
         // Handle Deep Link (azzahra-print://) if app opened via link
@@ -112,9 +111,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        // Force auto-connect every time app comes to foreground
+        if (printerManager != null && !printerManager.isConnected()) {
+            printerManager.autoConnect();
+        }
+    }
+
+    @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        
+        // Force auto-connect when app triggered by deep link
+        if (printerManager != null && !printerManager.isConnected()) {
+            printerManager.autoConnect();
+        }
+        
         handleIntent(intent);
     }
 
@@ -143,6 +157,11 @@ public class MainActivity extends AppCompatActivity {
         webView = findViewById(R.id.webView);
         webProgress = findViewById(R.id.webProgress);
         etWebUrl = findViewById(R.id.etWebUrl);
+        
+        // LOAD SAVED URL
+        String savedUrl = prefs.getString("pwa_url", "https://azzahra-fashion-muslim.vercel.app");
+        etWebUrl.setText(savedUrl);
+
         btnSaveUrl = findViewById(R.id.btnSaveUrl);
         btnLogout = findViewById(R.id.btnLogout);
         btnSimulatePwa = findViewById(R.id.btnSimulatePwa);
@@ -159,6 +178,17 @@ public class MainActivity extends AppCompatActivity {
 
         printerManager = new BluetoothPrinterManager(this);
         printBridge = new PrintBridge(this, printerManager);
+        
+        // Listen for Printer Status & Update UI
+        printerManager.setListener(status -> {
+            runOnUiThread(() -> {
+                txtPrinterStatus.setText(status);
+                if (status.contains("Terhubung")) {
+                    Toast.makeText(MainActivity.this, "Printer Siap! 🖨️", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
         printerManager.autoConnect();
 
         btnGrantNotif.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)));
@@ -222,37 +252,12 @@ public class MainActivity extends AppCompatActivity {
     private void initTabs() {
         tabHost = findViewById(android.R.id.tabhost);
         tabHost.setup();
-        tabHost.addTab(tabHost.newTabSpec("Web").setIndicator("HOME").setContent(R.id.tabWeb));
+        // HOME (WebView) DIHILANGKAN - User pakai Chrome saja untuk akses web
         tabHost.addTab(tabHost.newTabSpec("Sync").setIndicator("SYNC").setContent(R.id.tabSync));
         tabHost.addTab(tabHost.newTabSpec("Settings").setIndicator("SETTINGS").setContent(R.id.tabPrinter));
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
-    private void initWebView() {
-        WebSettings ws = webView.getSettings();
-        ws.setJavaScriptEnabled(true);
-        ws.setDomStorageEnabled(true);
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                if (url != null && url.startsWith("azzahra-print://")) {
-                    handleCustomPrintScheme(url);
-                    return true;
-                }
-                return false;
-            }
-        });
-        webView.setWebChromeClient(new WebChromeClient() {
-            public void onProgressChanged(WebView view, int newProgress) {
-                webProgress.setProgress(newProgress);
-                webProgress.setVisibility(newProgress == 100 ? View.GONE : View.VISIBLE);
-            }
-        });
-        webView.addJavascriptInterface(printBridge, "AndroidPrint");
-        String savedUrl = prefs.getString("pwa_url", "https://azzahra-fashion-muslim.vercel.app");
-        etWebUrl.setText(savedUrl);
-        webView.loadUrl(savedUrl);
-    }
+    // initWebView removed - Simplify App to Printer Service
 
     private void checkUserRole() {
         String uid = FirebaseAuth.getInstance().getUid();
@@ -273,14 +278,23 @@ public class MainActivity extends AppCompatActivity {
                 byte[] decodedBytes = android.util.Base64.decode(data, android.util.Base64.DEFAULT);
                 String printText = new String(decodedBytes, "UTF-8");
                 
+                // Jika belum connect, coba autoConnect dulu & beri jeda sedikit
+                if (!printerManager.isConnected()) {
+                    printerManager.autoConnect();
+                    // Jeda 1.5 detik tunggu koneksi
+                    try { Thread.sleep(1500); } catch (InterruptedException e) {}
+                }
+
                 // Print directly using PrinterManager
                 if (printerManager.isConnected()) {
                     printerManager.print(printText);
                     Toast.makeText(this, "Mencetak...", Toast.LENGTH_SHORT).show();
+                    // Optional: Kembali ke home/minimize setelah print (biar user balik ke Chrome)
+                    moveTaskToBack(true);
                 } else {
-                    Toast.makeText(this, "Printer belum terkoneksi!", Toast.LENGTH_LONG).show();
-                    // Auto try to connect if configured
-                    printerManager.autoConnect();
+                    Toast.makeText(this, "Gagal Connect Printer. Coba lagi!", Toast.LENGTH_LONG).show();
+                    // Buka tab setting biar user bisa connect manual kalau gagal
+                    tabHost.setCurrentTab(1); // Index 1 = Settings Tab (karena Tab 0 = Sync)
                 }
             }
         } catch (Exception e) {

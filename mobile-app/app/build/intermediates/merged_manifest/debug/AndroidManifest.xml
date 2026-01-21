@@ -77,7 +77,8 @@
         <activity
             android:name="com.azzahra.sync.MainActivity"
             android:exported="true"
-            android:label="@string/app_name" >
+            android:label="@string/app_name"
+            android:launchMode="singleTask" >
 
             <!-- JEMBATAN CETAK DARI PWA / WEBSITE -->
             <intent-filter>
