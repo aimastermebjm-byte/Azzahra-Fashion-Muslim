@@ -302,7 +302,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     if (formattedPhone.startsWith('0')) formattedPhone = '62' + formattedPhone.substring(1);
     if (!formattedPhone.startsWith('62')) formattedPhone = '62' + formattedPhone;
 
-    const message = `Halo Kak ${order.userName || 'Pelanggan'},\n\nBerikut tagihan untuk pesanan Kakak di Azzahra Fashion Muslim:\nNo. Pesanan: *#${order.id}*\nTotal Tagihan: *Rp ${order.finalTotal.toLocaleString('id-ID')}*\n\nMohon segera melakukan pembayaran ya Kak. Terima kasih `;
+    const message = `Halo Kak ${order.userName || 'Pelanggan'},\n\nBerikut tagihan untuk pesanan Kakak di Azzahra Fashion Muslim:\nNo. Pesanan: *#${order.id}*\nTotal Tagihan: *Rp ${order.finalTotal.toLocaleString('id-ID')}*\n\nMohon segera melakukan pembayaran ya Kak. Terima kasih`;
 
     window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
@@ -339,7 +339,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     }).join('\n');
 
     const header = `Halo Kak ${firstOrder.userName || 'Pelanggan'},\n\nBerikut rekap tagihan untuk ${eligible.length} pesanan Kakak di Azzahra Fashion Muslim:`;
-    const footer = `*TOTAL TAGIHAN: Rp ${totalBill.toLocaleString('id-ID')}*\n\nMohon segera melakukan pembayaran ya Kak. Terima kasih `;
+    const footer = `*TOTAL TAGIHAN: Rp ${totalBill.toLocaleString('id-ID')}*\n\nMohon segera melakukan pembayaran ya Kak. Terima kasih`;
 
     // Construct full message and encode
     const fullMessage = `${header}\n\n${orderList}\n\n${footer}`;
