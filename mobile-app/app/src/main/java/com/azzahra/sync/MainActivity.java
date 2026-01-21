@@ -158,7 +158,7 @@ public class MainActivity extends AppCompatActivity {
         webProgress = findViewById(R.id.webProgress);
         etWebUrl = findViewById(R.id.etWebUrl);
         
-        // LOAD SAVED URL
+        // LOAD SAVED URL (Local First, then Sync)
         String savedUrl = prefs.getString("pwa_url", "https://azzahra-fashion-muslim.vercel.app");
         etWebUrl.setText(savedUrl);
 
@@ -190,6 +190,9 @@ public class MainActivity extends AppCompatActivity {
         });
 
         printerManager.autoConnect();
+        
+        // SYNC CONFIG FROM FIRESTORE (PERMANENT URL)
+        syncAppConfig();
 
         btnGrantNotif.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)));
         btnBatteryIgnore.setOnClickListener(v -> {
@@ -206,14 +209,15 @@ public class MainActivity extends AppCompatActivity {
         webView.addJavascriptInterface(new WebAppInterface(this), "AndroidPrint");
         webView.setWebViewClient(new WebViewClient()); // Default client
         
-        // Load initial URL if available
-        String savedUrl = prefs.getString("pwa_url", "https://azzahra-fashion-muslim.vercel.app");
+        // Load initial URL
         webView.loadUrl(savedUrl);
 
         btnSaveUrl.setOnClickListener(v -> {
             String url = etWebUrl.getText().toString().trim();
             if (!url.startsWith("http")) url = "https://" + url;
             prefs.edit().putString("pwa_url", url).apply();
+            // Also update global config if admin
+            updateGlobalConfig(url);
             webView.loadUrl(url);
             Toast.makeText(this, "URL Saved", Toast.LENGTH_SHORT).show();
         });
@@ -264,13 +268,66 @@ public class MainActivity extends AppCompatActivity {
     private void initTabs() {
         tabHost = findViewById(android.R.id.tabhost);
         tabHost.setup();
-        // Restore HOME (WebView) because JS Interface works ONLY inside WebView
-        tabHost.addTab(tabHost.newTabSpec("Web").setIndicator("WEB").setContent(R.id.tabHome)); // Assuming tabHome exists in XML layout
+        // Web tab hidden as per user request (Background Service Mode)
+        // tabHost.addTab(tabHost.newTabSpec("Web").setIndicator("WEB").setContent(R.id.tabHome));
         tabHost.addTab(tabHost.newTabSpec("Sync").setIndicator("SYNC").setContent(R.id.tabSync));
         tabHost.addTab(tabHost.newTabSpec("Settings").setIndicator("SETTINGS").setContent(R.id.tabPrinter));
     }
 
-    // initWebView removed - Simplify App to Printer Service
+    private void handleHandler(Intent intent) {
+       handleIntent(intent);
+    }
+    
+    // Fixed: Combined handleIntent logic
+    private void handleIntent(Intent intent) {
+        if (Intent.ACTION_VIEW.equals(intent.getAction()) && intent.getData() != null) {
+            String url = intent.getData().toString();
+            if (url.startsWith("azzahra-print://print_job")) {
+                handleCloudPrintJob(intent.getData());
+            } else if (url.startsWith("azzahra-print://")) {
+                handleCustomPrintScheme(url);
+            }
+        }
+    }
+
+    // NEW: Handle Cloud Print Job (Firestore)
+    private void handleCloudPrintJob(Uri uri) {
+        String jobId = uri.getQueryParameter("id");
+        if (jobId == null) return;
+
+        Toast.makeText(this, "Menerima Job Print...", Toast.LENGTH_SHORT).show();
+
+        FirebaseFirestore.getInstance().collection("print_jobs").document(jobId).get()
+            .addOnSuccessListener(documentSnapshot -> {
+                if (documentSnapshot.exists()) {
+                    String content = documentSnapshot.getString("content");
+                    if (content != null) {
+                        printText(content);
+                        // Delete job after success
+                        FirebaseFirestore.getInstance().collection("print_jobs").document(jobId).delete();
+                    }
+                } else {
+                    Toast.makeText(this, "Expired Print Job", Toast.LENGTH_SHORT).show();
+                }
+            })
+            .addOnFailureListener(e -> Toast.makeText(this, "Gagal Ambil Print Job: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+    private void printText(String text) {
+        if (!printerManager.isConnected()) {
+            printerManager.autoConnect();
+            try { Thread.sleep(1500); } catch (InterruptedException e) {}
+        }
+
+        if (printerManager.isConnected()) {
+            printerManager.print(text);
+            Toast.makeText(this, "Mencetak...", Toast.LENGTH_SHORT).show();
+            moveTaskToBack(true); // Minimize app back to background
+        } else {
+            Toast.makeText(this, "Printer Belum Konek!", Toast.LENGTH_LONG).show();
+            tabHost.setCurrentTab(1); // Go to Settings
+        }
+    }
 
     private void checkUserRole() {
         String uid = FirebaseAuth.getInstance().getUid();
@@ -278,7 +335,12 @@ public class MainActivity extends AppCompatActivity {
         FirebaseFirestore.getInstance().collection("users").document(uid).get()
             .addOnSuccessListener(doc -> {
                 String role = doc.getString("role");
-                if ("admin".equalsIgnoreCase(role)) tabHost.getTabWidget().getChildAt(1).setVisibility(View.GONE);
+                if ("admin".equalsIgnoreCase(role)) {
+                   // Adjust tab index since Web tab is gone
+                   if (tabHost.getTabWidget().getChildCount() > 0) {
+                       // tabHost.getTabWidget().getChildAt(0).setVisibility(View.GONE); // Maybe hide Sync? No, keep it.
+                   }
+                }
             });
     }
 
@@ -287,28 +349,9 @@ public class MainActivity extends AppCompatActivity {
             Uri uri = Uri.parse(url);
             String data = uri.getQueryParameter("data");
             if (data != null) {
-                // Decode Base64 data (More robust than plain URL decode)
                 byte[] decodedBytes = android.util.Base64.decode(data, android.util.Base64.DEFAULT);
                 String printText = new String(decodedBytes, "UTF-8");
-                
-                // Jika belum connect, coba autoConnect dulu & beri jeda sedikit
-                if (!printerManager.isConnected()) {
-                    printerManager.autoConnect();
-                    // Jeda 1.5 detik tunggu koneksi
-                    try { Thread.sleep(1500); } catch (InterruptedException e) {}
-                }
-
-                // Print directly using PrinterManager
-                if (printerManager.isConnected()) {
-                    printerManager.print(printText);
-                    Toast.makeText(this, "Mencetak...", Toast.LENGTH_SHORT).show();
-                    // Optional: Kembali ke home/minimize setelah print (biar user balik ke Chrome)
-                    moveTaskToBack(true);
-                } else {
-                    Toast.makeText(this, "Gagal Connect Printer. Coba lagi!", Toast.LENGTH_LONG).show();
-                    // Buka tab setting biar user bisa connect manual kalau gagal
-                    tabHost.setCurrentTab(1); // Index 1 = Settings Tab (karena Tab 0 = Sync)
-                }
+                printText(printText);
             }
         } catch (Exception e) {
             Toast.makeText(this, "Error Print: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -351,7 +394,28 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
-    @Override protected void onResume() { super.onResume(); checkPermissions(); IntentFilter f = new IntentFilter("com.azzahra.sync.NEW_LOG"); if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) registerReceiver(logReceiver, f, Context.RECEIVER_EXPORTED); else registerReceiver(logReceiver, f); }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        checkPermissions();
+        
+        IntentFilter f = new IntentFilter("com.azzahra.sync.NEW_LOG");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(logReceiver, f, Context.RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(logReceiver, f);
+        }
+
+        // AGGRESSIVE PRINTER CONNECT (Retry if not connected)
+        printerManager.autoConnect();
+        new android.os.Handler().postDelayed(() -> {
+             String status = txtPrinterStatus.getText().toString();
+             if (!status.toLowerCase().contains("terhubung")) {
+                 // Try auto-connect again if failed
+                 printerManager.autoConnect();
+             }
+        }, 3000); 
+    }
     @Override protected void onPause() { super.onPause(); unregisterReceiver(logReceiver); }
     private void checkPermissions() { boolean listenerOk = NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName()); statusIndicator.setBackgroundResource(listenerOk ? R.drawable.circle_green : R.drawable.circle_red); }
     private static class AppInfo { String name, packageName; Drawable icon; boolean selected; AppInfo(String n, String p, Drawable i, boolean s) { this.name = n; this.packageName = p; this.icon = i; this.selected = s; } }
@@ -370,6 +434,55 @@ public class MainActivity extends AppCompatActivity {
             cb.setOnCheckedChangeListener(null); cb.setChecked(selectedPackages.contains(app.packageName));
             cb.setOnCheckedChangeListener((bv, isChecked) -> { if (isChecked) selectedPackages.add(app.packageName); else selectedPackages.remove(app.packageName); prefs.edit().putStringSet("selected_packages", new HashSet<>(selectedPackages)).apply(); });
             v.setOnClickListener(view -> cb.performClick()); return v;
+        }
+    }
+    
+    // PWA CONFIG SYNC
+    private void syncAppConfig() {
+        FirebaseFirestore.getInstance().collection("settings").document("app_config")
+                .get().addOnSuccessListener(snapshot -> {
+                    if (snapshot.exists()) {
+                        String pwaUrl = snapshot.getString("pwa_url");
+                        if (pwaUrl != null && !pwaUrl.startsWith("http")) pwaUrl = "https://" + pwaUrl;
+                        
+                        if (pwaUrl != null && !pwaUrl.isEmpty()) {
+                            prefs.edit().putString("pwa_url", pwaUrl).apply();
+                            String finalPwaUrl = pwaUrl;
+                            runOnUiThread(() -> {
+                                etWebUrl.setText(finalPwaUrl);
+                                webView.loadUrl(finalPwaUrl); 
+                            });
+                        }
+                    }
+                }).addOnFailureListener(e -> Toast.makeText(this, "Sync Config Failed", Toast.LENGTH_SHORT).show());
+    }
+
+    private void updateGlobalConfig(String url) {
+        java.util.Map<String, Object> data = new java.util.HashMap<>();
+        data.put("pwa_url", url);
+        FirebaseFirestore.getInstance().collection("settings").document("app_config")
+                .set(data, com.google.firebase.firestore.SetOptions.merge());
+    }
+
+    // Helper to print text
+    public void printTextHelper(String text) {
+        printText(text);
+    }
+    
+    // Inner class for JS Interface (kept for compatibility in case Web Tab is re-enabled)
+    public class WebAppInterface {
+        Context mContext;
+        WebAppInterface(Context c) { mContext = c; }
+
+        @android.webkit.JavascriptInterface
+        public void print(String base64Data) {
+            try {
+                byte[] decodedBytes = android.util.Base64.decode(base64Data, android.util.Base64.DEFAULT);
+                String printText = new String(decodedBytes, "UTF-8");
+                printText(printText); // Re-use the main print method
+            } catch (Exception e) {
+                Toast.makeText(mContext, "Print Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }

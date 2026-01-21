@@ -399,11 +399,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
       const headerPhone = isDropship && order.dropshipPhone
         ? `\nTelp: ${order.dropshipPhone}`
-        : '';
-
-      const notaText = [
-      const notaText = [
-        headerTitle + headerPhone,
+      const notaText = [headerPhone,
         '----------------', // Minimal separator
         `Kpd: ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
         `Tel: ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
@@ -411,53 +407,51 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         '----------------',
         itemsText,
         '----------------',
-        `Eks: ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
-        `#${order.id}\n` // Single newline
-      ].join('\n');
+        `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
+        `Order ID  : #${order.id}\n` // Single newline
       ].join('\n');
 
-// Use custom URL scheme for Android native app with Base64 encoding (SafeArea)
-// btoa() encodes string to Base64, safe for URLs
-// Encode URI Component to ensure Base64 chars like '+' or '=' don't break URL parsing
-const base64Data = encodeURIComponent(btoa(notaText));
-const printUrl = `azzahra-print://print?data=${base64Data}`;
+      // Use custom URL scheme for Android native app with Base64 encoding (SafeArea)
+      // btoa() encodes string to Base64, safe for URLs
+      // Encode URI Component to ensure Base64 chars like '+' or '=' don't break URL parsing
+      const base64Data = encodeURIComponent(btoa(notaText));
+      const printUrl = `azzahra-print://print?data=${base64Data}`;
 
-// Attempt to open deep link
-window.location.href = printUrl;
-showModernAlert('Print', 'Mencetak label...', 'success');
-return;
+      // Attempt to open deep link
+      window.location.href = printUrl;
+      showModernAlert('Print', 'Mencetak label...', 'success');
+      return;
     }
 
-// Fallback to browser print for desktop/browser
-const printWindow = window.open('', '_blank');
-if (!printWindow) {
-  showModernAlert('Error', 'Pop-up terblokir. Izinkan pop-up untuk mencetak label.', 'error');
-  return;
-}
+    // Fallback to browser print for desktop/browser
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showModernAlert('Error', 'Pop-up terblokir. Izinkan pop-up untuk mencetak label.', 'error');
+      return;
+    }
 
-const htmlContent = generateShippingLabelHtml([order]);
-printWindow.document.write(htmlContent);
-printWindow.document.close();
+    const htmlContent = generateShippingLabelHtml([order]);
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
-//  NEW: Print Label Function (Bulk)
-const handleBulkPrintLabel = () => {
-  const selected = orders.filter(o => selectedOrderIds.includes(o.id));
-  // Filter only eligible orders (paid, processing, shipped, delivered)
-  const eligible = selected.filter(o => ['paid', 'processing', 'shipped', 'delivered'].includes(o.status));
+  //  NEW: Print Label Function (Bulk)
+  const handleBulkPrintLabel = async () => {
+    const selected = orders.filter(o => selectedOrderIds.includes(o.id));
+    // Filter only eligible orders (paid, processing, shipped, delivered)
+    const eligible = selected.filter(o => ['paid', 'processing', 'shipped', 'delivered'].includes(o.status));
 
-  if (eligible.length === 0) {
-    showModernAlert('Peringatan', 'Pilih pesanan yang sudah lunas/diproses untuk dicetak labelnya.', 'warning');
-    return;
-  }
+    if (eligible.length === 0) {
+      showModernAlert('Peringatan', 'Pilih pesanan yang sudah lunas/diproses untuk dicetak labelnya.', 'warning');
+      return;
+    }
 
-  // Check if on mobile (Android) - try custom URL scheme first
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    // Check if on mobile (Android) - try custom URL scheme first
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-  if (isMobile) {
-    // 1. JS INTERFACE (PRIORITY - UNLIMITED SIZE)
-    if ((window as any).AndroidPrint) {
+    if (isMobile) {
       try {
+        // STANDARD FULL FORMAT (Unlimited Size via Cloud Print)
         const bulkText = eligible.map(order => {
           const fullAddress = [
             order.shippingInfo?.address,
@@ -469,9 +463,13 @@ const handleBulkPrintLabel = () => {
 
           const itemsText = order.items?.map((item: any) => `${item.productName} x${item.quantity}`).join('\n') || '-';
 
-          const isDropship = order.isDropship;
-          const headerTitle = isDropship && order.dropshipName ? order.dropshipName.toUpperCase().substring(0, 35) : 'AZZAHRA FASHION MUSLIM';
-          const headerPhone = isDropship && order.dropshipPhone ? `\nTelp: ${order.dropshipPhone}` : '';
+          // Check dropship data in both order root (legacy) and shippingInfo (new)
+          const isDropship = order.isDropship || order.shippingInfo?.isDropship;
+          const dName = order.dropshipName || order.shippingInfo?.dropshipName;
+          const dPhone = order.dropshipPhone || order.shippingInfo?.dropshipPhone;
+
+          const headerTitle = isDropship && dName ? dName.toUpperCase().substring(0, 35) : 'AZZAHRA FASHION MUSLIM';
+          const headerPhone = isDropship && dPhone ? `\nTelp: ${dPhone}` : '';
 
           return [
             '--------------------------------',
@@ -489,64 +487,31 @@ const handleBulkPrintLabel = () => {
           ].join('\n');
         }).join('\n');
 
-        const base64Data = btoa(bulkText);
-        (window as any).AndroidPrint.print(base64Data);
-        showModernAlert('Print', `Mencetak ${eligible.length} label...`, 'success');
+        showModernAlert('Print', `Menyiapkan ${eligible.length} label (Cloud Print)...`, 'info');
+
+        // 1. Try JS Interface (Fastest - In-App Webview)
+        if ((window as any).AndroidPrint) {
+          const base64Data = btoa(bulkText);
+          (window as any).AndroidPrint.print(base64Data);
+          showModernAlert('Print', `Mencetak ${eligible.length} label via App...`, 'success');
+          return;
+        }
+
+        // 2. Fallback: Upload Print Job to Firestore (Chrome - Unlimited Size)
+        const jobId = await ordersService.createPrintJob(bulkText);
+
+        // Trigger App via Lightweight URL Scheme
+        window.location.href = `azzahra-print://print_job?id=${jobId}`;
+
+        setTimeout(() => {
+          showModernAlert('Print', `Perintah cetak ${eligible.length} label dikirim!`, 'success');
+        }, 1000);
         return;
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        console.error("Cloud Bulk Print Error", e);
+        showModernAlert('Error', 'Gagal memproses Cloud Print', 'error');
+      }
     }
-
-    // 2. FALLBACK URL SCHEME (COMPRESSED)
-    // Aggregate all orders into one compact text
-    // Optimized to stay within Android Intent transaction limit (~1MB total, ideally <500KB)
-    const bulkText = eligible.map(order => {
-      const fullAddress = [
-        order.shippingInfo?.address,
-        order.shippingInfo?.subdistrict ? `Kel. ${order.shippingInfo.subdistrict}` : '',
-        order.shippingInfo?.district ? `Kec. ${order.shippingInfo.district}` : '',
-        order.shippingInfo?.cityName || '',
-        order.shippingInfo?.provinceName
-      ].filter(Boolean).join(', ');
-
-      const itemsText = order.items?.map((item: any) => {
-        // Truncate long product names to 30 chars
-        const pName = item.productName.length > 30 ? item.productName.substring(0, 30) + '...' : item.productName;
-        return `${pName} x${item.quantity}`;
-      }).join('\n') || '-';
-
-      // Determine Header based on Dropship status
-      const isDropship = order.isDropship;
-      const headerTitle = isDropship && order.dropshipName
-        ? order.dropshipName.toUpperCase().substring(0, 30)
-        : 'AZZAHRA FASHION MUSLIM';
-
-      const headerPhone = isDropship && order.dropshipPhone
-        ? `\nTelp: ${order.dropshipPhone}`
-        : '';
-
-      return [
-        headerTitle + headerPhone,
-        '----------------',
-        `Kpd: ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
-        `Tel: ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
-        `Alm: ${fullAddress}`,
-        '----------------',
-        itemsText,
-        '----------------',
-        `Eks: ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
-        `#${order.id}`,
-        '----------------\n' // Single newline between orders
-      ].join('\n');
-    }).join('\n');
-
-    // Use custom URL scheme for Android native app with Base64 encoding
-    const base64Data = btoa(bulkText);
-    const printUrl = `azzahra-print://print?data=${base64Data}`;
-
-    // Attempt to open deep link
-    window.location.href = printUrl;
-    showModernAlert('Print', `Mencetak ${eligible.length} label...`, 'success');
-    return;
   }
 
   // Fallback to browser print for desktop/browser

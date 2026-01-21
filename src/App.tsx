@@ -844,8 +844,6 @@ function AppContent() {
       case 'admin-banner':
         return <AdminBannerPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-master':
-        return <AdminFinancialPage onBack={() => setCurrentPage('account')} user={user} />;
-      case 'admin-master':
         return <AdminMasterDataPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-stock-opname':
         return <AdminStockOpnamePage onBack={() => setCurrentPage('account')} user={user} />;

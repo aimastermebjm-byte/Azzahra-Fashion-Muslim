@@ -44,6 +44,23 @@ export interface Order {
 
 class OrdersService {
   private readonly collection = 'orders';
+  private readonly printJobsCollection = 'print_jobs';
+
+  // Create temporary print job for Cloud Printing (Android Bridge)
+  async createPrintJob(text: string): Promise<string> {
+    try {
+      const docRef = doc(collection(db, this.printJobsCollection));
+      await setDoc(docRef, {
+        content: text,
+        createdAt: Timestamp.now(),
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60) // Auto-expire in 1 hour (optional cleanup policy)
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error('Error creating print job:', error);
+      throw error;
+    }
+  }
 
   // Create new order
   async createOrder(orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>): Promise<Order> {
