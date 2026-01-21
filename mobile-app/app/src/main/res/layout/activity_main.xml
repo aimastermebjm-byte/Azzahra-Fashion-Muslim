@@ -19,12 +19,13 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <!-- TAB 1: WEB VIEW (PWA) -->
+            <!-- TAB 1: WEB VIEW (PWA) - HIDDEN to prevent overlap -->
             <LinearLayout
                 android:id="@+id/tabWeb"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:visibility="gone">
                 
                 <ProgressBar
                     android:id="@+id/webProgress"
@@ -45,7 +46,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="16dp"
+                android:background="#FFFFFF">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -101,13 +103,14 @@
                     android:background="#EEEEEE"/>
             </LinearLayout>
 
-            <!-- TAB 3: SETTINGS -->
+            <!-- TAB 3: PRINTER SETTINGS -->
             <LinearLayout
                 android:id="@+id/tabPrinter"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="16dp"
+                android:background="#FFFFFF">
 
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="WEB &amp; PRINTER SETTINGS" android:textStyle="bold" android:layout_marginBottom="16dp"/>
 
