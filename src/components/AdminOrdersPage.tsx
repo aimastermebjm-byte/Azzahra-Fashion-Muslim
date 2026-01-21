@@ -487,9 +487,9 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             '--------------------------------',
             `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
             `Order ID  : #${order.id}`,
-            '\n\n' // Separator per order
+            '\n' // Separator per order
           ].filter(Boolean).join('\n');
-        }).join('\n*** POTONG DISINI ***\n\n');
+        }).join('\n*** POTONG DISINI ***\n');
 
         showModernAlert('Print', `Menyiapkan ${eligible.length} label...`, 'info');
 
@@ -548,16 +548,16 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           }
           .label-container { 
             border-bottom: 3px dashed #000; 
-            padding-bottom: 10px; 
-            margin-bottom: 10px; 
+            padding-bottom: 2px; 
+            margin-bottom: 2px; 
             page-break-inside: avoid;
-            padding-top: 5px;
+            padding-top: 2px;
           }
           .header { 
             text-align: center;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
             border-bottom: 3px solid #000; 
-            padding-bottom: 5px;
+            padding-bottom: 2px;
           }
           .header h1 { 
             margin: 0; 
@@ -607,9 +607,9 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           .footer { 
             font-size: 12px; 
             text-align: center; 
-            margin-top: 5px;
+            margin-top: 2px;
             border-top: 1px dashed #000;
-            padding-top: 5px;
+            padding-top: 2px;
           }
           @media print {
             body { padding: 0; margin: 0; width: 100%; }
