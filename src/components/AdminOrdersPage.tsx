@@ -2011,43 +2011,31 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     <span>Informasi Pengiriman</span>
                   </h4>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nama Penerima</label>
-                    <input
-                      type="text"
-                      value={editingOrder.shippingInfo?.name || ''}
-                      onChange={(e) => setEditingOrder({
-                        ...editingOrder,
-                        shippingInfo: { ...editingOrder.shippingInfo, name: e.target.value }
-                      })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">No. Telepon</label>
-                    <input
-                      type="text"
-                      value={editingOrder.shippingInfo?.phone || ''}
-                      onChange={(e) => setEditingOrder({
-                        ...editingOrder,
-                        shippingInfo: { ...editingOrder.shippingInfo, phone: e.target.value }
-                      })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap</label>
-                    <textarea
-                      value={editingOrder.shippingInfo?.address || ''}
-                      onChange={(e) => setEditingOrder({
-                        ...editingOrder,
-                        shippingInfo: { ...editingOrder.shippingInfo, address: e.target.value }
-                      })}
-                      rows={3}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
-                    />
+                  {/* Info: Alamat diedit via modal khusus agar lengkap dengan data Provinsi/Kota */}
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="w-5 h-5 text-amber-600 mt-0.5" />
+                      <div className="flex-1">
+                        <h5 className="text-sm font-semibold text-amber-800 mb-1">Alamat Pengiriman</h5>
+                        <p className="text-sm text-gray-700 mb-3 line-clamp-2">
+                          {editingOrder.shippingInfo?.name} ({editingOrder.shippingInfo?.phone})<br />
+                          {editingOrder.shippingInfo?.address}
+                        </p>
+                        <button
+                          onClick={() => {
+                            // Close this modal and open Shipping Edit Modal
+                            const orderToEdit = { ...editingOrder };
+                            setShowEditModal(false);
+                            setEditingOrder(null);
+                            setShippingEditOrder(orderToEdit);
+                          }}
+                          className="px-4 py-2 bg-white border border-amber-300 text-amber-700 rounded-lg text-sm font-semibold hover:bg-amber-100 transition-colors flex items-center gap-2"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          Atur Alamat Lengkap (Provinsi/Kota)
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
