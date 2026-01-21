@@ -382,29 +382,38 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     if (isMobile) {
       // Format nota text manual for URL Scheme (Native app expects raw text for URL scheme now)
       // Note: printData is for JS Interface. For Deep Link we send pre-formatted text.
+      // Format nota text manual for URL Scheme (Compact Version)
+      // Optimized to prevent Broken Pipe on Android Intent limit
+      const itemsText = order.items?.map((item: any) => {
+        // Truncate long product names to 30 chars
+        const pName = item.productName.length > 30 ? item.productName.substring(0, 30) + '...' : item.productName;
+        return `${pName} x${item.quantity}`;
+      }).join('\n') || '-';
+
       const notaText = [
-        '================================',
-        '         AZZAHRA FASHION        ',
-        '================================',
-        `Kepada : ${order.shippingInfo?.name || order.userName || '-'}`,
-        `Telp   : ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
-        `Alamat : ${fullAddress || '-'}`,
         '--------------------------------',
-        `Item   : ${order.items?.map((item: any) => `${item.productName} x${item.quantity}`).join(', ') || '-'}`,
-        `Ekspedisi: ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
+        'AZZAHRA FASHION',
         '--------------------------------',
-        `Order #${order.id}`,
-        '================================'
+        `Kpd: ${order.shippingInfo?.name?.substring(0, 25) || order.userName?.substring(0, 25) || '-'}`,
+        `Tel: ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
+        `Almt: ${fullAddress}`, // Full Address is priority, keep it
+        '--------------------------------',
+        itemsText,
+        '--------------------------------',
+        `Eks: ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
+        `#${order.id}`,
+        '--------------------------------\n' // Extra newline at end
       ].join('\n');
 
       // Use custom URL scheme for Android native app with Base64 encoding (SafeArea)
       // btoa() encodes string to Base64, safe for URLs
-      const base64Data = btoa(notaText);
+      // Encode URI Component to ensure Base64 chars like '+' or '=' don't break URL parsing
+      const base64Data = encodeURIComponent(btoa(notaText));
       const printUrl = `azzahra-print://print?data=${base64Data}`;
 
       // Attempt to open deep link
       window.location.href = printUrl;
-      showModernAlert('Print', 'Membuka aplikasi printer...', 'success');
+      showModernAlert('Print', 'Mencetak label...', 'success');
       return;
     }
 
@@ -436,6 +445,8 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
     if (isMobile) {
       // Aggregate all orders into one long text
+      // Aggregate all orders into one compact text
+      // Optimized to stay within Android Intent transaction limit (~1MB total, ideally <500KB)
       const bulkText = eligible.map(order => {
         const fullAddress = [
           order.shippingInfo?.address,
@@ -445,20 +456,25 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           order.shippingInfo?.provinceName
         ].filter(Boolean).join(', ');
 
+        const itemsText = order.items?.map((item: any) => {
+          // Truncate long product names to 30 chars
+          const pName = item.productName.length > 30 ? item.productName.substring(0, 30) + '...' : item.productName;
+          return `${pName} x${item.quantity}`;
+        }).join('\n') || '-';
+
         return [
-          '================================',
-          '         AZZAHRA FASHION        ',
-          '================================',
-          `Kepada : ${order.shippingInfo?.name || order.userName || '-'}`,
-          `Telp   : ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
-          `Alamat : ${fullAddress || '-'}`,
           '--------------------------------',
-          `Item   : ${order.items?.map((item: any) => `${item.productName} x${item.quantity}`).join(', ') || '-'}`,
-          `Ekspedisi: ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
+          'AZZAHRA FASHION',
           '--------------------------------',
-          `Order #${order.id}`,
-          '================================',
-          '\n\n' // Add spacing between orders
+          `Kpd: ${order.shippingInfo?.name?.substring(0, 25) || order.userName?.substring(0, 25) || '-'}`,
+          `Tel: ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
+          `Almt: ${fullAddress}`,
+          '--------------------------------',
+          itemsText,
+          '--------------------------------',
+          `Eks: ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
+          `#${order.id}`,
+          '--------------------------------\n\n' // Double newline between orders
         ].join('\n');
       }).join('\n');
 
