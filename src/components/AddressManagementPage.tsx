@@ -4,6 +4,7 @@ import { addressService, Address } from '../services/addressService';
 import AddressForm from './AddressForm';
 import PageHeader from './PageHeader';
 import EmptyState from './ui/EmptyState';
+import { ordersService } from '../services/ordersService';
 import { ListSkeleton } from './ui/Skeleton';
 import { useToast } from './ToastProvider';
 
@@ -120,6 +121,35 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
           postalCode: addressData.postalCode,
           isDefault: addressData.isDefault
         });
+      }
+
+      // ✨ GLOBAL SYNC: Update all active orders with this new/updated address
+      // Only if this matches the user's ID (we assume `user.uid` is passed to this page via props or context)
+      // Since AddressManagementPage receives `user` prop:
+      if (user?.uid) {
+        try {
+          const syncedCount = await ordersService.updateActiveOrdersAddress(user.uid, {
+            ...addressData,
+            // Ensure full address components are passed
+            province: addressData.province,
+            city: addressData.city,
+            district: addressData.district,
+            subdistrict: addressData.subdistrict,
+            postalCode: addressData.postalCode,
+            fullAddress: addressData.fullAddress
+          });
+
+          if (syncedCount > 0) {
+            showToast({
+              type: 'success',
+              title: 'Sinkronisasi Berhasil',
+              message: `${syncedCount} pesanan aktif berhasil diupdate ke alamat baru.`
+            });
+          }
+        } catch (syncError) {
+          console.error('Failed to sync active orders:', syncError);
+          // Non-blocking error, user address is still saved
+        }
       }
 
       showToast({

@@ -364,6 +364,78 @@ class OrdersService {
     }
   }
 
+  // ✨ NEW: Sync Address to All Active Orders
+  async updateActiveOrdersAddress(userId: string, newAddressData: any): Promise<number> {
+    try {
+      if (!userId) {
+        console.warn('❌ updateActiveOrdersAddress: No userId provided');
+        return 0;
+      }
+
+      console.log(`🔄 Syncing new address to active orders for user: ${userId}`);
+      console.log('📦 New Address Data:', newAddressData);
+
+      // 1. Query all active orders for this user
+      // Statuses considered active: pending, awaiting_verification, paid, processing
+      // We exclude: shipped (already has label printed likely), delivered, cancelled
+      const activeStatuses = ['pending', 'awaiting_verification', 'paid', 'processing'];
+
+      const ordersRef = collection(db, this.collection);
+      const q = query(
+        ordersRef,
+        where('userId', '==', userId),
+        where('status', 'in', activeStatuses)
+      );
+
+      const snapshot = await getDocs(q);
+      const activeOrders = snapshot.docs;
+
+      if (activeOrders.length === 0) {
+        console.log('ℹ️ No active orders found to sync.');
+        return 0;
+      }
+
+      console.log(`Found ${activeOrders.length} active orders to update.`);
+
+      // 2. Batch update each order
+      // We use Promise.all for parallel updates
+      const updatePromises = activeOrders.map(async (docSnapshot) => {
+        const orderData = docSnapshot.data() as Order;
+
+        // Construct updated shipping info preserving existing fields but overwriting address
+        const updatedShippingInfo = {
+          ...orderData.shippingInfo,
+          name: newAddressData.name || orderData.shippingInfo?.name,
+          phone: newAddressData.phone || orderData.shippingInfo?.phone,
+          address: newAddressData.fullAddress,
+          // Sync crucial location data
+          provinceName: newAddressData.province,
+          cityName: newAddressData.city,
+          district: newAddressData.district,
+          subdistrict: newAddressData.subdistrict,
+          postalCode: newAddressData.postalCode
+        };
+
+        const orderRef = doc(db, this.collection, docSnapshot.id);
+        await updateDoc(orderRef, {
+          shippingInfo: updatedShippingInfo,
+          updatedAt: Timestamp.now()
+        });
+
+        console.log(`✅ Updated Order #${docSnapshot.id}`);
+      });
+
+      await Promise.all(updatePromises);
+      console.log('✨ All active orders synced successfully!');
+
+      return activeOrders.length;
+
+    } catch (error) {
+      console.error('❌ Failed to sync active orders address:', error);
+      throw error;
+    }
+  }
+
   // Subscribe to orders (real-time) for PaymentAutoVerifier
   subscribeToOrders(callback: (orders: Order[]) => void): () => void {
     const ordersRef = collection(db, this.collection);
