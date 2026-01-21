@@ -197,6 +197,18 @@ public class MainActivity extends AppCompatActivity {
             intent.setData(Uri.parse("package:" + getPackageName()));
             startActivity(intent);
         });
+        
+        // SETUP WEBVIEW FOR JS INTERFACE (Powerful Printing)
+        WebSettings webSettings = webView.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setAllowFileAccess(true);
+        webView.addJavascriptInterface(new WebAppInterface(this), "AndroidPrint");
+        webView.setWebViewClient(new WebViewClient()); // Default client
+        
+        // Load initial URL if available
+        String savedUrl = prefs.getString("pwa_url", "https://azzahra-fashion-muslim.vercel.app");
+        webView.loadUrl(savedUrl);
 
         btnSaveUrl.setOnClickListener(v -> {
             String url = etWebUrl.getText().toString().trim();
@@ -252,7 +264,8 @@ public class MainActivity extends AppCompatActivity {
     private void initTabs() {
         tabHost = findViewById(android.R.id.tabhost);
         tabHost.setup();
-        // HOME (WebView) DIHILANGKAN - User pakai Chrome saja untuk akses web
+        // Restore HOME (WebView) because JS Interface works ONLY inside WebView
+        tabHost.addTab(tabHost.newTabSpec("Web").setIndicator("WEB").setContent(R.id.tabHome)); // Assuming tabHome exists in XML layout
         tabHost.addTab(tabHost.newTabSpec("Sync").setIndicator("SYNC").setContent(R.id.tabSync));
         tabHost.addTab(tabHost.newTabSpec("Settings").setIndicator("SETTINGS").setContent(R.id.tabPrinter));
     }
