@@ -415,35 +415,22 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         [name]: newValue
       };
 
-      // Special handling for province change
-      if (name === 'provinceId') {
-        const selectedProvince = provinces.find(p => p.province_id === value);
-        if (selectedProvince) {
-          updated.province = selectedProvince.province;
-        }
-      }
+      // Special handling: Capture text directly from the <select> option
+      // This is foolproof compared to searching in arrays by ID
+      if (e.target instanceof HTMLSelectElement && e.target.selectedIndex >= 0) {
+        const selectedText = e.target.options[e.target.selectedIndex].text;
 
-      // Special handling for city change
-      if (name === 'cityId') {
-        const selectedCity = cities.find(c => c.city_id === value);
-        if (selectedCity) {
-          updated.city = `${selectedCity.type} ${selectedCity.city_name}`;
+        if (name === 'provinceId' && value) {
+          updated.province = selectedText;
         }
-      }
-
-      // Special handling for district change
-      if (name === 'districtId') {
-        const selectedDistrict = districts.find(d => d.district_id === value);
-        if (selectedDistrict) {
-          updated.district = selectedDistrict.district_name;
+        else if (name === 'cityId' && value) {
+          updated.city = selectedText;
         }
-      }
-
-      // Special handling for subdistrict change
-      if (name === 'subdistrictId') {
-        const selectedSubdistrict = subdistricts.find(s => s.subdistrict_id === value);
-        if (selectedSubdistrict) {
-          updated.subdistrict = selectedSubdistrict.subdistrict_name;
+        else if (name === 'districtId' && value) {
+          updated.district = selectedText;
+        }
+        else if (name === 'subdistrictId' && value) {
+          updated.subdistrict = selectedText;
         }
       }
 
