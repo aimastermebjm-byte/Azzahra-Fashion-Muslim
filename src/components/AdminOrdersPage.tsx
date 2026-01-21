@@ -488,7 +488,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
             `Order ID  : #${order.id}`
           ].filter(Boolean).join('\n');
-        }).join('\n--- POTONG DISINI ---\n');
+        }).join('\n\n--- potong disini ---\n\n');
 
         showModernAlert('Print', `Menyiapkan ${eligible.length} label...`, 'info');
 
@@ -555,12 +555,13 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           }
           .cut-here {
             text-align: center;
-            font-size: 10px;
+            font-size: 8px;
             font-weight: bold;
-            margin-bottom: -12px;
+            margin-bottom: 8px;
+            margin-top: 2px;
             background: white;
             display: block;
-            width: 100px;
+            width: 80px;
             margin-left: auto;
             margin-right: auto;
           }
@@ -615,18 +616,10 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             width: 100%;
             box-sizing: border-box;
           }
-          .footer { 
-            font-size: 12px; 
-            text-align: center; 
-            margin-top: 2px;
-            border-top: 1px dashed #000;
-            padding-top: 2px;
-          }
           @media print {
             body { padding: 0; margin: 0; width: 100%; }
             .label-container { page-break-after: auto; border-bottom: 2px dashed #000; }
             .label-container:last-child { page-break-after: auto; border-bottom: none; }
-          }
           }
         </style>
       </head>
@@ -644,7 +637,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
       return `
           <div class="label-container">
-            <div class="cut-here">- POTONG DISINI -</div>
+            <div class="cut-here">- potong disini -</div>
             <div class="header">
               <h1>AZZAHRA</h1>
             </div>
