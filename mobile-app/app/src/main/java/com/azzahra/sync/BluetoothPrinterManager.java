@@ -82,10 +82,10 @@ public class BluetoothPrinterManager {
             write(new byte[]{0x1B, 0x40}); // Reset
             try { Thread.sleep(100); } catch (Exception e) {}
             
-            // SET DOUBLE HEIGHT (Biar tulisan besar tapi tidak lebar ke samping)
-            // 0x1B, 0x21, 0x10 -> ESC ! 16 (Double Height)
-            // 0x00 = Normal, 0x10 = DoubleHeight, 0x20 = DoubleWidth (Gak muat), 0x30 = Both
-            write(new byte[]{0x1B, 0x21, 0x10}); 
+            // SET BOLD (Ganti Double Height yang terlalu besar dengan Bold agar tetap terbaca tapi tidak raksasa)
+            // 0x1B, 0x21, 0x08 -> ESC ! 8 (Emphasized/Bold)
+            // Sebelumnya 0x10 (Double Height) dikomplain terlalu besar
+            write(new byte[]{0x1B, 0x21, 0x08}); 
             
             write(text.getBytes("GBK"));
             write(new byte[]{0x0A, 0x0A, 0x0A});
