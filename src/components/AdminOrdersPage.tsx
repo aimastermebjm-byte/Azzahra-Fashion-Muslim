@@ -376,6 +376,38 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       return;
     }
 
+    // Check if on mobile (Android) - try custom URL scheme first as fallback
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      // Format nota text manual for URL Scheme (Native app expects raw text for URL scheme now)
+      // Note: printData is for JS Interface. For Deep Link we send pre-formatted text.
+      const notaText = [
+        '================================',
+        '         AZZAHRA FASHION        ',
+        '================================',
+        `Kepada : ${order.shippingInfo?.name || order.userName || '-'}`,
+        `Telp   : ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
+        `Alamat : ${fullAddress || '-'}`,
+        '--------------------------------',
+        `Item   : ${order.items?.map((item: any) => `${item.productName} x${item.quantity}`).join(', ') || '-'}`,
+        `Ekspedisi: ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
+        '--------------------------------',
+        `Order #${order.id}`,
+        '================================'
+      ].join('\n');
+
+      // Use custom URL scheme for Android native app with Base64 encoding (SafeArea)
+      // btoa() encodes string to Base64, safe for URLs
+      const base64Data = btoa(notaText);
+      const printUrl = `azzahra-print://print?data=${base64Data}`;
+
+      // Attempt to open deep link
+      window.location.href = printUrl;
+      showModernAlert('Print', 'Membuka aplikasi printer...', 'success');
+      return;
+    }
+
     // Fallback to browser print for desktop/browser
     const printWindow = window.open('', '_blank');
     if (!printWindow) {

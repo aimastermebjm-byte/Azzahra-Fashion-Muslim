@@ -114,3 +114,34 @@ feature/ → Fitur besar/risky saja (optional)
 
 ### When Stuck:
 1. Jangan tebak-tebakan -> Tanya klarifikasi ke user.
+
+---
+
+## 🎯 7. SKILL SYSTEM (AUTO CHECK)
+
+### A. Kapan Cek Skills
+- **TUGAS KOMPLEKS**: fitur baru, debugging, security audit, optimization, refactoring
+- **BUKAN** untuk pertanyaan simple atau fix 1-2 baris
+
+### B. Skill Index Location
+```
+C:\Users\LENOVO\.antigravity\skills\SKILL_INDEX.md
+```
+
+### C. Workflow
+1. **Baca INDEX** - Match keyword dari tugas user
+2. **Suggest Skills** - Usulkan 1-3 skills yang relevan ke user
+3. **Tunggu Konfirmasi** - User harus setuju dulu
+4. **Baca SKILL.md** - Dari skill yang disetujui saja
+5. **Execute** - Terapkan metodologi skill tersebut
+
+### D. Aturan PENTING
+- ❌ **JANGAN** baca semua 89 skills sekaligus
+- ❌ **JANGAN** langsung baca skill tanpa konfirmasi
+- ✅ **SELALU** konfirmasi skill sebelum execute
+- ✅ **HANYA** baca skill yang sudah disetujui user
+
+### E. Skill Location
+```
+C:\Users\LENOVO\.antigravity\skills\.agent\skills\<skill-name>\SKILL.md
+```

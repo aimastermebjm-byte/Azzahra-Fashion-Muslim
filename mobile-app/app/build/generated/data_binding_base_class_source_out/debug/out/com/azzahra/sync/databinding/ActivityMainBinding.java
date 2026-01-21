@@ -4,11 +4,13 @@ package com.azzahra.sync.databinding;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TabHost;
 import android.widget.TabWidget;
 import android.widget.TextView;
@@ -29,9 +31,6 @@ public final class ActivityMainBinding implements ViewBinding {
   public final ListView appList;
 
   @NonNull
-  public final Button btnAppNotif;
-
-  @NonNull
   public final Button btnBatteryIgnore;
 
   @NonNull
@@ -41,10 +40,22 @@ public final class ActivityMainBinding implements ViewBinding {
   public final Button btnGrantNotif;
 
   @NonNull
+  public final Button btnLogout;
+
+  @NonNull
+  public final Button btnSaveUrl;
+
+  @NonNull
   public final Button btnScanPrinter;
 
   @NonNull
+  public final Button btnSimulatePwa;
+
+  @NonNull
   public final Button btnTestPrint;
+
+  @NonNull
+  public final EditText etWebUrl;
 
   @NonNull
   public final ListView logListView;
@@ -68,6 +79,9 @@ public final class ActivityMainBinding implements ViewBinding {
   public final LinearLayout tabSync;
 
   @NonNull
+  public final LinearLayout tabWeb;
+
+  @NonNull
   public final FrameLayout tabcontent;
 
   @NonNull
@@ -79,21 +93,32 @@ public final class ActivityMainBinding implements ViewBinding {
   @NonNull
   public final TextView txtPrinterStatus;
 
+  @NonNull
+  public final ProgressBar webProgress;
+
+  @NonNull
+  public final WebView webView;
+
   private ActivityMainBinding(@NonNull TabHost rootView, @NonNull ListView appList,
-      @NonNull Button btnAppNotif, @NonNull Button btnBatteryIgnore, @NonNull Button btnClearLog,
-      @NonNull Button btnGrantNotif, @NonNull Button btnScanPrinter, @NonNull Button btnTestPrint,
+      @NonNull Button btnBatteryIgnore, @NonNull Button btnClearLog, @NonNull Button btnGrantNotif,
+      @NonNull Button btnLogout, @NonNull Button btnSaveUrl, @NonNull Button btnScanPrinter,
+      @NonNull Button btnSimulatePwa, @NonNull Button btnTestPrint, @NonNull EditText etWebUrl,
       @NonNull ListView logListView, @NonNull ListView printerList, @NonNull EditText searchApps,
       @NonNull View statusIndicator, @NonNull TextView statusText, @NonNull LinearLayout tabPrinter,
-      @NonNull LinearLayout tabSync, @NonNull FrameLayout tabcontent, @NonNull TabHost tabhost,
-      @NonNull TabWidget tabs, @NonNull TextView txtPrinterStatus) {
+      @NonNull LinearLayout tabSync, @NonNull LinearLayout tabWeb, @NonNull FrameLayout tabcontent,
+      @NonNull TabHost tabhost, @NonNull TabWidget tabs, @NonNull TextView txtPrinterStatus,
+      @NonNull ProgressBar webProgress, @NonNull WebView webView) {
     this.rootView = rootView;
     this.appList = appList;
-    this.btnAppNotif = btnAppNotif;
     this.btnBatteryIgnore = btnBatteryIgnore;
     this.btnClearLog = btnClearLog;
     this.btnGrantNotif = btnGrantNotif;
+    this.btnLogout = btnLogout;
+    this.btnSaveUrl = btnSaveUrl;
     this.btnScanPrinter = btnScanPrinter;
+    this.btnSimulatePwa = btnSimulatePwa;
     this.btnTestPrint = btnTestPrint;
+    this.etWebUrl = etWebUrl;
     this.logListView = logListView;
     this.printerList = printerList;
     this.searchApps = searchApps;
@@ -101,10 +126,13 @@ public final class ActivityMainBinding implements ViewBinding {
     this.statusText = statusText;
     this.tabPrinter = tabPrinter;
     this.tabSync = tabSync;
+    this.tabWeb = tabWeb;
     this.tabcontent = tabcontent;
     this.tabhost = tabhost;
     this.tabs = tabs;
     this.txtPrinterStatus = txtPrinterStatus;
+    this.webProgress = webProgress;
+    this.webView = webView;
   }
 
   @Override
@@ -140,12 +168,6 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
-      id = R.id.btnAppNotif;
-      Button btnAppNotif = ViewBindings.findChildViewById(rootView, id);
-      if (btnAppNotif == null) {
-        break missingId;
-      }
-
       id = R.id.btnBatteryIgnore;
       Button btnBatteryIgnore = ViewBindings.findChildViewById(rootView, id);
       if (btnBatteryIgnore == null) {
@@ -164,15 +186,39 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.btnLogout;
+      Button btnLogout = ViewBindings.findChildViewById(rootView, id);
+      if (btnLogout == null) {
+        break missingId;
+      }
+
+      id = R.id.btnSaveUrl;
+      Button btnSaveUrl = ViewBindings.findChildViewById(rootView, id);
+      if (btnSaveUrl == null) {
+        break missingId;
+      }
+
       id = R.id.btnScanPrinter;
       Button btnScanPrinter = ViewBindings.findChildViewById(rootView, id);
       if (btnScanPrinter == null) {
         break missingId;
       }
 
+      id = R.id.btnSimulatePwa;
+      Button btnSimulatePwa = ViewBindings.findChildViewById(rootView, id);
+      if (btnSimulatePwa == null) {
+        break missingId;
+      }
+
       id = R.id.btnTestPrint;
       Button btnTestPrint = ViewBindings.findChildViewById(rootView, id);
       if (btnTestPrint == null) {
+        break missingId;
+      }
+
+      id = R.id.etWebUrl;
+      EditText etWebUrl = ViewBindings.findChildViewById(rootView, id);
+      if (etWebUrl == null) {
         break missingId;
       }
 
@@ -218,6 +264,12 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.tabWeb;
+      LinearLayout tabWeb = ViewBindings.findChildViewById(rootView, id);
+      if (tabWeb == null) {
+        break missingId;
+      }
+
       id = android.R.id.tabcontent;
       FrameLayout tabcontent = ViewBindings.findChildViewById(rootView, id);
       if (tabcontent == null) {
@@ -238,10 +290,22 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
-      return new ActivityMainBinding((TabHost) rootView, appList, btnAppNotif, btnBatteryIgnore,
-          btnClearLog, btnGrantNotif, btnScanPrinter, btnTestPrint, logListView, printerList,
-          searchApps, statusIndicator, statusText, tabPrinter, tabSync, tabcontent, tabhost, tabs,
-          txtPrinterStatus);
+      id = R.id.webProgress;
+      ProgressBar webProgress = ViewBindings.findChildViewById(rootView, id);
+      if (webProgress == null) {
+        break missingId;
+      }
+
+      id = R.id.webView;
+      WebView webView = ViewBindings.findChildViewById(rootView, id);
+      if (webView == null) {
+        break missingId;
+      }
+
+      return new ActivityMainBinding((TabHost) rootView, appList, btnBatteryIgnore, btnClearLog,
+          btnGrantNotif, btnLogout, btnSaveUrl, btnScanPrinter, btnSimulatePwa, btnTestPrint,
+          etWebUrl, logListView, printerList, searchApps, statusIndicator, statusText, tabPrinter,
+          tabSync, tabWeb, tabcontent, tabhost, tabs, txtPrinterStatus, webProgress, webView);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));
