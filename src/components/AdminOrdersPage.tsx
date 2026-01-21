@@ -386,10 +386,11 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
       const dPhone = order.shippingInfo?.dropshipPhone || order.dropshipPhone;
       const headerPhone = isDropship && dPhone
-        ? `\nTelepon: ${dPhone}`
+        ? `Telepon: ${dPhone}`
         : '';
 
       const notaText = [
+        'PENGIRIM',
         headerTitle,
         headerPhone,
         '--------------------------------',
@@ -470,10 +471,11 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
           const dPhone = order.shippingInfo?.dropshipPhone || order.dropshipPhone;
           const headerPhone = isDropship && dPhone
-            ? `\nTelepon: ${dPhone}`
+            ? `Telepon: ${dPhone}`
             : '';
 
           return [
+            'PENGIRIM',
             headerTitle,
             headerPhone,
             '--------------------------------',
