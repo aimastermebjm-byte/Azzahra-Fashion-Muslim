@@ -390,19 +390,30 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         return `${pName} x${item.quantity}`;
       }).join('\n') || '-';
 
+
+      // Determine Header based on Dropship status
+      const isDropship = order.isDropship;
+      const headerTitle = isDropship && order.dropshipName
+        ? order.dropshipName.toUpperCase().substring(0, 30)
+        : 'AZZAHRA FASHION MUSLIM';
+
+      const headerPhone = isDropship && order.dropshipPhone
+        ? `\nTelp: ${order.dropshipPhone}`
+        : '';
+
       const notaText = [
         '--------------------------------',
-        'AZZAHRA FASHION',
+        headerTitle + headerPhone,
         '--------------------------------',
-        `Kpd: ${order.shippingInfo?.name?.substring(0, 25) || order.userName?.substring(0, 25) || '-'}`,
-        `Tel: ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
-        `Almt: ${fullAddress}`, // Full Address is priority, keep it
+        `Kepada : ${order.shippingInfo?.name?.substring(0, 25) || order.userName?.substring(0, 25) || '-'}`,
+        `Telp   : ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
+        `Alamat : ${fullAddress}`, // Full Address
         '--------------------------------',
         itemsText,
         '--------------------------------',
-        `Eks: ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
-        `#${order.id}`,
-        '--------------------------------\n' // Extra newline at end
+        `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
+        `Order ID  : #${order.id}`,
+        '--------------------------------\n'
       ].join('\n');
 
       // Use custom URL scheme for Android native app with Base64 encoding (SafeArea)
@@ -462,18 +473,28 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           return `${pName} x${item.quantity}`;
         }).join('\n') || '-';
 
+        // Determine Header based on Dropship status
+        const isDropship = order.isDropship;
+        const headerTitle = isDropship && order.dropshipName
+          ? order.dropshipName.toUpperCase().substring(0, 30)
+          : 'AZZAHRA FASHION MUSLIM';
+
+        const headerPhone = isDropship && order.dropshipPhone
+          ? `\nTelp: ${order.dropshipPhone}`
+          : '';
+
         return [
           '--------------------------------',
-          'AZZAHRA FASHION',
+          headerTitle + headerPhone,
           '--------------------------------',
-          `Kpd: ${order.shippingInfo?.name?.substring(0, 25) || order.userName?.substring(0, 25) || '-'}`,
-          `Tel: ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
-          `Almt: ${fullAddress}`,
+          `Kepada : ${order.shippingInfo?.name?.substring(0, 25) || order.userName?.substring(0, 25) || '-'}`,
+          `Telp   : ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
+          `Alamat : ${fullAddress}`,
           '--------------------------------',
           itemsText,
           '--------------------------------',
-          `Eks: ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
-          `#${order.id}`,
+          `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
+          `Order ID  : #${order.id}`,
           '--------------------------------\n\n' // Double newline between orders
         ].join('\n');
       }).join('\n');
