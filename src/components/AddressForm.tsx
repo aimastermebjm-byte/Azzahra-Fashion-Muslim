@@ -93,21 +93,47 @@ interface AddressFormProps {
 }
 
 const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel }) => {
-  const buildFormState = (data?: Address | null): Address => ({
-    name: data?.name || '',
-    phone: data?.phone || '',
-    fullAddress: data?.fullAddress || '',
-    province: data?.province || '',
-    provinceId: data?.provinceId || '',
-    city: data?.city || '',
-    cityId: data?.cityId || '',
-    district: data?.district || '',
-    districtId: data?.districtId || '',
-    subdistrict: data?.subdistrict || '',
-    subdistrictId: data?.subdistrictId || '',
-    postalCode: data?.postalCode || '',
-    isDefault: data?.isDefault || false
-  });
+  const buildFormState = (data?: Address | null): Address => {
+    let street = data?.fullAddress || '';
+
+    // 🔥 CLEANUP: Prevent doubling if data was already "poisoned" by old buggy saves
+    if (street && data) {
+      // Components in reverse order of how they were appended (Province, City, District, Subdistrict)
+      const comps = [data.province, data.city, data.district, data.subdistrict].filter(Boolean);
+      for (const comp of comps) {
+        const suffix = `, ${comp}`;
+        // Case insensitive strip from end
+        if (street.toUpperCase().endsWith(suffix.toUpperCase())) {
+          street = street.substring(0, street.length - suffix.length);
+        } else if (street.toUpperCase().endsWith(comp.toUpperCase())) {
+          // Fallback if no comma (some old formats)
+          const lastIndex = street.toUpperCase().lastIndexOf(comp.toUpperCase());
+          if (lastIndex > 0) {
+            const before = street.charAt(lastIndex - 1);
+            if (before === ' ' || before === ',') {
+              street = street.substring(0, lastIndex).trim().replace(/,$/, '');
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      name: data?.name || '',
+      phone: data?.phone || '',
+      fullAddress: street.trim(), // Cleaned street detail
+      province: data?.province || '',
+      provinceId: data?.provinceId || '',
+      city: data?.city || '',
+      cityId: data?.cityId || '',
+      district: data?.district || '',
+      districtId: data?.districtId || '',
+      subdistrict: data?.subdistrict || '',
+      subdistrictId: data?.subdistrictId || '',
+      postalCode: data?.postalCode || '',
+      isDefault: data?.isDefault || false
+    };
+  };
 
   const [formData, setFormData] = useState<Address>(buildFormState(initialData));
 
@@ -461,24 +487,10 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      // Construct full address using the names stored in state (populated by handleChange)
-      // This matches exactly what the user sees in the preview
-      const parts = [
-        formData.fullAddress,
-        formData.subdistrict,
-        formData.district,
-        formData.city,
-        formData.province
-      ].filter(item => item && item.trim() !== '');
-
-      const fullAddress = parts.join(', ');
-
-      const addressToSave = {
-        ...formData,
-        fullAddress // Save the combined string
-      };
-
-      onSave(addressToSave);
+      // ✅ FIX: Don't mutate fullAddress (street details) into composed address here.
+      // The rest of the app expects fullAddress property to be JUST the street detail
+      // because they will append components (province, etc.) manually for display/printing.
+      onSave(formData);
     }
   };
 
