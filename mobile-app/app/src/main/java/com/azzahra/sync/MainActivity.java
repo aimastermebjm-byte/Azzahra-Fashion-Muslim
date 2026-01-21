@@ -248,11 +248,47 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void printText(String text) {
-        if (printerManager.isConnected()) {
-            try { printerManager.print(text); } catch (Exception e) {}
-        } else {
-            Toast.makeText(this, "Printer belum konek!", Toast.LENGTH_SHORT).show();
+        if (!printerManager.isConnected()) {
+             printerManager.autoConnect();
+             Toast.makeText(this, "Menyambungkan Printer...", Toast.LENGTH_SHORT).show();
+             return;
         }
+
+        new Thread(() -> {
+            try {
+                // Stabilize Connection First
+                Thread.sleep(500);
+
+                // 1. Set Font B (42 chars/line)
+                // Removed Reset (ESC @) to prevent connection drop on some printers
+                // Just use ESC ! 1 (Font B)
+                printerManager.write(new byte[]{0x1B, 0x21, 0x01});
+                Thread.sleep(200);
+
+                // 2. Buffer Logic: Increase delay to 150ms for cheap thermal printers
+                String[] lines = text.split("\n");
+                for (String line : lines) {
+                    try {
+                        // Send line + newline using GBK
+                        printerManager.write((line + "\n").getBytes("GBK"));
+                        // Delay per line to let printer process and clear buffer
+                        Thread.sleep(150);
+                    } catch (IOException io) {
+                        // If write fails, try one reconnect attempt
+                        printerManager.autoConnect();
+                        Thread.sleep(1000);
+                        printerManager.write((line + "\n").getBytes("GBK"));
+                    }
+                }
+
+                // 3. Feed & Reset Font
+                printerManager.write(new byte[]{0x0A, 0x0A, 0x0A});
+                printerManager.write(new byte[]{0x1B, 0x21, 0x00}); // Reset to Normal
+            } catch (Exception e) {
+                e.printStackTrace();
+                runOnUiThread(() -> Toast.makeText(this, "Eror Print: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+        }).start();
     }
 
     private void checkUserRole() {

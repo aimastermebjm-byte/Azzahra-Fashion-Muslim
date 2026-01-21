@@ -36,59 +36,57 @@ public class BluetoothPrinterManager {
         if (adapter == null) throw new IOException("Bluetooth tidak didukung");
         
         BluetoothDevice device = adapter.getRemoteDevice(address);
-        
-        // Tutup koneksi lama dengan bersih
         closeConnection();
         
         try {
             if (listener != null) listener.onStatusChanged("Menghubungkan...");
-            
-            // COBA JALUR 1: Jalur Standar
             socket = device.createRfcommSocketToServiceRecord(SPP_UUID);
             socket.connect();
         } catch (IOException e) {
-            Log.e("Printer", "Jalur 1 gagal, mencoba jalur alternatif...");
-            // COBA JALUR 2: Jalur Alternatif (Lebih kuat untuk printer China)
             try {
-                socket = (BluetoothSocket) device.getClass().getMethod("createInsecureRfcommSocketToServiceRecord", UUID.class)
-                                .invoke(device, SPP_UUID);
+                // Jalur Insecure (Biasanya lebih tahan banting untuk printer low-end)
+                socket = (BluetoothSocket) device.getClass().getMethod("createInsecureRfcommSocketToServiceRecord", UUID.class).invoke(device, SPP_UUID);
                 if (socket != null) socket.connect();
             } catch (Exception ex) {
-                if (listener != null) listener.onStatusChanged("Gagal Terhubung");
-                throw new IOException("Semua jalur koneksi gagal. Pastikan printer nyala.");
+                if (listener != null) listener.onStatusChanged("Gagal!");
+                throw new IOException("Koneksi gagal total.");
             }
         }
         
         if (socket != null && socket.isConnected()) {
             outputStream = socket.getOutputStream();
-            // JEDA STABILISASI: Penting agar printer tidak error
-            try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+            // Jeda stabilisasi diperlama agar chip printer tenang
+            try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
             
-            // KIRIM PERINTAH RESET: Biar lampu merah berhenti jika karena error data
-            outputStream.write(new byte[]{0x1B, 0x40}); 
+            // Hard Reset & Clear Buffer
+            outputStream.write(new byte[]{0x1B, 0x40});
             outputStream.flush();
             
             prefs.edit().putString("last_address", address).apply();
-            if (listener != null) listener.onStatusChanged("Terhubung ke " + device.getName());
+            if (listener != null) listener.onStatusChanged("Terhubung ✅");
         }
     }
 
     public void print(String text) throws IOException {
+        // Jika tidak terkoneksi, coba paksa auto-connect dulu
         if (outputStream == null || !isConnected()) {
-            throw new IOException("Printer belum siap. Silakan hubungkan lagi.");
+            autoConnect();
+            // Beri waktu sebentar untuk auto-connect
+            try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
+            if (outputStream == null) throw new IOException("Printer mati/tidak terdeteksi.");
         }
         
         try {
-            // Reset & Set Font Standard
+            // KIRIM PERINTAH CLEANING SEBELUM SETIAP PRINT
             outputStream.write(new byte[]{0x1B, 0x40}); 
-            // Print
+            try { Thread.sleep(100); } catch (Exception e) {}
+            
             outputStream.write(text.getBytes("GBK"));
-            // Feed paper
             outputStream.write(new byte[]{0x0A, 0x0A, 0x0A});
             outputStream.flush();
         } catch (IOException e) {
             closeConnection();
-            if (listener != null) listener.onStatusChanged("Koneksi Putus (Broken Pipe)");
+            if (listener != null) listener.onStatusChanged("Putus ❌");
             throw e;
         }
     }
@@ -110,11 +108,7 @@ public class BluetoothPrinterManager {
         String lastAddr = prefs.getString("last_address", null);
         if (lastAddr != null && !isConnected()) {
             new Thread(() -> {
-                try {
-                    connect(lastAddr);
-                } catch (Exception e) {
-                    Log.e("Printer", "AutoConnect gagal: " + e.getMessage());
-                }
+                try { connect(lastAddr); } catch (Exception ignored) {}
             }).start();
         }
     }
