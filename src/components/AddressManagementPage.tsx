@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Edit, Trash2, Check, Home, Plus } from 'lucide-react';
+import { MapPin, Edit, Trash2, Home, Plus } from 'lucide-react';
 import { addressService, Address } from '../services/addressService';
 import AddressForm from './AddressForm';
 import PageHeader from './PageHeader';
 import EmptyState from './ui/EmptyState';
-import { ordersService } from '../services/ordersService';
 import { ListSkeleton } from './ui/Skeleton';
 import { useToast } from './ToastProvider';
 
@@ -13,7 +12,7 @@ interface AddressManagementPageProps {
   onBack: () => void;
 }
 
-const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onBack }) => {
+const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ onBack }) => {
   const { showToast } = useToast();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,34 +122,9 @@ const AddressManagementPage: React.FC<AddressManagementPageProps> = ({ user, onB
         });
       }
 
-      // ✨ GLOBAL SYNC: Update all active orders with this new/updated address
-      // Only if this matches the user's ID (we assume `user.uid` is passed to this page via props or context)
-      // Since AddressManagementPage receives `user` prop:
-      if (user?.uid) {
-        try {
-          const syncedCount = await ordersService.updateActiveOrdersAddress(user.uid, {
-            ...addressData,
-            // Ensure full address components are passed
-            province: addressData.province,
-            city: addressData.city,
-            district: addressData.district,
-            subdistrict: addressData.subdistrict,
-            postalCode: addressData.postalCode,
-            fullAddress: addressData.fullAddress
-          });
-
-          if (syncedCount > 0) {
-            showToast({
-              type: 'success',
-              title: 'Sinkronisasi Berhasil',
-              message: `${syncedCount} pesanan aktif berhasil diupdate ke alamat baru.`
-            });
-          }
-        } catch (syncError) {
-          console.error('Failed to sync active orders:', syncError);
-          // Non-blocking error, user address is still saved
-        }
-      }
+      // ⚠️ REMOVED GLOBAL SYNC: Address changes in the profile should NOT automatically
+      // change active orders to prevent accidental data corruption across different recipients.
+      // Order address updates should be handled explicitly via the Admin Order Dashboard.
 
       showToast({
         type: 'success',
