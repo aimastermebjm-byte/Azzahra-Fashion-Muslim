@@ -341,18 +341,29 @@ public class MainActivity extends AppCompatActivity {
 
         new Thread(() -> {
             try {
-                // 1. Initialize & Set Font B (42 chars/line) for WIDER layout
-                // ESC @ = Reset, ESC ! 1 = Font B (9x17)
-                printerManager.write(new byte[]{0x1B, 0x40, 0x1B, 0x21, 0x01});
+                // Stabilize Connection First
+                Thread.sleep(500);
+
+                // 1. Set Font B (42 chars/line)
+                // Removed Reset (ESC @) to prevent connection drop on some printers
+                // Just use ESC ! 1 (Font B)
+                printerManager.write(new byte[]{0x1B, 0x21, 0x01});
                 Thread.sleep(200);
 
-                // 2. Buffer Logic: Split lines to prevent Buffer Overflow (Red Blinking)
+                // 2. Buffer Logic: Increase delay to 150ms for cheap thermal printers
                 String[] lines = text.split("\n");
                 for (String line : lines) {
-                    // Send line + newline using GBK
-                    printerManager.write((line + "\n").getBytes("GBK"));
-                    // Delay per line to let printer process
-                    Thread.sleep(50);
+                    try {
+                        // Send line + newline using GBK
+                        printerManager.write((line + "\n").getBytes("GBK"));
+                        // Delay per line to let printer process and clear buffer
+                        Thread.sleep(150);
+                    } catch (IOException io) {
+                        // If write fails, try one reconnect attempt
+                        printerManager.autoConnect();
+                        Thread.sleep(1000);
+                        printerManager.write((line + "\n").getBytes("GBK"));
+                    }
                 }
 
                 // 3. Feed & Reset Font
@@ -360,6 +371,7 @@ public class MainActivity extends AppCompatActivity {
                 printerManager.write(new byte[]{0x1B, 0x21, 0x00}); // Reset to Normal
             } catch (Exception e) {
                 e.printStackTrace();
+                runOnUiThread(() -> Toast.makeText(this, "Eror Print: " + e.getMessage(), Toast.LENGTH_SHORT).show());
             }
         }).start();
     }

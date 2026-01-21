@@ -358,24 +358,6 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       order.shippingInfo?.provinceName
     ].filter(Boolean).join(', ');
 
-    // Prepare JSON data for Android (Android will format for 32-char printer)
-    const printData = {
-      name: order.shippingInfo?.name || order.userName || '-',
-      phone: order.shippingInfo?.phone || (order as any).phone || '-',
-      address: fullAddress || order.shippingInfo?.address || '-',
-      items: order.items?.map((item: any) => `${item.productName} x${item.quantity}`).join(', ') || '-',
-      courier: order.shippingInfo?.courier?.toUpperCase() || 'JNE',
-      orderId: order.id
-    };
-
-    // Check if AndroidPrint interface is available (running in native app WebView)
-    if (typeof (window as any).AndroidPrint !== 'undefined') {
-      // Call Android native print - 1-click direct print!
-      (window as any).AndroidPrint.printLabel(JSON.stringify(printData));
-      showModernAlert('Print', 'Mengirim ke printer...', 'success');
-      return;
-    }
-
     // Check if on mobile (Android) - try custom URL scheme first as fallback
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
