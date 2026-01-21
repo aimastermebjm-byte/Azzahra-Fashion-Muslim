@@ -400,17 +400,19 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       const headerPhone = isDropship && order.dropshipPhone
         ? `\nTelp: ${order.dropshipPhone}`
         : '';
-      const notaText = [headerPhone,
-        '----------------', // Minimal separator
-        `Kpd: ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
-        `Tel: ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
-        `Alm: ${fullAddress}`, // Keep full address
-        '----------------',
+      const notaText = [
+        headerTitle, // Title first (Store Name or Dropship Name)
+        headerPhone,
+        '--------------------------------',
+        `Kpd    : ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
+        `Telp   : ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
+        `Alamat : ${fullAddress.substring(0, 100)}`, // Limit address length
+        '--------------------------------',
         itemsText,
-        '----------------',
+        '--------------------------------',
         `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
-        `Order ID  : #${order.id}\n` // Single newline
-      ].join('\n');
+        `Order ID  : #${order.id}\n`
+      ].filter(Boolean).join('\n');
 
       // Use custom URL scheme for Android native app with Base64 encoding (SafeArea)
       // btoa() encodes string to Base64, safe for URLs
@@ -459,34 +461,39 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             order.shippingInfo?.subdistrict ? `Kel. ${order.shippingInfo.subdistrict}` : '',
             order.shippingInfo?.district ? `Kec. ${order.shippingInfo.district}` : '',
             order.shippingInfo?.cityName || '',
-            order.shippingInfo?.provinceName
+            order.shippingInfo?.provinceName,
+            order.shippingInfo?.postalCode
           ].filter(Boolean).join(', ');
 
-          const itemsText = order.items?.map((item: any) => `${item.productName} x${item.quantity}`).join('\n') || '-';
+          const itemsText = order.items?.map((item: any) => {
+            const pName = item.productName.length > 30 ? item.productName.substring(0, 30) + '...' : item.productName;
+            return `${pName} x${item.quantity}`;
+          }).join('\n') || '-';
 
-          // Check dropship data in both order root (legacy) and shippingInfo (new)
-          const isDropship = order.isDropship || order.shippingInfo?.isDropship;
-          const dName = order.dropshipName || order.shippingInfo?.dropshipName;
-          const dPhone = order.dropshipPhone || order.shippingInfo?.dropshipPhone;
+          const isDropship = order.isDropship; // Assuming property exists, otherwise check shippingInfo
+          const headerTitle = isDropship && order.dropshipName
+            ? order.dropshipName.toUpperCase().substring(0, 30)
+            : 'AZZAHRA FASHION MUSLIM';
 
-          const headerTitle = isDropship && dName ? dName.toUpperCase().substring(0, 35) : 'AZZAHRA FASHION MUSLIM';
-          const headerPhone = isDropship && dPhone ? `\nTelp: ${dPhone}` : '';
+          const headerPhone = isDropship && order.dropshipPhone
+            ? `\nTelp   : ${order.dropshipPhone}`
+            : '';
 
           return [
+            headerTitle,
+            headerPhone,
             '--------------------------------',
-            headerTitle + headerPhone,
-            '--------------------------------',
-            `Kepada : ${order.shippingInfo?.name || order.userName || '-'}`,
+            `Kpd    : ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
             `Telp   : ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
-            `Alamat : ${fullAddress}`,
+            `Alamat : ${fullAddress.substring(0, 100)}`,
             '--------------------------------',
             itemsText,
             '--------------------------------',
             `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
             `Order ID  : #${order.id}`,
-            '--------------------------------\n\n'
-          ].join('\n');
-        }).join('\n');
+            '\n\n' // Separator per order
+          ].filter(Boolean).join('\n');
+        }).join('\n*** POTONG DISINI ***\n\n');
 
         showModernAlert('Print', `Menyiapkan ${eligible.length} label (Cloud Print)...`, 'info');
 
