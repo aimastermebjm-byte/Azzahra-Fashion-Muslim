@@ -49,6 +49,7 @@ import androidx.core.app.NotificationManagerCompat;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -129,38 +130,13 @@ public class MainActivity extends AppCompatActivity {
         if (intent != null && intent.getData() != null) {
             Uri data = intent.getData();
             if ("azzahra-print".equals(data.getScheme())) {
-                
-                // 1. Check for CLOUD JOB ID (priority)
-                String jobId = data.getQueryParameter("id");
-                if (jobId != null && !jobId.isEmpty()) {
-                    Toast.makeText(this, "Mengunduh data print cloud...", Toast.LENGTH_SHORT).show();
-                    FirebaseFirestore.getInstance().collection("print_jobs").document(jobId).get()
-                        .addOnSuccessListener(doc -> {
-                            if (doc.exists()) {
-                                String content = doc.getString("content");
-                                if (content != null) {
-                                    printText(content);
-                                    // Cleanup: Delete job after fetching
-                                    FirebaseFirestore.getInstance().collection("print_jobs").document(jobId).delete();
-                                } else {
-                                    Toast.makeText(this, "Data print kosong!", Toast.LENGTH_SHORT).show();
-                                }
-                            } else {
-                                Toast.makeText(this, "Job Print kadaluarsa/tidak ada", Toast.LENGTH_SHORT).show();
-                            }
-                        })
-                        .addOnFailureListener(e -> Toast.makeText(this, "Gagal ambil print job: " + e.getMessage(), Toast.LENGTH_LONG).show());
-                    return;
-                }
-
-                // 2. Check for DIRECT DATA (fallback/legacy)
                 String text = data.getQueryParameter("data");
                 if (text != null) {
                     try {
                         byte[] decodedBytes = android.util.Base64.decode(text, android.util.Base64.DEFAULT);
                         printText(new String(decodedBytes, "UTF-8"));
                     } catch (Exception e) {
-                        printText(text); // Fallback jika bukan base64
+                        printText(text); 
                     }
                 }
             }
@@ -271,6 +247,13 @@ public class MainActivity extends AppCompatActivity {
         webView.loadUrl(savedUrl);
     }
 
+    private void printText(String text) {
+        if (printerManager.isConnected()) {
+            try { printerManager.print(text); } catch (Exception e) {}
+        } else {
+            Toast.makeText(this, "Printer belum konek!", Toast.LENGTH_SHORT).show();
+        }
+    }
 
     private void checkUserRole() {
         String uid = FirebaseAuth.getInstance().getUid();
@@ -318,63 +301,7 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        checkPermissions();
-        IntentFilter f = new IntentFilter("com.azzahra.sync.NEW_LOG");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) registerReceiver(logReceiver, f, Context.RECEIVER_EXPORTED);
-        else registerReceiver(logReceiver, f);
-
-        // Smart Auto-Connect: Hanya jika BELUM konek, supaya tidak spam command saat printing
-        if (printerManager != null && !printerManager.isConnected()) {
-            new android.os.Handler().postDelayed(() -> printerManager.autoConnect(), 1500);
-        }
-    }
-
-    private void printText(String text) {
-        if (!printerManager.isConnected()) {
-             printerManager.autoConnect();
-             Toast.makeText(this, "Menyambungkan Printer...", Toast.LENGTH_SHORT).show();
-             return;
-        }
-
-        new Thread(() -> {
-            try {
-                // Stabilize Connection First
-                Thread.sleep(500);
-
-                // 1. Set Font B (42 chars/line)
-                // Removed Reset (ESC @) to prevent connection drop on some printers
-                // Just use ESC ! 1 (Font B)
-                printerManager.write(new byte[]{0x1B, 0x21, 0x01});
-                Thread.sleep(200);
-
-                // 2. Buffer Logic: Increase delay to 150ms for cheap thermal printers
-                String[] lines = text.split("\n");
-                for (String line : lines) {
-                    try {
-                        // Send line + newline using GBK
-                        printerManager.write((line + "\n").getBytes("GBK"));
-                        // Delay per line to let printer process and clear buffer
-                        Thread.sleep(150);
-                    } catch (IOException io) {
-                        // If write fails, try one reconnect attempt
-                        printerManager.autoConnect();
-                        Thread.sleep(1000);
-                        printerManager.write((line + "\n").getBytes("GBK"));
-                    }
-                }
-
-                // 3. Feed & Reset Font
-                printerManager.write(new byte[]{0x0A, 0x0A, 0x0A});
-                printerManager.write(new byte[]{0x1B, 0x21, 0x00}); // Reset to Normal
-            } catch (Exception e) {
-                e.printStackTrace();
-                runOnUiThread(() -> Toast.makeText(this, "Eror Print: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-            }
-        }).start();
-    }
+    @Override protected void onResume() { super.onResume(); checkPermissions(); IntentFilter f = new IntentFilter("com.azzahra.sync.NEW_LOG"); if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) registerReceiver(logReceiver, f, Context.RECEIVER_EXPORTED); else registerReceiver(logReceiver, f); }
     @Override protected void onPause() { super.onPause(); unregisterReceiver(logReceiver); }
     private void checkPermissions() { boolean listenerOk = NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName()); statusIndicator.setBackgroundResource(listenerOk ? R.drawable.circle_green : R.drawable.circle_red); }
     private static class AppInfo { String name, packageName; Drawable icon; boolean selected; AppInfo(String n, String p, Drawable i, boolean s) { this.name = n; this.packageName = p; this.icon = i; this.selected = s; } }

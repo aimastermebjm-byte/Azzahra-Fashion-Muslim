@@ -385,27 +385,26 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       const notaText = [
         headerTitle, // Title first (Store Name or Dropship Name)
         headerPhone,
-        '------------------------------------------', // 42 chars for Font B
-        `Kpd    : ${order.shippingInfo?.name?.substring(0, 25) || order.userName?.substring(0, 25) || '-'}`,
+        '--------------------------------', // Revert to 32 chars (User reverted Native App)
+        `Kpd    : ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
         `Telp   : ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
-        `Alamat : ${fullAddress.substring(0, 120)}`, // Limit address length
-        '------------------------------------------',
+        `Alamat : ${fullAddress.substring(0, 100)}`, // Limit address length
+        '--------------------------------',
         itemsText,
-        '------------------------------------------',
+        '--------------------------------',
         `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
         `Order ID  : #${order.id}\n`
       ].filter(Boolean).join('\n');
 
-      // Use Cloud Print for Single Label too (Standardized)
-      try {
-        const jobId = await ordersService.createPrintJob(notaText);
-        // Trigger App via Lightweight URL Scheme (ID Only)
-        window.location.href = `azzahra-print://print_job?id=${jobId}`;
-        showModernAlert('Print', 'Mengirim data ke printer...', 'success');
-      } catch (e) {
-        console.error("Cloud Print Error", e);
-        showModernAlert('Error', 'Gagal memproses Cloud Print', 'error');
-      }
+      // Use custom URL scheme for Android native app with Base64 encoding (SafeArea)
+      // btoa() encodes string to Base64, safe for URLs
+      // Encode URI Component to ensure Base64 chars like '+' or '=' don't break URL parsing
+      const base64Data = encodeURIComponent(btoa(notaText));
+      const printUrl = `azzahra-print://print?data=${base64Data}`;
+
+      // Attempt to open deep link
+      window.location.href = printUrl;
+      showModernAlert('Print', 'Mencetak label...', 'success');
       return;
     }
 
