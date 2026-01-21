@@ -16,7 +16,8 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
@@ -138,6 +139,9 @@ public class MainActivity extends AppCompatActivity {
                     } catch (Exception e) {
                         printText(text); 
                     }
+                    
+                    // Minimize app after 1.5s to return to PWA/Browser automatically
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> moveTaskToBack(true), 1500);
                 }
             }
         }
@@ -230,9 +234,9 @@ public class MainActivity extends AppCompatActivity {
     private void initTabs() {
         tabHost = findViewById(android.R.id.tabhost);
         tabHost.setup();
-        tabHost.addTab(tabHost.newTabSpec("Web").setIndicator("HOME").setContent(R.id.tabWeb));
-        tabHost.addTab(tabHost.newTabSpec("Sync").setIndicator("SYNC").setContent(R.id.tabSync));
+        // Hide "HOME" tab as requested to prevent admin confusion/transactions
         tabHost.addTab(tabHost.newTabSpec("Settings").setIndicator("SETTINGS").setContent(R.id.tabPrinter));
+        tabHost.addTab(tabHost.newTabSpec("Sync").setIndicator("SYNC").setContent(R.id.tabSync));
     }
 
     @SuppressLint("SetJavaScriptEnabled")
