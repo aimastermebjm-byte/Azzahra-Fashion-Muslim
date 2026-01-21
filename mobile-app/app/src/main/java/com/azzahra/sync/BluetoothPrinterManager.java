@@ -79,8 +79,14 @@ public class BluetoothPrinterManager {
         }
         
         try {
-            write(new byte[]{0x1B, 0x40}); 
+            write(new byte[]{0x1B, 0x40}); // Reset
             try { Thread.sleep(100); } catch (Exception e) {}
+            
+            // SET DOUBLE HEIGHT (Biar tulisan besar tapi tidak lebar ke samping)
+            // 0x1B, 0x21, 0x10 -> ESC ! 16 (Double Height)
+            // 0x00 = Normal, 0x10 = DoubleHeight, 0x20 = DoubleWidth (Gak muat), 0x30 = Both
+            write(new byte[]{0x1B, 0x21, 0x10}); 
+            
             write(text.getBytes("GBK"));
             write(new byte[]{0x0A, 0x0A, 0x0A});
         } catch (IOException e) {
