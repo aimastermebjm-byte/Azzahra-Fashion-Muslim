@@ -373,22 +373,24 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       }).join('\n') || '-';
 
 
-      // Determine Header based on Dropship status
-      const isDropship = order.isDropship;
+      // Determine Header based on Dropship status (Robust Check)
+      // If dropshipName exists, use it regardless of isDropship flag
+      const isDropship = order.isDropship || (order.dropshipName && order.dropshipName.length > 0);
       const headerTitle = isDropship && order.dropshipName
         ? order.dropshipName.toUpperCase().substring(0, 30)
         : 'AZZAHRA FASHION MUSLIM';
 
       const headerPhone = isDropship && order.dropshipPhone
-        ? `\nTelp: ${order.dropshipPhone}`
+        ? `\nTelepon: ${order.dropshipPhone}`
         : '';
+
       const notaText = [
-        headerTitle, // Title first (Store Name or Dropship Name)
+        headerTitle,
         headerPhone,
-        '--------------------------------', // Revert to 32 chars (User reverted Native App)
-        `Kpd    : ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
-        `Telp   : ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
-        `Alamat : ${fullAddress.substring(0, 100)}`, // Limit address length
+        '--------------------------------',
+        `Kepada : ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
+        `Telepon: ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
+        `Alamat : ${fullAddress.substring(0, 100)}`,
         '--------------------------------',
         itemsText,
         '--------------------------------',
@@ -452,21 +454,21 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             return `${pName} x${item.quantity}`;
           }).join('\n') || '-';
 
-          const isDropship = order.isDropship;
+          const isDropship = order.isDropship || (order.dropshipName && order.dropshipName.length > 0);
           const headerTitle = isDropship && order.dropshipName
             ? order.dropshipName.toUpperCase().substring(0, 30)
             : 'AZZAHRA FASHION MUSLIM';
 
           const headerPhone = isDropship && order.dropshipPhone
-            ? `\nTelp   : ${order.dropshipPhone}`
+            ? `\nTelepon: ${order.dropshipPhone}`
             : '';
 
           return [
             headerTitle,
             headerPhone,
-            '--------------------------------', // 32 chars Standard
-            `Kpd    : ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
-            `Telp   : ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
+            '--------------------------------',
+            `Kepada : ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
+            `Telepon: ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
             `Alamat : ${fullAddress.substring(0, 100)}`,
             '--------------------------------',
             itemsText,
