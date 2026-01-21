@@ -44,7 +44,6 @@ public class BluetoothPrinterManager {
             socket.connect();
         } catch (IOException e) {
             try {
-                // Jalur Insecure (Biasanya lebih tahan banting untuk printer low-end)
                 socket = (BluetoothSocket) device.getClass().getMethod("createInsecureRfcommSocketToServiceRecord", UUID.class).invoke(device, SPP_UUID);
                 if (socket != null) socket.connect();
             } catch (Exception ex) {
@@ -55,35 +54,35 @@ public class BluetoothPrinterManager {
         
         if (socket != null && socket.isConnected()) {
             outputStream = socket.getOutputStream();
-            // Jeda stabilisasi diperlama agar chip printer tenang
             try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
-            
-            // Hard Reset & Clear Buffer
-            outputStream.write(new byte[]{0x1B, 0x40});
-            outputStream.flush();
-            
+            write(new byte[]{0x1B, 0x40}); // Reset
             prefs.edit().putString("last_address", address).apply();
             if (listener != null) listener.onStatusChanged("Terhubung ✅");
         }
     }
 
+    // FUNGSI BARU UNTUK KIRIM BYTE MURNI (Fix Error Build)
+    public void write(byte[] data) throws IOException {
+        if (outputStream != null) {
+            outputStream.write(data);
+            outputStream.flush();
+        } else {
+            throw new IOException("Output stream null");
+        }
+    }
+
     public void print(String text) throws IOException {
-        // Jika tidak terkoneksi, coba paksa auto-connect dulu
         if (outputStream == null || !isConnected()) {
             autoConnect();
-            // Beri waktu sebentar untuk auto-connect
             try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
             if (outputStream == null) throw new IOException("Printer mati/tidak terdeteksi.");
         }
         
         try {
-            // KIRIM PERINTAH CLEANING SEBELUM SETIAP PRINT
-            outputStream.write(new byte[]{0x1B, 0x40}); 
+            write(new byte[]{0x1B, 0x40}); 
             try { Thread.sleep(100); } catch (Exception e) {}
-            
-            outputStream.write(text.getBytes("GBK"));
-            outputStream.write(new byte[]{0x0A, 0x0A, 0x0A});
-            outputStream.flush();
+            write(text.getBytes("GBK"));
+            write(new byte[]{0x0A, 0x0A, 0x0A});
         } catch (IOException e) {
             closeConnection();
             if (listener != null) listener.onStatusChanged("Putus ❌");

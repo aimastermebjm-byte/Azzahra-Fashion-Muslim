@@ -436,7 +436,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
     if (isMobile) {
       try {
-        // STANDARD FULL FORMAT (Unlimited Size via Cloud Print)
+        // STANDARD FULL FORMAT (Direct Data Mode for Bulk)
         const bulkText = eligible.map(order => {
           const fullAddress = [
             order.shippingInfo?.address,
@@ -452,7 +452,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             return `${pName} x${item.quantity}`;
           }).join('\n') || '-';
 
-          const isDropship = order.isDropship; // Assuming property exists, otherwise check shippingInfo
+          const isDropship = order.isDropship;
           const headerTitle = isDropship && order.dropshipName
             ? order.dropshipName.toUpperCase().substring(0, 30)
             : 'AZZAHRA FASHION MUSLIM';
@@ -464,20 +464,20 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           return [
             headerTitle,
             headerPhone,
-            '------------------------------------------',
-            `Kpd    : ${order.shippingInfo?.name?.substring(0, 25) || order.userName?.substring(0, 25) || '-'}`,
+            '--------------------------------', // 32 chars Standard
+            `Kpd    : ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
             `Telp   : ${order.shippingInfo?.phone || (order as any).phone || '-'}`,
-            `Alamat : ${fullAddress.substring(0, 120)}`,
-            '------------------------------------------',
+            `Alamat : ${fullAddress.substring(0, 100)}`,
+            '--------------------------------',
             itemsText,
-            '------------------------------------------',
+            '--------------------------------',
             `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
             `Order ID  : #${order.id}`,
             '\n\n' // Separator per order
           ].filter(Boolean).join('\n');
         }).join('\n*** POTONG DISINI ***\n\n');
 
-        showModernAlert('Print', `Menyiapkan ${eligible.length} label (Cloud Print)...`, 'info');
+        showModernAlert('Print', `Menyiapkan ${eligible.length} label...`, 'info');
 
         // 1. Try JS Interface (Fastest - In-App Webview)
         if ((window as any).AndroidPrint) {
@@ -487,11 +487,10 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           return;
         }
 
-        // 2. Fallback: Upload Print Job to Firestore (Chrome - Unlimited Size)
-        const jobId = await ordersService.createPrintJob(bulkText);
-
-        // Trigger App via Lightweight URL Scheme
-        window.location.href = `azzahra-print://print_job?id=${jobId}`;
+        // 2. Direct URL Scheme (Legacy/Robust for Text)
+        const base64Data = encodeURIComponent(btoa(bulkText));
+        // Use standard print scheme
+        window.location.href = `azzahra-print://print?data=${base64Data}`;
 
         setTimeout(() => {
           showModernAlert('Print', `Perintah cetak ${eligible.length} label dikirim!`, 'success');
