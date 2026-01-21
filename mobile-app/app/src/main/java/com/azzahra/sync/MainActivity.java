@@ -129,6 +129,31 @@ public class MainActivity extends AppCompatActivity {
         if (intent != null && intent.getData() != null) {
             Uri data = intent.getData();
             if ("azzahra-print".equals(data.getScheme())) {
+                
+                // 1. Check for CLOUD JOB ID (priority)
+                String jobId = data.getQueryParameter("id");
+                if (jobId != null && !jobId.isEmpty()) {
+                    Toast.makeText(this, "Mengunduh data print cloud...", Toast.LENGTH_SHORT).show();
+                    FirebaseFirestore.getInstance().collection("print_jobs").document(jobId).get()
+                        .addOnSuccessListener(doc -> {
+                            if (doc.exists()) {
+                                String content = doc.getString("content");
+                                if (content != null) {
+                                    printText(content);
+                                    // Cleanup: Delete job after fetching
+                                    FirebaseFirestore.getInstance().collection("print_jobs").document(jobId).delete();
+                                } else {
+                                    Toast.makeText(this, "Data print kosong!", Toast.LENGTH_SHORT).show();
+                                }
+                            } else {
+                                Toast.makeText(this, "Job Print kadaluarsa/tidak ada", Toast.LENGTH_SHORT).show();
+                            }
+                        })
+                        .addOnFailureListener(e -> Toast.makeText(this, "Gagal ambil print job: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                    return;
+                }
+
+                // 2. Check for DIRECT DATA (fallback/legacy)
                 String text = data.getQueryParameter("data");
                 if (text != null) {
                     try {
