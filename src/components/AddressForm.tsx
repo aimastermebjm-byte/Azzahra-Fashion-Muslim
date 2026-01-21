@@ -154,7 +154,7 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         }
       } catch (error) {
         // Silently fail preload - not critical
-        }
+      }
     });
   }, []); // Only run once on mount
 
@@ -474,11 +474,22 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      // Construct full address
-      const fullAddress = `${formData.fullAddress}, ${formData.subdistrict}, ${formData.district}, ${formData.city}, ${formData.province}`;
+      // Construct full address by looking up the exact names from data sources
+      // This ensures we don't rely on potentially stale form state
+      const selectedProvince = provinces.find(p => p.province_id === formData.provinceId)?.province || formData.province;
+      const selectedCityObj = cities.find(c => c.city_id === formData.cityId);
+      const selectedCity = selectedCityObj ? `${selectedCityObj.type} ${selectedCityObj.city_name}` : formData.city;
+      const selectedDistrict = districts.find(d => d.district_id === formData.districtId)?.district_name || formData.district;
+      const selectedSubdistrict = subdistricts.find(s => s.subdistrict_id === formData.subdistrictId)?.subdistrict_name || formData.subdistrict;
+
+      const fullAddress = `${formData.fullAddress}, ${selectedSubdistrict}, ${selectedDistrict}, ${selectedCity}, ${selectedProvince}, ${formData.postalCode}`;
 
       const addressToSave = {
         ...formData,
+        province: selectedProvince,
+        city: selectedCity,
+        district: selectedDistrict,
+        subdistrict: selectedSubdistrict,
         fullAddress
       };
 
@@ -506,9 +517,8 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
           name="name"
           value={formData.name}
           onChange={handleChange}
-          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${
-            errors.name ? 'border-red-500' : 'border-gray-300'
-          }`}
+          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${errors.name ? 'border-red-500' : 'border-gray-300'
+            }`}
           placeholder="Masukkan nama lengkap"
         />
         {errors.name && (
@@ -525,9 +535,8 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
           name="phone"
           value={formData.phone}
           onChange={handleChange}
-          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${
-            errors.phone ? 'border-red-500' : 'border-gray-300'
-          }`}
+          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${errors.phone ? 'border-red-500' : 'border-gray-300'
+            }`}
           placeholder="Masukkan nomor telepon aktif"
         />
         {errors.phone && (
@@ -544,9 +553,8 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
           name="provinceId"
           value={formData.provinceId}
           onChange={handleChange}
-          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${
-            errors.provinceId ? 'border-red-500' : 'border-gray-300'
-          }`}
+          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${errors.provinceId ? 'border-red-500' : 'border-gray-300'
+            }`}
           disabled={loadingProvinces}
         >
           <option value="">Pilih provinsi</option>
@@ -575,9 +583,8 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
           name="cityId"
           value={formData.cityId}
           onChange={handleChange}
-          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${
-            errors.cityId ? 'border-red-500' : 'border-gray-300'
-          }`}
+          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${errors.cityId ? 'border-red-500' : 'border-gray-300'
+            }`}
           disabled={!formData.provinceId || loadingCities}
         >
           <option value="">Pilih kota/kabupaten</option>
@@ -606,9 +613,8 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
           name="districtId"
           value={formData.districtId}
           onChange={handleChange}
-          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${
-            errors.districtId ? 'border-red-500' : 'border-gray-300'
-          }`}
+          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${errors.districtId ? 'border-red-500' : 'border-gray-300'
+            }`}
           disabled={!formData.cityId || loadingDistricts}
         >
           <option value="">Pilih kecamatan</option>
@@ -637,9 +643,8 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
           name="subdistrictId"
           value={formData.subdistrictId}
           onChange={handleChange}
-          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${
-            errors.subdistrictId ? 'border-red-500' : 'border-gray-300'
-          }`}
+          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${errors.subdistrictId ? 'border-red-500' : 'border-gray-300'
+            }`}
           disabled={!formData.districtId || loadingSubdistricts}
         >
           <option value="">Pilih kelurahan/desa</option>
@@ -669,9 +674,8 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
           name="postalCode"
           value={formData.postalCode}
           onChange={handleChange}
-          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${
-            errors.postalCode ? 'border-red-500' : 'border-gray-300'
-          }`}
+          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${errors.postalCode ? 'border-red-500' : 'border-gray-300'
+            }`}
           placeholder="Masukkan kode pos"
           maxLength={5}
         />
@@ -689,9 +693,8 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
           value={formData.fullAddress}
           onChange={handleChange}
           rows={3}
-          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${
-            errors.fullAddress ? 'border-red-500' : 'border-gray-300'
-          }`}
+          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${errors.fullAddress ? 'border-red-500' : 'border-gray-300'
+            }`}
           placeholder="Contoh: Jl. Merdeka No. 123, RT 001/RW 002"
         />
         {errors.fullAddress && (
@@ -701,8 +704,26 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
         <p className="text-sm text-blue-800">
-          <strong>Preview Alamat:</strong><br/>
-          {formData.fullAddress && `${formData.fullAddress}, `}{formData.subdistrict}, {formData.district}, {formData.city}, {formData.province}, {formData.postalCode}
+          <strong>Preview Alamat:</strong><br />
+          {(() => {
+            const pName = provinces.find(p => p.province_id === formData.provinceId)?.province || formData.province;
+            const cObj = cities.find(c => c.city_id === formData.cityId);
+            const cName = cObj ? `${cObj.type} ${cObj.city_name}` : formData.city;
+            const dName = districts.find(d => d.district_id === formData.districtId)?.district_name || formData.district;
+            const sName = subdistricts.find(s => s.subdistrict_id === formData.subdistrictId)?.subdistrict_name || formData.subdistrict;
+
+            // Ensure components are filtered to avoid "undefined, undefined" showing up
+            const parts = [
+              formData.fullAddress,
+              sName,
+              dName,
+              cName,
+              pName,
+              formData.postalCode
+            ].filter(Boolean);
+
+            return parts.join(', ');
+          })()}
         </p>
       </div>
 
