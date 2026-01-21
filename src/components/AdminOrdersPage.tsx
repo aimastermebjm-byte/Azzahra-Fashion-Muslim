@@ -401,7 +401,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         itemsText,
         '--------------------------------',
         `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
-        `Order ID  : #${order.id}\n`
+        `Order ID  : #${order.id}`
       ].filter(Boolean).join('\n');
 
       // Use custom URL scheme for Android native app with Base64 encoding (SafeArea)
@@ -486,10 +486,9 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             itemsText,
             '--------------------------------',
             `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
-            `Order ID  : #${order.id}`,
-            '\n' // Separator per order
+            `Order ID  : #${order.id}`
           ].filter(Boolean).join('\n');
-        }).join('\n*** POTONG DISINI ***\n');
+        }).join('\n--- POTONG DISINI ---\n');
 
         showModernAlert('Print', `Menyiapkan ${eligible.length} label...`, 'info');
 
@@ -547,11 +546,23 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             color: black;
           }
           .label-container { 
-            border-bottom: 3px dashed #000; 
-            padding-bottom: 2px; 
-            margin-bottom: 2px; 
+            border-bottom: 2px dashed #000; 
+            padding-bottom: 5px; 
+            margin-bottom: 5px; 
             page-break-inside: avoid;
-            padding-top: 2px;
+            padding-top: 5px;
+            position: relative;
+          }
+          .cut-here {
+            text-align: center;
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: -12px;
+            background: white;
+            display: block;
+            width: 100px;
+            margin-left: auto;
+            margin-right: auto;
           }
           .header { 
             text-align: center;
@@ -613,8 +624,9 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           }
           @media print {
             body { padding: 0; margin: 0; width: 100%; }
-            .label-container { page-break-after: always; border-bottom: none; }
-            .label-container:last-child { page-break-after: auto; }
+            .label-container { page-break-after: auto; border-bottom: 2px dashed #000; }
+            .label-container:last-child { page-break-after: auto; border-bottom: none; }
+          }
           }
         </style>
       </head>
@@ -632,6 +644,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
       return `
           <div class="label-container">
+            <div class="cut-here">- POTONG DISINI -</div>
             <div class="header">
               <h1>AZZAHRA</h1>
             </div>
