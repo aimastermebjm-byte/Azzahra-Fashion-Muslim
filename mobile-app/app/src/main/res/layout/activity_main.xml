@@ -52,14 +52,30 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
+                    android:padding="8dp"
+                    android:background="#E8F5E9"
                     android:layout_marginBottom="12dp">
-                    <View android:id="@+id/statusIndicator" android:layout_width="20dp" android:layout_height="20dp" android:background="@drawable/circle_red" android:layout_marginEnd="12dp"/>
-                    <TextView android:id="@+id/statusText" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Status: OFF" android:textSize="16sp" android:textStyle="bold"/>
+                    <View android:id="@+id/statusIndicator" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/circle_red" android:layout_marginEnd="12dp"/>
+                    <TextView android:id="@+id/statusText" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Status: OFF" android:textSize="18sp" android:textStyle="bold" android:textColor="#D32F2F"/>
                     <Button android:id="@+id/btnClearLog" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Clear Log" android:textSize="10sp" style="@style/Widget.MaterialComponents.Button.TextButton"/>
                 </LinearLayout>
 
-                <Button android:id="@+id/btnGrantNotif" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="1. Setup Listener Permission" android:textSize="12sp" android:layout_marginBottom="4dp"/>
-                <Button android:id="@+id/btnBatteryIgnore" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="2. Disable Battery Optimization" android:textSize="12sp" android:layout_marginBottom="4dp"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="PERMISSION SETUP (Wajib Semua)" android:textStyle="bold" android:textSize="12sp" android:layout_marginBottom="8dp" android:textColor="#555555"/>
+                
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="4dp">
+                    <Button android:id="@+id/btnGrantAppNotif" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="1. Izin Notifikasi" android:textSize="10sp"/>
+                    <View android:id="@+id/indicatorAppNotif" android:layout_width="15dp" android:layout_height="15dp" android:layout_gravity="center" android:layout_marginStart="8dp" android:background="@drawable/circle_red"/>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="4dp">
+                    <Button android:id="@+id/btnGrantNotif" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="2. Izin Listener (Mbanking)" android:textSize="10sp"/>
+                    <View android:id="@+id/indicatorListener" android:layout_width="15dp" android:layout_height="15dp" android:layout_gravity="center" android:layout_marginStart="8dp" android:background="@drawable/circle_red"/>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+                    <Button android:id="@+id/btnBatteryIgnore" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="3. Izin Battery (Background)" android:textSize="10sp"/>
+                    <View android:id="@+id/indicatorBattery" android:layout_width="15dp" android:layout_height="15dp" android:layout_gravity="center" android:layout_marginStart="8dp" android:background="@drawable/circle_red"/>
+                </LinearLayout>
                 
                 <EditText
                     android:id="@+id/searchApps"

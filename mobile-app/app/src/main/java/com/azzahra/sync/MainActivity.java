@@ -62,8 +62,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView statusText, txtPrinterStatus;
     private ListView appListView, logListView, printerListView;
     private EditText searchApps, etWebUrl;
-    private View statusIndicator;
-    private Button btnGrantNotif, btnBatteryIgnore, btnScanPrinter, btnTestPrint, btnSaveUrl, btnLogout, btnSimulatePwa;
+    private View statusIndicator, indicatorAppNotif, indicatorListener, indicatorBattery;
+    private Button btnGrantAppNotif, btnGrantNotif, btnBatteryIgnore, btnScanPrinter, btnTestPrint, btnSaveUrl, btnLogout, btnSimulatePwa;
     private SharedPreferences prefs;
     private Set<String> selectedPackages;
     private List<AppInfo> allAppInfos = new ArrayList<>();
@@ -157,6 +157,11 @@ public class MainActivity extends AppCompatActivity {
         logListView = findViewById(R.id.logListView);
         searchApps = findViewById(R.id.searchApps);
         statusIndicator = findViewById(R.id.statusIndicator);
+        indicatorAppNotif = findViewById(R.id.indicatorAppNotif);
+        indicatorListener = findViewById(R.id.indicatorListener);
+        indicatorBattery = findViewById(R.id.indicatorBattery);
+
+        btnGrantAppNotif = findViewById(R.id.btnGrantAppNotif);
         btnGrantNotif = findViewById(R.id.btnGrantNotif);
         btnBatteryIgnore = findViewById(R.id.btnBatteryIgnore);
 
@@ -180,6 +185,19 @@ public class MainActivity extends AppCompatActivity {
         printerManager = new BluetoothPrinterManager(this);
         printBridge = new PrintBridge(this, printerManager);
         printerManager.autoConnect();
+
+        btnGrantAppNotif.setOnClickListener(v -> {
+            Intent intent = new Intent();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+            } else {
+                intent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
+                intent.putExtra("app_package", getPackageName());
+                intent.putExtra("app_uid", getApplicationInfo().uid);
+            }
+            startActivity(intent);
+        });
 
         btnGrantNotif.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)));
         btnBatteryIgnore.setOnClickListener(v -> {
@@ -227,6 +245,12 @@ public class MainActivity extends AppCompatActivity {
             printBridge.printLabel(dummyJson);
         });
 
+        searchApps.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { if (appAdapter != null) appAdapter.getFilter().filter(s); }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+
         loadAppList();
         triggerStartServices();
     }
@@ -234,9 +258,11 @@ public class MainActivity extends AppCompatActivity {
     private void initTabs() {
         tabHost = findViewById(android.R.id.tabhost);
         tabHost.setup();
-        // Hide "HOME" tab as requested to prevent admin confusion/transactions
-        tabHost.addTab(tabHost.newTabSpec("Settings").setIndicator("SETTINGS").setContent(R.id.tabPrinter));
-        tabHost.addTab(tabHost.newTabSpec("Sync").setIndicator("SYNC").setContent(R.id.tabSync));
+        // LOGICAL ORDER: SYNC & NOTIF -> PRINTER -> APP CONFIG
+        tabHost.addTab(tabHost.newTabSpec("Sync").setIndicator("SYNC & NOTIF").setContent(R.id.tabSync));
+        tabHost.addTab(tabHost.newTabSpec("Settings").setIndicator("PRINTER").setContent(R.id.tabPrinter));
+        // Web tab is hidden but keep content if needed for legacy
+        // tabHost.addTab(tabHost.newTabSpec("Web").setIndicator("HOME").setContent(R.id.tabWeb));
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -312,9 +338,26 @@ public class MainActivity extends AppCompatActivity {
 
     @Override protected void onResume() { super.onResume(); checkPermissions(); IntentFilter f = new IntentFilter("com.azzahra.sync.NEW_LOG"); if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) registerReceiver(logReceiver, f, Context.RECEIVER_EXPORTED); else registerReceiver(logReceiver, f); }
     @Override protected void onPause() { super.onPause(); unregisterReceiver(logReceiver); }
-    private void checkPermissions() { boolean listenerOk = NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName()); statusIndicator.setBackgroundResource(listenerOk ? R.drawable.circle_green : R.drawable.circle_red); }
+    private void checkPermissions() {
+        boolean appNotifOk = NotificationManagerCompat.from(this).areNotificationsEnabled();
+        boolean listenerOk = NotificationManagerCompat.getEnabledListenerPackages(this).contains(getPackageName());
+        boolean batteryOk = true;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            batteryOk = pm.isIgnoringBatteryOptimizations(getPackageName());
+        }
+
+        indicatorAppNotif.setBackgroundResource(appNotifOk ? R.drawable.circle_green : R.drawable.circle_red);
+        indicatorListener.setBackgroundResource(listenerOk ? R.drawable.circle_green : R.drawable.circle_red);
+        indicatorBattery.setBackgroundResource(batteryOk ? R.drawable.circle_green : R.drawable.circle_red);
+
+        boolean allOk = appNotifOk && listenerOk && batteryOk;
+        statusIndicator.setBackgroundResource(allOk ? R.drawable.circle_green : R.drawable.circle_red);
+        statusText.setText(allOk ? "Status: ACTIVE" : "Status: OFF (Check Permissions)");
+        statusText.setTextColor(allOk ? Color.parseColor("#4CAF50") : Color.parseColor("#D32F2F"));
+    }
     private static class AppInfo { String name, packageName; Drawable icon; boolean selected; AppInfo(String n, String p, Drawable i, boolean s) { this.name = n; this.packageName = p; this.icon = i; this.selected = s; } }
-    private class AppAdapter extends ArrayAdapter<AppInfo> {
+    private class AppAdapter extends ArrayAdapter<AppInfo> implements android.widget.Filterable {
         private List<AppInfo> original, filtered;
         AppAdapter(Context c, List<AppInfo> a) { super(c, 0, a); this.original = new ArrayList<>(a); this.filtered = a; }
         @Override public int getCount() { return filtered.size(); }
@@ -329,6 +372,25 @@ public class MainActivity extends AppCompatActivity {
             cb.setOnCheckedChangeListener(null); cb.setChecked(selectedPackages.contains(app.packageName));
             cb.setOnCheckedChangeListener((bv, isChecked) -> { if (isChecked) selectedPackages.add(app.packageName); else selectedPackages.remove(app.packageName); prefs.edit().putStringSet("selected_packages", new HashSet<>(selectedPackages)).apply(); });
             v.setOnClickListener(view -> cb.performClick()); return v;
+        }
+        @NonNull @Override public android.widget.Filter getFilter() {
+            return new android.widget.Filter() {
+                @Override protected FilterResults performFiltering(CharSequence constraint) {
+                    FilterResults results = new FilterResults();
+                    if (constraint == null || constraint.length() == 0) {
+                        results.values = original; results.count = original.size();
+                    } else {
+                        String filterString = constraint.toString().toLowerCase();
+                        List<AppInfo> found = new ArrayList<>();
+                        for (AppInfo item : original) { if (item.name.toLowerCase().contains(filterString) || item.packageName.toLowerCase().contains(filterString)) found.add(item); }
+                        results.values = found; results.count = found.size();
+                    }
+                    return results;
+                }
+                @Override protected void publishResults(CharSequence constraint, FilterResults results) {
+                    filtered = (List<AppInfo>) results.values; notifyDataSetChanged();
+                }
+            };
         }
     }
 }
