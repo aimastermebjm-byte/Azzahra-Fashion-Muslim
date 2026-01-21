@@ -399,6 +399,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
       const headerPhone = isDropship && order.dropshipPhone
         ? `\nTelp: ${order.dropshipPhone}`
+        : '';
       const notaText = [headerPhone,
         '----------------', // Minimal separator
         `Kpd: ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
