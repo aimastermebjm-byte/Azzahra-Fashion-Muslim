@@ -474,23 +474,21 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      // Construct full address by looking up the exact names from data sources
-      // This ensures we don't rely on potentially stale form state
-      const selectedProvince = provinces.find(p => p.province_id === formData.provinceId)?.province || formData.province;
-      const selectedCityObj = cities.find(c => c.city_id === formData.cityId);
-      const selectedCity = selectedCityObj ? `${selectedCityObj.type} ${selectedCityObj.city_name}` : formData.city;
-      const selectedDistrict = districts.find(d => d.district_id === formData.districtId)?.district_name || formData.district;
-      const selectedSubdistrict = subdistricts.find(s => s.subdistrict_id === formData.subdistrictId)?.subdistrict_name || formData.subdistrict;
+      // Construct full address using the names stored in state (populated by handleChange)
+      // This matches exactly what the user sees in the preview
+      const parts = [
+        formData.fullAddress,
+        formData.subdistrict,
+        formData.district,
+        formData.city,
+        formData.province
+      ].filter(item => item && item.trim() !== '');
 
-      const fullAddress = `${formData.fullAddress}, ${selectedSubdistrict}, ${selectedDistrict}, ${selectedCity}, ${selectedProvince}, ${formData.postalCode}`;
+      const fullAddress = parts.join(', ');
 
       const addressToSave = {
         ...formData,
-        province: selectedProvince,
-        city: selectedCity,
-        district: selectedDistrict,
-        subdistrict: selectedSubdistrict,
-        fullAddress
+        fullAddress // Save the combined string
       };
 
       onSave(addressToSave);
@@ -706,23 +704,17 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         <p className="text-sm text-blue-800">
           <strong>Preview Alamat:</strong><br />
           {(() => {
-            const pName = provinces.find(p => p.province_id === formData.provinceId)?.province || formData.province;
-            const cObj = cities.find(c => c.city_id === formData.cityId);
-            const cName = cObj ? `${cObj.type} ${cObj.city_name}` : formData.city;
-            const dName = districts.find(d => d.district_id === formData.districtId)?.district_name || formData.district;
-            const sName = subdistricts.find(s => s.subdistrict_id === formData.subdistrictId)?.subdistrict_name || formData.subdistrict;
-
-            // Ensure components are filtered to avoid "undefined, undefined" showing up
+            // Use formData directly as it's populated by handleChange
             const parts = [
               formData.fullAddress,
-              sName,
-              dName,
-              cName,
-              pName,
+              formData.subdistrict,
+              formData.district,
+              formData.city,
+              formData.province,
               formData.postalCode
-            ].filter(Boolean);
+            ].filter(Boolean); // Filter out empty strings/nulls
 
-            return parts.join(', ');
+            return parts.length > 0 ? parts.join(', ') : 'Alamat akan muncul di sini...';
           })()}
         </p>
       </div>
