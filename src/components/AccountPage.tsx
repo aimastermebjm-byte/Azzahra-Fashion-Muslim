@@ -6,6 +6,9 @@ import { useToast } from './ToastProvider';
 // Import assets - v2 (White Background for Multiply Blend)
 import avatarMale from '../assets/avatar_outline_male_black_v2.png';
 import avatarFemale from '../assets/avatar_outline_female_black_v2.png';
+import { doc, getDoc, getFirestore } from 'firebase/firestore';
+import { db } from '../utils/firebaseClient'; // Ensure db is imported
+
 
 interface AccountPageProps {
   user: any;
@@ -47,8 +50,75 @@ const AccountPage: React.FC<AccountPageProps> = ({
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
+
     confirmPassword: ''
   });
+
+  // System Check State
+  const [showSystemModal, setShowSystemModal] = useState(false);
+  const [systemCheckStatus, setSystemCheckStatus] = useState<'idle' | 'checking' | 'success' | 'error'>('idle');
+  const [systemCheckLog, setSystemCheckLog] = useState<string[]>([]);
+
+  const runSystemCheck = async () => {
+    setSystemCheckStatus('checking');
+    setSystemCheckLog(['🔄 Memulai diagnosa sistem...', '📡 Memeriksa koneksi internet...']);
+
+    // 1. Check Online Status
+    if (!navigator.onLine) {
+      setSystemCheckLog(prev => [...prev, '❌ Internet Client Putus (Offline)', '🛑 Diagnosa berhenti.']);
+      setSystemCheckStatus('error');
+      return;
+    }
+    setSystemCheckLog(prev => [...prev, '✅ Internet: Terhubung']);
+
+    try {
+      // 2. Check Firebase Config
+      setSystemCheckLog(prev => [...prev, '🔑 Memeriksa konfigurasi Firebase...']);
+      // We assume db is initialized if imported.
+      setSystemCheckLog(prev => [...prev, '✅ Firebase SDK: Initialized']);
+
+      // 3. Test Firestore Read (Product Batch)
+      setSystemCheckLog(prev => [...prev, '📦 Mencoba akses Database Produk (batch_1)...']);
+
+      const startTime = Date.now();
+      const batchRef = doc(db, 'productBatches', 'batch_1');
+      const docSnap = await getDoc(batchRef);
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const productCount = data.products?.length || 0;
+        const lastUpdated = data.lastModified ? new Date(data.lastModified).toLocaleString('id-ID') : 'N/A';
+
+        setSystemCheckLog(prev => [...prev, `✅ Database: TERHUBUNG (${duration}ms)`, `📊 Data ditemukan: ${productCount} Produk`, `🕒 Update Terakhir: ${lastUpdated}`, '🎉 SISTEM SEHAT & ONLINE!']);
+        setSystemCheckStatus('success');
+      } else {
+        setSystemCheckLog(prev => [...prev, '❌ Database: Terhubung tapi DATA KOSONG (No batch_1)', '⚠️ Hubungi Developer segera!']);
+        setSystemCheckStatus('error');
+      }
+
+    } catch (error: any) {
+      console.error("System Check Error:", error);
+      let errorMsg = error.message || 'Unknown error';
+
+      if (errorMsg.includes('offline')) {
+        errorMsg = 'Koneksi ke Firebase gagal (Offline Mode?)';
+      } else if (errorMsg.includes('permission')) {
+        errorMsg = 'Akses ditolak (Permission Denied)';
+      }
+
+      setSystemCheckLog(prev => [...prev, `❌ ERROR FATAL: ${errorMsg}`, '🛑 Pastikan internet stabil dan coba lagi.']);
+      setSystemCheckStatus('error');
+    }
+  };
+
+  const handleRepairAction = () => {
+    if (confirm('Lakukan Hard Refresh? Halaman akan dimuat ulang untuk membersihkan cache browser.')) {
+      window.location.reload();
+    }
+  };
+
 
   // Use prop user if available
   const user = propUser;
@@ -239,6 +309,95 @@ const AccountPage: React.FC<AccountPageProps> = ({
       </div>
     );
   };
+
+  // System Health Modal
+  const renderSystemModal = () => {
+    if (!showSystemModal) return null;
+
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl border-2 border-[#D4AF37]">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-[#997B2C] to-[#EDD686] p-4 flex justify-between items-center">
+            <h3 className="text-white font-bold text-lg flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Diagnosa Sistem
+            </h3>
+            <button
+              onClick={() => setShowSystemModal(false)}
+              className="p-1 bg-white/20 rounded-full hover:bg-white/30 text-white transition-colors"
+            >
+              <LogOut className="w-4 h-4 rotate-180" /> {/* Close icon workaround */}
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-5">
+            <div className="text-center mb-6">
+              <div className={`w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-3 transition-colors duration-500 ${systemCheckStatus === 'idle' ? 'bg-gray-100' :
+                systemCheckStatus === 'checking' ? 'bg-blue-100 animate-pulse' :
+                  systemCheckStatus === 'success' ? 'bg-green-100' : 'bg-red-100'
+                }`}>
+                {systemCheckStatus === 'idle' && <Settings className="w-8 h-8 text-gray-500" />}
+                {systemCheckStatus === 'checking' && <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />}
+                {systemCheckStatus === 'success' && <Shield className="w-8 h-8 text-green-600" />}
+                {systemCheckStatus === 'error' && <EyeOff className="w-8 h-8 text-red-600" />}
+              </div>
+
+              <h4 className="font-bold text-lg text-slate-800">
+                {systemCheckStatus === 'idle' ? 'Cek Kesehatan Sistem' :
+                  systemCheckStatus === 'checking' ? 'Sedang Memeriksa...' :
+                    systemCheckStatus === 'success' ? 'Sistem Normal' : 'Terdeteksi Masalah'}
+              </h4>
+              <p className="text-xs text-gray-500 mt-1">
+                Verifikasi koneksi database ke Production
+              </p>
+            </div>
+
+            {/* Log Console */}
+            <div className="bg-slate-900 rounded-lg p-3 h-48 overflow-y-auto mb-4 font-mono text-[10px] text-green-400 space-y-1 shadow-inner border border-slate-700">
+              {systemCheckLog.length === 0 ? (
+                <span className="text-gray-500 italic">Klik tombol "Mulai Cek Sistem" di bawah...</span>
+              ) : (
+                systemCheckLog.map((log, i) => (
+                  <div key={i} className={`${log.includes('❌') ? 'text-red-400' : log.includes('warning') ? 'text-yellow-400' : ''}`}>
+                    {log}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={runSystemCheck}
+                disabled={systemCheckStatus === 'checking'}
+                className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {systemCheckStatus === 'idle' ? 'Mulai Cek Sistem' : 'Cek Ulang'}
+              </button>
+
+              {systemCheckStatus === 'error' && (
+                <button
+                  onClick={handleRepairAction}
+                  className="px-4 py-3 bg-red-100 text-red-700 rounded-xl font-bold text-sm hover:bg-red-200 active:scale-95 transition-all"
+                >
+                  Perbaikan
+                </button>
+              )}
+            </div>
+
+            {systemCheckStatus === 'error' && (
+              <p className="text-[10px] text-center text-gray-400 mt-3">
+                *Tombol Perbaikan akan melakukan refresh paksa aplikasi
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
 
   // Role-based settings content
   const renderSettingsContent = () => {
@@ -552,12 +711,16 @@ const AccountPage: React.FC<AccountPageProps> = ({
                     <p className="text-[10px] font-bold text-slate-900 leading-tight">Keamanan</p>
                   </div>
                 </button>
-                <button className="p-2.5 bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] hover:shadow-[0_2px_0_0_#7a6223,0_3px_15px_rgba(153,123,44,0.25)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#7a6223] active:translate-y-0.5 transition-all duration-150 shine-effect">
+                <button
+                  onClick={() => setShowSystemModal(true)}
+                  className="p-2.5 bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] hover:shadow-[0_2px_0_0_#7a6223,0_3px_15px_rgba(153,123,44,0.25)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#7a6223] active:translate-y-0.5 transition-all duration-150 shine-effect"
+                >
                   <div className="flex flex-col items-center">
                     <Settings className="w-5 h-5 text-[#997B2C] mb-1" />
                     <p className="text-[10px] font-bold text-slate-900 leading-tight">Sistem</p>
                   </div>
                 </button>
+
                 <button className="p-2.5 bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] hover:shadow-[0_2px_0_0_#7a6223,0_3px_15px_rgba(153,123,44,0.25)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#7a6223] active:translate-y-0.5 transition-all duration-150 shine-effect">
                   <div className="flex flex-col items-center">
                     <RefreshCw className="w-5 h-5 text-[#997B2C] mb-1" />
@@ -627,6 +790,8 @@ const AccountPage: React.FC<AccountPageProps> = ({
           <p className="text-xs text-gray-400">Azzahra Fashion Muslim v2.1.0</p>
         </div>
       </div>
+      {/* Modals */}
+      {renderSystemModal()}
     </div>
   );
 };
