@@ -1477,6 +1477,17 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             </button>
                           )}
 
+                          {/* ✨ NEW: Quick POS Cash Payment Button (Owner only) */}
+                          {order.status === 'pending' && user?.role === 'owner' && (
+                            <button
+                              onClick={() => handlePOSPaymentOpen(order)}
+                              className="px-2.5 py-1.5 rounded-full bg-emerald-500 border border-emerald-600 text-white text-xs font-semibold hover:bg-emerald-600 transition-all flex items-center justify-center gap-1 whitespace-nowrap shadow-sm"
+                            >
+                              <span className="font-bold text-[10px]">Rp</span>
+                              Cash
+                            </button>
+                          )}
+
                           <button
                             onClick={() => handleViewOrder(order)}
                             className="px-2.5 py-1.5 rounded-full bg-gradient-to-r from-[#F9F5EB] to-[#FEF9E7] border border-[#D4AF37]/30 text-[#997B2C] text-xs font-semibold hover:border-[#D4AF37] hover:shadow-md transition-all flex items-center justify-center gap-1 whitespace-nowrap"
