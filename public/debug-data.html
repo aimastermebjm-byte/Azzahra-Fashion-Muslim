@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azzahra Debugger</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #00ff00; }
+        .log { margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .error { color: #ff5555; }
+        .success { color: #55ff55; font-weight: bold; }
+        .info { color: #55ffff; }
+    </style>
+</head>
+<body>
+    <h1>🕵️ Azzahra Production Debugger</h1>
+    <div id="status">Initializing...</div>
+    <div id="logs"></div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // LOGGING HELPER
+        function log(msg, type = 'normal') {
+            const el = document.getElementById('logs');
+            const item = document.createElement('div');
+            item.className = 'log ' + type;
+            item.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            el.appendChild(item);
+            console.log(msg);
+        }
+
+        async function runDebug() {
+            try {
+                // 1. CONFIG CHECK
+                log('1. Checking Config...', 'info');
+                const firebaseConfig = {
+                    apiKey: "AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs",
+                    authDomain: "azzahra-fashion-muslim-ab416.firebaseapp.com",
+                    projectId: "azzahra-fashion-muslim-ab416",
+                    storageBucket: "azzahra-fashion-muslim-ab416.firebasestorage.app",
+                    messagingSenderId: "822661485961",
+                    appId: "1:822661485961:web:4603488d8bef0119f3fd58"
+                };
+                
+                log(`Config Project ID: ${firebaseConfig.projectId}`);
+
+                // 2. INIT FIREBASE
+                const app = initializeApp(firebaseConfig);
+                const db = getFirestore(app);
+                log('2. Firebase Initialized', 'success');
+
+                // 3. FETCH DATA
+                log('3. Attempting to fetch batch_1...', 'info');
+                const docRef = doc(db, 'productBatches', 'batch_1');
+                const snapshot = await getDoc(docRef);
+
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    const products = data.products || [];
+                    log('✅ SUCCESS: Connection OK & Data Found!', 'success');
+                    log(`📦 Document ID: ${snapshot.id}`);
+                    log(`📊 Product Count: ${products.length}`);
+                    log(`🕒 Last Updated: ${data.updatedAt}`);
+                    document.getElementById('status').innerText = '✅ SYSTEM OPERATIONAL (Data Exists)';
+                    document.getElementById('status').style.color = '#55ff55';
+                } else {
+                    log('❌ ERROR: Document does NOT exist.', 'error');
+                    log('Analysis: Connection successful, but "productBatches/batch_1" is MISSING from server.', 'error');
+                    document.getElementById('status').innerText = '⚠️ CONNECTED BUT DATA MISSING';
+                    document.getElementById('status').style.color = '#ffff55';
+                }
+
+            } catch (error) {
+                log(`🔥 FATAL ERROR: ${error.message}`, 'error');
+                log(`Code: ${error.code}`, 'error');
+                document.getElementById('status').innerText = '❌ CONNECTION FAILED';
+                document.getElementById('status').style.color = '#ff5555';
+            }
+        }
+
+        runDebug();
+    </script>
+</body>
+</html>
