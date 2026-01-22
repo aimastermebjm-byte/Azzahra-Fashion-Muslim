@@ -444,6 +444,13 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     loadData();
   }, [reportType]); // OPTIMIZED: Only reload when reportType changes, not filters
 
+  // ✨ FIX: Reload cashflow when payment method filter changes
+  useEffect(() => {
+    if (reportType === 'cashflow' || reportType === 'profitloss') {
+      loadCashFlowReport();
+    }
+  }, [paymentMethodFilter]);
+
   // Load product buyers with pagination
   const loadProductBuyers = async (product: ProductReport, page: number = 1, searchQuery?: string) => {
     setLoadingBuyers(true);
