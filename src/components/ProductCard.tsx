@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { ChevronUp, MessageCircle, X, ZoomIn } from 'lucide-react';
 import { Product } from '../types';
+import { useCollectionDiscount } from '../hooks/useCollectionDiscount';
 
 interface ProductCardProps {
   product: Product;
@@ -143,14 +144,19 @@ const ProductCard: React.FC<ProductCardProps> = ({
       );
     }
 
+    // Checking Global Collection Discount (New Logic)
+    const globalDiscount = useCollectionDiscount().getProductDiscount(product.id);
+    // Use either prop (legacy/banner specific) OR global lookup
+    const activeDiscount = Math.max(collectionDiscount, globalDiscount);
+
     // Collection Discount (Virtual - not stored in product price)
-    if (collectionDiscount > 0) {
+    if (activeDiscount > 0) {
       // Use originalRetailPrice as base (in case retailPrice was corrupted by old discount system)
       const baseRetail = product.originalRetailPrice || product.retailPrice;
       const baseReseller = product.originalResellerPrice || product.resellerPrice || baseRetail * 0.8;
 
-      const discountedRetail = Math.max(0, baseRetail - collectionDiscount);
-      const discountedReseller = Math.max(0, baseReseller - collectionDiscount);
+      const discountedRetail = Math.max(0, baseRetail - activeDiscount);
+      const discountedReseller = Math.max(0, baseReseller - activeDiscount);
 
       return (
         <div className="space-y-0.5 text-left">
@@ -159,7 +165,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               Rp {discountedRetail.toLocaleString('id-ID')}
             </span>
             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-green-500/20 text-green-600 border-green-500/30">
-              -Rp {collectionDiscount.toLocaleString('id-ID')}
+              -Rp {activeDiscount.toLocaleString('id-ID')}
             </span>
           </div>
           <div className="text-xs text-gray-400 line-through">

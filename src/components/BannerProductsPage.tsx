@@ -31,8 +31,11 @@ const BannerProductsPage: React.FC<BannerProductsPageProps> = ({
     // Wrapper to store collectionDiscount in sessionStorage before navigating
     const handleProductClick = (product: Product) => {
         if (collectionInfo?.discountAmount) {
+            // NOTE: This is now a FALLBACK. 
+            // The new 'useCollectionDiscount' hook handles this globally in ProductDetail.
+            // We keep it here just in case the global fetch fails or is slower.
             sessionStorage.setItem('activeCollectionDiscount', String(collectionInfo.discountAmount));
-            console.log('💰 Stored collectionDiscount in sessionStorage:', collectionInfo.discountAmount);
+            console.log('💰 Stored collectionDiscount in sessionStorage (Fallback):', collectionInfo.discountAmount);
         } else {
             sessionStorage.removeItem('activeCollectionDiscount');
         }

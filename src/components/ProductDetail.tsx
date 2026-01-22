@@ -5,7 +5,7 @@ import { Product } from '../types';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
 import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
 import VariantSelectionModal from './VariantSelectionModal';
-import { collectionService } from '../services/collectionService';
+import { useCollectionDiscount } from '../hooks/useCollectionDiscount';
 
 interface ProductDetailProps {
   currentProduct: Product;
@@ -29,6 +29,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   // Get cart count for badge
   const { cartItems } = useRealTimeCartOptimized();
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+
+  // Global Discount Hook
+  const { getProductDiscount } = useCollectionDiscount();
 
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
@@ -57,7 +60,15 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   // Fetch collection discount - check sessionStorage first (from BannerProductsPage), then try product.collectionId
   useEffect(() => {
     const fetchCollectionDiscount = async () => {
-      // First try sessionStorage (set by BannerProductsPage when clicking from collection)
+      // 0. Check GLOBAL discount first (Refactor Priority)
+      const globalDiscount = getProductDiscount(initialProduct.id);
+      if (globalDiscount > 0) {
+        console.log('💰 ProductDetail: Using GLOBAL collection discount:', globalDiscount);
+        setCollectionDiscount(globalDiscount);
+        return;
+      }
+
+      // 1. First try sessionStorage (set by BannerProductsPage when clicking from collection)
       const storedDiscount = sessionStorage.getItem('activeCollectionDiscount');
       if (storedDiscount) {
         const discount = Number(storedDiscount);
