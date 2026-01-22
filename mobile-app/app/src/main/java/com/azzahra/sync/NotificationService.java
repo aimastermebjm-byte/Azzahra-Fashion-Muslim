@@ -76,11 +76,37 @@ public class NotificationService extends NotificationListenerService {
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-        String pkg = sbn.getPackageName();
-        
-        // LOG SETIAP NOTIFIKASI YANG MASUK (untuk debugging)
-        updateUILog("📨 Notif dari: " + pkg.substring(Math.max(0, pkg.length()-20)));
-        
+        // ========== DEBUG MODE: LOG SEMUA TANPA FILTER ==========
+        try {
+            String pkg = sbn.getPackageName();
+            Notification n = sbn.getNotification();
+            String title = "";
+            String text = "";
+            
+            if (n != null && n.extras != null) {
+                title = n.extras.getString(Notification.EXTRA_TITLE, "");
+                CharSequence textChar = n.extras.getCharSequence(Notification.EXTRA_TEXT);
+                text = (textChar != null) ? textChar.toString() : "";
+            }
+            
+            // LOG SEMUA NOTIFIKASI TANPA FILTER
+            String shortPkg = pkg.length() > 15 ? pkg.substring(pkg.length() - 15) : pkg;
+            String preview = (title + " " + text).trim();
+            if (preview.length() > 30) preview = preview.substring(0, 30) + "...";
+            
+            updateUILog("📬 [" + shortPkg + "] " + preview);
+            
+            // UNTUK SEMENTARA: JANGAN PROSES KE FIREBASE, CUMA LOG SAJA
+            // Uncomment baris di bawah setelah log bekerja
+            // processNotificationFull(sbn, pkg, title, text);
+            
+        } catch (Exception e) {
+            updateUILog("❌ Error: " + e.getMessage());
+        }
+    }
+    
+    // Backup function untuk proses normal (akan diaktifkan setelah debug selesai)
+    private void processNotificationFull(StatusBarNotification sbn, String pkg, String title, String text) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
             updateUILog("⚠️ Skip: User belum login");
@@ -91,32 +117,19 @@ public class NotificationService extends NotificationListenerService {
         boolean isDiag = pkg.equals(getPackageName());
         boolean isSelected = selected.contains(pkg);
 
-        if (!isSelected && !isDiag) {
-            // Tidak ada log untuk app yang tidak dipilih (terlalu banyak)
-            return;
-        }
+        if (!isSelected && !isDiag) return;
 
-        updateUILog("🎯 App match: " + pkg.substring(Math.max(0, pkg.length()-15)));
+        updateUILog("🎯 App match: " + pkg);
 
         if (cachedRole == null) {
-            updateUILog("🔍 Checking role...");
             db.collection("users").document(user.getUid()).get().addOnSuccessListener(doc -> {
                 if (doc.exists()) {
                     cachedRole = doc.getString("role");
-                    updateUILog("👤 Role: " + cachedRole);
-                    if ("owner".equalsIgnoreCase(cachedRole)) {
-                        processNotification(sbn);
-                    } else {
-                        updateUILog("⚠️ Skip: Role bukan owner");
-                    }
-                } else {
-                    updateUILog("❌ User doc not found");
+                    if ("owner".equalsIgnoreCase(cachedRole)) processNotification(sbn);
                 }
-            }).addOnFailureListener(e -> updateUILog("❌ Role check failed: " + e.getMessage()));
+            });
         } else if ("owner".equalsIgnoreCase(cachedRole)) {
             processNotification(sbn);
-        } else {
-            updateUILog("⚠️ Skip: Cached role = " + cachedRole);
         }
     }
 
