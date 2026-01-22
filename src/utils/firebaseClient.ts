@@ -5,15 +5,18 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, si
 
 // Firebase configuration with HARDCODED FALLBACK values
 // This ensures the app works even without Vercel env vars
+// Firebase configuration with EXPLICIT HARDCODED values (Safe Fallback)
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'azzahra-fashion-muslim-ab416.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'azzahra-fashion-muslim-ab416',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'azzahra-fashion-muslim-ab416.firebasestorage.app',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '822661485961',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:822661485961:web:4603488d8bef0119f3fd58',
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-NZSXEKPQER'
+  apiKey: "AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs",
+  authDomain: "azzahra-fashion-muslim-ab416.firebaseapp.com",
+  projectId: "azzahra-fashion-muslim-ab416",
+  storageBucket: "azzahra-fashion-muslim-ab416.firebasestorage.app",
+  messagingSenderId: "822661485961",
+  appId: "1:822661485961:web:4603488d8bef0119f3fd58",
+  measurementId: "G-NZSXEKPQER"
 };
+
+console.log('🔥 FIREBASE CLIENT INIT:', { projectId: firebaseConfig.projectId, apiKeyPrefix: firebaseConfig.apiKey.substring(0, 5) + '...' });
 
 // Initialize Firebase
 const firebaseApp = initializeApp(firebaseConfig);
