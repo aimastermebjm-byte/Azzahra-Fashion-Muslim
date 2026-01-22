@@ -40,6 +40,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [voucherCode, setVoucherCode] = useState('');
   const [voucherLoading, setVoucherLoading] = useState(false);
 
+  // POS Cash State
+  const [cashReceived, setCashReceived] = useState<string>('');
+
   // Load cart from backend
   const loadCart = async () => {
     try {
@@ -58,19 +61,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     loadCart(); // Load regardless of user state
   }, [user]);
 
-  // Filter cart items based on selected IDs
-  const cartItems = selectedCartItemIds.length > 0
-    ? allCartItems.filter(item => selectedCartItemIds.includes(item.id))
-    : allCartItems;
-
-  const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => {
-      if (!item) return total;
-      const itemPrice = item.price || 0;
-      const itemQuantity = item.quantity || 1;
-      return total + (itemPrice * itemQuantity);
-    }, 0);
-  };
 
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
@@ -383,6 +373,18 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   };
 
+  // Metric Calculations (Cart Items & Total Price) - Moved UP for scope dependencies
+  const cartItems = selectedCartItemIds.length > 0
+    ? allCartItems.filter(item => selectedCartItemIds.includes(item.id))
+    : allCartItems;
+
+  const totalPrice = cartItems.reduce((total, item) => {
+    if (!item) return total;
+    const itemPrice = item.price || 0;
+    const itemQuantity = item.quantity || 1;
+    return total + (itemPrice * itemQuantity);
+  }, 0);
+
   // Shipping mode: 'delivery' = kirim ke alamat, 'keep' = atur alamat nanti
   // RULES:
   // 1. Ready stock (ALL roles) → ALWAYS 'delivery', NO 'keep' option
@@ -430,6 +432,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     notes: ''
   });
 
+
+
+  const shippingFee = shippingMode === 'keep' ? 0 : formData.shippingCost || 0;
+  const voucherDiscount = appliedVoucher ? appliedVoucher.discountAmount : 0;
+  const effectiveFinalTotal = Math.max(0, totalPrice + shippingFee - voucherDiscount);
+  // Alias for legacy usage
+  const effectiveShippingFee = shippingFee;
+
   const shippingOptions = [
     { id: 'jnt', name: 'J&T Express', code: 'jnt', price: 0 }, // RajaOngkir supported
     { id: 'jne', name: 'JNE', code: 'jne', price: 0 }, // RajaOngkir supported
@@ -437,7 +447,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     { id: 'tiki', name: 'TIKI', code: 'tiki', price: 0 }, // RajaOngkir supported
     { id: 'ojek', name: 'OJEK', code: null, price: 0 }, // Local courier - manual price
     { id: 'lion', name: 'Lion Parcel', code: 'lion', price: 0 }, // Automatic via Komerce
-    { id: 'idexpress', name: 'IDExpress', code: 'ide', price: 0 } // Automatic via Komerce
+    { id: 'idexpress', name: 'IDExpress', code: 'ide', price: 0 }, // Automatic via Komerce
+    { id: 'pickup', name: 'Ambil di Toko', code: 'pickup', price: 0 } // ✨ NEW: Pickup option (Free)
   ];
 
   const selectedPaymentMethod = paymentMethods.find(method => method.id === formData.paymentMethodId);
@@ -627,7 +638,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     setVoucherLoading(true);
     try {
-      const result = await voucherService.validateVoucher(codeToApply, user?.uid, getTotalPrice());
+      const result = await voucherService.validateVoucher(codeToApply, user?.uid, totalPrice);
       if (result.valid && result.voucher) {
         setAppliedVoucher(result.voucher);
         setVoucherCode('');
@@ -671,22 +682,25 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       // No need to check here - transaction will handle it atomically
 
       // Check if selected courier has valid shipping cost (only for delivery mode)
-      if (supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {
-        showToast({
-          type: 'warning',
-          title: 'Ongkir belum siap',
-          message: 'Tunggu perhitungan ongkir selesai atau pilih kurir lain.'
-        });
-        return;
-      }
+      // BYPASS if courier is 'pickup'
+      if (formData.shippingCourier !== 'pickup') {
+        if (supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {
+          showToast({
+            type: 'warning',
+            title: 'Ongkir belum siap',
+            message: 'Tunggu perhitungan ongkir selesai atau pilih kurir lain.'
+          });
+          return;
+        }
 
-      if (!supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {
-        showToast({
-          type: 'warning',
-          title: 'Isi biaya ongkir',
-          message: 'Masukkan biaya ongkos kirim untuk kurir lokal.'
-        });
-        return;
+        if (!supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {
+          showToast({
+            type: 'warning',
+            title: 'Isi biaya ongkir',
+            message: 'Masukkan biaya ongkos kirim untuk kurir lokal.'
+          });
+          return;
+        }
       }
     }
 
@@ -702,9 +716,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     // ✅ SIMPLIFIED: No unique code at checkout
     // Unique code will be generated when customer decides to pay
 
-    // Hitung shipping fee berdasarkan mode
-    const effectiveShippingFee = shippingMode === 'keep' ? 0 : shippingFee;
-    const effectiveFinalTotal = Math.max(0, totalPrice + effectiveShippingFee - voucherDiscount);
+    // Metric vars are now calculated at component level (effectiveFinalTotal, etc)
 
     const orderData = {
       items: cartItems.map(item => ({
@@ -753,16 +765,29 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       shippingMode: shippingMode,
       shippingConfigured: shippingMode === 'delivery', // true jika sudah lengkap
       paymentMethod: selectedPaymentMethod.name,
-      notes: formData.notes,
+      notes: (() => {
+        // Append POS info if Cash payment
+        let finalNotes = formData.notes || '';
+        const isCashMethod = selectedPaymentMethod?.name?.toLowerCase().includes('cash') || selectedPaymentMethod?.name?.toLowerCase().includes('tunai') || selectedPaymentMethod?.name?.toLowerCase().includes('bayar di toko');
+
+        if (isCashMethod && cashReceived) {
+          const received = Number(cashReceived);
+          const change = received - effectiveFinalTotal;
+          const posNote = `\n[POS] Tunai: Rp ${received.toLocaleString('id-ID')} | Kembalian: Rp ${change.toLocaleString('id-ID')}`;
+          finalNotes += posNote;
+        }
+        return finalNotes;
+      })(),
       paymentMethodId: selectedPaymentMethod.id,
       paymentMethodName: selectedPaymentMethod.name,
       totalAmount: totalPrice,
       shippingCost: effectiveShippingFee,
       voucherCode: appliedVoucher?.code || null,
       voucherDiscount: voucherDiscount,
-      finalTotal: effectiveFinalTotal
-      // ✅ SIMPLIFIED: No unique code fields
-      // These will be added when customer generates payment in OrdersPage
+      finalTotal: effectiveFinalTotal,
+      // ✨ NEW: Add cash details explicitly for Admin UI if supported later
+      cashReceived: cashReceived ? Number(cashReceived) : undefined,
+      cashChange: cashReceived ? (Number(cashReceived) - effectiveFinalTotal) : undefined
     };
 
     // Create order and get order ID (pass cartItems to eliminate duplicate read)
@@ -798,11 +823,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     onBack();
   };
 
-  const totalPrice = getTotalPrice();
-  // Shipping fee is 0 for 'keep' mode (no delivery)
-  const shippingFee = shippingMode === 'keep' ? 0 : (formData.shippingCost || shippingCost || 0);
-  const voucherDiscount = appliedVoucher?.discountAmount || 0;
-  const finalTotal = Math.max(0, totalPrice + shippingFee - voucherDiscount);
+  const finalTotal = effectiveFinalTotal;
   const cartCount = cartItems?.length || 0;
 
   // ✅ SIMPLIFIED: Just show finalTotal (no unique code)
@@ -1003,8 +1024,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     />
                   )}
 
-                  {/* Manual shipping cost input for non-automatic couriers */}
-                  {!supportsAutomatic && (
+                  {/* Manual shipping cost input for non-automatic couriers, EXCEPT pickup */}
+                  {!supportsAutomatic && formData.shippingCourier !== 'pickup' && (
                     <div className="mt-4 border-t border-dashed border-slate-200 pt-4">
                       <label className="mb-2 block text-sm font-semibold text-slate-700">
                         Biaya Ongkos Kirim (Rp)
@@ -1020,6 +1041,19 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       />
                       <p className="mt-1 text-xs text-slate-500">
                         * Masukkan manual biaya ongkos kirim untuk kurir lokal
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Pickup Info */}
+                  {formData.shippingCourier === 'pickup' && (
+                    <div className="mt-4 rounded-xl bg-green-50 p-4 border border-green-200">
+                      <p className="text-sm font-semibold text-green-800 flex items-center gap-2">
+                        <Package className="w-4 h-4" />
+                        Ambil Sendiri di Toko
+                      </p>
+                      <p className="text-sm text-green-700 mt-1">
+                        Gratis Ongkir. Silakan ambil pesanan Anda langsung di toko.
                       </p>
                     </div>
                   )}
@@ -1211,28 +1245,75 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {paymentMethods.map((method) => (
-                      <label key={method.id} className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 cursor-pointer relative overflow-hidden group ${formData.paymentMethodId === method.id
-                        ? 'bg-gradient-to-br from-white to-[#FEFAE0] shadow-[0_0_15px_rgba(212,175,55,0.25)]'
-                        : 'bg-white border border-gray-100 hover:border-[#D4AF37]/30 hover:shadow-md'
-                        }`}>
-                        <div className={`flex items-center justify-center h-5 w-5 rounded-full border transition-all duration-300 ${formData.paymentMethodId === method.id ? 'border-[#B8860B] bg-white' : 'border-gray-300 group-hover:border-[#D4AF37]'}`}>
-                          {formData.paymentMethodId === method.id && <div className="h-3 w-3 rounded-full bg-[#B8860B] shadow-sm transform scale-110" />}
+                    {paymentMethods.map((method) => {
+                      const isSelected = formData.paymentMethodId === method.id;
+                      const isCash = method.name.toLowerCase().includes('cash') || method.name.toLowerCase().includes('tunai') || method.name.toLowerCase().includes('bayar di toko') || method.name.toLowerCase().includes('kas');
+
+                      return (
+                        <div key={method.id}>
+                          <label className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 cursor-pointer relative overflow-hidden group ${isSelected
+                            ? 'bg-gradient-to-br from-white to-[#FEFAE0] shadow-[0_0_15px_rgba(212,175,55,0.25)]'
+                            : 'bg-white border border-gray-100 hover:border-[#D4AF37]/30 hover:shadow-md'
+                            }`}>
+                            <div className={`flex items-center justify-center h-5 w-5 rounded-full border transition-all duration-300 ${isSelected ? 'border-[#B8860B] bg-white' : 'border-gray-300 group-hover:border-[#D4AF37]'}`}>
+                              {isSelected && <div className="h-3 w-3 rounded-full bg-[#B8860B] shadow-sm transform scale-110" />}
+                            </div>
+                            <input
+                              type="radio"
+                              name="paymentMethodId"
+                              value={method.id}
+                              checked={isSelected}
+                              onChange={handleInputChange}
+                              className="sr-only"
+                            />
+                            <div>
+                              <p className={`text-sm font-bold transition-colors duration-300 ${isSelected ? 'text-[#996515]' : 'text-gray-900 group-hover:text-[#996515]'}`}>{method.name}</p>
+                              <p className="text-xs text-slate-500">Metode pembayaran toko</p>
+                            </div>
+                          </label>
+
+                          {/* POS Calculator UI if Cash Selected */}
+                          {isSelected && isCash && (
+                            <div className="mt-2 ml-4 mr-4 p-4 bg-amber-50 rounded-xl border border-amber-200 animate-in slide-in-from-top-2 fade-in duration-300">
+                              <div className="flex flex-col gap-3">
+                                <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-amber-100 shadow-sm">
+                                  <span className="text-sm font-semibold text-gray-600">Total Tagihan:</span>
+                                  <span className="text-lg font-bold text-[#D4AF37]">Rp {effectiveFinalTotal.toLocaleString('id-ID')}</span>
+                                </div>
+
+                                <div>
+                                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Uang Diterima (Rp)</label>
+                                  <input
+                                    type="number"
+                                    value={cashReceived}
+                                    onChange={(e) => setCashReceived(e.target.value)}
+                                    placeholder="0"
+                                    className="w-full text-lg font-bold p-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+                                  />
+                                </div>
+
+                                <div className="flex gap-2 text-xs">
+                                  <button onClick={() => setCashReceived(String(effectiveFinalTotal))} className="px-2 py-1 bg-white border border-amber-200 rounded text-amber-800 hover:bg-amber-100">Uang Pas</button>
+                                  <button onClick={() => setCashReceived(String(effectiveFinalTotal + 10000))} className="px-2 py-1 bg-white border border-amber-200 rounded text-amber-800 hover:bg-amber-100">+10k</button>
+                                  <button onClick={() => setCashReceived(String(effectiveFinalTotal + 50000))} className="px-2 py-1 bg-white border border-amber-200 rounded text-amber-800 hover:bg-amber-100">+50k</button>
+                                </div>
+
+                                {Number(cashReceived) > 0 && (
+                                  <div className={`flex justify-between items-center p-3 rounded-lg border ${Number(cashReceived) >= effectiveFinalTotal ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                    <span className="text-sm font-semibold text-gray-600">
+                                      {Number(cashReceived) >= effectiveFinalTotal ? 'Kembalian:' : 'Kurang:'}
+                                    </span>
+                                    <span className={`text-lg font-bold ${Number(cashReceived) >= effectiveFinalTotal ? 'text-green-700' : 'text-red-700'}`}>
+                                      Rp {Math.abs(Number(cashReceived) - effectiveFinalTotal).toLocaleString('id-ID')}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <input
-                          type="radio"
-                          name="paymentMethodId"
-                          value={method.id}
-                          checked={formData.paymentMethodId === method.id}
-                          onChange={handleInputChange}
-                          className="sr-only"
-                        />
-                        <div>
-                          <p className={`text-sm font-bold transition-colors duration-300 ${formData.paymentMethodId === method.id ? 'text-[#996515]' : 'text-gray-900 group-hover:text-[#996515]'}`}>{method.name}</p>
-                          <p className="text-xs text-slate-500">Metode pembayaran toko</p>
-                        </div>
-                      </label>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1295,8 +1376,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                             <button
                               key={v.id}
                               onClick={() => handleApplyVoucher(v)}
-                              disabled={getTotalPrice() < v.minPurchase}
-                              className={`w - full text - left p - 3 rounded - lg border transition ${getTotalPrice() >= v.minPurchase
+                              disabled={totalPrice < v.minPurchase}
+                              className={`w-full text-left p-3 rounded-lg border transition ${totalPrice >= v.minPurchase
                                 ? 'border-purple-200 bg-purple-50 hover:bg-purple-100'
                                 : 'border-slate-200 bg-slate-50 opacity-60'
                                 } `}
@@ -1309,9 +1390,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                                 </div>
                                 <Tag className="w-4 h-4 text-purple-400" />
                               </div>
-                              {getTotalPrice() < v.minPurchase && (
+                              {totalPrice < v.minPurchase && (
                                 <p className="text-xs text-amber-600 mt-1">
-                                  Belanja kurang Rp {(v.minPurchase - getTotalPrice()).toLocaleString('id-ID')} lagi
+                                  Belanja kurang Rp {(v.minPurchase - totalPrice).toLocaleString('id-ID')} lagi
                                 </p>
                               )}
                             </button>

@@ -521,7 +521,14 @@ function AppContent() {
         paymentMethod: orderData.paymentMethodName || orderData.paymentMethod || '',
         paymentMethodId: orderData.paymentMethodId || null,
         paymentMethodName: orderData.paymentMethodName || orderData.paymentMethod || '',
-        status: 'pending' as const,
+        // ✨ AUTO-PAID: Set status to 'processing' if Cash/Tunai/Kas (POS flow)
+        // This implies the order is "Lunas" and ready to be processed.
+        status: (orderData.paymentMethodName?.toLowerCase().includes('cash') ||
+          orderData.paymentMethodName?.toLowerCase().includes('tunai') ||
+          orderData.paymentMethodName?.toLowerCase().includes('bayar di toko') ||
+          orderData.paymentMethodName?.toLowerCase().includes('kas'))
+          ? 'processing'
+          : 'pending',
         totalAmount: calculatedSubtotal,
         shippingCost: calculatedShippingCost,
         // ✅ CRITICAL: Use finalTotal from CheckoutPage (includes unique code if auto mode)

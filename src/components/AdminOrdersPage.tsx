@@ -6,6 +6,7 @@ import { ordersService } from '../services/ordersService';
 import { paymentGroupService } from '../services/paymentGroupService';
 import { checkAndUpgradeRole, OrderItemForUpgrade, queueWhatsAppNotification } from '../services/roleUpgradeService';
 import ShippingEditModal from './ShippingEditModal';
+import CashPaymentModal from './CashPaymentModal'; // ✨ NEW: POS Cash Modal
 
 interface AdminOrdersPageProps {
   onBack: () => void;
@@ -45,6 +46,10 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
   //  NEW: Shipping edit state for admin/owner
   const [shippingEditOrder, setShippingEditOrder] = useState<any>(null);
+
+  // POS Cash Modal State
+  const [showCashModal, setShowCashModal] = useState(false);
+  const [cashOrder, setCashOrder] = useState<any>(null);
 
   //  NEW: Unaddressed Orders Filter
   const [showUnaddressedOnly, setShowUnaddressedOnly] = useState(false);
@@ -1032,6 +1037,50 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     }
   };
 
+  // ✨ NEW: POS Cash Payment Handlers
+  const handlePOSPaymentOpen = (order: any) => {
+    setCashOrder(order);
+    setShowCashModal(true);
+  };
+
+  const handleCashPaymentConfirm = async (cashReceived: number, change: number, notes: string) => {
+    if (!cashOrder) return;
+
+    try {
+      // Create detailed notes about cash payment
+      const timestamp = new Date().toLocaleString('id-ID');
+      const cashInfo = `[POS CASH] ${timestamp}\nTotal: Rp ${cashOrder.finalTotal.toLocaleString('id-ID')}\nDiterima: Rp ${cashReceived.toLocaleString('id-ID')}\nKembalian: Rp ${change.toLocaleString('id-ID')}`;
+      const userNote = notes ? `\nCatatan: ${notes}` : '';
+      const cashNote = `${cashInfo}${userNote}\n\n`;
+
+      const updatedNotes = cashOrder.notes
+        ? `${cashNote}${cashOrder.notes}`
+        : cashNote;
+
+      // Update order status, payment method, and notes
+      const success = await ordersService.updateOrder(cashOrder.id, {
+        status: 'processing', // Mark as Lunas/Paid (Processing)
+        paymentMethodName: 'Cash (POS Admin)', // Update payment method name
+        notes: updatedNotes
+      });
+
+      if (success) {
+        showModernAlert('Berhasil', 'Pembayaran tunai berhasil dicatat. Status pesanan sekarang "Diproses" (Lunas).', 'success');
+        setShowCashModal(false);
+        setCashOrder(null);
+
+        // Refresh orders if needed (usually auto-syncs via hook)
+        // If not auto-syncing, might need to trigger refresh
+      } else {
+        showModernAlert('Error', 'Gagal update status pesanan.', 'error');
+      }
+
+    } catch (error) {
+      console.error('Error processing cash payment:', error);
+      showModernAlert('Error', 'Terjadi kesalahan saat memproses pembayaran.', 'error');
+    }
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !selectedOrderForUpload) return;
@@ -1379,7 +1428,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <p className="font-semibold text-lg">#{order.id}</p>
-                          <p className="text-sm text-gray-600">{order.userName} â€¢ {order.userEmail}</p>
+                          <p className="text-sm text-gray-600">{order.userName} • {order.userEmail}</p>
                           <p className="text-xs text-gray-500">
                             {new Date(order.createdAt).toLocaleDateString('id-ID', {
                               day: 'numeric',
@@ -1403,7 +1452,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-gray-600">
-                          {order.items.length} item â€¢ {paymentMethodLabel}
+                          {order.items.length} item • {paymentMethodLabel}
                         </div>
                         <div className="mt-4 grid grid-cols-2 lg:flex lg:flex-row items-center gap-2 pt-3 border-t border-gray-100">
                           {/*  NEW: Atur Alamat Button for Unaddressed Orders */}
@@ -1425,6 +1474,17 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             >
                               <Phone className="w-3.5 h-3.5" />
                               Tagih
+                            </button>
+                          )}
+
+                          {/* ✨ NEW: Quick POS Cash Payment Button (Owner only) */}
+                          {order.status === 'pending' && user?.role === 'owner' && (
+                            <button
+                              onClick={() => handlePOSPaymentOpen(order)}
+                              className="px-2.5 py-1.5 rounded-full bg-emerald-500 border border-emerald-600 text-white text-xs font-semibold hover:bg-emerald-600 transition-all flex items-center justify-center gap-1 whitespace-nowrap shadow-sm"
+                            >
+                              <span className="font-bold text-[10px]">Rp</span>
+                              Cash
                             </button>
                           )}
 
@@ -1760,17 +1820,31 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   </button>
                   {/*  NEW: Payment Assistance Button (Owner only, pending orders) */}
                   {selectedOrder.status === 'pending' && user?.role === 'owner' && (
-                    <button
-                      onClick={() => {
-                        setShowDetailModal(false);
-                        handlePaymentAssist(selectedOrder);
-                      }}
-                      className="px-4 py-2 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white hover:shadow-lg rounded-lg transition-all flex items-center space-x-2"
-                    >
-                      <CreditCard className="w-4 h-4" />
-                      <span>Bantu Pembayaran</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          setShowDetailModal(false);
+                          handlePOSPaymentOpen(selectedOrder);
+                        }}
+                        className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 hover:shadow-lg rounded-lg transition-all flex items-center space-x-2"
+                      >
+                        <span className="font-bold">Rp</span>
+                        <span>Bayar Tunai</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowDetailModal(false);
+                          handlePaymentAssist(selectedOrder);
+                        }}
+                        className="px-4 py-2 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white hover:shadow-lg rounded-lg transition-all flex items-center space-x-2"
+                      >
+                        <CreditCard className="w-4 h-4" />
+                        <span>Bantu Transfer</span>
+                      </button>
+                    </>
                   )}
+
                   {(selectedOrder.status === 'pending' || selectedOrder.status === 'awaiting_verification') && user?.role === 'owner' && (
                     <button
                       onClick={() => {
@@ -2481,6 +2555,18 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           setShippingEditOrder(null);
         }}
       />
+
+      {/* POS Cash Payment Modal */}
+      <CashPaymentModal
+        isOpen={showCashModal}
+        onClose={() => {
+          setShowCashModal(false);
+          setCashOrder(null);
+        }}
+        order={cashOrder}
+        onConfirm={handleCashPaymentConfirm}
+      />
+
     </div >
   );
 };
