@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
     private ListView appListView, logListView, printerListView;
     private EditText searchApps;
     private View statusIndicator, indicatorAppNotif, indicatorListener, indicatorBattery;
-    private Button btnGrantNotif, btnBatteryIgnore, btnScanPrinter, btnTestPrint, btnLogout, btnSimulatePwa, btnGrantAppNotif, btnClearLog;
+    private Button btnGrantNotif, btnBatteryIgnore, btnScanPrinter, btnTestPrint, btnLogout, btnSimulatePwa, btnGrantAppNotif, btnClearLog, btnAutostart, btnTestNotif;
     private SharedPreferences prefs;
     private Set<String> selectedPackages;
     private List<AppInfo> allAppInfos = new ArrayList<>();
@@ -176,7 +176,8 @@ public class MainActivity extends AppCompatActivity {
         logListView = findViewById(R.id.logListView);
         searchApps = findViewById(R.id.searchApps);
         statusIndicator = findViewById(R.id.statusIndicator);
-        indicatorAppNotif = findViewById(R.id.indicatorAppNotif);
+        indicatorAppNotif = findViewById(R.id
+                .indicatorAppNotif);
         indicatorListener = findViewById(R.id.indicatorListener);
         indicatorBattery = findViewById(R.id.indicatorBattery);
 
@@ -250,6 +251,14 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
+        // TOMBOL AUTOSTART - Khusus Xiaomi/Poco/Realme
+        btnAutostart = findViewById(R.id.btnAutostart);
+        btnAutostart.setOnClickListener(v -> openAutostartSettings());
+
+        // TOMBOL TEST NOTIFIKASI - Untuk cek service aktif
+        btnTestNotif = findViewById(R.id.btnTestNotif);
+        btnTestNotif.setOnClickListener(v -> sendTestNotification());
 
         btnLogout.setOnClickListener(v -> {
             FirebaseAuth.getInstance().signOut();
@@ -370,6 +379,45 @@ public class MainActivity extends AppCompatActivity {
         // Log permission status for debugging
         addLogEntry("🔐 Notif:" + (appNotifOk?"✅":"❌") + " Listener:" + (listenerOk?"✅":"❌") + " Battery:" + (batteryOk?"✅":"❌"));
     }
+    private void openAutostartSettings() {
+        addLogEntry(" Membuka Autostart Settings...");
+        try {
+            Intent intent = new Intent();
+            intent.setComponent(new android.content.ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"));
+            startActivity(intent);
+        } catch (Exception e1) {
+            try {
+                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+                addLogEntry(" Buka App Info - cari Autostart manual");
+            } catch (Exception e2) {
+                addLogEntry(" Gagal buka settings");
+            }
+        }
+    }
+
+    private void sendTestNotification() {
+        addLogEntry(" Mengirim test notifikasi...");
+        try {
+            android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                android.app.NotificationChannel channel = new android.app.NotificationChannel("test_channel", "Test Channel", android.app.NotificationManager.IMPORTANCE_HIGH);
+                nm.createNotificationChannel(channel);
+            }
+            android.app.Notification notification = new android.app.Notification.Builder(this, "test_channel")
+                .setContentTitle("Test Payment")
+                .setContentText("masuk 12345")
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .build();
+            nm.notify(999, notification);
+            addLogEntry(" Test notifikasi dikirim! Cek log...");
+            new android.os.Handler().postDelayed(() -> nm.cancel(999), 3000);
+        } catch (Exception e) {
+            addLogEntry(" Error: " + e.getMessage());
+        }
+    }
+
 
     private static class AppInfo { String name, packageName; Drawable icon; boolean selected; AppInfo(String n, String p, Drawable i, boolean s) { this.name = n; this.packageName = p; this.icon = i; this.selected = s; } }
     private class AppAdapter extends ArrayAdapter<AppInfo> implements Filterable {

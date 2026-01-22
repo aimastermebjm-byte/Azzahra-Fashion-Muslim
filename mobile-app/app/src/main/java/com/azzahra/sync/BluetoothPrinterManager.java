@@ -44,49 +44,44 @@ public class BluetoothPrinterManager {
             socket.connect();
         } catch (IOException e) {
             try {
+                // Jalur Insecure untuk printer thermal murah
                 socket = (BluetoothSocket) device.getClass().getMethod("createInsecureRfcommSocketToServiceRecord", UUID.class).invoke(device, SPP_UUID);
                 if (socket != null) socket.connect();
             } catch (Exception ex) {
                 if (listener != null) listener.onStatusChanged("Gagal!");
-                throw new IOException("Koneksi gagal total.");
+                throw new IOException("Koneksi gagal.");
             }
         }
         
         if (socket != null && socket.isConnected()) {
             outputStream = socket.getOutputStream();
             try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
-            write(new byte[]{0x1B, 0x40}); // Reset
+            
+            // Simpan alamat printer secara permanen untuk AUTO-CONNECT
             prefs.edit().putString("last_address", address).apply();
+            
+            write(new byte[]{0x1B, 0x40}); // Reset
             if (listener != null) listener.onStatusChanged("Terhubung ✅");
         }
     }
 
-    // FUNGSI BARU UNTUK KIRIM BYTE MURNI (Fix Error Build)
     public void write(byte[] data) throws IOException {
         if (outputStream != null) {
             outputStream.write(data);
             outputStream.flush();
-        } else {
-            throw new IOException("Output stream null");
         }
     }
 
     public void print(String text) throws IOException {
         if (outputStream == null || !isConnected()) {
+            // Coba auto connect dulu jika belum konek
             autoConnect();
-            try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
-            if (outputStream == null) throw new IOException("Printer mati/tidak terdeteksi.");
+            throw new IOException("Printer belum siap. Sedang menyambungkan ulang...");
         }
         
         try {
-            write(new byte[]{0x1B, 0x40}); // Reset
-            try { Thread.sleep(100); } catch (Exception e) {}
-            
-            // SET BOLD (Ganti Double Height yang terlalu besar dengan Bold agar tetap terbaca tapi tidak raksasa)
-            // 0x1B, 0x21, 0x08 -> ESC ! 8 (Emphasized/Bold)
-            // Sebelumnya 0x10 (Double Height) dikomplain terlalu besar
-            write(new byte[]{0x1B, 0x21, 0x08}); 
-            
+            write(new byte[]{0x1B, 0x40}); 
+            write(new byte[]{0x1B, 0x21, 0x08}); // BOLD
             write(text.getBytes("GBK"));
             write(new byte[]{0x0A, 0x0A, 0x0A});
         } catch (IOException e) {
@@ -110,10 +105,15 @@ public class BluetoothPrinterManager {
     }
 
     public void autoConnect() {
+        // AMBIL ALAMAT TERAKHIR YANG TERSIMPAN
         String lastAddr = prefs.getString("last_address", null);
         if (lastAddr != null && !isConnected()) {
             new Thread(() -> {
-                try { connect(lastAddr); } catch (Exception ignored) {}
+                try {
+                    connect(lastAddr);
+                } catch (Exception e) {
+                    Log.e("Printer", "AutoConnect Gagal: " + e.getMessage());
+                }
             }).start();
         }
     }

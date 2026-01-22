@@ -3232,10 +3232,10 @@ id browser_actions_menu_items
 id browser_actions_menu_view
 id btnBatteryIgnore
 id btnClearLog
+id btnGrantAppNotif
 id btnGrantNotif
 id btnLogin
 id btnLogout
-id btnSaveUrl
 id btnScanPrinter
 id btnSimulatePwa
 id btnTestPrint
@@ -3322,7 +3322,6 @@ id enterAlways
 id enterAlwaysCollapsed
 id etEmail
 id etPassword
-id etWebUrl
 id exitUntilCollapsed
 id expand_activities_button
 id expanded_menu
@@ -3367,6 +3366,9 @@ id image
 id immediateStop
 id included
 id indeterminate
+id indicatorAppNotif
+id indicatorBattery
+id indicatorListener
 id info
 id invisible
 id inward
@@ -3581,7 +3583,6 @@ id supportScrollUp
 id tabMode
 id tabPrinter
 id tabSync
-id tabWeb
 id tag_accessibility_actions
 id tag_accessibility_clickable_spans
 id tag_accessibility_heading
@@ -3642,8 +3643,6 @@ id view_tree_saved_state_registry_owner
 id view_tree_view_model_store_owner
 id visible
 id visible_removing_fragment_view_tag
-id webProgress
-id webView
 id west
 id wide
 id withText

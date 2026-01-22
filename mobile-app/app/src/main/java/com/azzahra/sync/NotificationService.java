@@ -37,28 +37,19 @@ public class NotificationService extends NotificationListenerService {
     public void onCreate() {
         super.onCreate();
         db = FirebaseFirestore.getInstance();
-        
-        // Optimasi: Simpan data di HP jika internet lemot
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
                 .setPersistenceEnabled(true)
                 .setCacheSizeBytes(FirebaseFirestoreSettings.CACHE_SIZE_UNLIMITED)
                 .build();
         db.setFirestoreSettings(settings);
-        
         prefs = getSharedPreferences("AzzahraPrefs", MODE_PRIVATE);
     }
 
     @Override
     public void onListenerConnected() {
         super.onListenerConnected();
-        updateUILog("✅ SERVICE CONNECTED!");
+        updateUILog("✅ SERVICE ACTIVE");
         performManualScan();
-    }
-
-    @Override
-    public void onListenerDisconnected() {
-        super.onListenerDisconnected();
-        updateUILog("❌ SERVICE DISCONNECTED");
     }
 
     private void performManualScan() {
@@ -76,60 +67,37 @@ public class NotificationService extends NotificationListenerService {
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-        // ========== DEBUG MODE: LOG SEMUA TANPA FILTER ==========
         try {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user == null) return;
+
             String pkg = sbn.getPackageName();
-            Notification n = sbn.getNotification();
-            String title = "";
-            String text = "";
-            
-            if (n != null && n.extras != null) {
-                title = n.extras.getString(Notification.EXTRA_TITLE, "");
-                CharSequence textChar = n.extras.getCharSequence(Notification.EXTRA_TEXT);
-                text = (textChar != null) ? textChar.toString() : "";
-            }
-            
-            // LOG SEMUA NOTIFIKASI TANPA FILTER
-            String shortPkg = pkg.length() > 15 ? pkg.substring(pkg.length() - 15) : pkg;
-            String preview = (title + " " + text).trim();
-            if (preview.length() > 30) preview = preview.substring(0, 30) + "...";
-            
-            updateUILog("📬 [" + shortPkg + "] " + preview);
-            
-            // UNTUK SEMENTARA: JANGAN PROSES KE FIREBASE, CUMA LOG SAJA
-            // Uncomment baris di bawah setelah log bekerja
-            // processNotificationFull(sbn, pkg, title, text);
-            
-        } catch (Exception e) {
-            updateUILog("❌ Error: " + e.getMessage());
-        }
-    }
-    
-    // Backup function untuk proses normal (akan diaktifkan setelah debug selesai)
-    private void processNotificationFull(StatusBarNotification sbn, String pkg, String title, String text) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-            updateUILog("⚠️ Skip: User belum login");
-            return;
-        }
+            Set<String> selected = prefs.getStringSet("selected_packages", new HashSet<>());
+            boolean isDiag = pkg.equals(getPackageName());
 
-        Set<String> selected = prefs.getStringSet("selected_packages", new HashSet<>());
-        boolean isDiag = pkg.equals(getPackageName());
-        boolean isSelected = selected.contains(pkg);
+            if (selected.contains(pkg) || isDiag) {
+                String appName = pkg.contains(".") ? pkg.substring(pkg.lastIndexOf(".") + 1) : pkg;
+                
+                // LANGSUNG LOG AGAR BOSS TAHU NOTIF TERLIHAT
+                if (!isDiag) updateUILog("🔍 Menangkap notif dari " + appName);
 
-        if (!isSelected && !isDiag) return;
-
-        updateUILog("🎯 App match: " + pkg);
-
-        if (cachedRole == null) {
-            db.collection("users").document(user.getUid()).get().addOnSuccessListener(doc -> {
-                if (doc.exists()) {
-                    cachedRole = doc.getString("role");
-                    if ("owner".equalsIgnoreCase(cachedRole)) processNotification(sbn);
+                if (cachedRole == null) {
+                    db.collection("users").document(user.getUid()).get().addOnSuccessListener(doc -> {
+                        if (doc.exists()) {
+                            cachedRole = doc.getString("role");
+                            if ("owner".equalsIgnoreCase(cachedRole)) {
+                                processNotification(sbn);
+                            } else {
+                                updateUILog("⚠️ Role '" + cachedRole + "' ditolak.");
+                            }
+                        }
+                    });
+                } else if ("owner".equalsIgnoreCase(cachedRole)) {
+                    processNotification(sbn);
                 }
-            });
-        } else if ("owner".equalsIgnoreCase(cachedRole)) {
-            processNotification(sbn);
+            }
+        } catch (Exception err) {
+            Log.e("AzzahraLog", "Error", err);
         }
     }
 
@@ -150,14 +118,14 @@ public class NotificationService extends NotificationListenerService {
             if (processedHistory.containsKey(uniqueId) && (now - processedHistory.get(uniqueId) < DUPLICATE_TIMEOUT)) return;
             processedHistory.put(uniqueId, now);
 
-            // LOGIKA FILTER: Bebas huruf besar/kecil
             String low = fullContent.toLowerCase(Locale.getDefault());
             
             if (sbn.getPackageName().equals(getPackageName())) {
-                updateUILog("DIAGNOSTIC: " + fullContent);
+                updateUILog("⚙️ DIAGNOSTIC: " + fullContent);
                 return;
             }
 
+            // FILTER KATA KUNCI (LOG LEBIH DETAIL)
             if (low.contains("masuk") || low.contains("pemasukan")) {
                 long amt = extractAmount(fullContent);
                 if (amt > 0) {
@@ -168,10 +136,14 @@ public class NotificationService extends NotificationListenerService {
                     vibrate();
                     updateUILog("💰 TERDETEKSI: Rp " + String.format("%,d", amt));
                     sendToFirebase(sbn.getPackageName(), amt, fullContent, uniqueId);
+                } else {
+                    updateUILog("⏩ Diabaikan: Tidak ada angka nominal.");
                 }
+            } else {
+                updateUILog("⏩ Diabaikan: Tidak ada kata 'masuk'");
             }
         } catch (Exception err) {
-            Log.e("AzzahraLog", "Error process", err);
+            Log.e("AzzahraLog", "Error", err);
         }
     }
 
@@ -200,8 +172,10 @@ public class NotificationService extends NotificationListenerService {
     }
 
     private void vibrate() {
-        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        if (v != null) v.vibrate(200);
+        try {
+            Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            if (v != null) v.vibrate(200);
+        } catch (Exception ignored) {}
     }
 
     private void updateUILog(String m) {
@@ -214,26 +188,19 @@ public class NotificationService extends NotificationListenerService {
 
     private void sendToFirebase(String bank, long amt, String raw, String docId) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-            updateUILog("❌ GAGAL: User belum login");
-            return;
-        }
+        if (user == null) return;
 
         Map<String, Object> d = new HashMap<>();
         d.put("amount", amt); 
         d.put("bank", bank); 
         d.put("rawText", raw);
-        d.put("secretKey", SECRET_KEY); // KEY UTAMA PEMBUKA PINTU FIREBASE
+        d.put("secretKey", SECRET_KEY);
         d.put("ownerId", user.getUid());
         d.put("timestamp", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date()));
         d.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
 
         db.collection("paymentDetectionsPending").document(docId).set(d)
             .addOnSuccessListener(aVoid -> updateUILog("☁️ SYNC OK: Rp " + String.format("%,d", amt)))
-            .addOnFailureListener(e -> {
-                // LOG DETAIL ERROR UNTUK BOSS
-                updateUILog("❌ FIREBASE REJECT: " + e.getMessage());
-                Log.e("AzzahraLog", "Firebase Error: ", e);
-            });
+            .addOnFailureListener(e -> updateUILog("❌ FIREBASE REJECT: " + e.getMessage()));
     }
 }

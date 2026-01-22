@@ -19,47 +19,44 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <!-- TAB 1: WEB VIEW (PWA) -->
-            <LinearLayout
-                android:id="@+id/tabWeb"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
-                
-                <ProgressBar
-                    android:id="@+id/webProgress"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="4dp"
-                    android:visibility="gone"/>
-
-                <android.webkit.WebView
-                    android:id="@+id/webView"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
-            </LinearLayout>
-
-            <!-- TAB 2: SYNC PEMBAYARAN -->
+            <!-- TAB 1: SYNC PEMBAYARAN -->
             <LinearLayout
                 android:id="@+id/tabSync"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="16dp"
+                android:background="#FFFFFF">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
+                    android:padding="8dp"
+                    android:background="#E8F5E9"
                     android:layout_marginBottom="12dp">
-                    <View android:id="@+id/statusIndicator" android:layout_width="20dp" android:layout_height="20dp" android:background="@drawable/circle_red" android:layout_marginEnd="12dp"/>
-                    <TextView android:id="@+id/statusText" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Status: OFF" android:textSize="16sp" android:textStyle="bold"/>
+                    <View android:id="@+id/statusIndicator" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/circle_red" android:layout_marginEnd="12dp"/>
+                    <TextView android:id="@+id/statusText" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Status: OFF" android:textSize="18sp" android:textStyle="bold" android:textColor="#D32F2F"/>
                     <Button android:id="@+id/btnClearLog" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Clear Log" android:textSize="10sp" style="@style/Widget.MaterialComponents.Button.TextButton"/>
                 </LinearLayout>
 
-                <Button android:id="@+id/btnGrantNotif" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="1. Setup Listener Permission" android:textSize="12sp" android:layout_marginBottom="4dp"/>
-                <Button android:id="@+id/btnBatteryIgnore" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="2. Disable Battery Optimization" android:textSize="12sp" android:layout_marginBottom="4dp"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="PERMISSION SETUP (Wajib Semua)" android:textStyle="bold" android:textSize="12sp" android:layout_marginBottom="8dp" android:textColor="#555555"/>
+                
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="4dp">
+                    <Button android:id="@+id/btnGrantAppNotif" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="1. Izin Notifikasi" android:textSize="10sp"/>
+                    <View android:id="@+id/indicatorAppNotif" android:layout_width="15dp" android:layout_height="15dp" android:layout_gravity="center" android:layout_marginStart="8dp" android:background="@drawable/circle_red"/>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="4dp">
+                    <Button android:id="@+id/btnGrantNotif" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="2. Izin Listener" android:textSize="10sp"/>
+                    <View android:id="@+id/indicatorListener" android:layout_width="15dp" android:layout_height="15dp" android:layout_gravity="center" android:layout_marginStart="8dp" android:background="@drawable/circle_red"/>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+                    <Button android:id="@+id/btnBatteryIgnore" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="3. Izin Battery" android:textSize="10sp"/>
+                    <View android:id="@+id/indicatorBattery" android:layout_width="15dp" android:layout_height="15dp" android:layout_gravity="center" android:layout_marginStart="8dp" android:background="@drawable/circle_red"/>
+                </LinearLayout>
                 
                 <EditText
                     android:id="@+id/searchApps"
@@ -85,31 +82,37 @@
                     android:background="#EEEEEE"/>
             </LinearLayout>
 
-            <!-- TAB 3: SETTINGS -->
+            <!-- TAB 2: PRINTER SETTINGS -->
             <LinearLayout
                 android:id="@+id/tabPrinter"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="16dp"
+                android:background="#FFFFFF">
 
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="WEB &amp; PRINTER SETTINGS" android:textStyle="bold" android:layout_marginBottom="16dp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PRINTER &amp; SETTINGS" android:textStyle="bold" android:textSize="18sp" android:layout_marginBottom="16dp"/>
 
-                <EditText android:id="@+id/etWebUrl" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="PWA URL" android:textSize="14sp"/>
-                <Button android:id="@+id/btnSaveUrl" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Simpan URL Website"/>
+                <TextView
+                    android:id="@+id/txtPrinterStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Status: Not Connected"
+                    android:textColor="#F44336"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="12dp"/>
 
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#CCCCCC" android:layout_marginVertical="12dp"/>
+                <Button android:id="@+id/btnScanPrinter" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Cari Printer Bluetooth" android:backgroundTint="#2196F3"/>
 
-                <TextView android:id="@+id/txtPrinterStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Printer: Not Connected" android:textColor="#F44336" android:layout_marginBottom="8dp"/>
-                <Button android:id="@+id/btnScanPrinter" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Cari Printer"/>
+                <ListView android:id="@+id/printerList" android:layout_width="match_parent" android:layout_height="120dp" android:background="#F9F9F9" android:layout_marginBottom="12dp"/>
 
-                <ListView android:id="@+id/printerList" android:layout_width="match_parent" android:layout_height="100dp" android:background="#F9F9F9" android:layout_marginBottom="8dp"/>
-
-                <Button android:id="@+id/btnTestPrint" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Tes Print Biasa" android:backgroundTint="#607D8B"/>
+                <Button android:id="@+id/btnTestPrint" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Tes Print Nota" android:backgroundTint="#FF9800" android:enabled="false"/>
                 
-                <Button android:id="@+id/btnSimulatePwa" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Simulasi Print Label (PWA Mode)" android:backgroundTint="#4CAF50" android:layout_marginTop="4dp"/>
+                <Button android:id="@+id/btnSimulatePwa" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Simulasi Print Label PWA" android:backgroundTint="#4CAF50" android:layout_marginTop="8dp"/>
 
-                <Button android:id="@+id/btnLogout" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Logout" style="@style/Widget.MaterialComponents.Button.TextButton"/>
+                <View android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
+
+                <Button android:id="@+id/btnLogout" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Logout Akun" style="@style/Widget.MaterialComponents.Button.TextButton"/>
             </LinearLayout>
 
         </FrameLayout>
