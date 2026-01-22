@@ -61,21 +61,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     loadCart(); // Load regardless of user state
   }, [user]);
 
-  // Metric Calculations (Moved up for scope access)
-  const cartItems = selectedCartItemIds.length > 0
-    ? allCartItems.filter(item => selectedCartItemIds.includes(item.id))
-    : allCartItems;
-
-  const totalPrice = cartItems.reduce((total, item) => {
-    if (!item) return total;
-    const itemPrice = item.price || 0;
-    const itemQuantity = item.quantity || 1;
-    return total + (itemPrice * itemQuantity);
-  }, 0);
-
-  const shippingFee = shippingMode === 'keep' ? 0 : formData.shippingCost || 0;
-  const voucherDiscount = appliedVoucher ? appliedVoucher.discountAmount : 0;
-  const effectiveFinalTotal = Math.max(0, totalPrice + shippingFee - voucherDiscount);
 
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
@@ -388,6 +373,18 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   };
 
+  // Metric Calculations (Cart Items & Total Price) - Moved UP for scope dependencies
+  const cartItems = selectedCartItemIds.length > 0
+    ? allCartItems.filter(item => selectedCartItemIds.includes(item.id))
+    : allCartItems;
+
+  const totalPrice = cartItems.reduce((total, item) => {
+    if (!item) return total;
+    const itemPrice = item.price || 0;
+    const itemQuantity = item.quantity || 1;
+    return total + (itemPrice * itemQuantity);
+  }, 0);
+
   // Shipping mode: 'delivery' = kirim ke alamat, 'keep' = atur alamat nanti
   // RULES:
   // 1. Ready stock (ALL roles) → ALWAYS 'delivery', NO 'keep' option
@@ -434,6 +431,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     shippingETD: '',
     notes: ''
   });
+
+
+
+  const shippingFee = shippingMode === 'keep' ? 0 : formData.shippingCost || 0;
+  const voucherDiscount = appliedVoucher ? appliedVoucher.discountAmount : 0;
+  const effectiveFinalTotal = Math.max(0, totalPrice + shippingFee - voucherDiscount);
+  // Alias for legacy usage
+  const effectiveShippingFee = shippingFee;
 
   const shippingOptions = [
     { id: 'jnt', name: 'J&T Express', code: 'jnt', price: 0 }, // RajaOngkir supported
@@ -818,11 +823,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     onBack();
   };
 
-  const totalPrice = getTotalPrice();
-  // Shipping fee is 0 for 'keep' mode (no delivery)
-  const shippingFee = shippingMode === 'keep' ? 0 : (formData.shippingCost || shippingCost || 0);
-  const voucherDiscount = appliedVoucher?.discountAmount || 0;
-  const finalTotal = Math.max(0, totalPrice + shippingFee - voucherDiscount);
+  const finalTotal = effectiveFinalTotal;
   const cartCount = cartItems?.length || 0;
 
   // ✅ SIMPLIFIED: Just show finalTotal (no unique code)
@@ -1376,7 +1377,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                               key={v.id}
                               onClick={() => handleApplyVoucher(v)}
                               disabled={totalPrice < v.minPurchase}
-                              className={`w - full text - left p - 3 rounded - lg border transition ${totalPrice >= v.minPurchase
+                              className={`w-full text-left p-3 rounded-lg border transition ${totalPrice >= v.minPurchase
                                 ? 'border-purple-200 bg-purple-50 hover:bg-purple-100'
                                 : 'border-slate-200 bg-slate-50 opacity-60'
                                 } `}
@@ -1389,9 +1390,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                                 </div>
                                 <Tag className="w-4 h-4 text-purple-400" />
                               </div>
-                              {getTotalPrice() < v.minPurchase && (
+                              {totalPrice < v.minPurchase && (
                                 <p className="text-xs text-amber-600 mt-1">
-                                  Belanja kurang Rp {(v.minPurchase - getTotalPrice()).toLocaleString('id-ID')} lagi
+                                  Belanja kurang Rp {(v.minPurchase - totalPrice).toLocaleString('id-ID')} lagi
                                 </p>
                               )}
                             </button>
