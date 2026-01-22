@@ -521,11 +521,12 @@ function AppContent() {
         paymentMethod: orderData.paymentMethodName || orderData.paymentMethod || '',
         paymentMethodId: orderData.paymentMethodId || null,
         paymentMethodName: orderData.paymentMethodName || orderData.paymentMethod || '',
-        // ✨ AUTO-PAID: Set status to 'processed' if Cash/Tunai (POS flow)
+        // ✨ AUTO-PAID: Set status to 'processing' if Cash/Tunai/Kas (POS flow)
         // This implies the order is "Lunas" and ready to be processed.
         status: (orderData.paymentMethodName?.toLowerCase().includes('cash') ||
           orderData.paymentMethodName?.toLowerCase().includes('tunai') ||
-          orderData.paymentMethodName?.toLowerCase().includes('bayar di toko'))
+          orderData.paymentMethodName?.toLowerCase().includes('bayar di toko') ||
+          orderData.paymentMethodName?.toLowerCase().includes('kas'))
           ? 'processing'
           : 'pending',
         totalAmount: calculatedSubtotal,

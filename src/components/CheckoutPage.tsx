@@ -1247,7 +1247,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   <div className="space-y-3">
                     {paymentMethods.map((method) => {
                       const isSelected = formData.paymentMethodId === method.id;
-                      const isCash = method.name.toLowerCase().includes('cash') || method.name.toLowerCase().includes('tunai') || method.name.toLowerCase().includes('bayar di toko');
+                      const isCash = method.name.toLowerCase().includes('cash') || method.name.toLowerCase().includes('tunai') || method.name.toLowerCase().includes('bayar di toko') || method.name.toLowerCase().includes('kas');
 
                       return (
                         <div key={method.id}>

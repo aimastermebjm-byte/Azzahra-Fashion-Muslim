@@ -1428,7 +1428,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <p className="font-semibold text-lg">#{order.id}</p>
-                          <p className="text-sm text-gray-600">{order.userName} â€¢ {order.userEmail}</p>
+                          <p className="text-sm text-gray-600">{order.userName} • {order.userEmail}</p>
                           <p className="text-xs text-gray-500">
                             {new Date(order.createdAt).toLocaleDateString('id-ID', {
                               day: 'numeric',
@@ -1452,7 +1452,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-gray-600">
-                          {order.items.length} item â€¢ {paymentMethodLabel}
+                          {order.items.length} item • {paymentMethodLabel}
                         </div>
                         <div className="mt-4 grid grid-cols-2 lg:flex lg:flex-row items-center gap-2 pt-3 border-t border-gray-100">
                           {/*  NEW: Atur Alamat Button for Unaddressed Orders */}
