@@ -208,6 +208,9 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
   // ✨ NEW: User chooses payment method
   const handleChooseMethod = async (mode: 'auto' | 'manual') => {
+    console.log('💳 handleChooseMethod called with mode:', mode);
+    console.log('💳 Current paymentData:', paymentData);
+
     try {
       if (mode === 'auto') {
         showToast({ message: '🔄 Membuat pembayaran otomatis...', type: 'info' });
@@ -251,6 +254,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         showToast({ message: '✅ Instruksi pembayaran siap!', type: 'success' });
 
       } else {
+        console.log('📤 Manual mode selected - opening upload modal...');
         // Manual mode - no code generation needed
         setPaymentData({
           ...paymentData,
@@ -259,6 +263,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
         setShowMethodModal(false);
         setShowUploadModal(true);
+        console.log('📤 showUploadModal set to true!');
       }
     } catch (error) {
       console.error('Error choosing method:', error);
@@ -396,8 +401,13 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('📁 handleFileChange called!');
+    console.log('📁 e.target.files:', e.target.files);
     if (e.target.files && e.target.files[0]) {
-      setPaymentProof(e.target.files[0]);
+      const file = e.target.files[0];
+      console.log('📁 Selected file:', file.name, 'Size:', file.size, 'Type:', file.type);
+      setPaymentProof(file);
+      console.log('📁 paymentProof state updated!');
     }
   };
 
