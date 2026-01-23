@@ -141,7 +141,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
             if (isSameOrders && isSameTotal) {
               console.log('✅ Matches existing group!');
-              showToast('💡 Menggunakan kode pembayaran yang sudah dibuat', 'info');
+              showToast({ message: '💡 Menggunakan kode pembayaran yang sudah dibuat', type: 'info' });
 
               setPaymentData({
                 orderIds: selectedOrderIds,
@@ -168,11 +168,11 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                 await paymentGroupService.cancelPaymentGroup(existingPaymentGroup.id);
                 // Remove payment group links from OLD orders in background to save time?
                 // Let's await to be safe but show toast first
-                showToast('✅ Pembayaran lama dibatalkan', 'success');
+                showToast({ message: '✅ Pembayaran lama dibatalkan', type: 'success' });
 
                 for (const orderId of existingPaymentGroup.orderIds) {
                   await ordersService.updateOrder(orderId, {
-                    paymentGroupId: null,
+                    paymentGroupId: undefined,
                     groupPaymentAmount: undefined,
                     verificationMode: undefined
                   });
@@ -210,7 +210,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   const handleChooseMethod = async (mode: 'auto' | 'manual') => {
     try {
       if (mode === 'auto') {
-        showToast('🔄 Membuat pembayaran otomatis...', 'info');
+        showToast({ message: '🔄 Membuat pembayaran otomatis...', type: 'info' });
 
         // Create payment group with unique code
         const paymentGroup = await paymentGroupService.createPaymentGroup({
@@ -248,7 +248,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
         setShowMethodModal(false);
         setShowInstructionsModal(true);
-        showToast('✅ Instruksi pembayaran siap!', 'success');
+        showToast({ message: '✅ Instruksi pembayaran siap!', type: 'success' });
 
       } else {
         // Manual mode - no code generation needed
@@ -262,7 +262,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       }
     } catch (error) {
       console.error('Error choosing method:', error);
-      showToast('❌ Gagal membuat pembayaran', 'error');
+      showToast({ message: '❌ Gagal membuat pembayaran', type: 'error' });
     }
   };
 
@@ -283,10 +283,10 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
         setShowInstructionsModal(false);
         setShowMethodModal(true);
-        showToast('💡 Silakan pilih metode pembayaran lagi', 'info');
+        showToast({ message: '💡 Silakan pilih metode pembayaran lagi', type: 'info' });
       } catch (error) {
         console.error('Error updating payment group:', error);
-        showToast('❌ Gagal mengubah metode', 'error');
+        showToast({ message: '❌ Gagal mengubah metode', type: 'error' });
       }
     }
   };
@@ -305,8 +305,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         // Remove payment group links from orders
         for (const orderId of paymentData.orderIds) {
           await ordersService.updateOrder(orderId, {
-            paymentGroupId: null,
-            groupPaymentAmount: null,
+            paymentGroupId: undefined,
+            groupPaymentAmount: undefined,
             verificationMode: undefined
           });
         }
@@ -314,18 +314,28 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         setShowInstructionsModal(false);
         setPaymentData(null);
         setSelectedOrderIds([]);
-        showToast('Pembayaran dibatalkan', 'info');
+        showToast({ message: 'Pembayaran dibatalkan', type: 'info' });
       } catch (error) {
         console.error('Error cancelling payment:', error);
-        showToast('❌ Gagal membatalkan pembayaran', 'error');
+        showToast({ message: '❌ Gagal membatalkan pembayaran', type: 'error' });
       }
     }
   };
 
   // ✨ NEW: Handle upload bukti payment (manual mode)
   const handleSubmitManualPayment = async () => {
+    console.log('🚀 handleSubmitManualPayment called');
+    console.log('📄 paymentProof:', paymentProof);
+    console.log('📦 paymentData:', paymentData);
+
     if (!paymentProof) {
       showToast({ message: '❌ Pilih bukti transfer terlebih dahulu', type: 'error' });
+      return;
+    }
+
+    if (!paymentData || !paymentData.orderIds || paymentData.orderIds.length === 0) {
+      console.error('❌ paymentData is null or has no orderIds!');
+      showToast({ message: '❌ Data pesanan tidak valid. Silakan coba lagi.', type: 'error' });
       return;
     }
 
@@ -333,15 +343,21 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       setUploadingProof(true);
       let successCount = 0;
 
+      console.log('📤 Uploading to', paymentData.orderIds.length, 'orders...');
+
       // Upload bukti for each selected order
       for (const orderId of paymentData.orderIds) {
+        console.log('⏳ Processing order:', orderId);
         const success = await ordersService.updateOrderPayment(
           orderId,
           paymentProof,
           'awaiting_verification'
         );
+        console.log('📝 Order', orderId, 'result:', success);
         if (success) successCount++;
       }
+
+      console.log('✅ Total success:', successCount);
 
       if (successCount > 0) {
         setShowUploadModal(false);
@@ -354,7 +370,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         showToast({ message: '❌ Gagal mengupload bukti pembayaran. Coba lagi atau gunakan gambar lebih kecil.', type: 'error' });
       }
     } catch (error) {
-      console.error('Error submitting payment:', error);
+      console.error('💥 Error submitting payment:', error);
       showToast({ message: '❌ Gagal mengupload bukti pembayaran', type: 'error' });
     } finally {
       setUploadingProof(false);
@@ -364,7 +380,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   // Copy to clipboard helper
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    showToast(`✅ ${label} berhasil disalin!`, 'success');
+    showToast({ message: `✅ ${label} berhasil disalin!`, type: 'success' });
   };
 
   // OLD: Single order payment (legacy - keep for backward compatibility)
@@ -397,13 +413,13 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
       if (success) {
         closePaymentModal();
-        showToast('✅ Bukti pembayaran berhasil dikirim!', 'success');
+        showToast({ message: '✅ Bukti pembayaran berhasil dikirim!', type: 'success' });
       } else {
-        showToast('❌ Gagal mengupload bukti pembayaran', 'error');
+        showToast({ message: '❌ Gagal mengupload bukti pembayaran', type: 'error' });
       }
     } catch (error) {
       console.error('Error submitting payment:', error);
-      showToast('❌ Gagal mengupload bukti pembayaran', 'error');
+      showToast({ message: '❌ Gagal mengupload bukti pembayaran', type: 'error' });
     }
   };
 
@@ -919,7 +935,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                   setShowInstructionsModal(false);
                   setPaymentData(null);
                   setSelectedOrderIds([]);
-                  showToast('✅ Silakan lakukan transfer sesuai instruksi', 'success');
+                  showToast({ message: '✅ Silakan lakukan transfer sesuai instruksi', type: 'success' });
                 }}
                 className="w-full px-6 py-3 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black rounded-xl font-bold hover:shadow-lg transition-all"
               >
