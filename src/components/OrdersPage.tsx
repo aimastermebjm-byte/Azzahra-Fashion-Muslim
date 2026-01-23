@@ -113,7 +113,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       const subtotal = selected.reduce((sum, o) => sum + o.finalTotal, 0);
 
       if (selected.length === 0) {
-        showToast('Pilih minimal satu pesanan', 'error');
+        showToast({ title: 'Error', message: 'Pilih minimal satu pesanan', type: 'error' });
         return;
       }
 
@@ -173,7 +173,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                 for (const orderId of existingPaymentGroup.orderIds) {
                   await ordersService.updateOrder(orderId, {
                     paymentGroupId: null,
-                    groupPaymentAmount: null,
+                    groupPaymentAmount: undefined,
                     verificationMode: undefined
                   });
                 }
@@ -325,31 +325,37 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   // ✨ NEW: Handle upload bukti payment (manual mode)
   const handleSubmitManualPayment = async () => {
     if (!paymentProof) {
-      showToast('❌ Pilih bukti transfer terlebih dahulu', 'error');
+      showToast({ message: '❌ Pilih bukti transfer terlebih dahulu', type: 'error' });
       return;
     }
 
     try {
       setUploadingProof(true);
+      let successCount = 0;
 
       // Upload bukti for each selected order
       for (const orderId of paymentData.orderIds) {
-        await ordersService.updateOrderPayment(
+        const success = await ordersService.updateOrderPayment(
           orderId,
           paymentProof,
           'awaiting_verification'
         );
+        if (success) successCount++;
       }
 
-      setShowUploadModal(false);
-      setPaymentData(null);
-      setSelectedOrderIds([]);
-      setPaymentProof(null);
+      if (successCount > 0) {
+        setShowUploadModal(false);
+        setPaymentData(null);
+        setSelectedOrderIds([]);
+        setPaymentProof(null);
 
-      showToast(`✅ Bukti pembayaran berhasil dikirim untuk ${paymentData.orderIds.length} pesanan!`, 'success');
+        showToast({ message: `✅ Bukti pembayaran berhasil dikirim untuk ${successCount} pesanan!`, type: 'success' });
+      } else {
+        showToast({ message: '❌ Gagal mengupload bukti pembayaran. Coba lagi atau gunakan gambar lebih kecil.', type: 'error' });
+      }
     } catch (error) {
       console.error('Error submitting payment:', error);
-      showToast('❌ Gagal mengupload bukti pembayaran', 'error');
+      showToast({ message: '❌ Gagal mengupload bukti pembayaran', type: 'error' });
     } finally {
       setUploadingProof(false);
     }

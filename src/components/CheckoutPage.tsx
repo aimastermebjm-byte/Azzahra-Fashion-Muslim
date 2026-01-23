@@ -549,7 +549,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [formData.shippingCourier, selectedAddressId, addresses.length, cartItems.length]);
+  }, [formData.shippingCourier, selectedAddressId, addresses.length, cartItems.length, totalPrice]);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

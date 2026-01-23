@@ -24,21 +24,20 @@ service cloud.firestore {
       );
     }
 
-    // Allow read access to transactions for reporting (public read for production)
-    // SECURITY: Anyone can create, only OWNER can edit/delete
-    match /transactions/{transactionId} {
-      allow read: if true; // Public read for reporting system
-      allow create: if request.auth != null; // Any authenticated user can create
-      allow update, delete: if isOwner(); // Only owner can edit/delete
+    // --- CORE COLLECTIONS ---
+
+    match /users/{userId} {
+      allow read, write: if isSelf(userId) || isAdminOrOwner();
+      
+      // Wishlist Subcollection (Restored)
+      match /wishlist/{productId} {
+        allow read, write: if isSelf(userId);
+      }
     }
 
-    // Products - Owner full access, Admin limited (no delete, no price/stock edit)
     match /products/{productId} {
-      allow read: if true; // Public read for catalog
-      allow create: if isAdminOrOwner(); // Owner & Admin can add products
-      
-      // Update: Owner can edit all, Admin can edit but NOT price/stock fields
-      // Protected fields: retailPrice, resellerPrice, costPrice, flashSalePrice, stock
+      allow read: if true;
+      allow create: if isAdminOrOwner();
       allow update: if isOwner() || 
         (isAdminOrOwner() && 
          request.resource.data.retailPrice == resource.data.retailPrice &&
@@ -47,197 +46,191 @@ service cloud.firestore {
          request.resource.data.flashSalePrice == resource.data.flashSalePrice &&
          request.resource.data.stock == resource.data.stock
         );
-      
-      // Delete: Only owner
       allow delete: if isOwner();
     }
 
-    // WhatsApp integration - Admin & Owner only
-    match /pending_products/{productId} {
-      allow read, write: if isAdminOrOwner();
-    }
-
-    // WhatsApp Draft Queue - Admin & Owner only
-    match /product_drafts/{draftId} {
-      allow read, write: if isAdminOrOwner();
-    }
-
-    // Allow read access to orders for reporting (public read for production)
-    // SECURITY: Only OWNER can update order status (including marking as paid)
     match /orders/{orderId} {
-      allow read: if true; // Public read for reporting system
-      allow create: if request.auth != null; // Any authenticated user can create order
-      
-      // Update: User can update own order, OR owner can update any order
-      allow update: if request.auth != null && (
-        request.auth.uid == resource.data.userId ||  // User updates own order
-        isOwner()  // Only OWNER can update any order (for status changes)
+      allow read: if true; 
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (
+        request.auth.uid == resource.data.userId || 
+        isOwner()
       );
-      
-      // Delete: Only owner can delete orders
       allow delete: if isOwner();
     }
 
-    // Allow read/write access to user profiles
-    // - User can read/write dirinya sendiri
-    // - Admin/owner dapat membaca & menulis semua user
-    match /users/{userId} {
-      allow read, write: if isSelf(userId) || isAdminOrOwner();
-    }
-
-    // Categories - Admin & Owner can manage
     match /categories/{categoryId} {
-      allow read: if true; // Public read
-      allow write: if isAdminOrOwner(); // Only Admin/Owner can edit
+      allow read: if true;
+      allow write: if isAdminOrOwner();
     }
 
-    // Flash Sales - OWNER ONLY can manage
-    match /flashSales/{flashSaleId} {
-      allow read: if true; // Public read for promo display
-      allow write: if isOwner(); // Only Owner can manage flash sales
-    }
-
-    // Flash Sale Config - OWNER ONLY
-    match /flashSale/{documentId} {
-      allow read: if true; // Public read for promo display
-      allow write: if isOwner(); // Only Owner can configure
-    }
-
-    // Product Batches - Owner full access, Admin limited (same as products)
-    match /productBatches/{batchId} {
-      allow read: if true; // Public read
-      allow create: if isAdminOrOwner(); // Owner & Admin can add
-      allow update: if isAdminOrOwner(); // Owner & Admin can update
-      allow delete: if isOwner(); // Only owner can delete
-    }
-
-    // Global index for product search - OWNER ONLY can write
-    match /globalindex/{productId} {
-      allow read: if true; // Public read for search
-      allow write, delete: if isOwner(); // Only owner can modify
-    }
-
-    // Allow read/write access to user carts for authenticated users
-    match /user_carts/{userId} {
-      allow read: if true; // Public read for reporting system
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // Allow read/write access to user addresses for authenticated users
-    match /user_addresses/{addressId} {
-      allow read: if true; // Public read for reporting system
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-    }
-
-    // Financial categories - OWNER ONLY (sensitive data)
-    match /financial_categories/{categoryId} {
-      allow read: if isOwner();
-      allow write: if isOwner();
-    }
-
-    // Financial payment methods - Public read (for checkout), Owner only write
-    match /financial_payment_methods/{methodId} {
-      allow read: if true;  // Public read - dibutuhkan untuk checkout & laporan
-      allow write: if isOwner();
-    }
-
-    // Financial entries - OWNER ONLY (very sensitive!)
-    match /financial_entries/{entryId} {
-      allow read: if isOwner();
-      allow write: if isOwner();
-    }
-
-    // Product categories (Master data)
-    match /product_categories/{categoryId} {
-      allow read: if true; // Public read
-      allow create, update, delete: if isOwner(); // Only owner can edit
-    }
-
-    // Payment Detection System - OWNER ONLY for create (security)
-    match /paymentDetectionsPending/{detectionId} {
-      allow create: if isOwner();  // Only owner can create (not admin)
-      allow read, update, delete: if isAdminOrOwner();
-    }
-
-    match /paymentDetectionsVerified/{detectionId} {
-      allow read, write: if isAdminOrOwner();
-    }
-
-    match /paymentDetectionsIgnored/{detectionId} {
-      allow read, write: if isAdminOrOwner();
-    }
-
-    match /paymentDetectionSettings/{settingId} {
-      allow read, write: if isAdminOrOwner();
-    }
-
-    // Payment Groups - Users can create/read their own, Admin can read/write all
-    match /paymentGroups/{groupId} {
-      allow read: if isSignedIn() && (
-        request.auth.uid == resource.data.userId || 
-        isAdminOrOwner()
-      );
-      allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
-      allow update: if isSignedIn() && (
-        request.auth.uid == resource.data.userId || 
-        isAdminOrOwner()
-      );
-      allow delete: if isAdminOrOwner();
-    }
-
-    // AI API Keys - Encrypted API keys for Gemini/GLM AI services
-    // Only owner can read/write their own keys
-    match /aiApiKeys/{userId} {
-      allow read, write: if isSignedIn() && request.auth.uid == userId && isOwner();
-    }
-
-    // Auto Verification Logs - Audit trail for automatic payment verification
-    // Admin/Owner can read, system writes automatically
-    match /autoVerificationLogs/{logId} {
-      allow read: if isAdminOrOwner();
-      allow create: if isAdminOrOwner(); // System creates logs
-      allow update, delete: if isOwner(); // Only owner can modify/delete logs
-    }
-
-    // Stock Opname Sessions - Inventory counting sessions
-    // Admin/Owner can read (view sessions), Owner can create/update/delete
-    match /stockOpnameSessions/{sessionId} {
-      allow read: if isAdminOrOwner();
-      allow create, update: if isAdminOrOwner(); // Admin can create, Owner can approve
-      allow delete: if isOwner(); // Only owner can delete sessions
-    }
-
-    // Vouchers - User-tied discount vouchers
-    // Any signed-in user can READ (for query by code), ownership validated in code
-    // User can update their own voucher (mark as used), Owner can do everything
-    match /vouchers/{voucherId} {
-      allow read: if isSignedIn();  // Any user can query vouchers, code validates ownership
-      allow create, delete: if isOwner(); // Only owner can create/delete vouchers
-      allow update: if isSignedIn() && (
-        request.auth.uid == resource.data.assignedTo ||  // User marks their own voucher as used
-        isAdminOrOwner()  // Admin/Owner can update any
-      );
-    }
-
-    // Notifications - System notifications to users
-    match /notifications/{notificationId} {
-      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
-      allow create: if isOwner(); // Owner creates notifications (vouchers, etc)
-      allow update: if isSignedIn() && request.auth.uid == resource.data.userId; // User marks as read
-      allow delete: if isOwner();
-    }
-
-    // Banners - Public read for homepage, Admin/Owner managed
     match /banners/{bannerId} {
       allow read: if true;
       allow write: if isAdminOrOwner();
     }
-    // Product Collections - Public read for banners/filters, Admin/Owner managed
+
+    // --- FEATURE COLLECTIONS (Restored) ---
+
+    // Flash Sales
+    match /flashSales/{flashSaleId} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+    match /flashSale/{documentId} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    // Print Jobs (Cloud Printing)
+    match /print_jobs/{jobId} {
+      allow read: if true; // Bridge app needs access
+      allow create: if isSignedIn(); // Users create print jobs
+    }
+
+    // Notifications & Queue
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow create: if isOwner();
+      allow update: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow delete: if isOwner();
+    }
+    
+    match /notificationQueue/{queueId} {
+      allow create: if isSignedIn(); // For triggering role upgrade notifications
+      allow read, write: if isAdminOrOwner();
+    }
+
+    // Stock Management (Mutations & Adjustments)
+    match /stock_mutations/{mutationId} {
+      allow read: if isAdminOrOwner();
+      allow create: if isAdminOrOwner();
+    }
+    
+    match /stock_adjustments/{adjustmentId} {
+      allow read, write: if isAdminOrOwner();
+    }
+    
+    match /productBatches/{batchId} {
+      allow read: if true;
+      allow create: if isAdminOrOwner();
+      allow update: if isSignedIn(); // Required for Checkout Stock Deduction
+      allow delete: if isOwner();
+    }
+
+    match /stockOpnameSessions/{sessionId} {
+      allow read: if isAdminOrOwner();
+      allow create, update: if isAdminOrOwner();
+      allow delete: if isOwner();
+    }
+
+    // Vouchers
+    match /vouchers/{voucherId} {
+      allow read: if isSignedIn();
+      allow create, delete: if isOwner();
+      allow update: if isSignedIn() && (
+        request.auth.uid == resource.data.assignedTo || isAdminOrOwner()
+      );
+    }
+
+    // Financials
+    match /financial_categories/{categoryId} {
+      allow read, write: if isOwner();
+    }
+    match /financial_payment_methods/{methodId} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+    match /financial_entries/{entryId} {
+      allow read, write: if isOwner();
+    }
+    
+    // Transactions (Reporting)
+    match /transactions/{transactionId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner();
+    }
+
+    // User Data
+    match /user_carts/{userId} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+    match /user_addresses/{addressId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+
+    // WhatsApp/Product Ops
+    match /pending_products/{productId} {
+      allow read, write: if isAdminOrOwner();
+    }
+    match /product_drafts/{draftId} {
+      allow read, write: if isAdminOrOwner();
+    }
+    match /product_categories/{categoryId} {
+      allow read: if true;
+      allow create, update, delete: if isOwner();
+    }
     match /collections/{collectionId} {
       allow read: if true;
       allow write: if isAdminOrOwner();
     }
+    match /globalindex/{productId} {
+      allow read: if true;
+      allow write, delete: if isOwner();
+    }
 
+    // Payment Detection
+    match /paymentDetectionsPending/{detectionId} {
+      allow create: if isOwner();
+      allow read, update, delete: if isAdminOrOwner();
+    }
+    match /paymentDetectionsVerified/{detectionId} {
+      allow read, write: if isAdminOrOwner();
+    }
+    match /paymentDetectionsIgnored/{detectionId} {
+      allow read, write: if isAdminOrOwner();
+    }
+    match /paymentDetectionSettings/{settingId} {
+      allow read, write: if isAdminOrOwner();
+    }
+    match /paymentGroups/{groupId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.userId || isAdminOrOwner()
+      );
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+      allow update: if isSignedIn() && (
+        request.auth.uid == resource.data.userId || isAdminOrOwner()
+      );
+      allow delete: if isAdminOrOwner();
+    }
+    match /autoVerificationLogs/{logId} {
+      allow read: if isAdminOrOwner();
+      allow create: if isAdminOrOwner();
+      allow update, delete: if isOwner();
+    }
+
+    // AI & Security
+    match /aiApiKeys/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId && isOwner();
+    }
+
+    // --- NEW RULES (POINT SYSTEM) ---
+
+    // Point Settings
+    match /point_settings/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isOwner();
+    }
+
+    // Point History
+    match /point_history/{docId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.userId || isAdminOrOwner()
+      );
+      allow create: if isSignedIn();
+    }
   }
 }
