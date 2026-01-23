@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Plus, Truck, Archive, CreditCard, ChevronRight, Gift, Tag, Trash2, Edit2, AlertCircle, ShoppingBag, Package, Loader2, Check } from 'lucide-react';
+import { MapPin, Plus, Truck, Archive, CreditCard, ChevronRight, Gift, Tag, Trash2, Edit2, AlertCircle, ShoppingBag, Package, Loader2, Check, Award } from 'lucide-react';
 import { addressService } from '../services/addressService';
 import AddressForm from './AddressForm';
 import { komerceService, KomerceCostResult } from '../utils/komerceService';
@@ -12,6 +12,7 @@ import { useToast } from './ToastProvider';
 import { financialService, PaymentMethod } from '../services/financialService';
 import { voucherService } from '../services/voucherService';
 import { Voucher } from '../types/voucher';
+import { pointService, PointSettings } from '../services/pointService';
 // ✅ SIMPLIFIED: No longer needed at checkout
 // Unique code generation moved to OrdersPage when customer is ready to pay
 
@@ -415,6 +416,15 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   }, [shippingMode]);
 
+  // Point System State
+  const [usePoints, setUsePoints] = useState(false);
+  const [pointSettings, setPointSettings] = useState<PointSettings | null>(null);
+
+  // Load point settings
+  useEffect(() => {
+    pointService.getSettings().then(setPointSettings);
+  }, []);
+
   const [formData, setFormData] = useState({
     name: user?.name || '',
     phone: '',
@@ -436,7 +446,31 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   const shippingFee = shippingMode === 'keep' ? 0 : formData.shippingCost || 0;
   const voucherDiscount = appliedVoucher ? appliedVoucher.discountAmount : 0;
-  const effectiveFinalTotal = Math.max(0, totalPrice + shippingFee - voucherDiscount);
+
+  // Point Calculation
+  const userPoints = user?.points || 0;
+
+  // ⛔ RESTRICTION CHECK
+  // Check if any item is Flash Sale OR Discounted
+  const hasRestrictedItems = cartItems.some(item => {
+    const isFlashSale = item.isFlashSale || item.productStatus === 'flash_sale';
+    const currentPrice = item.price || 0;
+    const originalPrice = item.originalResellerPrice || item.originalRetailPrice || item.originalPrice || 0;
+    const isDiscounted = originalPrice > currentPrice;
+
+    return isFlashSale || isDiscounted;
+  });
+
+  // Calculate max points usable (can't go below 0 total)
+  // Use points to cover Total + Shipping - Voucher
+  const maxRedeemablePoints = Math.max(0, Math.min(userPoints, totalPrice + shippingFee - voucherDiscount));
+
+  // Only apply discount if toggle is ON, user is RESELLER, settings enabled, and has points
+  const pointDiscount = (usePoints && user?.role === 'reseller' && pointSettings?.isEnabled && maxRedeemablePoints > 0)
+    ? maxRedeemablePoints
+    : 0;
+
+  const effectiveFinalTotal = Math.max(0, totalPrice + shippingFee - voucherDiscount - pointDiscount);
   // Alias for legacy usage
   const effectiveShippingFee = shippingFee;
 
@@ -784,6 +818,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       shippingCost: effectiveShippingFee,
       voucherCode: appliedVoucher?.code || null,
       voucherDiscount: voucherDiscount,
+      // ✨ NEW: Point System Fields
+      usedPoints: pointDiscount,
+      pointDiscount: pointDiscount,
       finalTotal: effectiveFinalTotal,
       // ✨ NEW: Add cash details explicitly for Admin UI if supported later
       cashReceived: cashReceived ? Number(cashReceived) : undefined,
@@ -809,6 +846,18 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         await voucherService.useVoucher(appliedVoucher.id, newOrderId);
       } catch (error) {
         console.error('Failed to mark voucher as used:', error);
+      }
+    }
+
+    // ✨ NEW: Deduct points if used
+    if (pointDiscount > 0 && newOrderId) {
+      try {
+        console.log(`💎 Deducting ${pointDiscount} points...`);
+        await pointService.deductPoints(user.uid, pointDiscount, newOrderId);
+        console.log('✅ Points deducted.');
+      } catch (error) {
+        console.error('❌ Failed to deduct points:', error);
+        // Note: Code continues, as order is already created. Admin might need to reconcile manually if this fails.
       }
     }
 
@@ -1320,6 +1369,65 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
               {/* ✅ SIMPLIFIED: No verification mode selection at checkout */}
               {/* Customers will choose auto/manual when ready to pay in OrdersPage */}
+
+              {/* Point Redemption Section (Reseller Only) */}
+              {user?.role === 'reseller' && pointSettings?.isEnabled && user?.points > 0 && (
+                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
+                  <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <Award className="w-5 h-5 text-blue-600" />
+                    Tukar Poin Reseller
+                  </h3>
+
+                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="text-sm text-blue-800 font-medium">Saldo Poin Anda</p>
+                        <p className="text-2xl font-bold text-blue-600">{user.points.toLocaleString('id-ID')} pts</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-blue-600">Nilai Tukar</p>
+                        <p className="text-sm font-bold text-blue-800">1 Poin = Rp 1</p>
+                      </div>
+                    </div>
+
+                    <label className={`flex items-center gap-3 p-3 bg-white rounded-lg border transition-colors ${hasRestrictedItems || (!!pointSettings?.minOrderForRedeem && totalPrice < pointSettings.minOrderForRedeem) ? 'border-gray-200 opacity-60 cursor-not-allowed' : 'border-blue-100 cursor-pointer hover:border-blue-300'}`}>
+                      <div className="relative inline-flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={usePoints}
+                          onChange={(e) => !hasRestrictedItems && (!pointSettings?.minOrderForRedeem || totalPrice >= pointSettings.minOrderForRedeem) && setUsePoints(e.target.checked)}
+                          disabled={hasRestrictedItems || (!!pointSettings?.minOrderForRedeem && totalPrice < pointSettings.minOrderForRedeem)}
+                          className="sr-only peer"
+                        />
+                        <div className={`w-11 h-6 rounded-full peer after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${hasRestrictedItems || (!!pointSettings?.minOrderForRedeem && totalPrice < pointSettings.minOrderForRedeem) ? 'bg-gray-200' : 'bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white peer-checked:bg-blue-600'}`}></div>
+                      </div>
+                      <div className="flex-1">
+                        <p className={`font-semibold ${hasRestrictedItems || (!!pointSettings?.minOrderForRedeem && totalPrice < pointSettings.minOrderForRedeem) ? 'text-gray-500' : 'text-gray-900'}`}>Gunakan Poin</p>
+                        <p className="text-xs text-gray-500">
+                          {hasRestrictedItems
+                            ? 'Tidak tersedia item Promo/Flash Sale'
+                            : (!!pointSettings?.minOrderForRedeem && totalPrice < pointSettings.minOrderForRedeem)
+                              ? `Min. belanja Rp ${pointSettings.minOrderForRedeem.toLocaleString('id-ID')}`
+                              : (usePoints
+                                ? `Hemat Rp ${pointDiscount.toLocaleString('id-ID')}`
+                                : 'Tukarkan poin untuk diskon')}
+                        </p>
+                      </div>
+                    </label>
+
+                    {(hasRestrictedItems || (!!pointSettings?.minOrderForRedeem && totalPrice < pointSettings.minOrderForRedeem)) && (
+                      <div className="mt-3 flex items-start gap-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-100">
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <p>
+                          {hasRestrictedItems
+                            ? "Penukaran poin dinonaktifkan karena terdapat produk Flash Sale/Diskon."
+                            : `Minimal belanja Rp ${pointSettings?.minOrderForRedeem?.toLocaleString('id-ID')} untuk tukar poin.`}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Voucher Section */}
               <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">

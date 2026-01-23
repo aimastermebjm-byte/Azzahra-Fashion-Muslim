@@ -1,8 +1,10 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Users, Search, Filter, Plus, Eye, Edit, Trash2, Shield, Award, AlertCircle, RefreshCcw, X, Check, Save } from 'lucide-react';
+import { Users, Search, Filter, Plus, Eye, Edit, Trash2, Shield, Award, AlertCircle, RefreshCcw, X, Check, Save, Settings } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { usersService, AdminUser } from '../services/usersService';
+import { pointService, PointSettings } from '../services/pointService';
+import { productCategoryService, ProductCategory } from '../services/productCategoryService';
 
 interface AdminUsersPageProps {
   onBack: () => void;
@@ -28,6 +30,12 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
   });
   const [isSaving, setIsSaving] = useState(false);
 
+  // Point Settings State
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [pointSettings, setPointSettings] = useState<PointSettings | null>(null);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
   // Initial load: cache first, then subscribe
   useEffect(() => {
     const unsubscribe = usersService.subscribeToUsers((data) => {
@@ -40,6 +48,26 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
       unsubscribe();
     };
   }, []);
+
+  // Load settings when modal opens
+  useEffect(() => {
+    if (showSettingsModal) {
+      const loadData = async () => {
+        try {
+          const [settings, cats] = await Promise.all([
+            pointService.getSettings(),
+            productCategoryService.listCategories()
+          ]);
+          setPointSettings(settings);
+          setCategories(cats);
+        } catch (err) {
+          console.error('Failed to load settings:', err);
+          alert('Gagal memuat pengaturan point');
+        }
+      };
+      loadData();
+    }
+  }, [showSettingsModal]);
 
   const roleConfig = {
     owner: { label: 'Owner', color: 'text-red-600 bg-red-100', icon: Shield },
@@ -99,6 +127,36 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
     }
   };
 
+  const handleSaveSettings = async () => {
+    if (!pointSettings) return;
+    try {
+      setIsSavingSettings(true);
+      await pointService.saveSettings(pointSettings);
+      setShowSettingsModal(false);
+      alert('Pengaturan point berhasil disimpan!');
+    } catch (err) {
+      console.error(err);
+      alert('Gagal menyimpan pengaturan');
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const toggleCategory = (catName: string) => {
+    if (!pointSettings) return;
+    const current = pointSettings.eligibleCategories || [];
+    const exists = current.includes(catName);
+
+    let newCategories;
+    if (exists) {
+      newCategories = current.filter(c => c !== catName);
+    } else {
+      newCategories = [...current, catName];
+    }
+
+    setPointSettings({ ...pointSettings, eligibleCategories: newCategories });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <PageHeader
@@ -106,10 +164,21 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
         subtitle="Pantau role, status, dan aktivitas pelanggan/reseller"
         onBack={onBack}
         actions={(
-          <button className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-[#997B2C] hover:text-[#997B2C]/80 transition hover:bg-white/90 shadow-md">
-            <Plus className="w-4 h-4" />
-            Tambah User
-          </button>
+          <div className="flex gap-2">
+            {user?.role === 'owner' && (
+              <button
+                onClick={() => setShowSettingsModal(true)}
+                className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-700 hover:text-gray-900 transition hover:bg-white/90 shadow-md border border-gray-200"
+              >
+                <Settings className="w-4 h-4" />
+                Pengaturan Point
+              </button>
+            )}
+            <button className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-[#997B2C] hover:text-[#997B2C]/80 transition hover:bg-white/90 shadow-md">
+              <Plus className="w-4 h-4" />
+              Tambah User
+            </button>
+          </div>
         )}
       />
 
@@ -377,6 +446,132 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
               >
                 {isSaving ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Simpan Perubahan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL SETTINGS POINT */}
+      {showSettingsModal && pointSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="bg-yellow-100 p-2 rounded-full">
+                  <Award className="w-5 h-5 text-yellow-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-slate-800">Pengaturan Point Reseller</h3>
+                  <p className="text-xs text-gray-500">Konfigurasi reward untuk reseller</p>
+                </div>
+              </div>
+              <button onClick={() => setShowSettingsModal(false)} className="p-1 hover:bg-gray-200 rounded-full transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-5 overflow-y-auto">
+              {/* Toggle Enable */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                  <h4 className="font-medium text-gray-800">Aktifkan Sistem Point</h4>
+                  <p className="text-xs text-gray-500">Reseller akan mendapatkan poin dari transaksi</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={pointSettings.isEnabled}
+                    onChange={(e) => setPointSettings({ ...pointSettings, isEnabled: e.target.checked })}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              {/* Point Value */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Point per Produk (IDR)</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500 font-bold">Pts</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={pointSettings.pointPerItem}
+                    onChange={(e) => setPointSettings({ ...pointSettings, pointPerItem: Number(e.target.value) })}
+                    className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-lg text-blue-600"
+                    placeholder="1000"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Nilai point yang didapat untuk setiap 1 item eligible yang terjual.</p>
+              </div>
+
+              {/* Min Order for Redeem */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Min. Belanja untuk Tukar Poin</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500 font-bold">Rp</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={pointSettings.minOrderForRedeem || 0}
+                    onChange={(e) => setPointSettings({ ...pointSettings, minOrderForRedeem: Number(e.target.value) })}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-lg text-slate-800"
+                    placeholder="0"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Minimum total belanja agar reseller bisa menggunakan poinnya.</p>
+              </div>
+
+              {/* Categories */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Kategori Eligible</label>
+                <div className="bg-gray-50 rounded-xl border border-gray-200 p-3 max-h-48 overflow-y-auto space-y-2">
+                  {categories.map(cat => {
+                    const isSelected = pointSettings.eligibleCategories.includes(cat.name);
+                    return (
+                      <label key={cat.id} className={`flex items-center p-2 rounded-lg cursor-pointer transition-colors border ${isSelected ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-100 border-transparent'}`}>
+                        <div className={`w-5 h-5 rounded border flex items-center justify-center mr-3 transition-colors ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'}`}>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                        </div>
+                        <span className={`text-sm ${isSelected ? 'font-medium text-blue-700' : 'text-gray-700'}`}>{cat.name}</span>
+                        <input
+                          type="checkbox"
+                          className="hidden"
+                          checked={isSelected}
+                          onChange={() => toggleCategory(cat.name)}
+                        />
+                      </label>
+                    );
+                  })}
+
+                  {categories.length === 0 && (
+                    <div className="text-center py-4 text-gray-500 text-sm">
+                      Tidak ada kategori ditemukan.
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Pilih kategori produk yang akan memberikan poin.</p>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-100 flex gap-3 bg-gray-50 shrink-0">
+              <button
+                onClick={() => setShowSettingsModal(false)}
+                disabled={isSavingSettings}
+                className="flex-1 py-2 px-4 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSaveSettings}
+                disabled={isSavingSettings}
+                className="flex-1 py-2 px-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+              >
+                {isSavingSettings ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Simpan
               </button>
             </div>
           </div>

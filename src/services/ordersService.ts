@@ -2,6 +2,7 @@
 import { auth } from '../utils/firebaseClient';
 import { doc, setDoc, collection, getDocs, query, where, updateDoc, deleteDoc, getDoc, Timestamp, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
+import { pointService } from './pointService';
 
 export interface Order {
   id: string;
@@ -39,7 +40,13 @@ export interface Order {
   userRole?: 'customer' | 'reseller' | 'admin' | 'owner'; // Role saat order dibuat
   expiresAt?: number | null;           // Timestamp kapan order expired (null = no limit)
   hasReadyStockItems?: boolean;        // True jika ada item ready stock
+  expiresAt?: number | null;           // Timestamp kapan order expired (null = no limit)
+  hasReadyStockItems?: boolean;        // True jika ada item ready stock
   expiryNotified?: boolean;            // True jika sudah kirim notifikasi 15 menit
+
+  // ✨ NEW: Reseller Point System
+  usedPoints?: number;                 // Points redeeemed in this order
+  pointDiscount?: number;              // Discount amount from points
 }
 
 class OrdersService {
@@ -145,6 +152,14 @@ class OrdersService {
         status: newStatus,
         updatedAt: Timestamp.now()
       });
+
+      // ✨ NEW: Process Reseller Points if order is PAID
+      if (newStatus === 'paid') {
+        const fullOrder = { ...orderData, id: orderId };
+        pointService.processOrderPoints(fullOrder).catch(err =>
+          console.error('❌ Background point processing error:', err)
+        );
+      }
 
       console.log('✅ Order status updated successfully');
       return true;
