@@ -41,8 +41,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [voucherCode, setVoucherCode] = useState('');
   const [voucherLoading, setVoucherLoading] = useState(false);
 
-  // POS Cash State
-  const [cashReceived, setCashReceived] = useState<string>('');
 
   // Load cart from backend
   const loadCart = async () => {
@@ -799,32 +797,18 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       shippingMode: shippingMode,
       shippingConfigured: shippingMode === 'delivery', // true jika sudah lengkap
       paymentMethod: selectedPaymentMethod.name,
-      notes: (() => {
-        // Append POS info if Cash payment
-        let finalNotes = formData.notes || '';
-        const isCashMethod = selectedPaymentMethod?.name?.toLowerCase().includes('cash') || selectedPaymentMethod?.name?.toLowerCase().includes('tunai') || selectedPaymentMethod?.name?.toLowerCase().includes('bayar di toko');
-
-        if (isCashMethod && cashReceived) {
-          const received = Number(cashReceived);
-          const change = received - effectiveFinalTotal;
-          const posNote = `\n[POS] Tunai: Rp ${received.toLocaleString('id-ID')} | Kembalian: Rp ${change.toLocaleString('id-ID')}`;
-          finalNotes += posNote;
-        }
-        return finalNotes;
-      })(),
+      notes: formData.notes || '',
       paymentMethodId: selectedPaymentMethod.id,
       paymentMethodName: selectedPaymentMethod.name,
       totalAmount: totalPrice,
       shippingCost: effectiveShippingFee,
       voucherCode: appliedVoucher?.code || null,
       voucherDiscount: voucherDiscount,
-      // ✨ NEW: Point System Fields
+      // ✨ Point System Fields
       usedPoints: pointDiscount,
       pointDiscount: pointDiscount,
-      finalTotal: effectiveFinalTotal,
-      // ✨ NEW: Add cash details explicitly for Admin UI if supported later
-      cashReceived: cashReceived ? Number(cashReceived) : undefined,
-      cashChange: cashReceived ? (Number(cashReceived) - effectiveFinalTotal) : undefined
+      finalTotal: effectiveFinalTotal
+      // Note: cashReceived/cashChange will be added by Admin via POS modal when verifying
     };
 
     // Create order and get order ID (pass cartItems to eliminate duplicate read)
@@ -1296,7 +1280,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   <div className="space-y-3">
                     {paymentMethods.map((method) => {
                       const isSelected = formData.paymentMethodId === method.id;
-                      const isCash = method.name.toLowerCase().includes('cash') || method.name.toLowerCase().includes('tunai') || method.name.toLowerCase().includes('bayar di toko') || method.name.toLowerCase().includes('kas');
 
                       return (
                         <div key={method.id}>
@@ -1321,45 +1304,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                             </div>
                           </label>
 
-                          {/* POS Calculator UI if Cash Selected */}
-                          {isSelected && isCash && (
-                            <div className="mt-2 ml-4 mr-4 p-4 bg-amber-50 rounded-xl border border-amber-200 animate-in slide-in-from-top-2 fade-in duration-300">
-                              <div className="flex flex-col gap-3">
-                                <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-amber-100 shadow-sm">
-                                  <span className="text-sm font-semibold text-gray-600">Total Tagihan:</span>
-                                  <span className="text-lg font-bold text-[#D4AF37]">Rp {effectiveFinalTotal.toLocaleString('id-ID')}</span>
-                                </div>
-
-                                <div>
-                                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Uang Diterima (Rp)</label>
-                                  <input
-                                    type="number"
-                                    value={cashReceived}
-                                    onChange={(e) => setCashReceived(e.target.value)}
-                                    placeholder="0"
-                                    className="w-full text-lg font-bold p-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
-                                  />
-                                </div>
-
-                                <div className="flex gap-2 text-xs">
-                                  <button onClick={() => setCashReceived(String(effectiveFinalTotal))} className="px-2 py-1 bg-white border border-amber-200 rounded text-amber-800 hover:bg-amber-100">Uang Pas</button>
-                                  <button onClick={() => setCashReceived(String(effectiveFinalTotal + 10000))} className="px-2 py-1 bg-white border border-amber-200 rounded text-amber-800 hover:bg-amber-100">+10k</button>
-                                  <button onClick={() => setCashReceived(String(effectiveFinalTotal + 50000))} className="px-2 py-1 bg-white border border-amber-200 rounded text-amber-800 hover:bg-amber-100">+50k</button>
-                                </div>
-
-                                {Number(cashReceived) > 0 && (
-                                  <div className={`flex justify-between items-center p-3 rounded-lg border ${Number(cashReceived) >= effectiveFinalTotal ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                                    <span className="text-sm font-semibold text-gray-600">
-                                      {Number(cashReceived) >= effectiveFinalTotal ? 'Kembalian:' : 'Kurang:'}
-                                    </span>
-                                    <span className={`text-lg font-bold ${Number(cashReceived) >= effectiveFinalTotal ? 'text-green-700' : 'text-red-700'}`}>
-                                      Rp {Math.abs(Number(cashReceived) - effectiveFinalTotal).toLocaleString('id-ID')}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
+                          {/* Cash payment: no input needed at checkout - admin will handle via POS modal */}
                         </div>
                       );
                     })}
