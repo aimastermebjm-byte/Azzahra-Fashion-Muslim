@@ -960,8 +960,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       {canShowPickupOption && (
                         <label
                           className={`flex flex-col items-center gap-2 p-4 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden group ${shippingMode === 'pickup'
-                            ? 'bg-gradient-to-br from-white to-[#E8F5E9] shadow-[0_0_15px_rgba(76,175,80,0.25)]'
-                            : 'bg-white border border-gray-100 hover:border-green-400/30 hover:shadow-md'
+                            ? 'bg-gradient-to-br from-white to-[#FEFAE0] shadow-[0_0_15px_rgba(212,175,55,0.25)]'
+                            : 'bg-white border border-gray-100 hover:border-[#D4AF37]/30 hover:shadow-md'
                             }`}
                         >
                           <input
@@ -972,19 +972,19 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                             onChange={() => setShippingMode('pickup')}
                             className="sr-only"
                           />
-                          <div className={`p-2.5 rounded-full transition-all duration-300 ${shippingMode === 'pickup' ? 'bg-gradient-to-br from-green-500 to-green-600 shadow-inner' : 'bg-gray-50 group-hover:bg-green-50'}`}>
-                            <Package className={`w-5 h-5 transition-colors duration-300 ${shippingMode === 'pickup' ? 'text-white' : 'text-gray-400 group-hover:text-green-600'}`} />
+                          <div className={`p-2.5 rounded-full transition-all duration-300 ${shippingMode === 'pickup' ? 'bg-gradient-to-br from-[#D4AF37] to-[#B8860B] shadow-inner' : 'bg-gray-50 group-hover:bg-[#D4AF37]/10'}`}>
+                            <Package className={`w-5 h-5 transition-colors duration-300 ${shippingMode === 'pickup' ? 'text-white' : 'text-gray-400 group-hover:text-[#B8860B]'}`} />
                           </div>
-                          <p className={`font-bold text-sm transition-colors duration-300 text-center ${shippingMode === 'pickup' ? 'text-green-700' : 'text-gray-600 group-hover:text-green-700'}`}>Ambil di Toko</p>
+                          <p className={`font-bold text-sm transition-colors duration-300 text-center ${shippingMode === 'pickup' ? 'text-[#996515]' : 'text-gray-600 group-hover:text-[#996515]'}`}>Ambil di Toko</p>
                         </label>
                       )}
                     </div>
 
                     {/* Info text for pickup mode */}
                     {shippingMode === 'pickup' && (
-                      <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200 text-sm text-green-700">
+                      <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm text-amber-700">
                         <p className="font-medium">📍 Ambil langsung di toko</p>
-                        <p className="text-xs text-green-600 mt-1">Ongkir Rp 0 - Tidak perlu alamat pengiriman</p>
+                        <p className="text-xs text-amber-600 mt-1">Ongkir Rp 0 - Tidak perlu alamat pengiriman</p>
                       </div>
                     )}
                   </div>
