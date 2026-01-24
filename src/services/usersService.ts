@@ -148,6 +148,36 @@ export const usersService = {
     }
   },
 
+  async getUserById(userId: string): Promise<AdminUser | null> {
+    try {
+      const { doc, getDoc } = await import('firebase/firestore');
+      const userRef = doc(db, 'users', userId);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        const data = userSnap.data() as any;
+        return {
+          id: userSnap.id,
+          name: data.name || data.displayName || 'Pengguna',
+          email: data.email || 'no-email',
+          phone: data.phone || data.phoneNumber || '',
+          role: data.role || 'customer',
+          status: data.status || 'active',
+          joinDate: data.createdAt || data.joinDate || '',
+          totalOrders: Number(data.totalOrders || 0),
+          totalSpent: Number(data.totalSpent || 0),
+          points: Number(data.points || data.resellerPoints || 0),
+          lastLoginAt: data.lastLoginAt || '',
+          gender: data.gender || 'male'
+        };
+      }
+      return null;
+    } catch (err) {
+      console.error('❌ Error fetching user by ID:', err);
+      return null;
+    }
+  },
+
   async updateUser(userId: string, data: Partial<AdminUser>): Promise<void> {
     try {
       const { doc, updateDoc } = await import('firebase/firestore');

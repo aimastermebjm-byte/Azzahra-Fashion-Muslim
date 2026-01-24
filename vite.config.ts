@@ -18,8 +18,8 @@ export default defineConfig({
         name: 'Azzahra Fashion Muslim',
         short_name: 'Azzahra',
         description: 'Pusat Fashion Muslim Terlengkap & Terpercaya',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
+        theme_color: '#0d0d0d',
+        background_color: '#0d0d0d',
         display: 'standalone',
         display_override: ["window-controls-overlay", "minimal-ui"], // 🔥 Hardening display mode
         scope: '/',

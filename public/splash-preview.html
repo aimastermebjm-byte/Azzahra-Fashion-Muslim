@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Splash Screen Preview - Azzahra Fashion Muslim</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .phone-frame {
+            width: 375px;
+            height: 812px;
+            background: linear-gradient(180deg, #0d0d0d 0%, #1a1a1a 50%, #0d0d0d 100%);
+            border-radius: 40px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.8), inset 0 0 0 3px #333;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Gold Shimmer Particles */
+        .particles {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: radial-gradient(circle, #D4AF37 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .particle:nth-child(1) { top: 10%; left: 20%; animation-delay: 0s; }
+        .particle:nth-child(2) { top: 30%; left: 80%; animation-delay: 1s; }
+        .particle:nth-child(3) { top: 50%; left: 15%; animation-delay: 2s; }
+        .particle:nth-child(4) { top: 70%; left: 70%; animation-delay: 3s; }
+        .particle:nth-child(5) { top: 20%; left: 50%; animation-delay: 0.5s; }
+        .particle:nth-child(6) { top: 60%; left: 40%; animation-delay: 1.5s; }
+        .particle:nth-child(7) { top: 80%; left: 25%; animation-delay: 2.5s; }
+        .particle:nth-child(8) { top: 40%; left: 90%; animation-delay: 3.5s; }
+
+        @keyframes float {
+            0%, 100% { 
+                transform: translateY(0) scale(1); 
+                opacity: 0.3;
+            }
+            50% { 
+                transform: translateY(-30px) scale(1.5); 
+                opacity: 1;
+            }
+        }
+
+        /* Content */
+        .splash-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 40px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Logo */
+        .logo-container {
+            width: 200px;
+            height: 200px;
+            animation: logoEntrance 1.5s ease-out forwards;
+            margin-bottom: 30px;
+        }
+
+        .logo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 20px;
+            box-shadow: 
+                0 0 30px rgba(212, 175, 55, 0.4),
+                0 0 60px rgba(212, 175, 55, 0.2),
+                0 0 90px rgba(212, 175, 55, 0.1);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes logoEntrance {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes glow {
+            0% {
+                box-shadow: 
+                    0 0 30px rgba(212, 175, 55, 0.4),
+                    0 0 60px rgba(212, 175, 55, 0.2);
+            }
+            100% {
+                box-shadow: 
+                    0 0 40px rgba(212, 175, 55, 0.6),
+                    0 0 80px rgba(212, 175, 55, 0.3),
+                    0 0 120px rgba(212, 175, 55, 0.15);
+            }
+        }
+
+        /* Tagline */
+        .tagline {
+            text-align: center;
+            animation: fadeUp 1s ease-out 0.5s forwards;
+            opacity: 0;
+        }
+
+        .tagline-main {
+            font-size: 18px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+
+        .tagline-accent {
+            font-size: 14px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #D4AF37, #F5E6C8, #D4AF37);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 1px;
+        }
+
+        @keyframes fadeUp {
+            0% {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Loading Bar */
+        .loading-container {
+            position: absolute;
+            bottom: 100px;
+            width: 60%;
+            animation: fadeIn 1s ease-out 1s forwards;
+            opacity: 0;
+        }
+
+        .loading-bar {
+            height: 3px;
+            background: rgba(212, 175, 55, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .loading-progress {
+            height: 100%;
+            width: 30%;
+            background: linear-gradient(90deg, transparent, #D4AF37, #F5E6C8, #D4AF37, transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(400%); }
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        /* Skip Button */
+        .skip-btn {
+            position: absolute;
+            bottom: 50px;
+            right: 30px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+            cursor: pointer;
+            transition: color 0.3s;
+            animation: fadeIn 1s ease-out 1.5s forwards;
+            opacity: 0;
+        }
+
+        .skip-btn:hover {
+            color: #D4AF37;
+        }
+
+        /* Title */
+        h1 {
+            color: #D4AF37;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 300;
+            letter-spacing: 3px;
+        }
+
+        .note {
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>✨ SPLASH SCREEN PREVIEW ✨</h1>
+        
+        <div class="phone-frame">
+            <!-- Gold Particles -->
+            <div class="particles">
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+            </div>
+
+            <div class="splash-content">
+                <!-- Logo -->
+                <div class="logo-container">
+                    <img src="azzahra-logo.jpg" alt="Azzahra Logo">
+                </div>
+
+                <!-- Tagline -->
+                <div class="tagline">
+                    <div class="tagline-main">Elegance in Modesty</div>
+                    <div class="tagline-accent">Premium Muslim Fashion</div>
+                </div>
+
+                <!-- Loading Bar -->
+                <div class="loading-container">
+                    <div class="loading-bar">
+                        <div class="loading-progress"></div>
+                    </div>
+                </div>
+
+                <!-- Skip -->
+                <div class="skip-btn">Skip →</div>
+            </div>
+        </div>
+
+        <p class="note">Refresh halaman untuk melihat animasi dari awal</p>
+    </div>
+</body>
+</html>

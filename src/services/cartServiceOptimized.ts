@@ -16,6 +16,7 @@ export interface CartItem {
     size?: string;
     color?: string;
   };
+  category?: string; // Product category for point calculation
   status?: string; // Product status: 'po', 'ready', etc.
   addedAt: string; // Selalu string untuk Firestore compatibility
 }
@@ -215,6 +216,7 @@ class CartServiceOptimized {
           quantity: Number(quantity) || 1,
           image: product.image || product.images?.[0] || '/placeholder-product.jpg',
           ...(variant && { variant }), // Hanya include variant jika ada
+          category: product.category || '', // Include product category for point calculation
           status: product.status || undefined, // Include product status (po, ready, etc.)
           addedAt: new Date().toISOString()
         };

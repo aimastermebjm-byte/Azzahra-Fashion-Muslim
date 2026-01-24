@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Plus, Truck, Archive, CreditCard, ChevronRight, Gift, Tag, Trash2, Edit2, AlertCircle, ShoppingBag, Package, Loader2, Check } from 'lucide-react';
+import { MapPin, Plus, Truck, Archive, CreditCard, ChevronRight, Gift, Tag, Trash2, Edit2, AlertCircle, ShoppingBag, Package, Loader2, Check, Award } from 'lucide-react';
 import { addressService } from '../services/addressService';
 import AddressForm from './AddressForm';
 import { komerceService, KomerceCostResult } from '../utils/komerceService';
@@ -12,6 +12,7 @@ import { useToast } from './ToastProvider';
 import { financialService, PaymentMethod } from '../services/financialService';
 import { voucherService } from '../services/voucherService';
 import { Voucher } from '../types/voucher';
+import { pointService, PointSettings } from '../services/pointService';
 // ✅ SIMPLIFIED: No longer needed at checkout
 // Unique code generation moved to OrdersPage when customer is ready to pay
 
@@ -40,8 +41,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [voucherCode, setVoucherCode] = useState('');
   const [voucherLoading, setVoucherLoading] = useState(false);
 
-  // POS Cash State
-  const [cashReceived, setCashReceived] = useState<string>('');
 
   // Load cart from backend
   const loadCart = async () => {
@@ -385,26 +384,31 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     return total + (itemPrice * itemQuantity);
   }, 0);
 
-  // Shipping mode: 'delivery' = kirim ke alamat, 'keep' = atur alamat nanti
+  // Shipping mode: 'delivery' = kirim ke alamat, 'keep' = atur alamat nanti, 'pickup' = ambil di toko
   // RULES:
   // 1. Ready stock (ALL roles) → ALWAYS 'delivery', NO 'keep' option
   // 2. PO + Customer → ALWAYS 'delivery', NO 'keep' option
   // 3. PO + Owner/Reseller → CAN CHOOSE 'keep' or 'delivery', default 'keep'
+  // 4. Pickup option → available for owner, admin, reseller (not customer)
   const userRole = user?.role || 'customer';
   const hasPOItems = cartItems.some(item => item.status === 'po');
   const hasReadyItems = cartItems.some(item => item.status !== 'po');
   const isOwnerOrReseller = ['owner', 'reseller'].includes(userRole);
+  const isPrivilegedUser = ['owner', 'admin', 'reseller'].includes(userRole);
 
   // Only owner/reseller with ONLY PO items can see the 'keep' option
   const canShowKeepOption = isOwnerOrReseller && hasPOItems && !hasReadyItems;
 
+  // Pickup option available for owner, admin, reseller (always)
+  const canShowPickupOption = isPrivilegedUser;
+
   // Default mode: 'keep' only for owner/reseller with PO only, otherwise always 'delivery'
   const defaultMode = canShowKeepOption ? 'keep' : 'delivery';
-  const [shippingMode, setShippingMode] = useState<'delivery' | 'keep'>(defaultMode);
+  const [shippingMode, setShippingMode] = useState<'delivery' | 'keep' | 'pickup'>(defaultMode);
 
-  // Reset shipping cost when switching to 'keep' mode
+  // Reset shipping cost when switching to 'keep' or 'pickup' mode
   useEffect(() => {
-    if (shippingMode === 'keep') {
+    if (shippingMode === 'keep' || shippingMode === 'pickup') {
       setShippingCost(0);
       setFormData(prev => ({
         ...prev,
@@ -414,6 +418,15 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       }));
     }
   }, [shippingMode]);
+
+  // Point System State
+  const [usePoints, setUsePoints] = useState(false);
+  const [pointSettings, setPointSettings] = useState<PointSettings | null>(null);
+
+  // Load point settings
+  useEffect(() => {
+    pointService.getSettings().then(setPointSettings);
+  }, []);
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -434,9 +447,33 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
 
 
-  const shippingFee = shippingMode === 'keep' ? 0 : formData.shippingCost || 0;
+  const shippingFee = (shippingMode === 'keep' || shippingMode === 'pickup') ? 0 : formData.shippingCost || 0;
   const voucherDiscount = appliedVoucher ? appliedVoucher.discountAmount : 0;
-  const effectiveFinalTotal = Math.max(0, totalPrice + shippingFee - voucherDiscount);
+
+  // Point Calculation
+  const userPoints = user?.points || 0;
+
+  // ⛔ RESTRICTION CHECK
+  // Check if any item is Flash Sale OR Discounted
+  const hasRestrictedItems = cartItems.some(item => {
+    const isFlashSale = item.isFlashSale || item.productStatus === 'flash_sale';
+    const currentPrice = item.price || 0;
+    const originalPrice = item.originalResellerPrice || item.originalRetailPrice || item.originalPrice || 0;
+    const isDiscounted = originalPrice > currentPrice;
+
+    return isFlashSale || isDiscounted;
+  });
+
+  // Calculate max points usable (can't go below 0 total)
+  // Use points to cover Total + Shipping - Voucher
+  const maxRedeemablePoints = Math.max(0, Math.min(userPoints, totalPrice + shippingFee - voucherDiscount));
+
+  // Only apply discount if toggle is ON, user is RESELLER, settings enabled, and has points
+  const pointDiscount = (usePoints && user?.role === 'reseller' && pointSettings?.isEnabled && maxRedeemablePoints > 0)
+    ? maxRedeemablePoints
+    : 0;
+
+  const effectiveFinalTotal = Math.max(0, totalPrice + shippingFee - voucherDiscount - pointDiscount);
   // Alias for legacy usage
   const effectiveShippingFee = shippingFee;
 
@@ -515,7 +552,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [formData.shippingCourier, selectedAddressId, addresses.length, cartItems.length]);
+  }, [formData.shippingCourier, selectedAddressId, addresses.length, cartItems.length, totalPrice]);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -765,29 +802,18 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       shippingMode: shippingMode,
       shippingConfigured: shippingMode === 'delivery', // true jika sudah lengkap
       paymentMethod: selectedPaymentMethod.name,
-      notes: (() => {
-        // Append POS info if Cash payment
-        let finalNotes = formData.notes || '';
-        const isCashMethod = selectedPaymentMethod?.name?.toLowerCase().includes('cash') || selectedPaymentMethod?.name?.toLowerCase().includes('tunai') || selectedPaymentMethod?.name?.toLowerCase().includes('bayar di toko');
-
-        if (isCashMethod && cashReceived) {
-          const received = Number(cashReceived);
-          const change = received - effectiveFinalTotal;
-          const posNote = `\n[POS] Tunai: Rp ${received.toLocaleString('id-ID')} | Kembalian: Rp ${change.toLocaleString('id-ID')}`;
-          finalNotes += posNote;
-        }
-        return finalNotes;
-      })(),
+      notes: formData.notes || '',
       paymentMethodId: selectedPaymentMethod.id,
       paymentMethodName: selectedPaymentMethod.name,
       totalAmount: totalPrice,
       shippingCost: effectiveShippingFee,
       voucherCode: appliedVoucher?.code || null,
       voucherDiscount: voucherDiscount,
-      finalTotal: effectiveFinalTotal,
-      // ✨ NEW: Add cash details explicitly for Admin UI if supported later
-      cashReceived: cashReceived ? Number(cashReceived) : undefined,
-      cashChange: cashReceived ? (Number(cashReceived) - effectiveFinalTotal) : undefined
+      // ✨ Point System Fields
+      usedPoints: pointDiscount,
+      pointDiscount: pointDiscount,
+      finalTotal: effectiveFinalTotal
+      // Note: cashReceived/cashChange will be added by Admin via POS modal when verifying
     };
 
     // Create order and get order ID (pass cartItems to eliminate duplicate read)
@@ -809,6 +835,18 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         await voucherService.useVoucher(appliedVoucher.id, newOrderId);
       } catch (error) {
         console.error('Failed to mark voucher as used:', error);
+      }
+    }
+
+    // ✨ NEW: Deduct points if used
+    if (pointDiscount > 0 && newOrderId) {
+      try {
+        console.log(`💎 Deducting ${pointDiscount} points...`);
+        await pointService.deductPoints(user.uid, pointDiscount, newOrderId);
+        console.log('✅ Points deducted.');
+      } catch (error) {
+        console.error('❌ Failed to deduct points:', error);
+        // Note: Code continues, as order is already created. Admin might need to reconcile manually if this fails.
       }
     }
 
@@ -864,7 +902,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 );
 
                 // Use the canShowKeepOption flag defined at component level
-                if (!canShowKeepOption) return null;
+                // Show section if either keep or pickup options are available
+                if (!canShowKeepOption && !canShowPickupOption) return null;
 
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
@@ -872,9 +911,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       <Truck className="w-5 h-5 text-yellow-700" />
                       Mode Pengiriman
                     </h3>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className={`grid gap-3 ${canShowKeepOption && canShowPickupOption ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                      {/* Kirim option - always visible when section shows */}
                       <label
-                        className={`flex items-center gap-4 p-5 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden group ${shippingMode === 'delivery'
+                        className={`flex flex-col items-center gap-2 p-4 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden group ${shippingMode === 'delivery'
                           ? 'bg-gradient-to-br from-white to-[#FEFAE0] shadow-[0_0_15px_rgba(212,175,55,0.25)]'
                           : 'bg-white border border-gray-100 hover:border-[#D4AF37]/30 hover:shadow-md'
                           }`}
@@ -888,31 +928,65 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           className="sr-only"
                         />
                         <div className={`p-2.5 rounded-full transition-all duration-300 ${shippingMode === 'delivery' ? 'bg-gradient-to-br from-[#D4AF37] to-[#B8860B] shadow-inner' : 'bg-gray-50 group-hover:bg-[#D4AF37]/10'}`}>
-                          <Truck className={`w-6 h-6 transition-colors duration-300 ${shippingMode === 'delivery' ? 'text-white' : 'text-gray-400 group-hover:text-[#B8860B]'}`} />
+                          <Truck className={`w-5 h-5 transition-colors duration-300 ${shippingMode === 'delivery' ? 'text-white' : 'text-gray-400 group-hover:text-[#B8860B]'}`} />
                         </div>
-                        <p className={`font-bold text-lg transition-colors duration-300 ${shippingMode === 'delivery' ? 'text-[#996515]' : 'text-gray-600 group-hover:text-[#996515]'}`}>Kirim</p>
+                        <p className={`font-bold text-sm transition-colors duration-300 ${shippingMode === 'delivery' ? 'text-[#996515]' : 'text-gray-600 group-hover:text-[#996515]'}`}>Kirim</p>
                       </label>
 
-                      <label
-                        className={`flex items-center gap-4 p-5 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden group ${shippingMode === 'keep'
-                          ? 'bg-gradient-to-br from-white to-[#FEFAE0] shadow-[0_0_15px_rgba(212,175,55,0.25)]'
-                          : 'bg-white border border-gray-100 hover:border-[#D4AF37]/30 hover:shadow-md'
-                          }`}
-                      >
-                        <input
-                          type="radio"
-                          name="shippingMode"
-                          value="keep"
-                          checked={shippingMode === 'keep'}
-                          onChange={() => setShippingMode('keep')}
-                          className="sr-only"
-                        />
-                        <div className={`p-2.5 rounded-full transition-all duration-300 ${shippingMode === 'keep' ? 'bg-gradient-to-br from-[#D4AF37] to-[#B8860B] shadow-inner' : 'bg-gray-50 group-hover:bg-[#D4AF37]/10'}`}>
-                          <Archive className={`w-6 h-6 transition-colors duration-300 ${shippingMode === 'keep' ? 'text-white' : 'text-gray-400 group-hover:text-[#B8860B]'}`} />
-                        </div>
-                        <p className={`font-bold text-lg transition-colors duration-300 ${shippingMode === 'keep' ? 'text-[#996515]' : 'text-gray-600 group-hover:text-[#996515]'}`}>Keep</p>
-                      </label>
+                      {/* Keep option - only for owner/reseller with PO items */}
+                      {canShowKeepOption && (
+                        <label
+                          className={`flex flex-col items-center gap-2 p-4 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden group ${shippingMode === 'keep'
+                            ? 'bg-gradient-to-br from-white to-[#FEFAE0] shadow-[0_0_15px_rgba(212,175,55,0.25)]'
+                            : 'bg-white border border-gray-100 hover:border-[#D4AF37]/30 hover:shadow-md'
+                            }`}
+                        >
+                          <input
+                            type="radio"
+                            name="shippingMode"
+                            value="keep"
+                            checked={shippingMode === 'keep'}
+                            onChange={() => setShippingMode('keep')}
+                            className="sr-only"
+                          />
+                          <div className={`p-2.5 rounded-full transition-all duration-300 ${shippingMode === 'keep' ? 'bg-gradient-to-br from-[#D4AF37] to-[#B8860B] shadow-inner' : 'bg-gray-50 group-hover:bg-[#D4AF37]/10'}`}>
+                            <Archive className={`w-5 h-5 transition-colors duration-300 ${shippingMode === 'keep' ? 'text-white' : 'text-gray-400 group-hover:text-[#B8860B]'}`} />
+                          </div>
+                          <p className={`font-bold text-sm transition-colors duration-300 ${shippingMode === 'keep' ? 'text-[#996515]' : 'text-gray-600 group-hover:text-[#996515]'}`}>Keep</p>
+                        </label>
+                      )}
+
+                      {/* Pickup option - for owner/admin/reseller */}
+                      {canShowPickupOption && (
+                        <label
+                          className={`flex flex-col items-center gap-2 p-4 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden group ${shippingMode === 'pickup'
+                            ? 'bg-gradient-to-br from-white to-[#FEFAE0] shadow-[0_0_15px_rgba(212,175,55,0.25)]'
+                            : 'bg-white border border-gray-100 hover:border-[#D4AF37]/30 hover:shadow-md'
+                            }`}
+                        >
+                          <input
+                            type="radio"
+                            name="shippingMode"
+                            value="pickup"
+                            checked={shippingMode === 'pickup'}
+                            onChange={() => setShippingMode('pickup')}
+                            className="sr-only"
+                          />
+                          <div className={`p-2.5 rounded-full transition-all duration-300 ${shippingMode === 'pickup' ? 'bg-gradient-to-br from-[#D4AF37] to-[#B8860B] shadow-inner' : 'bg-gray-50 group-hover:bg-[#D4AF37]/10'}`}>
+                            <Package className={`w-5 h-5 transition-colors duration-300 ${shippingMode === 'pickup' ? 'text-white' : 'text-gray-400 group-hover:text-[#B8860B]'}`} />
+                          </div>
+                          <p className={`font-bold text-sm transition-colors duration-300 text-center ${shippingMode === 'pickup' ? 'text-[#996515]' : 'text-gray-600 group-hover:text-[#996515]'}`}>Ambil di Toko</p>
+                        </label>
+                      )}
                     </div>
+
+                    {/* Info text for pickup mode */}
+                    {shippingMode === 'pickup' && (
+                      <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm text-amber-700">
+                        <p className="font-medium">📍 Ambil langsung di toko</p>
+                        <p className="text-xs text-amber-600 mt-1">Ongkir Rp 0 - Tidak perlu alamat pengiriman</p>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -1247,7 +1321,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   <div className="space-y-3">
                     {paymentMethods.map((method) => {
                       const isSelected = formData.paymentMethodId === method.id;
-                      const isCash = method.name.toLowerCase().includes('cash') || method.name.toLowerCase().includes('tunai') || method.name.toLowerCase().includes('bayar di toko') || method.name.toLowerCase().includes('kas');
 
                       return (
                         <div key={method.id}>
@@ -1272,45 +1345,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                             </div>
                           </label>
 
-                          {/* POS Calculator UI if Cash Selected */}
-                          {isSelected && isCash && (
-                            <div className="mt-2 ml-4 mr-4 p-4 bg-amber-50 rounded-xl border border-amber-200 animate-in slide-in-from-top-2 fade-in duration-300">
-                              <div className="flex flex-col gap-3">
-                                <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-amber-100 shadow-sm">
-                                  <span className="text-sm font-semibold text-gray-600">Total Tagihan:</span>
-                                  <span className="text-lg font-bold text-[#D4AF37]">Rp {effectiveFinalTotal.toLocaleString('id-ID')}</span>
-                                </div>
-
-                                <div>
-                                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Uang Diterima (Rp)</label>
-                                  <input
-                                    type="number"
-                                    value={cashReceived}
-                                    onChange={(e) => setCashReceived(e.target.value)}
-                                    placeholder="0"
-                                    className="w-full text-lg font-bold p-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
-                                  />
-                                </div>
-
-                                <div className="flex gap-2 text-xs">
-                                  <button onClick={() => setCashReceived(String(effectiveFinalTotal))} className="px-2 py-1 bg-white border border-amber-200 rounded text-amber-800 hover:bg-amber-100">Uang Pas</button>
-                                  <button onClick={() => setCashReceived(String(effectiveFinalTotal + 10000))} className="px-2 py-1 bg-white border border-amber-200 rounded text-amber-800 hover:bg-amber-100">+10k</button>
-                                  <button onClick={() => setCashReceived(String(effectiveFinalTotal + 50000))} className="px-2 py-1 bg-white border border-amber-200 rounded text-amber-800 hover:bg-amber-100">+50k</button>
-                                </div>
-
-                                {Number(cashReceived) > 0 && (
-                                  <div className={`flex justify-between items-center p-3 rounded-lg border ${Number(cashReceived) >= effectiveFinalTotal ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                                    <span className="text-sm font-semibold text-gray-600">
-                                      {Number(cashReceived) >= effectiveFinalTotal ? 'Kembalian:' : 'Kurang:'}
-                                    </span>
-                                    <span className={`text-lg font-bold ${Number(cashReceived) >= effectiveFinalTotal ? 'text-green-700' : 'text-red-700'}`}>
-                                      Rp {Math.abs(Number(cashReceived) - effectiveFinalTotal).toLocaleString('id-ID')}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
+                          {/* Cash payment: no input needed at checkout - admin will handle via POS modal */}
                         </div>
                       );
                     })}
@@ -1320,6 +1355,65 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
               {/* ✅ SIMPLIFIED: No verification mode selection at checkout */}
               {/* Customers will choose auto/manual when ready to pay in OrdersPage */}
+
+              {/* Point Redemption Section (Reseller Only) */}
+              {user?.role === 'reseller' && pointSettings?.isEnabled && user?.points > 0 && (
+                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
+                  <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <Award className="w-5 h-5 text-blue-600" />
+                    Tukar Poin Reseller
+                  </h3>
+
+                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="text-sm text-blue-800 font-medium">Saldo Poin Anda</p>
+                        <p className="text-2xl font-bold text-blue-600">{user.points.toLocaleString('id-ID')} pts</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-blue-600">Nilai Tukar</p>
+                        <p className="text-sm font-bold text-blue-800">1 Poin = Rp 1</p>
+                      </div>
+                    </div>
+
+                    <label className={`flex items-center gap-3 p-3 bg-white rounded-lg border transition-colors ${hasRestrictedItems || (!!pointSettings?.minOrderForRedeem && totalPrice < pointSettings.minOrderForRedeem) ? 'border-gray-200 opacity-60 cursor-not-allowed' : 'border-blue-100 cursor-pointer hover:border-blue-300'}`}>
+                      <div className="relative inline-flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={usePoints}
+                          onChange={(e) => !hasRestrictedItems && (!pointSettings?.minOrderForRedeem || totalPrice >= pointSettings.minOrderForRedeem) && setUsePoints(e.target.checked)}
+                          disabled={hasRestrictedItems || (!!pointSettings?.minOrderForRedeem && totalPrice < pointSettings.minOrderForRedeem)}
+                          className="sr-only peer"
+                        />
+                        <div className={`w-11 h-6 rounded-full peer after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${hasRestrictedItems || (!!pointSettings?.minOrderForRedeem && totalPrice < pointSettings.minOrderForRedeem) ? 'bg-gray-200' : 'bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white peer-checked:bg-blue-600'}`}></div>
+                      </div>
+                      <div className="flex-1">
+                        <p className={`font-semibold ${hasRestrictedItems || (!!pointSettings?.minOrderForRedeem && totalPrice < pointSettings.minOrderForRedeem) ? 'text-gray-500' : 'text-gray-900'}`}>Gunakan Poin</p>
+                        <p className="text-xs text-gray-500">
+                          {hasRestrictedItems
+                            ? 'Tidak tersedia item Promo/Flash Sale'
+                            : (!!pointSettings?.minOrderForRedeem && totalPrice < pointSettings.minOrderForRedeem)
+                              ? `Min. belanja Rp ${pointSettings.minOrderForRedeem.toLocaleString('id-ID')}`
+                              : (usePoints
+                                ? `Hemat Rp ${pointDiscount.toLocaleString('id-ID')}`
+                                : 'Tukarkan poin untuk diskon')}
+                        </p>
+                      </div>
+                    </label>
+
+                    {(hasRestrictedItems || (!!pointSettings?.minOrderForRedeem && totalPrice < pointSettings.minOrderForRedeem)) && (
+                      <div className="mt-3 flex items-start gap-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-100">
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <p>
+                          {hasRestrictedItems
+                            ? "Penukaran poin dinonaktifkan karena terdapat produk Flash Sale/Diskon."
+                            : `Minimal belanja Rp ${pointSettings?.minOrderForRedeem?.toLocaleString('id-ID')} untuk tukar poin.`}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Voucher Section */}
               <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">

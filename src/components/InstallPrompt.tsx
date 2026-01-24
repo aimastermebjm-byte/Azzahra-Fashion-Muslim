@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Download, X, Share } from 'lucide-react';
+import { Download, X, Share, Smartphone, Zap, WifiOff } from 'lucide-react';
 
 const InstallPrompt: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
-  const [showBanner, setShowBanner] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     // Check if already installed
@@ -14,17 +15,36 @@ const InstallPrompt: React.FC = () => {
       return;
     }
 
+    // Check if user already dismissed the prompt today
+    const lastDismissed = localStorage.getItem('azzahra-install-dismissed');
+    if (lastDismissed) {
+      const dismissedDate = new Date(lastDismissed);
+      const now = new Date();
+      // Show again after 24 hours
+      if (now.getTime() - dismissedDate.getTime() < 24 * 60 * 60 * 1000) {
+        setDismissed(true);
+        return;
+      }
+    }
+
     // Android/Chrome
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setShowBanner(true);
+      // Show modal after a short delay (let splash screen finish)
+      setTimeout(() => {
+        setShowModal(true);
+      }, 1000);
     };
 
     // iOS Detection
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     if (isIOS) {
       setShowIOSPrompt(true);
+      // Show modal after a short delay
+      setTimeout(() => {
+        setShowModal(true);
+      }, 1000);
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -37,7 +57,7 @@ const InstallPrompt: React.FC = () => {
   useEffect(() => {
     const handleAppInstalled = () => {
       setIsStandalone(true);
-      setShowBanner(false);
+      setShowModal(false);
       setDeferredPrompt(null);
     };
 
@@ -58,78 +78,148 @@ const InstallPrompt: React.FC = () => {
 
     if (outcome === 'accepted') {
       setIsStandalone(true);
-      setShowBanner(false);
+      setShowModal(false);
     } else {
-      setShowBanner(false);
+      handleDismiss();
     }
   };
 
-  if (isStandalone || !showBanner) return null;
+  const handleDismiss = () => {
+    setShowModal(false);
+    setDismissed(true);
+    localStorage.setItem('azzahra-install-dismissed', new Date().toISOString());
+  };
 
-  // iOS Instruction Banner
-  if (showIOSPrompt) {
-    return (
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-50 animate-slide-up">
-        <div className="flex items-start justify-between max-w-md mx-auto">
-          <div className="flex-1 mr-4">
-            <h3 className="font-semibold text-gray-900 mb-1">Install Aplikasi Azzahra</h3>
-            <p className="text-sm text-gray-600 mb-2">
-              Untuk pengalaman terbaik, install aplikasi ke layar utama Anda:
-            </p>
-            <div className="flex items-center space-x-2 text-sm text-gray-700">
-              <span>1. Ketuk tombol Share</span>
-              <Share className="w-4 h-4" />
-            </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-700 mt-1">
-              <span>2. Pilih "Add to Home Screen"</span>
-              <span className="bg-gray-100 border border-gray-300 rounded px-1 text-xs">+</span>
-            </div>
-          </div>
-          <button 
-            onClick={() => setShowBanner(false)}
-            className="text-gray-400 hover:text-gray-600 p-1"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (isStandalone || dismissed || !showModal) return null;
 
-  // Android/Chrome Install Button
-  if (deferredPrompt) {
-    return (
-      <div className="fixed bottom-4 left-4 right-4 z-50 animate-fade-in md:left-auto md:right-4 md:w-80">
-        <div className="bg-white rounded-xl shadow-xl border border-blue-100 p-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-100 p-2 rounded-lg">
-              <Download className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 text-sm">Install Aplikasi</h3>
-              <p className="text-xs text-gray-500">Akses lebih cepat & hemat kuota</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setShowBanner(false)}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+  // Features list
+  const features = [
+    { icon: Zap, text: 'Akses Lebih Cepat' },
+    { icon: WifiOff, text: 'Bisa Offline' },
+    { icon: Smartphone, text: 'Seperti Aplikasi Native' },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+      <div
+        className="relative w-full max-w-sm bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-3xl shadow-2xl overflow-hidden border border-amber-500/30"
+        style={{
+          animation: 'modalSlideUp 0.4s ease-out'
+        }}
+      >
+        {/* Gold accent top */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400" />
+
+        {/* Close button */}
+        <button
+          onClick={handleDismiss}
+          className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
+        >
+          <X className="w-5 h-5 text-white/70" />
+        </button>
+
+        {/* Content */}
+        <div className="p-6 pt-8 text-center">
+          {/* Logo */}
+          <div className="mb-6">
+            <div
+              className="w-24 h-24 mx-auto rounded-2xl overflow-hidden shadow-lg"
+              style={{
+                boxShadow: '0 0 30px rgba(212, 175, 55, 0.4)'
+              }}
             >
-              <X className="w-4 h-4" />
-            </button>
+              <img
+                src="/azzahra-logo.jpg"
+                alt="Azzahra Fashion"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+
+          {/* Title */}
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Install Aplikasi
+          </h2>
+          <p className="text-amber-400 font-medium mb-6">
+            Azzahra Fashion Muslim
+          </p>
+
+          {/* Features */}
+          <div className="space-y-3 mb-6">
+            {features.map((feature, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-center gap-3 text-white/80"
+              >
+                <feature.icon className="w-5 h-5 text-amber-400" />
+                <span className="text-sm">{feature.text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* iOS Instructions */}
+          {showIOSPrompt ? (
+            <div className="bg-white/10 rounded-xl p-4 mb-6 text-left">
+              <p className="text-white/90 text-sm mb-3 font-medium">
+                Cara Install di iPhone/iPad:
+              </p>
+              <div className="space-y-2 text-sm text-white/70">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold">1</span>
+                  <span>Ketuk tombol</span>
+                  <Share className="w-4 h-4 text-amber-400" />
+                  <span>Share</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold">2</span>
+                  <span>Pilih "Add to Home Screen"</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold">3</span>
+                  <span>Ketuk "Add"</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Android Install Button */
             <button
               onClick={handleInstallClick}
-              className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+              className="w-full py-4 rounded-xl font-bold text-gray-900 text-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3"
+              style={{
+                background: 'linear-gradient(135deg, #D4AF37, #F5E6C8, #D4AF37)',
+                boxShadow: '0 4px 20px rgba(212, 175, 55, 0.4)'
+              }}
             >
-              Install
+              <Download className="w-6 h-6" />
+              Install Sekarang
             </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+          )}
 
-  return null;
+          {/* Skip link */}
+          <button
+            onClick={handleDismiss}
+            className="mt-4 text-white/50 text-sm hover:text-white/70 transition-colors"
+          >
+            Nanti saja
+          </button>
+        </div>
+
+        {/* Animation keyframes */}
+        <style>{`
+          @keyframes modalSlideUp {
+            from {
+              transform: translateY(100px);
+              opacity: 0;
+            }
+            to {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+        `}</style>
+      </div>
+    </div>
+  );
 };
 
 export default InstallPrompt;

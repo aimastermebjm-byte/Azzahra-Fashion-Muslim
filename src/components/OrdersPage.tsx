@@ -113,7 +113,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       const subtotal = selected.reduce((sum, o) => sum + o.finalTotal, 0);
 
       if (selected.length === 0) {
-        showToast('Pilih minimal satu pesanan', 'error');
+        showToast({ title: 'Error', message: 'Pilih minimal satu pesanan', type: 'error' });
         return;
       }
 
@@ -141,7 +141,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
             if (isSameOrders && isSameTotal) {
               console.log('✅ Matches existing group!');
-              showToast('💡 Menggunakan kode pembayaran yang sudah dibuat', 'info');
+              showToast({ message: '💡 Menggunakan kode pembayaran yang sudah dibuat', type: 'info' });
 
               setPaymentData({
                 orderIds: selectedOrderIds,
@@ -168,12 +168,12 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                 await paymentGroupService.cancelPaymentGroup(existingPaymentGroup.id);
                 // Remove payment group links from OLD orders in background to save time?
                 // Let's await to be safe but show toast first
-                showToast('✅ Pembayaran lama dibatalkan', 'success');
+                showToast({ message: '✅ Pembayaran lama dibatalkan', type: 'success' });
 
                 for (const orderId of existingPaymentGroup.orderIds) {
                   await ordersService.updateOrder(orderId, {
-                    paymentGroupId: null,
-                    groupPaymentAmount: null,
+                    paymentGroupId: undefined,
+                    groupPaymentAmount: undefined,
                     verificationMode: undefined
                   });
                 }
@@ -208,9 +208,10 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
   // ✨ NEW: User chooses payment method
   const handleChooseMethod = async (mode: 'auto' | 'manual') => {
+
     try {
       if (mode === 'auto') {
-        showToast('🔄 Membuat pembayaran otomatis...', 'info');
+        showToast({ message: '🔄 Membuat pembayaran otomatis...', type: 'info' });
 
         // Create payment group with unique code
         const paymentGroup = await paymentGroupService.createPaymentGroup({
@@ -248,7 +249,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
         setShowMethodModal(false);
         setShowInstructionsModal(true);
-        showToast('✅ Instruksi pembayaran siap!', 'success');
+        showToast({ message: '✅ Instruksi pembayaran siap!', type: 'success' });
 
       } else {
         // Manual mode - no code generation needed
@@ -262,7 +263,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       }
     } catch (error) {
       console.error('Error choosing method:', error);
-      showToast('❌ Gagal membuat pembayaran', 'error');
+      showToast({ message: '❌ Gagal membuat pembayaran', type: 'error' });
     }
   };
 
@@ -283,10 +284,10 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
         setShowInstructionsModal(false);
         setShowMethodModal(true);
-        showToast('💡 Silakan pilih metode pembayaran lagi', 'info');
+        showToast({ message: '💡 Silakan pilih metode pembayaran lagi', type: 'info' });
       } catch (error) {
         console.error('Error updating payment group:', error);
-        showToast('❌ Gagal mengubah metode', 'error');
+        showToast({ message: '❌ Gagal mengubah metode', type: 'error' });
       }
     }
   };
@@ -305,8 +306,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         // Remove payment group links from orders
         for (const orderId of paymentData.orderIds) {
           await ordersService.updateOrder(orderId, {
-            paymentGroupId: null,
-            groupPaymentAmount: null,
+            paymentGroupId: undefined,
+            groupPaymentAmount: undefined,
             verificationMode: undefined
           });
         }
@@ -314,10 +315,10 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         setShowInstructionsModal(false);
         setPaymentData(null);
         setSelectedOrderIds([]);
-        showToast('Pembayaran dibatalkan', 'info');
+        showToast({ message: 'Pembayaran dibatalkan', type: 'info' });
       } catch (error) {
         console.error('Error cancelling payment:', error);
-        showToast('❌ Gagal membatalkan pembayaran', 'error');
+        showToast({ message: '❌ Gagal membatalkan pembayaran', type: 'error' });
       }
     }
   };
@@ -325,31 +326,42 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   // ✨ NEW: Handle upload bukti payment (manual mode)
   const handleSubmitManualPayment = async () => {
     if (!paymentProof) {
-      showToast('❌ Pilih bukti transfer terlebih dahulu', 'error');
+      showToast({ message: '❌ Pilih bukti transfer terlebih dahulu', type: 'error' });
+      return;
+    }
+
+    if (!paymentData || !paymentData.orderIds || paymentData.orderIds.length === 0) {
+      showToast({ message: '❌ Data pesanan tidak valid. Silakan coba lagi.', type: 'error' });
       return;
     }
 
     try {
       setUploadingProof(true);
+      let successCount = 0;
 
       // Upload bukti for each selected order
       for (const orderId of paymentData.orderIds) {
-        await ordersService.updateOrderPayment(
+        const success = await ordersService.updateOrderPayment(
           orderId,
           paymentProof,
           'awaiting_verification'
         );
+        if (success) successCount++;
       }
 
-      setShowUploadModal(false);
-      setPaymentData(null);
-      setSelectedOrderIds([]);
-      setPaymentProof(null);
+      if (successCount > 0) {
+        setShowUploadModal(false);
+        setPaymentData(null);
+        setSelectedOrderIds([]);
+        setPaymentProof(null);
 
-      showToast(`✅ Bukti pembayaran berhasil dikirim untuk ${paymentData.orderIds.length} pesanan!`, 'success');
+        showToast({ message: `✅ Bukti pembayaran berhasil dikirim untuk ${successCount} pesanan!`, type: 'success' });
+      } else {
+        showToast({ message: '❌ Gagal mengupload bukti pembayaran. Coba lagi atau gunakan gambar lebih kecil.', type: 'error' });
+      }
     } catch (error) {
-      console.error('Error submitting payment:', error);
-      showToast('❌ Gagal mengupload bukti pembayaran', 'error');
+      console.error('💥 Error submitting payment:', error);
+      showToast({ message: '❌ Gagal mengupload bukti pembayaran', type: 'error' });
     } finally {
       setUploadingProof(false);
     }
@@ -358,7 +370,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   // Copy to clipboard helper
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    showToast(`✅ ${label} berhasil disalin!`, 'success');
+    showToast({ message: `✅ ${label} berhasil disalin!`, type: 'success' });
   };
 
   // OLD: Single order payment (legacy - keep for backward compatibility)
@@ -391,13 +403,13 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
       if (success) {
         closePaymentModal();
-        showToast('✅ Bukti pembayaran berhasil dikirim!', 'success');
+        showToast({ message: '✅ Bukti pembayaran berhasil dikirim!', type: 'success' });
       } else {
-        showToast('❌ Gagal mengupload bukti pembayaran', 'error');
+        showToast({ message: '❌ Gagal mengupload bukti pembayaran', type: 'error' });
       }
     } catch (error) {
       console.error('Error submitting payment:', error);
-      showToast('❌ Gagal mengupload bukti pembayaran', 'error');
+      showToast({ message: '❌ Gagal mengupload bukti pembayaran', type: 'error' });
     }
   };
 
@@ -733,8 +745,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
       {/* ✨ Simplified Payment Method Modal */}
       {showMethodModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto">
             {/* Header */}
             <div className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] p-4 rounded-t-2xl shadow-md shine-effect">
               <h2 className="text-xl font-bold text-slate-900 text-center">
@@ -804,8 +816,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
       {/* ✨ Simplified Auto Payment Instructions Modal */}
       {showInstructionsModal && paymentData?.paymentGroup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto pb-4">
             {/* Header - Gold Theme */}
             <div className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] p-4 rounded-t-2xl shadow-md shine-effect">
               <div className="flex items-center justify-between">
@@ -913,7 +925,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                   setShowInstructionsModal(false);
                   setPaymentData(null);
                   setSelectedOrderIds([]);
-                  showToast('✅ Silakan lakukan transfer sesuai instruksi', 'success');
+                  showToast({ message: '✅ Silakan lakukan transfer sesuai instruksi', type: 'success' });
                 }}
                 className="w-full px-6 py-3 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black rounded-xl font-bold hover:shadow-lg transition-all"
               >
@@ -926,8 +938,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
       {/* ✨ Simplified Manual Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto pb-4">
             {/* Header - Gold Theme */}
             <div className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] p-4 rounded-t-2xl shadow-md">
               <div className="flex items-center justify-between">

@@ -2,6 +2,7 @@
 import { auth } from '../utils/firebaseClient';
 import { doc, setDoc, collection, getDocs, query, where, updateDoc, deleteDoc, getDoc, Timestamp, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
+import { pointService } from './pointService';
 
 export interface Order {
   id: string;
@@ -40,6 +41,10 @@ export interface Order {
   expiresAt?: number | null;           // Timestamp kapan order expired (null = no limit)
   hasReadyStockItems?: boolean;        // True jika ada item ready stock
   expiryNotified?: boolean;            // True jika sudah kirim notifikasi 15 menit
+
+  // ✨ NEW: Reseller Point System
+  usedPoints?: number;                 // Points redeeemed in this order
+  pointDiscount?: number;              // Discount amount from points
 }
 
 class OrdersService {
@@ -145,6 +150,14 @@ class OrdersService {
         status: newStatus,
         updatedAt: Timestamp.now()
       });
+
+      // ✨ NEW: Process Reseller Points if order is PAID
+      if (newStatus === 'paid') {
+        const fullOrder = { ...orderData, id: orderId };
+        pointService.processOrderPoints(fullOrder).catch(err =>
+          console.error('❌ Background point processing error:', err)
+        );
+      }
 
       console.log('✅ Order status updated successfully');
       return true;
@@ -271,36 +284,73 @@ class OrdersService {
       if (proof instanceof File) {
         paymentProofName = proof.name;
 
-        // Convert file to base64 and save directly to Firestore (FREE!)
+        // Convert file to base64 with COMPRESSION to ensure it fits in Firestore (Limit 1MB)
         try {
-          console.log('📤 Converting payment proof to base64 (FREE storage)...');
+          console.log('📤 Compressing and converting payment proof...');
 
-          const reader = new FileReader();
-          const base64Promise = new Promise((resolve, reject) => {
-            reader.onload = () => {
-              const result = reader.result as string;
-              // Remove data URL prefix to save space
-              const base64Data = result.split(',')[1] || result;
-              resolve(base64Data);
-            };
-            reader.onerror = reject;
+          const base64Data = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
             reader.readAsDataURL(proof);
+            reader.onload = (event) => {
+              const img = new Image();
+              img.src = event.target?.result as string;
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const MAX_WIDTH = 800;
+                const MAX_HEIGHT = 800;
+
+                // Resize logic
+                if (width > height) {
+                  if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                  }
+                } else {
+                  if (height > MAX_HEIGHT) {
+                    width *= MAX_HEIGHT / height;
+                    height = MAX_HEIGHT;
+                  }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx?.drawImage(img, 0, 0, width, height);
+
+                // Compress to JPEG with 0.7 quality
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                // Remove prefix
+                resolve(dataUrl.split(',')[1]);
+              };
+              img.onerror = (err) => reject(new Error('Failed to load image for compression'));
+            };
+            reader.onerror = (err) => reject(err);
           });
 
-          paymentProofData = await base64Promise;
-          console.log('✅ Payment proof converted to base64, size:', paymentProofData.length, 'characters');
-          console.log('💰 FREE storage in Firestore - No Firebase Storage cost!');
+          paymentProofData = base64Data;
+          console.log('✅ Payment proof compressed & converted, size:', paymentProofData.length, 'chars');
 
         } catch (conversionError) {
-          console.error('❌ Error converting file to base64:', conversionError);
-          // Fallback: Just save filename
-          paymentProofName = proof.name;
-          paymentProofData = '';
+          console.error('❌ Error compressing/converting file:', conversionError);
+          // Fallback: Try raw base64 if compression fails, but warn
+          try {
+            const rawBase64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.readAsDataURL(proof);
+              reader.onload = () => resolve((reader.result as string).split(',')[1]);
+              reader.onerror = reject;
+            });
+            paymentProofData = rawBase64;
+          } catch (e) {
+            paymentProofName = proof.name;
+            paymentProofData = '';
+          }
         }
       } else {
-        // Handle string proof (could be base64 data or filename)
+        // Handle string proof
         if (typeof proof === 'string' && proof.length > 100) {
-          // Likely base64 data (very long string)
           paymentProofData = proof;
           paymentProofName = 'payment_proof.jpg';
         } else {
@@ -326,6 +376,20 @@ class OrdersService {
       await updateDoc(orderRef, updateData);
 
       console.log('✅ Order payment updated in Firebase Firestore (FREE storage!)');
+
+      // ✨ NEW: Process Reseller Points if order status is now PAID
+      if (status === 'paid') {
+        console.log('💰 Order marked as paid, processing reseller points...');
+        // Fetch the full order data for point calculation
+        const orderSnap = await getDoc(orderRef);
+        if (orderSnap.exists()) {
+          const fullOrder = { id: orderId, ...orderSnap.data() } as Order;
+          pointService.processOrderPoints(fullOrder).catch(err =>
+            console.error('❌ Background point processing error:', err)
+          );
+        }
+      }
+
       return true;
     } catch (error) {
       console.error('❌ Error updating order payment in Firebase Firestore:', error);

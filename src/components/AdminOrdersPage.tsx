@@ -1057,20 +1057,19 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         ? `${cashNote}${cashOrder.notes}`
         : cashNote;
 
-      // Update order status, payment method, and notes
-      const success = await ordersService.updateOrder(cashOrder.id, {
-        status: 'processing', // Mark as Lunas/Paid (Processing)
-        paymentMethodName: 'Cash (POS Admin)', // Update payment method name
+      // First update payment method and notes
+      await ordersService.updateOrder(cashOrder.id, {
+        paymentMethodName: 'Cash (POS Admin)',
         notes: updatedNotes
       });
 
+      // Then update status to 'paid' which will trigger point distribution
+      const success = await ordersService.updateOrderStatus(cashOrder.id, 'paid');
+
       if (success) {
-        showModernAlert('Berhasil', 'Pembayaran tunai berhasil dicatat. Status pesanan sekarang "Diproses" (Lunas).', 'success');
+        showModernAlert('Berhasil', 'Pembayaran tunai berhasil dicatat. Pesanan LUNAS dan poin reseller akan diberikan!', 'success');
         setShowCashModal(false);
         setCashOrder(null);
-
-        // Refresh orders if needed (usually auto-syncs via hook)
-        // If not auto-syncing, might need to trigger refresh
       } else {
         showModernAlert('Error', 'Gagal update status pesanan.', 'error');
       }
@@ -1477,8 +1476,8 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             </button>
                           )}
 
-                          {/* ✨ NEW: Quick POS Cash Payment Button (Owner only) */}
-                          {order.status === 'pending' && user?.role === 'owner' && (
+                          {/* ✨ POS Cash Payment Button (Admin & Owner can verify cash payments) */}
+                          {order.status === 'pending' && (user?.role === 'owner' || user?.role === 'admin') && (
                             <button
                               onClick={() => handlePOSPaymentOpen(order)}
                               className="px-2.5 py-1.5 rounded-full bg-emerald-500 border border-emerald-600 text-white text-xs font-semibold hover:bg-emerald-600 transition-all flex items-center justify-center gap-1 whitespace-nowrap shadow-sm"
@@ -1507,7 +1506,8 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             </button>
                           )}
 
-                          {(order.status === 'pending' || order.status === 'awaiting_verification') && (
+                          {/* Verifikasi button - Only Owner can verify non-cash payments */}
+                          {(order.status === 'pending' || order.status === 'awaiting_verification') && user?.role === 'owner' && (
                             <button
                               onClick={() => handleVerifyPayment(order)}
                               className="px-2.5 py-1.5 rounded-full bg-white border border-[#D4AF37] text-[#997B2C] text-xs font-semibold hover:bg-[#F9F5EB] hover:shadow-md transition-all flex items-center justify-center gap-1 whitespace-nowrap"
