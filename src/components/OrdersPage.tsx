@@ -208,8 +208,6 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
   // ✨ NEW: User chooses payment method
   const handleChooseMethod = async (mode: 'auto' | 'manual') => {
-    console.log('💳 handleChooseMethod called with mode:', mode);
-    console.log('💳 Current paymentData:', paymentData);
 
     try {
       if (mode === 'auto') {
@@ -254,7 +252,6 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         showToast({ message: '✅ Instruksi pembayaran siap!', type: 'success' });
 
       } else {
-        console.log('📤 Manual mode selected - opening upload modal...');
         // Manual mode - no code generation needed
         setPaymentData({
           ...paymentData,
@@ -263,7 +260,6 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
         setShowMethodModal(false);
         setShowUploadModal(true);
-        console.log('📤 showUploadModal set to true!');
       }
     } catch (error) {
       console.error('Error choosing method:', error);
@@ -329,17 +325,12 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
   // ✨ NEW: Handle upload bukti payment (manual mode)
   const handleSubmitManualPayment = async () => {
-    console.log('🚀 handleSubmitManualPayment called');
-    console.log('📄 paymentProof:', paymentProof);
-    console.log('📦 paymentData:', paymentData);
-
     if (!paymentProof) {
       showToast({ message: '❌ Pilih bukti transfer terlebih dahulu', type: 'error' });
       return;
     }
 
     if (!paymentData || !paymentData.orderIds || paymentData.orderIds.length === 0) {
-      console.error('❌ paymentData is null or has no orderIds!');
       showToast({ message: '❌ Data pesanan tidak valid. Silakan coba lagi.', type: 'error' });
       return;
     }
@@ -348,21 +339,15 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       setUploadingProof(true);
       let successCount = 0;
 
-      console.log('📤 Uploading to', paymentData.orderIds.length, 'orders...');
-
       // Upload bukti for each selected order
       for (const orderId of paymentData.orderIds) {
-        console.log('⏳ Processing order:', orderId);
         const success = await ordersService.updateOrderPayment(
           orderId,
           paymentProof,
           'awaiting_verification'
         );
-        console.log('📝 Order', orderId, 'result:', success);
         if (success) successCount++;
       }
-
-      console.log('✅ Total success:', successCount);
 
       if (successCount > 0) {
         setShowUploadModal(false);
@@ -401,13 +386,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('📁 handleFileChange called!');
-    console.log('📁 e.target.files:', e.target.files);
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      console.log('📁 Selected file:', file.name, 'Size:', file.size, 'Type:', file.type);
-      setPaymentProof(file);
-      console.log('📁 paymentProof state updated!');
+      setPaymentProof(e.target.files[0]);
     }
   };
 
@@ -765,8 +745,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
       {/* ✨ Simplified Payment Method Modal */}
       {showMethodModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto">
             {/* Header */}
             <div className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] p-4 rounded-t-2xl shadow-md shine-effect">
               <h2 className="text-xl font-bold text-slate-900 text-center">
@@ -836,8 +816,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
       {/* ✨ Simplified Auto Payment Instructions Modal */}
       {showInstructionsModal && paymentData?.paymentGroup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto pb-4">
             {/* Header - Gold Theme */}
             <div className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] p-4 rounded-t-2xl shadow-md shine-effect">
               <div className="flex items-center justify-between">
@@ -958,8 +938,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
       {/* ✨ Simplified Manual Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto pb-4">
             {/* Header - Gold Theme */}
             <div className="bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] p-4 rounded-t-2xl shadow-md">
               <div className="flex items-center justify-between">
