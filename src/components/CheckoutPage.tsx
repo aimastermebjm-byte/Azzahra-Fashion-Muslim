@@ -384,26 +384,31 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     return total + (itemPrice * itemQuantity);
   }, 0);
 
-  // Shipping mode: 'delivery' = kirim ke alamat, 'keep' = atur alamat nanti
+  // Shipping mode: 'delivery' = kirim ke alamat, 'keep' = atur alamat nanti, 'pickup' = ambil di toko
   // RULES:
   // 1. Ready stock (ALL roles) → ALWAYS 'delivery', NO 'keep' option
   // 2. PO + Customer → ALWAYS 'delivery', NO 'keep' option
   // 3. PO + Owner/Reseller → CAN CHOOSE 'keep' or 'delivery', default 'keep'
+  // 4. Pickup option → available for owner, admin, reseller (not customer)
   const userRole = user?.role || 'customer';
   const hasPOItems = cartItems.some(item => item.status === 'po');
   const hasReadyItems = cartItems.some(item => item.status !== 'po');
   const isOwnerOrReseller = ['owner', 'reseller'].includes(userRole);
+  const isPrivilegedUser = ['owner', 'admin', 'reseller'].includes(userRole);
 
   // Only owner/reseller with ONLY PO items can see the 'keep' option
   const canShowKeepOption = isOwnerOrReseller && hasPOItems && !hasReadyItems;
 
+  // Pickup option available for owner, admin, reseller (always)
+  const canShowPickupOption = isPrivilegedUser;
+
   // Default mode: 'keep' only for owner/reseller with PO only, otherwise always 'delivery'
   const defaultMode = canShowKeepOption ? 'keep' : 'delivery';
-  const [shippingMode, setShippingMode] = useState<'delivery' | 'keep'>(defaultMode);
+  const [shippingMode, setShippingMode] = useState<'delivery' | 'keep' | 'pickup'>(defaultMode);
 
-  // Reset shipping cost when switching to 'keep' mode
+  // Reset shipping cost when switching to 'keep' or 'pickup' mode
   useEffect(() => {
-    if (shippingMode === 'keep') {
+    if (shippingMode === 'keep' || shippingMode === 'pickup') {
       setShippingCost(0);
       setFormData(prev => ({
         ...prev,
@@ -442,7 +447,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
 
 
-  const shippingFee = shippingMode === 'keep' ? 0 : formData.shippingCost || 0;
+  const shippingFee = (shippingMode === 'keep' || shippingMode === 'pickup') ? 0 : formData.shippingCost || 0;
   const voucherDiscount = appliedVoucher ? appliedVoucher.discountAmount : 0;
 
   // Point Calculation
@@ -897,7 +902,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 );
 
                 // Use the canShowKeepOption flag defined at component level
-                if (!canShowKeepOption) return null;
+                // Show section if either keep or pickup options are available
+                if (!canShowKeepOption && !canShowPickupOption) return null;
 
                 return (
                   <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
@@ -905,9 +911,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       <Truck className="w-5 h-5 text-yellow-700" />
                       Mode Pengiriman
                     </h3>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className={`grid gap-3 ${canShowKeepOption && canShowPickupOption ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                      {/* Kirim option - always visible when section shows */}
                       <label
-                        className={`flex items-center gap-4 p-5 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden group ${shippingMode === 'delivery'
+                        className={`flex flex-col items-center gap-2 p-4 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden group ${shippingMode === 'delivery'
                           ? 'bg-gradient-to-br from-white to-[#FEFAE0] shadow-[0_0_15px_rgba(212,175,55,0.25)]'
                           : 'bg-white border border-gray-100 hover:border-[#D4AF37]/30 hover:shadow-md'
                           }`}
@@ -921,31 +928,65 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           className="sr-only"
                         />
                         <div className={`p-2.5 rounded-full transition-all duration-300 ${shippingMode === 'delivery' ? 'bg-gradient-to-br from-[#D4AF37] to-[#B8860B] shadow-inner' : 'bg-gray-50 group-hover:bg-[#D4AF37]/10'}`}>
-                          <Truck className={`w-6 h-6 transition-colors duration-300 ${shippingMode === 'delivery' ? 'text-white' : 'text-gray-400 group-hover:text-[#B8860B]'}`} />
+                          <Truck className={`w-5 h-5 transition-colors duration-300 ${shippingMode === 'delivery' ? 'text-white' : 'text-gray-400 group-hover:text-[#B8860B]'}`} />
                         </div>
-                        <p className={`font-bold text-lg transition-colors duration-300 ${shippingMode === 'delivery' ? 'text-[#996515]' : 'text-gray-600 group-hover:text-[#996515]'}`}>Kirim</p>
+                        <p className={`font-bold text-sm transition-colors duration-300 ${shippingMode === 'delivery' ? 'text-[#996515]' : 'text-gray-600 group-hover:text-[#996515]'}`}>Kirim</p>
                       </label>
 
-                      <label
-                        className={`flex items-center gap-4 p-5 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden group ${shippingMode === 'keep'
-                          ? 'bg-gradient-to-br from-white to-[#FEFAE0] shadow-[0_0_15px_rgba(212,175,55,0.25)]'
-                          : 'bg-white border border-gray-100 hover:border-[#D4AF37]/30 hover:shadow-md'
-                          }`}
-                      >
-                        <input
-                          type="radio"
-                          name="shippingMode"
-                          value="keep"
-                          checked={shippingMode === 'keep'}
-                          onChange={() => setShippingMode('keep')}
-                          className="sr-only"
-                        />
-                        <div className={`p-2.5 rounded-full transition-all duration-300 ${shippingMode === 'keep' ? 'bg-gradient-to-br from-[#D4AF37] to-[#B8860B] shadow-inner' : 'bg-gray-50 group-hover:bg-[#D4AF37]/10'}`}>
-                          <Archive className={`w-6 h-6 transition-colors duration-300 ${shippingMode === 'keep' ? 'text-white' : 'text-gray-400 group-hover:text-[#B8860B]'}`} />
-                        </div>
-                        <p className={`font-bold text-lg transition-colors duration-300 ${shippingMode === 'keep' ? 'text-[#996515]' : 'text-gray-600 group-hover:text-[#996515]'}`}>Keep</p>
-                      </label>
+                      {/* Keep option - only for owner/reseller with PO items */}
+                      {canShowKeepOption && (
+                        <label
+                          className={`flex flex-col items-center gap-2 p-4 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden group ${shippingMode === 'keep'
+                            ? 'bg-gradient-to-br from-white to-[#FEFAE0] shadow-[0_0_15px_rgba(212,175,55,0.25)]'
+                            : 'bg-white border border-gray-100 hover:border-[#D4AF37]/30 hover:shadow-md'
+                            }`}
+                        >
+                          <input
+                            type="radio"
+                            name="shippingMode"
+                            value="keep"
+                            checked={shippingMode === 'keep'}
+                            onChange={() => setShippingMode('keep')}
+                            className="sr-only"
+                          />
+                          <div className={`p-2.5 rounded-full transition-all duration-300 ${shippingMode === 'keep' ? 'bg-gradient-to-br from-[#D4AF37] to-[#B8860B] shadow-inner' : 'bg-gray-50 group-hover:bg-[#D4AF37]/10'}`}>
+                            <Archive className={`w-5 h-5 transition-colors duration-300 ${shippingMode === 'keep' ? 'text-white' : 'text-gray-400 group-hover:text-[#B8860B]'}`} />
+                          </div>
+                          <p className={`font-bold text-sm transition-colors duration-300 ${shippingMode === 'keep' ? 'text-[#996515]' : 'text-gray-600 group-hover:text-[#996515]'}`}>Keep</p>
+                        </label>
+                      )}
+
+                      {/* Pickup option - for owner/admin/reseller */}
+                      {canShowPickupOption && (
+                        <label
+                          className={`flex flex-col items-center gap-2 p-4 rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden group ${shippingMode === 'pickup'
+                            ? 'bg-gradient-to-br from-white to-[#E8F5E9] shadow-[0_0_15px_rgba(76,175,80,0.25)]'
+                            : 'bg-white border border-gray-100 hover:border-green-400/30 hover:shadow-md'
+                            }`}
+                        >
+                          <input
+                            type="radio"
+                            name="shippingMode"
+                            value="pickup"
+                            checked={shippingMode === 'pickup'}
+                            onChange={() => setShippingMode('pickup')}
+                            className="sr-only"
+                          />
+                          <div className={`p-2.5 rounded-full transition-all duration-300 ${shippingMode === 'pickup' ? 'bg-gradient-to-br from-green-500 to-green-600 shadow-inner' : 'bg-gray-50 group-hover:bg-green-50'}`}>
+                            <Package className={`w-5 h-5 transition-colors duration-300 ${shippingMode === 'pickup' ? 'text-white' : 'text-gray-400 group-hover:text-green-600'}`} />
+                          </div>
+                          <p className={`font-bold text-sm transition-colors duration-300 text-center ${shippingMode === 'pickup' ? 'text-green-700' : 'text-gray-600 group-hover:text-green-700'}`}>Ambil di Toko</p>
+                        </label>
+                      )}
                     </div>
+
+                    {/* Info text for pickup mode */}
+                    {shippingMode === 'pickup' && (
+                      <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200 text-sm text-green-700">
+                        <p className="font-medium">📍 Ambil langsung di toko</p>
+                        <p className="text-xs text-green-600 mt-1">Ongkir Rp 0 - Tidak perlu alamat pengiriman</p>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
