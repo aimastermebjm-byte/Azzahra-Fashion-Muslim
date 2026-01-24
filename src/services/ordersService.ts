@@ -376,6 +376,20 @@ class OrdersService {
       await updateDoc(orderRef, updateData);
 
       console.log('✅ Order payment updated in Firebase Firestore (FREE storage!)');
+
+      // ✨ NEW: Process Reseller Points if order status is now PAID
+      if (status === 'paid') {
+        console.log('💰 Order marked as paid, processing reseller points...');
+        // Fetch the full order data for point calculation
+        const orderSnap = await getDoc(orderRef);
+        if (orderSnap.exists()) {
+          const fullOrder = { id: orderId, ...orderSnap.data() } as Order;
+          pointService.processOrderPoints(fullOrder).catch(err =>
+            console.error('❌ Background point processing error:', err)
+          );
+        }
+      }
+
       return true;
     } catch (error) {
       console.error('❌ Error updating order payment in Firebase Firestore:', error);
