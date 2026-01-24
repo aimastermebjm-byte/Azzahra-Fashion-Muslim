@@ -1057,20 +1057,19 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         ? `${cashNote}${cashOrder.notes}`
         : cashNote;
 
-      // Update order status, payment method, and notes
-      const success = await ordersService.updateOrder(cashOrder.id, {
-        status: 'processing', // Mark as Lunas/Paid (Processing)
-        paymentMethodName: 'Cash (POS Admin)', // Update payment method name
+      // First update payment method and notes
+      await ordersService.updateOrder(cashOrder.id, {
+        paymentMethodName: 'Cash (POS Admin)',
         notes: updatedNotes
       });
 
+      // Then update status to 'paid' which will trigger point distribution
+      const success = await ordersService.updateOrderStatus(cashOrder.id, 'paid');
+
       if (success) {
-        showModernAlert('Berhasil', 'Pembayaran tunai berhasil dicatat. Status pesanan sekarang "Diproses" (Lunas).', 'success');
+        showModernAlert('Berhasil', 'Pembayaran tunai berhasil dicatat. Pesanan LUNAS dan poin reseller akan diberikan!', 'success');
         setShowCashModal(false);
         setCashOrder(null);
-
-        // Refresh orders if needed (usually auto-syncs via hook)
-        // If not auto-syncing, might need to trigger refresh
       } else {
         showModernAlert('Error', 'Gagal update status pesanan.', 'error');
       }
