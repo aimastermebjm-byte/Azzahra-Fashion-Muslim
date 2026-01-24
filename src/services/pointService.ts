@@ -80,74 +80,45 @@ export const pointService = {
    * Calculate potential points for an order
    */
   async calculateEarnedPoints(order: Order, settings?: PointSettings): Promise<number> {
-    console.log('📊 calculateEarnedPoints called for order:', order.id);
-    console.log('📊 Order userRole:', order.userRole);
-    console.log('📊 Order userId:', order.userId);
-
     // Only Resellers earn points
-    // Note: We check the role at the time of calculation, or stored in order
-    // But per requirement "tiap user role reseller transaksi... dapat point"
-    // Ideally check current user role, but for backend logic rely on order.userRole if available or fetch user
-
-    // Quick role check if provided in order (from previous analysis order has userRole)
     if (order.userRole && order.userRole !== 'reseller') {
-      console.log('❌ User role is not reseller, skipping points. Role:', order.userRole);
       return 0;
     }
 
-    // Double check with latest user data if order.userRole is missing or unreliable
+    // Double check with latest user data if order.userRole is missing
     if (!order.userRole) {
-      console.log('⚠️ order.userRole is missing, fetching from database...');
       const user = await usersService.getUserById(order.userId);
-      console.log('📊 Fetched user:', user?.role);
       if (!user || user.role !== 'reseller') {
-        console.log('❌ User is not a reseller, skipping points.');
         return 0;
       }
-      console.log('✅ User confirmed as reseller from database.');
     }
 
     // Get settings if not provided
     const config = settings || await this.getSettings();
-    console.log('📊 Point settings:', JSON.stringify(config));
-
-    if (!config.isEnabled) {
-      console.log('❌ Point system is disabled.');
-      return 0;
-    }
+    if (!config.isEnabled) return 0;
 
     let totalPoints = 0;
 
     // Calculate based on eligible items
     if (order.items && Array.isArray(order.items)) {
-      console.log('📊 Processing', order.items.length, 'items...');
-
       for (const item of order.items) {
-        console.log('📊 Checking item:', item.name, 'Category:', item.category);
+        // Get item name (order items use productName, cart items use name)
+        const itemName = item.productName || item.name || 'Unknown';
 
         // ⛔ RESTRICTION: Skip Flash Sale Items
         if (item.isFlashSale) {
-          console.log(`⚠️ Skipping point for Flash Sale item: ${item.name}`);
           continue;
         }
 
         // ⛔ RESTRICTION: Skip Discounted Items (Harga Coret)
-        // Check if current price is lower than original price
-        // Note: We use flexible checking for either retail or reseller original price
         const currentPrice = item.price || 0;
         const originalPrice = item.originalResellerPrice || item.originalRetailPrice || 0;
 
         if (originalPrice > currentPrice) {
-          console.log(`⚠️ Skipping point for Discounted item: ${item.name}`);
           continue;
         }
 
         // Check if item category is eligible
-        // Item structure usually has category. If not, we might need to fetch product.
-        // Assuming item has category or we can match logical defaults.
-        // Realistically order items might not store category directly depending on snapshot.
-        // Let's assume item.category exists or we skip for safety.
-
         const category = item.category || '';
 
         // Case insensitive check
@@ -155,19 +126,17 @@ export const pointService = {
           cat => cat.toLowerCase() === category.toLowerCase()
         );
 
-        console.log(`📊 Item "${item.name}" category "${category}" eligible: ${isEligible}`);
-
         if (isEligible) {
           const itemPoints = (item.quantity || 0) * config.pointPerItem;
           totalPoints += itemPoints;
-          console.log(`✅ Added ${itemPoints} points for item "${item.name}"`);
-        } else {
-          console.log(`⚠️ Category "${category}" not in eligible list:`, config.eligibleCategories);
+          console.log(`✅ Point: +${itemPoints} for "${itemName}" (${category})`);
         }
       }
     }
 
-    console.log('📊 Total points calculated:', totalPoints);
+    if (totalPoints > 0) {
+      console.log(`💰 Total points earned: ${totalPoints}`);
+    }
     return totalPoints;
   },
 
