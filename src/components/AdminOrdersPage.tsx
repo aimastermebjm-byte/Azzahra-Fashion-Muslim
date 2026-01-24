@@ -1476,8 +1476,8 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             </button>
                           )}
 
-                          {/* ✨ NEW: Quick POS Cash Payment Button (Owner only) */}
-                          {order.status === 'pending' && user?.role === 'owner' && (
+                          {/* ✨ POS Cash Payment Button (Admin & Owner can verify cash payments) */}
+                          {order.status === 'pending' && (user?.role === 'owner' || user?.role === 'admin') && (
                             <button
                               onClick={() => handlePOSPaymentOpen(order)}
                               className="px-2.5 py-1.5 rounded-full bg-emerald-500 border border-emerald-600 text-white text-xs font-semibold hover:bg-emerald-600 transition-all flex items-center justify-center gap-1 whitespace-nowrap shadow-sm"
@@ -1506,7 +1506,8 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             </button>
                           )}
 
-                          {(order.status === 'pending' || order.status === 'awaiting_verification') && (
+                          {/* Verifikasi button - Only Owner can verify non-cash payments */}
+                          {(order.status === 'pending' || order.status === 'awaiting_verification') && user?.role === 'owner' && (
                             <button
                               onClick={() => handleVerifyPayment(order)}
                               className="px-2.5 py-1.5 rounded-full bg-white border border-[#D4AF37] text-[#997B2C] text-xs font-semibold hover:bg-[#F9F5EB] hover:shadow-md transition-all flex items-center justify-center gap-1 whitespace-nowrap"
