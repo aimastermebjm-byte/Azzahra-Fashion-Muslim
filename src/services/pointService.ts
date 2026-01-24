@@ -80,6 +80,10 @@ export const pointService = {
    * Calculate potential points for an order
    */
   async calculateEarnedPoints(order: Order, settings?: PointSettings): Promise<number> {
+    console.log('📊 calculateEarnedPoints called for order:', order.id);
+    console.log('📊 Order userRole:', order.userRole);
+    console.log('📊 Order userId:', order.userId);
+
     // Only Resellers earn points
     // Note: We check the role at the time of calculation, or stored in order
     // But per requirement "tiap user role reseller transaksi... dapat point"
@@ -87,24 +91,40 @@ export const pointService = {
 
     // Quick role check if provided in order (from previous analysis order has userRole)
     if (order.userRole && order.userRole !== 'reseller') {
+      console.log('❌ User role is not reseller, skipping points. Role:', order.userRole);
       return 0;
     }
 
     // Double check with latest user data if order.userRole is missing or unreliable
     if (!order.userRole) {
-      const user = await usersService.getUserById(order.userId); // We might need to add this method to usersService or query directly
-      if (!user || user.role !== 'reseller') return 0;
+      console.log('⚠️ order.userRole is missing, fetching from database...');
+      const user = await usersService.getUserById(order.userId);
+      console.log('📊 Fetched user:', user?.role);
+      if (!user || user.role !== 'reseller') {
+        console.log('❌ User is not a reseller, skipping points.');
+        return 0;
+      }
+      console.log('✅ User confirmed as reseller from database.');
     }
 
     // Get settings if not provided
     const config = settings || await this.getSettings();
-    if (!config.isEnabled) return 0;
+    console.log('📊 Point settings:', JSON.stringify(config));
+
+    if (!config.isEnabled) {
+      console.log('❌ Point system is disabled.');
+      return 0;
+    }
 
     let totalPoints = 0;
 
     // Calculate based on eligible items
     if (order.items && Array.isArray(order.items)) {
+      console.log('📊 Processing', order.items.length, 'items...');
+
       for (const item of order.items) {
+        console.log('📊 Checking item:', item.name, 'Category:', item.category);
+
         // ⛔ RESTRICTION: Skip Flash Sale Items
         if (item.isFlashSale) {
           console.log(`⚠️ Skipping point for Flash Sale item: ${item.name}`);
@@ -135,12 +155,19 @@ export const pointService = {
           cat => cat.toLowerCase() === category.toLowerCase()
         );
 
+        console.log(`📊 Item "${item.name}" category "${category}" eligible: ${isEligible}`);
+
         if (isEligible) {
-          totalPoints += (item.quantity || 0) * config.pointPerItem;
+          const itemPoints = (item.quantity || 0) * config.pointPerItem;
+          totalPoints += itemPoints;
+          console.log(`✅ Added ${itemPoints} points for item "${item.name}"`);
+        } else {
+          console.log(`⚠️ Category "${category}" not in eligible list:`, config.eligibleCategories);
         }
       }
     }
 
+    console.log('📊 Total points calculated:', totalPoints);
     return totalPoints;
   },
 
