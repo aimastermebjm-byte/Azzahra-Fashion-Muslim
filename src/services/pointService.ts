@@ -80,22 +80,45 @@ export const pointService = {
    * Calculate potential points for an order
    */
   async calculateEarnedPoints(order: Order, settings?: PointSettings): Promise<number> {
+    console.log('🔍 DEBUG calculateEarnedPoints:', {
+      orderId: order.id,
+      userId: order.userId,
+      userRole: order.userRole,
+      status: order.status,
+      itemCount: order.items?.length || 0
+    });
+
     // Only Resellers earn points
     if (order.userRole && order.userRole !== 'reseller') {
+      console.log(`❌ Points skipped: User role is "${order.userRole}", not "reseller"`);
       return 0;
     }
 
     // Double check with latest user data if order.userRole is missing
     if (!order.userRole) {
+      console.log('⚠️ order.userRole is missing, checking Firestore...');
       const user = await usersService.getUserById(order.userId);
       if (!user || user.role !== 'reseller') {
+        console.log(`❌ Points skipped: User from Firestore is "${user?.role || 'not found'}", not "reseller"`);
         return 0;
       }
+      console.log('✅ User is reseller (from Firestore)');
+    } else {
+      console.log(`✅ User role from order: "${order.userRole}"`);
     }
 
     // Get settings if not provided
     const config = settings || await this.getSettings();
-    if (!config.isEnabled) return 0;
+    console.log('📋 Point settings:', {
+      isEnabled: config.isEnabled,
+      pointPerItem: config.pointPerItem,
+      eligibleCategories: config.eligibleCategories
+    });
+
+    if (!config.isEnabled) {
+      console.log('❌ Points skipped: Point system is disabled');
+      return 0;
+    }
 
     let totalPoints = 0;
 

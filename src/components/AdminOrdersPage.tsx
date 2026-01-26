@@ -1039,6 +1039,25 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
   // ✨ NEW: POS Cash Payment Handlers
   const handlePOSPaymentOpen = (order: any) => {
+    // 🔥 FIX: Validate address before allowing payment
+    const hasValidAddress = order.shippingInfo?.address &&
+      order.shippingInfo?.district &&
+      order.shippingInfo?.city;
+
+    // Allow POS payments for pick-up orders (no address needed) or orders with valid address
+    const isPickUpOrder = order.paymentMethodName?.toLowerCase().includes('ambil di toko') ||
+      order.paymentMethodName?.toLowerCase().includes('pick up') ||
+      order.shippingInfo?.method === 'pickup';
+
+    if (!hasValidAddress && !isPickUpOrder) {
+      showModernAlert(
+        'Alamat Belum Lengkap',
+        'Pesanan ini belum memiliki alamat pengiriman yang lengkap. Silakan lengkapi alamat terlebih dahulu sebelum melunaskan pembayaran.',
+        'warning'
+      );
+      return;
+    }
+
     setCashOrder(order);
     setShowCashModal(true);
   };
