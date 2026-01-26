@@ -131,7 +131,8 @@ class CartServiceOptimized {
   }
 
   // 🔥 FIRESTORE PERSISTENCE: Add item to cart (optimized - 0 reads)
-  async addToCart(product: any, quantity: number = 1, variant?: { size?: string; color?: string }, existingItems: CartItem[] = []): Promise<boolean> {
+  // 🔧 FIX: Added userRole parameter to properly determine reseller vs retail price
+  async addToCart(product: any, quantity: number = 1, variant?: { size?: string; color?: string }, existingItems: CartItem[] = [], userRole?: string): Promise<boolean> {
     try {
       const user = auth.currentUser;
       if (!user) {
@@ -192,20 +193,35 @@ class CartServiceOptimized {
         if (product.pricesPerVariant && variant?.size && variant?.color) {
           const variantKey = `${variant.size}-${variant.color}`;
           const variantPricing = product.pricesPerVariant[variantKey];
-          if (variantPricing?.retail && Number(variantPricing.retail) > 0) {
+          // 🔧 FIX: Use reseller price for reseller, retail for others
+          if (userRole === 'reseller' && variantPricing?.reseller && Number(variantPricing.reseller) > 0) {
+            itemPrice = Number(variantPricing.reseller);
+            console.log(`💰 Using variant RESELLER price for ${variantKey}: ${itemPrice}`);
+          } else if (variantPricing?.retail && Number(variantPricing.retail) > 0) {
             itemPrice = Number(variantPricing.retail);
-            console.log(`💰 Using variant-specific price for ${variantKey}: ${itemPrice}`);
+            console.log(`💰 Using variant RETAIL price for ${variantKey}: ${itemPrice}`);
           }
         }
 
         // Fallback to other price sources if variant price not found
+        // 🔧 FIX: Priority order: product.price > Flash Sale > Reseller (if reseller) > Retail
         if (itemPrice === 0) {
           if (product.price && Number(product.price) > 0) {
+            // product.price sudah di-set dari komponen (ProductDetail, dll)
             itemPrice = Number(product.price);
+            console.log(`💰 Using pre-set product.price: ${itemPrice}`);
           } else if (product.isFlashSale && product.flashSalePrice > 0) {
+            // ✅ Flash Sale PRIORITY - tetap di atas reseller
             itemPrice = Number(product.flashSalePrice);
+            console.log(`🔥 Using Flash Sale price: ${itemPrice}`);
+          } else if (userRole === 'reseller' && product.resellerPrice && Number(product.resellerPrice) > 0) {
+            // 🔧 FIX: Reseller gets reseller price
+            itemPrice = Number(product.resellerPrice);
+            console.log(`💼 Using Reseller price (role=${userRole}): ${itemPrice}`);
           } else {
-            itemPrice = Number(product.retailPrice || product.resellerPrice || 0);
+            // Customer/Owner/Admin gets retail price
+            itemPrice = Number(product.retailPrice || 0);
+            console.log(`🏷️ Using Retail price (role=${userRole}): ${itemPrice}`);
           }
         }
 

@@ -51,8 +51,9 @@ export const useRealTimeCartOptimized = () => {
     };
   }, []);
 
-  const addToCart = async (product: any, quantity: number = 1, variant?: { size?: string; color?: string }) => {
-    return await cartServiceOptimized.addToCart(product, quantity, variant);
+  // 🔧 FIX: Added userRole parameter for proper reseller/retail price determination
+  const addToCart = async (product: any, quantity: number = 1, variant?: { size?: string; color?: string }, userRole?: string) => {
+    return await cartServiceOptimized.addToCart(product, quantity, variant, [], userRole);
   };
 
   const updateQuantity = async (itemId: string, newQuantity: number) => {

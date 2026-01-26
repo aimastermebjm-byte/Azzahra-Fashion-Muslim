@@ -230,11 +230,18 @@ function AppContent() {
       console.log('🔍 DEBUG: App.tsx handleAddToCart called with:', {
         product: product,
         variant: variant,
-        quantity: quantity
+        quantity: quantity,
+        userRole: user?.role // Log role for debugging
       });
 
-      // Call cartService.addToCart - let it read existing cart items
-      const success = await cartServiceOptimized.addToCart(product, quantity, variant);
+      // 🔧 FIX: Pass user role to addToCart for proper reseller/retail price determination
+      const success = await cartServiceOptimized.addToCart(
+        product,
+        quantity,
+        variant,
+        [],           // existingItems - let addToCart read from Firestore
+        user?.role    // ✅ NEW: Pass user role
+      );
 
       if (!success) {
         console.error('❌ Failed to add to cart');
