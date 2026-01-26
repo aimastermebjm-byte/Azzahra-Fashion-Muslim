@@ -745,16 +745,21 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
       try {
         if (status === 'paid') {
           // 🔥 FIX: Validate address before allowing payment verification
-          const hasValidAddress = selectedOrder.shippingInfo?.address &&
-            selectedOrder.shippingInfo?.district &&
-            selectedOrder.shippingInfo?.city;
+          // Simplified: just check if address exists and is not placeholder
+          const addressValue = selectedOrder.shippingInfo?.address || '';
+          const isAddressEmpty = !addressValue ||
+            addressValue.toLowerCase().includes('belum ditentukan') ||
+            addressValue.toLowerCase().includes('belum diatur') ||
+            addressValue.trim() === '';
 
           // Allow verification for pick-up orders (no address needed) or orders with valid address
           const isPickUpOrder = selectedOrder.paymentMethodName?.toLowerCase().includes('ambil di toko') ||
             selectedOrder.paymentMethodName?.toLowerCase().includes('pick up') ||
-            selectedOrder.shippingInfo?.method === 'pickup';
+            selectedOrder.shippingInfo?.method === 'pickup' ||
+            selectedOrder.shippingInfo?.courier === 'pickup' ||
+            selectedOrder.shippingMode === 'pickup';
 
-          if (!hasValidAddress && !isPickUpOrder) {
+          if (isAddressEmpty && !isPickUpOrder) {
             showModernAlert(
               'Alamat Belum Lengkap',
               'Pesanan ini belum memiliki alamat pengiriman yang lengkap. Silakan lengkapi alamat terlebih dahulu sebelum memverifikasi pembayaran.',
@@ -1059,16 +1064,21 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   // ✨ NEW: POS Cash Payment Handlers
   const handlePOSPaymentOpen = (order: any) => {
     // 🔥 FIX: Validate address before allowing payment
-    const hasValidAddress = order.shippingInfo?.address &&
-      order.shippingInfo?.district &&
-      order.shippingInfo?.city;
+    // Simplified: just check if address exists and is not placeholder
+    const addressValue = order.shippingInfo?.address || '';
+    const isAddressEmpty = !addressValue ||
+      addressValue.toLowerCase().includes('belum ditentukan') ||
+      addressValue.toLowerCase().includes('belum diatur') ||
+      addressValue.trim() === '';
 
     // Allow POS payments for pick-up orders (no address needed) or orders with valid address
     const isPickUpOrder = order.paymentMethodName?.toLowerCase().includes('ambil di toko') ||
       order.paymentMethodName?.toLowerCase().includes('pick up') ||
-      order.shippingInfo?.method === 'pickup';
+      order.shippingInfo?.method === 'pickup' ||
+      order.shippingInfo?.courier === 'pickup' ||
+      order.shippingMode === 'pickup';
 
-    if (!hasValidAddress && !isPickUpOrder) {
+    if (isAddressEmpty && !isPickUpOrder) {
       showModernAlert(
         'Alamat Belum Lengkap',
         'Pesanan ini belum memiliki alamat pengiriman yang lengkap. Silakan lengkapi alamat terlebih dahulu sebelum melunaskan pembayaran.',
