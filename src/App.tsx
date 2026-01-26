@@ -357,13 +357,12 @@ function AppContent() {
           }
 
           if (currentStock < item.quantity) {
-            throw new Error(`Stok "${item.name}" ${item.variant ? `(${item.variant.size}, ${item.variant.color})` : ''} tidak mencukupi. Tersedia: ${currentStock}, Diminta: ${item.quantity}`);
+            throw new Error(`Stok \"${item.name}\" ${item.variant ? `(${item.variant.size}, ${item.variant.color})` : ''} tidak mencukupi. Tersedia: ${currentStock}, Diminta: ${item.quantity}`);
           }
 
-          // Get current prices based on user role (atomic price check)
-          const currentRetailPrice = Number(batchProduct.retailPrice || batchProduct.price || 0);
-          const currentResellerPrice = Number(batchProduct.resellerPrice || 0) || currentRetailPrice * 0.8;
-          const expectedPrice = user?.role === 'reseller' ? currentResellerPrice : currentRetailPrice;
+          // ✅ FIX: Use price from cart item (preserves Flash Sale price)
+          // Cart already has the correct price (Flash Sale / Normal / Reseller)
+          const expectedPrice = item.price || 0;
 
           const itemTotal = expectedPrice * item.quantity;
           cartTotal += itemTotal;
@@ -517,7 +516,8 @@ function AppContent() {
           quantity: item.quantity,
           price: item.price || 0,
           total: item.total || 0,
-          category: item.category || ''
+          category: item.category || '',
+          isFlashSale: item.isFlashSale || false // ✅ FIX: Preserve Flash Sale status for point calculation
         })),
         shippingInfo: orderData.shippingInfo,
         paymentMethod: orderData.paymentMethodName || orderData.paymentMethod || '',

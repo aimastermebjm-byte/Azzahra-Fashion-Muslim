@@ -18,6 +18,7 @@ export interface CartItem {
   };
   category?: string; // Product category for point calculation
   status?: string; // Product status: 'po', 'ready', etc.
+  isFlashSale?: boolean; // ✅ Flash Sale indicator for point restriction
   addedAt: string; // Selalu string untuk Firestore compatibility
 }
 
@@ -218,6 +219,7 @@ class CartServiceOptimized {
           ...(variant && { variant }), // Hanya include variant jika ada
           category: product.category || '', // Include product category for point calculation
           status: product.status || undefined, // Include product status (po, ready, etc.)
+          isFlashSale: product.isFlashSale || false, // ✅ FIX: Preserve Flash Sale status
           addedAt: new Date().toISOString()
         };
 
