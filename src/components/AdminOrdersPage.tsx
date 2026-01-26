@@ -1513,16 +1513,17 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             </button>
                           )}
 
-                          {/*  NEW: WhatsApp Billing Button for Pending/Unpaid */}
-                          {(order.status === 'pending' || order.status === 'awaiting_verification') && (
-                            <button
-                              onClick={() => handleWhatsAppBilling(order)}
-                              className="px-2.5 py-1.5 rounded-full bg-green-50 border border-green-200 text-green-700 text-xs font-semibold hover:bg-green-100 transition-all flex items-center justify-center gap-1 whitespace-nowrap"
-                            >
-                              <Phone className="w-3.5 h-3.5" />
-                              Tagih
-                            </button>
-                          )}
+                          {/* 🔧 CLEANUP: WhatsApp Tagih - HANYA muncul jika belum ada bukti bayar */}
+                          {(order.status === 'pending' || order.status === 'awaiting_verification') &&
+                            !order.paymentProof && !order.paymentProofData && (
+                              <button
+                                onClick={() => handleWhatsAppBilling(order)}
+                                className="px-2.5 py-1.5 rounded-full bg-green-50 border border-green-200 text-green-700 text-xs font-semibold hover:bg-green-100 transition-all flex items-center justify-center gap-1 whitespace-nowrap"
+                              >
+                                <Phone className="w-3.5 h-3.5" />
+                                Tagih
+                              </button>
+                            )}
 
                           {/* ✨ POS Cash Payment Button (Admin & Owner can verify cash payments) */}
                           {order.status === 'pending' && (user?.role === 'owner' || user?.role === 'admin') && (
@@ -1866,45 +1867,38 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   >
                     Tutup
                   </button>
-                  {/*  NEW: Payment Assistance Button (Owner only, pending orders) */}
-                  {selectedOrder.status === 'pending' && user?.role === 'owner' && (
-                    <>
+
+                  {/* 🔧 CLEANUP: Verifikasi Pembayaran - HANYA muncul jika ada bukti pembayaran */}
+                  {(selectedOrder.status === 'pending' || selectedOrder.status === 'awaiting_verification') &&
+                    user?.role === 'owner' &&
+                    (selectedOrder.paymentProof || selectedOrder.paymentProofData) && (
+                      <button
+                        onClick={() => {
+                          setShowDetailModal(false);
+                          handleVerifyPayment(selectedOrder);
+                        }}
+                        className="px-4 py-2 bg-gradient-to-r from-[#D4AF37] to-[#997B2C] text-white hover:shadow-lg rounded-lg transition-all flex items-center space-x-2"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Verifikasi Pembayaran</span>
+                      </button>
+                    )}
+
+                  {/* 🔧 NEW: POS Cash button di detail modal jika belum ada bukti */}
+                  {selectedOrder.status === 'pending' &&
+                    (user?.role === 'owner' || user?.role === 'admin') &&
+                    !selectedOrder.paymentProof && !selectedOrder.paymentProofData && (
                       <button
                         onClick={() => {
                           setShowDetailModal(false);
                           handlePOSPaymentOpen(selectedOrder);
                         }}
-                        className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 hover:shadow-lg rounded-lg transition-all flex items-center space-x-2"
+                        className="px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg rounded-lg transition-all flex items-center space-x-2"
                       >
                         <span className="font-bold">Rp</span>
-                        <span>Bayar Tunai</span>
+                        <span>Bayar Cash</span>
                       </button>
-
-                      <button
-                        onClick={() => {
-                          setShowDetailModal(false);
-                          handlePaymentAssist(selectedOrder);
-                        }}
-                        className="px-4 py-2 bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white hover:shadow-lg rounded-lg transition-all flex items-center space-x-2"
-                      >
-                        <CreditCard className="w-4 h-4" />
-                        <span>Bantu Transfer</span>
-                      </button>
-                    </>
-                  )}
-
-                  {(selectedOrder.status === 'pending' || selectedOrder.status === 'awaiting_verification') && user?.role === 'owner' && (
-                    <button
-                      onClick={() => {
-                        setShowDetailModal(false);
-                        handleVerifyPayment(selectedOrder);
-                      }}
-                      className="px-4 py-2 bg-gradient-to-r from-[#D4AF37] to-[#997B2C] text-white hover:shadow-lg rounded-lg transition-all flex items-center space-x-2"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      <span>Verifikasi Pembayaran</span>
-                    </button>
-                  )}
+                    )}
                 </div>
               </div >
             </div >
