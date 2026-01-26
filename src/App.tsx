@@ -440,38 +440,40 @@ function AppContent() {
       // Transaction completed successfully
       const { validatedItems, cartTotal } = transactionResult;
 
-      // ✅ LOG STOCK MUTATIONS
-      // We do this after transaction to keep transaction fast and avoid dependency issues
-      // Mutations are "history", consistency with stock is critical but strictly speaking can be async
-      try {
-        const { stockMutationService } = await import('./services/stockMutationService');
+      // ✅ LOG STOCK MUTATIONS (Admin/Owner only)
+      // Skip for customer/reseller to avoid permission errors and speed up checkout
+      // Mutation log is internal audit feature, not needed for regular users
+      if (user.role === 'admin' || user.role === 'owner') {
+        try {
+          const { stockMutationService } = await import('./services/stockMutationService');
 
-        // Log in parallel
-        await Promise.all(validatedItems.map(async (item: any) => {
-          try {
-            await stockMutationService.logMutation({
-              productId: item.productId,
-              productName: item.name || 'Product',
-              size: item.variant?.size || '-',
-              variant: item.variant?.color || '-',
-              previousStock: item.currentStock,
-              newStock: item.newStock,
-              change: -item.quantity, // Negative for sales
-              type: 'order',
-              referenceId: orderId,
-              notes: `Order ${orderId}`,
-              createdBy: user.uid,
-              performedBy: user.displayName || 'Customer'
-            });
-          } catch (err) {
-            console.error('Failed to log mutation for item:', item.name, err);
-            // Don't block the order process if log fails
-          }
-        }));
+          // Log in parallel
+          await Promise.all(validatedItems.map(async (item: any) => {
+            try {
+              await stockMutationService.logMutation({
+                productId: item.productId,
+                productName: item.name || 'Product',
+                size: item.variant?.size || '-',
+                variant: item.variant?.color || '-',
+                previousStock: item.currentStock,
+                newStock: item.newStock,
+                change: -item.quantity, // Negative for sales
+                type: 'order',
+                referenceId: orderId,
+                notes: `Order ${orderId}`,
+                createdBy: user.uid,
+                performedBy: user.displayName || 'Admin'
+              });
+            } catch (err) {
+              console.error('Failed to log mutation for item:', item.name, err);
+              // Don't block the order process if log fails
+            }
+          }));
 
-        console.log('✅ Stock mutations logged successfully');
-      } catch (err) {
-        console.error('Failed to init mutation logging:', err);
+          console.log('✅ Stock mutations logged successfully');
+        } catch (err) {
+          console.error('Failed to init mutation logging:', err);
+        }
       }
 
       console.log('🎉 ATOMIC TRANSACTION SUCCESS:', {
