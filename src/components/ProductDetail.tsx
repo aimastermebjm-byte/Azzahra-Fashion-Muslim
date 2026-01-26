@@ -226,8 +226,20 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const { getProductById } = useGlobalProducts();
 
   const currentProduct = useMemo(() => {
-    return getProductById(initialProduct.id) || initialProduct;
-  }, [initialProduct.id, getProductById]);
+    const globalProduct = getProductById(initialProduct.id);
+
+    // 🔥 FIX: Merge global product with initialProduct to preserve Flash Sale data
+    // initialProduct may have isFlashSale=true from FlashSalePage, but global doesn't have it
+    if (globalProduct) {
+      return {
+        ...globalProduct,
+        // Preserve Flash Sale data from initialProduct (source of truth for Flash Sale)
+        isFlashSale: initialProduct.isFlashSale || globalProduct.isFlashSale || false,
+        flashSalePrice: initialProduct.flashSalePrice || globalProduct.flashSalePrice || 0,
+      };
+    }
+    return initialProduct;
+  }, [initialProduct, getProductById]);
 
 
   const handleAddToCart = () => {
