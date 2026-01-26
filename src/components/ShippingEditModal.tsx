@@ -6,13 +6,14 @@ import { useToast } from './ToastProvider';
 
 // Shipping options (same as CheckoutPage)
 const shippingOptions = [
-    { id: 'jnt', name: 'J&T Express', code: 'jnt' },
-    { id: 'jne', name: 'JNE', code: 'jne' },
-    { id: 'pos', name: 'POS Indonesia', code: 'pos' },
-    { id: 'tiki', name: 'TIKI', code: 'tiki' },
-    { id: 'ojek', name: 'OJEK (Lokal)', code: null },
-    { id: 'lion', name: 'Lion Parcel', code: 'lion' },
-    { id: 'idexpress', name: 'IDExpress', code: 'ide' }
+    { id: 'pickup', name: '🏪 Ambil di Toko', code: null, isPickup: true }, // 🔥 NEW: Pickup option
+    { id: 'jnt', name: 'J&T Express', code: 'jnt', isPickup: false },
+    { id: 'jne', name: 'JNE', code: 'jne', isPickup: false },
+    { id: 'pos', name: 'POS Indonesia', code: 'pos', isPickup: false },
+    { id: 'tiki', name: 'TIKI', code: 'tiki', isPickup: false },
+    { id: 'ojek', name: 'OJEK (Lokal)', code: null, isPickup: false },
+    { id: 'lion', name: 'Lion Parcel', code: 'lion', isPickup: false },
+    { id: 'idexpress', name: 'IDExpress', code: 'ide', isPickup: false }
 ];
 
 interface ShippingEditModalProps {
@@ -270,25 +271,40 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
     };
 
     const handleSubmit = async () => {
-        // Validate
-        if (!formData.name || !formData.phone || !formData.address) {
-            showToast({
-                type: 'warning',
-                title: 'Data belum lengkap',
-                message: 'Isi nama, telepon, dan alamat pengiriman.'
-            });
-            return;
-        }
-
-        // Validate shipping cost for non-automatic couriers
+        // Get selected courier info
         const selectedCourier = shippingOptions.find(opt => opt.id === formData.courier);
-        if (!selectedCourier?.code && formData.shippingCost <= 0) {
-            showToast({
-                type: 'warning',
-                title: 'Isi biaya ongkir',
-                message: 'Masukkan biaya ongkos kirim untuk kurir lokal.'
-            });
-            return;
+        const isPickupMode = selectedCourier?.isPickup === true;
+
+        // 🔥 For pickup mode: skip address validation, only need name & phone
+        if (isPickupMode) {
+            if (!formData.name || !formData.phone) {
+                showToast({
+                    type: 'warning',
+                    title: 'Data belum lengkap',
+                    message: 'Isi nama dan telepon pelanggan.'
+                });
+                return;
+            }
+        } else {
+            // For delivery: validate full address
+            if (!formData.name || !formData.phone || !formData.address) {
+                showToast({
+                    type: 'warning',
+                    title: 'Data belum lengkap',
+                    message: 'Isi nama, telepon, dan alamat pengiriman.'
+                });
+                return;
+            }
+
+            // Validate shipping cost for non-automatic couriers (except pickup)
+            if (!selectedCourier?.code && formData.shippingCost <= 0) {
+                showToast({
+                    type: 'warning',
+                    title: 'Isi biaya ongkir',
+                    message: 'Masukkan biaya ongkos kirim untuk kurir lokal.'
+                });
+                return;
+            }
         }
 
         setLoading(true);
@@ -297,36 +313,62 @@ const ShippingEditModal: React.FC<ShippingEditModalProps> = ({
             const ordersToUpdate = bulkOrders && bulkOrders.length > 0 ? bulkOrders : [order];
 
             for (const targetOrder of ordersToUpdate) {
-                // Calculate new final total for each order
-                const newFinalTotal = (targetOrder.totalAmount || 0) + formData.shippingCost - (targetOrder.voucherDiscount || 0);
+                // 🔥 Calculate shipping cost: 0 for pickup, otherwise use formData
+                const actualShippingCost = isPickupMode ? 0 : formData.shippingCost;
 
-                // Get full address details to save
+                // Calculate new final total for each order
+                const newFinalTotal = (targetOrder.totalAmount || 0) + actualShippingCost - (targetOrder.voucherDiscount || 0);
+
+                // Get full address details to save (only for delivery)
                 const selectedAddr = addresses.find(a => a.id === selectedAddressId);
+
+                // 🔥 Build shippingInfo based on mode
+                const shippingInfo = isPickupMode ? {
+                    // Pickup mode: minimal info, no address needed
+                    name: formData.name,
+                    phone: formData.phone,
+                    address: 'Ambil di Toko',
+                    courier: 'pickup',
+                    shippingCost: 0,
+                    isDropship: false,
+                    dropshipName: '',
+                    dropshipPhone: '',
+                    shippingService: '',
+                    shippingETD: '',
+                    method: 'pickup', // 🔥 KEY: Mark as pickup
+                    provinceName: '',
+                    cityName: '',
+                    district: '',
+                    subdistrict: '',
+                    postalCode: ''
+                } : {
+                    // Delivery mode: full address
+                    name: formData.name,
+                    phone: formData.phone,
+                    address: formData.address,
+                    courier: formData.courier,
+                    shippingCost: formData.shippingCost,
+                    isDropship: formData.isDropship,
+                    dropshipName: formData.dropshipName,
+                    dropshipPhone: formData.dropshipPhone,
+                    shippingService: '',
+                    shippingETD: '',
+                    method: 'delivery',
+                    // Save FULL address details for Print Label
+                    provinceName: selectedAddr?.province || selectedAddr?.provinsi || '',
+                    cityName: selectedAddr?.city || selectedAddr?.kota || selectedAddr?.regency || '',
+                    district: selectedAddr?.district || selectedAddr?.kecamatan || '',
+                    subdistrict: selectedAddr?.subDistrict || selectedAddr?.kelurahan || '',
+                    postalCode: selectedAddr?.postalCode || ''
+                };
 
                 // Update order in Firestore
                 await ordersService.updateOrder(targetOrder.id, {
-                    shippingInfo: {
-                        name: formData.name,
-                        phone: formData.phone,
-                        address: formData.address,
-                        courier: formData.courier,
-                        shippingCost: formData.shippingCost,
-                        isDropship: formData.isDropship,
-                        dropshipName: formData.dropshipName,
-                        dropshipPhone: formData.dropshipPhone,
-                        shippingService: '',
-                        shippingETD: '',
-                        // Save FULL address details for Print Label
-                        provinceName: selectedAddr?.province || selectedAddr?.provinsi || '',
-                        cityName: selectedAddr?.city || selectedAddr?.kota || selectedAddr?.regency || '',
-                        district: selectedAddr?.district || selectedAddr?.kecamatan || '',
-                        subdistrict: selectedAddr?.subDistrict || selectedAddr?.kelurahan || '',
-                        postalCode: selectedAddr?.postalCode || ''
-                    },
-                    shippingCost: formData.shippingCost,
+                    shippingInfo,
+                    shippingCost: actualShippingCost,
                     finalTotal: Math.max(0, newFinalTotal),
-                    shippingConfigured: true, // Mark as configured
-                    shippingMode: 'delivery' // Change from 'keep' to 'delivery'
+                    shippingConfigured: true,
+                    shippingMode: isPickupMode ? 'pickup' : 'delivery' // 🔥 Set correct mode
                 } as any);
             }
 
