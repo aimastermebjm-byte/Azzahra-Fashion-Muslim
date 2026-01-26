@@ -744,6 +744,25 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     if (selectedOrder) {
       try {
         if (status === 'paid') {
+          // 🔥 FIX: Validate address before allowing payment verification
+          const hasValidAddress = selectedOrder.shippingInfo?.address &&
+            selectedOrder.shippingInfo?.district &&
+            selectedOrder.shippingInfo?.city;
+
+          // Allow verification for pick-up orders (no address needed) or orders with valid address
+          const isPickUpOrder = selectedOrder.paymentMethodName?.toLowerCase().includes('ambil di toko') ||
+            selectedOrder.paymentMethodName?.toLowerCase().includes('pick up') ||
+            selectedOrder.shippingInfo?.method === 'pickup';
+
+          if (!hasValidAddress && !isPickUpOrder) {
+            showModernAlert(
+              'Alamat Belum Lengkap',
+              'Pesanan ini belum memiliki alamat pengiriman yang lengkap. Silakan lengkapi alamat terlebih dahulu sebelum memverifikasi pembayaran.',
+              'warning'
+            );
+            return;
+          }
+
           await updateOrderPayment(selectedOrder.id, paymentProof || 'payment_verified', 'paid');
 
           // Auto upgrade role if eligible (Customer -> Reseller)
