@@ -713,19 +713,33 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               setSelectedColor(variant.color);
               setQuantity(qty);
 
-              // Create product with discounted price if collection discount is active
-              let productWithPrice: any = currentProduct;
-              if (collectionDiscount > 0) {
+              // 🔥 FIX: Create product with correct price based on priority:
+              // 1. Flash Sale (highest priority) 
+              // 2. Collection Discount
+              // 3. Normal price
+              let productWithPrice: any = { ...currentProduct };
+
+              // 🔥 PRIORITY #1: Flash Sale price (always wins!)
+              if (currentProduct.isFlashSale && currentProduct.flashSalePrice > 0) {
+                productWithPrice = {
+                  ...currentProduct,
+                  price: currentProduct.flashSalePrice,
+                  isFlashSale: true, // Ensure this is preserved
+                };
+                console.log('💰 VariantModal: Using Flash Sale price:', currentProduct.flashSalePrice);
+              }
+              // 🔥 PRIORITY #2: Collection Discount
+              else if (collectionDiscount > 0) {
                 const baseRetail = currentProduct.originalRetailPrice || currentProduct.retailPrice;
                 const baseReseller = currentProduct.originalResellerPrice || currentProduct.resellerPrice || baseRetail * 0.8;
                 const discountedPrice = Math.max(0, baseRetail - collectionDiscount);
                 productWithPrice = {
                   ...currentProduct,
-                  price: discountedPrice, // Cart service checks this first!
+                  price: discountedPrice,
                   retailPrice: discountedPrice,
                   resellerPrice: Math.max(0, baseReseller - collectionDiscount),
                 };
-                console.log('💰 ProductDetail: Passing discounted price to cart:', discountedPrice);
+                console.log('💰 VariantModal: Using Collection discount price:', discountedPrice);
               }
 
               // Execute the appropriate action

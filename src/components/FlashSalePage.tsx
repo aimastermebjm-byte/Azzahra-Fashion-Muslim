@@ -306,10 +306,11 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                         .filter(p => !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()))
                         .map((flashProduct) => {
                             // Adapt flash product to standard Product interface for Card
+                            // 🔥 All products here are Flash Sale by definition (filtered by useUnifiedProducts)
                             const product = {
                                 id: flashProduct.id,
                                 name: flashProduct.name,
-                                price: flashProduct.price,
+                                price: flashProduct.flashSalePrice || flashProduct.price, // Use Flash Sale price as main price
                                 retailPrice: flashProduct.retailPrice || flashProduct.price,
                                 resellerPrice: flashProduct.resellerPrice || flashProduct.price * 0.8,
                                 costPrice: flashProduct.price * 0.6,
@@ -322,8 +323,11 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                                 createdAt: flashProduct.createdAt,
                                 featuredOrder: flashProduct.featuredOrder,
                                 variants: flashProduct.variants,
-                                isFlashSale: flashProduct.isFlashSale,
+                                isFlashSale: true, // 🔥 FORCE TRUE - all products here are Flash Sale!
                                 flashSalePrice: flashProduct.flashSalePrice || flashProduct.price * 0.8,
+                                // 🔥 Store original prices for display purposes
+                                originalRetailPrice: flashProduct.originalRetailPrice || flashProduct.retailPrice || flashProduct.price,
+                                originalResellerPrice: flashProduct.originalResellerPrice || flashProduct.resellerPrice || flashProduct.price * 0.8,
                             };
 
                             return (
