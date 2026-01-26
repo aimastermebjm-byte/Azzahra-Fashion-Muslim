@@ -7,6 +7,7 @@ import { paymentGroupService } from '../services/paymentGroupService';
 import { checkAndUpgradeRole, OrderItemForUpgrade, queueWhatsAppNotification } from '../services/roleUpgradeService';
 import ShippingEditModal from './ShippingEditModal';
 import CashPaymentModal from './CashPaymentModal'; // ✨ NEW: POS Cash Modal
+import PaymentInputModal from './PaymentInputModal'; // 💳 NEW: Installment Payment Modal
 
 interface AdminOrdersPageProps {
   onBack: () => void;
@@ -50,6 +51,11 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   // POS Cash Modal State
   const [showCashModal, setShowCashModal] = useState(false);
   const [cashOrder, setCashOrder] = useState<any>(null);
+
+  // 💳 NEW: Installment Payment Modal State
+  const [showPaymentInputModal, setShowPaymentInputModal] = useState(false);
+  const [paymentInputOrder, setPaymentInputOrder] = useState<any>(null);
+  const [paymentInputLoading, setPaymentInputLoading] = useState(false);
 
   //  NEW: Unaddressed Orders Filter
   const [showUnaddressedOnly, setShowUnaddressedOnly] = useState(false);
@@ -1128,6 +1134,47 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     }
   };
 
+  // 💳 NEW: Installment Payment Handlers
+  const handleAddPaymentOpen = (order: any) => {
+    setPaymentInputOrder(order);
+    setShowPaymentInputModal(true);
+  };
+
+  const handleAddPaymentConfirm = async (amount: number, method: 'cash' | 'transfer', notes: string) => {
+    if (!paymentInputOrder) return;
+
+    setPaymentInputLoading(true);
+
+    try {
+      const result = await ordersService.addPayment(
+        paymentInputOrder.id,
+        amount,
+        method,
+        notes,
+        user?.displayName || user?.email || 'Admin'
+      );
+
+      if (result.success) {
+        showModernAlert('Berhasil', result.message, 'success');
+        setShowPaymentInputModal(false);
+        setPaymentInputOrder(null);
+
+        // Close detail modal if order is now paid
+        if (result.newStatus === 'paid') {
+          setShowDetailModal(false);
+          setSelectedOrder(null);
+        }
+      } else {
+        showModernAlert('Gagal', result.message, 'error');
+      }
+    } catch (error) {
+      console.error('Error adding payment:', error);
+      showModernAlert('Error', 'Terjadi kesalahan saat menambahkan pembayaran.', 'error');
+    } finally {
+      setPaymentInputLoading(false);
+    }
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !selectedOrderForUpload) return;
@@ -1848,6 +1895,76 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     </div>
                   )
                 }
+
+                {/* 💳 NEW: Payment History Section */}
+                {selectedOrder.payments && selectedOrder.payments.length > 0 && (
+                  <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg p-4 border border-amber-200">
+                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
+                      <CreditCard className="w-4 h-4 mr-2 text-amber-600" />
+                      Riwayat Pembayaran
+                    </h3>
+                    <div className="space-y-2">
+                      {selectedOrder.payments.map((payment: any, index: number) => (
+                        <div key={payment.id || index} className="flex justify-between items-center bg-white p-2 rounded-lg border">
+                          <div>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${payment.method === 'cash'
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-blue-100 text-blue-700'
+                              }`}>
+                              {payment.method === 'cash' ? 'Cash' : 'Transfer'}
+                            </span>
+                            <span className="text-xs text-gray-500 ml-2">
+                              {new Date(payment.date).toLocaleDateString('id-ID', {
+                                day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                          <span className="font-bold text-gray-800">
+                            Rp {payment.amount.toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Totals */}
+                    <div className="mt-3 pt-3 border-t border-amber-200 space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Total Tagihan:</span>
+                        <span className="font-semibold">Rp {selectedOrder.finalTotal?.toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Sudah Dibayar:</span>
+                        <span className="font-semibold text-green-600">Rp {(selectedOrder.totalPaid || 0).toLocaleString('id-ID')}</span>
+                      </div>
+                      {(selectedOrder.remainingAmount ?? (selectedOrder.finalTotal - (selectedOrder.totalPaid || 0))) > 0 && (
+                        <div className="flex justify-between text-sm font-bold">
+                          <span className="text-amber-700">Sisa:</span>
+                          <span className="text-amber-700">
+                            Rp {(selectedOrder.remainingAmount ?? (selectedOrder.finalTotal - (selectedOrder.totalPaid || 0))).toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 💳 NEW: Add Payment Button for pending orders with remaining amount */}
+                {selectedOrder.status === 'pending' &&
+                  (user?.role === 'owner' || user?.role === 'admin') &&
+                  (selectedOrder.remainingAmount ?? selectedOrder.finalTotal) > 0 && (
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => {
+                          setShowDetailModal(false);
+                          handleAddPaymentOpen(selectedOrder);
+                        }}
+                        className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
+                      >
+                        <CreditCard className="w-5 h-5" />
+                        <span>+ Tambah Pembayaran</span>
+                      </button>
+                    </div>
+                  )}
 
                 {/* Notes */}
                 {
@@ -2607,6 +2724,18 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         }}
         order={cashOrder}
         onConfirm={handleCashPaymentConfirm}
+      />
+
+      {/* 💳 NEW: Installment Payment Modal */}
+      <PaymentInputModal
+        isOpen={showPaymentInputModal}
+        onClose={() => {
+          setShowPaymentInputModal(false);
+          setPaymentInputOrder(null);
+        }}
+        order={paymentInputOrder}
+        onConfirm={handleAddPaymentConfirm}
+        isLoading={paymentInputLoading}
       />
 
     </div >

@@ -4,6 +4,17 @@ import { doc, setDoc, collection, getDocs, query, where, updateDoc, deleteDoc, g
 import { db } from '../utils/firebaseClient';
 import { pointService } from './pointService';
 
+// 💳 Payment interface for installment/partial payment system
+export interface Payment {
+  id: string;                   // Unique ID (timestamp-based)
+  amount: number;               // Jumlah bayar
+  method: 'cash' | 'transfer';  // Metode pembayaran
+  date: string;                 // ISO timestamp
+  notes?: string;               // Catatan (optional)
+  addedBy?: string;             // User ID yang input (owner/admin)
+  addedByName?: string;         // Nama user yang input
+}
+
 export interface Order {
   id: string;
   userId: string;
@@ -45,6 +56,11 @@ export interface Order {
   // ✨ NEW: Reseller Point System
   usedPoints?: number;                 // Points redeeemed in this order
   pointDiscount?: number;              // Discount amount from points
+
+  // 💳 NEW: Installment/Partial Payment System
+  payments?: Payment[];                // Array of all payments
+  totalPaid?: number;                  // Total amount paid so far
+  remainingAmount?: number;            // Remaining amount to be paid
 }
 
 class OrdersService {
@@ -536,9 +552,104 @@ class OrdersService {
     return unsubscribe;
   }
 
+
   // Generate order ID
   private generateOrderId(): string {
     return 'AZF' + Date.now().toString().slice(-8);
+  }
+
+  // 💳 NEW: Add payment to order (for installment/partial payment system)
+  async addPayment(
+    orderId: string,
+    amount: number,
+    method: 'cash' | 'transfer',
+    notes?: string,
+    addedByName?: string
+  ): Promise<{ success: boolean; message: string; newStatus?: string }> {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        return { success: false, message: 'User tidak terautentikasi' };
+      }
+
+      // Get current order
+      const orderRef = doc(db, this.collection, orderId);
+      const orderDoc = await getDoc(orderRef);
+
+      if (!orderDoc.exists()) {
+        return { success: false, message: 'Order tidak ditemukan' };
+      }
+
+      const order = { id: orderDoc.id, ...orderDoc.data() } as Order;
+
+      // Validate amount
+      if (amount <= 0) {
+        return { success: false, message: 'Jumlah pembayaran harus lebih dari 0' };
+      }
+
+      const currentTotalPaid = order.totalPaid || 0;
+      const currentRemaining = order.remainingAmount ?? (order.finalTotal - currentTotalPaid);
+
+      if (amount > currentRemaining) {
+        return { success: false, message: `Jumlah melebihi sisa (Rp ${currentRemaining.toLocaleString('id-ID')})` };
+      }
+
+      // Create payment record
+      const payment: Payment = {
+        id: `PAY-${Date.now()}`,
+        amount: amount,
+        method: method,
+        date: new Date().toISOString(),
+        notes: notes || undefined,
+        addedBy: user.uid,
+        addedByName: addedByName || user.displayName || 'Admin'
+      };
+
+      // Calculate new totals
+      const existingPayments = order.payments || [];
+      const newPayments = [...existingPayments, payment];
+      const newTotalPaid = currentTotalPaid + amount;
+      const newRemainingAmount = order.finalTotal - newTotalPaid;
+
+      // Determine new status (paid if fully paid)
+      const newStatus = newRemainingAmount <= 0 ? 'paid' : order.status;
+
+      // Update order
+      const updateData: Partial<Order> = {
+        payments: newPayments,
+        totalPaid: newTotalPaid,
+        remainingAmount: newRemainingAmount,
+        status: newStatus,
+        updatedAt: new Date().toISOString()
+      };
+
+      await updateDoc(orderRef, updateData);
+
+      console.log(`💳 Payment added: ${method} Rp ${amount.toLocaleString('id-ID')} for order ${orderId}`);
+      console.log(`📊 New total paid: Rp ${newTotalPaid.toLocaleString('id-ID')}, remaining: Rp ${newRemainingAmount.toLocaleString('id-ID')}`);
+
+      // If fully paid, trigger point earning for reseller
+      if (newStatus === 'paid' && order.userRole === 'reseller') {
+        try {
+          await pointService.processOrderPoints(order as any);
+          console.log('🏆 Reseller points processed for order:', orderId);
+        } catch (pointError) {
+          console.error('Error processing points:', pointError);
+        }
+      }
+
+      return {
+        success: true,
+        message: newRemainingAmount <= 0
+          ? '✅ Pembayaran berhasil! Order sudah LUNAS.'
+          : `✅ Pembayaran berhasil! Sisa: Rp ${newRemainingAmount.toLocaleString('id-ID')}`,
+        newStatus: newStatus
+      };
+
+    } catch (error) {
+      console.error('Error adding payment:', error);
+      return { success: false, message: 'Gagal menambahkan pembayaran' };
+    }
   }
 }
 
