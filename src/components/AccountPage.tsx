@@ -464,7 +464,19 @@ const AccountPage: React.FC<AccountPageProps> = ({
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm text-gray-900 line-clamp-2">{product.name}</p>
                         <p className="text-sm text-[#D4AF37] font-bold mt-1">
-                          Rp {product.retailPrice?.toLocaleString('id-ID') || '-'}
+                          Rp {(() => {
+                            // Calculate minimum price from variants (Shopee-style)
+                            const productAny = product as any;
+                            if (productAny.pricesPerVariant) {
+                              const prices = Object.values(productAny.pricesPerVariant)
+                                .map((p: any) => Number(p.retail))
+                                .filter((p: number) => p > 0);
+                              if (prices.length > 0) {
+                                return Math.min(...prices).toLocaleString('id-ID');
+                              }
+                            }
+                            return product.retailPrice?.toLocaleString('id-ID') || '-';
+                          })()}
                         </p>
                       </div>
                     </div>
