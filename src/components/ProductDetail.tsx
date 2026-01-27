@@ -447,18 +447,15 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       return `Rp ${getPrice().toLocaleString('id-ID')}`;
     }
 
-    // 3. Variant Range -> Calculate Min-Max
+    // 3. Variant Price -> Show MINIMUM price only (Shopee-style)
     if (productAny.pricesPerVariant) {
       const prices = Object.values(productAny.pricesPerVariant).map((p: any) =>
         user?.role === 'reseller' && p.reseller ? Number(p.reseller) : Number(p.retail)
       ).filter(p => p > 0);
 
       if (prices.length > 0) {
-        const min = Math.min(...prices);
-        const max = Math.max(...prices);
-        return min !== max
-          ? `Rp ${min.toLocaleString('id-ID')} - Rp ${max.toLocaleString('id-ID')}`
-          : `Rp ${min.toLocaleString('id-ID')}`;
+        const minPrice = Math.min(...prices);
+        return `Rp ${minPrice.toLocaleString('id-ID')}`;
       }
     }
 
@@ -687,7 +684,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                         return `Rp ${getPrice().toLocaleString('id-ID')}`;
                       }
 
-                      // Case 2: No variant selected -> Check for price range from variants
+                      // Case 2: No variant selected -> Show minimum price (Shopee-style)
                       if (productAny.pricesPerVariant) {
                         const prices = Object.values(productAny.pricesPerVariant).map((p: any) =>
                           user?.role === 'reseller' && p.reseller ? Number(p.reseller) : Number(p.retail)
@@ -695,11 +692,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
                         if (prices.length > 0) {
                           const minPrice = Math.min(...prices);
-                          const maxPrice = Math.max(...prices);
-
-                          if (minPrice !== maxPrice) {
-                            return `Rp ${minPrice.toLocaleString('id-ID')} - Rp ${maxPrice.toLocaleString('id-ID')}`;
-                          }
                           return `Rp ${minPrice.toLocaleString('id-ID')}`;
                         }
                       }
