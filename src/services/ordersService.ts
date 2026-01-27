@@ -600,7 +600,7 @@ class OrdersService {
         amount: amount,
         method: method,
         date: new Date().toISOString(),
-        notes: notes || undefined,
+        notes: notes || '',
         addedBy: user.uid,
         addedByName: addedByName || user.displayName || 'Admin'
       };
