@@ -28,6 +28,7 @@ interface AccountPageProps {
   onNavigateToAdminVoucher?: () => void;
   onNavigateToAddressManagement?: () => void;
   onNavigateToAdminBanner?: () => void;
+  onNavigateToProduct?: (product: any) => void;
 }
 
 const AccountPage: React.FC<AccountPageProps> = ({
@@ -44,7 +45,8 @@ const AccountPage: React.FC<AccountPageProps> = ({
   onNavigateToAdminStockOpname,
   onNavigateToAdminVoucher,
   onNavigateToAddressManagement,
-  onNavigateToAdminBanner
+  onNavigateToAdminBanner,
+  onNavigateToProduct
 }) => {
   const { showToast } = useToast();
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -443,21 +445,36 @@ const AccountPage: React.FC<AccountPageProps> = ({
             ) : (
               <div className="space-y-3">
                 {wishlistProducts.map((product: any) => (
-                  <div key={product.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <img
-                      src={product.image || product.images?.[0] || '/placeholder.jpg'}
-                      alt={product.name}
-                      className="w-16 h-16 object-cover rounded-lg"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm text-gray-900 line-clamp-2">{product.name}</p>
-                      <p className="text-sm text-[#D4AF37] font-bold mt-1">
-                        Rp {product.retailPrice?.toLocaleString('id-ID') || '-'}
-                      </p>
+                  <div key={product.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    {/* Clickable area for navigation */}
+                    <div
+                      onClick={() => {
+                        if (onNavigateToProduct) {
+                          onNavigateToProduct(product);
+                          setShowWishlistModal(false);
+                        }
+                      }}
+                      className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                    >
+                      <img
+                        src={product.image || product.images?.[0] || '/placeholder.jpg'}
+                        alt={product.name}
+                        className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm text-gray-900 line-clamp-2">{product.name}</p>
+                        <p className="text-sm text-[#D4AF37] font-bold mt-1">
+                          Rp {product.retailPrice?.toLocaleString('id-ID') || '-'}
+                        </p>
+                      </div>
                     </div>
+                    {/* Delete button - separate */}
                     <button
-                      onClick={() => removeFromWishlist(product.id)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFromWishlist(product.id);
+                      }}
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>

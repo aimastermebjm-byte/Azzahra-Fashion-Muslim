@@ -816,6 +816,10 @@ function AppContent() {
             onNavigateToAdminStockOpname={handleNavigateToAdminStockOpname}
             onNavigateToAdminVoucher={handleNavigateToAdminVoucher}
             onNavigateToAdminBanner={handleNavigateToAdminBanner}
+            onNavigateToProduct={(product) => {
+              setSelectedProduct(product);
+              setCurrentPage('product-detail');
+            }}
           />
         );
       case 'address-management':
