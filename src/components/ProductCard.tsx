@@ -180,6 +180,49 @@ const ProductCard: React.FC<ProductCardProps> = ({
       );
     }
 
+    // 🔥 NEW: Check for variant-specific pricing (pricesPerVariant)
+    const productAny = product as any;
+    if (productAny.pricesPerVariant && Object.keys(productAny.pricesPerVariant).length > 0) {
+      // Calculate min and max prices from all variants
+      const prices = Object.values(productAny.pricesPerVariant).map((v: any) =>
+        user?.role === 'reseller' ? (v.reseller || v.retail) : v.retail
+      ).filter((p: number) => p > 0);
+
+      if (prices.length > 1) {
+        const minPrice = Math.min(...prices as number[]);
+        const maxPrice = Math.max(...prices as number[]);
+
+        // Only show range if there's actually a difference
+        if (minPrice !== maxPrice) {
+          return (
+            <div className="space-y-1.5 text-left">
+              <div className="text-base sm:text-lg font-bold text-slate-900">
+                <span>Rp {minPrice.toLocaleString('id-ID')}</span>
+                <span className="text-gray-400 mx-1">-</span>
+                <span>Rp {maxPrice.toLocaleString('id-ID')}</span>
+              </div>
+
+              {/* Reseller indicator */}
+              {user?.role === 'reseller' && (
+                <div className="text-xs text-[#D4AF37] font-medium">
+                  Harga Reseller
+                </div>
+              )}
+              {user?.role !== 'reseller' && (
+                <button
+                  onClick={handleResellerClick}
+                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#D4AF37] transition-colors"
+                >
+                  <span>Info Harga Reseller</span>
+                  <ChevronUp className={`w-3 h-3 transition-transform ${showResellerMenu ? 'rotate-180' : ''}`} />
+                </button>
+              )}
+            </div>
+          );
+        }
+      }
+    }
+
     return (
       <div className="space-y-1.5 text-left">
         <div className="text-lg sm:text-xl font-bold text-slate-900">
