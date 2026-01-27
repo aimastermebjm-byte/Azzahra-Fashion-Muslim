@@ -312,7 +312,9 @@ const HomePage: React.FC<HomePageProps> = ({
       flashSalePrice: p.flashSalePrice || 0,
       createdAt: p.createdAt || new Date(),
       salesCount: p.salesCount || 0,
-      isFeatured: p.isFeatured || false
+      isFeatured: p.isFeatured || false,
+      // 🔥 NEW: Preserve pricesPerVariant for price range display
+      pricesPerVariant: (p as any).pricesPerVariant || null
     })) as Product[];
   }, [products]);
 
