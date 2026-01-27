@@ -233,6 +233,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     if (globalProduct) {
       return {
         ...globalProduct,
+        // 🔥 FIX: Preserve variants/prices if missing in globalProduct but present in initialProduct
+        variants: globalProduct.variants || initialProduct.variants || {},
+        pricesPerVariant: (globalProduct as any).pricesPerVariant || (initialProduct as any).pricesPerVariant || undefined,
+
         // Preserve Flash Sale data from initialProduct (source of truth for Flash Sale)
         isFlashSale: initialProduct.isFlashSale || globalProduct.isFlashSale || false,
         flashSalePrice: initialProduct.flashSalePrice || globalProduct.flashSalePrice || 0,
@@ -428,6 +432,41 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const baseRetail = currentProduct.originalRetailPrice || currentProduct.retailPrice;
   const effectivePrice = collectionDiscount > 0 ? Math.max(0, baseRetail - collectionDiscount) : basePrice;
   const totalPrice = effectivePrice * quantity;
+
+  // 🔥 NEW: Calculate Price Display String (Centralized Logic for UI Consistency)
+  const getPriceDisplayString = () => {
+
+    // 1. Flash Sale
+    if (currentProduct.isFlashSale && currentProduct.flashSalePrice > 0) {
+      return `Rp ${currentProduct.flashSalePrice.toLocaleString('id-ID')}`;
+    }
+
+    // 2. Variant Selected -> Use specific calculated price
+    if (selectedSize && selectedColor) {
+      return `Rp ${getPrice().toLocaleString('id-ID')}`;
+    }
+
+    // 3. Variant Range -> Calculate Min-Max
+    if (productAny.pricesPerVariant) {
+      const prices = Object.values(productAny.pricesPerVariant).map((p: any) =>
+        user?.role === 'reseller' && p.reseller ? Number(p.reseller) : Number(p.retail)
+      ).filter(p => p > 0);
+
+      if (prices.length > 0) {
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        return min !== max
+          ? `Rp ${min.toLocaleString('id-ID')} - Rp ${max.toLocaleString('id-ID')}`
+          : `Rp ${min.toLocaleString('id-ID')}`;
+      }
+    }
+
+    // 4. Default Fallback
+    const defaultPrice = user?.role === 'reseller' ? currentProduct.resellerPrice : currentProduct.retailPrice;
+    return `Rp ${defaultPrice.toLocaleString('id-ID')}`;
+  };
+
+  const mainPriceDisplay = getPriceDisplayString();
 
   const getOriginalPrice = () => {
     return user?.role === 'reseller' ? currentProduct.resellerPrice : currentProduct.retailPrice;
@@ -700,9 +739,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           <div className="px-4 py-3 flex items-center gap-3">
             {/* Price Summary */}
             <div className="flex-shrink-0">
-              <p className="text-xs text-gray-500">Total</p>
+              <p className="text-xs text-gray-500">{isVariantIncomplete ? 'Harga' : 'Total'}</p>
               <p className="text-lg font-bold bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] bg-clip-text text-transparent">
-                Rp {totalPrice.toLocaleString('id-ID')}
+                {isVariantIncomplete ? mainPriceDisplay : `Rp ${totalPrice.toLocaleString('id-ID')}`}
               </p>
             </div>
 
