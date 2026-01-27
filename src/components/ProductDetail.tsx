@@ -6,6 +6,7 @@ import { useGlobalProducts } from '../hooks/useGlobalProducts';
 import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
 import VariantSelectionModal from './VariantSelectionModal';
 import { useCollectionDiscount } from '../hooks/useCollectionDiscount';
+import { useWishlist } from '../hooks/useWishlist';
 
 interface ProductDetailProps {
   currentProduct: Product;
@@ -28,6 +29,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 }) => {
   // Get cart count for badge
   const { cartItems } = useRealTimeCartOptimized();
+  const { isInWishlist, toggleWishlist } = useWishlist(user);
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
   // Global Discount Hook
@@ -541,8 +543,25 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             <button className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 transition hover:bg-gray-200">
               <Share2 className="h-4 w-4" />
             </button>
-            <button className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 transition hover:bg-gray-200">
-              <Heart className="h-4 w-4" />
+            <button
+              onClick={() => {
+                if (!user) {
+                  onLoginRequired();
+                  return;
+                }
+                const added = toggleWishlist(currentProduct);
+                showToast({
+                  type: added ? 'success' : 'info',
+                  title: added ? 'Ditambahkan ke Wishlist' : 'Dihapus dari Wishlist',
+                  message: added ? `${currentProduct.name} sudah ada di wishlist` : `${currentProduct.name} dihapus dari wishlist`
+                });
+              }}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition hover:scale-110 ${isInWishlist(currentProduct.id)
+                  ? 'bg-red-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+            >
+              <Heart className={`h-4 w-4 ${isInWishlist(currentProduct.id) ? 'fill-current' : ''}`} />
             </button>
             <button
               onClick={onNavigateToCart || (() => { })}
