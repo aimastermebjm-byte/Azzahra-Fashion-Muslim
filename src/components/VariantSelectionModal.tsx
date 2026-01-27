@@ -50,7 +50,7 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
             return Math.max(0, baseRetail - collectionDiscount);
         }
 
-        // 🔥 PRIORITY #3: Variant-specific pricing
+        // 🔥 PRIORITY #3: Variant-specific pricing (when variant selected)
         const productAny = product as any;
         if (productAny.pricesPerVariant && selectedSize && selectedColor) {
             const variantKey = `${selectedSize}-${selectedColor}`;
@@ -62,7 +62,18 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
             }
         }
 
-        // 🔥 PRIORITY #4: Role-based default pricing
+        // 🔥 PRIORITY #4: Minimum variant price (Shopee-style - when variant NOT selected)
+        if (productAny.pricesPerVariant && (!selectedSize || !selectedColor)) {
+            const prices = Object.values(productAny.pricesPerVariant).map((p: any) =>
+                user?.role === 'reseller' && p.reseller ? Number(p.reseller) : Number(p.retail)
+            ).filter(p => p > 0);
+
+            if (prices.length > 0) {
+                return Math.min(...prices);
+            }
+        }
+
+        // 🔥 PRIORITY #5: Role-based default pricing
         return user?.role === 'reseller' ? product.resellerPrice : product.retailPrice;
     };
 
