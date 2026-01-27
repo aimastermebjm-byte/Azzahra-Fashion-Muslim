@@ -88,7 +88,11 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
               weight: Number(data.weight) || 0,
               unit: 'gram',
               status: data.status || (data.condition === 'baru' ? 'ready' : 'po') || 'ready',
-              estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined
+              estimatedReady: data.estimatedReady ? new Date(data.estimatedReady) : undefined,
+              // 🔥 NEW: Variant-specific pricing for price range display
+              pricesPerVariant: data.pricesPerVariant || null,
+              costPricePerSize: data.costPricePerSize || null,
+              variantNames: data.variantNames || null
             };
           });
 

@@ -588,7 +588,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
         id: editingProduct.id,
         name: updateData.name,
         newImages: imageUrls.length,
-        totalImages: allImageUrls.length
+        totalImages: allImageUrls.length,
+        // 🔥 DEBUG: Log pricesPerVariant being saved
+        pricesPerVariant: updateData.pricesPerVariant,
+        pricesPerVariantCount: updateData.pricesPerVariant ? Object.keys(updateData.pricesPerVariant).length : 0
       });
 
       await updateProduct(editingProduct.id, updateData);
