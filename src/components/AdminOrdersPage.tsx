@@ -1948,8 +1948,12 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   </div>
                 )}
 
-                {/* 💳 NEW: Add Payment Button for pending orders with remaining amount */}
-                {selectedOrder.status === 'pending' &&
+                {/* 💳 NEW: Add Payment Button for orders with remaining amount */}
+                {/* 🔧 FIX: Allow adding payment if pending OR has payment proof but not fully paid */}
+                {(selectedOrder.status === 'pending' ||
+                  (selectedOrder.paymentProof && (selectedOrder.remainingAmount ?? selectedOrder.finalTotal) > 0)) &&
+                  selectedOrder.status !== 'paid' &&
+                  selectedOrder.status !== 'cancelled' &&
                   (user?.role === 'owner' || user?.role === 'admin') &&
                   (selectedOrder.remainingAmount ?? selectedOrder.finalTotal) > 0 && (
                     <div className="flex justify-center">

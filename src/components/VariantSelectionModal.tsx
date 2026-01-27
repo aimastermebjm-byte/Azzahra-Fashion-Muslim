@@ -39,12 +39,18 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
 
     // Price calculation (same as ProductDetail)
     const getPrice = () => {
-        // Apply collection discount if active
+        // 🔥 PRIORITY #1: Flash Sale (highest priority - always wins!)
+        if (product.isFlashSale && product.flashSalePrice > 0) {
+            return product.flashSalePrice;
+        }
+
+        // 🔥 PRIORITY #2: Collection discount
         if (collectionDiscount > 0) {
             const baseRetail = product.originalRetailPrice || product.retailPrice;
             return Math.max(0, baseRetail - collectionDiscount);
         }
 
+        // 🔥 PRIORITY #3: Variant-specific pricing
         const productAny = product as any;
         if (productAny.pricesPerVariant && selectedSize && selectedColor) {
             const variantKey = `${selectedSize}-${selectedColor}`;
@@ -55,9 +61,8 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                     : Number(variantPricing.retail);
             }
         }
-        if (product.isFlashSale && product.flashSalePrice > 0) {
-            return product.flashSalePrice;
-        }
+
+        // 🔥 PRIORITY #4: Role-based default pricing
         return user?.role === 'reseller' ? product.resellerPrice : product.retailPrice;
     };
 
