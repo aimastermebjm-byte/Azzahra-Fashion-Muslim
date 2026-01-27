@@ -7,7 +7,10 @@ import { useToast } from './ToastProvider';
 import avatarMale from '../assets/avatar_outline_male_black_v2.png';
 import avatarFemale from '../assets/avatar_outline_female_black_v2.png';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
-import { db } from '../utils/firebaseClient'; // Ensure db is imported
+import { db } from '../utils/firebaseClient';
+import { useWishlist } from '../hooks/useWishlist';
+import { useGlobalProducts } from '../hooks/useGlobalProducts';
+import { X, Trash2 } from 'lucide-react';
 
 
 interface AccountPageProps {
@@ -58,6 +61,11 @@ const AccountPage: React.FC<AccountPageProps> = ({
   const [showSystemModal, setShowSystemModal] = useState(false);
   const [systemCheckStatus, setSystemCheckStatus] = useState<'idle' | 'checking' | 'success' | 'error'>('idle');
   const [systemCheckLog, setSystemCheckLog] = useState<string[]>([]);
+
+  // Wishlist State
+  const [showWishlistModal, setShowWishlistModal] = useState(false);
+  const { wishlistItems, removeFromWishlist } = useWishlist(propUser);
+  const { getProductById } = useGlobalProducts();
 
   const runSystemCheck = async () => {
     setSystemCheckStatus('checking');
@@ -398,6 +406,81 @@ const AccountPage: React.FC<AccountPageProps> = ({
     );
   };
 
+  // Wishlist Modal
+  const renderWishlistModal = () => {
+    if (!showWishlistModal) return null;
+
+    // Get product details for wishlist items
+    const wishlistProducts = wishlistItems
+      .map(productId => getProductById(productId))
+      .filter(Boolean);
+
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl border-2 border-[#D4AF37] max-h-[80vh] flex flex-col">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-[#997B2C] to-[#EDD686] p-4 flex justify-between items-center flex-shrink-0">
+            <h3 className="text-white font-bold text-lg flex items-center gap-2">
+              <Heart className="w-5 h-5" />
+              Wishlist Saya
+            </h3>
+            <button
+              onClick={() => setShowWishlistModal(false)}
+              className="p-1 bg-white/20 rounded-full hover:bg-white/30 text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-4 overflow-y-auto flex-1">
+            {wishlistProducts.length === 0 ? (
+              <div className="text-center py-8">
+                <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">Belum ada produk favorit</p>
+                <p className="text-sm text-gray-400 mt-2">Klik ❤️ di halaman produk untuk menambahkan</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {wishlistProducts.map((product: any) => (
+                  <div key={product.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <img
+                      src={product.image || product.images?.[0] || '/placeholder.jpg'}
+                      alt={product.name}
+                      className="w-16 h-16 object-cover rounded-lg"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-gray-900 line-clamp-2">{product.name}</p>
+                      <p className="text-sm text-[#D4AF37] font-bold mt-1">
+                        Rp {product.retailPrice?.toLocaleString('id-ID') || '-'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => removeFromWishlist(product.id)}
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-gray-100 flex-shrink-0">
+            <button
+              onClick={() => setShowWishlistModal(false)}
+              className="w-full py-3 bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-white rounded-xl font-bold shadow-lg active:scale-95 transition-all"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
 
   // Role-based settings content
   const renderSettingsContent = () => {
@@ -412,13 +495,17 @@ const AccountPage: React.FC<AccountPageProps> = ({
             <div className="bg-white rounded-lg border-2 border-[#D4AF37] shadow-[0_6px_0_0_#997B2C,0_15px_30px_-5px_rgba(153,123,44,0.3)] p-4">
               <h3 className="font-semibold text-gray-800 mb-4">Preferensi</h3>
               <div className="space-y-3">
-                <button className="w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors">
+                <button
+                  onClick={() => setShowWishlistModal(true)}
+                  className="w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors"
+                >
                   <div className="flex items-center space-x-3">
-                    <Heart className="w-5 h-5 text-gray-400" />
+                    <Heart className="w-5 h-5 text-red-400" />
                     <div className="flex-1">
                       <p className="font-medium">Wishlist</p>
-                      <p className="text-sm text-gray-500">Produk favorit Anda</p>
+                      <p className="text-sm text-gray-500">{wishlistItems.length} produk favorit</p>
                     </div>
+                    <ChevronRight className="w-5 h-5 text-gray-300" />
                   </div>
                 </button>
               </div>
@@ -792,6 +879,7 @@ const AccountPage: React.FC<AccountPageProps> = ({
       </div>
       {/* Modals */}
       {renderSystemModal()}
+      {renderWishlistModal()}
     </div>
   );
 };
