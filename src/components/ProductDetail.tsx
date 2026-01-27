@@ -640,15 +640,40 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               ) : (
                 <div className="space-y-2">
                   <div className="text-3xl font-bold bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] bg-clip-text text-transparent">
-                    Rp {currentProduct.retailPrice.toLocaleString('id-ID')}
+                    {(() => {
+                      const productAny = currentProduct as any;
+                      // Case 1: Variant selected -> Use specific price from getPrice()
+                      if (selectedSize && selectedColor) {
+                        return `Rp ${getPrice().toLocaleString('id-ID')}`;
+                      }
+
+                      // Case 2: No variant selected -> Check for price range from variants
+                      if (productAny.pricesPerVariant) {
+                        const prices = Object.values(productAny.pricesPerVariant).map((p: any) =>
+                          user?.role === 'reseller' && p.reseller ? Number(p.reseller) : Number(p.retail)
+                        ).filter(p => p > 0);
+
+                        if (prices.length > 0) {
+                          const minPrice = Math.min(...prices);
+                          const maxPrice = Math.max(...prices);
+
+                          if (minPrice !== maxPrice) {
+                            return `Rp ${minPrice.toLocaleString('id-ID')} - Rp ${maxPrice.toLocaleString('id-ID')}`;
+                          }
+                          return `Rp ${minPrice.toLocaleString('id-ID')}`;
+                        }
+                      }
+
+                      // Case 3: No variants or invalid data -> Fallback to default price
+                      const defaultPrice = user?.role === 'reseller' ? currentProduct.resellerPrice : currentProduct.retailPrice;
+                      return `Rp ${defaultPrice.toLocaleString('id-ID')}`;
+                    })()}
                   </div>
 
-                  {/* Reseller Price - Match ProductCard Style */}
+                  {/* Reseller Price Info - Logic Updated to Support Range */}
                   {user?.role === 'reseller' ? (
-                    <div className="inline-flex items-center gap-2 text-sm bg-yellow-50 border border-yellow-200 py-2 px-3 rounded-lg">
-                      <span className="text-yellow-700 font-medium opacity-80">Reseller:</span>
-                      <span className="text-yellow-800 font-bold">Rp {currentProduct.resellerPrice.toLocaleString('id-ID')}</span>
-                    </div>
+                    // Reseller mode active - Price above is already reseller price
+                    null
                   ) : (
                     <button
                       onClick={handleResellerPriceClick}
