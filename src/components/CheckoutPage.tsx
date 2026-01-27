@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MapPin, Plus, Truck, Archive, CreditCard, ChevronRight, Gift, Tag, Trash2, Edit2, AlertCircle, ShoppingBag, Package, Loader2, Check, Award } from 'lucide-react';
 import { addressService } from '../services/addressService';
 import AddressForm from './AddressForm';
@@ -372,17 +372,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   };
 
-  // Metric Calculations (Cart Items & Total Price) - Moved UP for scope dependencies
+  // Metric Calculations (Cart Items) - Moved UP for scope dependencies
   const cartItems = selectedCartItemIds.length > 0
     ? allCartItems.filter(item => selectedCartItemIds.includes(item.id))
     : allCartItems;
-
-  const totalPrice = cartItems.reduce((total, item) => {
-    if (!item) return total;
-    const itemPrice = item.price || 0;
-    const itemQuantity = item.quantity || 1;
-    return total + (itemPrice * itemQuantity);
-  }, 0);
 
   // Shipping mode: 'delivery' = kirim ke alamat, 'keep' = atur alamat nanti, 'pickup' = ambil di toko
   // RULES:
@@ -455,6 +448,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   // ⛔ RESTRICTION CHECK
   // Check if any item is Flash Sale OR Discounted
+  // Check if any item is Flash Sale OR Discounted
   const hasRestrictedItems = cartItems.some(item => {
     const isFlashSale = item.isFlashSale || item.productStatus === 'flash_sale';
     const currentPrice = item.price || 0;
@@ -463,6 +457,43 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     return isFlashSale || isDiscounted;
   });
+
+  // 🔥 PRICE MODE TOGGLE (Admin/Owner Only)
+  const isAdminOrOwner = ['admin', 'owner'].includes(user?.role || '');
+  const [priceMode, setPriceMode] = useState<'retail' | 'reseller'>('retail');
+
+  // Recalculate cart items based on price mode
+  const recalculatedCartItems = useMemo(() => {
+    if (!isAdminOrOwner) return cartItems;
+
+    return cartItems.map(item => {
+      // If we have stored retail/reseller prices, use them
+      // Otherwise fallback to current price
+      let newPrice = item.price;
+
+      if (priceMode === 'reseller') {
+        // Try to find reseller price
+        if (item.resellerPrice && item.resellerPrice > 0) newPrice = item.resellerPrice;
+        else if (item.originalResellerPrice && item.originalResellerPrice > 0) newPrice = item.originalResellerPrice;
+      } else {
+        // Try to find retail price
+        if (item.retailPrice && item.retailPrice > 0) newPrice = item.retailPrice;
+        else if (item.originalRetailPrice && item.originalRetailPrice > 0) newPrice = item.originalRetailPrice;
+      }
+
+      return { ...item, price: newPrice };
+    });
+  }, [cartItems, priceMode, isAdminOrOwner]);
+
+  // Use recalculated items for total calculation if admin/owner
+  const effectiveCartItems = isAdminOrOwner ? recalculatedCartItems : cartItems;
+
+  const totalPrice = effectiveCartItems.reduce((total, item) => {
+    if (!item) return total;
+    const itemPrice = item.price || 0;
+    const itemQuantity = item.quantity || 1;
+    return total + (itemPrice * itemQuantity);
+  }, 0);
 
   // Calculate max points usable (can't go below 0 total)
   // Use points to cover Total + Shipping - Voucher
@@ -1136,6 +1167,42 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
               {/* Order Items */}
               <div className="rounded-2xl border border-white/40 bg-white/95 p-5 shadow-sm">
+
+                {/* 💼 ADMIN PRICE TOGGLE */}
+                {isAdminOrOwner && (
+                  <div className="mb-4 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-4 h-4 text-amber-600" />
+                        <div>
+                          <p className="text-xs font-bold text-amber-800 uppercase tracking-wider">Mode Harga</p>
+                          <p className="text-[10px] text-amber-600">Pilih harga untuk order ini</p>
+                        </div>
+                      </div>
+                      <div className="flex bg-white rounded-lg p-1 border border-amber-100 shadow-sm">
+                        <button
+                          onClick={() => setPriceMode('retail')}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${priceMode === 'retail'
+                              ? 'bg-amber-100 text-amber-800 shadow-sm'
+                              : 'text-gray-500 hover:bg-gray-50'
+                            }`}
+                        >
+                          Retail
+                        </button>
+                        <button
+                          onClick={() => setPriceMode('reseller')}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${priceMode === 'reseller'
+                              ? 'bg-amber-100 text-amber-800 shadow-sm'
+                              : 'text-gray-500 hover:bg-gray-50'
+                            }`}
+                        >
+                          Reseller
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-slate-900">Produk Pesanan</h3>
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{cartCount} produk</span>

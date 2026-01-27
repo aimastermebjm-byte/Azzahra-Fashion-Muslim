@@ -10,6 +10,8 @@ export interface CartItem {
   productId: string;
   name: string;
   price: number;
+  retailPrice?: number; // ✅ NEW: Store original retail price
+  resellerPrice?: number; // ✅ NEW: Store original reseller price
   quantity: number;
   image: string;
   variant?: {
@@ -225,11 +227,28 @@ class CartServiceOptimized {
           }
         }
 
+        // Populate retail and reseller prices for admin toggle
+        // 🔧 FIX: Store both prices to enable toggling
+        let retailPrice = 0;
+        let resellerPrice = 0;
+
+        if (product.pricesPerVariant && variant?.size && variant?.color) {
+          const variantKey = `${variant.size}-${variant.color}`;
+          const variantPricing = product.pricesPerVariant[variantKey];
+          retailPrice = Number(variantPricing?.retail || product.retailPrice || 0);
+          resellerPrice = Number(variantPricing?.reseller || product.resellerPrice || 0);
+        } else {
+          retailPrice = Number(product.retailPrice || 0);
+          resellerPrice = Number(product.resellerPrice || 0);
+        }
+
         const cartItem: CartItem = {
           id: this.generateCartItemId(),
           productId: productId,
           name: product.name || 'Unknown Product',
           price: itemPrice,
+          retailPrice: retailPrice, // ✅ NEW
+          resellerPrice: resellerPrice, // ✅ NEW
           quantity: Number(quantity) || 1,
           image: product.image || product.images?.[0] || '/placeholder-product.jpg',
           ...(variant && { variant }), // Hanya include variant jika ada

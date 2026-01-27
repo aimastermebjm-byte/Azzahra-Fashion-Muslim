@@ -183,16 +183,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
     // 🔥 NEW: Check for variant-specific pricing (pricesPerVariant)
     const productAny = product as any;
 
-    // DEBUG: Log products with variants to check if pricesPerVariant exists
-    if (product.variants?.sizes?.length > 1 || product.variants?.colors?.length > 1) {
-      console.log(`📊 ProductCard [${product.name}]:`, {
-        hasPricesPerVariant: !!productAny.pricesPerVariant,
-        pricesPerVariantKeys: productAny.pricesPerVariant ? Object.keys(productAny.pricesPerVariant) : [],
-        sizes: product.variants?.sizes?.length || 0,
-        colors: product.variants?.colors?.length || 0
-      });
-    }
-
     if (productAny.pricesPerVariant && Object.keys(productAny.pricesPerVariant).length > 0) {
       // Calculate min and max prices from all variants
       const prices = Object.values(productAny.pricesPerVariant).map((v: any) =>
