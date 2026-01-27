@@ -435,6 +435,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
   // 🔥 NEW: Calculate Price Display String (Centralized Logic for UI Consistency)
   const getPriceDisplayString = () => {
+    const productAny = currentProduct as any;
 
     // 1. Flash Sale
     if (currentProduct.isFlashSale && currentProduct.flashSalePrice > 0) {
