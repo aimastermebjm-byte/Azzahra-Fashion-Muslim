@@ -589,44 +589,54 @@ const AccountPage: React.FC<AccountPageProps> = ({
 
             {/* Admin Features */}
             <div className="bg-white rounded-lg border-2 border-[#D4AF37] shadow-[0_6px_0_0_#997B2C,0_15px_30px_-5px_rgba(153,123,44,0.3)] p-4">
+              {/* SVG Gradient Definition for Gold Icons */}
+              <svg width="0" height="0" className="absolute">
+                <defs>
+                  <linearGradient id="gold-icon-gradient-admin" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#997B2C" />
+                    <stop offset="50%" stopColor="#EDD686" />
+                    <stop offset="100%" stopColor="#997B2C" />
+                  </linearGradient>
+                </defs>
+              </svg>
               <h3 className="font-semibold text-gray-800 mb-4">Fitur Admin</h3>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={onNavigateToAdminProducts}
-                  className="p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="p-3 bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] hover:shadow-[0_2px_0_0_#7a6223,0_3px_15px_rgba(153,123,44,0.25)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#7a6223] active:translate-y-0.5 transition-all duration-150"
                 >
-                  <Package className="w-6 h-6 mx-auto mb-2" />
-                  <p className="text-sm">Kelola Produk</p>
+                  <Package className="w-6 h-6 mx-auto mb-2" style={{ stroke: 'url(#gold-icon-gradient-admin)', fill: 'none' }} />
+                  <p className="text-sm font-bold text-slate-900">Kelola Produk</p>
                 </button>
                 <button
                   onClick={onNavigateToAdminOrders}
-                  className="p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="p-3 bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] hover:shadow-[0_2px_0_0_#7a6223,0_3px_15px_rgba(153,123,44,0.25)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#7a6223] active:translate-y-0.5 transition-all duration-150"
                 >
-                  <Package className="w-6 h-6 mx-auto mb-2" />
-                  <p className="text-sm">Kelola Pesanan</p>
+                  <Package className="w-6 h-6 mx-auto mb-2" style={{ stroke: 'url(#gold-icon-gradient-admin)', fill: 'none' }} />
+                  <p className="text-sm font-bold text-slate-900">Kelola Pesanan</p>
                 </button>
                 {user?.role === 'owner' && (
                   <button
                     onClick={onNavigateToAdminPaymentVerification}
-                    className="p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    className="p-3 bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] hover:shadow-[0_2px_0_0_#7a6223,0_3px_15px_rgba(153,123,44,0.25)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#7a6223] active:translate-y-0.5 transition-all duration-150"
                   >
-                    <CreditCard className="w-6 h-6 mx-auto mb-2" />
-                    <p className="text-sm">Verifikasi Pembayaran</p>
+                    <CreditCard className="w-6 h-6 mx-auto mb-2" style={{ stroke: 'url(#gold-icon-gradient-admin)', fill: 'none' }} />
+                    <p className="text-sm font-bold text-slate-900">Verifikasi Pembayaran</p>
                   </button>
                 )}
                 <button
                   onClick={onNavigateToAdminReports}
-                  className="p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="p-3 bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] hover:shadow-[0_2px_0_0_#7a6223,0_3px_15px_rgba(153,123,44,0.25)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#7a6223] active:translate-y-0.5 transition-all duration-150"
                 >
-                  <BarChart3 className="w-6 h-6 mx-auto mb-2" />
-                  <p className="text-sm">Laporan</p>
+                  <BarChart3 className="w-6 h-6 mx-auto mb-2" style={{ stroke: 'url(#gold-icon-gradient-admin)', fill: 'none' }} />
+                  <p className="text-sm font-bold text-slate-900">Laporan</p>
                 </button>
                 <button
                   onClick={onNavigateToAdminUsers}
-                  className="p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="p-3 bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] hover:shadow-[0_2px_0_0_#7a6223,0_3px_15px_rgba(153,123,44,0.25)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#7a6223] active:translate-y-0.5 transition-all duration-150"
                 >
-                  <Users className="w-6 h-6 mx-auto mb-2" />
-                  <p className="text-sm">Pelanggan</p>
+                  <Users className="w-6 h-6 mx-auto mb-2" style={{ stroke: 'url(#gold-icon-gradient-admin)', fill: 'none' }} />
+                  <p className="text-sm font-bold text-slate-900">Pelanggan</p>
                 </button>
               </div>
             </div>
