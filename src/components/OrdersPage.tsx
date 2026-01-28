@@ -106,6 +106,25 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
     }
   };
 
+  // ✨ Helper: Format countdown timer
+  const formatCountdown = (expiresAt: number | null) => {
+    if (!expiresAt) return null;
+
+    const now = Date.now();
+    const remaining = expiresAt - now;
+
+    if (remaining <= 0) return 'Kadaluarsa';
+
+    const hours = Math.floor(remaining / (1000 * 60 * 60));
+    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (hours < 1) {
+      return `${minutes} menit`; // Red warning
+    }
+
+    return `${hours} jam ${minutes} menit`;
+  };
+
   // ✨ Handle "Bayar Sekarang" button
   const handleBayarSekarang = async () => {
     try {
@@ -197,6 +216,25 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
           method.includes('tunai') ||
           method.includes('bayar di toko');
       });
+
+      // Check if SOME (but not all) are Cash payment
+      const someCashPayment = selected.some(o => {
+        const method = o.paymentMethodName?.toLowerCase() || '';
+        return method.includes('kas') ||
+          method.includes('cash') ||
+          method.includes('tunai') ||
+          method.includes('bayar di toko');
+      });
+
+      // ⛔ VALIDATION: Tidak boleh campur Kas + Transfer
+      if (someCashPayment && !allCashPayment) {
+        showToast({
+          type: 'warning',
+          title: 'Metode Pembayaran Berbeda',
+          message: 'Tidak bisa menggabungkan pesanan Kas dan Transfer. Silakan bayar terpisah.'
+        });
+        return; // Exit early - mixed payment not allowed
+      }
 
       // ✅ CASH PAYMENT: Skip modal, show info toast
       if (allCashPayment) {
@@ -600,6 +638,16 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                           <MapPin className="w-3 h-3" />
                           Alamat Belum Diatur
                         </span>
+                      )}
+                      {/* ✨ NEW: Countdown Timer for Pending Orders */}
+                      {order.status === 'pending' && (order as any).expiresAt && (
+                        <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${((order as any).expiresAt - Date.now()) < 3600000
+                            ? 'bg-red-50 text-red-700 border border-red-200'
+                            : 'bg-blue-50 text-blue-700 border border-blue-200'
+                          }`}>
+                          <Clock className="w-3 h-3" />
+                          {formatCountdown((order as any).expiresAt)}
+                        </div>
                       )}
                     </div>
                   </div>

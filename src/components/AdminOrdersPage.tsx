@@ -794,7 +794,12 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             return;
           }
 
-          await updateOrderPayment(selectedOrder.id, paymentProof || 'payment_verified', 'paid');
+          // ✅ FIX: Simplify payment proof for Cash payment (no image needed)
+          const proofToUse = isCashPayment
+            ? `CASH_VERIFIED_BY_${userRole.toUpperCase()}_${Date.now()}`
+            : (paymentProof || 'payment_verified');
+
+          await updateOrderPayment(selectedOrder.id, proofToUse, 'paid');
 
           // Auto upgrade role if eligible (Customer -> Reseller)
           try {
