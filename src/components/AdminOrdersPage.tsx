@@ -1643,7 +1643,8 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                           )}
 
 
-                          {!['canceled', 'delivered'].includes(order.status) && (
+                          {/* ⚠️ OWNER ONLY: Edit Pesanan */}
+                          {!['canceled', 'delivered'].includes(order.status) && user?.role === 'owner' && (
                             <button
                               onClick={() => handleEditOrder(order)}
                               className="px-2.5 py-1.5 rounded-full bg-white border border-[#D4AF37] text-[#997B2C] text-xs font-semibold hover:bg-[#F9F5EB] hover:shadow-md transition-all flex items-center justify-center gap-1 whitespace-nowrap"
