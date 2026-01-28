@@ -1465,9 +1465,9 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           </div>
         </div >
 
-        {/*  NEW: Bulk Operations Toolbar - GOLD THEME */}
+        {/*  NEW: Bulk Operations Toolbar - GOLD THEME - Available for Admin & Owner */}
         {
-          user?.role === 'owner' && filteredOrders.length > 0 && (
+          filteredOrders.length > 0 && (
             <div className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C,0_10px_20px_rgba(153,123,44,0.2)] p-4 mb-4 shine-effect">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center space-x-4">
