@@ -188,6 +188,27 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         }
       }
 
+      // ✅ NEW: Deteksi metode pembayaran Kas - Skip modal verifikasi
+      // Check if ALL selected orders are Cash payment
+      const allCashPayment = selected.every(o => {
+        const method = o.paymentMethodName?.toLowerCase() || '';
+        return method.includes('kas') ||
+          method.includes('cash') ||
+          method.includes('tunai') ||
+          method.includes('bayar di toko');
+      });
+
+      // ✅ CASH PAYMENT: Skip modal, show info toast
+      if (allCashPayment) {
+        showToast({
+          type: 'info',
+          title: 'Pembayaran Kas',
+          message: `${selected.length} pesanan menunggu pembayaran di toko. Silakan datang ke toko untuk melunasi.`
+        });
+        return; // Exit early - no modal needed
+      }
+
+      // ✅ TRANSFER/E-WALLET: Show verification modal (existing flow)
       // No existing payment group (or cancelled), show method selection
       console.log('🔓 Opening Payment Method Modal');
 

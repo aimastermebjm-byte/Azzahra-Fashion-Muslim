@@ -750,6 +750,26 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     if (selectedOrder) {
       try {
         if (status === 'paid') {
+          // ✅ NEW: Permission Check - Admin vs Owner
+          const paymentMethod = selectedOrder.paymentMethodName?.toLowerCase() || '';
+          const isCashPayment = paymentMethod.includes('kas') ||
+            paymentMethod.includes('cash') ||
+            paymentMethod.includes('tunai') ||
+            paymentMethod.includes('bayar di toko');
+
+          const isTransferPayment = !isCashPayment;
+          const userRole = user?.role || '';
+
+          // ⛔ VALIDATION: Admin can only verify Cash, Owner can verify all
+          if (userRole === 'admin' && isTransferPayment) {
+            showModernAlert(
+              'Akses Ditolak',
+              'Admin hanya bisa memverifikasi pembayaran Kas. Untuk pembayaran Transfer/E-wallet, hubungi Owner.',
+              'warning'
+            );
+            return;
+          }
+
           // 🔥 FIX: Validate address before allowing payment verification
           // Simplified: just check if address exists and is not placeholder
           const addressValue = selectedOrder.shippingInfo?.address || '';
@@ -787,7 +807,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
             const result = await checkAndUpgradeRole(selectedOrder.userId, orderItems);
             if (result.upgraded) {
-              console.log('Ž‰ User upgraded to Reseller:', result.reason);
+              console.log('🎉 User upgraded to Reseller:', result.reason);
 
               // Queue WhatsApp notification for upgrade
               const customerPhone = selectedOrder.shippingInfo?.phone || selectedOrder.phone;
@@ -806,17 +826,17 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             // Non-blocking: don't fail the payment verification if upgrade fails
           }
         } else {
-          console.log('”„ CANCELLING ORDER - Status will be set to:', status);
+          console.log('🚫 CANCELLING ORDER - Status will be set to:', status);
           await updateOrderStatus(selectedOrder.id, status);
 
           // After cancelling, refresh products and navigate to home
-          console.log('… Order cancelled, refreshing products...');
+          console.log('🔄 Order cancelled, refreshing products...');
           if (onRefreshProducts) {
             onRefreshProducts();
           }
 
           if (onNavigateToHome) {
-            console.log('  Navigating to home after order cancellation...');
+            console.log('🏠 Navigating to home after order cancellation...');
             setTimeout(() => {
               onNavigateToHome();
             }, 1000); // Small delay to ensure products are refreshed
@@ -827,7 +847,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         setPaymentProof('');
         setVerificationNotes('');
       } catch (error) {
-        console.error('âŒ Error confirming verification:', error);
+        console.error('❌ Error confirming verification:', error);
         showModernAlert('Error', 'Gagal memperbarui verifikasi pesanan', 'error');
       }
     }
