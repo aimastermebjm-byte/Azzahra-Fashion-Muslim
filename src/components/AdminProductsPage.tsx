@@ -2632,6 +2632,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                                               type="number"
                                               min="0"
                                               value={currentStock}
+                                              onFocus={(e) => e.target.select()}
                                               onChange={(e) => updateVariantStock(size, color, e.target.value)}
                                               className="w-20 px-1 py-1 border border-blue-300 rounded text-center text-xs focus:ring-2 focus:ring-blue-500 text-blue-900 font-medium"
                                             />
