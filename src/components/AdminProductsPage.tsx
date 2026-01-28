@@ -1477,21 +1477,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                   </button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => {
-                      if (isFlashSaleActive) {
-                        setFlashSaleFormData({ ...flashSaleFormData, productIds: selectedProducts });
-                        handleAddToActiveFlashSale();
-                      } else {
-                        setFlashSaleFormData({ ...flashSaleFormData, productIds: selectedProducts });
-                        setShowFlashSaleModal(true);
-                      }
-                    }}
-                    className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
-                  >
-                    <Flame className="w-5 h-5 text-[#997B2C]" />
-                    <span className="text-sm">Flash Sale</span>
-                  </button>
+                  {/* ✅ Unggulan - ALWAYS SHOW for Admin & Owner */}
                   <button
                     onClick={() => {
                       if (confirm(`Tandai ${selectedProducts.length} produk sebagai Unggulan?`)) {
@@ -1510,27 +1496,48 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     <Star className="w-5 h-5 text-[#997B2C]" />
                     <span className="text-sm">Unggulan</span>
                   </button>
-                  <button
-                    onClick={() => setShowBatchModal(true)}
-                    className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
-                  >
-                    <Edit className="w-5 h-5 text-[#997B2C]" />
-                    <span className="text-sm">Edit Massal</span>
-                  </button>
-                  <button
-                    onClick={() => setShowVariantBatchModal(true)}
-                    className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
-                  >
-                    <Package className="w-5 h-5 text-[#997B2C]" />
-                    <span className="text-sm">Varian</span>
-                  </button>
-                  <button
-                    onClick={() => setShowDiscountModal(true)}
-                    className="bg-white text-green-600 p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-green-400 shadow-[0_3px_0_0_#16a34a] shine-effect"
-                  >
-                    <span className="text-lg">💰</span>
-                    <span className="text-sm">Diskon</span>
-                  </button>
+
+                  {/* ⚠️ OWNER ONLY: Flash Sale, Edit Massal, Varian, Diskon */}
+                  {user?.role === 'owner' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          if (isFlashSaleActive) {
+                            setFlashSaleFormData({ ...flashSaleFormData, productIds: selectedProducts });
+                            handleAddToActiveFlashSale();
+                          } else {
+                            setFlashSaleFormData({ ...flashSaleFormData, productIds: selectedProducts });
+                            setShowFlashSaleModal(true);
+                          }
+                        }}
+                        className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
+                      >
+                        <Flame className="w-5 h-5 text-[#997B2C]" />
+                        <span className="text-sm">Flash Sale</span>
+                      </button>
+                      <button
+                        onClick={() => setShowBatchModal(true)}
+                        className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
+                      >
+                        <Edit className="w-5 h-5 text-[#997B2C]" />
+                        <span className="text-sm">Edit Massal</span>
+                      </button>
+                      <button
+                        onClick={() => setShowVariantBatchModal(true)}
+                        className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
+                      >
+                        <Package className="w-5 h-5 text-[#997B2C]" />
+                        <span className="text-sm">Varian</span>
+                      </button>
+                      <button
+                        onClick={() => setShowDiscountModal(true)}
+                        className="bg-white text-green-600 p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-green-400 shadow-[0_3px_0_0_#16a34a] shine-effect"
+                      >
+                        <span className="text-lg">💰</span>
+                        <span className="text-sm">Diskon</span>
+                      </button>
+                    </>
+                  )}
 
                   {/* Collection button moved to main toolbar */}
                   {user?.role === 'owner' && (
