@@ -900,7 +900,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 onChange={(e) => setReportType(e.target.value as any)}
                 className="w-full appearance-none rounded-xl border-2 border-[#D4AF37] bg-white px-4 py-3 pr-10 text-base font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 cursor-pointer"
               >
-                <option value="summary">Ringkasan Laporan</option>
+                {/* ⚠️ OWNER ONLY: Ringkasan Laporan */}
+                {isOwner && <option value="summary">Ringkasan Laporan</option>}
                 <option value="sales">Laporan Penjualan</option>
                 <option value="products">Laporan Produk Terjual</option>
                 <option value="invoice">Laporan Invoice</option>
