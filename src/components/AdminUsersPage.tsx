@@ -329,12 +329,15 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ onBack, user }) => {
                     <button className="p-1 text-blue-600 hover:text-blue-700 transition-colors">
                       <Eye className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={() => handleEditClick(userItem)}
-                      className="p-1 text-green-600 hover:text-green-700 transition-colors"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
+                    {/* ⚠️ OWNER ONLY: Edit User */}
+                    {user?.role === 'owner' && (
+                      <button
+                        onClick={() => handleEditClick(userItem)}
+                        className="p-1 text-green-600 hover:text-green-700 transition-colors"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    )}
                     {user?.role === 'owner' && (
                       <button
                         onClick={() => handleDeleteUser(userItem.id, userItem.name)}
