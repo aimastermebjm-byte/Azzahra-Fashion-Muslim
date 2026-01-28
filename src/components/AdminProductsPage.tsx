@@ -1319,22 +1319,25 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
             </div>
           </div>
         ) : (
-          <div className="bg-gradient-to-r from-[#FDF6E3] to-[#FEF9ED] rounded-xl shadow-sm p-4 border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] mb-4 shine-effect">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-r from-[#997B2C] to-[#D4AF37] rounded-full">
-                  <Clock className="w-6 h-6 text-white" />
+          // ⚠️ OWNER ONLY: Flash Sale Banner
+          user?.role === 'owner' && (
+            <div className="bg-gradient-to-r from-[#FDF6E3] to-[#FEF9ED] rounded-xl shadow-sm p-4 border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] mb-4 shine-effect">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-gradient-to-r from-[#997B2C] to-[#D4AF37] rounded-full">
+                    <Clock className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-[#997B2C] text-lg">Siap Mulai Flash Sale?</h3>
+                    <p className="text-sm text-[#B8860B]">
+                      Pilih produk di tabel bawah, lalu klik "Set Flash Sale" untuk memulai.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-[#997B2C] text-lg">Siap Mulai Flash Sale?</h3>
-                  <p className="text-sm text-[#B8860B]">
-                    Pilih produk di tabel bawah, lalu klik "Set Flash Sale" untuk memulai.
-                  </p>
-                </div>
+                {/* No button here, guided action via table selection */}
               </div>
-              {/* No button here, guided action via table selection */}
             </div>
-          </div>
+          )
         )}
 
         {/* Emergency Flash Sale Cleanup - Debug Mode */}
@@ -1398,16 +1401,18 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
               <span className="text-base font-extrabold text-slate-900 group-hover:text-[#D4AF37] transition-colors">Draft Upload</span>
             </button>
 
-            {/* Kelola Koleksi */}
-            <button
-              onClick={() => setShowCollectionManager(true)}
-              className="bg-white p-4 rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C] hover:shadow-[0_6px_0_0_#997B2C] active:shadow-[0_2px_0_0_#997B2C] active:translate-y-0.5 transition-all flex items-center justify-center gap-3 group"
-            >
-              <div className="w-10 h-10 rounded-full bg-[radial-gradient(ellipse_at_center,_#EDD686_0%,_#D4AF37_50%,_#997B2C_100%)] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                <span className="text-2xl">📁</span>
-              </div>
-              <span className="text-base font-extrabold text-slate-900 group-hover:text-[#D4AF37] transition-colors">Koleksi</span>
-            </button>
+            {/* Kelola Koleksi - OWNER ONLY */}
+            {user?.role === 'owner' && (
+              <button
+                onClick={() => setShowCollectionManager(true)}
+                className="bg-white p-4 rounded-xl border-2 border-[#D4AF37] shadow-[0_4px_0_0_#997B2C] hover:shadow-[0_6px_0_0_#997B2C] active:shadow-[0_2px_0_0_#997B2C] active:translate-y-0.5 transition-all flex items-center justify-center gap-3 group"
+              >
+                <div className="w-10 h-10 rounded-full bg-[radial-gradient(ellipse_at_center,_#EDD686_0%,_#D4AF37_50%,_#997B2C_100%)] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                  <span className="text-2xl">📁</span>
+                </div>
+                <span className="text-base font-extrabold text-slate-900 group-hover:text-[#D4AF37] transition-colors">Koleksi</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -2532,7 +2537,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                                                 }
                                               });
                                             }}
-                                            className="w-20 px-1 py-1 border border-gray-300 rounded text-center text-xs focus:ring-2 focus:ring-[#D4AF37]"
+                                            disabled={user?.role === 'admin'}
+                                            className={`w-20 px-1 py-1 border border-gray-300 rounded text-center text-xs focus:ring-2 focus:ring-[#D4AF37] ${user?.role === 'admin' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                           />
                                         </td>
                                       );
@@ -2583,7 +2589,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                                                 }
                                               });
                                             }}
-                                            className="w-20 px-1 py-1 border border-gray-300 rounded text-center text-xs focus:ring-2 focus:ring-[#D4AF37]"
+                                            disabled={user?.role === 'admin'}
+                                            className={`w-20 px-1 py-1 border border-gray-300 rounded text-center text-xs focus:ring-2 focus:ring-[#D4AF37] ${user?.role === 'admin' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                           />
                                         </td>
                                       );

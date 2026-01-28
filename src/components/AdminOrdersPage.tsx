@@ -1504,13 +1504,16 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                       <span>Tagih ({selectedOrderIds.length})</span>
                     </button>
 
-                    <button
-                      onClick={handleBulkDelete}
-                      className="flex-1 md:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-[#D4AF37] text-[#997B2C] rounded-lg shadow-[0_2px_0_0_#997B2C] active:shadow-none active:translate-y-1 transition-all font-medium text-sm"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Hapus</span>
-                    </button>
+                    {/* ⚠️ OWNER ONLY: Hapus Pesanan Bulk */}
+                    {user?.role === 'owner' && (
+                      <button
+                        onClick={handleBulkDelete}
+                        className="flex-1 md:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 bg-white border border-[#D4AF37] text-[#997B2C] rounded-lg shadow-[0_2px_0_0_#997B2C] active:shadow-none active:translate-y-1 transition-all font-medium text-sm"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Hapus</span>
+                      </button>
+                    )}
 
                     <button
                       onClick={handleBulkPrintLabel}
@@ -1650,13 +1653,16 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             </button>
                           )}
 
-                          <button
-                            onClick={() => handleDeleteOrder(order.id)}
-                            className="px-2.5 py-1.5 rounded-full bg-white border border-[#D4AF37] text-[#997B2C] text-xs font-semibold hover:bg-[#F9F5EB] hover:shadow-md transition-all flex items-center justify-center gap-1 whitespace-nowrap"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            Hapus
-                          </button>
+                          {/* ⚠️ OWNER ONLY: Hapus Pesanan Single */}
+                          {user?.role === 'owner' && (
+                            <button
+                              onClick={() => handleDeleteOrder(order.id)}
+                              className="px-2.5 py-1.5 rounded-full bg-white border border-[#D4AF37] text-[#997B2C] text-xs font-semibold hover:bg-[#F9F5EB] hover:shadow-md transition-all flex items-center justify-center gap-1 whitespace-nowrap"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Hapus
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
