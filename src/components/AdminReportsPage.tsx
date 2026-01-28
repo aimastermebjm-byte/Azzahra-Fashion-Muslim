@@ -78,8 +78,10 @@ const writeUsersCache = (users: any[]) => {
 const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => {
   const isOwner = user?.role === 'owner';
 
-  // Report type untuk tab navigation
-  const [reportType, setReportType] = useState<'summary' | 'sales' | 'products' | 'invoice' | 'inventory' | 'cashflow' | 'profitloss' | 'detail'>('summary');
+  // Report type untuk tab navigation - Admin default ke 'sales', Owner default ke 'summary'
+  const [reportType, setReportType] = useState<'summary' | 'sales' | 'products' | 'invoice' | 'inventory' | 'cashflow' | 'profitloss' | 'detail'>(
+    isOwner ? 'summary' : 'sales'
+  );
 
   // Date filtering
   const [dateFilter, setDateFilter] = useState<'hari_ini' | 'kemaren' | 'bulan_ini' | 'bulan_kemaren' | 'custom'>('bulan_ini');
