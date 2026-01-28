@@ -1547,16 +1547,15 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                 <div key={order.id} className="bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] p-4 hover:shadow-lg transition-shadow shine-effect">
                   <div className="flex items-start space-x-3">
                     {/*  NEW: Checkbox for bulk selection (Owner only) */}
-                    {user?.role === 'owner' && (
-                      <div className="pt-1">
-                        <input
-                          type="checkbox"
-                          checked={selectedOrderIds.includes(order.id)}
-                          onChange={() => toggleSelectOrder(order.id)}
-                          className="w-4 h-4 text-[#D4AF37] border-gray-300 rounded focus:ring-[#D4AF37]"
-                        />
-                      </div>
-                    )}
+                    {/* Checkbox untuk bulk actions (Tagih, Print Label) - Available for all roles */}
+                    <div className="pt-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedOrderIds.includes(order.id)}
+                        onChange={() => toggleSelectOrder(order.id)}
+                        className="w-4 h-4 text-[#D4AF37] border-gray-300 rounded focus:ring-[#D4AF37]"
+                      />
+                    </div>
 
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-3">
