@@ -1622,16 +1622,6 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                             </button>
                           )}
 
-                          {/* Verifikasi button - Only Owner can verify non-cash payments */}
-                          {(order.status === 'pending' || order.status === 'awaiting_verification') && user?.role === 'owner' && (
-                            <button
-                              onClick={() => handleVerifyPayment(order)}
-                              className="px-2.5 py-1.5 rounded-full bg-white border border-[#D4AF37] text-[#997B2C] text-xs font-semibold hover:bg-[#F9F5EB] hover:shadow-md transition-all flex items-center justify-center gap-1 whitespace-nowrap"
-                            >
-                              <CheckCircle className="w-3.5 h-3.5" />
-                              Verifikasi
-                            </button>
-                          )}
 
                           {!['canceled', 'delivered'].includes(order.status) && (
                             <button
