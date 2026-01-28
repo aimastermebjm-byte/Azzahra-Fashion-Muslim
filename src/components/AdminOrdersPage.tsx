@@ -1168,6 +1168,18 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   const handleAddPaymentConfirm = async (amount: number, method: 'cash' | 'transfer', notes: string) => {
     if (!paymentInputOrder) return;
 
+    // ✅ NEW: Permission Check - Admin can only add Cash payment
+    const userRole = user?.role || '';
+    if (userRole === 'admin' && method === 'transfer') {
+      showModernAlert(
+        'Akses Ditolak',
+        'Admin hanya bisa menambahkan pembayaran Kas. Untuk pembayaran Transfer, hubungi Owner (harus cek data rekening).',
+        'warning'
+      );
+      setPaymentInputLoading(false);
+      return;
+    }
+
     setPaymentInputLoading(true);
 
     try {
