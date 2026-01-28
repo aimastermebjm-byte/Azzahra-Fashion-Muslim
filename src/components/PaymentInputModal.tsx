@@ -8,6 +8,7 @@ interface PaymentInputModalProps {
     order: Order | null;
     onConfirm: (amount: number, method: 'cash' | 'transfer', notes: string) => void;
     isLoading?: boolean;
+    userRole?: 'admin' | 'owner' | string; // ✅ NEW: untuk hide Transfer jika Admin
 }
 
 const PaymentInputModal: React.FC<PaymentInputModalProps> = ({
@@ -15,7 +16,8 @@ const PaymentInputModal: React.FC<PaymentInputModalProps> = ({
     onClose,
     order,
     onConfirm,
-    isLoading = false
+    isLoading = false,
+    userRole = '' // ✅ NEW: default empty
 }) => {
     const [amount, setAmount] = useState<string>('');
     const [method, setMethod] = useState<'cash' | 'transfer'>('cash');
@@ -103,30 +105,39 @@ const PaymentInputModal: React.FC<PaymentInputModalProps> = ({
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                             Metode Pembayaran
                         </label>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className={`grid gap-3 ${userRole === 'admin' ? 'grid-cols-1' : 'grid-cols-2'}`}>
                             <button
                                 onClick={() => setMethod('cash')}
                                 className={`p-3 rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${method === 'cash'
-                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                                        : 'border-gray-200 hover:border-gray-300'
+                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                    : 'border-gray-200 hover:border-gray-300'
                                     }`}
                             >
                                 <Banknote className="w-5 h-5" />
                                 <span className="font-semibold">Cash</span>
                                 {method === 'cash' && <Check className="w-4 h-4" />}
                             </button>
-                            <button
-                                onClick={() => setMethod('transfer')}
-                                className={`p-3 rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${method === 'transfer'
+                            {/* ✅ Transfer button: ONLY show for Owner, hide for Admin */}
+                            {userRole !== 'admin' && (
+                                <button
+                                    onClick={() => setMethod('transfer')}
+                                    className={`p-3 rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${method === 'transfer'
                                         ? 'border-blue-500 bg-blue-50 text-blue-700'
                                         : 'border-gray-200 hover:border-gray-300'
-                                    }`}
-                            >
-                                <CreditCard className="w-5 h-5" />
-                                <span className="font-semibold">Transfer</span>
-                                {method === 'transfer' && <Check className="w-4 h-4" />}
-                            </button>
+                                        }`}
+                                >
+                                    <CreditCard className="w-5 h-5" />
+                                    <span className="font-semibold">Transfer</span>
+                                    {method === 'transfer' && <Check className="w-4 h-4" />}
+                                </button>
+                            )}
                         </div>
+                        {/* ✅ Info untuk Admin: mengapa hanya Cash */}
+                        {userRole === 'admin' && (
+                            <p className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
+                                💡 Admin hanya bisa input pembayaran Cash. Untuk Transfer, hubungi Owner.
+                            </p>
+                        )}
                     </div>
 
                     {/* Amount Input */}
@@ -198,8 +209,8 @@ const PaymentInputModal: React.FC<PaymentInputModalProps> = ({
                     {/* After Payment Preview */}
                     {isValidAmount && (
                         <div className={`p-3 rounded-xl border-2 ${inputAmount === remainingAmount
-                                ? 'bg-green-50 border-green-400'
-                                : 'bg-blue-50 border-blue-200'
+                            ? 'bg-green-50 border-green-400'
+                            : 'bg-blue-50 border-blue-200'
                             }`}>
                             <p className="text-sm">
                                 {inputAmount === remainingAmount ? (

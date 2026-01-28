@@ -2767,6 +2767,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         order={paymentInputOrder}
         onConfirm={handleAddPaymentConfirm}
         isLoading={paymentInputLoading}
+        userRole={user?.role || ''} // ✅ NEW: Pass userRole for permission-based UI
       />
 
     </div >

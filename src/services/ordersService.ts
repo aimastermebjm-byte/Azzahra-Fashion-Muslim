@@ -620,7 +620,7 @@ class OrdersService {
         totalPaid: newTotalPaid,
         remainingAmount: newRemainingAmount,
         status: newStatus,
-        updatedAt: new Date().toISOString()
+        updatedAt: Timestamp.now() // ✅ FIX: use Timestamp, not string
       };
 
       await updateDoc(orderRef, updateData);
