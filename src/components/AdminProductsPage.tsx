@@ -2602,6 +2602,54 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                           </div>
                         </div>
 
+                        {/* Stock Matrix - OWNER ONLY */}
+                        {user?.role === 'owner' && (
+                          <div className="mt-4 pt-4 border-t border-gray-200">
+                            <h4 className="text-xs font-bold text-blue-700 mb-2">Matrix Stok (Khusus Owner)</h4>
+                            <div className="bg-blue-50 rounded-lg p-3 overflow-x-auto border border-blue-100">
+                              <table className="w-full text-xs">
+                                <thead>
+                                  <tr className="border-b border-blue-200">
+                                    <th className="text-left py-2 px-1 font-medium text-blue-800">Size \ Varian</th>
+                                    {formData.variants.colors.map((color) => (
+                                      <th key={color} className="text-center py-2 px-1 font-medium text-blue-800">
+                                        {color}{formData.variantNames[color] ? ` (${formData.variantNames[color]})` : ''}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {formData.variants.sizes.map((size) => (
+                                    <tr key={size} className="border-b border-blue-100">
+                                      <td className="py-2 px-1 font-medium text-blue-800">{size}</td>
+                                      {formData.variants.colors.map((color) => {
+                                        // Safely access current stock
+                                        const currentStock = formData.variants.stock?.[size]?.[color] ?? 0;
+
+                                        return (
+                                          <td key={color} className="py-2 px-1 text-center">
+                                            <input
+                                              type="number"
+                                              min="0"
+                                              value={currentStock}
+                                              onChange={(e) => updateVariantStock(size, color, e.target.value)}
+                                              className="w-20 px-1 py-1 border border-blue-300 rounded text-center text-xs focus:ring-2 focus:ring-blue-500 text-blue-900 font-medium"
+                                            />
+                                          </td>
+                                        );
+                                      })}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                            <p className="text-xs text-blue-600 mt-2">
+                              💡 Stok total produk akan dihitung ulang secara otomatis berdasarkan matrix ini saat disimpan.
+                            </p>
+                          </div>
+                        )}
+
+
                         <p className="text-xs text-gray-500">
                           💡 Kosongkan jika harga sama untuk semua varian. Harga yang diisi akan mengganti harga global.
                         </p>
