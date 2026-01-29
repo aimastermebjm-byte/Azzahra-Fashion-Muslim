@@ -316,10 +316,11 @@ class ReportsService {
     limit?: number;
   } = {}): Promise<ProductReport[]> {
     try {
-      // Get all transactions within date range
+      // Get all transactions within date range (excluding cancelled orders)
       const transactions = await this.getTransactions({
         startDate: filters.startDate,
         endDate: filters.endDate,
+        status: 'all', // ✅ FIX: Pass 'all' to trigger cancelled order filtering
         limit: filters.limit || 1000 // Default limit untuk data volume
       });
 
@@ -427,10 +428,11 @@ class ReportsService {
     limit?: number;
   } = {}): Promise<CustomerReport[]> {
     try {
-      // Get transactions with customer data
+      // Get transactions with customer data (excluding cancelled orders)
       const transactions = await this.getTransactions({
         startDate: filters.startDate,
         endDate: filters.endDate,
+        status: 'all', // ✅ FIX: Pass 'all' to trigger cancelled order filtering
         limit: filters.limit || 500
       });
 
@@ -732,6 +734,7 @@ class ReportsService {
       const transactions = await this.getTransactions({
         startDate: filters.startDate,
         endDate: filters.endDate,
+        status: 'all', // ✅ FIX: Pass 'all' to trigger cancelled order filtering
         limit: 1000 // Get all transactions for accurate pagination
       });
 
@@ -894,6 +897,7 @@ class ReportsService {
       const transactions = await this.getTransactions({
         startDate: filters.startDate,
         endDate: filters.endDate,
+        status: 'all', // ✅ FIX: Pass 'all' to trigger cancelled order filtering
         limit: 1000
       });
 
