@@ -199,28 +199,14 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     }
   };
 
-  // Load products report - with caching
+  // Load products report - CACHE DISABLED for debugging
   const loadProductsReport = async () => {
     const { start, end } = getDateRange;
     const cacheKey = `products-cache-${start}-${end}`;
 
-    // Check cache first
-    try {
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        const now = Date.now();
-        const CACHE_EXPIRY = 60 * 60 * 1000; // 1 hour
-
-        if (now - timestamp < CACHE_EXPIRY) {
-          console.log('✅ Products loaded from cache');
-          setProducts(data);
-          return;
-        }
-      }
-    } catch (err) {
-      console.error('Cache read error:', err);
-    }
+    // ⚠️ CACHE DISABLED - Always fetch fresh data from Firestore
+    // This ensures deleted orders are not shown in reports
+    console.log('📊 [loadProductsReport] Loading fresh data from Firestore...');
 
     setLoadingProducts(true);
     try {
