@@ -5,7 +5,7 @@ import {
   ArrowUpRight, ArrowDownRight,
   Search, ChevronDown, XCircle
 } from 'lucide-react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import ReportsService from '../services/reportsService';
 import { financialService, PaymentMethod } from '../services/financialService';
@@ -142,6 +142,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [customerInvoices, setCustomerInvoices] = useState<InvoiceReceivable[]>([]);
   const [loadingCustomerInvoices, setLoadingCustomerInvoices] = useState(false);
   const [showReceivablesModal, setShowReceivablesModal] = useState(false);
+  const [selectedOrderDetail, setSelectedOrderDetail] = useState<any>(null);
+  const [loadingOrderDetail, setLoadingOrderDetail] = useState(false);
 
   // Calculate date range based on filter
   const getDateRange = useMemo(() => {
@@ -415,6 +417,24 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       setCustomerInvoices([]);
     } finally {
       setLoadingCustomerInvoices(false);
+    }
+  };
+
+  // ✅ NEW: Load Order Detail (Level 3)
+  const loadOrderDetail = async (orderId: string) => {
+    setLoadingOrderDetail(true);
+    try {
+      const orderDoc = await getDoc(doc(db, 'orders', orderId));
+      if (orderDoc.exists()) {
+        setSelectedOrderDetail({ id: orderDoc.id, ...orderDoc.data() });
+      } else {
+        alert('Order tidak ditemukan');
+      }
+    } catch (error) {
+      console.error('Error loading order detail:', error);
+      alert('Gagal memuat detail order');
+    } finally {
+      setLoadingOrderDetail(false);
     }
   };
 
@@ -2066,11 +2086,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                       <tr
                         key={invoice.orderId}
                         className="hover:bg-yellow-50 cursor-pointer transition-colors"
-                        onClick={() => {
-                          // Copy orderId to clipboard for quick access
-                          navigator.clipboard.writeText(invoice.orderId);
-                          alert(`Order ID: ${invoice.orderId}\n\nID sudah di-copy ke clipboard.\nBuka halaman Admin Orders untuk melihat detail.`);
-                        }}
+                        onClick={() => loadOrderDetail(invoice.orderId)}
                       >
                         <td className="px-4 py-3 text-gray-600">{invoice.date}</td>
                         <td className="px-4 py-3 font-medium text-blue-600 underline">{invoice.invoice}</td>
@@ -2081,6 +2097,86 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                     ))}
                   </tbody>
                 </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Order Detail Modal (Level 3 - from Receivables) */}
+      {selectedOrderDetail && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg w-full max-w-lg max-h-[85vh] overflow-hidden">
+            <div className="p-4 border-b bg-gradient-to-r from-[#D4AF37] to-[#F4E4BC]">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-bold text-lg text-gray-900">
+                    Detail Pesanan
+                  </h3>
+                  <p className="text-sm text-gray-700">INV-{selectedOrderDetail.id}</p>
+                </div>
+                <button
+                  onClick={() => setSelectedOrderDetail(null)}
+                  className="text-gray-700 hover:text-gray-900"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            <div className="overflow-y-auto max-h-[70vh] p-4 space-y-4">
+              {loadingOrderDetail ? (
+                <div className="text-center text-gray-500 py-8">Loading...</div>
+              ) : (
+                <>
+                  {/* Customer Info */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs uppercase text-gray-500 font-bold mb-1">Pelanggan</p>
+                    <p className="font-medium">{selectedOrderDetail.userName}</p>
+                    <p className="text-sm text-gray-600">{selectedOrderDetail.shippingInfo?.phone}</p>
+                  </div>
+
+                  {/* Order Items */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs uppercase text-gray-500 font-bold mb-2">Produk</p>
+                    {selectedOrderDetail.items?.map((item: any, idx: number) => (
+                      <div key={idx} className="flex justify-between py-1 border-b last:border-0">
+                        <span className="text-sm">{item.name} x{item.quantity}</span>
+                        <span className="text-sm font-medium">{formatCurrency(item.price * item.quantity)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Payment Summary */}
+                  <div className="bg-red-50 rounded-lg p-3">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-gray-600">Total Pesanan</span>
+                      <span className="font-bold">{formatCurrency(selectedOrderDetail.finalTotal || selectedOrderDetail.totalAmount)}</span>
+                    </div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-gray-600">Sudah Dibayar</span>
+                      <span className="font-medium text-green-600">{formatCurrency(selectedOrderDetail.totalPaid || 0)}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t">
+                      <span className="font-bold text-red-600">Sisa Piutang</span>
+                      <span className="font-bold text-red-600">
+                        {formatCurrency((selectedOrderDetail.finalTotal || selectedOrderDetail.totalAmount) - (selectedOrderDetail.totalPaid || 0))}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Payment History */}
+                  {selectedOrderDetail.payments?.length > 0 && (
+                    <div className="bg-green-50 rounded-lg p-3">
+                      <p className="text-xs uppercase text-gray-500 font-bold mb-2">Riwayat Pembayaran</p>
+                      {selectedOrderDetail.payments.map((p: any, idx: number) => (
+                        <div key={idx} className="flex justify-between py-1 text-sm">
+                          <span>{p.date} ({p.method})</span>
+                          <span className="font-medium text-green-600">+{formatCurrency(p.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
