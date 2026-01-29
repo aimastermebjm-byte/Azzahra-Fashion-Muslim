@@ -2063,9 +2063,17 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {customerInvoices.map((invoice) => (
-                      <tr key={invoice.orderId} className="hover:bg-gray-50">
+                      <tr
+                        key={invoice.orderId}
+                        className="hover:bg-yellow-50 cursor-pointer transition-colors"
+                        onClick={() => {
+                          // Copy orderId to clipboard for quick access
+                          navigator.clipboard.writeText(invoice.orderId);
+                          alert(`Order ID: ${invoice.orderId}\n\nID sudah di-copy ke clipboard.\nBuka halaman Admin Orders untuk melihat detail.`);
+                        }}
+                      >
                         <td className="px-4 py-3 text-gray-600">{invoice.date}</td>
-                        <td className="px-4 py-3 font-medium text-blue-600">{invoice.invoice}</td>
+                        <td className="px-4 py-3 font-medium text-blue-600 underline">{invoice.invoice}</td>
                         <td className="px-4 py-3 text-right font-bold text-red-600">
                           {formatCurrency(invoice.receivable)}
                         </td>
