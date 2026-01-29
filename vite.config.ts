@@ -46,6 +46,7 @@ export default defineConfig({
         skipWaiting: true, // Force new SW to activate immediately
         clientsClaim: true, // Take control of all clients immediately
         cleanupOutdatedCaches: true, // Clean old caches
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3MB limit for large bundles
         navigateFallback: 'index.html', // Fallback for navigation requests
         navigateFallbackDenylist: [/^\/api/, /^\/clear-cache/], // Don't cache API and utility pages
         runtimeCaching: [
