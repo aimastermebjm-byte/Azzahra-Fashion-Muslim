@@ -1,4 +1,4 @@
-import { getFirestore, collection, query, where, orderBy, limit, getDocs, doc } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy, limit, getDocs, doc, getDocsFromServer } from 'firebase/firestore';
 
 // Initialize Firestore
 const db = getFirestore();
@@ -183,7 +183,8 @@ class ReportsService {
         q = query(q, limit(filters.limit));
       }
 
-      const snapshot = await getDocs(q);
+      // ✅ FIX: Use getDocsFromServer to bypass cache and get fresh data
+      const snapshot = await getDocsFromServer(q);
 
       // Build quick lookup map for product cost data from batch system
       const productBatchesSnapshot = await getDocs(query(collection(db, 'productBatches')));
