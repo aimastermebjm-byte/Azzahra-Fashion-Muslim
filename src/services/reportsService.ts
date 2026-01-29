@@ -169,11 +169,8 @@ class ReportsService {
       // Apply status filter
       if (filters.status && filters.status !== 'all') {
         constraints.push(where('status', '==', filters.status));
-      } else {
-        // ✅ FIX: Exclude cancelled orders from reports by default
-        // Cancelled/deleted orders should not appear in any reports
-        constraints.push(where('status', '!=', 'cancelled'));
       }
+      // Note: We'll filter out cancelled orders in JavaScript to avoid composite index requirement
 
       // Create query with all constraints - reading from orders collection
       let q = query(collection(db, 'orders'), ...constraints);
@@ -289,18 +286,23 @@ class ReportsService {
           updatedAt: updatedAtDate
         };
 
+
       }) as Transaction[];
+
+      // ✅ FIX: Filter out cancelled orders in JavaScript (to avoid composite index requirement)
+      // Cancelled/deleted orders should not appear in any reports
+      const nonCancelledTransactions = transactions.filter(t => t.status !== 'dibatalkan');
 
       if (filters.customerQuery) {
         const queryLower = filters.customerQuery.toLowerCase();
-        return transactions.filter(transaction => {
+        return nonCancelledTransactions.filter(transaction => {
           const customer = transaction.customer?.toLowerCase?.() || '';
           const phone = transaction.phone || '';
           return customer.includes(queryLower) || phone.includes(filters.customerQuery || '');
         });
       }
 
-      return transactions;
+      return nonCancelledTransactions;
     } catch (error) {
       console.error('Error getting transactions:', error);
       throw error;
