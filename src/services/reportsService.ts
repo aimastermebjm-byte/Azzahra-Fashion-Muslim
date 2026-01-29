@@ -165,9 +165,14 @@ class ReportsService {
         }
       }
 
+
       // Apply status filter
       if (filters.status && filters.status !== 'all') {
         constraints.push(where('status', '==', filters.status));
+      } else {
+        // ✅ FIX: Exclude cancelled orders from reports by default
+        // Cancelled/deleted orders should not appear in any reports
+        constraints.push(where('status', '!=', 'cancelled'));
       }
 
       // Create query with all constraints - reading from orders collection
