@@ -313,10 +313,31 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     if (formattedPhone.startsWith('0')) formattedPhone = '62' + formattedPhone.substring(1);
     if (!formattedPhone.startsWith('62')) formattedPhone = '62' + formattedPhone;
 
-    const message = `Halo Kak ${order.userName || 'Pelanggan'},\n\nBerikut tagihan untuk pesanan Kakak di Azzahra Fashion Muslim:\nNo. Pesanan: *#${order.id}*\nTotal Tagihan: *Rp ${order.finalTotal.toLocaleString('id-ID')}*\n\nMohon segera melakukan pembayaran ya Kak. Terima kasih`;
+    // ✅ FIX: Calculate remaining amount for partial payments
+    const totalPaid = order.totalPaid || 0;
+    const remainingAmount = order.finalTotal - totalPaid;
+    const hasPartialPayment = totalPaid > 0 && totalPaid < order.finalTotal;
+
+    // ✅ FIX: Dynamic message based on payment status
+    let message = `Halo Kak ${order.userName || 'Pelanggan'},\n\n`;
+    message += `Berikut tagihan untuk pesanan Kakak di Azzahra Fashion Muslim:\n`;
+    message += `No. Pesanan: *#${order.id}*\n`;
+
+    if (hasPartialPayment) {
+      // Partial payment - show breakdown
+      message += `Total Pesanan: *Rp ${order.finalTotal.toLocaleString('id-ID')}*\n`;
+      message += `Sudah Dibayar: *Rp ${totalPaid.toLocaleString('id-ID')}* ✅\n`;
+      message += `Sisa Tagihan: *Rp ${remainingAmount.toLocaleString('id-ID')}* ⚠️\n\n`;
+      message += `Mohon segera melunasi sisa pembayaran ya Kak. Terima kasih`;
+    } else {
+      // No payment yet - show full amount
+      message += `Total Tagihan: *Rp ${order.finalTotal.toLocaleString('id-ID')}*\n\n`;
+      message += `Mohon segera melakukan pembayaran ya Kak. Terima kasih`;
+    }
 
     window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
+
 
   //  NEW: Bulk WhatsApp Billing (Aggregated)
   const handleBulkWhatsAppBilling = () => {
@@ -1725,8 +1746,8 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                           }}
                           disabled={isAddressLocked}
                           className={`text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 ${isAddressLocked
-                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                              : 'bg-[#D4AF37]/10 text-[#997B2C] hover:bg-[#D4AF37]/20'
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'bg-[#D4AF37]/10 text-[#997B2C] hover:bg-[#D4AF37]/20'
                             }`}
                           title={isAddressLocked ? 'Alamat tidak bisa diubah setelah pesanan dibayar' : 'Edit alamat pengiriman'}
                         >

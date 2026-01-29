@@ -89,7 +89,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [endDate, setEndDate] = useState<string>('');
 
   // Additional filters for sales report
-  const [statusFilter, setStatusFilter] = useState<'all' | 'lunas' | 'belum_lunas'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'lunas' | 'belum_lunas' | 'dibatalkan'>('all');
   const [customerFilter, setCustomerFilter] = useState<string>('');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<'all' | string>('all');
   const [categoryFilter, setCategoryFilter] = useState<'all' | string>('all');
@@ -964,6 +964,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   <option value="all">Semua Status</option>
                   <option value="lunas">Lunas</option>
                   <option value="belum_lunas">Belum Lunas</option>
+                  <option value="dibatalkan">Dibatalkan</option>
                 </select>
               </div>
             )}

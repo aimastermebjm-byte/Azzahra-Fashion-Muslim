@@ -45,13 +45,14 @@ export interface Transaction {
   shippingCost: number;
   total: number;
   totalModal?: number; // total modal for all items
-  status: 'lunas' | 'belum_lunas';
+  status: 'lunas' | 'belum_lunas' | 'dibatalkan'; // ✅ Added 'dibatalkan' for cancelled orders
   paymentMethod?: string;
   paymentMethodId?: string | null;
   paymentMethodName?: string | null;
   createdAt: Date;
   updatedAt?: Date;
 }
+
 
 export interface ProductReport {
   id: string;
@@ -142,7 +143,7 @@ class ReportsService {
   static async getTransactions(filters: {
     startDate?: string;
     endDate?: string;
-    status?: 'all' | 'lunas' | 'belum_lunas';
+    status?: 'all' | 'lunas' | 'belum_lunas' | 'dibatalkan';
     customerQuery?: string;
     limit?: number;
   } = {}): Promise<Transaction[]> {
@@ -248,6 +249,7 @@ class ReportsService {
         // Calculate total modal
         const totalModal = itemsWithCost.reduce((sum: number, item: any) => sum + (item.modalTotal || 0), 0);
 
+
         // Map orders collection fields to Transaction interface
         return {
           id: doc.id,
@@ -260,13 +262,28 @@ class ReportsService {
           shippingCost: orderData.shippingCost || 0,
           total: orderData.finalTotal || (orderData.totalAmount || 0) + (orderData.shippingCost || 0),
           totalModal,
-          status: orderData.status === 'paid' ? 'lunas' : 'belum_lunas', // Map order status to transaction status
+          // ✅ FIX: Map ALL order statuses to transaction status
+          status: (() => {
+            switch (orderData.status) {
+              case 'paid':
+              case 'processing':
+              case 'shipped':
+              case 'delivered':
+                return 'lunas';
+              case 'cancelled':
+                return 'dibatalkan';
+              default:
+                // pending, awaiting_verification, etc.
+                return 'belum_lunas';
+            }
+          })(),
           paymentMethod: orderData.paymentMethodName || orderData.paymentMethod || '',
           paymentMethodId: orderData.paymentMethodId || null,
           paymentMethodName: orderData.paymentMethodName || orderData.paymentMethod || null,
           createdAt: createdAtDate,
           updatedAt: updatedAtDate
         };
+
       }) as Transaction[];
 
       if (filters.customerQuery) {
