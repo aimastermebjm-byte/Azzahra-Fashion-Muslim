@@ -186,10 +186,6 @@ class ReportsService {
       // ✅ FIX: Use getDocsFromServer to bypass cache and get fresh data
       const snapshot = await getDocsFromServer(q);
 
-      // 🔍 DEBUG: Log Firestore query result
-      console.log('📊 [getTransactions] Firestore orders count:', snapshot.docs.length);
-      console.log('📊 [getTransactions] Orders from Firestore:', snapshot.docs.map(d => ({ id: d.id, status: d.data().status })));
-
       // Build quick lookup map for product cost data from batch system
       const productBatchesSnapshot = await getDocs(query(collection(db, 'productBatches')));
       const productMap = new Map<string, any>();
@@ -328,10 +324,6 @@ class ReportsService {
         status: 'all', // ✅ FIX: Pass 'all' to trigger cancelled order filtering
         limit: filters.limit || 1000 // Default limit untuk data volume
       });
-
-      // 🔍 DEBUG: Log transactions count to trace data flow
-      console.log('📊 [getProductsReport] Transactions count:', transactions.length);
-      console.log('📊 [getProductsReport] Transactions:', transactions.map(t => ({ id: t.id, customer: t.customer, status: t.status })));
 
       // Process products from transactions (prefer productId when available)
       const aggregatedProducts = new Map<string, ProductReport>();
