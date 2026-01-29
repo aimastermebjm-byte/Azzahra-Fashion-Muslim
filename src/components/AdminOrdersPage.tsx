@@ -1611,17 +1611,6 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                               </button>
                             )}
 
-                          {/* ✨ POS Cash Payment Button (Admin & Owner can verify cash payments) */}
-                          {order.status === 'pending' && (user?.role === 'owner' || user?.role === 'admin') && (
-                            <button
-                              onClick={() => handlePOSPaymentOpen(order)}
-                              className="px-2.5 py-1.5 rounded-full bg-emerald-500 border border-emerald-600 text-white text-xs font-semibold hover:bg-emerald-600 transition-all flex items-center justify-center gap-1 whitespace-nowrap shadow-sm"
-                            >
-                              <span className="font-bold text-[10px]">Rp</span>
-                              Cash
-                            </button>
-                          )}
-
                           <button
                             onClick={() => handleViewOrder(order)}
                             className="px-2.5 py-1.5 rounded-full bg-gradient-to-r from-[#F9F5EB] to-[#FEF9E7] border border-[#D4AF37]/30 text-[#997B2C] text-xs font-semibold hover:border-[#D4AF37] hover:shadow-md transition-all flex items-center justify-center gap-1 whitespace-nowrap"
@@ -1723,17 +1712,29 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         </span>
                       )}
                     </h3>
-                    {/*  NEW: Edit button for admin/owner */}
-                    <button
-                      onClick={() => {
-                        setShowDetailModal(false);
-                        setShippingEditOrder(selectedOrder);
-                      }}
-                      className="text-xs px-3 py-1 bg-[#D4AF37]/10 text-[#997B2C] rounded-lg hover:bg-[#D4AF37]/20 transition flex items-center gap-1"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                      Edit Alamat
-                    </button>
+                    {/*  Edit Alamat button - DISABLED for paid/completed orders */}
+                    {(() => {
+                      const isAddressLocked = ['paid', 'processing', 'shipped', 'delivered'].includes(selectedOrder.status);
+                      return (
+                        <button
+                          onClick={() => {
+                            if (!isAddressLocked) {
+                              setShowDetailModal(false);
+                              setShippingEditOrder(selectedOrder);
+                            }
+                          }}
+                          disabled={isAddressLocked}
+                          className={`text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 ${isAddressLocked
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-[#D4AF37]/10 text-[#997B2C] hover:bg-[#D4AF37]/20'
+                            }`}
+                          title={isAddressLocked ? 'Alamat tidak bisa diubah setelah pesanan dibayar' : 'Edit alamat pengiriman'}
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          Edit Alamat
+                        </button>
+                      );
+                    })()}
                   </div>
                   <div className="space-y-2 text-sm">
                     <div>
