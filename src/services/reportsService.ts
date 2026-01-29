@@ -186,6 +186,10 @@ class ReportsService {
       // ✅ FIX: Use getDocsFromServer to bypass cache and get fresh data
       const snapshot = await getDocsFromServer(q);
 
+      // 🔍 DEBUG: Log raw Firestore query result
+      console.log('📊 [getTransactions] Firestore raw orders count:', snapshot.docs.length);
+      console.log('📊 [getTransactions] Raw order statuses:', snapshot.docs.map(d => ({ id: d.id, status: d.data().status })));
+
       // Build quick lookup map for product cost data from batch system
       const productBatchesSnapshot = await getDocs(query(collection(db, 'productBatches')));
       const productMap = new Map<string, any>();
@@ -287,12 +291,17 @@ class ReportsService {
           updatedAt: updatedAtDate
         };
 
-
       }) as Transaction[];
+
+      // 🔍 DEBUG: Log all transactions before and after filter
+      console.log('📊 [getTransactions] Total transactions BEFORE filter:', transactions.length);
+      console.log('📊 [getTransactions] Transaction statuses:', transactions.map(t => ({ id: t.id, status: t.status })));
 
       // ✅ FIX: Filter out cancelled orders in JavaScript (to avoid composite index requirement)
       // Cancelled/deleted orders should not appear in any reports
       const nonCancelledTransactions = transactions.filter(t => t.status !== 'dibatalkan');
+
+      console.log('📊 [getTransactions] Total transactions AFTER filter:', nonCancelledTransactions.length);
 
       if (filters.customerQuery) {
         const queryLower = filters.customerQuery.toLowerCase();
