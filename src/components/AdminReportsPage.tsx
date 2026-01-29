@@ -16,7 +16,9 @@ import {
   InventoryReport,
   CashFlowReport,
   ProductBuyerReport,
-  ProductBuyerSummary
+  ProductBuyerSummary,
+  CustomerReceivable,
+  InvoiceReceivable
 } from '../services/reportsService';
 import StockHistoryModal from './StockHistoryModal';
 import {
@@ -79,7 +81,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const isOwner = user?.role === 'owner';
 
   // Report type untuk tab navigation - Admin default ke 'sales', Owner default ke 'summary'
-  const [reportType, setReportType] = useState<'summary' | 'sales' | 'products' | 'invoice' | 'inventory' | 'cashflow' | 'profitloss' | 'detail'>(
+  const [reportType, setReportType] = useState<'summary' | 'sales' | 'products' | 'invoice' | 'inventory' | 'cashflow' | 'profitloss' | 'detail' | 'receivables'>(
     isOwner ? 'summary' : 'sales'
   );
 
@@ -132,6 +134,14 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   // Stock History Modal State
   const [showStockHistoryModal, setShowStockHistoryModal] = useState(false);
   const [selectedStockProduct, setSelectedStockProduct] = useState<any>(null);
+
+  // ✅ NEW: Receivables Report State
+  const [receivables, setReceivables] = useState<CustomerReceivable[]>([]);
+  const [loadingReceivables, setLoadingReceivables] = useState(false);
+  const [selectedCustomerReceivables, setSelectedCustomerReceivables] = useState<CustomerReceivable | null>(null);
+  const [customerInvoices, setCustomerInvoices] = useState<InvoiceReceivable[]>([]);
+  const [loadingCustomerInvoices, setLoadingCustomerInvoices] = useState(false);
+  const [showReceivablesModal, setShowReceivablesModal] = useState(false);
 
   // Calculate date range based on filter
   const getDateRange = useMemo(() => {
@@ -370,6 +380,44 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
     }
   };
 
+  // ✅ NEW: Load Receivables Report
+  const loadReceivablesReport = async () => {
+    setLoadingReceivables(true);
+    try {
+      const { start, end } = getDateRange;
+      const data = await ReportsService.getReceivablesReport({
+        startDate: start,
+        endDate: end
+      });
+      setReceivables(data);
+    } catch (error) {
+      console.error('Error loading receivables report:', error);
+      setReceivables([]);
+    } finally {
+      setLoadingReceivables(false);
+    }
+  };
+
+  // ✅ NEW: Load Customer Invoices (Level 2)
+  const loadCustomerInvoices = async (customer: CustomerReceivable) => {
+    setSelectedCustomerReceivables(customer);
+    setShowReceivablesModal(true);
+    setLoadingCustomerInvoices(true);
+    try {
+      const { start, end } = getDateRange;
+      const invoices = await ReportsService.getCustomerReceivables(customer.userId, {
+        startDate: start,
+        endDate: end
+      });
+      setCustomerInvoices(invoices);
+    } catch (error) {
+      console.error('Error loading customer invoices:', error);
+      setCustomerInvoices([]);
+    } finally {
+      setLoadingCustomerInvoices(false);
+    }
+  };
+
   // Load summary statistics
   const loadSummaryStats = async () => {
     try {
@@ -419,6 +467,10 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           // Lazy load - only when tab is clicked
           await loadCashFlowReport();
           await loadSummaryStats();
+          break;
+        case 'receivables':
+          // Lazy load - only when tab is clicked
+          await loadReceivablesReport();
           break;
         case 'summary':
           // Fix: Load transactions immediately for summary stats
@@ -859,6 +911,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
         return { title: 'Laporan Arus Kas', subtitle: 'Track pemasukan dan pengeluaran bisnis' };
       case 'profitloss':
         return { title: 'Laporan Rugi Laba', subtitle: 'Analisa profit dan loss bisnis' };
+      case 'receivables':
+        return { title: 'Laporan Piutang Pelanggan', subtitle: 'Daftar piutang per pelanggan' };
       case 'detail':
         return { title: 'Laporan Detail', subtitle: 'Informasi lengkap semua transaksi' };
       default:
@@ -896,6 +950,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 <option value="inventory">Laporan Persediaan</option>
                 {isOwner && <option value="cashflow">Laporan Arus Kas</option>}
                 {isOwner && <option value="profitloss">Laporan Rugi Laba</option>}
+                {isOwner && <option value="receivables">Laporan Piutang Pelanggan</option>}
                 <option value="detail">Laporan Detail</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#997B2C] pointer-events-none" />
@@ -1918,6 +1973,111 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           )}
         </div>
       </div>
+
+      {/* ✅ NEW: Receivables Tab */}
+      {reportType === 'receivables' && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="p-4 border-b">
+            <h3 className="font-bold text-lg">Daftar Piutang Pelanggan</h3>
+            <p className="text-sm text-gray-500">Klik pelanggan untuk melihat detail invoice</p>
+          </div>
+          {loadingReceivables ? (
+            <div className="p-8 text-center text-gray-500">Loading...</div>
+          ) : receivables.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">Tidak ada piutang</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gradient-to-r from-[#D4AF37] to-[#F4E4BC] text-gray-900">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-bold">Pelanggan</th>
+                    <th className="px-4 py-3 text-center font-bold">Invoice</th>
+                    <th className="px-4 py-3 text-right font-bold">Piutang</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {receivables.map((customer) => (
+                    <tr
+                      key={customer.userId}
+                      onClick={() => loadCustomerInvoices(customer)}
+                      className="hover:bg-yellow-50 cursor-pointer transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-gray-900">{customer.customerName}</div>
+                        {customer.customerPhone && (
+                          <div className="text-xs text-gray-500">{customer.customerPhone}</div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          {customer.invoiceCount} invoice
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-red-600">
+                        {formatCurrency(customer.totalReceivable)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Receivables Invoice Modal (Level 2) */}
+      {showReceivablesModal && selectedCustomerReceivables && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-2xl max-h-[80vh] overflow-hidden">
+            <div className="p-4 border-b bg-gradient-to-r from-[#D4AF37] to-[#F4E4BC]">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-bold text-lg text-gray-900">
+                    Piutang: {selectedCustomerReceivables.customerName}
+                  </h3>
+                  <p className="text-sm text-gray-700">
+                    Total: {formatCurrency(selectedCustomerReceivables.totalReceivable)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowReceivablesModal(false)}
+                  className="text-gray-700 hover:text-gray-900"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            <div className="overflow-y-auto max-h-[60vh]">
+              {loadingCustomerInvoices ? (
+                <div className="p-8 text-center text-gray-500">Loading...</div>
+              ) : customerInvoices.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">Tidak ada invoice</div>
+              ) : (
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-bold">Tanggal</th>
+                      <th className="px-4 py-3 text-left font-bold">Invoice</th>
+                      <th className="px-4 py-3 text-right font-bold">Piutang</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {customerInvoices.map((invoice) => (
+                      <tr key={invoice.orderId} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-gray-600">{invoice.date}</td>
+                        <td className="px-4 py-3 font-medium text-blue-600">{invoice.invoice}</td>
+                        <td className="px-4 py-3 text-right font-bold text-red-600">
+                          {formatCurrency(invoice.receivable)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Product Buyers Modal */}
       {showBuyersModal && selectedProduct && (

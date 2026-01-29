@@ -137,6 +137,24 @@ export interface CashFlowReport {
   createdAt: Date;
 }
 
+// ✅ NEW: Receivables Report Interfaces
+export interface CustomerReceivable {
+  userId: string;
+  customerName: string;
+  customerPhone?: string;
+  invoiceCount: number;    // Jumlah invoice yang belum lunas
+  totalReceivable: number; // Total piutang
+}
+
+export interface InvoiceReceivable {
+  orderId: string;
+  invoice: string;
+  date: string;
+  totalAmount: number;     // Total pesanan
+  totalPaid: number;       // Total sudah dibayar
+  receivable: number;      // Sisa piutang
+}
+
 class ReportsService {
 
   // Get transactions dengan filter
@@ -613,40 +631,114 @@ class ReportsService {
         return false;
       };
 
-      // Get transactions for cash flow
-      const transactions = await this.getTransactions({
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-        limit: filters.limit || 500
-      });
+      // ✅ NEW: Get orders directly to access payments array
+      // Cash flow is now PAYMENT-BASED, not ORDER-BASED
+      const ordersConstraints = [];
+      if (filters.startDate) {
+        const startMillis = new Date(`${filters.startDate}T00:00:00`).getTime();
+        ordersConstraints.push(where('timestamp', '>=', startMillis));
+      }
+      if (filters.endDate) {
+        const endMillis = new Date(`${filters.endDate}T23:59:59`).getTime();
+        ordersConstraints.push(where('timestamp', '<=', endMillis));
+      }
 
-      // Process cash flow data
+      const ordersQuery = query(
+        collection(db, 'orders'),
+        ...ordersConstraints,
+        orderBy('timestamp', 'desc'),
+        limit(filters.limit || 500)
+      );
+      const ordersSnapshot = await getDocsFromServer(ordersQuery);
+
+      // Process cash flow data - now based on PAYMENTS, not orders
       const cashFlowData: CashFlowReport[] = [];
 
-      transactions.forEach(transaction => {
-        const resolvedPayment = resolvePaymentMethod(transaction.paymentMethodId || transaction.paymentMethodName || transaction.paymentMethod);
-        const paymentMethodId = resolvedPayment?.id;
-        const paymentMethodName = resolvedPayment?.name || transaction.paymentMethodName || transaction.paymentMethod || null;
+      ordersSnapshot.docs.forEach(docSnap => {
+        const orderData = docSnap.data();
+        const orderId = docSnap.id;
+        const invoiceNumber = `INV-${orderId}`;
+        const customerName = orderData.userName || 'Unknown';
 
-        if (!matchesPaymentFilter(paymentMethodId, paymentMethodName)) {
+        // Skip cancelled orders
+        if (orderData.status === 'cancelled') {
           return;
         }
 
-        // Income from sales (total including shipping cost paid by customer)
-        cashFlowData.push({
-          id: `${transaction.id}_income`,
-          date: transaction.date,
-          description: `Penjualan ${transaction.invoice}`,
-          type: 'income',
-          amount: transaction.total,
-          category: 'penjualan',
-          paymentMethodId,
-          paymentMethodName: paymentMethodName || undefined,
-          source: 'sale',
-          includeInPnL: true,
-          createdAt: new Date(transaction.createdAt)
-        });
+        // Check if order has payments array (partial payment system)
+        const payments = orderData.payments as Array<{
+          id: string;
+          amount: number;
+          method: 'cash' | 'transfer';
+          date: string;
+          notes?: string;
+        }> | undefined;
 
+        if (payments && payments.length > 0) {
+          // ✅ NEW: Create cash flow entry for EACH payment
+          payments.forEach((payment, index) => {
+            // Map payment method to financial payment method
+            const paymentMethodName = payment.method === 'cash' ? 'Kas' : 'Transfer';
+
+            // Find matching financial payment method ID
+            let paymentMethodId: string | undefined;
+            paymentMethodByName.forEach((value, key) => {
+              if (key.includes(payment.method)) {
+                paymentMethodId = value.id;
+              }
+            });
+
+            // Check payment method filter
+            if (!matchesPaymentFilter(paymentMethodId, paymentMethodName)) {
+              return;
+            }
+
+            const paymentDate = payment.date ? new Date(payment.date) : new Date(orderData.timestamp);
+
+            cashFlowData.push({
+              id: `${orderId}_payment_${payment.id || index}`,
+              date: paymentDate.toISOString().split('T')[0],
+              description: `Pembayaran ${invoiceNumber} - ${customerName}`,
+              type: 'income',
+              amount: payment.amount,
+              category: 'penjualan',
+              paymentMethodId,
+              paymentMethodName,
+              source: 'sale',
+              includeInPnL: true,
+              createdAt: paymentDate
+            });
+          });
+        } else if (orderData.status === 'paid' || orderData.status === 'processing' ||
+          orderData.status === 'shipped' || orderData.status === 'delivered') {
+          // ✅ Fallback: For orders without payments array but are already paid (legacy orders)
+          // Treat as single full payment
+          const resolvedPayment = resolvePaymentMethod(orderData.paymentMethodId || orderData.paymentMethodName || orderData.paymentMethod);
+          const paymentMethodId = resolvedPayment?.id;
+          const paymentMethodName = resolvedPayment?.name || orderData.paymentMethodName || orderData.paymentMethod || null;
+
+          if (!matchesPaymentFilter(paymentMethodId, paymentMethodName)) {
+            return;
+          }
+
+          const orderTotal = orderData.finalTotal || orderData.totalAmount || 0;
+          const orderDate = new Date(orderData.timestamp);
+
+          cashFlowData.push({
+            id: `${orderId}_income`,
+            date: orderDate.toISOString().split('T')[0],
+            description: `Penjualan ${invoiceNumber} - ${customerName}`,
+            type: 'income',
+            amount: orderTotal,
+            category: 'penjualan',
+            paymentMethodId,
+            paymentMethodName: paymentMethodName || undefined,
+            source: 'sale',
+            includeInPnL: true,
+            createdAt: orderDate
+          });
+        }
+        // Orders with no payments and not paid status → NOT added to cash flow
       });
 
       // Append financial entries (owner-entered income/expense flagged for P&L)
@@ -977,6 +1069,100 @@ class ReportsService {
       };
     } catch (error) {
       console.error('Error getting product buyers summary:', error);
+      throw error;
+    }
+  }
+
+  // ✅ NEW: Get Receivables Report - Level 1 (Per Customer)
+  static async getReceivablesReport(filters: {
+    startDate?: string;
+    endDate?: string;
+  } = {}): Promise<CustomerReceivable[]> {
+    try {
+      const constraints: any[] = [];
+      if (filters.startDate) {
+        constraints.push(where('timestamp', '>=', new Date(`${filters.startDate}T00:00:00`).getTime()));
+      }
+      if (filters.endDate) {
+        constraints.push(where('timestamp', '<=', new Date(`${filters.endDate}T23:59:59`).getTime()));
+      }
+
+      const q = query(collection(db, 'orders'), ...constraints, orderBy('timestamp', 'desc'), limit(1000));
+      const snapshot = await getDocsFromServer(q);
+      const customerMap = new Map<string, CustomerReceivable>();
+
+      snapshot.docs.forEach(docSnap => {
+        const orderData = docSnap.data();
+        if (orderData.status === 'cancelled') return;
+
+        const finalTotal = orderData.finalTotal || orderData.totalAmount || 0;
+        const totalPaid = orderData.totalPaid || 0;
+        const receivable = finalTotal - totalPaid;
+        if (receivable <= 0) return;
+
+        const userId = orderData.userId || 'unknown';
+        if (customerMap.has(userId)) {
+          const existing = customerMap.get(userId)!;
+          existing.invoiceCount += 1;
+          existing.totalReceivable += receivable;
+        } else {
+          customerMap.set(userId, {
+            userId,
+            customerName: orderData.userName || 'Unknown',
+            customerPhone: orderData.shippingInfo?.phone || '',
+            invoiceCount: 1,
+            totalReceivable: receivable
+          });
+        }
+      });
+
+      return Array.from(customerMap.values()).sort((a, b) => b.totalReceivable - a.totalReceivable);
+    } catch (error) {
+      console.error('Error getting receivables report:', error);
+      throw error;
+    }
+  }
+
+  // ✅ NEW: Get Customer Receivables - Level 2 (Per Invoice)
+  static async getCustomerReceivables(userId: string, filters: {
+    startDate?: string;
+    endDate?: string;
+  } = {}): Promise<InvoiceReceivable[]> {
+    try {
+      const constraints: any[] = [where('userId', '==', userId)];
+      if (filters.startDate) {
+        constraints.push(where('timestamp', '>=', new Date(`${filters.startDate}T00:00:00`).getTime()));
+      }
+      if (filters.endDate) {
+        constraints.push(where('timestamp', '<=', new Date(`${filters.endDate}T23:59:59`).getTime()));
+      }
+
+      const q = query(collection(db, 'orders'), ...constraints, orderBy('timestamp', 'desc'), limit(100));
+      const snapshot = await getDocsFromServer(q);
+      const invoices: InvoiceReceivable[] = [];
+
+      snapshot.docs.forEach(docSnap => {
+        const orderData = docSnap.data();
+        if (orderData.status === 'cancelled') return;
+
+        const finalTotal = orderData.finalTotal || orderData.totalAmount || 0;
+        const totalPaid = orderData.totalPaid || 0;
+        const receivable = finalTotal - totalPaid;
+        if (receivable <= 0) return;
+
+        invoices.push({
+          orderId: docSnap.id,
+          invoice: `INV-${docSnap.id}`,
+          date: new Date(orderData.timestamp).toISOString().split('T')[0],
+          totalAmount: finalTotal,
+          totalPaid,
+          receivable
+        });
+      });
+
+      return invoices;
+    } catch (error) {
+      console.error('Error getting customer receivables:', error);
       throw error;
     }
   }
