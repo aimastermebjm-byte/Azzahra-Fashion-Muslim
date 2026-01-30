@@ -4,6 +4,12 @@ import { MapPin, Loader2 } from 'lucide-react';
 // ✅ Static data for instant dropdown (no API call needed)
 import provincesData from '../data/provinces.json';
 import citiesData from '../data/cities.json';
+// ✅ Kalimantan Selatan & Tengah - instant kecamatan & desa
+import districtsKalimantanData from '../data/districts_kalimantan.json';
+import subdistrictsKalimantanData from '../data/subdistricts_kalimantan.json';
+
+// Kalimantan province IDs for instant loading
+const KALIMANTAN_PROVINCE_IDS = ['3', '4']; // Kalsel, Kalteng
 
 // Types for address data
 interface Province {
@@ -23,15 +29,21 @@ interface District {
   district_id: string;
   district_name: string;
   city_id: string;
-  province: string;
+  city_name?: string;
+  province?: string;
+  province_id?: string;
 }
 
 interface Subdistrict {
   subdistrict_id: string;
   subdistrict_name: string;
   district_id: string;
-  city: string;
-  province: string;
+  district_name?: string;
+  city_id?: string;
+  city_name?: string;
+  city?: string;
+  province?: string;
+  province_id?: string;
 }
 
 const ADDRESS_CACHE_PREFIX = 'addressFormCache';
@@ -298,18 +310,34 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
     return filteredCities;
   };
 
+  // ✅ OPTIMIZED: Load districts - instant for Kalimantan, API for others
   const loadDistricts = async (cityIdOverride?: string) => {
     const cityId = cityIdOverride || formData.cityId;
     if (!cityId) return [];
 
     const cacheKey = `districts_${cityId}`;
 
+    // Check in-memory cache first
     if (addressCache.has(cacheKey)) {
       const cached = addressCache.get(cacheKey) as District[];
       setDistricts(cached);
       return cached;
     }
 
+    // ✅ Check if this city is in Kalimantan (use static data - INSTANT!)
+    const isKalimantan = KALIMANTAN_PROVINCE_IDS.includes(formData.provinceId);
+    if (isKalimantan) {
+      const staticDistricts = (districtsKalimantanData as District[]).filter(
+        d => d.city_id === cityId
+      );
+      if (staticDistricts.length > 0) {
+        setDistricts(staticDistricts);
+        setAddressCache(prev => new Map(prev).set(cacheKey, staticDistricts));
+        return staticDistricts;
+      }
+    }
+
+    // Check localStorage cache
     const persistedData = readPersistentCache<District[]>(cacheKey);
     if (persistedData) {
       setDistricts(persistedData);
@@ -317,6 +345,7 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
       return persistedData;
     }
 
+    // Fallback to API for non-Kalimantan provinces
     setLoadingDistricts(true);
     try {
       const response = await fetch(`/api/address-cached?type=districts&cityId=${cityId}`);
@@ -338,19 +367,34 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
 
     return [];
   };
-
+  // ✅ OPTIMIZED: Load subdistricts - instant for Kalimantan, API for others
   const loadSubdistricts = async (districtIdOverride?: string) => {
     const districtId = districtIdOverride || formData.districtId;
     if (!districtId) return [];
 
     const cacheKey = `subdistricts_${districtId}`;
 
+    // Check in-memory cache first
     if (addressCache.has(cacheKey)) {
       const cached = addressCache.get(cacheKey) as Subdistrict[];
       setSubdistricts(cached);
       return cached;
     }
 
+    // ✅ Check if this is Kalimantan (use static data - INSTANT!)
+    const isKalimantan = KALIMANTAN_PROVINCE_IDS.includes(formData.provinceId);
+    if (isKalimantan) {
+      const staticSubdistricts = (subdistrictsKalimantanData as Subdistrict[]).filter(
+        s => s.district_id === districtId
+      );
+      if (staticSubdistricts.length > 0) {
+        setSubdistricts(staticSubdistricts);
+        setAddressCache(prev => new Map(prev).set(cacheKey, staticSubdistricts));
+        return staticSubdistricts;
+      }
+    }
+
+    // Check localStorage cache
     const persistedData = readPersistentCache<Subdistrict[]>(cacheKey);
     if (persistedData) {
       setSubdistricts(persistedData);
@@ -358,6 +402,7 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
       return persistedData;
     }
 
+    // Fallback to API for non-Kalimantan provinces
     setLoadingSubdistricts(true);
     try {
       const response = await fetch(`/api/address-cached?type=subdistricts&districtId=${districtId}`);

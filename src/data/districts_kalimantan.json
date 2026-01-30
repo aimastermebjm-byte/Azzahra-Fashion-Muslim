@@ -1,0 +1,2025 @@
+[
+  {
+    "district_id": "235",
+    "district_name": "BANJARMASIN",
+    "city_id": "29",
+    "city_name": "BANJARMASIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "236",
+    "district_name": "BANJARMASIN BARAT",
+    "city_id": "29",
+    "city_name": "BANJARMASIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "237",
+    "district_name": "BANJARMASIN SELATAN",
+    "city_id": "29",
+    "city_name": "BANJARMASIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "238",
+    "district_name": "BANJARMASIN TENGAH",
+    "city_id": "29",
+    "city_name": "BANJARMASIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "239",
+    "district_name": "BANJARMASIN TIMUR",
+    "city_id": "29",
+    "city_name": "BANJARMASIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "240",
+    "district_name": "BANJARMASIN UTARA",
+    "city_id": "29",
+    "city_name": "BANJARMASIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "241",
+    "district_name": "BARABAI",
+    "city_id": "30",
+    "city_name": "HULU SUNGAI TENGAH",
+    "province_id": "3"
+  },
+  {
+    "district_id": "242",
+    "district_name": "BATANG ALAI SELATAN",
+    "city_id": "30",
+    "city_name": "HULU SUNGAI TENGAH",
+    "province_id": "3"
+  },
+  {
+    "district_id": "243",
+    "district_name": "BATU BENAWA",
+    "city_id": "30",
+    "city_name": "HULU SUNGAI TENGAH",
+    "province_id": "3"
+  },
+  {
+    "district_id": "244",
+    "district_name": "BATANG ALAI UTARA",
+    "city_id": "30",
+    "city_name": "HULU SUNGAI TENGAH",
+    "province_id": "3"
+  },
+  {
+    "district_id": "245",
+    "district_name": "HARUYAN",
+    "city_id": "30",
+    "city_name": "HULU SUNGAI TENGAH",
+    "province_id": "3"
+  },
+  {
+    "district_id": "246",
+    "district_name": "LABUAN AMAS SELATAN",
+    "city_id": "30",
+    "city_name": "HULU SUNGAI TENGAH",
+    "province_id": "3"
+  },
+  {
+    "district_id": "247",
+    "district_name": "LABUAN AMAS UTARA",
+    "city_id": "30",
+    "city_name": "HULU SUNGAI TENGAH",
+    "province_id": "3"
+  },
+  {
+    "district_id": "248",
+    "district_name": "PANDAWAN",
+    "city_id": "30",
+    "city_name": "HULU SUNGAI TENGAH",
+    "province_id": "3"
+  },
+  {
+    "district_id": "249",
+    "district_name": "HANTAKAN",
+    "city_id": "30",
+    "city_name": "HULU SUNGAI TENGAH",
+    "province_id": "3"
+  },
+  {
+    "district_id": "250",
+    "district_name": "LIMPASU",
+    "city_id": "30",
+    "city_name": "HULU SUNGAI TENGAH",
+    "province_id": "3"
+  },
+  {
+    "district_id": "251",
+    "district_name": "BATANG ALAI TIMUR",
+    "city_id": "30",
+    "city_name": "HULU SUNGAI TENGAH",
+    "province_id": "3"
+  },
+  {
+    "district_id": "252",
+    "district_name": "KANDANGAN",
+    "city_id": "32",
+    "city_name": "HULU SUNGAI SELATAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "253",
+    "district_name": "ANGKINANG",
+    "city_id": "32",
+    "city_name": "HULU SUNGAI SELATAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "254",
+    "district_name": "DAHA SELATAN",
+    "city_id": "32",
+    "city_name": "HULU SUNGAI SELATAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "255",
+    "district_name": "DAHA UTARA",
+    "city_id": "32",
+    "city_name": "HULU SUNGAI SELATAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "256",
+    "district_name": "KALUMPANG (KELUMPANG)",
+    "city_id": "32",
+    "city_name": "HULU SUNGAI SELATAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "257",
+    "district_name": "LOKSADO",
+    "city_id": "32",
+    "city_name": "HULU SUNGAI SELATAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "258",
+    "district_name": "PADANG BATUNG",
+    "city_id": "32",
+    "city_name": "HULU SUNGAI SELATAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "259",
+    "district_name": "SIMPUR",
+    "city_id": "32",
+    "city_name": "HULU SUNGAI SELATAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "260",
+    "district_name": "SUNGAI RAYA",
+    "city_id": "32",
+    "city_name": "HULU SUNGAI SELATAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "261",
+    "district_name": "TELAGA LANGSAT",
+    "city_id": "32",
+    "city_name": "HULU SUNGAI SELATAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "262",
+    "district_name": "DAHA BARAT",
+    "city_id": "32",
+    "city_name": "HULU SUNGAI SELATAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "263",
+    "district_name": "HAMPANG",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "264",
+    "district_name": "KELUMPANG UTARA",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "265",
+    "district_name": "KELUMPANG TENGAH",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "266",
+    "district_name": "KELUMPANG HULU",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "267",
+    "district_name": "KELUMPANG SELATAN",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "268",
+    "district_name": "PAMUKAN UTARA",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "269",
+    "district_name": "PAMUKAN SELATAN",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "270",
+    "district_name": "PULAU LAUT SELATAN",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "271",
+    "district_name": "PULAU LAUT BARAT",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "272",
+    "district_name": "PULAU LAUT TIMUR",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "273",
+    "district_name": "PULAU SEMBILAN",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "274",
+    "district_name": "PULAU SEBUKU",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "275",
+    "district_name": "SAMPANAHAN",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "276",
+    "district_name": "SUNGAI DURIAN",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "277",
+    "district_name": "PULAU LAUT UTARA",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "278",
+    "district_name": "PULAU LAUT TENGAH",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "279",
+    "district_name": "PULAU LAUT KEPULAUAN",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "280",
+    "district_name": "PAMUKAN BARAT",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "281",
+    "district_name": "KELUMPANG HILIR",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "282",
+    "district_name": "KELUMPANG BARAT",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "283",
+    "district_name": "PULAU LAUT TANJUNG SELAYAR",
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "284",
+    "district_name": "TANJUNG",
+    "city_id": "35",
+    "city_name": "TABALONG",
+    "province_id": "3"
+  },
+  {
+    "district_id": "285",
+    "district_name": "BANUA LAWAS",
+    "city_id": "35",
+    "city_name": "TABALONG",
+    "province_id": "3"
+  },
+  {
+    "district_id": "286",
+    "district_name": "HARUAI",
+    "city_id": "35",
+    "city_name": "TABALONG",
+    "province_id": "3"
+  },
+  {
+    "district_id": "287",
+    "district_name": "JARO",
+    "city_id": "35",
+    "city_name": "TABALONG",
+    "province_id": "3"
+  },
+  {
+    "district_id": "288",
+    "district_name": "KELUA (KLUA)",
+    "city_id": "35",
+    "city_name": "TABALONG",
+    "province_id": "3"
+  },
+  {
+    "district_id": "289",
+    "district_name": "MUARA HARUS",
+    "city_id": "35",
+    "city_name": "TABALONG",
+    "province_id": "3"
+  },
+  {
+    "district_id": "290",
+    "district_name": "MUARA UYA",
+    "city_id": "35",
+    "city_name": "TABALONG",
+    "province_id": "3"
+  },
+  {
+    "district_id": "291",
+    "district_name": "MURUNG PUDAK",
+    "city_id": "35",
+    "city_name": "TABALONG",
+    "province_id": "3"
+  },
+  {
+    "district_id": "292",
+    "district_name": "PUGAAN",
+    "city_id": "35",
+    "city_name": "TABALONG",
+    "province_id": "3"
+  },
+  {
+    "district_id": "293",
+    "district_name": "TANTA",
+    "city_id": "35",
+    "city_name": "TABALONG",
+    "province_id": "3"
+  },
+  {
+    "district_id": "294",
+    "district_name": "UPAU",
+    "city_id": "35",
+    "city_name": "TABALONG",
+    "province_id": "3"
+  },
+  {
+    "district_id": "295",
+    "district_name": "BINTANG ARA",
+    "city_id": "35",
+    "city_name": "TABALONG",
+    "province_id": "3"
+  },
+  {
+    "district_id": "296",
+    "district_name": "CEMPAKA",
+    "city_id": "36",
+    "city_name": "BANJARBARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "297",
+    "district_name": "LANDASAN ULIN",
+    "city_id": "36",
+    "city_name": "BANJARBARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "298",
+    "district_name": "LIANG ANGGANG",
+    "city_id": "36",
+    "city_name": "BANJARBARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "299",
+    "district_name": "BANJAR BARU UTARA",
+    "city_id": "36",
+    "city_name": "BANJARBARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "300",
+    "district_name": "BANJAR BARU SELATAN",
+    "city_id": "36",
+    "city_name": "BANJARBARU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "301",
+    "district_name": "AMUNTAI UTARA",
+    "city_id": "38",
+    "city_name": "HULU SUNGAI UTARA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "302",
+    "district_name": "AMUNTAI SELATAN",
+    "city_id": "38",
+    "city_name": "HULU SUNGAI UTARA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "303",
+    "district_name": "BABIRIK",
+    "city_id": "38",
+    "city_name": "HULU SUNGAI UTARA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "304",
+    "district_name": "DANAU PANGGANG",
+    "city_id": "38",
+    "city_name": "HULU SUNGAI UTARA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "305",
+    "district_name": "SUNGAI PANDAN",
+    "city_id": "38",
+    "city_name": "HULU SUNGAI UTARA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "306",
+    "district_name": "AMUNTAI TENGAH",
+    "city_id": "38",
+    "city_name": "HULU SUNGAI UTARA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "307",
+    "district_name": "BANJANG",
+    "city_id": "38",
+    "city_name": "HULU SUNGAI UTARA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "308",
+    "district_name": "SUNGAI TABUKAN",
+    "city_id": "38",
+    "city_name": "HULU SUNGAI UTARA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "309",
+    "district_name": "PAMINGGIR",
+    "city_id": "38",
+    "city_name": "HULU SUNGAI UTARA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "310",
+    "district_name": "HAUR GADING",
+    "city_id": "38",
+    "city_name": "HULU SUNGAI UTARA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "311",
+    "district_name": "MARABAHAN",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "312",
+    "district_name": "ALALAK",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "313",
+    "district_name": "ANJIR PASAR",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "314",
+    "district_name": "ANJIR MUARA",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "315",
+    "district_name": "BARAMBAI",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "316",
+    "district_name": "BELAWANG",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "317",
+    "district_name": "CERBON",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "318",
+    "district_name": "KURIPAN",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "319",
+    "district_name": "MANDASTANA",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "320",
+    "district_name": "MEKAR SARI",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "321",
+    "district_name": "RANTAU BADAUH",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "322",
+    "district_name": "TABUNGANEN",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "323",
+    "district_name": "TABUKAN",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "324",
+    "district_name": "TAMBAN",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "325",
+    "district_name": "BAKUMPAI",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "326",
+    "district_name": "WANARAYA",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "327",
+    "district_name": "JEJANGKIT",
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3"
+  },
+  {
+    "district_id": "328",
+    "district_name": "MARTAPURA KOTA",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "329",
+    "district_name": "ALUH-ALUH",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "330",
+    "district_name": "ASTAMBUL",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "331",
+    "district_name": "GAMBUT",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "332",
+    "district_name": "KARANG INTAN",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "333",
+    "district_name": "KERTAK HANYAR",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "334",
+    "district_name": "PENGARON",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "335",
+    "district_name": "SEI/SUNGAI TABUK",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "336",
+    "district_name": "SEI/SUNGAI PINANG",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "337",
+    "district_name": "ARANIO",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "338",
+    "district_name": "MATARAMAN",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "339",
+    "district_name": "TELAGA BAUNTUNG",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "340",
+    "district_name": "TATAH MAKMUR",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "341",
+    "district_name": "SAMBUNG MAKMUR",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "342",
+    "district_name": "PERAMASAN",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "343",
+    "district_name": "MARTAPURA TIMUR",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "344",
+    "district_name": "MARTAPURA BARAT",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "345",
+    "district_name": "BERUNTUNG BARU",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "346",
+    "district_name": "SIMPANG EMPAT",
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3"
+  },
+  {
+    "district_id": "347",
+    "district_name": "PELAIHARI",
+    "city_id": "42",
+    "city_name": "TANAH LAUT",
+    "province_id": "3"
+  },
+  {
+    "district_id": "348",
+    "district_name": "BATI-BATI",
+    "city_id": "42",
+    "city_name": "TANAH LAUT",
+    "province_id": "3"
+  },
+  {
+    "district_id": "349",
+    "district_name": "JORONG",
+    "city_id": "42",
+    "city_name": "TANAH LAUT",
+    "province_id": "3"
+  },
+  {
+    "district_id": "350",
+    "district_name": "KINTAP",
+    "city_id": "42",
+    "city_name": "TANAH LAUT",
+    "province_id": "3"
+  },
+  {
+    "district_id": "351",
+    "district_name": "KURAU",
+    "city_id": "42",
+    "city_name": "TANAH LAUT",
+    "province_id": "3"
+  },
+  {
+    "district_id": "352",
+    "district_name": "PANYIPATAN",
+    "city_id": "42",
+    "city_name": "TANAH LAUT",
+    "province_id": "3"
+  },
+  {
+    "district_id": "353",
+    "district_name": "TAKISUNG",
+    "city_id": "42",
+    "city_name": "TANAH LAUT",
+    "province_id": "3"
+  },
+  {
+    "district_id": "354",
+    "district_name": "BATU AMPAR",
+    "city_id": "42",
+    "city_name": "TANAH LAUT",
+    "province_id": "3"
+  },
+  {
+    "district_id": "355",
+    "district_name": "TAMBANG ULANG",
+    "city_id": "42",
+    "city_name": "TANAH LAUT",
+    "province_id": "3"
+  },
+  {
+    "district_id": "356",
+    "district_name": "BAJUIN",
+    "city_id": "42",
+    "city_name": "TANAH LAUT",
+    "province_id": "3"
+  },
+  {
+    "district_id": "357",
+    "district_name": "BUMI MAKMUR",
+    "city_id": "42",
+    "city_name": "TANAH LAUT",
+    "province_id": "3"
+  },
+  {
+    "district_id": "358",
+    "district_name": "BAKARANGAN",
+    "city_id": "44",
+    "city_name": "TAPIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "359",
+    "district_name": "BINUANG",
+    "city_id": "44",
+    "city_name": "TAPIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "360",
+    "district_name": "BUNGUR",
+    "city_id": "44",
+    "city_name": "TAPIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "361",
+    "district_name": "CANDI LARAS UTARA",
+    "city_id": "44",
+    "city_name": "TAPIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "362",
+    "district_name": "CANDI LARAS SELATAN",
+    "city_id": "44",
+    "city_name": "TAPIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "363",
+    "district_name": "HATUNGUN",
+    "city_id": "44",
+    "city_name": "TAPIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "364",
+    "district_name": "LOKPAIKAT",
+    "city_id": "44",
+    "city_name": "TAPIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "365",
+    "district_name": "PIANI",
+    "city_id": "44",
+    "city_name": "TAPIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "366",
+    "district_name": "SALAM BABARIS",
+    "city_id": "44",
+    "city_name": "TAPIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "367",
+    "district_name": "TAPIN TENGAH",
+    "city_id": "44",
+    "city_name": "TAPIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "368",
+    "district_name": "TAPIN SELATAN",
+    "city_id": "44",
+    "city_name": "TAPIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "369",
+    "district_name": "TAPIN UTARA",
+    "city_id": "44",
+    "city_name": "TAPIN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "405",
+    "district_name": "PARINGIN",
+    "city_id": "53",
+    "city_name": "BALANGAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "406",
+    "district_name": "AWAYAN",
+    "city_id": "53",
+    "city_name": "BALANGAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "407",
+    "district_name": "BATU MANDI",
+    "city_id": "53",
+    "city_name": "BALANGAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "408",
+    "district_name": "HALONG",
+    "city_id": "53",
+    "city_name": "BALANGAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "409",
+    "district_name": "JUAI",
+    "city_id": "53",
+    "city_name": "BALANGAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "410",
+    "district_name": "LAMPIHONG",
+    "city_id": "53",
+    "city_name": "BALANGAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "411",
+    "district_name": "PARINGIN SELATAN",
+    "city_id": "53",
+    "city_name": "BALANGAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "412",
+    "district_name": "TEBING TINGGI",
+    "city_id": "53",
+    "city_name": "BALANGAN",
+    "province_id": "3"
+  },
+  {
+    "district_id": "413",
+    "district_name": "BATULICIN",
+    "city_id": "54",
+    "city_name": "TANAH BUMBU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "414",
+    "district_name": "KUSAN HILIR",
+    "city_id": "54",
+    "city_name": "TANAH BUMBU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "415",
+    "district_name": "KUSAN HULU",
+    "city_id": "54",
+    "city_name": "TANAH BUMBU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "416",
+    "district_name": "SATUI",
+    "city_id": "54",
+    "city_name": "TANAH BUMBU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "417",
+    "district_name": "SUNGAI LOBAN",
+    "city_id": "54",
+    "city_name": "TANAH BUMBU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "418",
+    "district_name": "MANTEWE",
+    "city_id": "54",
+    "city_name": "TANAH BUMBU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "419",
+    "district_name": "KURANJI",
+    "city_id": "54",
+    "city_name": "TANAH BUMBU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "420",
+    "district_name": "KARANG BINTANG",
+    "city_id": "54",
+    "city_name": "TANAH BUMBU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "421",
+    "district_name": "ANGSANA",
+    "city_id": "54",
+    "city_name": "TANAH BUMBU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "422",
+    "district_name": "SIMPANG EMPAT",
+    "city_id": "54",
+    "city_name": "TANAH BUMBU",
+    "province_id": "3"
+  },
+  {
+    "district_id": "370",
+    "district_name": "GUNUNG PUREI",
+    "city_id": "46",
+    "city_name": "BARITO UTARA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "371",
+    "district_name": "GUNUNG TIMANG",
+    "city_id": "46",
+    "city_name": "BARITO UTARA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "372",
+    "district_name": "LAHEI",
+    "city_id": "46",
+    "city_name": "BARITO UTARA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "373",
+    "district_name": "MONTALLAT (MONTALAT)",
+    "city_id": "46",
+    "city_name": "BARITO UTARA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "374",
+    "district_name": "TEWEH TIMUR",
+    "city_id": "46",
+    "city_name": "BARITO UTARA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "375",
+    "district_name": "TEWEH TENGAH",
+    "city_id": "46",
+    "city_name": "BARITO UTARA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "376",
+    "district_name": "LAHEI BARAT",
+    "city_id": "46",
+    "city_name": "BARITO UTARA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "377",
+    "district_name": "TEWEH SELATAN",
+    "city_id": "46",
+    "city_name": "BARITO UTARA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "378",
+    "district_name": "TEWEH BARU",
+    "city_id": "46",
+    "city_name": "BARITO UTARA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "379",
+    "district_name": "AWANG",
+    "city_id": "48",
+    "city_name": "BARITO TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "380",
+    "district_name": "BENUA LIMA",
+    "city_id": "48",
+    "city_name": "BARITO TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "381",
+    "district_name": "DUSUN TENGAH",
+    "city_id": "48",
+    "city_name": "BARITO TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "382",
+    "district_name": "PATANGKEP TUTUI",
+    "city_id": "48",
+    "city_name": "BARITO TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "383",
+    "district_name": "PEMATANG KARAU",
+    "city_id": "48",
+    "city_name": "BARITO TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "384",
+    "district_name": "DUSUN TIMUR",
+    "city_id": "48",
+    "city_name": "BARITO TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "385",
+    "district_name": "KARUSEN JANANG",
+    "city_id": "48",
+    "city_name": "BARITO TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "386",
+    "district_name": "PAJU EPAT",
+    "city_id": "48",
+    "city_name": "BARITO TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "387",
+    "district_name": "PAKU",
+    "city_id": "48",
+    "city_name": "BARITO TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "388",
+    "district_name": "RAREN BATUAH",
+    "city_id": "48",
+    "city_name": "BARITO TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "389",
+    "district_name": "LAUNG TUHUP",
+    "city_id": "50",
+    "city_name": "MURUNG RAYA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "390",
+    "district_name": "PERMATA INTAN",
+    "city_id": "50",
+    "city_name": "MURUNG RAYA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "391",
+    "district_name": "SUMBER BARITO",
+    "city_id": "50",
+    "city_name": "MURUNG RAYA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "392",
+    "district_name": "TANAH SIANG",
+    "city_id": "50",
+    "city_name": "MURUNG RAYA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "393",
+    "district_name": "MURUNG",
+    "city_id": "50",
+    "city_name": "MURUNG RAYA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "394",
+    "district_name": "BARITO TUHUP RAYA",
+    "city_id": "50",
+    "city_name": "MURUNG RAYA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "395",
+    "district_name": "SERIBU RIAM",
+    "city_id": "50",
+    "city_name": "MURUNG RAYA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "396",
+    "district_name": "SUNGAI BABUAT",
+    "city_id": "50",
+    "city_name": "MURUNG RAYA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "397",
+    "district_name": "TANAH SIANG SELATAN",
+    "city_id": "50",
+    "city_name": "MURUNG RAYA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "398",
+    "district_name": "UUT MURUNG",
+    "city_id": "50",
+    "city_name": "MURUNG RAYA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "399",
+    "district_name": "DUSUN HILIR",
+    "city_id": "52",
+    "city_name": "BARITO SELATAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "400",
+    "district_name": "DUSUN UTARA",
+    "city_id": "52",
+    "city_name": "BARITO SELATAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "401",
+    "district_name": "JENAMAS",
+    "city_id": "52",
+    "city_name": "BARITO SELATAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "402",
+    "district_name": "KARAU KUALA",
+    "city_id": "52",
+    "city_name": "BARITO SELATAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "403",
+    "district_name": "DUSUN SELATAN",
+    "city_id": "52",
+    "city_name": "BARITO SELATAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "404",
+    "district_name": "GUNUNG BINTANG AWAI",
+    "city_id": "52",
+    "city_name": "BARITO SELATAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4403",
+    "district_name": "BUKIT BATU",
+    "city_id": "456",
+    "city_name": "PALANGKA RAYA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4404",
+    "district_name": "JEKAN RAYA",
+    "city_id": "456",
+    "city_name": "PALANGKA RAYA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4405",
+    "district_name": "PAHANDUT",
+    "city_id": "456",
+    "city_name": "PALANGKA RAYA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4406",
+    "district_name": "RAKUMPIT",
+    "city_id": "456",
+    "city_name": "PALANGKA RAYA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4407",
+    "district_name": "SEBANGAU",
+    "city_id": "456",
+    "city_name": "PALANGKA RAYA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4408",
+    "district_name": "KAMIPANG",
+    "city_id": "458",
+    "city_name": "KATINGAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4409",
+    "district_name": "KATINGAN HULU",
+    "city_id": "458",
+    "city_name": "KATINGAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4410",
+    "district_name": "KATINGAN KUALA",
+    "city_id": "458",
+    "city_name": "KATINGAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4411",
+    "district_name": "KATINGAN TENGAH",
+    "city_id": "458",
+    "city_name": "KATINGAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4412",
+    "district_name": "MARIKIT",
+    "city_id": "458",
+    "city_name": "KATINGAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4413",
+    "district_name": "PULAU MALAN",
+    "city_id": "458",
+    "city_name": "KATINGAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4414",
+    "district_name": "SANAMAN MANTIKEI (SENAMANG MANTIKEI)",
+    "city_id": "458",
+    "city_name": "KATINGAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4415",
+    "district_name": "TASIK PAYAWAN",
+    "city_id": "458",
+    "city_name": "KATINGAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4416",
+    "district_name": "TEWANG SANGGALANG GARING (SANGALANG)",
+    "city_id": "458",
+    "city_name": "KATINGAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4417",
+    "district_name": "MENDAWAI",
+    "city_id": "458",
+    "city_name": "KATINGAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4418",
+    "district_name": "KATINGAN HILIR",
+    "city_id": "458",
+    "city_name": "KATINGAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4419",
+    "district_name": "BUKIT RAYA",
+    "city_id": "458",
+    "city_name": "KATINGAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4420",
+    "district_name": "PETAK MALAI",
+    "city_id": "458",
+    "city_name": "KATINGAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4421",
+    "district_name": "BASARANG",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4422",
+    "district_name": "KAPUAS BARAT",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4423",
+    "district_name": "KAPUAS MURUNG",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4424",
+    "district_name": "KAPUAS TENGAH",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4425",
+    "district_name": "KAPUAS TIMUR",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4426",
+    "district_name": "KAPUAS KUALA",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4427",
+    "district_name": "MANTANGAI",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4428",
+    "district_name": "PULAU PETAK",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4429",
+    "district_name": "TIMPAH",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4430",
+    "district_name": "KAPUAS HULU",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4431",
+    "district_name": "KAPUAS HILIR",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4432",
+    "district_name": "SELAT",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4433",
+    "district_name": "BATAGUH",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4434",
+    "district_name": "DADAHUP",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4435",
+    "district_name": "MANDAU TALAWANG",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4436",
+    "district_name": "PASAK TALAWANG",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4437",
+    "district_name": "TAMBAN CATUR",
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4438",
+    "district_name": "KAHAYAN HULU UTARA",
+    "city_id": "462",
+    "city_name": "GUNUNG MAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4439",
+    "district_name": "RUNGAN",
+    "city_id": "462",
+    "city_name": "GUNUNG MAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4440",
+    "district_name": "SEPANG (SEPANG SIMIN)",
+    "city_id": "462",
+    "city_name": "GUNUNG MAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4441",
+    "district_name": "TEWAH",
+    "city_id": "462",
+    "city_name": "GUNUNG MAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4442",
+    "district_name": "DAMANG BATU",
+    "city_id": "462",
+    "city_name": "GUNUNG MAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4443",
+    "district_name": "KURUN",
+    "city_id": "462",
+    "city_name": "GUNUNG MAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4444",
+    "district_name": "MANUHING",
+    "city_id": "462",
+    "city_name": "GUNUNG MAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4445",
+    "district_name": "MANUHING RAYA",
+    "city_id": "462",
+    "city_name": "GUNUNG MAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4446",
+    "district_name": "MIHING RAYA",
+    "city_id": "462",
+    "city_name": "GUNUNG MAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4447",
+    "district_name": "MIRI MANASA",
+    "city_id": "462",
+    "city_name": "GUNUNG MAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4448",
+    "district_name": "RUNGAN BARAT",
+    "city_id": "462",
+    "city_name": "GUNUNG MAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4449",
+    "district_name": "RUNGAN HULU",
+    "city_id": "462",
+    "city_name": "GUNUNG MAS",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4450",
+    "district_name": "DANAU SEMBULUH",
+    "city_id": "464",
+    "city_name": "SERUYAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4451",
+    "district_name": "HANAU",
+    "city_id": "464",
+    "city_name": "SERUYAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4452",
+    "district_name": "SERUYAN HULU",
+    "city_id": "464",
+    "city_name": "SERUYAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4453",
+    "district_name": "SERUYAN TENGAH",
+    "city_id": "464",
+    "city_name": "SERUYAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4454",
+    "district_name": "SERUYAN HILIR",
+    "city_id": "464",
+    "city_name": "SERUYAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4455",
+    "district_name": "BATU AMPAR",
+    "city_id": "464",
+    "city_name": "SERUYAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4456",
+    "district_name": "DANAU SELULUK",
+    "city_id": "464",
+    "city_name": "SERUYAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4457",
+    "district_name": "SERUYAN HILIR TIMUR",
+    "city_id": "464",
+    "city_name": "SERUYAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4458",
+    "district_name": "SERUYAN RAYA",
+    "city_id": "464",
+    "city_name": "SERUYAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4459",
+    "district_name": "SULING TAMBUN",
+    "city_id": "464",
+    "city_name": "SERUYAN",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4460",
+    "district_name": "ARUT UTARA",
+    "city_id": "466",
+    "city_name": "KOTAWARINGIN BARAT",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4461",
+    "district_name": "KOTAWARINGIN LAMA",
+    "city_id": "466",
+    "city_name": "KOTAWARINGIN BARAT",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4462",
+    "district_name": "KUMAI",
+    "city_id": "466",
+    "city_name": "KOTAWARINGIN BARAT",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4463",
+    "district_name": "ARUT SELATAN",
+    "city_id": "466",
+    "city_name": "KOTAWARINGIN BARAT",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4464",
+    "district_name": "PANGKALAN LADA",
+    "city_id": "466",
+    "city_name": "KOTAWARINGIN BARAT",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4465",
+    "district_name": "PANGKALAN BANTENG",
+    "city_id": "466",
+    "city_name": "KOTAWARINGIN BARAT",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4466",
+    "district_name": "CEMPAGA",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4467",
+    "district_name": "KOTA BESI",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4468",
+    "district_name": "MENTAYA HILIR SELATAN",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4469",
+    "district_name": "MENTAYA HULU",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4470",
+    "district_name": "MENTAYA HILIR UTARA",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4471",
+    "district_name": "PARENGGEAN",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4472",
+    "district_name": "PULAU HANAUT",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4473",
+    "district_name": "ANTANG KALANG",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4474",
+    "district_name": "BAAMANG",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4475",
+    "district_name": "MENTAWA BARU KETAPANG",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4476",
+    "district_name": "BUKIT SANTUEI",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4477",
+    "district_name": "CEMPAGA HULU",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4478",
+    "district_name": "SERANAU",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4479",
+    "district_name": "TELAGA ANTANG",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4480",
+    "district_name": "TELAWANG",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4481",
+    "district_name": "TELUK SAMPIT",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4482",
+    "district_name": "TUALAN HULU",
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4483",
+    "district_name": "BULIK",
+    "city_id": "470",
+    "city_name": "LAMANDAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4484",
+    "district_name": "DELANG",
+    "city_id": "470",
+    "city_name": "LAMANDAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4485",
+    "district_name": "LAMANDAU",
+    "city_id": "470",
+    "city_name": "LAMANDAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4486",
+    "district_name": "BATANG KAWA",
+    "city_id": "470",
+    "city_name": "LAMANDAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4487",
+    "district_name": "BELANTIKAN RAYA",
+    "city_id": "470",
+    "city_name": "LAMANDAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4488",
+    "district_name": "BULIK TIMUR",
+    "city_id": "470",
+    "city_name": "LAMANDAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4489",
+    "district_name": "MENTHOBI RAYA",
+    "city_id": "470",
+    "city_name": "LAMANDAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4490",
+    "district_name": "SEMATU JAYA",
+    "city_id": "470",
+    "city_name": "LAMANDAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4491",
+    "district_name": "BANAMA TINGANG",
+    "city_id": "471",
+    "city_name": "PULANG PISAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4492",
+    "district_name": "KAHAYAN HILIR",
+    "city_id": "471",
+    "city_name": "PULANG PISAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4493",
+    "district_name": "KAHAYAN TENGAH",
+    "city_id": "471",
+    "city_name": "PULANG PISAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4494",
+    "district_name": "KAHAYAN KUALA",
+    "city_id": "471",
+    "city_name": "PULANG PISAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4495",
+    "district_name": "PANDIH BATU",
+    "city_id": "471",
+    "city_name": "PULANG PISAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4496",
+    "district_name": "MALIKU",
+    "city_id": "471",
+    "city_name": "PULANG PISAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4497",
+    "district_name": "JABIREN RAYA",
+    "city_id": "471",
+    "city_name": "PULANG PISAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4498",
+    "district_name": "SEBANGAU KUALA",
+    "city_id": "471",
+    "city_name": "PULANG PISAU",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4499",
+    "district_name": "SUKAMARA",
+    "city_id": "472",
+    "city_name": "SUKAMARA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4500",
+    "district_name": "BALAI RIAM",
+    "city_id": "472",
+    "city_name": "SUKAMARA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4501",
+    "district_name": "JELAI",
+    "city_id": "472",
+    "city_name": "SUKAMARA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4502",
+    "district_name": "PANTAI LUNCI",
+    "city_id": "472",
+    "city_name": "SUKAMARA",
+    "province_id": "4"
+  },
+  {
+    "district_id": "4503",
+    "district_name": "PERMATA KECUBUNG",
+    "city_id": "472",
+    "city_name": "SUKAMARA",
+    "province_id": "4"
+  }
+]
