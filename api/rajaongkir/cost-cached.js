@@ -1,9 +1,9 @@
 // Komerce API Integration - Calculate Domestic Cost with Caching
 // Based on official Komerce documentation
 // Added Firestore caching for cost optimization
+// ✅ Now with multi-key fallback support
 
-const KOMERCE_API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
-const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
+const { fetchWithFallback, KOMERCE_BASE_URL } = require('../utils/rajaongkir-keys');
 
 // Firebase Admin SDK for caching
 // Note: For Vercel deployment, we'll use Firebase REST API instead of Admin SDK
@@ -43,10 +43,10 @@ async function getFirestoreDocument(collectionPath, documentId) {
     if (response.ok) {
       const data = await response.json();
       // Convert timestamp to Date object
-        const expiresAt = data.fields.expires_at?.timestampValue;
-        const cachedAt = data.fields.cached_at?.timestampValue;
+      const expiresAt = data.fields.expires_at?.timestampValue;
+      const cachedAt = data.fields.cached_at?.timestampValue;
 
-        return {
+      return {
         exists: true,
         data: {
           origin: data.fields.origin?.stringValue,
@@ -494,25 +494,24 @@ async function fetchCourierFromAPI(courierCode, origin, destination, weight, pri
       price
     });
 
-    const response = await fetch(`${KOMERCE_BASE_URL}/calculate/domestic-cost`, {
+    // ✅ Use fetchWithFallback for automatic key rotation
+    const result = await fetchWithFallback('/calculate/domestic-cost', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'key': KOMERCE_API_KEY
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: formData.toString()
     });
 
+    const { response, data, keyIndex } = result;
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Komerce API Error:', errorText);
+      console.error('❌ Komerce API Error (key #' + keyIndex + '):', response.status);
       return null;
     }
 
-    const data = await response.json();
-
-    if (data.meta?.status === 'success' && data.data && data.data.length > 0) {
-      console.log(`✅ API Success for ${courierCode}:`, {
+    if (data?.meta?.status === 'success' && data.data && data.data.length > 0) {
+      console.log(`✅ API Success for ${courierCode} (key #${keyIndex}):`, {
         results_count: data.data.length,
         sample_result: data.data[0]
       });

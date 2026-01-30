@@ -1,8 +1,8 @@
 // Komerce API Integration - Calculate Domestic Cost
 // Based on official Komerce documentation
+// ✅ Now with multi-key fallback support
 
-const KOMERCE_API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
-const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
+const { fetchWithFallback, KOMERCE_BASE_URL } = require('../utils/rajaongkir-keys');
 
 export default async function handler(req, res) {
   try {
@@ -41,7 +41,6 @@ export default async function handler(req, res) {
       });
     }
 
-    
     // Available couriers
     const availableCouriers = ['jne', 'jnt', 'pos', 'tiki', 'sicepat', 'wahana'];
 
@@ -49,7 +48,6 @@ export default async function handler(req, res) {
 
     if (getAllCouriers) {
       // Get costs for ALL couriers
-
       for (const courierCode of availableCouriers) {
         try {
           const formData = new URLSearchParams();
@@ -59,23 +57,22 @@ export default async function handler(req, res) {
           formData.append('courier', courierCode);
           formData.append('price', price);
 
-          const response = await fetch(`${KOMERCE_BASE_URL}/calculate/domestic-cost`, {
+          // ✅ Use fetchWithFallback for automatic key rotation
+          const result = await fetchWithFallback('/calculate/domestic-cost', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              'key': KOMERCE_API_KEY
+              'Content-Type': 'application/x-www-form-urlencoded'
             },
             body: formData.toString()
           });
 
-          if (response.ok) {
-            const data = await response.json();
-            if (data.meta?.status === 'success' && data.data && data.data.length > 0) {
-              results = results.concat(data.data);
-            }
+          const { data } = result;
+          if (data?.meta?.status === 'success' && data.data && data.data.length > 0) {
+            results = results.concat(data.data);
           }
         } catch (error) {
           // Continue to next courier
+          console.warn(`⚠️ Failed for ${courierCode}:`, error.message);
         }
       }
     } else {
@@ -86,28 +83,26 @@ export default async function handler(req, res) {
       formData.append('weight', weight.toString());
       formData.append('courier', courier);
 
-      // Try to get all services by not specifying price
       if (price && price !== 'all') {
         formData.append('price', price);
       }
 
-      
-      const response = await fetch(`${KOMERCE_BASE_URL}/calculate/domestic-cost`, {
+      // ✅ Use fetchWithFallback for automatic key rotation
+      const result = await fetchWithFallback('/calculate/domestic-cost', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'key': KOMERCE_API_KEY
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
         body: formData.toString()
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Komerce API Error:', errorText);
+      const { response, data, keyIndex } = result;
 
+      if (!response.ok) {
+        console.error(`❌ Komerce API Error (key #${keyIndex}):`, response.status);
         return res.status(response.status).json({
           meta: {
-            message: `API Error: ${errorText}`,
+            message: `API Error: ${response.status}`,
             code: response.status,
             status: 'error'
           },
@@ -115,15 +110,12 @@ export default async function handler(req, res) {
         });
       }
 
-      const data = await response.json();
-
       // Return Komerce response directly (already in correct format)
       return res.status(200).json(data);
     }
 
     // Return results for getAllCouriers mode
     if (getAllCouriers) {
-      
       // Sort by cost (lowest first)
       results.sort((a, b) => a.cost - b.cost);
 
@@ -136,7 +128,7 @@ export default async function handler(req, res) {
         data: results
       };
 
-            return res.status(200).json(allCouriersResponse);
+      return res.status(200).json(allCouriersResponse);
     }
 
   } catch (error) {

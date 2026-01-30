@@ -1,8 +1,8 @@
 // Unified Address API - Supports both RajaOngkir and Komerce with Caching
 // Single endpoint for all address operations with Firestore caching
+// ✅ Now with multi-key fallback support
 
-const KOMERCE_API_KEY = 'L3abavkD5358dc66be91f537G8MkpZHi';
-const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
+const { fetchWithFallback, KOMERCE_BASE_URL } = require('./utils/rajaongkir-keys');
 const FIREBASE_PROJECT_ID = 'azzahra-fashion-muslim-ab416';
 const FIREBASE_API_KEY = 'AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs';
 
@@ -96,12 +96,12 @@ export default async function handler(req, res) {
 
     console.log(`📍 Address API request: type=${type}, provinceId=${provinceId}, cityId=${cityId}, districtId=${districtId}`);
 
-    let apiUrl = '';
+    let endpoint = '';
     let expectedType = '';
 
     switch (type) {
       case 'provinces':
-        apiUrl = `${KOMERCE_BASE_URL}/destination/province`;
+        endpoint = `/destination/province`;
         expectedType = 'provinces';
         break;
 
@@ -113,7 +113,7 @@ export default async function handler(req, res) {
             data: null
           });
         }
-        apiUrl = `${KOMERCE_BASE_URL}/destination/city/${provinceId}`;
+        endpoint = `/destination/city/${provinceId}`;
         expectedType = 'cities';
         break;
 
@@ -125,7 +125,7 @@ export default async function handler(req, res) {
             data: null
           });
         }
-        apiUrl = `${KOMERCE_BASE_URL}/destination/district/${cityId}`;
+        endpoint = `/destination/district/${cityId}`;
         expectedType = 'districts';
         break;
 
@@ -137,7 +137,7 @@ export default async function handler(req, res) {
             data: null
           });
         }
-        apiUrl = `${KOMERCE_BASE_URL}/destination/sub-district/${districtId}`;
+        endpoint = `/destination/sub-district/${districtId}`;
         expectedType = 'subdistricts';
         break;
 
@@ -149,39 +149,36 @@ export default async function handler(req, res) {
         });
     }
 
-    console.log(`🌐 Fetching ${expectedType} from: ${apiUrl}`);
+    console.log(`🌐 Fetching ${expectedType} from endpoint: ${endpoint}`);
 
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'Key': KOMERCE_API_KEY
-      }
+    // ✅ Use fetchWithFallback for automatic key rotation
+    const result = await fetchWithFallback(endpoint, {
+      method: 'GET'
     });
 
-    console.log(`${expectedType} response status:`, response.status);
+    const { response, data: rawData, keyIndex } = result;
+    console.log(`${expectedType} response status (key #${keyIndex}):`, response.status);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Komerce ${expectedType} API error:`, errorText);
-      throw new Error(`Komerce API error: ${response.status} ${errorText}`);
+      console.error(`Komerce ${expectedType} API error (key #${keyIndex}):`, response.status);
+      throw new Error(`Komerce API error: ${response.status}`);
     }
 
-    const data = await response.json();
-    console.log(`Raw ${expectedType} response:`, JSON.stringify(data, null, 2));
+    console.log(`Raw ${expectedType} response:`, JSON.stringify(rawData, null, 2));
 
     // Handle different response structures
     let dataArray = [];
-    if (Array.isArray(data)) {
-      dataArray = data;
+    if (Array.isArray(rawData)) {
+      dataArray = rawData;
       console.log(`${expectedType} is direct array`);
-    } else if (data.data && Array.isArray(data.data)) {
-      dataArray = data.data;
+    } else if (rawData.data && Array.isArray(rawData.data)) {
+      dataArray = rawData.data;
       console.log(`${expectedType} found in data.data`);
-    } else if (data.rajaongkir && data.rajaongkir.results && Array.isArray(data.rajaongkir.results)) {
-      dataArray = data.rajaongkir.results;
+    } else if (rawData.rajaongkir && rawData.rajaongkir.results && Array.isArray(rawData.rajaongkir.results)) {
+      dataArray = rawData.rajaongkir.results;
       console.log(`${expectedType} found in rajaongkir.results`);
     } else {
-      console.log(`${expectedType} unknown structure, keys:`, Object.keys(data));
+      console.log(`${expectedType} unknown structure, keys:`, Object.keys(rawData));
     }
 
     console.log(`${expectedType} array length:`, dataArray.length);
