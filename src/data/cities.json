@@ -1,0 +1,2936 @@
+[
+  {
+    "city_id": "1",
+    "city_name": "MATARAM",
+    "province_id": "1",
+    "type": ""
+  },
+  {
+    "city_id": "2",
+    "city_name": "BIMA",
+    "province_id": "1",
+    "type": ""
+  },
+  {
+    "city_id": "3",
+    "city_name": "DOMPU",
+    "province_id": "1",
+    "type": ""
+  },
+  {
+    "city_id": "4",
+    "city_name": "LOMBOK TENGAH",
+    "province_id": "1",
+    "type": ""
+  },
+  {
+    "city_id": "5",
+    "city_name": "LOMBOK TIMUR",
+    "province_id": "1",
+    "type": ""
+  },
+  {
+    "city_id": "7",
+    "city_name": "SUMBAWA",
+    "province_id": "1",
+    "type": ""
+  },
+  {
+    "city_id": "8",
+    "city_name": "LOMBOK BARAT",
+    "province_id": "1",
+    "type": ""
+  },
+  {
+    "city_id": "9",
+    "city_name": "LOMBOK UTARA",
+    "province_id": "1",
+    "type": ""
+  },
+  {
+    "city_id": "10",
+    "city_name": "SUMBAWA BARAT",
+    "province_id": "1",
+    "type": ""
+  },
+  {
+    "city_id": "11",
+    "city_name": "AMBON",
+    "province_id": "2",
+    "type": ""
+  },
+  {
+    "city_id": "12",
+    "city_name": "MALUKU TENGAH",
+    "province_id": "2",
+    "type": ""
+  },
+  {
+    "city_id": "14",
+    "city_name": "MALUKU TENGGARA",
+    "province_id": "2",
+    "type": ""
+  },
+  {
+    "city_id": "15",
+    "city_name": "TUAL",
+    "province_id": "2",
+    "type": ""
+  },
+  {
+    "city_id": "16",
+    "city_name": "BURU",
+    "province_id": "2",
+    "type": ""
+  },
+  {
+    "city_id": "17",
+    "city_name": "BURU SELATAN",
+    "province_id": "2",
+    "type": ""
+  },
+  {
+    "city_id": "19",
+    "city_name": "KEPULAUAN ARU",
+    "province_id": "2",
+    "type": ""
+  },
+  {
+    "city_id": "21",
+    "city_name": "SERAM BAGIAN BARAT",
+    "province_id": "2",
+    "type": ""
+  },
+  {
+    "city_id": "23",
+    "city_name": "SERAM BAGIAN TIMUR",
+    "province_id": "2",
+    "type": ""
+  },
+  {
+    "city_id": "24",
+    "city_name": "MALUKU BARAT DAYA",
+    "province_id": "2",
+    "type": ""
+  },
+  {
+    "city_id": "25",
+    "city_name": "MALUKU TENGGARA BARAT",
+    "province_id": "2",
+    "type": ""
+  },
+  {
+    "city_id": "29",
+    "city_name": "BANJARMASIN",
+    "province_id": "3",
+    "type": ""
+  },
+  {
+    "city_id": "30",
+    "city_name": "HULU SUNGAI TENGAH",
+    "province_id": "3",
+    "type": ""
+  },
+  {
+    "city_id": "32",
+    "city_name": "HULU SUNGAI SELATAN",
+    "province_id": "3",
+    "type": ""
+  },
+  {
+    "city_id": "34",
+    "city_name": "KOTABARU",
+    "province_id": "3",
+    "type": ""
+  },
+  {
+    "city_id": "35",
+    "city_name": "TABALONG",
+    "province_id": "3",
+    "type": ""
+  },
+  {
+    "city_id": "36",
+    "city_name": "BANJARBARU",
+    "province_id": "3",
+    "type": ""
+  },
+  {
+    "city_id": "38",
+    "city_name": "HULU SUNGAI UTARA",
+    "province_id": "3",
+    "type": ""
+  },
+  {
+    "city_id": "39",
+    "city_name": "BARITO KUALA",
+    "province_id": "3",
+    "type": ""
+  },
+  {
+    "city_id": "40",
+    "city_name": "BANJAR",
+    "province_id": "3",
+    "type": ""
+  },
+  {
+    "city_id": "42",
+    "city_name": "TANAH LAUT",
+    "province_id": "3",
+    "type": ""
+  },
+  {
+    "city_id": "44",
+    "city_name": "TAPIN",
+    "province_id": "3",
+    "type": ""
+  },
+  {
+    "city_id": "53",
+    "city_name": "BALANGAN",
+    "province_id": "3",
+    "type": ""
+  },
+  {
+    "city_id": "54",
+    "city_name": "TANAH BUMBU",
+    "province_id": "3",
+    "type": ""
+  },
+  {
+    "city_id": "46",
+    "city_name": "BARITO UTARA",
+    "province_id": "4",
+    "type": ""
+  },
+  {
+    "city_id": "48",
+    "city_name": "BARITO TIMUR",
+    "province_id": "4",
+    "type": ""
+  },
+  {
+    "city_id": "50",
+    "city_name": "MURUNG RAYA",
+    "province_id": "4",
+    "type": ""
+  },
+  {
+    "city_id": "52",
+    "city_name": "BARITO SELATAN",
+    "province_id": "4",
+    "type": ""
+  },
+  {
+    "city_id": "456",
+    "city_name": "PALANGKA RAYA",
+    "province_id": "4",
+    "type": ""
+  },
+  {
+    "city_id": "458",
+    "city_name": "KATINGAN",
+    "province_id": "4",
+    "type": ""
+  },
+  {
+    "city_id": "460",
+    "city_name": "KAPUAS",
+    "province_id": "4",
+    "type": ""
+  },
+  {
+    "city_id": "462",
+    "city_name": "GUNUNG MAS",
+    "province_id": "4",
+    "type": ""
+  },
+  {
+    "city_id": "464",
+    "city_name": "SERUYAN",
+    "province_id": "4",
+    "type": ""
+  },
+  {
+    "city_id": "466",
+    "city_name": "KOTAWARINGIN BARAT",
+    "province_id": "4",
+    "type": ""
+  },
+  {
+    "city_id": "468",
+    "city_name": "KOTAWARINGIN TIMUR",
+    "province_id": "4",
+    "type": ""
+  },
+  {
+    "city_id": "470",
+    "city_name": "LAMANDAU",
+    "province_id": "4",
+    "type": ""
+  },
+  {
+    "city_id": "471",
+    "city_name": "PULANG PISAU",
+    "province_id": "4",
+    "type": ""
+  },
+  {
+    "city_id": "472",
+    "city_name": "SUKAMARA",
+    "province_id": "4",
+    "type": ""
+  },
+  {
+    "city_id": "55",
+    "city_name": "BANDUNG",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "56",
+    "city_name": "CIMAHI",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "57",
+    "city_name": "SUMEDANG",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "59",
+    "city_name": "GARUT",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "60",
+    "city_name": "BANDUNG BARAT",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "62",
+    "city_name": "CIANJUR",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "63",
+    "city_name": "BEKASI",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "77",
+    "city_name": "BOGOR",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "129",
+    "city_name": "CIREBON",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "131",
+    "city_name": "INDRAMAYU",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "132",
+    "city_name": "KUNINGAN",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "133",
+    "city_name": "MAJALENGKA",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "199",
+    "city_name": "DEPOK",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "329",
+    "city_name": "KARAWANG",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "532",
+    "city_name": "PURWAKARTA",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "533",
+    "city_name": "SUBANG",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "538",
+    "city_name": "SUKABUMI",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "632",
+    "city_name": "TASIKMALAYA",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "633",
+    "city_name": "BANJAR",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "634",
+    "city_name": "CIAMIS",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "635",
+    "city_name": "PANGANDARAN",
+    "province_id": "5",
+    "type": ""
+  },
+  {
+    "city_id": "64",
+    "city_name": "BENGKULU",
+    "province_id": "6",
+    "type": ""
+  },
+  {
+    "city_id": "65",
+    "city_name": "BENGKULU UTARA",
+    "province_id": "6",
+    "type": ""
+  },
+  {
+    "city_id": "66",
+    "city_name": "BENGKULU TENGAH",
+    "province_id": "6",
+    "type": ""
+  },
+  {
+    "city_id": "67",
+    "city_name": "REJANG LEBONG",
+    "province_id": "6",
+    "type": ""
+  },
+  {
+    "city_id": "68",
+    "city_name": "BENGKULU SELATAN",
+    "province_id": "6",
+    "type": ""
+  },
+  {
+    "city_id": "69",
+    "city_name": "KAUR",
+    "province_id": "6",
+    "type": ""
+  },
+  {
+    "city_id": "70",
+    "city_name": "KEPAHIANG",
+    "province_id": "6",
+    "type": ""
+  },
+  {
+    "city_id": "71",
+    "city_name": "LEBONG",
+    "province_id": "6",
+    "type": ""
+  },
+  {
+    "city_id": "73",
+    "city_name": "MUKO MUKO",
+    "province_id": "6",
+    "type": ""
+  },
+  {
+    "city_id": "76",
+    "city_name": "SELUMA",
+    "province_id": "6",
+    "type": ""
+  },
+  {
+    "city_id": "78",
+    "city_name": "BALIKPAPAN",
+    "province_id": "7",
+    "type": ""
+  },
+  {
+    "city_id": "79",
+    "city_name": "KUTAI KARTANEGARA",
+    "province_id": "7",
+    "type": ""
+  },
+  {
+    "city_id": "80",
+    "city_name": "PASER",
+    "province_id": "7",
+    "type": ""
+  },
+  {
+    "city_id": "81",
+    "city_name": "BERAU",
+    "province_id": "7",
+    "type": ""
+  },
+  {
+    "city_id": "83",
+    "city_name": "PENAJAM PASER UTARA",
+    "province_id": "7",
+    "type": ""
+  },
+  {
+    "city_id": "84",
+    "city_name": "BONTANG",
+    "province_id": "7",
+    "type": ""
+  },
+  {
+    "city_id": "86",
+    "city_name": "KUTAI TIMUR",
+    "province_id": "7",
+    "type": ""
+  },
+  {
+    "city_id": "534",
+    "city_name": "SAMARINDA",
+    "province_id": "7",
+    "type": ""
+  },
+  {
+    "city_id": "536",
+    "city_name": "KUTAI BARAT",
+    "province_id": "7",
+    "type": ""
+  },
+  {
+    "city_id": "537",
+    "city_name": "MAHAKAM ULU",
+    "province_id": "7",
+    "type": ""
+  },
+  {
+    "city_id": "90",
+    "city_name": "BATAM",
+    "province_id": "8",
+    "type": ""
+  },
+  {
+    "city_id": "92",
+    "city_name": "LINGGA",
+    "province_id": "8",
+    "type": ""
+  },
+  {
+    "city_id": "94",
+    "city_name": "NATUNA",
+    "province_id": "8",
+    "type": ""
+  },
+  {
+    "city_id": "95",
+    "city_name": "KEPULAUAN ANAMBAS",
+    "province_id": "8",
+    "type": ""
+  },
+  {
+    "city_id": "96",
+    "city_name": "KARIMUN",
+    "province_id": "8",
+    "type": ""
+  },
+  {
+    "city_id": "619",
+    "city_name": "TANJUNG PINANG",
+    "province_id": "8",
+    "type": ""
+  },
+  {
+    "city_id": "624",
+    "city_name": "BINTAN",
+    "province_id": "8",
+    "type": ""
+  },
+  {
+    "city_id": "97",
+    "city_name": "BANDA ACEH",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "98",
+    "city_name": "LANGSA",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "100",
+    "city_name": "LHOKSEUMAWE",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "101",
+    "city_name": "ACEH BESAR",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "102",
+    "city_name": "BIREUEN",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "104",
+    "city_name": "ACEH TENGGARA",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "106",
+    "city_name": "ACEH BARAT",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "107",
+    "city_name": "PIDIE",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "109",
+    "city_name": "ACEH TENGAH",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "110",
+    "city_name": "ACEH SELATAN",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "111",
+    "city_name": "SABANG",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "112",
+    "city_name": "ACEH BARAT DAYA",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "113",
+    "city_name": "ACEH JAYA",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "114",
+    "city_name": "ACEH SINGKIL",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "116",
+    "city_name": "ACEH TAMIANG",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "117",
+    "city_name": "ACEH TIMUR",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "118",
+    "city_name": "ACEH UTARA",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "120",
+    "city_name": "BENER MERIAH",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "122",
+    "city_name": "GAYO LUES",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "124",
+    "city_name": "NAGAN RAYA",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "125",
+    "city_name": "PIDIE JAYA",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "127",
+    "city_name": "SIMEULUE",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "128",
+    "city_name": "SUBULUSSALAM",
+    "province_id": "9",
+    "type": ""
+  },
+  {
+    "city_id": "135",
+    "city_name": "JAKARTA BARAT",
+    "province_id": "10",
+    "type": ""
+  },
+  {
+    "city_id": "136",
+    "city_name": "JAKARTA SELATAN",
+    "province_id": "10",
+    "type": ""
+  },
+  {
+    "city_id": "137",
+    "city_name": "JAKARTA PUSAT",
+    "province_id": "10",
+    "type": ""
+  },
+  {
+    "city_id": "138",
+    "city_name": "JAKARTA UTARA",
+    "province_id": "10",
+    "type": ""
+  },
+  {
+    "city_id": "139",
+    "city_name": "JAKARTA TIMUR",
+    "province_id": "10",
+    "type": ""
+  },
+  {
+    "city_id": "141",
+    "city_name": "KEPULAUAN SERIBU",
+    "province_id": "10",
+    "type": ""
+  },
+  {
+    "city_id": "143",
+    "city_name": "CILEGON",
+    "province_id": "11",
+    "type": ""
+  },
+  {
+    "city_id": "144",
+    "city_name": "PANDEGLANG",
+    "province_id": "11",
+    "type": ""
+  },
+  {
+    "city_id": "147",
+    "city_name": "LEBAK",
+    "province_id": "11",
+    "type": ""
+  },
+  {
+    "city_id": "148",
+    "city_name": "SERANG",
+    "province_id": "11",
+    "type": ""
+  },
+  {
+    "city_id": "592",
+    "city_name": "TANGERANG",
+    "province_id": "11",
+    "type": ""
+  },
+  {
+    "city_id": "594",
+    "city_name": "TANGERANG SELATAN",
+    "province_id": "11",
+    "type": ""
+  },
+  {
+    "city_id": "149",
+    "city_name": "CILACAP",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "383",
+    "city_name": "MAGELANG",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "384",
+    "city_name": "KEBUMEN",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "385",
+    "city_name": "WONOSOBO",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "386",
+    "city_name": "PURWOREJO",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "387",
+    "city_name": "TEMANGGUNG",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "539",
+    "city_name": "SURAKARTA",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "540",
+    "city_name": "BOYOLALI",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "541",
+    "city_name": "KARANGANYAR",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "542",
+    "city_name": "KLATEN",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "543",
+    "city_name": "SRAGEN",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "544",
+    "city_name": "SUKOHARJO",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "545",
+    "city_name": "WONOGIRI",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "560",
+    "city_name": "SEMARANG",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "561",
+    "city_name": "JEPARA",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "562",
+    "city_name": "KUDUS",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "563",
+    "city_name": "PEKALONGAN",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "564",
+    "city_name": "BATANG",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "565",
+    "city_name": "BLORA",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "567",
+    "city_name": "DEMAK",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "568",
+    "city_name": "KENDAL",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "569",
+    "city_name": "PATI",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "570",
+    "city_name": "PEMALANG",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "571",
+    "city_name": "GROBOGAN",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "572",
+    "city_name": "REMBANG",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "573",
+    "city_name": "SALATIGA",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "575",
+    "city_name": "PURBALINGGA",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "576",
+    "city_name": "BANJARNEGARA",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "588",
+    "city_name": "TEGAL",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "589",
+    "city_name": "BREBES",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "591",
+    "city_name": "BANYUMAS",
+    "province_id": "12",
+    "type": ""
+  },
+  {
+    "city_id": "150",
+    "city_name": "JAMBI",
+    "province_id": "13",
+    "type": ""
+  },
+  {
+    "city_id": "152",
+    "city_name": "TANJUNG JABUNG BARAT",
+    "province_id": "13",
+    "type": ""
+  },
+  {
+    "city_id": "153",
+    "city_name": "MERANGIN",
+    "province_id": "13",
+    "type": ""
+  },
+  {
+    "city_id": "154",
+    "city_name": "BATANG HARI",
+    "province_id": "13",
+    "type": ""
+  },
+  {
+    "city_id": "156",
+    "city_name": "BUNGO",
+    "province_id": "13",
+    "type": ""
+  },
+  {
+    "city_id": "157",
+    "city_name": "SUNGAIPENUH",
+    "province_id": "13",
+    "type": ""
+  },
+  {
+    "city_id": "158",
+    "city_name": "KERINCI",
+    "province_id": "13",
+    "type": ""
+  },
+  {
+    "city_id": "160",
+    "city_name": "MUARO JAMBI",
+    "province_id": "13",
+    "type": ""
+  },
+  {
+    "city_id": "161",
+    "city_name": "SAROLANGUN",
+    "province_id": "13",
+    "type": ""
+  },
+  {
+    "city_id": "163",
+    "city_name": "TANJUNG JABUNG TIMUR",
+    "province_id": "13",
+    "type": ""
+  },
+  {
+    "city_id": "164",
+    "city_name": "TEBO",
+    "province_id": "13",
+    "type": ""
+  },
+  {
+    "city_id": "165",
+    "city_name": "JAYAPURA",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "166",
+    "city_name": "BIAK NUMFOR",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "167",
+    "city_name": "MERAUKE",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "168",
+    "city_name": "NABIRE",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "169",
+    "city_name": "DOGIYAI",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "171",
+    "city_name": "KEPULAUAN YAPEN",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "172",
+    "city_name": "JAYAWIJAYA",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "174",
+    "city_name": "LANNY JAYA",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "175",
+    "city_name": "YALIMO",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "176",
+    "city_name": "NDUGA",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "177",
+    "city_name": "MAMBERAMO TENGAH",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "178",
+    "city_name": "ASMAT",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "180",
+    "city_name": "BOVEN DIGOEL",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "181",
+    "city_name": "KEEROM",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "183",
+    "city_name": "MAPPI",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "184",
+    "city_name": "INTAN JAYA",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "185",
+    "city_name": "PANIAI",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "186",
+    "city_name": "DEIYAI",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "187",
+    "city_name": "PEGUNUNGAN BINTANG",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "188",
+    "city_name": "PUNCAK JAYA",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "189",
+    "city_name": "PUNCAK",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "190",
+    "city_name": "SARMI",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "192",
+    "city_name": "SUPIORI",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "193",
+    "city_name": "TOLIKARA",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "195",
+    "city_name": "WAROPEN",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "196",
+    "city_name": "YAHUKIMO",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "198",
+    "city_name": "MAMBERAMO RAYA",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "595",
+    "city_name": "MIMIKA",
+    "province_id": "14",
+    "type": ""
+  },
+  {
+    "city_id": "201",
+    "city_name": "DENPASAR",
+    "province_id": "15",
+    "type": ""
+  },
+  {
+    "city_id": "203",
+    "city_name": "KARANGASEM",
+    "province_id": "15",
+    "type": ""
+  },
+  {
+    "city_id": "204",
+    "city_name": "BANGLI",
+    "province_id": "15",
+    "type": ""
+  },
+  {
+    "city_id": "205",
+    "city_name": "GIANYAR",
+    "province_id": "15",
+    "type": ""
+  },
+  {
+    "city_id": "206",
+    "city_name": "JEMBRANA",
+    "province_id": "15",
+    "type": ""
+  },
+  {
+    "city_id": "208",
+    "city_name": "KLUNGKUNG",
+    "province_id": "15",
+    "type": ""
+  },
+  {
+    "city_id": "210",
+    "city_name": "BULELENG",
+    "province_id": "15",
+    "type": ""
+  },
+  {
+    "city_id": "211",
+    "city_name": "TABANAN",
+    "province_id": "15",
+    "type": ""
+  },
+  {
+    "city_id": "212",
+    "city_name": "BADUNG",
+    "province_id": "15",
+    "type": ""
+  },
+  {
+    "city_id": "218",
+    "city_name": "TOBA SAMOSIR",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "219",
+    "city_name": "GUNUNGSITOLI",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "220",
+    "city_name": "NIAS",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "221",
+    "city_name": "NIAS BARAT",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "222",
+    "city_name": "NIAS SELATAN",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "223",
+    "city_name": "NIAS UTARA",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "225",
+    "city_name": "SIBOLGA",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "226",
+    "city_name": "TAPANULI TENGAH",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "227",
+    "city_name": "PADANG SIDEMPUAN",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "228",
+    "city_name": "TAPANULI SELATAN",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "229",
+    "city_name": "TAPANULI UTARA",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "231",
+    "city_name": "PADANG LAWAS UTARA",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "239",
+    "city_name": "HUMBANG HASUNDUTAN",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "240",
+    "city_name": "MANDAILING NATAL",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "243",
+    "city_name": "PADANG LAWAS",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "361",
+    "city_name": "MEDAN",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "363",
+    "city_name": "ASAHAN",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "364",
+    "city_name": "DAIRI",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "365",
+    "city_name": "DELI SERDANG",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "366",
+    "city_name": "BINJAI",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "368",
+    "city_name": "SIMALUNGUN",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "370",
+    "city_name": "LABUHANBATU UTARA",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "371",
+    "city_name": "LABUHANBATU",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "372",
+    "city_name": "LABUHANBATU SELATAN",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "374",
+    "city_name": "KARO",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "375",
+    "city_name": "LANGKAT",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "376",
+    "city_name": "SERDANG BEDAGAI",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "377",
+    "city_name": "TEBING TINGGI",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "378",
+    "city_name": "BATU BARA",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "379",
+    "city_name": "PAKPAK BHARAT",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "380",
+    "city_name": "SAMOSIR",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "381",
+    "city_name": "TANJUNG BALAI",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "382",
+    "city_name": "PEMATANG SIANTAR",
+    "province_id": "16",
+    "type": ""
+  },
+  {
+    "city_id": "251",
+    "city_name": "GORONTALO",
+    "province_id": "17",
+    "type": ""
+  },
+  {
+    "city_id": "252",
+    "city_name": "GORONTALO UTARA",
+    "province_id": "17",
+    "type": ""
+  },
+  {
+    "city_id": "253",
+    "city_name": "BOALEMO",
+    "province_id": "17",
+    "type": ""
+  },
+  {
+    "city_id": "254",
+    "city_name": "BONE BOLANGO",
+    "province_id": "17",
+    "type": ""
+  },
+  {
+    "city_id": "255",
+    "city_name": "POHUWATO",
+    "province_id": "17",
+    "type": ""
+  },
+  {
+    "city_id": "256",
+    "city_name": "JEMBER",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "257",
+    "city_name": "BANYUWANGI",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "258",
+    "city_name": "BONDOWOSO",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "289",
+    "city_name": "KEDIRI",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "353",
+    "city_name": "MADIUN",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "355",
+    "city_name": "MAGETAN",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "357",
+    "city_name": "NGAWI",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "359",
+    "city_name": "PACITAN",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "360",
+    "city_name": "PONOROGO",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "388",
+    "city_name": "MOJOKERTO",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "389",
+    "city_name": "JOMBANG",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "390",
+    "city_name": "NGANJUK",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "391",
+    "city_name": "MALANG",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "392",
+    "city_name": "BLITAR",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "393",
+    "city_name": "BATU",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "394",
+    "city_name": "PROBOLINGGO",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "395",
+    "city_name": "LUMAJANG",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "396",
+    "city_name": "SITUBONDO",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "531",
+    "city_name": "PASURUAN",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "566",
+    "city_name": "BOJONEGORO",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "577",
+    "city_name": "SURABAYA",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "578",
+    "city_name": "GRESIK",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "579",
+    "city_name": "LAMONGAN",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "580",
+    "city_name": "BANGKALAN",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "581",
+    "city_name": "PAMEKASAN",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "582",
+    "city_name": "SAMPANG",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "583",
+    "city_name": "SIDOARJO",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "584",
+    "city_name": "SUMENEP",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "585",
+    "city_name": "TUBAN",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "586",
+    "city_name": "TULUNGAGUNG",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "587",
+    "city_name": "TRENGGALEK",
+    "province_id": "18",
+    "type": ""
+  },
+  {
+    "city_id": "259",
+    "city_name": "YOGYAKARTA",
+    "province_id": "19",
+    "type": ""
+  },
+  {
+    "city_id": "260",
+    "city_name": "BANTUL",
+    "province_id": "19",
+    "type": ""
+  },
+  {
+    "city_id": "261",
+    "city_name": "SLEMAN",
+    "province_id": "19",
+    "type": ""
+  },
+  {
+    "city_id": "262",
+    "city_name": "KULON PROGO",
+    "province_id": "19",
+    "type": ""
+  },
+  {
+    "city_id": "263",
+    "city_name": "GUNUNG KIDUL",
+    "province_id": "19",
+    "type": ""
+  },
+  {
+    "city_id": "264",
+    "city_name": "KENDARI",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "267",
+    "city_name": "BAU-BAU",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "268",
+    "city_name": "KOLAKA",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "269",
+    "city_name": "KOLAKA TIMUR",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "271",
+    "city_name": "BUTON UTARA",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "272",
+    "city_name": "MUNA",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "273",
+    "city_name": "MUNA BARAT",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "276",
+    "city_name": "KONAWE",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "277",
+    "city_name": "KONAWE UTARA",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "280",
+    "city_name": "BOMBANA",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "281",
+    "city_name": "BUTON",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "282",
+    "city_name": "BUTON SELATAN",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "283",
+    "city_name": "BUTON TENGAH",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "285",
+    "city_name": "KOLAKA UTARA",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "286",
+    "city_name": "KONAWE SELATAN",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "287",
+    "city_name": "WAKATOBI",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "288",
+    "city_name": "KONAWE KEPULAUAN",
+    "province_id": "20",
+    "type": ""
+  },
+  {
+    "city_id": "290",
+    "city_name": "KUPANG",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "292",
+    "city_name": "SUMBA TENGAH",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "293",
+    "city_name": "BELU",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "294",
+    "city_name": "MALAKA",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "296",
+    "city_name": "ALOR",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "297",
+    "city_name": "TIMOR TENGAH UTARA",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "298",
+    "city_name": "FLORES TIMUR",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "300",
+    "city_name": "SIKKA",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "301",
+    "city_name": "MANGGARAI",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "308",
+    "city_name": "TIMOR TENGAH SELATAN",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "309",
+    "city_name": "ENDE",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "310",
+    "city_name": "NGADA",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "313",
+    "city_name": "SUMBA TIMUR",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "314",
+    "city_name": "SUMBA BARAT",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "318",
+    "city_name": "MANGGARAI BARAT",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "319",
+    "city_name": "MANGGARAI TIMUR",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "321",
+    "city_name": "NAGEKEO",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "323",
+    "city_name": "ROTE NDAO",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "325",
+    "city_name": "SUMBA BARAT DAYA",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "326",
+    "city_name": "LEMBATA",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "328",
+    "city_name": "SABU RAIJUA",
+    "province_id": "21",
+    "type": ""
+  },
+  {
+    "city_id": "330",
+    "city_name": "MANADO",
+    "province_id": "22",
+    "type": ""
+  },
+  {
+    "city_id": "331",
+    "city_name": "KOTAMOBAGU",
+    "province_id": "22",
+    "type": ""
+  },
+  {
+    "city_id": "332",
+    "city_name": "BOLAANG MONGONDOW UTARA",
+    "province_id": "22",
+    "type": ""
+  },
+  {
+    "city_id": "333",
+    "city_name": "BOLAANG MONGONDOW",
+    "province_id": "22",
+    "type": ""
+  },
+  {
+    "city_id": "335",
+    "city_name": "BOLAANG MONGONDOW SELATAN",
+    "province_id": "22",
+    "type": ""
+  },
+  {
+    "city_id": "336",
+    "city_name": "BOLAANG MONGONDOW TIMUR",
+    "province_id": "22",
+    "type": ""
+  },
+  {
+    "city_id": "338",
+    "city_name": "KEPULAUAN SANGIHE",
+    "province_id": "22",
+    "type": ""
+  },
+  {
+    "city_id": "339",
+    "city_name": "KEPULAUAN SIAU TAGULANDANG BIARO (SITARO)",
+    "province_id": "22",
+    "type": ""
+  },
+  {
+    "city_id": "341",
+    "city_name": "MINAHASA",
+    "province_id": "22",
+    "type": ""
+  },
+  {
+    "city_id": "342",
+    "city_name": "BITUNG",
+    "province_id": "22",
+    "type": ""
+  },
+  {
+    "city_id": "347",
+    "city_name": "KEPULAUAN TALAUD",
+    "province_id": "22",
+    "type": ""
+  },
+  {
+    "city_id": "348",
+    "city_name": "MINAHASA UTARA",
+    "province_id": "22",
+    "type": ""
+  },
+  {
+    "city_id": "349",
+    "city_name": "MINAHASA SELATAN",
+    "province_id": "22",
+    "type": ""
+  },
+  {
+    "city_id": "351",
+    "city_name": "MINAHASA TENGGARA",
+    "province_id": "22",
+    "type": ""
+  },
+  {
+    "city_id": "352",
+    "city_name": "TOMOHON",
+    "province_id": "22",
+    "type": ""
+  },
+  {
+    "city_id": "397",
+    "city_name": "PADANG",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "399",
+    "city_name": "TANAH DATAR",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "401",
+    "city_name": "BUKITTINGGI",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "402",
+    "city_name": "PASAMAN",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "404",
+    "city_name": "PESISIR SELATAN",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "405",
+    "city_name": "PARIAMAN",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "406",
+    "city_name": "PADANG PARIAMAN",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "407",
+    "city_name": "LIMA PULUH KOTA",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "408",
+    "city_name": "PAYAKUMBUH",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "410",
+    "city_name": "SAWAH LUNTO",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "411",
+    "city_name": "SOLOK",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "412",
+    "city_name": "PADANG PANJANG",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "413",
+    "city_name": "DHARMASRAYA",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "416",
+    "city_name": "KEPULAUAN MENTAWAI",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "419",
+    "city_name": "PASAMAN BARAT",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "424",
+    "city_name": "SOLOK SELATAN",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "426",
+    "city_name": "SIJUNJUNG",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "427",
+    "city_name": "AGAM",
+    "province_id": "23",
+    "type": ""
+  },
+  {
+    "city_id": "428",
+    "city_name": "PANGKAL PINANG",
+    "province_id": "24",
+    "type": ""
+  },
+  {
+    "city_id": "429",
+    "city_name": "BANGKA",
+    "province_id": "24",
+    "type": ""
+  },
+  {
+    "city_id": "430",
+    "city_name": "BANGKA BARAT",
+    "province_id": "24",
+    "type": ""
+  },
+  {
+    "city_id": "431",
+    "city_name": "BANGKA TENGAH",
+    "province_id": "24",
+    "type": ""
+  },
+  {
+    "city_id": "432",
+    "city_name": "BANGKA SELATAN",
+    "province_id": "24",
+    "type": ""
+  },
+  {
+    "city_id": "596",
+    "city_name": "BELITUNG",
+    "province_id": "24",
+    "type": ""
+  },
+  {
+    "city_id": "597",
+    "city_name": "BELITUNG TIMUR",
+    "province_id": "24",
+    "type": ""
+  },
+  {
+    "city_id": "433",
+    "city_name": "PEKANBARU",
+    "province_id": "25",
+    "type": ""
+  },
+  {
+    "city_id": "434",
+    "city_name": "DUMAI",
+    "province_id": "25",
+    "type": ""
+  },
+  {
+    "city_id": "435",
+    "city_name": "KAMPAR",
+    "province_id": "25",
+    "type": ""
+  },
+  {
+    "city_id": "436",
+    "city_name": "BENGKALIS",
+    "province_id": "25",
+    "type": ""
+  },
+  {
+    "city_id": "438",
+    "city_name": "INDRAGIRI HULU",
+    "province_id": "25",
+    "type": ""
+  },
+  {
+    "city_id": "439",
+    "city_name": "INDRAGIRI HILIR",
+    "province_id": "25",
+    "type": ""
+  },
+  {
+    "city_id": "441",
+    "city_name": "ROKAN HILIR",
+    "province_id": "25",
+    "type": ""
+  },
+  {
+    "city_id": "443",
+    "city_name": "KUANTAN SINGINGI",
+    "province_id": "25",
+    "type": ""
+  },
+  {
+    "city_id": "444",
+    "city_name": "PELALAWAN",
+    "province_id": "25",
+    "type": ""
+  },
+  {
+    "city_id": "447",
+    "city_name": "ROKAN HULU",
+    "province_id": "25",
+    "type": ""
+  },
+  {
+    "city_id": "451",
+    "city_name": "SIAK",
+    "province_id": "25",
+    "type": ""
+  },
+  {
+    "city_id": "454",
+    "city_name": "KEPULAUAN MERANTI",
+    "province_id": "25",
+    "type": ""
+  },
+  {
+    "city_id": "473",
+    "city_name": "PALEMBANG",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "475",
+    "city_name": "MUSI RAWAS",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "476",
+    "city_name": "MUSI RAWAS UTARA",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "479",
+    "city_name": "OGAN KOMERING ULU",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "480",
+    "city_name": "OGAN KOMERING ILIR",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "482",
+    "city_name": "LAHAT",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "485",
+    "city_name": "MUARA ENIM",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "486",
+    "city_name": "PENUKAL ABAB LEMATANG ILIR",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "487",
+    "city_name": "PAGAR ALAM",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "488",
+    "city_name": "PRABUMULIH",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "489",
+    "city_name": "MUSI BANYUASIN",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "491",
+    "city_name": "BANYUASIN",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "492",
+    "city_name": "EMPAT LAWANG",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "493",
+    "city_name": "OGAN ILIR",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "494",
+    "city_name": "OGAN KOMERING ULU TIMUR",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "495",
+    "city_name": "OGAN KOMERING ULU SELATAN",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "496",
+    "city_name": "LUBUK LINGGAU",
+    "province_id": "26",
+    "type": ""
+  },
+  {
+    "city_id": "497",
+    "city_name": "PALU",
+    "province_id": "27",
+    "type": ""
+  },
+  {
+    "city_id": "498",
+    "city_name": "BANGGAI",
+    "province_id": "27",
+    "type": ""
+  },
+  {
+    "city_id": "499",
+    "city_name": "POSO",
+    "province_id": "27",
+    "type": ""
+  },
+  {
+    "city_id": "500",
+    "city_name": "TOLI-TOLI",
+    "province_id": "27",
+    "type": ""
+  },
+  {
+    "city_id": "501",
+    "city_name": "BANGGAI LAUT",
+    "province_id": "27",
+    "type": ""
+  },
+  {
+    "city_id": "502",
+    "city_name": "BANGGAI KEPULAUAN",
+    "province_id": "27",
+    "type": ""
+  },
+  {
+    "city_id": "504",
+    "city_name": "BUOL",
+    "province_id": "27",
+    "type": ""
+  },
+  {
+    "city_id": "505",
+    "city_name": "DONGGALA",
+    "province_id": "27",
+    "type": ""
+  },
+  {
+    "city_id": "507",
+    "city_name": "SIGI",
+    "province_id": "27",
+    "type": ""
+  },
+  {
+    "city_id": "509",
+    "city_name": "MOROWALI",
+    "province_id": "27",
+    "type": ""
+  },
+  {
+    "city_id": "510",
+    "city_name": "MOROWALI UTARA",
+    "province_id": "27",
+    "type": ""
+  },
+  {
+    "city_id": "511",
+    "city_name": "PARIGI MOUTONG",
+    "province_id": "27",
+    "type": ""
+  },
+  {
+    "city_id": "512",
+    "city_name": "TOJO UNA-UNA",
+    "province_id": "27",
+    "type": ""
+  },
+  {
+    "city_id": "513",
+    "city_name": "PONTIANAK",
+    "province_id": "28",
+    "type": ""
+  },
+  {
+    "city_id": "514",
+    "city_name": "KETAPANG",
+    "province_id": "28",
+    "type": ""
+  },
+  {
+    "city_id": "515",
+    "city_name": "SANGGAU",
+    "province_id": "28",
+    "type": ""
+  },
+  {
+    "city_id": "516",
+    "city_name": "SINGKAWANG",
+    "province_id": "28",
+    "type": ""
+  },
+  {
+    "city_id": "517",
+    "city_name": "SINTANG",
+    "province_id": "28",
+    "type": ""
+  },
+  {
+    "city_id": "519",
+    "city_name": "KAPUAS HULU",
+    "province_id": "28",
+    "type": ""
+  },
+  {
+    "city_id": "522",
+    "city_name": "BENGKAYANG",
+    "province_id": "28",
+    "type": ""
+  },
+  {
+    "city_id": "523",
+    "city_name": "LANDAK",
+    "province_id": "28",
+    "type": ""
+  },
+  {
+    "city_id": "524",
+    "city_name": "MELAWI",
+    "province_id": "28",
+    "type": ""
+  },
+  {
+    "city_id": "526",
+    "city_name": "MEMPAWAH",
+    "province_id": "28",
+    "type": ""
+  },
+  {
+    "city_id": "527",
+    "city_name": "KUBU RAYA",
+    "province_id": "28",
+    "type": ""
+  },
+  {
+    "city_id": "528",
+    "city_name": "SAMBAS",
+    "province_id": "28",
+    "type": ""
+  },
+  {
+    "city_id": "529",
+    "city_name": "SEKADAU",
+    "province_id": "28",
+    "type": ""
+  },
+  {
+    "city_id": "530",
+    "city_name": "KAYONG UTARA",
+    "province_id": "28",
+    "type": ""
+  },
+  {
+    "city_id": "546",
+    "city_name": "SORONG",
+    "province_id": "29",
+    "type": ""
+  },
+  {
+    "city_id": "547",
+    "city_name": "TAMBRAUW",
+    "province_id": "29",
+    "type": ""
+  },
+  {
+    "city_id": "548",
+    "city_name": "FAKFAK",
+    "province_id": "29",
+    "type": ""
+  },
+  {
+    "city_id": "549",
+    "city_name": "KAIMANA",
+    "province_id": "29",
+    "type": ""
+  },
+  {
+    "city_id": "551",
+    "city_name": "RAJA AMPAT",
+    "province_id": "29",
+    "type": ""
+  },
+  {
+    "city_id": "552",
+    "city_name": "SORONG SELATAN",
+    "province_id": "29",
+    "type": ""
+  },
+  {
+    "city_id": "553",
+    "city_name": "MAYBRAT",
+    "province_id": "29",
+    "type": ""
+  },
+  {
+    "city_id": "554",
+    "city_name": "TELUK BINTUNI",
+    "province_id": "29",
+    "type": ""
+  },
+  {
+    "city_id": "556",
+    "city_name": "TELUK WONDAMA",
+    "province_id": "29",
+    "type": ""
+  },
+  {
+    "city_id": "557",
+    "city_name": "MANOKWARI",
+    "province_id": "29",
+    "type": ""
+  },
+  {
+    "city_id": "558",
+    "city_name": "PEGUNUNGAN ARFAK",
+    "province_id": "29",
+    "type": ""
+  },
+  {
+    "city_id": "559",
+    "city_name": "MANOKWARI SELATAN",
+    "province_id": "29",
+    "type": ""
+  },
+  {
+    "city_id": "598",
+    "city_name": "BANDAR LAMPUNG",
+    "province_id": "30",
+    "type": ""
+  },
+  {
+    "city_id": "599",
+    "city_name": "LAMPUNG SELATAN",
+    "province_id": "30",
+    "type": ""
+  },
+  {
+    "city_id": "600",
+    "city_name": "LAMPUNG UTARA",
+    "province_id": "30",
+    "type": ""
+  },
+  {
+    "city_id": "601",
+    "city_name": "METRO",
+    "province_id": "30",
+    "type": ""
+  },
+  {
+    "city_id": "603",
+    "city_name": "LAMPUNG BARAT",
+    "province_id": "30",
+    "type": ""
+  },
+  {
+    "city_id": "604",
+    "city_name": "PESISIR BARAT",
+    "province_id": "30",
+    "type": ""
+  },
+  {
+    "city_id": "605",
+    "city_name": "LAMPUNG TENGAH",
+    "province_id": "30",
+    "type": ""
+  },
+  {
+    "city_id": "607",
+    "city_name": "LAMPUNG TIMUR",
+    "province_id": "30",
+    "type": ""
+  },
+  {
+    "city_id": "608",
+    "city_name": "WAY KANAN",
+    "province_id": "30",
+    "type": ""
+  },
+  {
+    "city_id": "609",
+    "city_name": "TULANG BAWANG",
+    "province_id": "30",
+    "type": ""
+  },
+  {
+    "city_id": "610",
+    "city_name": "MESUJI",
+    "province_id": "30",
+    "type": ""
+  },
+  {
+    "city_id": "611",
+    "city_name": "TULANG BAWANG BARAT",
+    "province_id": "30",
+    "type": ""
+  },
+  {
+    "city_id": "615",
+    "city_name": "PRINGSEWU",
+    "province_id": "30",
+    "type": ""
+  },
+  {
+    "city_id": "616",
+    "city_name": "TANGGAMUS",
+    "province_id": "30",
+    "type": ""
+  },
+  {
+    "city_id": "618",
+    "city_name": "PESAWARAN",
+    "province_id": "30",
+    "type": ""
+  },
+  {
+    "city_id": "626",
+    "city_name": "TARAKAN",
+    "province_id": "31",
+    "type": ""
+  },
+  {
+    "city_id": "627",
+    "city_name": "BULUNGAN",
+    "province_id": "31",
+    "type": ""
+  },
+  {
+    "city_id": "628",
+    "city_name": "MALINAU",
+    "province_id": "31",
+    "type": ""
+  },
+  {
+    "city_id": "629",
+    "city_name": "NUNUKAN",
+    "province_id": "31",
+    "type": ""
+  },
+  {
+    "city_id": "631",
+    "city_name": "TANA TIDUNG",
+    "province_id": "31",
+    "type": ""
+  },
+  {
+    "city_id": "636",
+    "city_name": "TERNATE",
+    "province_id": "32",
+    "type": ""
+  },
+  {
+    "city_id": "637",
+    "city_name": "HALMAHERA BARAT",
+    "province_id": "32",
+    "type": ""
+  },
+  {
+    "city_id": "639",
+    "city_name": "HALMAHERA SELATAN",
+    "province_id": "32",
+    "type": ""
+  },
+  {
+    "city_id": "640",
+    "city_name": "HALMAHERA TENGAH",
+    "province_id": "32",
+    "type": ""
+  },
+  {
+    "city_id": "641",
+    "city_name": "HALMAHERA TIMUR",
+    "province_id": "32",
+    "type": ""
+  },
+  {
+    "city_id": "642",
+    "city_name": "HALMAHERA UTARA",
+    "province_id": "32",
+    "type": ""
+  },
+  {
+    "city_id": "643",
+    "city_name": "PULAU MOROTAI",
+    "province_id": "32",
+    "type": ""
+  },
+  {
+    "city_id": "644",
+    "city_name": "KEPULAUAN SULA",
+    "province_id": "32",
+    "type": ""
+  },
+  {
+    "city_id": "646",
+    "city_name": "PULAU TALIABU",
+    "province_id": "32",
+    "type": ""
+  },
+  {
+    "city_id": "647",
+    "city_name": "TIDORE KEPULAUAN",
+    "province_id": "32",
+    "type": ""
+  },
+  {
+    "city_id": "648",
+    "city_name": "MAKASSAR",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "649",
+    "city_name": "BANTAENG",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "650",
+    "city_name": "BARRU",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "651",
+    "city_name": "BULUKUMBA",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "652",
+    "city_name": "ENREKANG",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "653",
+    "city_name": "JENEPONTO",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "654",
+    "city_name": "TANA TORAJA",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "655",
+    "city_name": "TORAJA UTARA",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "659",
+    "city_name": "MAROS",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "663",
+    "city_name": "PALOPO",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "664",
+    "city_name": "PINRANG",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "667",
+    "city_name": "SIDENRENG RAPPANG",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "670",
+    "city_name": "WAJO",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "671",
+    "city_name": "SINJAI",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "673",
+    "city_name": "GOWA",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "674",
+    "city_name": "TAKALAR",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "676",
+    "city_name": "BONE",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "678",
+    "city_name": "SOPPENG",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "679",
+    "city_name": "KEPULAUAN SELAYAR",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "680",
+    "city_name": "PANGKAJENE KEPULAUAN",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "683",
+    "city_name": "PAREPARE",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "684",
+    "city_name": "LUWU",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "685",
+    "city_name": "LUWU TIMUR",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "686",
+    "city_name": "LUWU UTARA",
+    "province_id": "33",
+    "type": ""
+  },
+  {
+    "city_id": "657",
+    "city_name": "MAMUJU",
+    "province_id": "34",
+    "type": ""
+  },
+  {
+    "city_id": "658",
+    "city_name": "MAMUJU TENGAH",
+    "province_id": "34",
+    "type": ""
+  },
+  {
+    "city_id": "662",
+    "city_name": "MAJENE",
+    "province_id": "34",
+    "type": ""
+  },
+  {
+    "city_id": "665",
+    "city_name": "POLEWALI MANDAR",
+    "province_id": "34",
+    "type": ""
+  },
+  {
+    "city_id": "687",
+    "city_name": "MAMASA",
+    "province_id": "34",
+    "type": ""
+  },
+  {
+    "city_id": "688",
+    "city_name": "MAMUJU UTARA",
+    "province_id": "34",
+    "type": ""
+  }
+]

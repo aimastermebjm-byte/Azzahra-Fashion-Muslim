@@ -714,8 +714,11 @@ function AppContent() {
       );
     }
 
-    // Force login if user is not authenticated (except for ongkir-test page)
-    if (!user && currentPage !== 'ongkir-test') {
+    // ✅ Guest Browsing: Allow access to public pages without login
+    const guestPages: Page[] = ['home', 'product-detail', 'flash-sale', 'banner-products', 'ongkir-test'];
+
+    // Force login only for protected pages (cart, checkout, orders, account, admin)
+    if (!user && !guestPages.includes(currentPage)) {
       return (
         <LoginFormSimple
           onSuccess={handleLoginWithUser}

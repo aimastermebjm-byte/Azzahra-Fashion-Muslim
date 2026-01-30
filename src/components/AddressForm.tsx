@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Loader2 } from 'lucide-react';
 
+// ✅ Static data for instant dropdown (no API call needed)
+import provincesData from '../data/provinces.json';
+import citiesData from '../data/cities.json';
+
 // Types for address data
 interface Province {
   province_id: string;
@@ -271,80 +275,27 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
     }));
   }, [formData.districtId]);
 
+  // ✅ OPTIMIZED: Load provinces from static JSON (INSTANT - no API call)
   const loadProvinces = async () => {
-    const cacheKey = 'provinces';
-
-    if (addressCache.has(cacheKey)) {
-      const cachedData = addressCache.get(cacheKey) as Province[];
-      setProvinces(cachedData);
-      return;
-    }
-
-    const persistedData = readPersistentCache<Province[]>(cacheKey);
-    if (persistedData) {
-      setProvinces(persistedData);
-      setAddressCache(prev => new Map(prev).set(cacheKey, persistedData));
-      return;
-    }
-
-    setLoadingProvinces(true);
-    try {
-      const response = await fetch('/api/address-cached?type=provinces');
-      const data = await response.json();
-
-      if (data.success && data.data) {
-        setProvinces(data.data);
-        setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
-        writePersistentCache(cacheKey, data.data);
-      } else {
-        console.error('❌ Failed to load provinces from cache:', data.message);
-      }
-    } catch (error) {
-      console.error('Error loading provinces from cache:', error);
-    } finally {
-      setLoadingProvinces(false);
-    }
+    // Static data is already typed correctly from import
+    setProvinces(provincesData as Province[]);
+    // Also cache it for consistency with rest of the code
+    setAddressCache(prev => new Map(prev).set('provinces', provincesData));
   };
 
+  // ✅ OPTIMIZED: Load cities from static JSON (INSTANT - no API call)
   const loadCities = async (provinceIdOverride?: string) => {
     const provinceId = provinceIdOverride || formData.provinceId;
     if (!provinceId) return [];
 
-    const cacheKey = `cities_${provinceId}`;
+    // Filter cities from static data - INSTANT!
+    const filteredCities = (citiesData as City[]).filter(
+      city => city.province_id === provinceId
+    );
 
-    if (addressCache.has(cacheKey)) {
-      const cached = addressCache.get(cacheKey) as City[];
-      setCities(cached);
-      return cached;
-    }
-
-    const persistedData = readPersistentCache<City[]>(cacheKey);
-    if (persistedData) {
-      setCities(persistedData);
-      setAddressCache(prev => new Map(prev).set(cacheKey, persistedData));
-      return persistedData;
-    }
-
-    setLoadingCities(true);
-    try {
-      const response = await fetch(`/api/address-cached?type=cities&provinceId=${provinceId}`);
-      const data = await response.json();
-
-      if (data.success && data.data) {
-        setCities(data.data);
-        setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
-        writePersistentCache(cacheKey, data.data);
-        return data.data;
-      } else {
-        console.error('❌ Failed to load cities:', data.message);
-      }
-    } catch (error) {
-      console.error('Error loading cities:', error);
-    } finally {
-      setLoadingCities(false);
-    }
-
-    return [];
+    setCities(filteredCities);
+    setAddressCache(prev => new Map(prev).set(`cities_${provinceId}`, filteredCities));
+    return filteredCities;
   };
 
   const loadDistricts = async (cityIdOverride?: string) => {
