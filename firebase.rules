@@ -232,5 +232,26 @@ service cloud.firestore {
       );
       allow create: if isSignedIn();
     }
+
+    // --- CACHE COLLECTIONS (for API caching) ---
+    
+    // Shipping Cost Cache (used by api/rajaongkir/cost-cached.js)
+    match /shipping_cache/{cacheId} {
+      allow read, write: if true;
+    }
+
+    // Address Cache Collections (used by api/address-cached.js)
+    match /address_provinces/{docId} {
+      allow read, write: if true;
+    }
+    match /address_cities/{docId} {
+      allow read, write: if true;
+    }
+    match /address_districts/{docId} {
+      allow read, write: if true;
+    }
+    match /address_subdistricts/{docId} {
+      allow read, write: if true;
+    }
   }
 }
