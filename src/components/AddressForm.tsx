@@ -173,27 +173,15 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
     // Start loading provinces immediately
     loadProvinces();
 
-    // Preload popular provinces data in background for better UX
+    // Preload popular provinces cities into cache using static JSON (INSTANT, no API)
     // This ensures that when user selects common provinces, cities are already cached
-    const popularProvinceIds = ['11', '12', '31', '34', '10', '6']; // Jabar, Jateng, DKI, Jatim, DIY, Banten
-    popularProvinceIds.forEach(async (provinceId) => {
-      try {
-        // Preload cities for popular provinces (background, non-blocking)
-        const cacheKey = `cities_${provinceId}`;
-        const persistedData = readPersistentCache<City[]>(cacheKey);
-        if (persistedData) {
-          setAddressCache(prev => new Map(prev).set(cacheKey, persistedData));
-          return;
-        }
-
-        const response = await fetch(`/api/address-cached?type=cities&provinceId=${provinceId}`);
-        const data = await response.json();
-        if (data.success && data.data) {
-          setAddressCache(prev => new Map(prev).set(cacheKey, data.data));
-          writePersistentCache(cacheKey, data.data);
-        }
-      } catch (error) {
-        // Silently fail preload - not critical
+    const popularProvinceIds = ['11', '12', '31', '34', '10', '6', '3', '4']; // Jabar, Jateng, DKI, Jatim, DIY, Banten, Kalsel, Kalteng
+    popularProvinceIds.forEach((provinceId) => {
+      const cacheKey = `cities_${provinceId}`;
+      // Use static JSON data - no API call needed!
+      const staticCities = (citiesData as City[]).filter(c => c.province_id === provinceId);
+      if (staticCities.length > 0) {
+        setAddressCache(prev => new Map(prev).set(cacheKey, staticCities));
       }
     });
   }, []); // Only run once on mount
