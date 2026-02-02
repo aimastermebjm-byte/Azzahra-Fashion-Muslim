@@ -152,8 +152,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
     // Collection Discount (Virtual - not stored in product price)
     if (activeDiscount > 0) {
       // Use originalRetailPrice as base (in case retailPrice was corrupted by old discount system)
-      const baseRetail = product.originalRetailPrice || product.retailPrice;
+      // Fallback chain: originalRetailPrice -> retailPrice -> price
+      const baseRetail = product.originalRetailPrice || product.retailPrice || product.price || 0;
       const baseReseller = product.originalResellerPrice || product.resellerPrice || baseRetail * 0.8;
+
+      // 🔍 DEBUG: Log untuk cek kenapa harga jadi 0
+      console.log(`🔍 ProductCard Collection Discount Debug:`, {
+        productName: product.name,
+        originalRetailPrice: product.originalRetailPrice,
+        retailPrice: product.retailPrice,
+        price: product.price,
+        baseRetail: baseRetail,
+        activeDiscount: activeDiscount,
+        calculation: `${baseRetail} - ${activeDiscount} = ${baseRetail - activeDiscount}`
+      });
 
       const discountedRetail = Math.max(0, baseRetail - activeDiscount);
       const discountedReseller = Math.max(0, baseReseller - activeDiscount);
