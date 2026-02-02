@@ -2,7 +2,7 @@
 // Single endpoint for all address operations with Firestore caching
 // ✅ Now with multi-key fallback support
 
-const { fetchWithFallback, KOMERCE_BASE_URL } = require('./utils/rajaongkir-keys');
+import { fetchWithFallback, KOMERCE_BASE_URL } from './utils/rajaongkir-keys.js';
 const FIREBASE_PROJECT_ID = 'azzahra-fashion-muslim-ab416';
 const FIREBASE_API_KEY = 'AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs';
 

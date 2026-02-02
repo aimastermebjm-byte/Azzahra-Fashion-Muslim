@@ -3,7 +3,7 @@
 // Added Firestore caching for cost optimization
 // ✅ Now with multi-key fallback support
 
-const { fetchWithFallback, KOMERCE_BASE_URL } = require('../utils/rajaongkir-keys');
+import { fetchWithFallback, KOMERCE_BASE_URL } from '../utils/rajaongkir-keys.js';
 
 // Firebase Admin SDK for caching
 // Note: For Vercel deployment, we'll use Firebase REST API instead of Admin SDK

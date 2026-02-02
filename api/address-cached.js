@@ -2,7 +2,7 @@
 // Reduces API calls by caching provinces, cities, districts, subdistricts
 // ✅ Now with multi-key fallback support
 
-const { fetchWithFallback, API_KEYS, KOMERCE_BASE_URL } = require('./utils/rajaongkir-keys');
+import { fetchWithFallback, API_KEYS, KOMERCE_BASE_URL } from './utils/rajaongkir-keys.js';
 const FIREBASE_PROJECT_ID = 'azzahra-fashion-muslim-ab416';
 const FIREBASE_API_KEY = 'AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs';
 

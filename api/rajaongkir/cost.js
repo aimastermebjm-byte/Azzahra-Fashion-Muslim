@@ -2,7 +2,7 @@
 // Based on official Komerce documentation
 // ✅ Now with multi-key fallback support
 
-const { fetchWithFallback, KOMERCE_BASE_URL } = require('../utils/rajaongkir-keys');
+import { fetchWithFallback, KOMERCE_BASE_URL } from '../utils/rajaongkir-keys.js';
 
 export default async function handler(req, res) {
   try {

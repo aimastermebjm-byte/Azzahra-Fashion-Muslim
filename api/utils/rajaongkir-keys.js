@@ -140,7 +140,7 @@ function resetToFirstKey() {
     currentKeyIndex = 0;
 }
 
-module.exports = {
+export {
     fetchWithFallback,
     getCurrentKey,
     getKeysCount,
