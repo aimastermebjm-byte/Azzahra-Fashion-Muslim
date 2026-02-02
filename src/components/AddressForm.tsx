@@ -170,7 +170,6 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   const [loadingSubdistricts, setLoadingSubdistricts] = useState(false);
   const [loadingPostalCodes, setLoadingPostalCodes] = useState(false);
   const [postalCodes, setPostalCodes] = useState<string[]>([]); // All codes for kecamatan
-  const [filteredPostalCodes, setFilteredPostalCodes] = useState<string[]>([]); // Filtered for selected kelurahan
   const [postalCodeMap, setPostalCodeMap] = useState<Map<string, string>>(new Map()); // kelurahan name -> postal code
   const [errors, setErrors] = useState<Partial<Address>>({});
 
@@ -512,16 +511,15 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
     if (postalCode) {
       console.log(`✅ Auto-fill postal code: ${postalCode} for ${formData.subdistrict}`);
       setFormData(prev => ({ ...prev, postalCode }));
-      // Filter dropdown to only show this kelurahan's postal code
-      setFilteredPostalCodes([postalCode]);
+
     } else if (postalCodes.length === 1) {
       // If only one postal code for the whole kecamatan, use it
       console.log(`✅ Auto-fill single postal code: ${postalCodes[0]}`);
       setFormData(prev => ({ ...prev, postalCode: postalCodes[0] }));
-      setFilteredPostalCodes([postalCodes[0]]);
+
     } else {
       // No specific match found, show all kecamatan codes as fallback
-      setFilteredPostalCodes(postalCodes);
+
     }
   }, [formData.subdistrict, formData.subdistrictId, postalCodeMap, postalCodes]);
 
@@ -752,27 +750,21 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
           Kode Pos *
         </label>
         {/* Show dropdown if postal codes available, otherwise fallback to input */}
-        {filteredPostalCodes.length > 0 ? (
+        {postalCodes.length > 0 ? (
           <select
             name="postalCode"
             value={formData.postalCode}
             onChange={handleChange}
             className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${errors.postalCode ? 'border-red-500' : 'border-gray-300'
               }`}
-            disabled={loadingPostalCodes || filteredPostalCodes.length === 1}
+            disabled={loadingPostalCodes}
           >
-            {filteredPostalCodes.length === 1 ? (
-              <option value={filteredPostalCodes[0]}>{filteredPostalCodes[0]}</option>
-            ) : (
-              <>
-                <option value="">Pilih kode pos</option>
-                {filteredPostalCodes.map(code => (
-                  <option key={code} value={code}>
-                    {code}
-                  </option>
-                ))}
-              </>
-            )}
+            <option value="">Pilih kode pos</option>
+            {postalCodes.map(code => (
+              <option key={code} value={code}>
+                {code}
+              </option>
+            ))}
           </select>
         ) : (
           <input
