@@ -86,6 +86,10 @@ async function fetchWithFallback(endpoint, options = {}, keyIndex = 0) {
             data = null;
         }
 
+        // Debug: Log response status and data
+        console.log(`📊 Key #${keyIndex + 1} response status: ${response.status}`);
+        console.log(`📊 Key #${keyIndex + 1} response meta:`, data?.meta);
+
         // Check if rate limited
         if (isRateLimitError(response, data)) {
             console.warn(`⚠️ API key #${keyIndex + 1} rate limited, trying next key...`);
