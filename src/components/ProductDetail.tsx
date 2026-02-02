@@ -306,8 +306,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     } else if (collectionDiscount > 0) {
       // 🔥 PRIORITY #2: Collection Discount
       const basePrice = user?.role === 'reseller'
-        ? (currentProduct.originalResellerPrice || currentProduct.resellerPrice)
-        : (currentProduct.originalRetailPrice || currentProduct.retailPrice);
+        ? currentProduct.resellerPrice
+        : currentProduct.retailPrice;
       finalPrice = Math.max(0, basePrice - collectionDiscount);
       console.log(`💰 Using Collection Discount price: ${basePrice} - ${collectionDiscount} = ${finalPrice}`);
     } else {
@@ -388,8 +388,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     } else if (collectionDiscount > 0) {
       // 🔥 PRIORITY #2: Collection Discount
       const basePrice = user?.role === 'reseller'
-        ? (currentProduct.originalResellerPrice || currentProduct.resellerPrice)
-        : (currentProduct.originalRetailPrice || currentProduct.retailPrice);
+        ? currentProduct.resellerPrice
+        : currentProduct.retailPrice;
       finalPrice = Math.max(0, basePrice - collectionDiscount);
       console.log(`💰 BuyNow: Using Collection Discount price: ${basePrice} - ${collectionDiscount} = ${finalPrice}`);
     } else {
@@ -426,8 +426,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     // 🔥 PRIORITY #2: Collection Discount (before variant pricing)
     if (collectionDiscount > 0) {
       const basePrice = user?.role === 'reseller'
-        ? (currentProduct.originalResellerPrice || currentProduct.resellerPrice)
-        : (currentProduct.originalRetailPrice || currentProduct.retailPrice);
+        ? currentProduct.resellerPrice
+        : currentProduct.retailPrice;
       return Math.max(0, basePrice - collectionDiscount);
     }
 
