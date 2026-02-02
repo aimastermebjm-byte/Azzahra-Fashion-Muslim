@@ -25,12 +25,17 @@ function isRateLimitError(response, data) {
     if (response.status === 429) return true;
 
     // Komerce-specific error messages
-    if (data?.meta?.status === 'error') {
+    if (data?.meta?.status === 'error' || data?.meta?.status === 'failed') {
         const message = (data.meta.message || '').toLowerCase();
         if (message.includes('limit') ||
             message.includes('quota') ||
             message.includes('exceeded') ||
             message.includes('rate')) {
+            return true;
+        }
+        // Also fallback on invalid key
+        if (message.includes('invalid api key') || message.includes('key not found')) {
+            console.warn('⚠️ Detected Invalid API Key');
             return true;
         }
     }
@@ -58,7 +63,7 @@ async function fetchWithFallback(endpoint, options = {}, keyIndex = 0) {
     const headers = {
         ...options.headers,
         'key': apiKey,
-        'Key': apiKey // Some endpoints use different casing
+        // 'Key': apiKey // Duplicate header causing 400 Bad Request on some endpoints
     };
 
     console.log(`🔑 Using API key #${keyIndex + 1} for ${endpoint}`);
