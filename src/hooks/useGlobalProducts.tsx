@@ -103,11 +103,39 @@ export const GlobalProductsProvider: React.FC<{ children: React.ReactNode }> = (
           variantNames: data.variantNames || null
         }));
 
-        setAllProducts(transformedProducts);
+        // 🔥 FLASH SALE ENRICHMENT - Calculate on-the-fly from flashSaleConfig
+        const flashSaleConfig = batchData.flashSaleConfig;
+        const enrichedProducts = transformedProducts.map(product => {
+          // Check if this product is in flash sale
+          const discount = flashSaleConfig?.isActive && flashSaleConfig?.productDiscounts?.[product.id];
+
+          if (discount && discount > 0) {
+            // Calculate flash sale price from retailPrice - discount
+            const flashSalePrice = Math.max(product.retailPrice - discount, 1000);
+
+            return {
+              ...product,
+              isFlashSale: true,
+              flashSalePrice,
+              flashSaleDiscount: discount
+            };
+          }
+
+          // Not in flash sale - return as-is (remove old flash sale flags if any)
+          return {
+            ...product,
+            isFlashSale: false,
+            flashSalePrice: product.retailPrice,  // Default to retailPrice
+            flashSaleDiscount: null
+          };
+        });
+
+        setAllProducts(enrichedProducts);
         setLoading(false);
         setError(null);
 
-        console.log(`🌍 GLOBAL: Products updated with ${products.length} products (from Firestore real-time)`);
+        const flashSaleCount = enrichedProducts.filter(p => p.isFlashSale).length;
+        console.log(`🌍 GLOBAL: ${products.length} products loaded. ${flashSaleCount} in flash sale (enriched from config).`);
       } else {
         setAllProducts([]);
         setLoading(false);
