@@ -7,11 +7,13 @@ const FIREBASE_PROJECT_ID = 'azzahra-fashion-muslim-ab416';
 const FIREBASE_API_KEY = 'AIzaSyDYGOfg7BSk1W8KuqjA0RzVMGOmfKZdOUs';
 
 // Cache TTL (hours) - will be loaded from settings
+// Address data = PERMANENT (user-requested: only refresh manually if needed)
+// Shipping data = 30 days
 const DEFAULT_CACHE_TTL = {
-  provinces: 24 * 30 * 6,  // 6 months - provinces rarely change
-  cities: 24 * 30,        // 1 month
-  districts: 24 * 30,     // 1 month
-  subdistricts: 24 * 30   // 1 month
+  provinces: 24 * 365 * 100,    // 100 years (permanent)
+  cities: 24 * 365 * 100,       // 100 years (permanent)
+  districts: 24 * 365 * 100,    // 100 years (permanent)
+  subdistricts: 24 * 365 * 100  // 100 years (permanent)
 };
 
 // Load cache TTL from settings
