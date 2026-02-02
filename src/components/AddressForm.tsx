@@ -46,6 +46,12 @@ interface Subdistrict {
   province_id?: string;
 }
 
+// Kode pos data per kelurahan
+interface PostalCodeData {
+  name: string;
+  postal_code: string;
+}
+
 const ADDRESS_CACHE_PREFIX = 'addressFormCache';
 const ADDRESS_CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 const isBrowser = typeof window !== 'undefined';
@@ -162,6 +168,9 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [loadingSubdistricts, setLoadingSubdistricts] = useState(false);
+  const [loadingPostalCodes, setLoadingPostalCodes] = useState(false);
+  const [postalCodes, setPostalCodes] = useState<string[]>([]);
+  const [postalCodeMap, setPostalCodeMap] = useState<Map<string, string>>(new Map()); // kelurahan name -> postal code
   const [errors, setErrors] = useState<Partial<Address>>({});
 
   // In-memory cache to reduce API calls within browser session
@@ -413,6 +422,102 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
     return [];
   };
 
+  // ✅ NEW: Load postal codes for a kecamatan (pre-fetch on kecamatan select)
+  const loadPostalCodes = async () => {
+    // Need province, city, and district names for lookup
+    if (!formData.province || !formData.city || !formData.district) return;
+
+    const cacheKey = `postalcodes_${formData.districtId}`;
+
+    // Check in-memory cache first
+    if (addressCache.has(cacheKey)) {
+      const cached = addressCache.get(cacheKey) as PostalCodeData[];
+      const codes = [...new Set(cached.map(c => c.postal_code))].sort();
+      setPostalCodes(codes);
+      const map = new Map<string, string>();
+      cached.forEach(c => map.set(c.name.toUpperCase(), c.postal_code));
+      setPostalCodeMap(map);
+      console.log('✅ Postal codes from cache:', codes.length);
+      return codes;
+    }
+
+    setLoadingPostalCodes(true);
+    try {
+      const params = new URLSearchParams({
+        province: formData.province,
+        city: formData.city,
+        district: formData.district
+      });
+
+      const response = await fetch(`/api/postal-code?${params}`);
+      const data = await response.json();
+
+      if (data.success) {
+        // Extract unique postal codes
+        const codes = data.codes as string[];
+        setPostalCodes(codes);
+
+        // Build kelurahan -> postal code map if subdistricts available
+        const map = new Map<string, string>();
+        if (data.subdistricts) {
+          (data.subdistricts as PostalCodeData[]).forEach(s => {
+            map.set(s.name.toUpperCase(), s.postal_code);
+          });
+          // Cache the full subdistrict data
+          setAddressCache(prev => new Map(prev).set(cacheKey, data.subdistricts));
+        }
+        setPostalCodeMap(map);
+
+        console.log(`✅ Loaded ${codes.length} postal codes for ${formData.district}`);
+        return codes;
+      } else {
+        console.warn('⚠️ Postal codes not found:', data.error);
+        setPostalCodes([]);
+        setPostalCodeMap(new Map());
+      }
+    } catch (error) {
+      console.error('Error loading postal codes:', error);
+      setPostalCodes([]);
+      setPostalCodeMap(new Map());
+    } finally {
+      setLoadingPostalCodes(false);
+    }
+
+    return [];
+  };
+
+  // Pre-fetch postal codes when district (kecamatan) is selected
+  useEffect(() => {
+    if (!formData.districtId || !formData.district) return;
+
+    // Pre-fetch postal codes in background
+    loadPostalCodes();
+
+    // Reset postal code selection when district changes
+    if (!isPrefillingRef.current) {
+      setPostalCodes([]);
+      setPostalCodeMap(new Map());
+    }
+  }, [formData.districtId, formData.district]);
+
+  // Auto-fill postal code when kelurahan is selected
+  useEffect(() => {
+    if (!formData.subdistrict || isPrefillingRef.current) return;
+
+    // Try to find postal code for selected kelurahan
+    const normalizedName = formData.subdistrict.toUpperCase().trim();
+    const postalCode = postalCodeMap.get(normalizedName);
+
+    if (postalCode) {
+      console.log(`✅ Auto-fill postal code: ${postalCode} for ${formData.subdistrict}`);
+      setFormData(prev => ({ ...prev, postalCode }));
+    } else if (postalCodes.length === 1) {
+      // If only one postal code for the whole kecamatan, use it
+      console.log(`✅ Auto-fill single postal code: ${postalCodes[0]}`);
+      setFormData(prev => ({ ...prev, postalCode: postalCodes[0] }));
+    }
+  }, [formData.subdistrict, formData.subdistrictId, postalCodeMap, postalCodes]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     let newValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
@@ -639,16 +744,42 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Kode Pos *
         </label>
-        <input
-          type="text"
-          name="postalCode"
-          value={formData.postalCode}
-          onChange={handleChange}
-          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${errors.postalCode ? 'border-red-500' : 'border-gray-300'
-            }`}
-          placeholder="Masukkan kode pos"
-          maxLength={5}
-        />
+        {/* Show dropdown if postal codes available, otherwise fallback to input */}
+        {postalCodes.length > 0 ? (
+          <select
+            name="postalCode"
+            value={formData.postalCode}
+            onChange={handleChange}
+            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${errors.postalCode ? 'border-red-500' : 'border-gray-300'
+              }`}
+            disabled={loadingPostalCodes}
+          >
+            <option value="">Pilih kode pos</option>
+            {postalCodes.map(code => (
+              <option key={code} value={code}>
+                {code}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="text"
+            name="postalCode"
+            value={formData.postalCode}
+            onChange={handleChange}
+            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent ${errors.postalCode ? 'border-red-500' : 'border-gray-300'
+              }`}
+            placeholder={loadingPostalCodes ? "Memuat kode pos..." : "Masukkan kode pos"}
+            maxLength={5}
+            disabled={loadingPostalCodes}
+          />
+        )}
+        {loadingPostalCodes && (
+          <div className="mt-2 flex items-center text-sm text-gray-500">
+            <Loader2 className="w-4 h-4 animate-spin mr-1" />
+            Memuat kode pos...
+          </div>
+        )}
         {errors.postalCode && (
           <p className="text-red-500 text-xs mt-1">{errors.postalCode}</p>
         )}
