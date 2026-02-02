@@ -303,8 +303,15 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     if (currentProduct.isFlashSale && currentProduct.flashSalePrice > 0) {
       finalPrice = currentProduct.flashSalePrice;
       console.log(`💰 Using Flash Sale price: ${finalPrice}`);
+    } else if (collectionDiscount > 0) {
+      // 🔥 PRIORITY #2: Collection Discount
+      const basePrice = user?.role === 'reseller'
+        ? (currentProduct.originalResellerPrice || currentProduct.resellerPrice)
+        : (currentProduct.originalRetailPrice || currentProduct.retailPrice);
+      finalPrice = Math.max(0, basePrice - collectionDiscount);
+      console.log(`💰 Using Collection Discount price: ${basePrice} - ${collectionDiscount} = ${finalPrice}`);
     } else {
-      // 🔥 PRIORITY #2: Check for variant-specific pricing
+      // 🔥 PRIORITY #3: Check for variant-specific pricing
       const productAny = currentProduct as any;
       if (productAny.pricesPerVariant && selectedSize && selectedColor) {
         const variantKey = `${selectedSize}-${selectedColor}`;
@@ -378,8 +385,15 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     if (currentProduct.isFlashSale && currentProduct.flashSalePrice > 0) {
       finalPrice = currentProduct.flashSalePrice;
       console.log(`💰 BuyNow: Using Flash Sale price: ${finalPrice}`);
+    } else if (collectionDiscount > 0) {
+      // 🔥 PRIORITY #2: Collection Discount
+      const basePrice = user?.role === 'reseller'
+        ? (currentProduct.originalResellerPrice || currentProduct.resellerPrice)
+        : (currentProduct.originalRetailPrice || currentProduct.retailPrice);
+      finalPrice = Math.max(0, basePrice - collectionDiscount);
+      console.log(`💰 BuyNow: Using Collection Discount price: ${basePrice} - ${collectionDiscount} = ${finalPrice}`);
     } else {
-      // 🔥 PRIORITY #2: Check for variant-specific pricing
+      // 🔥 PRIORITY #3: Check for variant-specific pricing
       const productAny = currentProduct as any;
       if (productAny.pricesPerVariant && selectedSize && selectedColor) {
         const variantKey = `${selectedSize}-${selectedColor}`;
@@ -409,7 +423,15 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       return currentProduct.flashSalePrice;
     }
 
-    // 🔥 PRIORITY #2: Variant-specific pricing
+    // 🔥 PRIORITY #2: Collection Discount (before variant pricing)
+    if (collectionDiscount > 0) {
+      const basePrice = user?.role === 'reseller'
+        ? (currentProduct.originalResellerPrice || currentProduct.resellerPrice)
+        : (currentProduct.originalRetailPrice || currentProduct.retailPrice);
+      return Math.max(0, basePrice - collectionDiscount);
+    }
+
+    // 🔥 PRIORITY #3: Variant-specific pricing
     const productAny = currentProduct as any;
     if (productAny.pricesPerVariant && selectedSize && selectedColor) {
       const variantKey = `${selectedSize}-${selectedColor}`;
@@ -422,7 +444,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       }
     }
 
-    // 🔥 PRIORITY #3: Role-based pricing (default)
+    // 🔥 PRIORITY #4: Role-based pricing (default)
     return user?.role === 'reseller' ? currentProduct.resellerPrice : currentProduct.retailPrice;
   };
 
@@ -444,12 +466,17 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       return `Rp ${currentProduct.flashSalePrice.toLocaleString('id-ID')}`;
     }
 
-    // 2. Variant Selected -> Use specific calculated price
+    // 2. Collection Discount
+    if (collectionDiscount > 0) {
+      return `Rp ${getPrice().toLocaleString('id-ID')}`;
+    }
+
+    // 3. Variant Selected -> Use specific calculated price
     if (selectedSize && selectedColor) {
       return `Rp ${getPrice().toLocaleString('id-ID')}`;
     }
 
-    // 3. Variant Price -> Show MINIMUM price only (Shopee-style)
+    // 4. Variant Price -> Show MINIMUM price only (Shopee-style)
     if (productAny.pricesPerVariant) {
       const prices = Object.values(productAny.pricesPerVariant).map((p: any) =>
         user?.role === 'reseller' && p.reseller ? Number(p.reseller) : Number(p.retail)
@@ -461,7 +488,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       }
     }
 
-    // 4. Default Fallback
+    // 5. Default Fallback
     const defaultPrice = user?.role === 'reseller' ? currentProduct.resellerPrice : currentProduct.retailPrice;
     return `Rp ${defaultPrice.toLocaleString('id-ID')}`;
   };
@@ -557,8 +584,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                 });
               }}
               className={`w-9 h-9 rounded-full flex items-center justify-center transition hover:scale-110 ${isInWishlist(currentProduct.id)
-                  ? 'bg-red-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-red-500 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
               <Heart className={`h-4 w-4 ${isInWishlist(currentProduct.id) ? 'fill-current' : ''}`} />
