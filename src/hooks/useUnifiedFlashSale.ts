@@ -291,62 +291,19 @@ export const useUnifiedFlashSale = () => {
       const updatePromises = validBatches.map(async ({ batchId, data: batchData }) => {
         console.log(`🔄 Processing ${batchId} for flash sale updates...`);
 
-        const updatedProducts = batchData.products.map((product: any) => {
-          const shouldUpdate = selectedProductIds
-            ? selectedProductIds.includes(product.id)  // Only selected products
-            : isActive; // If no specific IDs, use global logic
-
-          if (shouldUpdate && isActive) {
-            // 🔥 FIX: originalRetailPrice HARUS immutable - jangan pernah overwrite!
-            // Flash sale SELALU dihitung dari harga asli pertama
-            const basePrice = product.originalRetailPrice || product.retailPrice;
-
-            // Apply flash sale to selected products
-            // discountPercentage is in RUPIAH, not percentage
-            const flashSalePrice = Math.max(basePrice - discountPercentage, 1000); // Minimum 1000
-
-            // 🔒 TRIPLE SAFETY LOCK untuk originalRetailPrice:
-            // 1. Jika sudah ada originalRetailPrice → JANGAN UBAH! (preserve)
-            // 2. Jika belum ada → Set dari retailPrice SAAT INI (first time only)
-            // 3. JANGAN PERNAH overwrite originalRetailPrice yang sudah ada
-            const safeOriginalRetailPrice = product.originalRetailPrice
-              ? product.originalRetailPrice  // Lock #1: Preserve existing value
-              : product.retailPrice;         // Lock #2: First time only
-
-            return {
-              ...product,
-              isFlashSale: true,
-              flashSalePrice: flashSalePrice,
-              // 🔒 CRITICAL: originalRetailPrice is IMMUTABLE after first set
-              originalRetailPrice: safeOriginalRetailPrice
-            };
-          } else {
-            // Reset flash sale flags (if not active or not selected)
-            const updatedProduct = {
-              ...product,
-              isFlashSale: false,
-              flashSalePrice: undefined
-            };
-
-            // Remove undefined fields
-            delete updatedProduct.flashSalePrice;
-
-            return updatedProduct;
-          }
-        });
+        // 🔥 REMOVED: Old products.map() logic - we don't modify products anymore!
 
         // 🔥 NEW: ONLY update flashSaleConfig, NEVER touch products array!
         const batchRef = doc(db, 'productBatches', batchId);
 
-        // Build productDiscounts mapping from updatedProducts
+        // 🔥 NEW: Directly build productDiscounts from selectedProductIds
         const productDiscounts: { [productId: string]: number } = {};
-        updatedProducts.forEach((p: any) => {
-          if (p.isFlashSale && p.flashSalePrice) {
-            // Calculate discount from the old logic
-            const discount = (p.originalRetailPrice || p.retailPrice) - p.flashSalePrice;
-            productDiscounts[p.id] = discount;
-          }
-        });
+        if (selectedProductIds && selectedProductIds.length > 0 && isActive) {
+          selectedProductIds.forEach(productId => {
+            productDiscounts[productId] = discountPercentage;
+          });
+          console.log(`💰 Flash sale: ${Object.keys(productDiscounts).length} products, discount Rp ${discountPercentage.toLocaleString('id-ID')}`);
+        }
 
         await setDoc(batchRef, {
           flashSaleConfig: {
@@ -357,11 +314,10 @@ export const useUnifiedFlashSale = () => {
           }
         }, { merge: true });  // ← KEY: Merge only config, products untouched!
 
+        const affectedCount = Object.keys(productDiscounts).length;
+        console.log(`✅ ${batchId}: FlashSaleConfig saved. ${affectedCount} products in flash sale. Products array NOT modified.`);
 
-        const affectedCount = updatedProducts.filter((p: any) => p.isFlashSale === isActive).length;
-        console.log(`✅ ${batchId}: Flash sale flags updated for ${affectedCount} products`);
-
-        return { batchId, affectedCount, totalProducts: updatedProducts.length };
+        return { batchId, affectedCount };
       });
 
       // Execute all batch updates in parallel
@@ -369,8 +325,7 @@ export const useUnifiedFlashSale = () => {
 
       // Summary
       const totalAffected = updateResults.reduce((sum, result) => sum + result.affectedCount, 0);
-      const totalProducts = updateResults.reduce((sum, result) => sum + result.totalProducts, 0);
-      console.log(`🎉 FLASH SALE COMPLETE: ${totalAffected}/${totalProducts} products updated across ${validBatches.length} batches`);
+      console.log(`🎉 FLASH SALE CONFIG SAVED: ${totalAffected} products across ${validBatches.length} batches. Products array UNTOUCHED!`);
     } catch (error) {
       console.error('❌ Failed to update product flash sale flags:', error);
       throw error;
