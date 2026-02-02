@@ -294,14 +294,28 @@ export const useUnifiedFlashSale = () => {
             : isActive; // If no specific IDs, use global logic
 
           if (shouldUpdate && isActive) {
+            // 🔥 FIX: originalRetailPrice HARUS immutable - jangan pernah overwrite!
+            // Flash sale SELALU dihitung dari harga asli pertama
+            const basePrice = product.originalRetailPrice || product.retailPrice;
+
             // Apply flash sale to selected products
             // discountPercentage is in RUPIAH, not percentage
-            const flashSalePrice = Math.max(product.retailPrice - discountPercentage, 1000); // Minimum 1000
+            const flashSalePrice = Math.max(basePrice - discountPercentage, 1000); // Minimum 1000
+
+            // 🔒 TRIPLE SAFETY LOCK untuk originalRetailPrice:
+            // 1. Jika sudah ada originalRetailPrice → JANGAN UBAH! (preserve)
+            // 2. Jika belum ada → Set dari retailPrice SAAT INI (first time only)
+            // 3. JANGAN PERNAH overwrite originalRetailPrice yang sudah ada
+            const safeOriginalRetailPrice = product.originalRetailPrice
+              ? product.originalRetailPrice  // Lock #1: Preserve existing value
+              : product.retailPrice;         // Lock #2: First time only
+
             return {
               ...product,
               isFlashSale: true,
               flashSalePrice: flashSalePrice,
-              originalRetailPrice: product.originalRetailPrice || product.retailPrice
+              // 🔒 CRITICAL: originalRetailPrice is IMMUTABLE after first set
+              originalRetailPrice: safeOriginalRetailPrice
             };
           } else {
             // Reset flash sale flags (if not active or not selected)

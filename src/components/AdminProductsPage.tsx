@@ -648,9 +648,27 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
       const updates: Partial<Product> = {};
 
       if (batchFormData.category) updates.category = batchFormData.category;
+
+      // 🔒 PROTECTION: Harga hanya boleh diubah dengan konfirmasi eksplisit
       if (batchFormData.retailPrice > 0) {
+        const confirmation = confirm(
+          `⚠️ PERINGATAN PENTING!\n\n` +
+          `Anda akan mengubah HARGA RETAIL ${selectedProducts.length} produk secara PERMANENT!\n\n` +
+          `Harga baru: Rp ${batchFormData.retailPrice.toLocaleString('id-ID')}\n\n` +
+          `Tindakan ini TIDAK DAPAT DIBATALKAN!\n\n` +
+          `Apakah Anda YAKIN ingin melanjutkan?`
+        );
+
+        if (!confirmation) {
+          alert('Batch update dibatalkan. Harga produk tidak diubah.');
+          return;
+        }
+
         updates.retailPrice = batchFormData.retailPrice;
         updates.resellerPrice = Math.round(batchFormData.retailPrice * 0.8);
+        // 🔒 Update originalRetailPrice juga untuk konsistensi
+        updates.originalRetailPrice = batchFormData.retailPrice;
+        updates.originalResellerPrice = Math.round(batchFormData.retailPrice * 0.8);
       }
       // FIXED: Don't update stock unless explicitly changed by user (prevent stock reset to 0)
       if (batchFormData.stock >= 0) { // Only update if stock is explicitly set (not -1)
@@ -962,8 +980,14 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
     }
   };
 
-  // NEW: Bulk discount handler
+  // 🚫 DISABLED: Bulk discount handler
+  // ⚠️ REASON: Fitur ini BERBAHAYA karena mengubah retailPrice/resellerPrice PERMANENT!
+  // Boss rule: Harga HANYA boleh diubah via manual edit oleh owner
   const handleApplyDiscount = async () => {
+    alert('⚠️ FITUR INI DINONAKTIFKAN!\n\nAlasan: Mengubah harga retail/reseller secara permanent dapat menyebabkan kerugian.\n\nCara aman:\n1. Gunakan Flash Sale untuk diskon sementara\n2. Atau edit harga produk satu per satu secara manual\n\nHubungi developer jika Anda benar-benar perlu fitur ini.');
+    return;
+
+    /* ORIGINAL CODE - DISABLED FOR SAFETY
     if (selectedProducts.length === 0) {
       alert('Pilih setidaknya satu produk');
       return;
@@ -1001,6 +1025,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
       console.error('Error applying discount:', error);
       alert('Gagal menerapkan diskon. Silakan coba lagi.');
     }
+    */
   };
 
   // NEW: Handler for CollectionManager to update products (e.g. apply discount)
