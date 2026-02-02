@@ -170,7 +170,6 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   const [loadingSubdistricts, setLoadingSubdistricts] = useState(false);
   const [loadingPostalCodes, setLoadingPostalCodes] = useState(false);
   const [postalCodes, setPostalCodes] = useState<string[]>([]); // All codes for kecamatan
-  const [postalCodeMap, setPostalCodeMap] = useState<Map<string, string>>(new Map()); // kelurahan name -> postal code
   const [errors, setErrors] = useState<Partial<Address>>({});
 
   // In-memory cache to reduce API calls within browser session
@@ -434,9 +433,6 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
       const cached = addressCache.get(cacheKey) as PostalCodeData[];
       const codes = [...new Set(cached.map(c => c.postal_code))].sort();
       setPostalCodes(codes);
-      const map = new Map<string, string>();
-      cached.forEach(c => map.set(c.name.toUpperCase(), c.postal_code));
-      setPostalCodeMap(map);
       console.log('✅ Postal codes from cache:', codes.length);
       return codes;
     }
@@ -457,28 +453,23 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
         const codes = data.codes as string[];
         setPostalCodes(codes);
 
-        // Build kelurahan -> postal code map if subdistricts available
-        const map = new Map<string, string>();
+        // Build kelurahan -> postal code map removed as no longer needed for auto-fill
         if (data.subdistricts) {
-          (data.subdistricts as PostalCodeData[]).forEach(s => {
-            map.set(s.name.toUpperCase(), s.postal_code);
-          });
           // Cache the full subdistrict data
           setAddressCache(prev => new Map(prev).set(cacheKey, data.subdistricts));
         }
-        setPostalCodeMap(map);
 
         console.log(`✅ Loaded ${codes.length} postal codes for ${formData.district}`);
         return codes;
       } else {
         console.warn('⚠️ Postal codes not found:', data.error);
         setPostalCodes([]);
-        setPostalCodeMap(new Map());
+        setPostalCodes([]);
       }
     } catch (error) {
       console.error('Error loading postal codes:', error);
       setPostalCodes([]);
-      setPostalCodeMap(new Map());
+      setPostalCodes([]);
     } finally {
       setLoadingPostalCodes(false);
     }
@@ -496,7 +487,7 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
     // Reset postal code selection when district changes
     if (!isPrefillingRef.current) {
       setPostalCodes([]);
-      setPostalCodeMap(new Map());
+      setPostalCodes([]);
     }
   }, [formData.districtId, formData.district]);
 
@@ -504,24 +495,11 @@ const AddressForm: React.FC<AddressFormProps> = ({ initialData, onSave, onCancel
   useEffect(() => {
     if (!formData.subdistrict || isPrefillingRef.current) return;
 
-    // Try to find postal code for selected kelurahan
-    const normalizedName = formData.subdistrict.toUpperCase().trim();
-    const postalCode = postalCodeMap.get(normalizedName);
+    // Clear postal code when subdistrict changes so user must select again from dropdown
+    console.log('🔄 Resetting postal code for manual selection');
+    setFormData(prev => ({ ...prev, postalCode: '' }));
 
-    if (postalCode) {
-      console.log(`✅ Auto-fill postal code: ${postalCode} for ${formData.subdistrict}`);
-      setFormData(prev => ({ ...prev, postalCode }));
-
-    } else if (postalCodes.length === 1) {
-      // If only one postal code for the whole kecamatan, use it
-      console.log(`✅ Auto-fill single postal code: ${postalCodes[0]}`);
-      setFormData(prev => ({ ...prev, postalCode: postalCodes[0] }));
-
-    } else {
-      // No specific match found, show all kecamatan codes as fallback
-
-    }
-  }, [formData.subdistrict, formData.subdistrictId, postalCodeMap, postalCodes]);
+  }, [formData.subdistrict, formData.subdistrictId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
