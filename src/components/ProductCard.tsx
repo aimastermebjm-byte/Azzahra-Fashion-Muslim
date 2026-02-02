@@ -138,7 +138,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </span>
           </div>
           <div className="text-xs text-gray-400 line-through">
-            Rp {(product.originalRetailPrice || product.retailPrice).toLocaleString('id-ID')}
+            Rp {product.retailPrice.toLocaleString('id-ID')}
           </div>
         </div>
       );
