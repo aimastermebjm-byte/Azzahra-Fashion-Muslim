@@ -9,7 +9,8 @@
 
 const API_KEYS = [
     'L3abavkD5358dc66be91f537G8MkpZHi',  // Primary key
-    'nJFX74nma6890752436be846QFngTohb'   // Secondary key (fallback)
+    'nJFX74nma6890752436be846QFngTohb',  // Secondary key (fallback)
+    'rh5MbRkfd0ed58a2c5ad06bbpXLxf3Py'   // Key #3
 ];
 
 const KOMERCE_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
