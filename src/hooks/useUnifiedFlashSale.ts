@@ -12,6 +12,9 @@ interface FlashSaleConfig {
   duration: number; // dalam detik
   title?: string;
   description?: string;
+  // NEW: Product-level discount mapping untuk support multiple groups
+  productDiscounts?: { [productId: string]: number };
+  // OLD: Keep for backward compatibility
   discountPercentage?: number;
 }
 
@@ -332,18 +335,28 @@ export const useUnifiedFlashSale = () => {
           }
         });
 
-        // Update this batch with flash sale changes
+        // 🔥 NEW: ONLY update flashSaleConfig, NEVER touch products array!
         const batchRef = doc(db, 'productBatches', batchId);
+
+        // Build productDiscounts mapping from updatedProducts
+        const productDiscounts: { [productId: string]: number } = {};
+        updatedProducts.forEach((p: any) => {
+          if (p.isFlashSale && p.flashSalePrice) {
+            // Calculate discount from the old logic
+            const discount = (p.originalRetailPrice || p.retailPrice) - p.flashSalePrice;
+            productDiscounts[p.id] = discount;
+          }
+        });
+
         await setDoc(batchRef, {
-          ...batchData,
-          products: updatedProducts,
           flashSaleConfig: {
-            ...(batchData.flashSaleConfig || {}),
             isActive,
-            discountPercentage,
+            productDiscounts,  // NEW: per-product discount mapping
+            discountPercentage,  // Keep for backward compat
             lastUpdated: new Date().toISOString()
           }
-        }, { merge: true });
+        }, { merge: true });  // ← KEY: Merge only config, products untouched!
+
 
         const affectedCount = updatedProducts.filter((p: any) => p.isFlashSale === isActive).length;
         console.log(`✅ ${batchId}: Flash sale flags updated for ${affectedCount} products`);
