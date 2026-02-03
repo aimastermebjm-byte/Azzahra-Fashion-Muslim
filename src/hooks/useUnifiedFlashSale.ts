@@ -174,7 +174,19 @@ export const useUnifiedFlashSale = () => {
     selectedProductIds?: string[]
   ) => {
     try {
-      console.log('🚀 Starting flash sale...');
+      // 🔥 NEW: ADD MODE - duration=0 means add to existing, don't touch config!
+      if (durationMinutes === 0) {
+        console.log('➕ ADD MODE: Adding products to existing flash sale (skip config update)');
+
+        // ONLY update productDiscounts (merge with existing)
+        await updateProductFlashSaleFlags(true, discountPercentage || 20, selectedProductIds);
+
+        console.log('✅ Products added to flash sale successfully!');
+        return true;
+      }
+
+      // Original NEW flash sale logic
+      console.log('🚀 Starting NEW flash sale...');
 
       const startTime = new Date();
       const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
