@@ -296,19 +296,32 @@ export const useUnifiedFlashSale = () => {
         // 🔥 NEW: ONLY update flashSaleConfig, NEVER touch products array!
         const batchRef = doc(db, 'productBatches', batchId);
 
-        // 🔥 NEW: Directly build productDiscounts from selectedProductIds
-        const productDiscounts: { [productId: string]: number } = {};
+        // 🔥 READ existing flashSaleConfig to MERGE productDiscounts
+        const existingBatch = await getDoc(batchRef);
+        const existingFlashSaleConfig = existingBatch.exists() ? existingBatch.data().flashSaleConfig : null;
+        const existingProductDiscounts = existingFlashSaleConfig?.productDiscounts || {};
+
+        console.log(`📚 Existing flash sale products: ${Object.keys(existingProductDiscounts).length}`);
+
+        // 🔥 NEW: Build productDiscounts - MERGE with existing if flash sale active
+        let productDiscounts: { [productId: string]: number } = { ...existingProductDiscounts };
+
         if (selectedProductIds && selectedProductIds.length > 0 && isActive) {
+          // ADD or UPDATE products with new discount
           selectedProductIds.forEach(productId => {
             productDiscounts[productId] = discountPercentage;
           });
-          console.log(`💰 Flash sale: ${Object.keys(productDiscounts).length} products, discount Rp ${discountPercentage.toLocaleString('id-ID')}`);
+          console.log(`➕ Adding/updating ${selectedProductIds.length} products with discount Rp ${discountPercentage.toLocaleString('id-ID')}`);
+        } else if (!isActive) {
+          // Flash sale ending - clear all
+          productDiscounts = {};
+          console.log('🧹 Clearing all flash sale products');
         }
 
         await setDoc(batchRef, {
           flashSaleConfig: {
             isActive,
-            productDiscounts,  // NEW: per-product discount mapping
+            productDiscounts,  // NEW: per-product discount mapping (merged)
             discountPercentage,  // Keep for backward compat
             lastUpdated: new Date().toISOString()
           }

@@ -753,7 +753,54 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
 
   // Flash sale operations
   const handleFlashSaleStart = async () => {
-    // Validasi: Pastikan semua field yang diperlukan terisi
+    // 🔥 NEW: If flash sale is active, add to existing with custom discount
+    if (isFlashSaleActive) {
+      // Simplified validation for adding to existing
+      if (flashSaleFormData.productIds.length === 0) {
+        alert('Pilih setidaknya satu produk untuk ditambahkan ke flash sale');
+        return;
+      }
+
+      if (!flashSaleFormData.flashSaleDiscount || flashSaleFormData.flashSaleDiscount <= 0) {
+        alert('Mohon isi jumlah diskon yang valid untuk grup produk ini');
+        return;
+      }
+
+      try {
+        console.log('➕ ADDING products to existing flash sale with custom discount');
+        console.log('- Products to add:', flashSaleFormData.productIds.length);
+        console.log('- Custom discount for this group:', flashSaleFormData.flashSaleDiscount);
+
+        // Call with duration=0 to signal ADD mode (not replace)
+        await startUnifiedFlashSale(
+          0, // duration = 0 means keep existing timer
+          flashSaleConfig?.title || '⚡ Flash Sale',
+          flashSaleConfig?.description || 'Diskon spesial terbatas!',
+          flashSaleFormData.flashSaleDiscount, // Custom discount for this group
+          flashSaleFormData.productIds
+        );
+
+        setShowFlashSaleModal(false);
+
+        // Reset form
+        setFlashSaleFormData({
+          isActive: false,
+          startTime: '',
+          endTime: '',
+          flashSaleDiscount: 0,
+          productIds: []
+        });
+
+        alert(`✅ ${flashSaleFormData.productIds.length} produk berhasil ditambahkan ke flash sale dengan diskon Rp ${flashSaleFormData.flashSaleDiscount.toLocaleString('id-ID')}!`);
+        return; // Exit early
+      } catch (error) {
+        console.error('Error adding to flash sale:', error);
+        alert('Gagal menambahkan produk ke flash sale: ' + (error as Error).message);
+        return;
+      }
+    }
+
+    // Original validation for NEW flash sale
     if (!flashSaleFormData.startTime) {
       alert('Mohon isi waktu mulai flash sale');
       return;
@@ -3120,6 +3167,22 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
               </div>
 
               <div className="p-6 space-y-6">
+                {/* 🔥 NEW: Info Banner when Flash Sale Active */}
+                {isFlashSaleActive && (
+                  <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Flame className="w-5 h-5 text-orange-600" />
+                      <h3 className="font-bold text-orange-800">Flash Sale Sedang Berlangsung</h3>
+                    </div>
+                    <p className="text-sm text-orange-700 mb-1">
+                      Produk yang Anda pilih akan <strong>ditambahkan</strong> ke flash sale aktif dengan diskon <strong>berbeda</strong>.
+                    </p>
+                    <div className="text-xs text-orange-600 bg-orange-100 px-3 py-2 rounded mt-2">
+                      ⏰ Waktu berakhir: Ikut flash sale aktif (otomatis)
+                    </div>
+                  </div>
+                )}
+
                 {/* Product Selection Info (Replacing selector) */}
                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm text-gray-800">
                   <div className="flex items-center gap-2 mb-3 border-b border-gray-200 pb-2">
@@ -3147,49 +3210,56 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     }
                   </div>
                   <p className="text-xs opacity-70 mt-2 italic">
-                    * Produk ini akan didaftarkan ke sesi Flash Sale baru.
+                    * Produk ini akan {isFlashSaleActive ? 'ditambahkan ke' : 'didaftarkan ke'} Flash Sale {isFlashSaleActive ? 'yang sedang aktif' : 'baru'}.
                   </p>
                 </div>
 
-                {/* Flash Sale Settings */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <Clock className="w-4 h-4 inline mr-1" />
-                      Waktu Mulai
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={flashSaleFormData.startTime}
-                      onChange={(e) => setFlashSaleFormData({ ...flashSaleFormData, startTime: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
-                    />
+                {/* Flash Sale Settings - HIDE time picker if flash sale active */}
+                {!isFlashSaleActive && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <Clock className="w-4 h-4 inline mr-1" />
+                        Waktu Mulai
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={flashSaleFormData.startTime}
+                        onChange={(e) => setFlashSaleFormData({ ...flashSaleFormData, startTime: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <Clock className="w-4 h-4 inline mr-1" />
+                        Waktu Berakhir
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={flashSaleFormData.endTime}
+                        onChange={(e) => setFlashSaleFormData({ ...flashSaleFormData, endTime: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <Clock className="w-4 h-4 inline mr-1" />
-                      Waktu Berakhir
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={flashSaleFormData.endTime}
-                      onChange={(e) => setFlashSaleFormData({ ...flashSaleFormData, endTime: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
-                    />
-                  </div>
-                </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Diskon Flash Sale (Rp)
+                    Diskon Flash Sale {isFlashSaleActive && '(untuk Grup Produk Ini)'} (Rp)
                   </label>
                   <input
                     type="number"
                     value={flashSaleFormData.flashSaleDiscount || ''}
                     onChange={(e) => setFlashSaleFormData({ ...flashSaleFormData, flashSaleDiscount: parseInt(e.target.value) || 0 })}
-                    placeholder="Masukkan jumlah diskon"
+                    placeholder="Masukkan jumlah diskon (contoh: 100000)"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
                   />
+                  {isFlashSaleActive && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      💡 Diskon ini hanya untuk produk yang Anda pilih, berbeda dengan flash sale yang sedang berjalan.
+                    </p>
+                  )}
                 </div>
 
                 {/* Action Buttons */}
@@ -3216,7 +3286,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                         className="bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all flex items-center space-x-2 font-bold shadow-[0_2px_0_0_#7a6223]"
                       >
                         <Flame className="w-4 h-4" />
-                        <span>Mulai Flash Sale</span>
+                        <span>{isFlashSaleActive ? 'Tambah ke Flash Sale' : 'Mulai Flash Sale'}</span>
                       </button>
                     )}
                   </div>
