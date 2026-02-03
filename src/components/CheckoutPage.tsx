@@ -468,23 +468,31 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     return cartItems.map(item => {
       // 🔥 CRITICAL: DON'T override flash sale prices!
-      // If item has flash sale, item.price is already the discounted flash sale price
       if (item.isFlashSale || item.productStatus === 'flash_sale') {
-        return item; // Keep original flash sale price
+        return item;
       }
 
-      // If we have stored retail/reseller prices, use them
-      // Otherwise fallback to current price
       let newPrice = item.price;
+      const variant = item.variant;
 
       if (priceMode === 'reseller') {
-        // Try to find reseller price
-        if (item.resellerPrice && item.resellerPrice > 0) newPrice = item.resellerPrice;
-        else if (item.originalResellerPrice && item.originalResellerPrice > 0) newPrice = item.originalResellerPrice;
+        // RESELLER Mode: Check Variant Reseller -> Product Reseller -> Original Reseller
+        if (variant?.resellerPrice && Number(variant.resellerPrice) > 0) {
+          newPrice = Number(variant.resellerPrice);
+        } else if (item.resellerPrice && item.resellerPrice > 0) {
+          newPrice = item.resellerPrice;
+        } else if (item.originalResellerPrice && item.originalResellerPrice > 0) {
+          newPrice = item.originalResellerPrice;
+        }
       } else {
-        // Try to find retail price
-        if (item.retailPrice && item.retailPrice > 0) newPrice = item.retailPrice;
-        else if (item.originalRetailPrice && item.originalRetailPrice > 0) newPrice = item.originalRetailPrice;
+        // RETAIL Mode: Check Variant Retail -> Product Retail -> Original Retail
+        if (variant?.retailPrice && Number(variant.retailPrice) > 0) {
+          newPrice = Number(variant.retailPrice);
+        } else if (item.retailPrice && item.retailPrice > 0) {
+          newPrice = item.retailPrice;
+        } else if (item.originalRetailPrice && item.originalRetailPrice > 0) {
+          newPrice = item.originalRetailPrice;
+        }
       }
 
       return { ...item, price: newPrice };
@@ -792,8 +800,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     // Metric vars are now calculated at component level (effectiveFinalTotal, etc)
 
+    // 🔥 Use effectiveCartItems to ensure correct pricing (Retail/Reseller) is saved!
     const orderData = {
-      items: cartItems.map(item => ({
+      items: effectiveCartItems.map(item => ({
         ...item,
         price: item.price || 0,
         total: (item.price || 0) * (item.quantity || 1),
@@ -1226,7 +1235,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       )}
                     />
                   ) : (
-                    cartItems.map((item, index) => {
+                    effectiveCartItems.map((item, index) => {
                       // Safety checks
                       if (!item) return null;
 
