@@ -15,16 +15,10 @@ export interface Product {
     stock: Record<string, Record<string, number>>; // Nested: { size: { color: quantity } }
   };
 
-  // Pricing fields yang sesuai dengan data aktual
-  sellingPrice: number; // Harga jual utama
-  price: number; // Harga umum (sellingPrice/retailPrice)
-  retailPrice: number; // Harga retail
+  // Pricing fields (cleaned up - only essentials)
+  retailPrice: number; // Harga retail (customer)
   resellerPrice: number; // Harga reseller
-  costPrice: number; // Harga pokok
-  purchasePrice: number; // Harga beli
-  originalRetailPrice: number; // Harga retail asli
-  originalResellerPrice: number; // Harga reseller asli
-  originalSellingPrice: number; // Harga jual asli (untuk backward compatibility)
+  costPrice: number; // Harga pokok untuk hitung laba
 
   // Stock dan status
   stock: number;
@@ -32,20 +26,15 @@ export interface Product {
   condition?: string; // Tambahan dari data aktual
   estimatedReady?: Date;
 
-  // Flash sale
+  // Flash sale (cleaned up)
   isFeatured: boolean;
-  featured?: boolean; // Tambahan dari data aktual
   isFlashSale: boolean;
   flashSalePrice: number;
-  flashSaleDiscount?: number | null; // Tambahan dari data aktual
-  discount?: number; // Tambahan dari data aktual
 
-  // Metadata
+  // Metadata (cleaned up)
   createdAt: Date;
-  updatedAt?: string; // Tambahan dari data aktual
+  updatedAt?: string;
   salesCount: number;
-  reviews?: number; // Tambahan dari data aktual
-  rating?: number; // Tambahan dari data aktual
 
   // Physical properties
   weight: number;
@@ -76,8 +65,6 @@ export interface IndividualProduct {
   isFeatured: boolean;
   isFlashSale: boolean;
   flashSalePrice: number;
-  originalRetailPrice: number;
-  originalResellerPrice: number;
   createdAt: Date;
   salesCount: number;
   weight: number;
