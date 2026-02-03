@@ -39,9 +39,35 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
 
     // Price calculation (same as ProductDetail)
     const getPrice = () => {
-        // 🔥 PRIORITY #1: Flash Sale (highest priority - always wins!)
-        if (product.isFlashSale && product.flashSalePrice > 0) {
-            return product.flashSalePrice;
+        const productAny = product as any;
+
+        // 🔥 PRIORITY #1: Flash Sale - Calculate from VARIANT price!
+        if (product.isFlashSale) {
+            const discount = productAny.flashSaleDiscount || 0;
+
+            if (discount > 0) {
+                // Get variant-specific price FIRST
+                let basePrice = 0;
+                if (productAny.pricesPerVariant && selectedSize && selectedColor) {
+                    const variantKey = `${selectedSize}-${selectedColor}`;
+                    const variantPricing = productAny.pricesPerVariant[variantKey];
+                    if (variantPricing?.retail && Number(variantPricing.retail) > 0) {
+                        basePrice = user?.role === 'reseller' && variantPricing.reseller
+                            ? Number(variantPricing.reseller)
+                            : Number(variantPricing.retail);
+                    }
+                }
+
+                // Fallback to global price if no variant selected
+                if (basePrice === 0) {
+                    basePrice = user?.role === 'reseller'
+                        ? product.resellerPrice
+                        : product.retailPrice;
+                }
+
+                // Apply flash sale discount to actual price
+                return Math.max(basePrice - discount, 1000);
+            }
         }
 
         // 🔥 PRIORITY #2: Collection discount
@@ -51,7 +77,6 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
         }
 
         // 🔥 PRIORITY #3: Variant-specific pricing (when variant selected)
-        const productAny = product as any;
         if (productAny.pricesPerVariant && selectedSize && selectedColor) {
             const variantKey = `${selectedSize}-${selectedColor}`;
             const variantPricing = productAny.pricesPerVariant[variantKey];

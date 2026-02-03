@@ -380,11 +380,38 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       ? { size: selectedSize, color: selectedColor }
       : null;
 
-    // 🔥 PRIORITY #1: Flash Sale price (always wins!)
+    // 🔥 PRIORITY #1: Flash Sale - Calculate from VARIANT price!
     let finalPrice = 0;
-    if (currentProduct.isFlashSale && currentProduct.flashSalePrice > 0) {
-      finalPrice = currentProduct.flashSalePrice;
-      console.log(`💰 BuyNow: Using Flash Sale price: ${finalPrice}`);
+    if (currentProduct.isFlashSale) {
+      const productAny = currentProduct as any;
+      const discount = productAny.flashSaleDiscount || 0;
+
+      if (discount > 0) {
+        // Get variant-specific price FIRST
+        let basePrice = 0;
+        if (productAny.pricesPerVariant && selectedSize && selectedColor) {
+          const variantKey = `${selectedSize}-${selectedColor}`;
+          const variantPricing = productAny.pricesPerVariant[variantKey];
+          if (variantPricing?.retail && Number(variantPricing.retail) > 0) {
+            basePrice = user?.role === 'reseller' && variantPricing.reseller
+              ? Number(variantPricing.reseller)
+              : Number(variantPricing.retail);
+            console.log(`💰 Flash Sale: Using variant ${variantKey} price: ${basePrice}`);
+          }
+        }
+
+        // Fallback to global price if no variant
+        if (basePrice === 0) {
+          basePrice = user?.role === 'reseller'
+            ? currentProduct.resellerPrice
+            : currentProduct.retailPrice;
+          console.log(`💰 Flash Sale: Using global price: ${basePrice}`);
+        }
+
+        // Apply flash sale discount to actual price
+        finalPrice = Math.max(basePrice - discount, 1000);
+        console.log(`💰 Flash Sale: ${basePrice} - ${discount} = ${finalPrice}`);
+      }
     } else if (collectionDiscount > 0) {
       // 🔥 PRIORITY #2: Collection Discount
       const basePrice = user?.role === 'reseller'
