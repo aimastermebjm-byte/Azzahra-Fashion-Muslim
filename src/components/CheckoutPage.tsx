@@ -467,6 +467,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     if (!isAdminOrOwner) return cartItems;
 
     return cartItems.map(item => {
+      // 🔥 CRITICAL: DON'T override flash sale prices!
+      // If item has flash sale, item.price is already the discounted flash sale price
+      if (item.isFlashSale || item.productStatus === 'flash_sale') {
+        return item; // Keep original flash sale price
+      }
+
       // If we have stored retail/reseller prices, use them
       // Otherwise fallback to current price
       let newPrice = item.price;
@@ -1183,8 +1189,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         <button
                           onClick={() => setPriceMode('retail')}
                           className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${priceMode === 'retail'
-                              ? 'bg-amber-100 text-amber-800 shadow-sm'
-                              : 'text-gray-500 hover:bg-gray-50'
+                            ? 'bg-amber-100 text-amber-800 shadow-sm'
+                            : 'text-gray-500 hover:bg-gray-50'
                             }`}
                         >
                           Retail
@@ -1192,8 +1198,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         <button
                           onClick={() => setPriceMode('reseller')}
                           className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${priceMode === 'reseller'
-                              ? 'bg-amber-100 text-amber-800 shadow-sm'
-                              : 'text-gray-500 hover:bg-gray-50'
+                            ? 'bg-amber-100 text-amber-800 shadow-sm'
+                            : 'text-gray-500 hover:bg-gray-50'
                             }`}
                         >
                           Reseller

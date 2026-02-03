@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AdminProvider } from './contexts/AdminContext';
 // import { FlashSaleProvider } from './contexts/FlashSaleContext'; // DISABLED - Emergency fix
-import { GlobalProductsProvider } from './hooks/useGlobalProducts';
+import { GlobalProductsProvider, useGlobalProducts } from './hooks/useGlobalProducts';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './components/ToastProvider';
 import SplashScreen from './components/SplashScreen';
@@ -60,7 +60,10 @@ function AppContent() {
   // Firebase Authentication
   const { user, login, logout } = useFirebaseAuth();
   // Optimized hooks with Firestore persistence only
-  const { allProducts: products, featuredProducts, flashSaleProducts, loading, refresh, updateProductStock } = useUnifiedProducts();
+  const { allProducts: products, featuredProducts, loading, refresh, updateProductStock } = useUnifiedProducts();
+  // 🔥 CRITICAL: Use GlobalProducts for flash sale (has enrichment logic)
+  const { allProducts: enrichedProducts } = useGlobalProducts();
+  const flashSaleProducts = useMemo(() => enrichedProducts.filter(p => p.isFlashSale === true), [enrichedProducts]);
   const { addOrder } = useAdmin();
 
 
