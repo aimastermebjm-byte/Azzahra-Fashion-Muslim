@@ -482,11 +482,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
         isFlashSale: false,
         flashSalePrice: parseInt(formData.retailPrice) || 0,
         // Optional fields with defaults
-        condition: 'baru',
-        featured: false,
-        discount: 0,
-        reviews: 0,
-        rating: 0
+        condition: 'baru'
       };
 
       // Important: Log to verify data being saved to Firestore
@@ -3035,10 +3031,6 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                   flashSalePrice: parseInt(productData.retailPrice) || 0,
                   // Optional fields with defaults
                   condition: 'baru',
-                  featured: false,
-                  discount: 0,
-                  reviews: 0,
-                  rating: 0,
                   // Save AI analysis for future comparisons
                   aiAnalysis: productData.analysisResults?.[0]?.analysis ? {
                     ...productData.analysisResults[0].analysis,
@@ -3149,10 +3141,6 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                   isFlashSale: false,
                   flashSalePrice: parseInt(productData.retailPrice) || 0,
                   condition: 'baru',
-                  featured: false,
-                  discount: 0,
-                  reviews: 0,
-                  rating: 0,
                   uploadMode: 'manual'
                 };
 
