@@ -1579,13 +1579,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     <>
                       <button
                         onClick={() => {
-                          if (isFlashSaleActive) {
-                            setFlashSaleFormData({ ...flashSaleFormData, productIds: selectedProducts });
-                            handleAddToActiveFlashSale();
-                          } else {
-                            setFlashSaleFormData({ ...flashSaleFormData, productIds: selectedProducts });
-                            setShowFlashSaleModal(true);
-                          }
+                          // \ud83d\udd25 FIXED: Always open modal, modal handles both new/add modes
+                          setFlashSaleFormData({ ...flashSaleFormData, productIds: selectedProducts });
+                          setShowFlashSaleModal(true);
                         }}
                         className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
                       >
