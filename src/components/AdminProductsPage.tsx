@@ -78,7 +78,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showBatchModal, setShowBatchModal] = useState(false);
-  const [showVariantBatchModal, setShowVariantBatchModal] = useState(false);
+
   const [showFlashSaleModal, setShowFlashSaleModal] = useState(false);
   const [showAIUploadModal, setShowAIUploadModal] = useState(false);
   const [showManualUploadModal, setShowManualUploadModal] = useState(false);
@@ -1072,50 +1072,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
     }
   };
 
-  // Bulk variant update function
-  const handleVariantBatchUpdate = async () => {
-    if (selectedProducts.length === 0) {
-      alert('Pilih setidaknya satu produk');
-      return;
-    }
 
-    try {
-      console.log(`🔄 Mengupdate varian untuk ${selectedProducts.length} produk...`);
-
-      // Create variant stock structure
-      const variantStock: any = {};
-      variantBatchFormData.sizes.forEach((size: string) => {
-        variantStock[size] = {};
-        variantBatchFormData.colors.forEach((color: string) => {
-          variantStock[size][color] = variantBatchFormData.stockPerVariant;
-        });
-      });
-
-      // Calculate total stock
-      const totalStock = variantBatchFormData.sizes.length *
-        variantBatchFormData.colors.length *
-        variantBatchFormData.stockPerVariant;
-
-      // Update each product
-      for (const productId of selectedProducts) {
-        await updateProduct(productId, {
-          variants: {
-            sizes: variantBatchFormData.sizes,
-            colors: variantBatchFormData.colors,
-            stock: variantStock
-          },
-          stock: totalStock
-        });
-      }
-
-      setShowVariantBatchModal(false);
-      setSelectedProducts([]);
-      alert(`✅ Berhasil mengupdate varian untuk ${selectedProducts.length} produk`);
-    } catch (error) {
-      console.error('Error bulk updating variants:', error);
-      alert('Gagal mengupdate varian beberapa produk. Silakan coba lagi.');
-    }
-  };
 
   const handleForceSyncGlobalIndex = async () => {
     if (isForceSyncing) {
@@ -1546,13 +1503,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                         <Edit className="w-5 h-5 text-[#997B2C]" />
                         <span className="text-sm">Edit Massal</span>
                       </button>
-                      <button
-                        onClick={() => setShowVariantBatchModal(true)}
-                        className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
-                      >
-                        <Package className="w-5 h-5 text-[#997B2C]" />
-                        <span className="text-sm">Varian</span>
-                      </button>
+
 
                     </>
                   )}
@@ -2855,237 +2806,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
         )
       }
 
-      {/* Variant Batch Modal */}
-      {
-        showVariantBatchModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-800 flex items-center space-x-2">
-                    <Package className="w-5 h-5 text-[#997B2C]" />
-                    <span>Edit Varian Massal ({selectedProducts.length} Produk)</span>
-                  </h2>
-                  <button
-                    onClick={() => setShowVariantBatchModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
 
-              <div className="p-6 space-y-6">
-                {/* Selected Products List */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-800 mb-3">Produk yang akan diedit:</h4>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {selectedProducts.map(productId => {
-                      const product = products.find(p => p.id === productId);
-                      return product ? (
-                        <div key={product.id} className="flex items-center justify-between text-sm">
-                          <span className="font-medium">{product.name}</span>
-                          <span className="text-gray-500">{product.category}</span>
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-
-                {/* Sizes Configuration */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    📏 Ukuran Produk
-                  </label>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {variantBatchFormData.sizes.map((size, index) => (
-                      <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
-                        <input
-                          type="text"
-                          value={size}
-                          onChange={(e) => {
-                            const newSizes = [...variantBatchFormData.sizes];
-                            newSizes[index] = e.target.value;
-                            setVariantBatchFormData({
-                              ...variantBatchFormData,
-                              sizes: newSizes
-                            });
-                          }}
-                          className="px-2 py-1 border border-gray-300 rounded text-sm"
-                          placeholder="contoh: S, M, L"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newSizes = variantBatchFormData.sizes.filter((_, i) => i !== index);
-                            setVariantBatchFormData({
-                              ...variantBatchFormData,
-                              sizes: newSizes
-                            });
-                          }}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newSize = `Ukuran ${variantBatchFormData.sizes.length + 1} `;
-                      setVariantBatchFormData({
-                        ...variantBatchFormData,
-                        sizes: [...variantBatchFormData.sizes, newSize]
-                      });
-                    }}
-                    className="px-3 py-1 bg-[#D4AF37]/10 text-[#997B2C] rounded-lg hover:bg-[#D4AF37]/20 transition-colors text-sm"
-                  >
-                    + Tambah Ukuran
-                  </button>
-                </div>
-
-                {/* Colors Configuration */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    🎨 Warna Produk
-                  </label>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {variantBatchFormData.colors.map((color, index) => (
-                      <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
-                        <input
-                          type="text"
-                          value={color}
-                          onChange={(e) => {
-                            const newColors = [...variantBatchFormData.colors];
-                            newColors[index] = e.target.value;
-                            setVariantBatchFormData({
-                              ...variantBatchFormData,
-                              colors: newColors
-                            });
-                          }}
-                          className="px-2 py-1 border border-gray-300 rounded text-sm"
-                          placeholder="contoh: Merah, Biru"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newColors = variantBatchFormData.colors.filter((_, i) => i !== index);
-                            setVariantBatchFormData({
-                              ...variantBatchFormData,
-                              colors: newColors
-                            });
-                          }}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-                      const letterIndex = variantBatchFormData.colors.length % 26;
-                      const newColor = alphabet[letterIndex];
-                      setVariantBatchFormData({
-                        ...variantBatchFormData,
-                        colors: [...variantBatchFormData.colors, newColor]
-                      });
-                    }}
-                    className="px-3 py-1 bg-[#D4AF37]/10 text-[#997B2C] rounded-lg hover:bg-[#D4AF37]/20 transition-colors text-sm"
-                  >
-                    + Tambah Warna
-                  </button>
-                </div>
-
-                {/* Stock per Variant */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    📦 Stok per Varian
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={variantBatchFormData.stockPerVariant}
-                    onChange={(e) => setVariantBatchFormData({
-                      ...variantBatchFormData,
-                      stockPerVariant: parseInt(e.target.value) || 0
-                    })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37]"
-                    placeholder="Masukkan stok per varian"
-                  />
-                  <p className="text-sm text-gray-600 mt-1">
-                    Total stok per produk: {variantBatchFormData.sizes.length} × {variantBatchFormData.colors.length} × {variantBatchFormData.stockPerVariant} = {variantBatchFormData.sizes.length * variantBatchFormData.colors.length * variantBatchFormData.stockPerVariant} pcs
-                  </p>
-                </div>
-
-                {/* Preview Matrix */}
-                {(variantBatchFormData.sizes.length > 0 && variantBatchFormData.colors.length > 0) && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      👀 Preview Stok Matrix
-                    </label>
-                    <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="bg-[#D4AF37]/10 border-b border-[#D4AF37]/20">
-                            <th className="text-left py-2 px-2 font-bold text-[#997B2C]">Ukuran \ Warna</th>
-                            {variantBatchFormData.colors.map((color, index) => (
-                              <th key={index} className="text-center py-2 px-2 font-bold text-[#997B2C]">
-                                {color}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {variantBatchFormData.sizes.map((size, sizeIndex) => (
-                            <tr key={sizeIndex} className="border-b border-gray-100">
-                              <td className="py-2 px-2 font-medium text-gray-600">{size}</td>
-                              {variantBatchFormData.colors.map((color, colorIndex) => (
-                                <td key={colorIndex} className="py-2 px-2 text-center">
-                                  <span className="inline-block bg-[#D4AF37]/10 text-[#997B2C] px-2 py-1 rounded text-xs font-medium">
-                                    {variantBatchFormData.stockPerVariant}
-                                  </span>
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* Warning */}
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  <p className="text-sm text-yellow-800">
-                    ⚠️ <strong>Perhatian:</strong> Ini akan mengganti semua varian yang ada untuk produk yang dipilih. Semua ukuran, warna, dan stok akan disesuaikan dengan konfigurasi di atas.
-                  </p>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                  <button
-                    onClick={() => setShowVariantBatchModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    onClick={handleVariantBatchUpdate}
-                    className="bg-[radial-gradient(ellipse_at_top,_#EDD686_0%,_#D4AF37_40%,_#997B2C_100%)] text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all flex items-center space-x-2 font-bold shadow-[0_2px_0_0_#7a6223]"
-                  >
-                    <Package className="w-4 h-4" />
-                    <span>Update Varian</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-      }
 
       {/* Flash Sale Modal */}
       {
