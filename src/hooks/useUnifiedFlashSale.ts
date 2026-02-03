@@ -319,11 +319,18 @@ export const useUnifiedFlashSale = () => {
         let productDiscounts: { [productId: string]: number } = { ...existingProductDiscounts };
 
         if (selectedProductIds && selectedProductIds.length > 0 && isActive) {
-          // ADD or UPDATE products with new discount
+          // ✅ FIX: Only ADD NEW products with current discount
+          // Keep existing products' original discount unchanged!
           selectedProductIds.forEach(productId => {
-            productDiscounts[productId] = discountPercentage;
+            // Only set discount if product is NEW (not already in flash sale)
+            if (!productDiscounts[productId]) {
+              productDiscounts[productId] = discountPercentage;
+              console.log(`➕ Adding NEW product ${productId} with discount Rp ${discountPercentage.toLocaleString('id-ID')}`);
+            } else {
+              console.log(`⏭️ Skipping ${productId} - already in flash sale with Rp ${productDiscounts[productId].toLocaleString('id-ID')}`);
+            }
           });
-          console.log(`➕ Adding/updating ${selectedProductIds.length} products with discount Rp ${discountPercentage.toLocaleString('id-ID')}`);
+          console.log(`✅ Total products in flash sale: ${Object.keys(productDiscounts).length}`);
         } else if (!isActive) {
           // Flash sale ending - clear all
           productDiscounts = {};
