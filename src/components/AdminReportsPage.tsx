@@ -29,6 +29,7 @@ import {
 interface AdminReportsPageProps {
   onBack: () => void;
   user: any;
+  onNavigateToStockAdjustments?: () => void;
 }
 
 interface CombinedBuyerSummary {
@@ -77,7 +78,7 @@ const writeUsersCache = (users: any[]) => {
   }
 };
 
-const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => {
+const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user, onNavigateToStockAdjustments }) => {
   const isOwner = user?.role === 'owner';
 
   // Report type untuk tab navigation - Admin default ke 'sales', Owner default ke 'summary'
@@ -1646,6 +1647,17 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   </div>
                 );
               })()}
+
+              {/* Owner: Tombol Pengajuan Stok Adjustment */}
+              {isOwner && onNavigateToStockAdjustments && (
+                <button
+                  onClick={onNavigateToStockAdjustments}
+                  className="w-full mb-4 py-3 px-4 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                >
+                  <Package className="w-5 h-5" />
+                  📋 Lihat Pengajuan Stok dari Admin
+                </button>
+              )}
 
               <div className="flex justify-between items-center mb-3">
                 <h3 className="text-lg font-semibold text-gray-800">Stok Persediaan</h3>
