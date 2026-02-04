@@ -105,13 +105,21 @@ export const stockAdjustmentService = {
             let batchRef: any = null;
             let productIndex = -1;
 
+            // The productId might include variant suffix like "productId_Size_Variant"
+            // Extract the base product ID (first part before underscore with size/variant)
+            const baseProductId = request.productId.split('_')[0];
+
             // Try batch_1 first
             const batch1Ref = doc(db, 'productBatches', 'batch_1');
             const batch1Snap = await getDoc(batch1Ref);
 
             if (batch1Snap.exists()) {
                 products = batch1Snap.data().products || [];
+                // Try exact match first, then base ID match
                 productIndex = products.findIndex((p: any) => p.id === request.productId);
+                if (productIndex === -1) {
+                    productIndex = products.findIndex((p: any) => p.id === baseProductId);
+                }
                 if (productIndex !== -1) {
                     batchRef = batch1Ref;
                 }
@@ -123,7 +131,11 @@ export const stockAdjustmentService = {
                 const batch2Snap = await getDoc(batch2Ref);
                 if (batch2Snap.exists()) {
                     products = batch2Snap.data().products || [];
+                    // Try exact match first, then base ID match
                     productIndex = products.findIndex((p: any) => p.id === request.productId);
+                    if (productIndex === -1) {
+                        productIndex = products.findIndex((p: any) => p.id === baseProductId);
+                    }
                     if (productIndex !== -1) {
                         batchRef = batch2Ref;
                     }
@@ -132,6 +144,7 @@ export const stockAdjustmentService = {
 
             console.log('🔍 DEBUG approveRequest:', {
                 requestProductId: request.productId,
+                baseProductId,
                 productsCount: products.length,
                 productIndex,
                 sampleProductIds: products.slice(0, 3).map((p: any) => p.id)
