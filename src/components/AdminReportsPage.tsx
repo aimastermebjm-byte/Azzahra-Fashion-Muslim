@@ -1623,7 +1623,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                 }, 0);
 
                 return (
-                  <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="grid grid-cols-1 gap-3 mb-4">
                     {/* Total Stok Card */}
                     <div className="bg-gradient-to-br from-[#EDD686] via-[#D4AF37] to-[#997B2C] rounded-xl p-4 shadow-[0_4px_0_0_#997B2C,0_6px_12px_rgba(153,123,44,0.3)] shine-effect">
                       <div className="flex items-center gap-2 mb-1">
@@ -1640,14 +1640,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                           <Wallet className="w-5 h-5 text-white/80" />
                           <p className="text-white/80 text-xs font-medium uppercase tracking-wider">Total Modal</p>
                         </div>
-                        <p className="text-2xl font-bold text-white">
-                          {totalModal >= 1000000
-                            ? `${(totalModal / 1000000).toFixed(1)}jt`
-                            : totalModal >= 1000
-                              ? `${Math.round(totalModal / 1000)}rb`
-                              : formatCurrency(totalModal)
-                          }
-                        </p>
+                        <p className="text-2xl font-bold text-white">Rp {totalModal.toLocaleString('id-ID')}</p>
                       </div>
                     )}
                   </div>
