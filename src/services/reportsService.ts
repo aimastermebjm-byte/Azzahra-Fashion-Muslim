@@ -278,7 +278,7 @@ class ReportsService {
         // Map orders collection fields to Transaction interface
         return {
           id: doc.id,
-          invoice: `INV-${doc.id}`, // Generate invoice from order ID
+          invoice: orderData.invoiceNumber || `INV-${doc.id}`, // Use stored invoice or generate from order ID
           date: new Date(timestampMillis).toISOString().split('T')[0],
           customer: orderData.userName || 'Unknown Customer',
           phone: orderData.shippingInfo?.phone || '',
@@ -657,7 +657,7 @@ class ReportsService {
       ordersSnapshot.docs.forEach(docSnap => {
         const orderData = docSnap.data();
         const orderId = docSnap.id;
-        const invoiceNumber = `INV-${orderId}`;
+        const invoiceNumber = orderData.invoiceNumber || `INV-${orderId}`;
         const customerName = orderData.userName || 'Unknown';
 
         // Skip cancelled orders
@@ -1152,7 +1152,7 @@ class ReportsService {
 
         invoices.push({
           orderId: docSnap.id,
-          invoice: `INV-${docSnap.id}`,
+          invoice: orderData.invoiceNumber || `INV-${docSnap.id}`,
           date: new Date(orderData.timestamp).toISOString().split('T')[0],
           totalAmount: finalTotal,
           totalPaid,
