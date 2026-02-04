@@ -600,7 +600,7 @@ class OrdersService {
   // 🧾 NEW: Generate Invoice Number (format: INV-YYMMNNNNN)
   // Uses Firestore transaction for atomic counter increment
   // Counter resets each month automatically (new document per month)
-  async generateInvoiceNumber(): Promise<string> {
+  private async generateInvoiceNumber(): Promise<string> {
     try {
       const now = new Date();
       const year = now.getFullYear().toString().slice(-2); // "26" for 2026

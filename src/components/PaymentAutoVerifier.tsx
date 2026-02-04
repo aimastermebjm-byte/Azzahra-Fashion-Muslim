@@ -150,24 +150,8 @@ const PaymentAutoVerifier: React.FC = () => {
 
                             const customerName = matchedOrder?.shippingInfo?.name || matchedOrder?.userName || 'Unknown';
 
-                            // 🧾 MIGRATION: Ensure all orders have invoiceNumber
-                            // For orders created before invoice system was added, generate and update
-                            const ensuredGroupOrders = await Promise.all(
-                                groupOrders.map(async (o: any) => {
-                                    if (!o.invoiceNumber) {
-                                        // Generate invoice number for legacy order
-                                        const newInvoiceNumber = await ordersService.generateInvoiceNumber();
-                                        // Update order in Firestore (migration on-the-fly)
-                                        await ordersService.updateOrder(o.id, { invoiceNumber: newInvoiceNumber });
-                                        console.log(`🧾 Migrated order ${o.id} with invoice: ${newInvoiceNumber}`);
-                                        return { ...o, invoiceNumber: newInvoiceNumber };
-                                    }
-                                    return o;
-                                })
-                            );
-
-
-                            const orderDetails = ensuredGroupOrders.map(o => ({
+                            // Use data AS IS - DO NOT REGENERATE INVOICE NUMBERS
+                            const orderDetails = groupOrders.map(o => ({
                                 id: o.invoiceNumber || o.id,
                                 amount: o.finalTotal || 0,
                                 customerName: o.shippingInfo?.name || o.userName
