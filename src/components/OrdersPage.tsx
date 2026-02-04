@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Package, Clock, Truck, CheckCircle, Search, XCircle, CreditCard, Upload, X, Copy, ArrowLeft, Check, MapPin } from 'lucide-react';
+import { deleteField } from 'firebase/firestore';
 import { ordersService } from '../services/ordersService';
 import { paymentGroupService } from '../services/paymentGroupService';
 import { useFirebaseOrders } from '../hooks/useFirebaseOrders';
@@ -272,6 +273,10 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       if (mode === 'auto') {
         showToast({ message: '🔄 Membuat pembayaran otomatis...', type: 'info' });
 
+        // 🧾 Log Invoice Number for User Assurance
+        const invoiceList = paymentData?.orders?.map((o: any) => o.invoiceNumber || o.id).join(', ');
+        console.log(`✅ Initiating Auto-Verification for Invoice(s): ${invoiceList}`);
+
         // Create payment group with unique code
         const paymentGroup = await paymentGroupService.createPaymentGroup({
           userId: user.uid,
@@ -365,9 +370,9 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         // Remove payment group links from orders
         for (const orderId of paymentData.orderIds) {
           await ordersService.updateOrder(orderId, {
-            paymentGroupId: undefined,
-            groupPaymentAmount: undefined,
-            verificationMode: undefined
+            paymentGroupId: deleteField(),
+            groupPaymentAmount: deleteField(),
+            verificationMode: deleteField()
           });
         }
 

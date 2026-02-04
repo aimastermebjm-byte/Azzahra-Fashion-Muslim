@@ -289,7 +289,7 @@ class OrdersService {
         ...updateData,
         updatedAt: Timestamp.now()
       });
-      console.log('✅ Order updated successfully:', orderId);
+      console.log('✅ Order updated with payment group (Internal Ref):', orderId);
       return true;
     } catch (error) {
       console.error('❌ Error updating order:', error);
