@@ -120,6 +120,9 @@ const PaymentAutoVerifier: React.FC = () => {
 
                             // 🔄 FETCH FRESH DATA from Firestore (Bypass stale state)
                             // Ini penting untuk memastikan invoiceNumber terbaca meskipun local state belum update
+                            // Helper to validate invoice format strictly
+                            const isValidInvoice = (inv: any) => typeof inv === 'string' && inv.startsWith('INV');
+
                             const isPaymentGroup = bestMatch.orderId.startsWith('PG');
                             let freshGroupOrders: any[] = [];
                             let freshMatchedOrder: any = null;
@@ -129,22 +132,21 @@ const PaymentAutoVerifier: React.FC = () => {
                                 freshGroupOrders = await ordersService.getOrdersByPaymentGroupId(bestMatch.orderId);
                                 freshMatchedOrder = freshGroupOrders[0];
 
-                                // RETRY MECHANISM: If invoiceNumber missing, wait 2s and retry
-                                if (!freshMatchedOrder?.invoiceNumber) {
-                                    console.log('⏳ Invoice number missing, retrying fetch in 2s...');
+                                // RETRY MECHANISM: If invoiceNumber missing or invalid, wait 2s and retry
+                                if (!isValidInvoice(freshMatchedOrder?.invoiceNumber)) {
+                                    console.log('⏳ Invoice number missing or invalid, retrying fetch in 2s...');
                                     await new Promise(resolve => setTimeout(resolve, 2000));
                                     freshGroupOrders = await ordersService.getOrdersByPaymentGroupId(bestMatch.orderId);
                                     freshMatchedOrder = freshGroupOrders[0];
                                 }
 
-                                // 🚑 DATA SCAVENGING: If fresh fetch missing invoice, try local state
-                                if (!freshMatchedOrder?.invoiceNumber) {
+                                // 🚑 DATA SCAVENGING: If fresh fetch missing valid invoice, try local state
+                                if (!isValidInvoice(freshMatchedOrder?.invoiceNumber)) {
                                     const localGroupMatch = orders.find(o => o.paymentGroupId === bestMatch.orderId);
-                                    if (localGroupMatch?.invoiceNumber) {
-                                        console.log('🚑 Recovered Invoice Number from Local State:', localGroupMatch.invoiceNumber);
-                                        if (freshMatchedOrder) freshMatchedOrder.invoiceNumber = localGroupMatch.invoiceNumber;
-                                        // Update group order reference too
-                                        if (freshGroupOrders[0]) freshGroupOrders[0].invoiceNumber = localGroupMatch.invoiceNumber;
+                                    if (isValidInvoice(localGroupMatch?.invoiceNumber)) {
+                                        console.log('🚑 Recovered Valid Invoice from Local State:', localGroupMatch?.invoiceNumber);
+                                        if (freshMatchedOrder) freshMatchedOrder.invoiceNumber = localGroupMatch?.invoiceNumber;
+                                        if (freshGroupOrders[0]) freshGroupOrders[0].invoiceNumber = localGroupMatch?.invoiceNumber;
                                     }
                                 }
 
@@ -153,16 +155,17 @@ const PaymentAutoVerifier: React.FC = () => {
                                 localOrderMatch = orders.find(o => o.id === bestMatch.orderId);
 
                                 // RETRY MECHANISM
-                                if (!freshMatchedOrder?.invoiceNumber) {
-                                    console.log('⏳ Invoice number missing, retrying fetch in 2s...');
+                                if (!isValidInvoice(freshMatchedOrder?.invoiceNumber)) {
+                                    console.log('⏳ Invoice number missing or invalid, retrying fetch in 2s...');
                                     await new Promise(resolve => setTimeout(resolve, 2000));
                                     freshMatchedOrder = await ordersService.getOrderById(bestMatch.orderId);
+                                    localOrderMatch = orders.find(o => o.id === bestMatch.orderId); // Refresh local too
                                 }
 
                                 // 🚑 DATA SCAVENGING: Merge with local data manually
                                 if (freshMatchedOrder && localOrderMatch) {
-                                    if (!freshMatchedOrder.invoiceNumber && localOrderMatch.invoiceNumber) {
-                                        console.log('🚑 Recovered Invoice Number from Local State:', localOrderMatch.invoiceNumber);
+                                    if (!isValidInvoice(freshMatchedOrder.invoiceNumber) && isValidInvoice(localOrderMatch.invoiceNumber)) {
+                                        console.log('🚑 Recovered Valid Invoice from Local State:', localOrderMatch.invoiceNumber);
                                         freshMatchedOrder.invoiceNumber = localOrderMatch.invoiceNumber;
                                     }
                                 }
@@ -190,7 +193,7 @@ const PaymentAutoVerifier: React.FC = () => {
 
                             // Use data AS IS - DO NOT REGENERATE INVOICE NUMBERS
                             const orderDetails = groupOrders.map(o => ({
-                                id: o.invoiceNumber || o.id,
+                                id: isValidInvoice(o.invoiceNumber) ? o.invoiceNumber : o.id, // Prefer Valid Invoice
                                 amount: o.finalTotal || 0,
                                 customerName: o.shippingInfo?.name || o.userName
                             }));
@@ -212,7 +215,7 @@ const PaymentAutoVerifier: React.FC = () => {
                                     status: 'dry-run',
                                     executedBy: 'system',
                                     paymentGroupId: isPaymentGroup ? bestMatch.orderId : matchedOrder?.paymentGroupId,
-                                    orderIds: groupOrders.map(o => o.invoiceNumber || o.id), // 🧾 Use invoice numbers
+                                    orderIds: groupOrders.map(o => isValidInvoice(o.invoiceNumber) ? o.invoiceNumber : o.id), // 🧾 Use valid invoice numbers
                                     isGroupPayment: isPaymentGroup || groupOrders.length > 1,
                                     orderDetails // 🧾 Include all order details with invoice numbers
                                 } as any);
