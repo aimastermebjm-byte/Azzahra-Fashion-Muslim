@@ -123,13 +123,13 @@ const PaymentAutoVerifier: React.FC = () => {
                             const isPaymentGroup = bestMatch.orderId.startsWith('PG');
                             let freshGroupOrders: any[] = [];
                             let freshMatchedOrder: any = null;
+                            let localOrderMatch = null;
 
                             if (isPaymentGroup) {
                                 freshGroupOrders = await ordersService.getOrdersByPaymentGroupId(bestMatch.orderId);
                                 freshMatchedOrder = freshGroupOrders[0];
 
                                 // RETRY MECHANISM: If invoiceNumber missing, wait 2s and retry
-                                // This handles Firestore latency where order updates (adding invoice/group) might lag slightly
                                 if (!freshMatchedOrder?.invoiceNumber) {
                                     console.log('⏳ Invoice number missing, retrying fetch in 2s...');
                                     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -137,14 +137,34 @@ const PaymentAutoVerifier: React.FC = () => {
                                     freshMatchedOrder = freshGroupOrders[0];
                                 }
 
+                                // 🚑 DATA SCAVENGING: If fresh fetch missing invoice, try local state
+                                if (!freshMatchedOrder?.invoiceNumber) {
+                                    const localGroupMatch = orders.find(o => o.paymentGroupId === bestMatch.orderId);
+                                    if (localGroupMatch?.invoiceNumber) {
+                                        console.log('🚑 Recovered Invoice Number from Local State:', localGroupMatch.invoiceNumber);
+                                        if (freshMatchedOrder) freshMatchedOrder.invoiceNumber = localGroupMatch.invoiceNumber;
+                                        // Update group order reference too
+                                        if (freshGroupOrders[0]) freshGroupOrders[0].invoiceNumber = localGroupMatch.invoiceNumber;
+                                    }
+                                }
+
                             } else {
                                 freshMatchedOrder = await ordersService.getOrderById(bestMatch.orderId);
+                                localOrderMatch = orders.find(o => o.id === bestMatch.orderId);
 
                                 // RETRY MECHANISM
                                 if (!freshMatchedOrder?.invoiceNumber) {
                                     console.log('⏳ Invoice number missing, retrying fetch in 2s...');
                                     await new Promise(resolve => setTimeout(resolve, 2000));
                                     freshMatchedOrder = await ordersService.getOrderById(bestMatch.orderId);
+                                }
+
+                                // 🚑 DATA SCAVENGING: Merge with local data manually
+                                if (freshMatchedOrder && localOrderMatch) {
+                                    if (!freshMatchedOrder.invoiceNumber && localOrderMatch.invoiceNumber) {
+                                        console.log('🚑 Recovered Invoice Number from Local State:', localOrderMatch.invoiceNumber);
+                                        freshMatchedOrder.invoiceNumber = localOrderMatch.invoiceNumber;
+                                    }
                                 }
 
                                 if (freshMatchedOrder) {
