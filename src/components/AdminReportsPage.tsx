@@ -305,6 +305,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       try {
         const cacheKey = 'payment-methods-cache';
         const cached = localStorage.getItem(cacheKey);
+        let needsFetch = true;
+
         if (cached) {
           const { data, timestamp } = JSON.parse(cached);
           const now = Date.now();
@@ -313,18 +315,20 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           if (now - timestamp < CACHE_EXPIRY) {
             console.log('✅ Payment methods loaded from cache');
             setPaymentMethods(data);
-            return;
+            needsFetch = false;
           }
         }
 
-        const methods = await financialService.listPaymentMethods();
-        setPaymentMethods(methods);
+        if (needsFetch) {
+          const methods = await financialService.listPaymentMethods();
+          setPaymentMethods(methods);
 
-        // Cache for 30 minutes
-        localStorage.setItem(cacheKey, JSON.stringify({
-          data: methods,
-          timestamp: Date.now()
-        }));
+          // Cache for 30 minutes
+          localStorage.setItem(cacheKey, JSON.stringify({
+            data: methods,
+            timestamp: Date.now()
+          }));
+        }
       } catch (error) {
         console.error('Error loading payment methods:', error);
       }
