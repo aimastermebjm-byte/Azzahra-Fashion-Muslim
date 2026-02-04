@@ -119,14 +119,28 @@ const PaymentAutoVerifier: React.FC = () => {
                             processingRef.current.add(detection.id);
 
                             // Get order details for logging
-                            const matchedOrder = orders.find(o => o.id === bestMatch.orderId);
+                            // 🔧 FIX: If orderId is Payment Group (PG prefix), find by paymentGroupId
+                            const isPaymentGroup = bestMatch.orderId.startsWith('PG');
+                            const matchedOrder = isPaymentGroup
+                                ? orders.find(o => o.paymentGroupId === bestMatch.orderId)
+                                : orders.find(o => o.id === bestMatch.orderId);
                             const customerName = matchedOrder?.shippingInfo?.name || matchedOrder?.userName || 'Unknown';
+
+                            // 🔧 Get all orders in payment group for logging
+                            const groupOrders = isPaymentGroup
+                                ? orders.filter(o => o.paymentGroupId === bestMatch.orderId)
+                                : (matchedOrder ? [matchedOrder] : []);
+                            const orderDetails = groupOrders.map(o => ({
+                                id: o.invoiceNumber || o.id,
+                                amount: o.finalTotal || 0,
+                                customerName: o.shippingInfo?.name || o.userName
+                            }));
 
                             if (isTestMode) {
                                 // 🧪 TEST MODE: Only log, don't execute
                                 await autoVerificationLogService.createLog({
                                     orderId: bestMatch.orderId,
-                                    invoiceNumber: matchedOrder?.invoiceNumber, // 🧾 Store invoice number
+                                    invoiceNumber: matchedOrder?.invoiceNumber, // 🧾 Store invoice number (first order)
                                     orderAmount: matchedOrder?.finalTotal || detection.amount,
                                     customerName,
                                     detectionId: detection.id,
@@ -138,9 +152,11 @@ const PaymentAutoVerifier: React.FC = () => {
                                     matchReason: `Auto-match (Confidence: ${bestMatch.confidence}%)`,
                                     status: 'dry-run',
                                     executedBy: 'system',
-                                    paymentGroupId: matchedOrder?.paymentGroupId,
-                                    orderIds: matchedOrder?.paymentGroupId ? [bestMatch.orderId] : undefined
-                                });
+                                    paymentGroupId: isPaymentGroup ? bestMatch.orderId : matchedOrder?.paymentGroupId,
+                                    orderIds: groupOrders.map(o => o.invoiceNumber || o.id), // 🧾 Use invoice numbers
+                                    isGroupPayment: isPaymentGroup || groupOrders.length > 1,
+                                    orderDetails // 🧾 Include all order details with invoice numbers
+                                } as any);
 
                                 showToast({
                                     title: '🧪 [TEST] Pembayaran Terdeteksi',
@@ -184,7 +200,7 @@ const PaymentAutoVerifier: React.FC = () => {
                                     // 📋 Log success
                                     await autoVerificationLogService.createLog({
                                         orderId: bestMatch.orderId,
-                                        invoiceNumber: matchedOrder?.invoiceNumber, // 🧾 Store invoice number
+                                        invoiceNumber: matchedOrder?.invoiceNumber, // 🧾 Store invoice number (first order)
                                         orderAmount: matchedOrder?.finalTotal || detection.amount,
                                         customerName,
                                         detectionId: detection.id,
@@ -196,9 +212,11 @@ const PaymentAutoVerifier: React.FC = () => {
                                         matchReason: `Auto-verified by System (Confidence: ${bestMatch.confidence}%)`,
                                         status: 'success',
                                         executedBy: 'system',
-                                        paymentGroupId: matchedOrder?.paymentGroupId,
-                                        orderIds: matchedOrder?.paymentGroupId ? [bestMatch.orderId] : undefined
-                                    });
+                                        paymentGroupId: isPaymentGroup ? bestMatch.orderId : matchedOrder?.paymentGroupId,
+                                        orderIds: groupOrders.map(o => o.invoiceNumber || o.id), // 🧾 Use invoice numbers
+                                        isGroupPayment: isPaymentGroup || groupOrders.length > 1,
+                                        orderDetails // 🧾 Include all order details with invoice numbers
+                                    } as any);
 
                                     // Notifikasi Petir ⚡
                                     showToast({
