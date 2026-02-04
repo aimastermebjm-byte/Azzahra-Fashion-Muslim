@@ -127,14 +127,32 @@ const PaymentAutoVerifier: React.FC = () => {
                             if (isPaymentGroup) {
                                 freshGroupOrders = await ordersService.getOrdersByPaymentGroupId(bestMatch.orderId);
                                 freshMatchedOrder = freshGroupOrders[0];
+
+                                // RETRY MECHANISM: If invoiceNumber missing, wait 2s and retry
+                                // This handles Firestore latency where order updates (adding invoice/group) might lag slightly
+                                if (!freshMatchedOrder?.invoiceNumber) {
+                                    console.log('⏳ Invoice number missing, retrying fetch in 2s...');
+                                    await new Promise(resolve => setTimeout(resolve, 2000));
+                                    freshGroupOrders = await ordersService.getOrdersByPaymentGroupId(bestMatch.orderId);
+                                    freshMatchedOrder = freshGroupOrders[0];
+                                }
+
                             } else {
                                 freshMatchedOrder = await ordersService.getOrderById(bestMatch.orderId);
+
+                                // RETRY MECHANISM
+                                if (!freshMatchedOrder?.invoiceNumber) {
+                                    console.log('⏳ Invoice number missing, retrying fetch in 2s...');
+                                    await new Promise(resolve => setTimeout(resolve, 2000));
+                                    freshMatchedOrder = await ordersService.getOrderById(bestMatch.orderId);
+                                }
+
                                 if (freshMatchedOrder) {
                                     freshGroupOrders = [freshMatchedOrder];
                                 }
                             }
 
-                            // Fallback ke local state jika fetch gagal (safety net)
+                            // Fallback ke local state jika fetch gagal total (safety net)
                             if (!freshMatchedOrder) {
                                 console.warn('⚠️ Fresh fetch failed/empty, using local state fallback for:', bestMatch.orderId);
                                 freshMatchedOrder = isPaymentGroup
