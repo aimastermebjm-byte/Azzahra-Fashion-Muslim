@@ -1479,7 +1479,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
 
             {/* Filter Panel - Organized Layout */}
             <div className="bg-gradient-to-r from-[#FDF6E3] to-[#FEF9ED] p-3 rounded-xl border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold text-[#997B2C]">🔍 Filter Lanjutan</span>
                 {(dateFilterFrom || dateFilterTo || priceFilterMin || priceFilterMax) && (
                   <button
@@ -1491,65 +1491,63 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     }}
                     className="px-2.5 py-1 text-xs bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-white rounded-lg font-semibold hover:shadow-md transition-all border border-[#7A6223] shadow-[0_1px_0_0_#7A6223]"
                   >
-                    ✕ Reset Semua Filter
+                    ✕ Reset
                   </button>
                 )}
               </div>
 
-              {/* Filter Grid - 2 Rows */}
-              <div className="grid grid-cols-1 gap-2">
-                {/* Row 1: Date Filter */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-[#997B2C] font-semibold w-16">📅 Tanggal</span>
+              {/* Filter Grid - Clean 2 Column Layout */}
+              <div className="space-y-3">
+                {/* Date Filter Row */}
+                <div className="grid grid-cols-[auto_1fr_1fr] gap-2 items-center">
+                  <span className="text-xs text-[#997B2C] font-semibold">📅 Tanggal</span>
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-[#997B2C]">Dari</span>
+                    <span className="text-xs text-[#997B2C] w-12">Dari</span>
                     <input
                       type="date"
                       value={dateFilterFrom}
                       onChange={(e) => setDateFilterFrom(e.target.value)}
-                      className="px-2 py-1 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                      className="flex-1 min-w-0 px-2 py-1.5 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
                     />
                   </div>
-                  <span className="text-xs text-[#997B2C]">-</span>
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-[#997B2C]">Sampai</span>
+                    <span className="text-xs text-[#997B2C] w-12">Sampai</span>
                     <input
                       type="date"
                       value={dateFilterTo}
                       onChange={(e) => setDateFilterTo(e.target.value)}
-                      className="px-2 py-1 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                      className="flex-1 min-w-0 px-2 py-1.5 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
                     />
                   </div>
                 </div>
 
-                {/* Row 2: Price Filter */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-[#997B2C] font-semibold w-16">💰 Harga</span>
+                {/* Price Filter Row */}
+                <div className="grid grid-cols-[auto_1fr_1fr] gap-2 items-center">
+                  <span className="text-xs text-[#997B2C] font-semibold">💰 Harga</span>
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-[#997B2C]">Min</span>
+                    <span className="text-xs text-[#997B2C] w-12">Min</span>
                     <input
                       type="number"
                       placeholder="0"
                       value={priceFilterMin}
                       onChange={(e) => setPriceFilterMin(e.target.value)}
-                      className="w-24 px-2 py-1 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                      className="flex-1 min-w-0 px-2 py-1.5 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
                     />
                   </div>
-                  <span className="text-xs text-[#997B2C]">-</span>
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-[#997B2C]">Max</span>
+                    <span className="text-xs text-[#997B2C] w-12">Max</span>
                     <input
                       type="number"
                       placeholder="∞"
                       value={priceFilterMax}
                       onChange={(e) => setPriceFilterMax(e.target.value)}
-                      className="w-24 px-2 py-1 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                      className="flex-1 min-w-0 px-2 py-1.5 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
                     />
                   </div>
-                  <span className="text-xs text-gray-400">(Rp)</span>
                 </div>
               </div>
             </div>
+
 
             {/* Batch Actions - 2 Columns Like Main Menu */}
             {selectedProducts.length > 0 && (
