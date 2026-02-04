@@ -99,21 +99,47 @@ export const stockAdjustmentService = {
                 throw new Error('Request is already processed');
             }
 
-            // 1. Get Product Batch (Assuming all products are in batch_1 or need generic fetch)
-            // Note: Currently system uses 'batch_1'. 
-            // We need to find the product document. 
-            // Since we store all products in 'productBatches/batch_1' (as per prev context), we fetch that.
-            // WARNING: Re-reading entire batch is expensive but consistent with project style.
+            // 1. Get Product Batch - Try multiple batches
+            // Products might be spread across batch_1, batch_2, etc.
+            let products: any[] = [];
+            let batchRef: any = null;
+            let productIndex = -1;
 
-            const batchRef = doc(db, 'productBatches', 'batch_1');
-            const batchSnap = await getDoc(batchRef);
+            // Try batch_1 first
+            const batch1Ref = doc(db, 'productBatches', 'batch_1');
+            const batch1Snap = await getDoc(batch1Ref);
 
-            if (!batchSnap.exists()) throw new Error('Product batch not found');
+            if (batch1Snap.exists()) {
+                products = batch1Snap.data().products || [];
+                productIndex = products.findIndex((p: any) => p.id === request.productId);
+                if (productIndex !== -1) {
+                    batchRef = batch1Ref;
+                }
+            }
 
-            const products = batchSnap.data().products || [];
-            const productIndex = products.findIndex((p: any) => p.id === request.productId);
+            // If not found in batch_1, try batch_2
+            if (productIndex === -1) {
+                const batch2Ref = doc(db, 'productBatches', 'batch_2');
+                const batch2Snap = await getDoc(batch2Ref);
+                if (batch2Snap.exists()) {
+                    products = batch2Snap.data().products || [];
+                    productIndex = products.findIndex((p: any) => p.id === request.productId);
+                    if (productIndex !== -1) {
+                        batchRef = batch2Ref;
+                    }
+                }
+            }
 
-            if (productIndex === -1) throw new Error('Product not found in batch');
+            console.log('🔍 DEBUG approveRequest:', {
+                requestProductId: request.productId,
+                productsCount: products.length,
+                productIndex,
+                sampleProductIds: products.slice(0, 3).map((p: any) => p.id)
+            });
+
+            if (productIndex === -1) {
+                throw new Error(`Product not found in batch. ProductId: ${request.productId}`);
+            }
 
             const product = products[productIndex];
 

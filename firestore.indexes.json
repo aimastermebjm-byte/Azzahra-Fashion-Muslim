@@ -125,16 +125,6 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "isFlashSale",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "products",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
           "fieldPath": "isFeatured",
           "order": "ASCENDING"
         },
