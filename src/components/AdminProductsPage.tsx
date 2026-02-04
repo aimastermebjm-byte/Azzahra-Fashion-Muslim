@@ -97,6 +97,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
   const [dateFilterFrom, setDateFilterFrom] = useState<string>('');
   const [dateFilterTo, setDateFilterTo] = useState<string>('');
 
+  // Price Filter State
+  const [priceFilterMin, setPriceFilterMin] = useState<string>('');
+  const [priceFilterMax, setPriceFilterMax] = useState<string>('');
+
   // NEW: Discount and Collection Modal States
 
   const [showCollectionModal, setShowCollectionModal] = useState(false);
@@ -134,7 +138,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(20);
-  }, [searchQuery, selectedCategory, sortBy, dateFilterFrom, dateFilterTo]);
+  }, [searchQuery, selectedCategory, sortBy, dateFilterFrom, dateFilterTo, priceFilterMin, priceFilterMax]);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -419,6 +423,17 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
       });
     }
 
+    // Apply price filter
+    if (priceFilterMin) {
+      const minPrice = parseInt(priceFilterMin) || 0;
+      filtered = filtered.filter(product => product.retailPrice >= minPrice);
+    }
+
+    if (priceFilterMax) {
+      const maxPrice = parseInt(priceFilterMax) || Infinity;
+      filtered = filtered.filter(product => product.retailPrice <= maxPrice);
+    }
+
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
@@ -437,7 +452,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
     });
 
     return filtered;
-  }, [products, searchQuery, selectedCategory, sortBy, dateFilterFrom, dateFilterTo]);
+  }, [products, searchQuery, selectedCategory, sortBy, dateFilterFrom, dateFilterTo, priceFilterMin, priceFilterMax]);
 
   // Infinite Scroll Slice
   const currentProducts = filteredAndSortedProducts.slice(0, visibleCount);
@@ -1462,38 +1477,78 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
               </select>
             </div>
 
-            {/* Date Filter Row */}
-            <div className="flex gap-2 items-center flex-wrap">
-              <span className="text-xs text-[#997B2C] font-semibold">📅 Filter Tanggal:</span>
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-[#997B2C]">Dari</span>
-                <input
-                  type="date"
-                  value={dateFilterFrom}
-                  onChange={(e) => setDateFilterFrom(e.target.value)}
-                  className="px-2 py-1 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_2px_0_0_#997B2C]"
-                />
+            {/* Filter Panel - Organized Layout */}
+            <div className="bg-gradient-to-r from-[#FDF6E3] to-[#FEF9ED] p-3 rounded-xl border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-[#997B2C]">🔍 Filter Lanjutan</span>
+                {(dateFilterFrom || dateFilterTo || priceFilterMin || priceFilterMax) && (
+                  <button
+                    onClick={() => {
+                      setDateFilterFrom('');
+                      setDateFilterTo('');
+                      setPriceFilterMin('');
+                      setPriceFilterMax('');
+                    }}
+                    className="px-2.5 py-1 text-xs bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-white rounded-lg font-semibold hover:shadow-md transition-all border border-[#7A6223] shadow-[0_1px_0_0_#7A6223]"
+                  >
+                    ✕ Reset Semua Filter
+                  </button>
+                )}
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-[#997B2C]">Sampai</span>
-                <input
-                  type="date"
-                  value={dateFilterTo}
-                  onChange={(e) => setDateFilterTo(e.target.value)}
-                  className="px-2 py-1 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_2px_0_0_#997B2C]"
-                />
+
+              {/* Filter Grid - 2 Rows */}
+              <div className="grid grid-cols-1 gap-2">
+                {/* Row 1: Date Filter */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-[#997B2C] font-semibold w-16">📅 Tanggal</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-[#997B2C]">Dari</span>
+                    <input
+                      type="date"
+                      value={dateFilterFrom}
+                      onChange={(e) => setDateFilterFrom(e.target.value)}
+                      className="px-2 py-1 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                    />
+                  </div>
+                  <span className="text-xs text-[#997B2C]">-</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-[#997B2C]">Sampai</span>
+                    <input
+                      type="date"
+                      value={dateFilterTo}
+                      onChange={(e) => setDateFilterTo(e.target.value)}
+                      className="px-2 py-1 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 2: Price Filter */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-[#997B2C] font-semibold w-16">💰 Harga</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-[#997B2C]">Min</span>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={priceFilterMin}
+                      onChange={(e) => setPriceFilterMin(e.target.value)}
+                      className="w-24 px-2 py-1 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                    />
+                  </div>
+                  <span className="text-xs text-[#997B2C]">-</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-[#997B2C]">Max</span>
+                    <input
+                      type="number"
+                      placeholder="∞"
+                      value={priceFilterMax}
+                      onChange={(e) => setPriceFilterMax(e.target.value)}
+                      className="w-24 px-2 py-1 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                    />
+                  </div>
+                  <span className="text-xs text-gray-400">(Rp)</span>
+                </div>
               </div>
-              {(dateFilterFrom || dateFilterTo) && (
-                <button
-                  onClick={() => {
-                    setDateFilterFrom('');
-                    setDateFilterTo('');
-                  }}
-                  className="px-2 py-1 text-xs bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-white rounded-lg font-semibold hover:shadow-md transition-all border border-[#7A6223] shadow-[0_1px_0_0_#7A6223]"
-                >
-                  ✕ Reset
-                </button>
-              )}
             </div>
 
             {/* Batch Actions - 2 Columns Like Main Menu */}
