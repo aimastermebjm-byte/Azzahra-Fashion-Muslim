@@ -22,14 +22,11 @@ interface FlashSaleConfig {
 let globalConfig: FlashSaleConfig | null = null;
 let globalUnsubscribe: (() => void) | null = null;
 let globalSubscribers: Array<(config: FlashSaleConfig | null) => void> = [];
-let globalSubscriberId = 0;
 
 // 🔥 GLOBAL FUNCTIONS: Di luar hook scope
 const subscribeToFlashSale = (callback: (config: FlashSaleConfig | null) => void) => {
-  // Generate unique ID untuk tracking
-  const subscriberId = globalSubscriberId++;
 
-  console.log(`🔥 [${subscriberId}] Subscribing to flash sale...`);
+
 
   // Tambah subscriber
   const subscriberWrapper = (config: FlashSaleConfig | null) => {
@@ -40,20 +37,16 @@ const subscribeToFlashSale = (callback: (config: FlashSaleConfig | null) => void
 
   // Create global listener jika belum ada
   if (!globalUnsubscribe) {
-    console.log('🔥 Creating GLOBAL flash sale listener (SINGLE INSTANCE)...');
+
 
     const flashSaleRef = doc(db, 'flashSale', 'config');
     globalUnsubscribe = onSnapshot(flashSaleRef,
       (snapshot) => {
         if (snapshot.exists()) {
           globalConfig = snapshot.data() as FlashSaleConfig;
-          console.log('🚀 GLOBAL flash sale config updated:', {
-            isActive: globalConfig.isActive,
-            endTime: globalConfig.endTime,
-            subscriberCount: globalSubscribers.length
-          });
+
         } else {
-          console.log('❌ No flash sale config found');
+
           globalConfig = null;
         }
 
@@ -67,7 +60,7 @@ const subscribeToFlashSale = (callback: (config: FlashSaleConfig | null) => void
       }
     );
   } else {
-    console.log(`🔄 [${subscriberId}] Reusing existing GLOBAL flash sale listener`);
+
   }
 
   // Initial call
@@ -75,7 +68,7 @@ const subscribeToFlashSale = (callback: (config: FlashSaleConfig | null) => void
 
   // Return unsubscribe function
   return () => {
-    console.log(`🔄 [${subscriberId}] Unsubscribing from flash sale...`);
+
 
     // Remove specific subscriber
     globalSubscribers = globalSubscribers.filter(sub => sub !== subscriberWrapper);
@@ -85,7 +78,7 @@ const subscribeToFlashSale = (callback: (config: FlashSaleConfig | null) => void
     if (globalSubscribers.length === 0 && globalUnsubscribe) {
       setTimeout(() => {
         if (globalSubscribers.length === 0 && globalUnsubscribe) {
-          console.log('🔄 Cleaning up GLOBAL flash sale listener (delayed)');
+
           globalUnsubscribe();
           globalUnsubscribe = null;
         }
@@ -106,10 +99,10 @@ export const useUnifiedFlashSale = () => {
 
   // 🔥 SUBSCRIBE TO GLOBAL STATE
   useEffect(() => {
-    console.log('🔥 useUnifiedFlashSale: Setting up subscription...');
+
 
     const unsubscribe = subscribeToFlashSale((config) => {
-      console.log('🔥 useUnifiedFlashSale: Config received:', config?.isActive);
+
       setLoading(false);
       setFlashSaleConfig(config);
       if (config) {
@@ -128,7 +121,7 @@ export const useUnifiedFlashSale = () => {
 
     // Start timer if active
     if (flashSaleConfig?.isActive && flashSaleConfig.endTime) {
-      console.log('🕐 Starting timer with endTime:', flashSaleConfig.endTime);
+
 
       timerRef = setInterval(() => {
         const now = new Date().getTime();
@@ -149,7 +142,7 @@ export const useUnifiedFlashSale = () => {
             timerRef = null;
           }
 
-          console.log('⏰ Flash sale expired - triggering auto cleanup...');
+
           endFlashSale();
         }
       }, 1000);
@@ -300,8 +293,7 @@ export const useUnifiedFlashSale = () => {
       }
 
       // 🔥 Process all batches for flash sale updates
-      const updatePromises = validBatches.map(async ({ batchId, data: batchData }) => {
-        console.log(`🔄 Processing ${batchId} for flash sale updates...`);
+      const updatePromises = validBatches.map(async ({ batchId }) => {
 
         // 🔥 REMOVED: Old products.map() logic - we don't modify products anymore!
 

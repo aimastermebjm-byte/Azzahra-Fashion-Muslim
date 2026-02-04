@@ -29,7 +29,7 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
 
   // 🔥 FIRESTORE PERSISTENCE: Single batch read untuk semua kebutuhan produk
   useEffect(() => {
-    console.log('🚀 Initializing UNIFIED product system - SINGLE READ for all product data...');
+
 
     const batchRef = doc(db, 'productBatches', 'batch_1');
 
@@ -40,7 +40,7 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
           const batchData = snapshot.data();
           const products = batchData.products || [];
 
-          console.log(`✅ UNIFIED: Batch updated with ${products.length} products (0 reads - from cache)`);
+
 
           // Transform data products sekali saja
           const transformedProducts: Product[] = products.map((data: any) => {
@@ -100,7 +100,7 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
           setError(null);
 
         } else {
-          console.log('❌ UNIFIED: No batch data found');
+
           setAllProducts([]);
           setLoading(false);
           setInitialLoad(false);
@@ -115,7 +115,7 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
     );
 
     return () => {
-      console.log('🔄 UNIFIED: Cleaning up listener');
+
       unsubscribe();
     };
   }, []);
@@ -132,7 +132,7 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
   // 🔥 BATCH SYSTEM: Update product stock dalam batch
   const updateProductStock = async (id: string, quantity: number, variantInfo?: { size: string; color: string }) => {
     try {
-      console.log('🔄 UNIFIED: Updating stock in batch system:', { id, quantity, variantInfo });
+
 
       const batchRef = doc(db, 'productBatches', 'batch_1');
       const batchDoc = await getDoc(batchRef);
@@ -147,7 +147,7 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
 
       products = products.map((product: any) => {
         if (product.id === id) {
-          console.log('✅ UNIFIED: Found product to update stock:', product.name);
+
 
           let updatedProduct = { ...product };
 
@@ -170,13 +170,13 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
             const totalStock = Number(product.stock || 0);
             updatedProduct.stock = Math.max(0, totalStock - quantity);
 
-            console.log(`📦 UNIFIED: Variant stock updated: ${size}-${color}: ${currentVariantStock} → ${newVariantStock}`);
+
           } else {
             const currentStock = Number(product.stock || 0);
             const newStock = Math.max(0, currentStock - quantity);
             updatedProduct.stock = newStock;
 
-            console.log(`📦 UNIFIED: Total stock updated: ${currentStock} → ${newStock}`);
+
           }
 
           return updatedProduct;
@@ -192,7 +192,7 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
         updatedAt: new Date().toISOString()
       });
 
-      console.log('✅ UNIFIED: Stock updated successfully in batch system');
+
       return quantity;
 
     } catch (error) {
@@ -202,7 +202,7 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
   };
 
   const refresh = async () => {
-    console.log('🔄 UNIFIED: Manual refresh - forcing cache invalidation...');
+
     try {
       const batchRef = doc(db, 'productBatches', 'batch_1');
       await getDoc(batchRef); // Force refresh dari server

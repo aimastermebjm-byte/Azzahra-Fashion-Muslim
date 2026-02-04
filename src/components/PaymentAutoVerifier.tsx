@@ -39,18 +39,14 @@ const PaymentAutoVerifier: React.FC = () => {
     // Hanya jalankan untuk OWNER
     const isOwner = user?.role === 'owner';
 
-    // Debug mount log
-    useEffect(() => {
-        console.log('🤖 PaymentAutoVerifier MOUNTED', { isOwner, userId: user?.uid, role: user?.role });
-        return () => console.log('🤖 PaymentAutoVerifier UNMOUNTED');
-    }, [isOwner, user?.uid, user?.role]);
+
 
     // 1. Load Settings (Real-time subscription)
     useEffect(() => {
         if (!isOwner) return;
 
         const unsubscribe = paymentDetectionService.subscribeToSettings((newSettings) => {
-            console.log('🤖 AutoVerifier: Settings loaded', newSettings?.mode, newSettings?.testMode ? '[TEST MODE]' : '');
+
             setSettings(newSettings);
         });
 
@@ -64,7 +60,7 @@ const PaymentAutoVerifier: React.FC = () => {
         // ✅ FIX: Use correct method name - onPendingDetectionsChange
         const unsubscribe = paymentDetectionService.onPendingDetectionsChange((pendingDetections) => {
             // ✅ FIX: No need to filter - already pending from source
-            console.log('🤖 AutoVerifier: Pending detections updated:', pendingDetections.length);
+
             setDetections(pendingDetections);
         });
 
@@ -98,7 +94,7 @@ const PaymentAutoVerifier: React.FC = () => {
 
             const isTestMode = settings.testMode === true;
             if (isTestMode) {
-                console.log('🧪 AutoVerifier running in TEST MODE - will log but not execute');
+
             }
 
             // Loop semua detection yang belum diproses
@@ -117,7 +113,7 @@ const PaymentAutoVerifier: React.FC = () => {
 
                         // JIKA Confidence cukup tinggi (misal 100% dari kode unik)
                         if (bestMatch.confidence >= threshold) {
-                            console.log(`🤖 AutoVerifier: MATCH FOUND! ${detection.id} -> ${bestMatch.orderId} (${bestMatch.confidence}%)`);
+
 
                             // Kunci detection ini biar gak diproses 2x
                             processingRef.current.add(detection.id);
@@ -152,7 +148,7 @@ const PaymentAutoVerifier: React.FC = () => {
                                     duration: 5000
                                 });
 
-                                console.log('🧪 [DRY RUN] Would have verified:', bestMatch.orderId);
+
                             } else {
                                 // 🚀 PRODUCTION MODE: Execute verification
                                 try {
@@ -178,7 +174,7 @@ const PaymentAutoVerifier: React.FC = () => {
 
                                         const upgradeResult = await checkAndUpgradeRole(matchedOrder?.userId, orderItems);
                                         if (upgradeResult.upgraded) {
-                                            console.log('🎉 Auto-verified: User upgraded to Reseller:', upgradeResult.reason);
+
                                         }
                                     } catch (upgradeError) {
                                         console.error('Role upgrade check failed (non-blocking):', upgradeError);

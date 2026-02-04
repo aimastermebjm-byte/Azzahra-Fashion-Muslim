@@ -50,7 +50,7 @@ export const productCategoryService = {
     // Try cache first
     const cached = readCache();
     if (cached) {
-      console.log('✅ Using cached product categories');
+
       return cached;
     }
 
@@ -68,7 +68,7 @@ export const productCategoryService = {
 
     // Cache the result
     writeCache(categories);
-    console.log(`✅ Fetched ${categories.length} product categories from Firestore`);
+
     return categories;
   },
 
@@ -126,7 +126,7 @@ export const productCategoryService = {
     const cached = readCache() || [];
     writeCache(cached.filter((cat) => cat.id !== categoryId));
 
-    console.log(`✅ Deleted product category: ${categoryId}`);
+
   },
 
   /**
@@ -134,7 +134,7 @@ export const productCategoryService = {
    */
   clearCache(): void {
     localStorage.removeItem(CACHE_KEY);
-    console.log('✅ Product category cache cleared');
+
   },
 
   /**
@@ -143,7 +143,7 @@ export const productCategoryService = {
   async initializeDefaultCategories(): Promise<void> {
     try {
       const existing = await this.listCategories();
-      
+
       // Default categories yang sudah ada di sistem
       const defaultCategories = [
         { name: 'Hijab', icon: '🧕' },
@@ -155,17 +155,17 @@ export const productCategoryService = {
 
       // Add only if not exists
       for (const cat of defaultCategories) {
-        const exists = existing.find(e => 
+        const exists = existing.find(e =>
           e.name.toLowerCase() === cat.name.toLowerCase()
         );
-        
+
         if (!exists) {
           await this.addCategory(cat.name, 'system', 'system');
-          console.log(`✅ Added default category: ${cat.name}`);
+
         }
       }
 
-      console.log('✅ Default categories initialized');
+
     } catch (error) {
       console.error('❌ Failed to initialize default categories:', error);
     }
