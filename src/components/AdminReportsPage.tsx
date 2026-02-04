@@ -150,6 +150,9 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user, onNav
   const [showInvoiceDetailModal, setShowInvoiceDetailModal] = useState(false);
   const [selectedInvoiceDetail, setSelectedInvoiceDetail] = useState<Transaction | null>(null);
 
+  // 📊 Hierarchical Invoice View State
+  const [expandedInvoiceCustomer, setExpandedInvoiceCustomer] = useState<string | null>(null);
+
   // Calculate date range based on filter
   const getDateRange = useMemo(() => {
     const now = new Date();
@@ -683,6 +686,27 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user, onNav
       return matchesDate && matchesStatus && matchesCustomer && matchesCategory;
     });
   }, [transactions, getDateRange, statusFilter, customerFilter, categoryFilter, initialLoadingComplete]);
+
+  // 📊 Group invoices by customer for hierarchical view
+  const groupedInvoicesByCustomer = useMemo(() => {
+    const grouped: { [key: string]: { customer: string, invoices: Transaction[], totalAmount: number } } = {};
+
+    for (const transaction of filteredTransactions) {
+      const customerKey = transaction.customer || 'Unknown';
+      if (!grouped[customerKey]) {
+        grouped[customerKey] = {
+          customer: customerKey,
+          invoices: [],
+          totalAmount: 0
+        };
+      }
+      grouped[customerKey].invoices.push(transaction);
+      grouped[customerKey].totalAmount += transaction.total;
+    }
+
+    // Sort by total amount descending
+    return Object.values(grouped).sort((a, b) => b.totalAmount - a.totalAmount);
+  }, [filteredTransactions]);
 
   // Calculate summary statistics - optimized for performance
   const summaryStats = useMemo(() => {
@@ -1543,57 +1567,105 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user, onNav
             </div>
           )}
 
-          {/* Invoice Tab */}
+          {/* Invoice Tab - Hierarchical View */}
           {reportType === 'invoice' && (
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Daftar Invoice</h3>
-                <span className="text-sm text-gray-500">{filteredTransactions.length} invoice</span>
+                <h3 className="text-lg font-semibold text-gray-800">Rekap Invoice per Pelanggan</h3>
+                <span className="text-sm text-gray-500">{groupedInvoicesByCustomer.length} pelanggan · {filteredTransactions.length} invoice</span>
               </div>
 
-              {/* Responsive Table - Clickable Invoice */}
+              {/* Level 1: Customer Summary Table */}
               <div className="overflow-x-auto -mx-4 px-4">
                 <table className="w-full min-w-[320px] table-fixed text-xs sm:text-sm">
                   <thead>
                     <tr className="bg-gradient-to-r from-[#EDD686]/20 via-[#D4AF37]/20 to-[#997B2C]/20">
-                      <th className="px-2 py-2 text-left font-bold text-gray-700 uppercase tracking-wider w-[40%] sm:w-auto">Invoice</th>
-                      <th className="px-2 py-2 text-left font-bold text-gray-700 uppercase tracking-wider w-[35%] sm:w-auto">Pelanggan</th>
-                      <th className="px-2 py-2 text-right font-bold text-gray-700 uppercase tracking-wider w-[25%] sm:w-auto">Total</th>
+                      <th className="px-2 py-2 text-center font-bold text-gray-700 uppercase tracking-wider w-[20%]">Invoice</th>
+                      <th className="px-2 py-2 text-left font-bold text-gray-700 uppercase tracking-wider w-[50%]">Pelanggan</th>
+                      <th className="px-2 py-2 text-right font-bold text-gray-700 uppercase tracking-wider w-[30%]">Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredTransactions.map((transaction) => (
-                      <tr
-                        key={transaction.id}
-                        className="hover:bg-[#D4AF37]/10 cursor-pointer transition-colors"
-                        onClick={() => {
-                          setSelectedInvoiceDetail(transaction);
-                          setShowInvoiceDetailModal(true);
-                        }}
-                      >
-                        <td className="px-2 py-2">
-                          <div className="font-semibold text-[#997B2C] underline decoration-dotted">{transaction.invoice}</div>
-                          <div className="text-[10px] text-gray-400">{transaction.date}</div>
-                        </td>
-                        <td className="px-2 py-2">
-                          <div className="font-medium text-gray-900 truncate">{transaction.customer}</div>
-                          <div className="text-[10px] text-gray-400 hidden sm:block">{transaction.phone}</div>
-                        </td>
-                        <td className="px-2 py-2 text-right font-semibold text-gray-900 whitespace-nowrap">
-                          {transaction.total >= 1000000
-                            ? `${(transaction.total / 1000000).toFixed(1)}jt`
-                            : transaction.total >= 1000
-                              ? `${Math.round(transaction.total / 1000)}rb`
-                              : formatCurrency(transaction.total)
-                          }
-                        </td>
-                      </tr>
+                    {groupedInvoicesByCustomer.map((group) => (
+                      <React.Fragment key={group.customer}>
+                        {/* Level 1 Row - Customer Summary */}
+                        <tr
+                          className={`cursor-pointer transition-colors ${expandedInvoiceCustomer === group.customer ? 'bg-[#D4AF37]/20' : 'hover:bg-[#D4AF37]/10'}`}
+                          onClick={() => setExpandedInvoiceCustomer(expandedInvoiceCustomer === group.customer ? null : group.customer)}
+                        >
+                          <td className="px-2 py-3 text-center">
+                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-[#EDD686] to-[#997B2C] text-white font-bold text-sm">
+                              {group.invoices.length}
+                            </span>
+                          </td>
+                          <td className="px-2 py-3">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs transition-transform ${expandedInvoiceCustomer === group.customer ? 'rotate-90' : ''}`}>▶</span>
+                              <span className="font-semibold text-gray-900">{group.customer}</span>
+                            </div>
+                          </td>
+                          <td className="px-2 py-3 text-right font-bold text-[#997B2C] whitespace-nowrap">
+                            {group.totalAmount >= 1000000
+                              ? `${(group.totalAmount / 1000000).toFixed(1)}jt`
+                              : group.totalAmount >= 1000
+                                ? `${Math.round(group.totalAmount / 1000)}rb`
+                                : formatCurrency(group.totalAmount)
+                            }
+                          </td>
+                        </tr>
+
+                        {/* Level 2 - Invoice List (Expanded) */}
+                        {expandedInvoiceCustomer === group.customer && (
+                          <tr>
+                            <td colSpan={3} className="p-0">
+                              <div className="bg-gray-50 border-l-4 border-[#D4AF37] ml-4">
+                                <table className="w-full text-xs">
+                                  <thead>
+                                    <tr className="bg-gray-100">
+                                      <th className="px-3 py-2 text-left font-semibold text-gray-600 w-[30%]">Tanggal</th>
+                                      <th className="px-3 py-2 text-left font-semibold text-gray-600 w-[40%]">No. Invoice</th>
+                                      <th className="px-3 py-2 text-right font-semibold text-gray-600 w-[30%]">Nominal</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {group.invoices.map((invoice) => (
+                                      <tr
+                                        key={invoice.id}
+                                        className="hover:bg-[#D4AF37]/10 cursor-pointer border-b border-gray-200 last:border-b-0"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedInvoiceDetail(invoice);
+                                          setShowInvoiceDetailModal(true);
+                                        }}
+                                      >
+                                        <td className="px-3 py-2 text-gray-600">{invoice.date}</td>
+                                        <td className="px-3 py-2">
+                                          <span className="font-semibold text-[#997B2C] underline decoration-dotted">{invoice.invoice}</span>
+                                        </td>
+                                        <td className="px-3 py-2 text-right font-medium text-gray-900">
+                                          {invoice.total >= 1000000
+                                            ? `${(invoice.total / 1000000).toFixed(1)}jt`
+                                            : invoice.total >= 1000
+                                              ? `${Math.round(invoice.total / 1000)}rb`
+                                              : formatCurrency(invoice.total)
+                                          }
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     ))}
                   </tbody>
                   {/* Total Footer */}
                   <tfoot>
                     <tr className="bg-gradient-to-r from-[#EDD686] via-[#D4AF37] to-[#997B2C] text-white font-bold">
-                      <td className="px-2 py-3 uppercase tracking-wider" colSpan={2}>Total</td>
+                      <td className="px-2 py-3 text-center">{filteredTransactions.length}</td>
+                      <td className="px-2 py-3 uppercase tracking-wider">Total</td>
                       <td className="px-2 py-3 text-right whitespace-nowrap">
                         {(() => {
                           const totalAll = filteredTransactions.reduce((sum, t) => sum + t.total, 0);
@@ -1608,7 +1680,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user, onNav
               </div>
 
               {/* Hint */}
-              <p className="text-xs text-gray-400 mt-3 text-center">💡 Tap invoice untuk lihat detail</p>
+              <p className="text-xs text-gray-400 mt-3 text-center">💡 Tap pelanggan untuk lihat daftar invoice, tap invoice untuk lihat detail</p>
             </div>
           )}
 
