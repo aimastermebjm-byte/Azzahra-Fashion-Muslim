@@ -93,6 +93,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
   const [tappedProductId, setTappedProductId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(20);
 
+  // Date Filter State
+  const [dateFilterFrom, setDateFilterFrom] = useState<string>('');
+  const [dateFilterTo, setDateFilterTo] = useState<string>('');
+
   // NEW: Discount and Collection Modal States
 
   const [showCollectionModal, setShowCollectionModal] = useState(false);
@@ -130,7 +134,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(20);
-  }, [searchQuery, selectedCategory, sortBy]);
+  }, [searchQuery, selectedCategory, sortBy, dateFilterFrom, dateFilterTo]);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -396,6 +400,25 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
       filtered = filtered.filter(product => product.category === selectedCategory);
     }
 
+    // Apply date filter (createdAt)
+    if (dateFilterFrom) {
+      const fromDate = new Date(dateFilterFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(product => {
+        const createdAt = product.createdAt ? new Date(product.createdAt) : null;
+        return createdAt && createdAt >= fromDate;
+      });
+    }
+
+    if (dateFilterTo) {
+      const toDate = new Date(dateFilterTo);
+      toDate.setHours(23, 59, 59, 999); // Include entire day
+      filtered = filtered.filter(product => {
+        const createdAt = product.createdAt ? new Date(product.createdAt) : null;
+        return createdAt && createdAt <= toDate;
+      });
+    }
+
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
@@ -414,7 +437,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
     });
 
     return filtered;
-  }, [products, searchQuery, selectedCategory, sortBy]);
+  }, [products, searchQuery, selectedCategory, sortBy, dateFilterFrom, dateFilterTo]);
 
   // Infinite Scroll Slice
   const currentProducts = filteredAndSortedProducts.slice(0, visibleCount);
@@ -1437,6 +1460,40 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                 <option value="date-newest">Terbaru</option>
                 <option value="date-oldest">Terlama</option>
               </select>
+            </div>
+
+            {/* Date Filter Row */}
+            <div className="flex gap-2 items-center flex-wrap">
+              <span className="text-xs text-[#997B2C] font-semibold">📅 Filter Tanggal:</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-[#997B2C]">Dari</span>
+                <input
+                  type="date"
+                  value={dateFilterFrom}
+                  onChange={(e) => setDateFilterFrom(e.target.value)}
+                  className="px-2 py-1 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_2px_0_0_#997B2C]"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-[#997B2C]">Sampai</span>
+                <input
+                  type="date"
+                  value={dateFilterTo}
+                  onChange={(e) => setDateFilterTo(e.target.value)}
+                  className="px-2 py-1 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_2px_0_0_#997B2C]"
+                />
+              </div>
+              {(dateFilterFrom || dateFilterTo) && (
+                <button
+                  onClick={() => {
+                    setDateFilterFrom('');
+                    setDateFilterTo('');
+                  }}
+                  className="px-2 py-1 text-xs bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-white rounded-lg font-semibold hover:shadow-md transition-all border border-[#7A6223] shadow-[0_1px_0_0_#7A6223]"
+                >
+                  ✕ Reset
+                </button>
+              )}
             </div>
 
             {/* Batch Actions - 2 Columns Like Main Menu */}
