@@ -1066,8 +1066,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
               </div>
             )}
 
-            {/* Category Filter - Only for products/inventory */}
-            {(reportType === 'products' || reportType === 'inventory') && (
+            {/* Category Filter - For sales/products/inventory */}
+            {(reportType === 'sales' || reportType === 'products' || reportType === 'inventory') && (
               <div>
                 <label className="text-xs uppercase tracking-wide text-gray-500 font-bold mb-2 block">Kategori Produk</label>
                 <select
@@ -1278,84 +1278,98 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">Transaksi Penjualan</h3>
+                <span className="text-sm text-gray-500">{filteredTransactions.length} transaksi</span>
               </div>
 
-              {/* Mobile Card View */}
-              <div className="block md:hidden space-y-4">
-                {filteredTransactions.map((transaction) => {
-                  const modal = transaction.totalModal || (transaction.subtotal * 0.6);
-                  const laba = transaction.subtotal - modal;
-                  return (
-                    <div key={transaction.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-bold text-gray-800">{transaction.invoice}</p>
-                          <p className="text-xs text-gray-500">{transaction.date}</p>
-                        </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${transaction.status === 'lunas' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                          }`}>
-                          {transaction.status === 'lunas' ? 'Lunas' : 'Belum'}
-                        </span>
-                      </div>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Pelanggan</span>
-                          <span className="font-medium text-gray-900">{transaction.customer}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Total</span>
-                          <span className="font-bold text-gray-900">{formatCurrency(transaction.subtotal)}</span>
-                        </div>
-                        {isOwner && (
-                          <div className="flex justify-between border-t pt-1 mt-1">
-                            <span className="text-xs text-gray-500">Laba</span>
-                            <span className="font-bold text-green-600">{formatCurrency(laba)}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full table-auto">
+              {/* Responsive Table - Works on both mobile and desktop */}
+              <div className="overflow-x-auto -mx-4 px-4">
+                <table className="w-full min-w-[320px] table-fixed text-xs sm:text-sm">
                   <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subtotal</th>
-                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>}
-                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Laba</th>}
+                    <tr className="bg-gradient-to-r from-[#EDD686]/20 via-[#D4AF37]/20 to-[#997B2C]/20">
+                      <th className="px-2 py-2 text-left font-bold text-gray-700 uppercase tracking-wider w-[35%] sm:w-auto">Invoice</th>
+                      <th className="px-2 py-2 text-right font-bold text-gray-700 uppercase tracking-wider w-[22%] sm:w-auto">Total</th>
+                      {isOwner && <th className="px-2 py-2 text-right font-bold text-gray-700 uppercase tracking-wider w-[21.5%] sm:w-auto">Modal</th>}
+                      {isOwner && <th className="px-2 py-2 text-right font-bold text-gray-700 uppercase tracking-wider w-[21.5%] sm:w-auto">Laba</th>}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-100">
                     {filteredTransactions.map((transaction) => {
-                      const modal = transaction.totalModal || (transaction.subtotal * 0.6); // Use real modal or fallback 60%
+                      const modal = transaction.totalModal || (transaction.subtotal * 0.6);
                       const laba = transaction.subtotal - modal;
-
                       return (
                         <tr key={transaction.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                            {transaction.invoice}
+                          <td className="px-2 py-2">
+                            <div className="font-medium text-gray-900 truncate">{transaction.invoice}</div>
+                            <div className="text-[10px] text-gray-400 hidden sm:block">{transaction.customer}</div>
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {formatCurrency(transaction.subtotal)}
+                          <td className="px-2 py-2 text-right font-semibold text-gray-900 whitespace-nowrap">
+                            {transaction.subtotal >= 1000000
+                              ? `${(transaction.subtotal / 1000000).toFixed(1)}jt`
+                              : transaction.subtotal >= 1000
+                                ? `${Math.round(transaction.subtotal / 1000)}rb`
+                                : formatCurrency(transaction.subtotal)
+                            }
                           </td>
                           {isOwner && (
-                            <td className="px-4 py-3 text-sm text-gray-900">
-                              {formatCurrency(modal)}
+                            <td className="px-2 py-2 text-right text-gray-600 whitespace-nowrap">
+                              {modal >= 1000000
+                                ? `${(modal / 1000000).toFixed(1)}jt`
+                                : modal >= 1000
+                                  ? `${Math.round(modal / 1000)}rb`
+                                  : formatCurrency(modal)
+                              }
                             </td>
                           )}
                           {isOwner && (
-                            <td className="px-4 py-3 text-sm text-green-600">
-                              {formatCurrency(laba)}
+                            <td className="px-2 py-2 text-right font-bold text-green-600 whitespace-nowrap">
+                              {laba >= 1000000
+                                ? `${(laba / 1000000).toFixed(1)}jt`
+                                : laba >= 1000
+                                  ? `${Math.round(laba / 1000)}rb`
+                                  : formatCurrency(laba)
+                              }
                             </td>
                           )}
                         </tr>
                       );
                     })}
                   </tbody>
+                  {/* Total Footer */}
+                  <tfoot>
+                    <tr className="bg-gradient-to-r from-[#EDD686] via-[#D4AF37] to-[#997B2C] text-white font-bold">
+                      <td className="px-2 py-3 uppercase tracking-wider">Total</td>
+                      <td className="px-2 py-3 text-right whitespace-nowrap">
+                        {summaryStats.totalRevenue >= 1000000
+                          ? `${(summaryStats.totalRevenue / 1000000).toFixed(1)}jt`
+                          : `${Math.round(summaryStats.totalRevenue / 1000)}rb`
+                        }
+                      </td>
+                      {isOwner && (
+                        <td className="px-2 py-3 text-right whitespace-nowrap">
+                          {(() => {
+                            const totalModal = filteredTransactions.reduce((sum, t) =>
+                              sum + (t.totalModal || t.subtotal * 0.6), 0);
+                            return totalModal >= 1000000
+                              ? `${(totalModal / 1000000).toFixed(1)}jt`
+                              : `${Math.round(totalModal / 1000)}rb`;
+                          })()}
+                        </td>
+                      )}
+                      {isOwner && (
+                        <td className="px-2 py-3 text-right whitespace-nowrap">
+                          {(() => {
+                            const totalLaba = filteredTransactions.reduce((sum, t) => {
+                              const modal = t.totalModal || t.subtotal * 0.6;
+                              return sum + (t.subtotal - modal);
+                            }, 0);
+                            return totalLaba >= 1000000
+                              ? `${(totalLaba / 1000000).toFixed(1)}jt`
+                              : `${Math.round(totalLaba / 1000)}rb`;
+                          })()}
+                        </td>
+                      )}
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             </div>
