@@ -1305,9 +1305,16 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                       const modal = transaction.totalModal || (transaction.subtotal * 0.6);
                       const laba = transaction.subtotal - modal;
                       return (
-                        <tr key={transaction.id} className="hover:bg-gray-50">
+                        <tr
+                          key={transaction.id}
+                          className="hover:bg-[#D4AF37]/10 cursor-pointer transition-colors"
+                          onClick={() => {
+                            setSelectedInvoiceDetail(transaction);
+                            setShowInvoiceDetailModal(true);
+                          }}
+                        >
                           <td className="px-2 py-2">
-                            <div className="font-medium text-gray-900 truncate">{transaction.invoice}</div>
+                            <div className="font-semibold text-[#997B2C] underline decoration-dotted truncate">{transaction.invoice}</div>
                             <div className="text-[10px] text-gray-400 hidden sm:block">{transaction.customer}</div>
                           </td>
                           <td className="px-2 py-2 text-right font-semibold text-gray-900 whitespace-nowrap">
@@ -1380,6 +1387,9 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   </tfoot>
                 </table>
               </div>
+
+              {/* Hint */}
+              <p className="text-xs text-gray-400 mt-3 text-center">💡 Tap invoice untuk lihat detail</p>
             </div>
           )}
 
