@@ -1477,8 +1477,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
               </select>
             </div>
 
-            {/* Filter Panel - Organized Layout */}
+            {/* Filter Panel - Mobile-First Layout */}
             <div className="bg-gradient-to-r from-[#FDF6E3] to-[#FEF9ED] p-3 rounded-xl border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
+              {/* Header */}
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold text-[#997B2C]">🔍 Filter Lanjutan</span>
                 {(dateFilterFrom || dateFilterTo || priceFilterMin || priceFilterMax) && (
@@ -1496,59 +1497,61 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                 )}
               </div>
 
-              {/* Filter Grid - Clean 2 Column Layout */}
+              {/* Filter Sections - Mobile Friendly Stacked Layout */}
               <div className="space-y-3">
-                {/* Date Filter Row */}
-                <div className="grid grid-cols-[auto_1fr_1fr] gap-2 items-center">
-                  <span className="text-xs text-[#997B2C] font-semibold">📅 Tanggal</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-[#997B2C] w-12">Dari</span>
-                    <input
-                      type="date"
-                      value={dateFilterFrom}
-                      onChange={(e) => setDateFilterFrom(e.target.value)}
-                      className="flex-1 min-w-0 px-2 py-1.5 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
-                    />
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-[#997B2C] w-12">Sampai</span>
-                    <input
-                      type="date"
-                      value={dateFilterTo}
-                      onChange={(e) => setDateFilterTo(e.target.value)}
-                      className="flex-1 min-w-0 px-2 py-1.5 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
-                    />
+                {/* Date Filter */}
+                <div className="space-y-2">
+                  <span className="text-xs text-[#997B2C] font-semibold">📅 Filter Tanggal</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-[#997B2C] mb-0.5 block">Dari</label>
+                      <input
+                        type="date"
+                        value={dateFilterFrom}
+                        onChange={(e) => setDateFilterFrom(e.target.value)}
+                        className="w-full px-2 py-2 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-[#997B2C] mb-0.5 block">Sampai</label>
+                      <input
+                        type="date"
+                        value={dateFilterTo}
+                        onChange={(e) => setDateFilterTo(e.target.value)}
+                        className="w-full px-2 py-2 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Price Filter Row */}
-                <div className="grid grid-cols-[auto_1fr_1fr] gap-2 items-center">
-                  <span className="text-xs text-[#997B2C] font-semibold">💰 Harga</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-[#997B2C] w-12">Min</span>
-                    <input
-                      type="number"
-                      placeholder="0"
-                      value={priceFilterMin}
-                      onChange={(e) => setPriceFilterMin(e.target.value)}
-                      className="flex-1 min-w-0 px-2 py-1.5 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
-                    />
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-[#997B2C] w-12">Max</span>
-                    <input
-                      type="number"
-                      placeholder="∞"
-                      value={priceFilterMax}
-                      onChange={(e) => setPriceFilterMax(e.target.value)}
-                      className="flex-1 min-w-0 px-2 py-1.5 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
-                    />
+                {/* Price Filter */}
+                <div className="space-y-2">
+                  <span className="text-xs text-[#997B2C] font-semibold">💰 Filter Harga (Rp)</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-[#997B2C] mb-0.5 block">Minimum</label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={priceFilterMin}
+                        onChange={(e) => setPriceFilterMin(e.target.value)}
+                        className="w-full px-2 py-2 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-[#997B2C] mb-0.5 block">Maksimum</label>
+                      <input
+                        type="number"
+                        placeholder="∞"
+                        value={priceFilterMax}
+                        onChange={(e) => setPriceFilterMax(e.target.value)}
+                        className="w-full px-2 py-2 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-
-
             {/* Batch Actions - 2 Columns Like Main Menu */}
             {selectedProducts.length > 0 && (
               <div className="pt-3 border-t space-y-2">
