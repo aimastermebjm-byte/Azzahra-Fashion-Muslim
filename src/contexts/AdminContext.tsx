@@ -84,7 +84,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const newOrder = {
         ...orderData,
-        id: `AZF${Date.now().toString().slice(-8)}`,
+        id: `ORD${Date.now().toString().slice(-8)}`,
         timestamp: Date.now(),
         createdAt: new Date(),
         updatedAt: new Date()

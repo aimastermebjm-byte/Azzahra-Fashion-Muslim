@@ -126,6 +126,7 @@ const PaymentAutoVerifier: React.FC = () => {
                                 // 🧪 TEST MODE: Only log, don't execute
                                 await autoVerificationLogService.createLog({
                                     orderId: bestMatch.orderId,
+                                    invoiceNumber: matchedOrder?.invoiceNumber, // 🧾 Store invoice number
                                     orderAmount: matchedOrder?.finalTotal || detection.amount,
                                     customerName,
                                     detectionId: detection.id,
@@ -183,6 +184,7 @@ const PaymentAutoVerifier: React.FC = () => {
                                     // 📋 Log success
                                     await autoVerificationLogService.createLog({
                                         orderId: bestMatch.orderId,
+                                        invoiceNumber: matchedOrder?.invoiceNumber, // 🧾 Store invoice number
                                         orderAmount: matchedOrder?.finalTotal || detection.amount,
                                         customerName,
                                         detectionId: detection.id,

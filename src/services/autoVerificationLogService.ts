@@ -24,6 +24,7 @@ export interface AutoVerificationLog {
 
     // Order info
     orderId: string;
+    invoiceNumber?: string;  // 🧾 NEW: Store invoice number (INV-YYMMNNNNN format)
     orderAmount: number;
     customerName: string;
 

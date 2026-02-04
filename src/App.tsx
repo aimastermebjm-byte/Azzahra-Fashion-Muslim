@@ -297,7 +297,7 @@ function AppContent() {
       return null;
     }
 
-    const orderId = 'AZF' + Date.now().toString().slice(-8);
+    const orderId = 'ORD' + Date.now().toString().slice(-8);
 
     try {
       // Use cartItems from parameter (eliminates 1 read!)

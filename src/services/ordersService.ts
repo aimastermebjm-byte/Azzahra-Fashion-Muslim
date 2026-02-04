@@ -560,9 +560,9 @@ class OrdersService {
   }
 
 
-  // Generate order ID
+  // Generate order ID (internal reference, different from invoice number)
   private generateOrderId(): string {
-    return 'AZF' + Date.now().toString().slice(-8);
+    return 'ORD' + Date.now().toString().slice(-8);
   }
 
   // 🧾 NEW: Generate Invoice Number (format: INV-YYMMNNNNN)

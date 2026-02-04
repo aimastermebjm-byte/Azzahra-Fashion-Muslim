@@ -189,7 +189,7 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                                             {getStatusIcon(log.status)}
                                             <div>
                                                 <div className="font-semibold text-gray-900">
-                                                    Order: {log.orderId}
+                                                    Order: {log.invoiceNumber || log.orderId}
                                                 </div>
                                                 {/* Customer Name */}
                                                 <div className="text-sm text-[#997B2C] font-bold">
