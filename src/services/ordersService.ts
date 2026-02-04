@@ -559,6 +559,38 @@ class OrdersService {
     return unsubscribe;
   }
 
+  // ✨ NEW: Get single order by ID (helper)
+  async getOrderById(orderId: string): Promise<Order | null> {
+    try {
+      const orderRef = doc(db, this.collection, orderId);
+      const orderDoc = await getDoc(orderRef);
+
+      if (!orderDoc.exists()) {
+        return null;
+      }
+      return { id: orderDoc.id, ...orderDoc.data() } as Order;
+    } catch (error) {
+      console.error('Error getting order by ID:', error);
+      return null;
+    }
+  }
+
+  // ✨ NEW: Get orders by Payment Group ID (helper)
+  async getOrdersByPaymentGroupId(groupId: string): Promise<Order[]> {
+    try {
+      const ordersRef = collection(db, this.collection);
+      const q = query(ordersRef, where('paymentGroupId', '==', groupId));
+      const snapshot = await getDocs(q);
+
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Order[];
+    } catch (error) {
+      console.error('Error getting orders by Payment Group ID:', error);
+      return [];
+    }
+  }
 
   // Generate order ID (internal reference, different from invoice number)
   private generateOrderId(): string {
@@ -568,7 +600,7 @@ class OrdersService {
   // 🧾 NEW: Generate Invoice Number (format: INV-YYMMNNNNN)
   // Uses Firestore transaction for atomic counter increment
   // Counter resets each month automatically (new document per month)
-  private async generateInvoiceNumber(): Promise<string> {
+  async generateInvoiceNumber(): Promise<string> {
     try {
       const now = new Date();
       const year = now.getFullYear().toString().slice(-2); // "26" for 2026

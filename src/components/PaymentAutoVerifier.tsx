@@ -118,19 +118,56 @@ const PaymentAutoVerifier: React.FC = () => {
                             // Kunci detection ini biar gak diproses 2x
                             processingRef.current.add(detection.id);
 
-                            // Get order details for logging
-                            // 🔧 FIX: If orderId is Payment Group (PG prefix), find by paymentGroupId
+                            // 🔄 FETCH FRESH DATA from Firestore (Bypass stale state)
+                            // Ini penting untuk memastikan invoiceNumber terbaca meskipun local state belum update
                             const isPaymentGroup = bestMatch.orderId.startsWith('PG');
-                            const matchedOrder = isPaymentGroup
-                                ? orders.find(o => o.paymentGroupId === bestMatch.orderId)
-                                : orders.find(o => o.id === bestMatch.orderId);
+                            let freshGroupOrders: any[] = [];
+                            let freshMatchedOrder: any = null;
+
+                            if (isPaymentGroup) {
+                                freshGroupOrders = await ordersService.getOrdersByPaymentGroupId(bestMatch.orderId);
+                                freshMatchedOrder = freshGroupOrders[0];
+                            } else {
+                                freshMatchedOrder = await ordersService.getOrderById(bestMatch.orderId);
+                                if (freshMatchedOrder) {
+                                    freshGroupOrders = [freshMatchedOrder];
+                                }
+                            }
+
+                            // Fallback ke local state jika fetch gagal (safety net)
+                            if (!freshMatchedOrder) {
+                                console.warn('⚠️ Fresh fetch failed/empty, using local state fallback for:', bestMatch.orderId);
+                                freshMatchedOrder = isPaymentGroup
+                                    ? orders.find(o => o.paymentGroupId === bestMatch.orderId)
+                                    : orders.find(o => o.id === bestMatch.orderId);
+                                freshGroupOrders = isPaymentGroup
+                                    ? orders.filter(o => o.paymentGroupId === bestMatch.orderId)
+                                    : (freshMatchedOrder ? [freshMatchedOrder] : []);
+                            }
+
+                            const matchedOrder = freshMatchedOrder;
+                            const groupOrders = freshGroupOrders;
+
                             const customerName = matchedOrder?.shippingInfo?.name || matchedOrder?.userName || 'Unknown';
 
-                            // 🔧 Get all orders in payment group for logging
-                            const groupOrders = isPaymentGroup
-                                ? orders.filter(o => o.paymentGroupId === bestMatch.orderId)
-                                : (matchedOrder ? [matchedOrder] : []);
-                            const orderDetails = groupOrders.map(o => ({
+                            // 🧾 MIGRATION: Ensure all orders have invoiceNumber
+                            // For orders created before invoice system was added, generate and update
+                            const ensuredGroupOrders = await Promise.all(
+                                groupOrders.map(async (o: any) => {
+                                    if (!o.invoiceNumber) {
+                                        // Generate invoice number for legacy order
+                                        const newInvoiceNumber = await ordersService.generateInvoiceNumber();
+                                        // Update order in Firestore (migration on-the-fly)
+                                        await ordersService.updateOrder(o.id, { invoiceNumber: newInvoiceNumber });
+                                        console.log(`🧾 Migrated order ${o.id} with invoice: ${newInvoiceNumber}`);
+                                        return { ...o, invoiceNumber: newInvoiceNumber };
+                                    }
+                                    return o;
+                                })
+                            );
+
+
+                            const orderDetails = ensuredGroupOrders.map(o => ({
                                 id: o.invoiceNumber || o.id,
                                 amount: o.finalTotal || 0,
                                 customerName: o.shippingInfo?.name || o.userName
