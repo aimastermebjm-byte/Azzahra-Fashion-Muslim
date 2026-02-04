@@ -66,7 +66,7 @@ const CashPaymentModal: React.FC<CashPaymentModalProps> = ({
 
                     {/* Summary Box */}
                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 text-center">
-                        <p className="text-gray-500 text-sm mb-1">Total Tagihan Pesanan #{order.id}</p>
+                        <p className="text-gray-500 text-sm mb-1">Total Tagihan Pesanan {order.invoiceNumber || `#${order.id}`}</p>
                         <p className="text-2xl font-bold text-gray-800">Rp {total.toLocaleString('id-ID')}</p>
                     </div>
 

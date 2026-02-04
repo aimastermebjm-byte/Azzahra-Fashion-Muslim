@@ -443,7 +443,7 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
                   <div key={order.id} className="bg-white rounded-lg p-3 shadow-sm border border-blue-200">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-gray-900">#{order.id}</p>
+                        <p className="text-sm font-semibold text-gray-900">{order.invoiceNumber || `#${order.id}`}</p>
                         <p className="text-xs text-gray-600">{order.shippingInfo?.name || order.userName}</p>
                         <p className="text-lg font-bold text-blue-600 mt-1">
                           Rp {(order.exactPaymentAmount || order.finalTotal).toLocaleString('id-ID')}

@@ -321,7 +321,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     // ✅ FIX: Dynamic message based on payment status
     let message = `Halo Kak ${order.userName || 'Pelanggan'},\n\n`;
     message += `Berikut tagihan untuk pesanan Kakak di Azzahra Fashion Muslim:\n`;
-    message += `No. Pesanan: *#${order.id}*\n`;
+    message += `No. Invoice: *${order.invoiceNumber || order.id}*\n`;
 
     if (hasPartialPayment) {
       // Partial payment - show breakdown
@@ -433,7 +433,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         itemsText,
         '--------------------------------',
         `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
-        `Order ID  : #${order.id}`
+        `Invoice    : ${order.invoiceNumber || order.id}`
       ].filter(Boolean).join('\n');
 
       // Use custom URL scheme for Android native app with Base64 encoding (SafeArea)
@@ -518,7 +518,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             itemsText,
             '--------------------------------',
             `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
-            `Order ID  : #${order.id}`
+            `Invoice    : ${order.invoiceNumber || order.id}`
           ].filter(Boolean).join('\n');
         }).join('\n\n--- potong disini ---\n\n');
 
@@ -2437,7 +2437,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   {assistPaymentData.orders ? (
                     `${assistPaymentData.orders.length} Pesanan - Rp ${assistPaymentData.subtotal.toLocaleString('id-ID')}`
                   ) : (
-                    `Pesanan #{assistPaymentData.order.id} - Rp ${assistPaymentData.order.finalTotal.toLocaleString('id-ID')}`
+                    `Pesanan ${assistPaymentData.order.invoiceNumber || assistPaymentData.order.id} - Rp ${assistPaymentData.order.finalTotal.toLocaleString('id-ID')}`
                   )}
                 </p>
               </div>
