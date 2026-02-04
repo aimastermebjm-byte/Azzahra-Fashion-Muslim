@@ -9,8 +9,7 @@ import {
     Timestamp,
     doc,
     updateDoc,
-    getDoc,
-    writeBatch
+    getDoc
 } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { stockMutationService } from './stockMutationService';
@@ -141,14 +140,6 @@ export const stockAdjustmentService = {
                     }
                 }
             }
-
-            console.log('🔍 DEBUG approveRequest:', {
-                requestProductId: request.productId,
-                baseProductId,
-                productsCount: products.length,
-                productIndex,
-                sampleProductIds: products.slice(0, 3).map((p: any) => p.id)
-            });
 
             if (productIndex === -1) {
                 throw new Error(`Product not found in batch. ProductId: ${request.productId}`);
