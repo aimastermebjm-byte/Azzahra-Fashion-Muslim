@@ -101,14 +101,22 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
         const [displayId, setDisplayId] = useState(id);
 
         useEffect(() => {
+            // ✅ If ID already starts with INV-, no need to query
+            if (id && id.startsWith('INV-')) {
+                setDisplayId(id);
+                return;
+            }
+
             let isMounted = true;
             if (id && (id.startsWith('ORD') || id.startsWith('PG'))) {
                 console.log('🔍 OrderRefDisplay: Looking up invoice for:', id);
                 // 🔥 FIX: Use getOrderByInternalId which searches by 'id' field, not document ID
                 ordersService.getOrderByInternalId(id).then(order => {
-                    console.log('📦 OrderRefDisplay result for', id, ':', order ? `Found! Invoice: ${order.invoiceNumber}` : 'NOT FOUND');
+                    console.log('📦 OrderRefDisplay result for', id, ':', order ? `Found! Invoice: ${order.invoiceNumber || 'UNDEFINED'}` : 'NOT FOUND');
                     if (isMounted && order?.invoiceNumber) {
                         setDisplayId(order.invoiceNumber);
+                    } else if (isMounted) {
+                        console.warn('⚠️ OrderRefDisplay: Order found but no invoiceNumber for', id);
                     }
                 }).catch((err) => {
                     console.error('❌ OrderRefDisplay error for', id, ':', err);
