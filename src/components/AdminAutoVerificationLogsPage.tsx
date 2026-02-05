@@ -374,6 +374,7 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                                                 <div className="text-sm bg-red-50 text-red-700 rounded-lg p-2 mt-1 border border-red-200">
                                                     {log.errorMessage}
                                                 </div>
+                                            </div>
                                         )}
 
                                         {/* Action Buttons */}
