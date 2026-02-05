@@ -289,7 +289,7 @@ class PaymentDetectionService {
     console.log('🔍 Searching for exact amount match:', detectedAmount);
 
     // Find orders with exact payment amount OR group payment amount (unique code system)
-    const exactMatches = pendingOrders.filter(order =>
+    let exactMatches = pendingOrders.filter(order =>
       (
         (order.exactPaymentAmount === detectedAmount) ||
         (order.groupPaymentAmount === detectedAmount)
@@ -298,8 +298,43 @@ class PaymentDetectionService {
       order.status === 'pending'
     );
 
+    // 🔥 FIX: If local state is stale (race condition), try DIRECT Firestore query
     if (exactMatches.length === 0) {
-      console.log('❌ No exact amount match found');
+      console.log('⏳ Local state might be stale, querying Firestore directly...');
+      try {
+        const ordersRef = collection(db, 'orders');
+        const q = query(
+          ordersRef,
+          where('exactPaymentAmount', '==', detectedAmount),
+          where('status', '==', 'pending'),
+          where('verificationMode', '==', 'auto')
+        );
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+          exactMatches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          console.log('✅ Found match via direct Firestore query:', exactMatches.length);
+        } else {
+          // Also try groupPaymentAmount
+          const q2 = query(
+            ordersRef,
+            where('groupPaymentAmount', '==', detectedAmount),
+            where('status', '==', 'pending'),
+            where('verificationMode', '==', 'auto')
+          );
+          const snapshot2 = await getDocs(q2);
+          if (!snapshot2.empty) {
+            exactMatches = snapshot2.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log('✅ Found match via groupPaymentAmount query:', exactMatches.length);
+          }
+        }
+      } catch (err) {
+        console.error('❌ Firestore direct query failed:', err);
+      }
+    }
+
+    if (exactMatches.length === 0) {
+      console.log('❌ No exact amount match found (even after Firestore query)');
       return null;
     }
 
