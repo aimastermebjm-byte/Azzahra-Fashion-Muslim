@@ -575,6 +575,32 @@ class OrdersService {
     }
   }
 
+  // 🔥 NEW: Get single order by Internal ID (ORD...) - searches by 'id' field, not document ID
+  async getOrderByInternalId(internalId: string): Promise<Order | null> {
+    try {
+      // First try direct document lookup (in case it's actually invoiceNumber)
+      const directOrder = await this.getOrderById(internalId);
+      if (directOrder) {
+        return directOrder;
+      }
+
+      // If not found, search by 'id' field (internal ORD ID)
+      const ordersRef = collection(db, this.collection);
+      const q = query(ordersRef, where('id', '==', internalId));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        return null;
+      }
+
+      const docData = snapshot.docs[0];
+      return { id: docData.id, ...docData.data() } as Order;
+    } catch (error) {
+      console.error('Error getting order by internal ID:', error);
+      return null;
+    }
+  }
+
   // ✨ NEW: Get orders by Payment Group ID (helper)
   async getOrdersByPaymentGroupId(groupId: string): Promise<Order[]> {
     try {

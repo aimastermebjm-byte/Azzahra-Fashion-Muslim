@@ -103,8 +103,8 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
         useEffect(() => {
             let isMounted = true;
             if (id && (id.startsWith('ORD') || id.startsWith('PG'))) {
-                // Try to resolve invoice number
-                ordersService.getOrderById(id).then(order => {
+                // 🔥 FIX: Use getOrderByInternalId which searches by 'id' field, not document ID
+                ordersService.getOrderByInternalId(id).then(order => {
                     if (isMounted && order?.invoiceNumber) {
                         setDisplayId(order.invoiceNumber);
                     }
