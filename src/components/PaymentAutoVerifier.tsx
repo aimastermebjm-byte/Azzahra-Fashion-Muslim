@@ -288,9 +288,9 @@ const PaymentAutoVerifier: React.FC = () => {
                                         duration: 5000
                                     });
 
-                                    // Play sound effect (optional)
-                                    const audio = new Audio('/sounds/success.mp3');
-                                    audio.play().catch(() => { });
+                                    // Play sound effect (optional) - REMOVED per user request
+                                    // const audio = new Audio('/sounds/success.mp3');
+                                    // audio.play().catch(() => { });
 
                                 } catch (execError) {
                                     // 📋 Log failure

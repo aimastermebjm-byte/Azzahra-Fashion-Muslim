@@ -370,9 +370,32 @@ function AppContent() {
             throw new Error(`Stok \"${item.name}\" ${item.variant ? `(${item.variant.size}, ${item.variant.color})` : ''} tidak mencukupi. Tersedia: ${currentStock}, Diminta: ${item.quantity}`);
           }
 
-          // ✅ FIX: Use price from cart item (preserves Flash Sale price)
-          // Cart already has the correct price (Flash Sale / Normal / Reseller)
-          const expectedPrice = item.price || 0;
+          // 🛡️ SECURITY: Server-Side Price Validation (Smart Logic)
+          // Never trust client price (item.price). Calculate strictly from database.
+
+          // 0. Get Flash Sale Config from the SAME batch doc (Zero extra reads)
+          const flashSaleConfig = batchDoc.data().flashSaleConfig;
+          const fsDiscount = (flashSaleConfig?.isActive && flashSaleConfig?.productDiscounts?.[item.productId]) || 0;
+
+          let officialPrice = Number(batchProduct.retailPrice || 0); // Default to Retail
+          let isFlashSaleItem = false;
+
+          if (fsDiscount > 0) {
+            // ⚡ Case 1: Active Flash Sale (Takes Priority)
+            // Calculate strictly: Retail - Discount
+            officialPrice = Math.max(officialPrice - fsDiscount, 1000);
+            isFlashSaleItem = true;
+          } else if (user.role === 'reseller' && batchProduct.resellerPrice) {
+            // 💼 Case 2: Reseller (If not Flash Sale)
+            officialPrice = Number(batchProduct.resellerPrice);
+          } else {
+            // 🏷️ Case 3: Regular Retail (Fallback)
+            // (Optional: Check variant price here if needed, but standard Retail is safe base)
+            officialPrice = Number(batchProduct.retailPrice || 0);
+          }
+
+          // 🎯 FORCE OVERRIDE: Use Official Price
+          const expectedPrice = officialPrice;
 
           const itemTotal = expectedPrice * item.quantity;
           cartTotal += itemTotal;
