@@ -103,12 +103,16 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
         useEffect(() => {
             let isMounted = true;
             if (id && (id.startsWith('ORD') || id.startsWith('PG'))) {
+                console.log('🔍 OrderRefDisplay: Looking up invoice for:', id);
                 // 🔥 FIX: Use getOrderByInternalId which searches by 'id' field, not document ID
                 ordersService.getOrderByInternalId(id).then(order => {
+                    console.log('📦 OrderRefDisplay result for', id, ':', order ? `Found! Invoice: ${order.invoiceNumber}` : 'NOT FOUND');
                     if (isMounted && order?.invoiceNumber) {
                         setDisplayId(order.invoiceNumber);
                     }
-                }).catch(() => { });
+                }).catch((err) => {
+                    console.error('❌ OrderRefDisplay error for', id, ':', err);
+                });
             }
             return () => { isMounted = false; };
         }, [id]);
