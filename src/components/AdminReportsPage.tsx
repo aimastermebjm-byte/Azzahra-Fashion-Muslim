@@ -3,7 +3,7 @@ import PageHeader from './PageHeader';
 import {
   Download, Package, Users,
   ArrowUpRight, ArrowDownRight,
-  Search, ChevronDown, XCircle
+  Search, ChevronDown, XCircle, Wallet
 } from 'lucide-react';
 import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
@@ -29,6 +29,7 @@ import {
 interface AdminReportsPageProps {
   onBack: () => void;
   user: any;
+  onNavigateToStockAdjustments?: () => void;
 }
 
 interface CombinedBuyerSummary {
@@ -77,7 +78,7 @@ const writeUsersCache = (users: any[]) => {
   }
 };
 
-const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => {
+const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user, onNavigateToStockAdjustments }) => {
   const isOwner = user?.role === 'owner';
 
   // Report type untuk tab navigation - Admin default ke 'sales', Owner default ke 'summary'
@@ -144,6 +145,13 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
   const [showReceivablesModal, setShowReceivablesModal] = useState(false);
   const [selectedOrderDetail, setSelectedOrderDetail] = useState<any>(null);
   const [loadingOrderDetail, setLoadingOrderDetail] = useState(false);
+
+  // 🧾 Invoice Detail Modal State
+  const [showInvoiceDetailModal, setShowInvoiceDetailModal] = useState(false);
+  const [selectedInvoiceDetail, setSelectedInvoiceDetail] = useState<Transaction | null>(null);
+
+  // 📊 Hierarchical Invoice View State
+  const [expandedInvoiceCustomer, setExpandedInvoiceCustomer] = useState<string | null>(null);
 
   // Calculate date range based on filter
   const getDateRange = useMemo(() => {
@@ -305,6 +313,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       try {
         const cacheKey = 'payment-methods-cache';
         const cached = localStorage.getItem(cacheKey);
+        let needsFetch = true;
+
         if (cached) {
           const { data, timestamp } = JSON.parse(cached);
           const now = Date.now();
@@ -313,18 +323,20 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
           if (now - timestamp < CACHE_EXPIRY) {
             console.log('✅ Payment methods loaded from cache');
             setPaymentMethods(data);
-            return;
+            needsFetch = false;
           }
         }
 
-        const methods = await financialService.listPaymentMethods();
-        setPaymentMethods(methods);
+        if (needsFetch) {
+          const methods = await financialService.listPaymentMethods();
+          setPaymentMethods(methods);
 
-        // Cache for 30 minutes
-        localStorage.setItem(cacheKey, JSON.stringify({
-          data: methods,
-          timestamp: Date.now()
-        }));
+          // Cache for 30 minutes
+          localStorage.setItem(cacheKey, JSON.stringify({
+            data: methods,
+            timestamp: Date.now()
+          }));
+        }
       } catch (error) {
         console.error('Error loading payment methods:', error);
       }
@@ -674,6 +686,27 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
       return matchesDate && matchesStatus && matchesCustomer && matchesCategory;
     });
   }, [transactions, getDateRange, statusFilter, customerFilter, categoryFilter, initialLoadingComplete]);
+
+  // 📊 Group invoices by customer for hierarchical view
+  const groupedInvoicesByCustomer = useMemo(() => {
+    const grouped: { [key: string]: { customer: string, invoices: Transaction[], totalAmount: number } } = {};
+
+    for (const transaction of filteredTransactions) {
+      const customerKey = transaction.customer || 'Unknown';
+      if (!grouped[customerKey]) {
+        grouped[customerKey] = {
+          customer: customerKey,
+          invoices: [],
+          totalAmount: 0
+        };
+      }
+      grouped[customerKey].invoices.push(transaction);
+      grouped[customerKey].totalAmount += transaction.total;
+    }
+
+    // Sort by total amount descending
+    return Object.values(grouped).sort((a, b) => b.totalAmount - a.totalAmount);
+  }, [filteredTransactions]);
 
   // Calculate summary statistics - optimized for performance
   const summaryStats = useMemo(() => {
@@ -1066,8 +1099,8 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
               </div>
             )}
 
-            {/* Category Filter - Only for products/inventory */}
-            {(reportType === 'products' || reportType === 'inventory') && (
+            {/* Category Filter - For sales/products/inventory */}
+            {(reportType === 'sales' || reportType === 'products' || reportType === 'inventory') && (
               <div>
                 <label className="text-xs uppercase tracking-wide text-gray-500 font-bold mb-2 block">Kategori Produk</label>
                 <select
@@ -1278,86 +1311,110 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">Transaksi Penjualan</h3>
+                <span className="text-sm text-gray-500">{filteredTransactions.length} transaksi</span>
               </div>
 
-              {/* Mobile Card View */}
-              <div className="block md:hidden space-y-4">
-                {filteredTransactions.map((transaction) => {
-                  const modal = transaction.totalModal || (transaction.subtotal * 0.6);
-                  const laba = transaction.subtotal - modal;
-                  return (
-                    <div key={transaction.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-bold text-gray-800">{transaction.invoice}</p>
-                          <p className="text-xs text-gray-500">{transaction.date}</p>
-                        </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${transaction.status === 'lunas' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                          }`}>
-                          {transaction.status === 'lunas' ? 'Lunas' : 'Belum'}
-                        </span>
-                      </div>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Pelanggan</span>
-                          <span className="font-medium text-gray-900">{transaction.customer}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Total</span>
-                          <span className="font-bold text-gray-900">{formatCurrency(transaction.subtotal)}</span>
-                        </div>
-                        {isOwner && (
-                          <div className="flex justify-between border-t pt-1 mt-1">
-                            <span className="text-xs text-gray-500">Laba</span>
-                            <span className="font-bold text-green-600">{formatCurrency(laba)}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full table-auto">
+              {/* Responsive Table - Works on both mobile and desktop */}
+              <div className="overflow-x-auto -mx-4 px-4">
+                <table className="w-full min-w-[320px] table-fixed text-xs sm:text-sm">
                   <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subtotal</th>
-                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>}
-                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Laba</th>}
+                    <tr className="bg-gradient-to-r from-[#EDD686]/20 via-[#D4AF37]/20 to-[#997B2C]/20">
+                      <th className="px-2 py-2 text-left font-bold text-gray-700 uppercase tracking-wider w-[35%] sm:w-auto">Invoice</th>
+                      <th className="px-2 py-2 text-right font-bold text-gray-700 uppercase tracking-wider w-[22%] sm:w-auto">Total</th>
+                      {isOwner && <th className="px-2 py-2 text-right font-bold text-gray-700 uppercase tracking-wider w-[21.5%] sm:w-auto">Modal</th>}
+                      {isOwner && <th className="px-2 py-2 text-right font-bold text-gray-700 uppercase tracking-wider w-[21.5%] sm:w-auto">Laba</th>}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-100">
                     {filteredTransactions.map((transaction) => {
-                      const modal = transaction.totalModal || (transaction.subtotal * 0.6); // Use real modal or fallback 60%
+                      const modal = transaction.totalModal || (transaction.subtotal * 0.6);
                       const laba = transaction.subtotal - modal;
-
                       return (
-                        <tr key={transaction.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                            {transaction.invoice}
+                        <tr
+                          key={transaction.id}
+                          className="hover:bg-[#D4AF37]/10 cursor-pointer transition-colors"
+                          onClick={() => {
+                            setSelectedInvoiceDetail(transaction);
+                            setShowInvoiceDetailModal(true);
+                          }}
+                        >
+                          <td className="px-2 py-2">
+                            <div className="font-semibold text-[#997B2C] underline decoration-dotted truncate">{transaction.invoice}</div>
+                            <div className="text-[10px] text-gray-400 hidden sm:block">{transaction.customer}</div>
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {formatCurrency(transaction.subtotal)}
+                          <td className="px-2 py-2 text-right font-semibold text-gray-900 whitespace-nowrap">
+                            {transaction.subtotal >= 1000000
+                              ? `${(transaction.subtotal / 1000000).toFixed(1)}jt`
+                              : transaction.subtotal >= 1000
+                                ? `${Math.round(transaction.subtotal / 1000)}rb`
+                                : formatCurrency(transaction.subtotal)
+                            }
                           </td>
                           {isOwner && (
-                            <td className="px-4 py-3 text-sm text-gray-900">
-                              {formatCurrency(modal)}
+                            <td className="px-2 py-2 text-right text-gray-600 whitespace-nowrap">
+                              {modal >= 1000000
+                                ? `${(modal / 1000000).toFixed(1)}jt`
+                                : modal >= 1000
+                                  ? `${Math.round(modal / 1000)}rb`
+                                  : formatCurrency(modal)
+                              }
                             </td>
                           )}
                           {isOwner && (
-                            <td className="px-4 py-3 text-sm text-green-600">
-                              {formatCurrency(laba)}
+                            <td className="px-2 py-2 text-right font-bold text-green-600 whitespace-nowrap">
+                              {laba >= 1000000
+                                ? `${(laba / 1000000).toFixed(1)}jt`
+                                : laba >= 1000
+                                  ? `${Math.round(laba / 1000)}rb`
+                                  : formatCurrency(laba)
+                              }
                             </td>
                           )}
                         </tr>
                       );
                     })}
                   </tbody>
+                  {/* Total Footer */}
+                  <tfoot>
+                    <tr className="bg-gradient-to-r from-[#EDD686] via-[#D4AF37] to-[#997B2C] text-white font-bold">
+                      <td className="px-2 py-3 uppercase tracking-wider">Total</td>
+                      <td className="px-2 py-3 text-right whitespace-nowrap">
+                        {summaryStats.totalRevenue >= 1000000
+                          ? `${(summaryStats.totalRevenue / 1000000).toFixed(1)}jt`
+                          : `${Math.round(summaryStats.totalRevenue / 1000)}rb`
+                        }
+                      </td>
+                      {isOwner && (
+                        <td className="px-2 py-3 text-right whitespace-nowrap">
+                          {(() => {
+                            const totalModal = filteredTransactions.reduce((sum, t) =>
+                              sum + (t.totalModal || t.subtotal * 0.6), 0);
+                            return totalModal >= 1000000
+                              ? `${(totalModal / 1000000).toFixed(1)}jt`
+                              : `${Math.round(totalModal / 1000)}rb`;
+                          })()}
+                        </td>
+                      )}
+                      {isOwner && (
+                        <td className="px-2 py-3 text-right whitespace-nowrap">
+                          {(() => {
+                            const totalLaba = filteredTransactions.reduce((sum, t) => {
+                              const modal = t.totalModal || t.subtotal * 0.6;
+                              return sum + (t.subtotal - modal);
+                            }, 0);
+                            return totalLaba >= 1000000
+                              ? `${(totalLaba / 1000000).toFixed(1)}jt`
+                              : `${Math.round(totalLaba / 1000)}rb`;
+                          })()}
+                        </td>
+                      )}
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
+
+              {/* Hint */}
+              <p className="text-xs text-gray-400 mt-3 text-center">💡 Tap invoice untuk lihat detail</p>
             </div>
           )}
 
@@ -1510,179 +1567,261 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
             </div>
           )}
 
-          {/* Invoice Tab */}
+          {/* Invoice Tab - Hierarchical View */}
           {reportType === 'invoice' && (
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Daftar Invoice</h3>
+                <h3 className="text-lg font-semibold text-gray-800">Rekap Invoice per Pelanggan</h3>
+                <span className="text-sm text-gray-500">{groupedInvoicesByCustomer.length} pelanggan · {filteredTransactions.length} invoice</span>
               </div>
 
-              {/* Mobile Card View */}
-              <div className="block md:hidden space-y-4">
-                {filteredTransactions.map((transaction) => (
-                  <div key={transaction.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="font-bold text-gray-800">{transaction.invoice}</p>
-                      </div>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Pelanggan</span>
-                        <span className="font-medium text-gray-900">
-                          {transaction.customer}
-                          <span className="text-xs text-gray-400 block">{transaction.phone}</span>
-                        </span>
-                      </div>
-                      <div className="flex justify-between border-t pt-2 mt-2">
-                        <span className="text-gray-500">Total Tagihan</span>
-                        <span className="font-bold text-gray-900">{formatCurrency(transaction.total)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full table-auto">
+              {/* Level 1: Customer Summary Table */}
+              <div className="overflow-x-auto -mx-4 px-4">
+                <table className="w-full min-w-[320px] table-fixed text-xs sm:text-sm">
                   <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pelanggan</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nominal</th>
+                    <tr className="bg-gradient-to-r from-[#EDD686]/20 via-[#D4AF37]/20 to-[#997B2C]/20">
+                      <th className="px-2 py-2 text-center font-bold text-gray-700 uppercase tracking-wider w-[20%]">Invoice</th>
+                      <th className="px-2 py-2 text-left font-bold text-gray-700 uppercase tracking-wider w-[50%]">Pelanggan</th>
+                      <th className="px-2 py-2 text-right font-bold text-gray-700 uppercase tracking-wider w-[30%]">Total</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {filteredTransactions.map((transaction) => (
-                      <tr key={transaction.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          <div>
-                            <div className="font-medium">{transaction.customer}</div>
-                            <div className="text-gray-500">{transaction.phone}</div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          {transaction.invoice}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          {formatCurrency(transaction.total)}
-                        </td>
-                      </tr>
+                  <tbody className="divide-y divide-gray-100">
+                    {groupedInvoicesByCustomer.map((group) => (
+                      <React.Fragment key={group.customer}>
+                        {/* Level 1 Row - Customer Summary */}
+                        <tr
+                          className={`cursor-pointer transition-colors ${expandedInvoiceCustomer === group.customer ? 'bg-[#D4AF37]/20' : 'hover:bg-[#D4AF37]/10'}`}
+                          onClick={() => setExpandedInvoiceCustomer(expandedInvoiceCustomer === group.customer ? null : group.customer)}
+                        >
+                          <td className="px-2 py-3 text-center">
+                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-[#EDD686] to-[#997B2C] text-white font-bold text-sm">
+                              {group.invoices.length}
+                            </span>
+                          </td>
+                          <td className="px-2 py-3">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs transition-transform ${expandedInvoiceCustomer === group.customer ? 'rotate-90' : ''}`}>▶</span>
+                              <span className="font-semibold text-gray-900">{group.customer}</span>
+                            </div>
+                          </td>
+                          <td className="px-2 py-3 text-right font-bold text-[#997B2C] whitespace-nowrap">
+                            {group.totalAmount >= 1000000
+                              ? `${(group.totalAmount / 1000000).toFixed(1)}jt`
+                              : group.totalAmount >= 1000
+                                ? `${Math.round(group.totalAmount / 1000)}rb`
+                                : formatCurrency(group.totalAmount)
+                            }
+                          </td>
+                        </tr>
+
+                        {/* Level 2 - Invoice List (Expanded) */}
+                        {expandedInvoiceCustomer === group.customer && (
+                          <tr>
+                            <td colSpan={3} className="p-0">
+                              <div className="bg-gray-50 border-l-4 border-[#D4AF37] ml-4">
+                                <table className="w-full text-xs">
+                                  <thead>
+                                    <tr className="bg-gray-100">
+                                      <th className="px-3 py-2 text-left font-semibold text-gray-600 w-[30%]">Tanggal</th>
+                                      <th className="px-3 py-2 text-left font-semibold text-gray-600 w-[40%]">No. Invoice</th>
+                                      <th className="px-3 py-2 text-right font-semibold text-gray-600 w-[30%]">Nominal</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {group.invoices.map((invoice) => (
+                                      <tr
+                                        key={invoice.id}
+                                        className="hover:bg-[#D4AF37]/10 cursor-pointer border-b border-gray-200 last:border-b-0"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedInvoiceDetail(invoice);
+                                          setShowInvoiceDetailModal(true);
+                                        }}
+                                      >
+                                        <td className="px-3 py-2 text-gray-600">{invoice.date}</td>
+                                        <td className="px-3 py-2">
+                                          <span className="font-semibold text-[#997B2C] underline decoration-dotted">{invoice.invoice}</span>
+                                        </td>
+                                        <td className="px-3 py-2 text-right font-medium text-gray-900">
+                                          {invoice.total >= 1000000
+                                            ? `${(invoice.total / 1000000).toFixed(1)}jt`
+                                            : invoice.total >= 1000
+                                              ? `${Math.round(invoice.total / 1000)}rb`
+                                              : formatCurrency(invoice.total)
+                                          }
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     ))}
                   </tbody>
+                  {/* Total Footer */}
+                  <tfoot>
+                    <tr className="bg-gradient-to-r from-[#EDD686] via-[#D4AF37] to-[#997B2C] text-white font-bold">
+                      <td className="px-2 py-3 text-center">{filteredTransactions.length}</td>
+                      <td className="px-2 py-3 uppercase tracking-wider">Total</td>
+                      <td className="px-2 py-3 text-right whitespace-nowrap">
+                        {(() => {
+                          const totalAll = filteredTransactions.reduce((sum, t) => sum + t.total, 0);
+                          return totalAll >= 1000000
+                            ? `${(totalAll / 1000000).toFixed(1)}jt`
+                            : `${Math.round(totalAll / 1000)}rb`;
+                        })()}
+                      </td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
+
+              {/* Hint */}
+              <p className="text-xs text-gray-400 mt-3 text-center">💡 Tap pelanggan untuk lihat daftar invoice, tap invoice untuk lihat detail</p>
             </div>
           )}
 
           {/* Persediaan Tab */}
           {reportType === 'inventory' && (
             <div className="p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Stok Persediaan</h3>
-              </div>
+              {/* Summary Cards - 3D Gold Look */}
+              {(() => {
+                const filteredInventory = inventory.filter(i => categoryFilter === 'all' || i.category === categoryFilter);
+                const totalStok = filteredInventory.reduce((sum, item) => sum + (Number(item.stock) || 0), 0);
+                const totalModal = filteredInventory.reduce((sum, item) => {
+                  return sum + (Number(item.value) || 0);
+                }, 0);
 
-              {/* Mobile Card View */}
-              <div className="block md:hidden space-y-4">
-                {inventory
-                  .filter(i => categoryFilter === 'all' || i.category === categoryFilter)
-                  .map((item) => {
-                    const stock = Number(item.stock) || 0;
-                    const modalPerUnit = stock > 0 ? (Number(item.value) || 0) / stock : 0;
-                    const totalModal = modalPerUnit * stock;
-
-                    return (
-                      <div
-                        key={item.id}
-                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50"
-                        onClick={() => {
-                          setSelectedStockProduct(item);
-                          setShowStockHistoryModal(true);
-                        }}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h4 className="font-bold text-gray-800 line-clamp-2">{item.name}</h4>
-                            <p className="text-xs text-gray-500 mt-0.5">{item.size} / {item.color}</p>
-                          </div>
-                          <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded whitespace-nowrap ml-2">
-                            Stok: {stock}
-                          </span>
-                        </div>
-                        {isOwner && (
-                          <div className="space-y-1 text-sm border-t pt-2 mt-2">
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Modal/Unit</span>
-                              <span className="text-gray-900">{formatCurrency(modalPerUnit)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-500 font-medium">Total Modal</span>
-                              <span className="font-bold text-gray-900">{formatCurrency(totalModal)}</span>
-                            </div>
-                          </div>
-                        )}
+                return (
+                  <div className="grid grid-cols-1 gap-3 mb-4">
+                    {/* Total Stok Card */}
+                    <div className="bg-gradient-to-br from-[#EDD686] via-[#D4AF37] to-[#997B2C] rounded-xl p-4 shadow-[0_4px_0_0_#997B2C,0_6px_12px_rgba(153,123,44,0.3)] shine-effect">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Package className="w-5 h-5 text-white/80" />
+                        <p className="text-white/80 text-xs font-medium uppercase tracking-wider">Total Stok</p>
                       </div>
-                    );
-                  })}
+                      <p className="text-2xl font-bold text-white">{totalStok.toLocaleString('id-ID')} <span className="text-sm font-normal">pcs</span></p>
+                    </div>
+
+                    {/* Total Modal Card - Owner Only */}
+                    {isOwner && (
+                      <div className="bg-gradient-to-br from-[#EDD686] via-[#D4AF37] to-[#997B2C] rounded-xl p-4 shadow-[0_4px_0_0_#997B2C,0_6px_12px_rgba(153,123,44,0.3)] shine-effect">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Wallet className="w-5 h-5 text-white/80" />
+                          <p className="text-white/80 text-xs font-medium uppercase tracking-wider">Total Modal</p>
+                        </div>
+                        <p className="text-2xl font-bold text-white">Rp {totalModal.toLocaleString('id-ID')}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Owner: Tombol Pengajuan Stok Adjustment */}
+              {isOwner && onNavigateToStockAdjustments && (
+                <button
+                  onClick={onNavigateToStockAdjustments}
+                  className="w-full mb-4 py-3 px-4 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                >
+                  <Package className="w-5 h-5" />
+                  📋 Lihat Pengajuan Stok dari Admin
+                </button>
+              )}
+
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-semibold text-gray-800">Stok Persediaan</h3>
+                <span className="text-sm text-gray-500">{inventory.filter(i => categoryFilter === 'all' || i.category === categoryFilter).length} produk</span>
               </div>
 
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full table-auto">
+              {/* Responsive Table */}
+              <div className="overflow-x-auto -mx-4 px-4">
+                <table className="w-full min-w-[320px] table-fixed text-xs sm:text-sm">
                   <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Warna</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stok</th>
-                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modal</th>}
-                      {isOwner && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Modal</th>}
+                    <tr className="bg-gradient-to-r from-[#EDD686]/20 via-[#D4AF37]/20 to-[#997B2C]/20">
+                      <th className="px-2 py-2 text-left font-bold text-gray-700 uppercase tracking-wider w-[40%] sm:w-auto">Produk</th>
+                      <th className="px-2 py-2 text-right font-bold text-gray-700 uppercase tracking-wider w-[15%] sm:w-auto">Stok</th>
+                      {isOwner && <th className="px-2 py-2 text-right font-bold text-gray-700 uppercase tracking-wider w-[22.5%] sm:w-auto">Modal</th>}
+                      {isOwner && <th className="px-2 py-2 text-right font-bold text-gray-700 uppercase tracking-wider w-[22.5%] sm:w-auto">Total</th>}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-100">
                     {inventory
                       .filter(i => categoryFilter === 'all' || i.category === categoryFilter)
                       .map((item) => {
                         const stock = Number(item.stock) || 0;
                         const modalPerUnit = stock > 0 ? (Number(item.value) || 0) / stock : 0;
-                        const totalModal = modalPerUnit * stock;
+                        const totalModal = Number(item.value) || 0;
 
                         return (
-
                           <tr
                             key={item.id}
-                            className="hover:bg-gray-50 cursor-pointer"
+                            className="hover:bg-[#D4AF37]/10 cursor-pointer transition-colors"
                             onClick={() => {
                               setSelectedStockProduct(item);
                               setShowStockHistoryModal(true);
                             }}
                           >
-                            <td className="px-4 py-3 text-sm font-medium text-gray-900 flex items-center gap-2 group">
-                              {item.name}
-                              <div className="opacity-0 group-hover:opacity-100 bg-purple-100 p-1 rounded-full text-purple-600 transition-opacity">
-                                <Package className="w-3 h-3" />
-                              </div>
+                            <td className="px-2 py-2">
+                              <div className="font-medium text-gray-900 truncate">{item.name}</div>
+                              <div className="text-[10px] text-gray-400">{item.size} / {item.color}</div>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">{item.size}</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">{item.color}</td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
+                            <td className="px-2 py-2 text-right font-semibold text-gray-900">
                               {stock}
                             </td>
                             {isOwner && (
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                {formatCurrency(modalPerUnit)}
+                              <td className="px-2 py-2 text-right text-gray-600 whitespace-nowrap">
+                                {modalPerUnit >= 1000000
+                                  ? `${(modalPerUnit / 1000000).toFixed(1)}jt`
+                                  : modalPerUnit >= 1000
+                                    ? `${Math.round(modalPerUnit / 1000)}rb`
+                                    : formatCurrency(modalPerUnit)
+                                }
                               </td>
                             )}
                             {isOwner && (
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                {formatCurrency(totalModal)}
+                              <td className="px-2 py-2 text-right font-bold text-gray-900 whitespace-nowrap">
+                                {totalModal >= 1000000
+                                  ? `${(totalModal / 1000000).toFixed(1)}jt`
+                                  : totalModal >= 1000
+                                    ? `${Math.round(totalModal / 1000)}rb`
+                                    : formatCurrency(totalModal)
+                                }
                               </td>
                             )}
                           </tr>
                         );
                       })}
                   </tbody>
+                  {/* Total Footer */}
+                  <tfoot>
+                    <tr className="bg-gradient-to-r from-[#EDD686] via-[#D4AF37] to-[#997B2C] text-white font-bold">
+                      <td className="px-2 py-3 uppercase tracking-wider">Total</td>
+                      <td className="px-2 py-3 text-right">
+                        {inventory.filter(i => categoryFilter === 'all' || i.category === categoryFilter)
+                          .reduce((sum, item) => sum + (Number(item.stock) || 0), 0).toLocaleString('id-ID')}
+                      </td>
+                      {isOwner && <td className="px-2 py-3"></td>}
+                      {isOwner && (
+                        <td className="px-2 py-3 text-right whitespace-nowrap">
+                          {(() => {
+                            const total = inventory.filter(i => categoryFilter === 'all' || i.category === categoryFilter)
+                              .reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+                            return total >= 1000000
+                              ? `${(total / 1000000).toFixed(1)}jt`
+                              : `${Math.round(total / 1000)}rb`;
+                          })()}
+                        </td>
+                      )}
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
+
+              {/* Hint */}
+              <p className="text-xs text-gray-400 mt-3 text-center">💡 Tap produk untuk lihat history stok</p>
             </div>
           )}
 
@@ -2439,6 +2578,82 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ onBack, user }) => 
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🧾 Invoice Detail Modal */}
+      {showInvoiceDetailModal && selectedInvoiceDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#EDD686] via-[#D4AF37] to-[#997B2C] px-4 py-3 flex justify-between items-center">
+              <div>
+                <h3 className="text-white font-bold text-lg">{selectedInvoiceDetail.invoice}</h3>
+                <p className="text-white/80 text-xs">{selectedInvoiceDetail.date}</p>
+              </div>
+              <button
+                onClick={() => setShowInvoiceDetailModal(false)}
+                className="text-white hover:bg-white/20 rounded-full p-1 transition"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+              {/* Customer Info */}
+              <div className="bg-gray-50 rounded-xl p-3 mb-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Pelanggan</p>
+                <p className="font-bold text-gray-900">{selectedInvoiceDetail.customer}</p>
+                <p className="text-sm text-gray-600">{selectedInvoiceDetail.phone}</p>
+              </div>
+
+              {/* Items */}
+              <div className="mb-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Item Pesanan</p>
+                <div className="space-y-2">
+                  {selectedInvoiceDetail.items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center bg-white border border-gray-100 rounded-lg p-3">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 text-sm">{item.name}</p>
+                        <p className="text-xs text-gray-500">{item.quantity} x {formatCurrency(item.price)}</p>
+                      </div>
+                      <p className="font-bold text-gray-900">{formatCurrency(item.total)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div className="border-t pt-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Subtotal</span>
+                  <span className="font-medium">{formatCurrency(selectedInvoiceDetail.subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Ongkir</span>
+                  <span className="font-medium">{formatCurrency(selectedInvoiceDetail.shippingCost)}</span>
+                </div>
+                <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
+                  <span>Total</span>
+                  <span className="text-[#997B2C]">{formatCurrency(selectedInvoiceDetail.total)}</span>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="mt-4 flex justify-center">
+                <span className={`px-4 py-2 rounded-full text-sm font-bold ${selectedInvoiceDetail.status === 'lunas'
+                  ? 'bg-green-100 text-green-700'
+                  : selectedInvoiceDetail.status === 'dibatalkan'
+                    ? 'bg-red-100 text-red-700'
+                    : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                  {selectedInvoiceDetail.status === 'lunas' ? '✅ LUNAS' :
+                    selectedInvoiceDetail.status === 'dibatalkan' ? '❌ DIBATALKAN' : '⏳ BELUM LUNAS'}
+                </span>
+              </div>
             </div>
           </div>
         </div>

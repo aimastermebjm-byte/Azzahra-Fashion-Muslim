@@ -253,5 +253,11 @@ service cloud.firestore {
     match /address_subdistricts/{docId} {
       allow read, write: if true;
     }
+
+    // 🧾 Invoice Counters (for generating sequential invoice numbers)
+    // Read/Write: Authenticated users (needed during order creation)
+    match /invoice_counters/{monthKey} {
+      allow read, write: if isSignedIn();
+    }
   }
 }

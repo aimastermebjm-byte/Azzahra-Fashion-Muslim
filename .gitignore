@@ -9,3 +9,8 @@ service-account.json
 .wwebjs_cache/
 .vercel
 .env*.local
+
+# Backups
+*.backup
+*.backup.*
+scripts/backups/

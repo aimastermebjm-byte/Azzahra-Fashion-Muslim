@@ -9,8 +9,7 @@ import {
     Timestamp,
     doc,
     updateDoc,
-    getDoc,
-    writeBatch
+    getDoc
 } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { stockMutationService } from './stockMutationService';
@@ -99,21 +98,52 @@ export const stockAdjustmentService = {
                 throw new Error('Request is already processed');
             }
 
-            // 1. Get Product Batch (Assuming all products are in batch_1 or need generic fetch)
-            // Note: Currently system uses 'batch_1'. 
-            // We need to find the product document. 
-            // Since we store all products in 'productBatches/batch_1' (as per prev context), we fetch that.
-            // WARNING: Re-reading entire batch is expensive but consistent with project style.
+            // 1. Get Product Batch - Try multiple batches
+            // Products might be spread across batch_1, batch_2, etc.
+            let products: any[] = [];
+            let batchRef: any = null;
+            let productIndex = -1;
 
-            const batchRef = doc(db, 'productBatches', 'batch_1');
-            const batchSnap = await getDoc(batchRef);
+            // The productId might include variant suffix like "productId_Size_Variant"
+            // Extract the base product ID (first part before underscore with size/variant)
+            const baseProductId = request.productId.split('_')[0];
 
-            if (!batchSnap.exists()) throw new Error('Product batch not found');
+            // Try batch_1 first
+            const batch1Ref = doc(db, 'productBatches', 'batch_1');
+            const batch1Snap = await getDoc(batch1Ref);
 
-            const products = batchSnap.data().products || [];
-            const productIndex = products.findIndex((p: any) => p.id === request.productId);
+            if (batch1Snap.exists()) {
+                products = batch1Snap.data().products || [];
+                // Try exact match first, then base ID match
+                productIndex = products.findIndex((p: any) => p.id === request.productId);
+                if (productIndex === -1) {
+                    productIndex = products.findIndex((p: any) => p.id === baseProductId);
+                }
+                if (productIndex !== -1) {
+                    batchRef = batch1Ref;
+                }
+            }
 
-            if (productIndex === -1) throw new Error('Product not found in batch');
+            // If not found in batch_1, try batch_2
+            if (productIndex === -1) {
+                const batch2Ref = doc(db, 'productBatches', 'batch_2');
+                const batch2Snap = await getDoc(batch2Ref);
+                if (batch2Snap.exists()) {
+                    products = batch2Snap.data().products || [];
+                    // Try exact match first, then base ID match
+                    productIndex = products.findIndex((p: any) => p.id === request.productId);
+                    if (productIndex === -1) {
+                        productIndex = products.findIndex((p: any) => p.id === baseProductId);
+                    }
+                    if (productIndex !== -1) {
+                        batchRef = batch2Ref;
+                    }
+                }
+            }
+
+            if (productIndex === -1) {
+                throw new Error(`Product not found in batch. ProductId: ${request.productId}`);
+            }
 
             const product = products[productIndex];
 

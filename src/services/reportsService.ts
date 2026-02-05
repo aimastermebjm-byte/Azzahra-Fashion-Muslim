@@ -204,9 +204,7 @@ class ReportsService {
       // ✅ FIX: Use getDocsFromServer to bypass cache and get fresh data
       const snapshot = await getDocsFromServer(q);
 
-      // 🔍 DEBUG: Log raw Firestore query result
-      console.log('📊 [getTransactions] Firestore raw orders count:', snapshot.docs.length);
-      console.log('📊 [getTransactions] Raw order statuses:', snapshot.docs.map(d => ({ id: d.id, status: d.data().status })));
+
 
       // Build quick lookup map for product cost data from batch system
       const productBatchesSnapshot = await getDocs(query(collection(db, 'productBatches')));
@@ -278,7 +276,7 @@ class ReportsService {
         // Map orders collection fields to Transaction interface
         return {
           id: doc.id,
-          invoice: `INV-${doc.id}`, // Generate invoice from order ID
+          invoice: orderData.invoiceNumber, // 🧾 Use stored invoice number
           date: new Date(timestampMillis).toISOString().split('T')[0],
           customer: orderData.userName || 'Unknown Customer',
           phone: orderData.shippingInfo?.phone || '',
@@ -311,15 +309,13 @@ class ReportsService {
 
       }) as Transaction[];
 
-      // 🔍 DEBUG: Log all transactions before and after filter
-      console.log('📊 [getTransactions] Total transactions BEFORE filter:', transactions.length);
-      console.log('📊 [getTransactions] Transaction statuses:', transactions.map(t => ({ id: t.id, status: t.status })));
+
 
       // ✅ FIX: Filter out cancelled orders in JavaScript (to avoid composite index requirement)
       // Cancelled/deleted orders should not appear in any reports
       const nonCancelledTransactions = transactions.filter(t => t.status !== 'dibatalkan');
 
-      console.log('📊 [getTransactions] Total transactions AFTER filter:', nonCancelledTransactions.length);
+
 
       if (filters.customerQuery) {
         const queryLower = filters.customerQuery.toLowerCase();
@@ -657,7 +653,7 @@ class ReportsService {
       ordersSnapshot.docs.forEach(docSnap => {
         const orderData = docSnap.data();
         const orderId = docSnap.id;
-        const invoiceNumber = `INV-${orderId}`;
+        const invoiceNumber = orderData.invoiceNumber;
         const customerName = orderData.userName || 'Unknown';
 
         // Skip cancelled orders
@@ -1152,7 +1148,7 @@ class ReportsService {
 
         invoices.push({
           orderId: docSnap.id,
-          invoice: `INV-${docSnap.id}`,
+          invoice: orderData.invoiceNumber,
           date: new Date(orderData.timestamp).toISOString().split('T')[0],
           totalAmount: finalTotal,
           totalPaid,

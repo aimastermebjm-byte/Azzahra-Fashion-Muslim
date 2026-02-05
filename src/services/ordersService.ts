@@ -1,6 +1,6 @@
 // Orders Service - Sync orders across devices using Firebase
 import { auth } from '../utils/firebaseClient';
-import { doc, setDoc, collection, getDocs, query, where, updateDoc, deleteDoc, getDoc, Timestamp, onSnapshot, orderBy } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs, query, where, updateDoc, deleteDoc, getDoc, Timestamp, onSnapshot, orderBy, runTransaction } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import { pointService } from './pointService';
 
@@ -61,6 +61,9 @@ export interface Order {
   payments?: Payment[];                // Array of all payments
   totalPaid?: number;                  // Total amount paid so far
   remainingAmount?: number;            // Remaining amount to be paid
+
+  // 🧾 NEW: Invoice Number System (format: INV-YYMMNNNNN)
+  invoiceNumber?: string;              // Nomor invoice unik per bulan
 }
 
 class OrdersService {
@@ -93,9 +96,13 @@ class OrdersService {
         throw new Error('User not authenticated');
       }
 
+      // 🧾 Generate invoice number (format: INV-YYMMNNNNN)
+      const invoiceNumber = await this.generateInvoiceNumber();
+
       const newOrder = {
         ...orderData,
         id: this.generateOrderId(),
+        invoiceNumber, // 🧾 Save invoice number
         userId: user.uid,
         createdAt: Timestamp.now(), // ✅ Use Firestore Timestamp for queries
         updatedAt: Timestamp.now(),
@@ -106,7 +113,7 @@ class OrdersService {
       const orderRef = doc(db, this.collection, newOrder.id);
       await setDoc(orderRef, newOrder);
 
-      console.log('✅ Order created in Firebase:', newOrder.id);
+      console.log('✅ Order created in Firebase:', newOrder.id, 'Invoice:', invoiceNumber);
       return newOrder;
     } catch (error) {
       console.error('❌ Error creating order:', error);
@@ -282,7 +289,7 @@ class OrdersService {
         ...updateData,
         updatedAt: Timestamp.now()
       });
-      console.log('✅ Order updated successfully:', orderId);
+      console.log('✅ Order updated with payment group (Internal Ref):', orderId);
       return true;
     } catch (error) {
       console.error('❌ Error updating order:', error);
@@ -552,10 +559,89 @@ class OrdersService {
     return unsubscribe;
   }
 
+  // ✨ NEW: Get single order by ID (helper)
+  async getOrderById(orderId: string): Promise<Order | null> {
+    try {
+      const orderRef = doc(db, this.collection, orderId);
+      const orderDoc = await getDoc(orderRef);
 
-  // Generate order ID
+      if (!orderDoc.exists()) {
+        return null;
+      }
+      return { id: orderDoc.id, ...orderDoc.data() } as Order;
+    } catch (error) {
+      console.error('Error getting order by ID:', error);
+      return null;
+    }
+  }
+
+  // ✨ NEW: Get orders by Payment Group ID (helper)
+  async getOrdersByPaymentGroupId(groupId: string): Promise<Order[]> {
+    try {
+      const ordersRef = collection(db, this.collection);
+      const q = query(ordersRef, where('paymentGroupId', '==', groupId));
+      const snapshot = await getDocs(q);
+
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Order[];
+    } catch (error) {
+      console.error('Error getting orders by Payment Group ID:', error);
+      return [];
+    }
+  }
+
+  // Generate order ID (internal reference, different from invoice number)
   private generateOrderId(): string {
-    return 'AZF' + Date.now().toString().slice(-8);
+    return 'ORD' + Date.now().toString().slice(-8);
+  }
+
+  // 🧾 NEW: Generate Invoice Number (format: INV-YYMMNNNNN)
+  // Uses Firestore transaction for atomic counter increment
+  // Counter resets each month automatically (new document per month)
+  private async generateInvoiceNumber(): Promise<string> {
+    try {
+      const now = new Date();
+      const year = now.getFullYear().toString().slice(-2); // "26" for 2026
+      const month = (now.getMonth() + 1).toString().padStart(2, '0'); // "02" for February
+      const monthKey = `${year}${month}`; // "2602"
+
+      const counterRef = doc(db, 'invoice_counters', monthKey);
+
+      // Use transaction for atomic increment
+      const newNumber = await runTransaction(db, async (transaction) => {
+        const counterDoc = await transaction.get(counterRef);
+
+        let currentCount = 0;
+        if (counterDoc.exists()) {
+          currentCount = counterDoc.data().count || 0;
+        }
+
+        const nextCount = currentCount + 1;
+
+        transaction.set(counterRef, {
+          count: nextCount,
+          year: now.getFullYear(),
+          month: now.getMonth() + 1,
+          lastUpdated: Timestamp.now()
+        });
+
+        return nextCount;
+      });
+
+      // Format: INV-YYMMNNNNN (4 digit counter)
+      const invoiceNumber = `INV-${monthKey}${newNumber.toString().padStart(4, '0')}`;
+      console.log('🧾 Generated invoice number:', invoiceNumber);
+
+      return invoiceNumber;
+    } catch (error) {
+      console.error('❌ Error generating invoice number:', error);
+      // Fallback to timestamp-based invoice
+      const fallback = `INV-${Date.now()}`;
+      console.log('⚠️ Using fallback invoice:', fallback);
+      return fallback;
+    }
   }
 
   // 💳 NEW: Add payment to order (for installment/partial payment system)

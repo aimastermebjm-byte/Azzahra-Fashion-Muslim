@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { autoVerificationLogService, AutoVerificationLog } from '../services/autoVerificationLogService';
+import { ordersService } from '../services/ordersService';
 
 interface AdminAutoVerificationLogsPageProps {
     onBack: () => void;
@@ -93,6 +94,26 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
             hour: '2-digit',
             minute: '2-digit'
         });
+    };
+
+    // 🩹 Self-Healing Component: Lazily fetches Invoice Number if log has stale ORD-ID
+    const OrderRefDisplay = ({ id }: { id: string }) => {
+        const [displayId, setDisplayId] = useState(id);
+
+        useEffect(() => {
+            let isMounted = true;
+            if (id && (id.startsWith('ORD') || id.startsWith('PG'))) {
+                // Try to resolve invoice number
+                ordersService.getOrderById(id).then(order => {
+                    if (isMounted && order?.invoiceNumber) {
+                        setDisplayId(order.invoiceNumber);
+                    }
+                }).catch(() => { });
+            }
+            return () => { isMounted = false; };
+        }, [id]);
+
+        return <>{displayId}</>;
     };
 
     return (
@@ -189,7 +210,7 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                                             {getStatusIcon(log.status)}
                                             <div>
                                                 <div className="font-semibold text-gray-900">
-                                                    Order: {log.orderId}
+                                                    Order: {log.invoiceNumber || log.orderId}
                                                 </div>
                                                 {/* Customer Name */}
                                                 <div className="text-sm text-[#997B2C] font-bold">
@@ -228,7 +249,7 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                                                     {(log as any).orderDetails ? (
                                                         (log as any).orderDetails.map((order: { id: string; amount: number; customerName?: string }, index: number) => (
                                                             <div key={index} className="flex justify-between items-center bg-white rounded px-2 py-1 border border-blue-100">
-                                                                <span className="text-sm font-semibold text-blue-800">• {order.id}</span>
+                                                                <span className="text-sm font-semibold text-blue-800">• <OrderRefDisplay id={order.id} /></span>
                                                                 <span className="text-sm font-bold text-green-600">
                                                                     Rp {order.amount.toLocaleString('id-ID')}
                                                                 </span>
@@ -237,7 +258,7 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                                                     ) : (
                                                         (log as any).orderIds.map((orderId: string, index: number) => (
                                                             <div key={index} className="text-sm font-semibold text-blue-800">
-                                                                • {orderId}
+                                                                • <OrderRefDisplay id={orderId} />
                                                             </div>
                                                         ))
                                                     )}

@@ -39,18 +39,14 @@ const PaymentAutoVerifier: React.FC = () => {
     // Hanya jalankan untuk OWNER
     const isOwner = user?.role === 'owner';
 
-    // Debug mount log
-    useEffect(() => {
-        console.log('🤖 PaymentAutoVerifier MOUNTED', { isOwner, userId: user?.uid, role: user?.role });
-        return () => console.log('🤖 PaymentAutoVerifier UNMOUNTED');
-    }, [isOwner, user?.uid, user?.role]);
+
 
     // 1. Load Settings (Real-time subscription)
     useEffect(() => {
         if (!isOwner) return;
 
         const unsubscribe = paymentDetectionService.subscribeToSettings((newSettings) => {
-            console.log('🤖 AutoVerifier: Settings loaded', newSettings?.mode, newSettings?.testMode ? '[TEST MODE]' : '');
+
             setSettings(newSettings);
         });
 
@@ -64,7 +60,7 @@ const PaymentAutoVerifier: React.FC = () => {
         // ✅ FIX: Use correct method name - onPendingDetectionsChange
         const unsubscribe = paymentDetectionService.onPendingDetectionsChange((pendingDetections) => {
             // ✅ FIX: No need to filter - already pending from source
-            console.log('🤖 AutoVerifier: Pending detections updated:', pendingDetections.length);
+
             setDetections(pendingDetections);
         });
 
@@ -98,7 +94,7 @@ const PaymentAutoVerifier: React.FC = () => {
 
             const isTestMode = settings.testMode === true;
             if (isTestMode) {
-                console.log('🧪 AutoVerifier running in TEST MODE - will log but not execute');
+
             }
 
             // Loop semua detection yang belum diproses
@@ -117,19 +113,96 @@ const PaymentAutoVerifier: React.FC = () => {
 
                         // JIKA Confidence cukup tinggi (misal 100% dari kode unik)
                         if (bestMatch.confidence >= threshold) {
-                            console.log(`🤖 AutoVerifier: MATCH FOUND! ${detection.id} -> ${bestMatch.orderId} (${bestMatch.confidence}%)`);
+
 
                             // Kunci detection ini biar gak diproses 2x
                             processingRef.current.add(detection.id);
 
-                            // Get order details for logging
-                            const matchedOrder = orders.find(o => o.id === bestMatch.orderId);
+                            // 🔄 FETCH FRESH DATA from Firestore (Bypass stale state)
+                            // Ini penting untuk memastikan invoiceNumber terbaca meskipun local state belum update
+                            // Helper to validate invoice format strictly
+                            const isValidInvoice = (inv: any) => typeof inv === 'string' && inv.startsWith('INV');
+
+                            const isPaymentGroup = bestMatch.orderId.startsWith('PG');
+                            let freshGroupOrders: any[] = [];
+                            let freshMatchedOrder: any = null;
+                            let localOrderMatch = null;
+
+                            if (isPaymentGroup) {
+                                freshGroupOrders = await ordersService.getOrdersByPaymentGroupId(bestMatch.orderId);
+                                freshMatchedOrder = freshGroupOrders[0];
+
+                                // RETRY MECHANISM: If invoiceNumber missing or invalid, wait 2s and retry
+                                if (!isValidInvoice(freshMatchedOrder?.invoiceNumber)) {
+                                    console.log('⏳ Invoice number missing or invalid, retrying fetch in 2s...');
+                                    await new Promise(resolve => setTimeout(resolve, 2000));
+                                    freshGroupOrders = await ordersService.getOrdersByPaymentGroupId(bestMatch.orderId);
+                                    freshMatchedOrder = freshGroupOrders[0];
+                                }
+
+                                // 🚑 DATA SCAVENGING: If fresh fetch missing valid invoice, try local state
+                                if (!isValidInvoice(freshMatchedOrder?.invoiceNumber)) {
+                                    const localGroupMatch = orders.find(o => o.paymentGroupId === bestMatch.orderId);
+                                    if (isValidInvoice(localGroupMatch?.invoiceNumber)) {
+                                        console.log('🚑 Recovered Valid Invoice from Local State:', localGroupMatch?.invoiceNumber);
+                                        if (freshMatchedOrder) freshMatchedOrder.invoiceNumber = localGroupMatch?.invoiceNumber;
+                                        if (freshGroupOrders[0]) freshGroupOrders[0].invoiceNumber = localGroupMatch?.invoiceNumber;
+                                    }
+                                }
+
+                            } else {
+                                freshMatchedOrder = await ordersService.getOrderById(bestMatch.orderId);
+                                localOrderMatch = orders.find(o => o.id === bestMatch.orderId);
+
+                                // RETRY MECHANISM
+                                if (!isValidInvoice(freshMatchedOrder?.invoiceNumber)) {
+                                    console.log('⏳ Invoice number missing or invalid, retrying fetch in 2s...');
+                                    await new Promise(resolve => setTimeout(resolve, 2000));
+                                    freshMatchedOrder = await ordersService.getOrderById(bestMatch.orderId);
+                                    localOrderMatch = orders.find(o => o.id === bestMatch.orderId); // Refresh local too
+                                }
+
+                                // 🚑 DATA SCAVENGING: Merge with local data manually
+                                if (freshMatchedOrder && localOrderMatch) {
+                                    if (!isValidInvoice(freshMatchedOrder.invoiceNumber) && isValidInvoice(localOrderMatch.invoiceNumber)) {
+                                        console.log('🚑 Recovered Valid Invoice from Local State:', localOrderMatch.invoiceNumber);
+                                        freshMatchedOrder.invoiceNumber = localOrderMatch.invoiceNumber;
+                                    }
+                                }
+
+                                if (freshMatchedOrder) {
+                                    freshGroupOrders = [freshMatchedOrder];
+                                }
+                            }
+
+                            // Fallback ke local state jika fetch gagal total (safety net)
+                            if (!freshMatchedOrder) {
+                                console.warn('⚠️ Fresh fetch failed/empty, using local state fallback for:', bestMatch.orderId);
+                                freshMatchedOrder = isPaymentGroup
+                                    ? orders.find(o => o.paymentGroupId === bestMatch.orderId)
+                                    : orders.find(o => o.id === bestMatch.orderId);
+                                freshGroupOrders = isPaymentGroup
+                                    ? orders.filter(o => o.paymentGroupId === bestMatch.orderId)
+                                    : (freshMatchedOrder ? [freshMatchedOrder] : []);
+                            }
+
+                            const matchedOrder = freshMatchedOrder;
+                            const groupOrders = freshGroupOrders;
+
                             const customerName = matchedOrder?.shippingInfo?.name || matchedOrder?.userName || 'Unknown';
+
+                            // Use data AS IS - DO NOT REGENERATE INVOICE NUMBERS
+                            const orderDetails = groupOrders.map(o => ({
+                                id: isValidInvoice(o.invoiceNumber) ? o.invoiceNumber : o.id, // Prefer Valid Invoice
+                                amount: o.finalTotal || 0,
+                                customerName: o.shippingInfo?.name || o.userName
+                            }));
 
                             if (isTestMode) {
                                 // 🧪 TEST MODE: Only log, don't execute
                                 await autoVerificationLogService.createLog({
                                     orderId: bestMatch.orderId,
+                                    invoiceNumber: matchedOrder?.invoiceNumber, // 🧾 Store invoice number (first order)
                                     orderAmount: matchedOrder?.finalTotal || detection.amount,
                                     customerName,
                                     detectionId: detection.id,
@@ -141,9 +214,11 @@ const PaymentAutoVerifier: React.FC = () => {
                                     matchReason: `Auto-match (Confidence: ${bestMatch.confidence}%)`,
                                     status: 'dry-run',
                                     executedBy: 'system',
-                                    paymentGroupId: matchedOrder?.paymentGroupId,
-                                    orderIds: matchedOrder?.paymentGroupId ? [bestMatch.orderId] : undefined
-                                });
+                                    paymentGroupId: isPaymentGroup ? bestMatch.orderId : matchedOrder?.paymentGroupId,
+                                    orderIds: groupOrders.map(o => isValidInvoice(o.invoiceNumber) ? o.invoiceNumber : o.id), // 🧾 Use valid invoice numbers
+                                    isGroupPayment: isPaymentGroup || groupOrders.length > 1,
+                                    orderDetails // 🧾 Include all order details with invoice numbers
+                                } as any);
 
                                 showToast({
                                     title: '🧪 [TEST] Pembayaran Terdeteksi',
@@ -152,7 +227,7 @@ const PaymentAutoVerifier: React.FC = () => {
                                     duration: 5000
                                 });
 
-                                console.log('🧪 [DRY RUN] Would have verified:', bestMatch.orderId);
+
                             } else {
                                 // 🚀 PRODUCTION MODE: Execute verification
                                 try {
@@ -178,7 +253,7 @@ const PaymentAutoVerifier: React.FC = () => {
 
                                         const upgradeResult = await checkAndUpgradeRole(matchedOrder?.userId, orderItems);
                                         if (upgradeResult.upgraded) {
-                                            console.log('🎉 Auto-verified: User upgraded to Reseller:', upgradeResult.reason);
+
                                         }
                                     } catch (upgradeError) {
                                         console.error('Role upgrade check failed (non-blocking):', upgradeError);
@@ -187,6 +262,7 @@ const PaymentAutoVerifier: React.FC = () => {
                                     // 📋 Log success
                                     await autoVerificationLogService.createLog({
                                         orderId: bestMatch.orderId,
+                                        invoiceNumber: matchedOrder?.invoiceNumber, // 🧾 Store invoice number (first order)
                                         orderAmount: matchedOrder?.finalTotal || detection.amount,
                                         customerName,
                                         detectionId: detection.id,
@@ -198,9 +274,11 @@ const PaymentAutoVerifier: React.FC = () => {
                                         matchReason: `Auto-verified by System (Confidence: ${bestMatch.confidence}%)`,
                                         status: 'success',
                                         executedBy: 'system',
-                                        paymentGroupId: matchedOrder?.paymentGroupId,
-                                        orderIds: matchedOrder?.paymentGroupId ? [bestMatch.orderId] : undefined
-                                    });
+                                        paymentGroupId: isPaymentGroup ? bestMatch.orderId : matchedOrder?.paymentGroupId,
+                                        orderIds: groupOrders.map(o => o.invoiceNumber || o.id), // 🧾 Use invoice numbers
+                                        isGroupPayment: isPaymentGroup || groupOrders.length > 1,
+                                        orderDetails // 🧾 Include all order details with invoice numbers
+                                    } as any);
 
                                     // Notifikasi Petir ⚡
                                     showToast({

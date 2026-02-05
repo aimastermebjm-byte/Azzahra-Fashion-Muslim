@@ -297,7 +297,7 @@ function AppContent() {
       return null;
     }
 
-    const orderId = 'AZF' + Date.now().toString().slice(-8);
+    const orderId = 'ORD' + Date.now().toString().slice(-8);
 
     try {
       // Use cartItems from parameter (eliminates 1 read!)
@@ -855,7 +855,7 @@ function AppContent() {
           />
         );
       case 'admin-reports':
-        return <AdminReportsPage onBack={() => setCurrentPage('account')} user={user} />;
+        return <AdminReportsPage onBack={() => setCurrentPage('account')} user={user} onNavigateToStockAdjustments={() => setCurrentPage('admin-stock-adjustments')} />;
       case 'admin-users':
         return <AdminUsersPage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-cache':
@@ -870,6 +870,8 @@ function AppContent() {
         return <AdminStockOpnamePage onBack={() => setCurrentPage('account')} user={user} />;
       case 'admin-voucher':
         return <AdminVoucherPage onBack={() => setCurrentPage('account')} user={user} />;
+      case 'admin-stock-adjustments':
+        return <AdminStockAdjustmentPage onBack={() => setCurrentPage('admin-reports')} user={user} />;
       case 'ongkir-test':
         return <OngkirTestPage onBack={() => setCurrentPage('home')} />;
       case 'product-detail':

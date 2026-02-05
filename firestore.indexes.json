@@ -125,16 +125,6 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "isFlashSale",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "products",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
           "fieldPath": "isFeatured",
           "order": "ASCENDING"
         },
@@ -170,6 +160,20 @@
           "fieldPath": "assignedTo",
           "order": "ASCENDING"
         },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "stock_adjustments",
+      "queryScope": "COLLECTION",
+      "fields": [
         {
           "fieldPath": "status",
           "order": "ASCENDING"

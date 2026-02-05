@@ -321,7 +321,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     // ✅ FIX: Dynamic message based on payment status
     let message = `Halo Kak ${order.userName || 'Pelanggan'},\n\n`;
     message += `Berikut tagihan untuk pesanan Kakak di Azzahra Fashion Muslim:\n`;
-    message += `No. Pesanan: *#${order.id}*\n`;
+    message += `No. Invoice: *${order.invoiceNumber || order.id}*\n`;
 
     if (hasPartialPayment) {
       // Partial payment - show breakdown
@@ -433,7 +433,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
         itemsText,
         '--------------------------------',
         `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
-        `Order ID  : #${order.id}`
+        `Invoice    : ${order.invoiceNumber || order.id}`
       ].filter(Boolean).join('\n');
 
       // Use custom URL scheme for Android native app with Base64 encoding (SafeArea)
@@ -518,7 +518,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             itemsText,
             '--------------------------------',
             `Ekspedisi : ${order.shippingInfo?.courier?.toUpperCase() || 'JNE'}`,
-            `Order ID  : #${order.id}`
+            `Invoice    : ${order.invoiceNumber || order.id}`
           ].filter(Boolean).join('\n');
         }).join('\n\n--- potong disini ---\n\n');
 
@@ -1581,16 +1581,22 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <p className="font-semibold text-lg">#{order.id}</p>
+                          <p className="font-semibold text-lg">{order.invoiceNumber || `#${order.id}`}</p>
                           <p className="text-sm text-gray-600">{order.userName} • {order.userEmail}</p>
                           <p className="text-xs text-gray-500">
-                            {new Date(order.createdAt).toLocaleDateString('id-ID', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+                            {(() => {
+                              // Handle both Firestore Timestamp and regular Date
+                              const dateValue = order.createdAt?.toDate?.() ||
+                                (typeof order.createdAt === 'string' ? new Date(order.createdAt) : null) ||
+                                (order.timestamp ? new Date(order.timestamp) : new Date());
+                              return dateValue.toLocaleDateString('id-ID', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              });
+                            })()}
                           </p>
                         </div>
                         <div className="text-right">
@@ -1691,7 +1697,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-800">Detail Pesanan #{selectedOrder.id}</h2>
+                  <h2 className="text-xl font-bold text-gray-800">Detail Pesanan {selectedOrder.invoiceNumber || `#${selectedOrder.id}`}</h2>
                   <button
                     onClick={() => setShowDetailModal(false)}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -2431,7 +2437,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   {assistPaymentData.orders ? (
                     `${assistPaymentData.orders.length} Pesanan - Rp ${assistPaymentData.subtotal.toLocaleString('id-ID')}`
                   ) : (
-                    `Pesanan #{assistPaymentData.order.id} - Rp ${assistPaymentData.order.finalTotal.toLocaleString('id-ID')}`
+                    `Pesanan ${assistPaymentData.order.invoiceNumber || assistPaymentData.order.id} - Rp ${assistPaymentData.order.finalTotal.toLocaleString('id-ID')}`
                   )}
                 </p>
               </div>

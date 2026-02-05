@@ -35,6 +35,9 @@ export interface Order {
   // ✨ NEW: Payment Group System
   paymentGroupId?: string | null;
   groupPaymentAmount?: number | null;
+
+  // 🧾 NEW: Invoice Number System
+  invoiceNumber?: string;
 }
 
 export const useFirebaseOrders = () => {

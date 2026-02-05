@@ -77,5 +77,11 @@ service cloud.firestore {
       );
       allow create: if isAuthenticated();
     }
+
+    // 🧾 Invoice Counters (for generating sequential invoice numbers)
+    // Read/Write: Authenticated users (needed during order creation)
+    match /invoice_counters/{monthKey} {
+      allow read, write: if isAuthenticated();
+    }
   }
 }

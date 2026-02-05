@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Package, Clock, Truck, CheckCircle, Search, XCircle, CreditCard, Upload, X, Copy, ArrowLeft, Check, MapPin } from 'lucide-react';
+import { deleteField } from 'firebase/firestore';
 import { ordersService } from '../services/ordersService';
 import { paymentGroupService } from '../services/paymentGroupService';
 import { useFirebaseOrders } from '../hooks/useFirebaseOrders';
@@ -272,6 +273,10 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       if (mode === 'auto') {
         showToast({ message: '🔄 Membuat pembayaran otomatis...', type: 'info' });
 
+        // 🧾 Log Invoice Number for User Assurance
+        const invoiceList = paymentData?.orders?.map((o: any) => o.invoiceNumber || o.id).join(', ');
+        console.log(`✅ Initiating Auto-Verification for Invoice(s): ${invoiceList}`);
+
         // Create payment group with unique code
         const paymentGroup = await paymentGroupService.createPaymentGroup({
           userId: user.uid,
@@ -365,9 +370,9 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
         // Remove payment group links from orders
         for (const orderId of paymentData.orderIds) {
           await ordersService.updateOrder(orderId, {
-            paymentGroupId: undefined,
-            groupPaymentAmount: undefined,
-            verificationMode: undefined
+            paymentGroupId: deleteField(),
+            groupPaymentAmount: deleteField(),
+            verificationMode: deleteField()
           });
         }
 
@@ -617,7 +622,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                         <div className="p-1.5 bg-gray-50 rounded-lg">
                           <Package className="w-4 h-4 text-[#D4AF37]" />
                         </div>
-                        <span className="text-sm font-bold text-slate-900 tracking-wide">#{order.id.slice(0, 8)}...</span>
+                        <span className="text-sm font-bold text-slate-900 tracking-wide">{order.invoiceNumber || `#${order.id.slice(0, 8)}...`}</span>
                       </div>
                       <p className="text-xs font-medium text-gray-500 pl-9">
                         {new Date(order.timestamp).toLocaleDateString('id-ID', {
@@ -642,8 +647,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                       {/* ✨ NEW: Countdown Timer for Pending Orders */}
                       {order.status === 'pending' && (order as any).expiresAt && (
                         <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${((order as any).expiresAt - Date.now()) < 3600000
-                            ? 'bg-red-50 text-red-700 border border-red-200'
-                            : 'bg-blue-50 text-blue-700 border border-blue-200'
+                          ? 'bg-red-50 text-red-700 border border-red-200'
+                          : 'bg-blue-50 text-blue-700 border border-blue-200'
                           }`}>
                           <Clock className="w-3 h-3" />
                           {formatCountdown((order as any).expiresAt)}

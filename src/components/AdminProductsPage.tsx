@@ -93,6 +93,14 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
   const [tappedProductId, setTappedProductId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(20);
 
+  // Date Filter State
+  const [dateFilterFrom, setDateFilterFrom] = useState<string>('');
+  const [dateFilterTo, setDateFilterTo] = useState<string>('');
+
+  // Price Filter State
+  const [priceFilterMin, setPriceFilterMin] = useState<string>('');
+  const [priceFilterMax, setPriceFilterMax] = useState<string>('');
+
   // NEW: Discount and Collection Modal States
 
   const [showCollectionModal, setShowCollectionModal] = useState(false);
@@ -130,7 +138,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(20);
-  }, [searchQuery, selectedCategory, sortBy]);
+  }, [searchQuery, selectedCategory, sortBy, dateFilterFrom, dateFilterTo, priceFilterMin, priceFilterMax]);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -396,6 +404,36 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
       filtered = filtered.filter(product => product.category === selectedCategory);
     }
 
+    // Apply date filter (createdAt)
+    if (dateFilterFrom) {
+      const fromDate = new Date(dateFilterFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(product => {
+        const createdAt = product.createdAt ? new Date(product.createdAt) : null;
+        return createdAt && createdAt >= fromDate;
+      });
+    }
+
+    if (dateFilterTo) {
+      const toDate = new Date(dateFilterTo);
+      toDate.setHours(23, 59, 59, 999); // Include entire day
+      filtered = filtered.filter(product => {
+        const createdAt = product.createdAt ? new Date(product.createdAt) : null;
+        return createdAt && createdAt <= toDate;
+      });
+    }
+
+    // Apply price filter
+    if (priceFilterMin) {
+      const minPrice = parseInt(priceFilterMin) || 0;
+      filtered = filtered.filter(product => product.retailPrice >= minPrice);
+    }
+
+    if (priceFilterMax) {
+      const maxPrice = parseInt(priceFilterMax) || Infinity;
+      filtered = filtered.filter(product => product.retailPrice <= maxPrice);
+    }
+
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
@@ -414,7 +452,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
     });
 
     return filtered;
-  }, [products, searchQuery, selectedCategory, sortBy]);
+  }, [products, searchQuery, selectedCategory, sortBy, dateFilterFrom, dateFilterTo, priceFilterMin, priceFilterMax]);
 
   // Infinite Scroll Slice
   const currentProducts = filteredAndSortedProducts.slice(0, visibleCount);
@@ -1439,6 +1477,81 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
               </select>
             </div>
 
+            {/* Filter Panel - Mobile-First Layout */}
+            <div className="bg-gradient-to-r from-[#FDF6E3] to-[#FEF9ED] p-3 rounded-xl border-2 border-[#D4AF37] shadow-[0_2px_0_0_#997B2C]">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold text-[#997B2C]">🔍 Filter Lanjutan</span>
+                {(dateFilterFrom || dateFilterTo || priceFilterMin || priceFilterMax) && (
+                  <button
+                    onClick={() => {
+                      setDateFilterFrom('');
+                      setDateFilterTo('');
+                      setPriceFilterMin('');
+                      setPriceFilterMax('');
+                    }}
+                    className="px-2.5 py-1 text-xs bg-gradient-to-r from-[#997B2C] to-[#D4AF37] text-white rounded-lg font-semibold hover:shadow-md transition-all border border-[#7A6223] shadow-[0_1px_0_0_#7A6223]"
+                  >
+                    ✕ Reset
+                  </button>
+                )}
+              </div>
+
+              {/* Filter Sections - Mobile Friendly Stacked Layout */}
+              <div className="space-y-3">
+                {/* Date Filter */}
+                <div className="space-y-2">
+                  <span className="text-xs text-[#997B2C] font-semibold">📅 Filter Tanggal</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-[#997B2C] mb-0.5 block">Dari</label>
+                      <input
+                        type="date"
+                        value={dateFilterFrom}
+                        onChange={(e) => setDateFilterFrom(e.target.value)}
+                        className="w-full px-2 py-2 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-[#997B2C] mb-0.5 block">Sampai</label>
+                      <input
+                        type="date"
+                        value={dateFilterTo}
+                        onChange={(e) => setDateFilterTo(e.target.value)}
+                        className="w-full px-2 py-2 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Price Filter */}
+                <div className="space-y-2">
+                  <span className="text-xs text-[#997B2C] font-semibold">💰 Filter Harga (Rp)</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-[#997B2C] mb-0.5 block">Minimum</label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={priceFilterMin}
+                        onChange={(e) => setPriceFilterMin(e.target.value)}
+                        className="w-full px-2 py-2 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-[#997B2C] mb-0.5 block">Maksimum</label>
+                      <input
+                        type="number"
+                        placeholder="∞"
+                        value={priceFilterMax}
+                        onChange={(e) => setPriceFilterMax(e.target.value)}
+                        className="w-full px-2 py-2 text-xs border-2 border-[#D4AF37] rounded-lg focus:ring-1 focus:ring-[#D4AF37] focus:border-[#997B2C] bg-white text-[#997B2C] shadow-[0_1px_0_0_#997B2C]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             {/* Batch Actions - 2 Columns Like Main Menu */}
             {selectedProducts.length > 0 && (
               <div className="pt-3 border-t space-y-2">

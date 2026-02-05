@@ -77,7 +77,7 @@ const PaymentInputModal: React.FC<PaymentInputModalProps> = ({
 
                     {/* Order Summary */}
                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                        <p className="text-gray-500 text-sm mb-2">Pesanan #{order.id}</p>
+                        <p className="text-gray-500 text-sm mb-2">Pesanan {order.invoiceNumber || `#${order.id}`}</p>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                             <div>
                                 <span className="text-gray-600">Total Tagihan:</span>
