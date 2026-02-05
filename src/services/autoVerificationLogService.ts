@@ -1,14 +1,9 @@
-/**
- * Auto Verification Log Service
- * 🛡️ Audit trail untuk setiap pelunasan otomatis
- * Memastikan transparansi dan memudahkan rollback jika terjadi kesalahan
- */
-
 import {
     collection,
     doc,
     getDocs,
     setDoc,
+    deleteDoc,
     query,
     where,
     orderBy,
@@ -70,6 +65,42 @@ class AutoVerificationLogService {
             return logId;
         } catch (error) {
             console.error('❌ Error creating auto-verification log:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 🗑️ Delete a single log entry
+     */
+    async deleteLog(logId: string): Promise<void> {
+        try {
+            const docRef = doc(db, this.COLLECTION, logId);
+            await deleteDoc(docRef);
+            console.log(`🗑️ Log deleted: ${logId}`);
+        } catch (error) {
+            console.error('❌ Error deleting log:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 🗑️ Delete all logs (bulk delete)
+     */
+    async deleteAllLogs(): Promise<number> {
+        try {
+            const logsRef = collection(db, this.COLLECTION);
+            const snapshot = await getDocs(logsRef);
+
+            let deletedCount = 0;
+            for (const docSnap of snapshot.docs) {
+                await deleteDoc(docSnap.ref);
+                deletedCount++;
+            }
+
+            console.log(`🗑️ Deleted ${deletedCount} logs`);
+            return deletedCount;
+        } catch (error) {
+            console.error('❌ Error deleting all logs:', error);
             throw error;
         }
     }

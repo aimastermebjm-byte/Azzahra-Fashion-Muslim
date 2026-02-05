@@ -7,7 +7,8 @@ import {
     Clock,
     RefreshCw,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Trash2
 } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { autoVerificationLogService, AutoVerificationLog } from '../services/autoVerificationLogService';
@@ -28,6 +29,8 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
         totalDryRun: 0,
         totalAmount: 0
     });
+    const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
     useEffect(() => {
         loadLogs();
@@ -51,6 +54,35 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
             setStats(loadedStats);
         } catch (error) {
             console.error('Error loading stats:', error);
+        }
+    };
+
+    // 🗑️ Delete single log
+    const handleDeleteLog = async (logId: string) => {
+        try {
+            setDeletingId(logId);
+            await autoVerificationLogService.deleteLog(logId);
+            setLogs(logs.filter(l => l.id !== logId));
+            loadStats();
+        } catch (error) {
+            console.error('Error deleting log:', error);
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
+    // 🗑️ Delete all logs
+    const handleDeleteAllLogs = async () => {
+        try {
+            setLoading(true);
+            await autoVerificationLogService.deleteAllLogs();
+            setLogs([]);
+            setStats({ totalSuccess: 0, totalFailed: 0, totalDryRun: 0, totalAmount: 0 });
+            setShowDeleteAllConfirm(false);
+        } catch (error) {
+            console.error('Error deleting all logs:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -172,12 +204,24 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                         </button>
                     ))}
                 </div>
-                <button
-                    onClick={() => { loadLogs(); loadStats(); }}
-                    className="p-2 hover:bg-gray-100 rounded-lg"
-                >
-                    <RefreshCw className={`w-5 h-5 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
-                </button>
+                <div className="flex items-center gap-2">
+                    {filteredLogs.length > 0 && (
+                        <button
+                            onClick={() => setShowDeleteAllConfirm(true)}
+                            className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors flex items-center gap-1"
+                            title="Hapus Semua Log"
+                        >
+                            <Trash2 className="w-5 h-5" />
+                        </button>
+                    )}
+                    <button
+                        onClick={() => { loadLogs(); loadStats(); }}
+                        className="p-2 hover:bg-gray-100 rounded-lg"
+                        title="Refresh Log"
+                    >
+                        <RefreshCw className={`w-5 h-5 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
+                </div>
             </div>
 
             {/* Logs List */}
@@ -330,13 +374,63 @@ const AdminAutoVerificationLogsPage: React.FC<AdminAutoVerificationLogsPageProps
                                                 <div className="text-sm bg-red-50 text-red-700 rounded-lg p-2 mt-1 border border-red-200">
                                                     {log.errorMessage}
                                                 </div>
-                                            </div>
                                         )}
+
+                                        {/* Action Buttons */}
+                                        <div className="mt-4 pt-4 border-t flex justify-end">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (window.confirm('Yakin ingin menghapus log ini?')) {
+                                                        handleDeleteLog(log.id);
+                                                    }
+                                                }}
+                                                disabled={deletingId === log.id}
+                                                className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
+                                            >
+                                                {deletingId === log.id ? (
+                                                    <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="w-4 h-4" />
+                                                )}
+                                                Hapus Log
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
                         ))}
                     </>
+                )}
+
+                {/* Delete All Confirmation Modal */}
+                {showDeleteAllConfirm && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl">
+                            <div className="flex items-center gap-3 text-red-600 mb-4">
+                                <AlertTriangle className="w-8 h-8" />
+                                <h3 className="text-lg font-bold">Hapus Semua Log?</h3>
+                            </div>
+                            <p className="text-gray-600 mb-6">
+                                Tindakan ini akan menghapus <b>{filteredLogs.length} log</b> secara permanen. Tindakan ini tidak dapat dibatalkan.
+                            </p>
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => setShowDeleteAllConfirm(false)}
+                                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    onClick={handleDeleteAllLogs}
+                                    disabled={loading}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {loading ? 'Menghapus...' : 'Ya, Hapus Semua'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>
