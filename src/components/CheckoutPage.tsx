@@ -400,6 +400,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [shippingMode, setShippingMode] = useState<'delivery' | 'keep' | 'pickup'>(defaultMode);
 
   // Reset shipping cost when switching to 'keep' or 'pickup' mode
+  // 🔥 FIX: Also trigger recalculation when switching BACK to 'delivery' mode
   useEffect(() => {
     if (shippingMode === 'keep' || shippingMode === 'pickup') {
       setShippingCost(0);
@@ -409,6 +410,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
         shippingService: '',
         shippingETD: ''
       }));
+    } else if (shippingMode === 'delivery') {
+      // 🔥 FIX: Reset cache key to force recalculation of shipping cost
+      lastShippingCalcRef.current = '';
     }
   }, [shippingMode]);
 
