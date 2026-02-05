@@ -569,6 +569,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const lastShippingCalcRef = React.useRef<string>('');
 
   useEffect(() => {
+    // 🔥 FIX: Skip calculation if not in delivery mode
+    if (shippingMode !== 'delivery') {
+      return;
+    }
+
     const defaultAddr = getActiveAddress();
     const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
 
@@ -601,7 +606,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [formData.shippingCourier, selectedAddressId, addresses.length, cartItems.length, totalPrice]);
+  }, [formData.shippingCourier, selectedAddressId, addresses.length, cartItems.length, totalPrice, shippingMode]); // 🔥 FIX: Added shippingMode
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
