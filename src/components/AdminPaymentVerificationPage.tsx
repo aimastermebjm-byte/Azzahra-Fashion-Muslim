@@ -25,6 +25,7 @@ import { db } from '../utils/firebaseClient';
 import PageHeader from './PageHeader';
 import { paymentDetectionService, PaymentDetection, PaymentDetectionSettings } from '../services/paymentDetectionService';
 import { ordersService } from '../services/ordersService';
+import { autoVerificationLogService } from '../services/autoVerificationLogService';
 import { useToast } from './ToastProvider';
 import AdminAutoVerificationLogsPage from './AdminAutoVerificationLogsPage';
 
@@ -170,6 +171,10 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
     }
 
     try {
+      // Get matched order details for logging
+      const matchedOrder = getMatchedOrder(detection.matchedOrderId);
+      const customerName = matchedOrder?.shippingInfo?.name || matchedOrder?.userName || detection.senderName || 'Unknown';
+
       // Update order status to paid
       await ordersService.updateOrderStatus(detection.matchedOrderId, 'paid');
 
@@ -180,6 +185,23 @@ const AdminPaymentVerificationPage: React.FC<AdminPaymentVerificationPageProps> 
         user.email,
         'semi-auto'
       );
+
+      // 🔥 NEW: Create verification log for semi-auto mode
+      await autoVerificationLogService.createLog({
+        orderId: detection.matchedOrderId,
+        invoiceNumber: matchedOrder?.invoiceNumber || detection.matchedOrderId, // 🧾 Store invoice number
+        orderAmount: matchedOrder?.finalTotal || detection.amount,
+        customerName,
+        detectionId: detection.id,
+        detectedAmount: detection.amount,
+        senderName: detection.senderName || 'Unknown',
+        bank: detection.bank || 'Unknown',
+        rawNotification: detection.rawText || '',
+        confidence: detection.confidence || 100,
+        matchReason: `Semi-auto verified by ${user.email}`,
+        status: 'success',
+        executedBy: user.email || 'admin'
+      });
 
       showToast({ message: '✅ Pembayaran berhasil diverifikasi!', type: 'success' });
 
