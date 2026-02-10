@@ -533,8 +533,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     { id: 'tiki', name: 'TIKI', code: 'tiki', price: 0 }, // RajaOngkir supported
     { id: 'ojek', name: 'OJEK', code: null, price: 0 }, // Local courier - manual price
     { id: 'lion', name: 'Lion Parcel', code: 'lion', price: 0 }, // Automatic via Komerce
-    { id: 'idexpress', name: 'IDExpress', code: 'ide', price: 0 }, // Automatic via Komerce
-    { id: 'pickup', name: 'Ambil di Toko', code: 'pickup', price: 0 } // ✨ NEW: Pickup option (Free)
+    { id: 'idexpress', name: 'IDExpress', code: 'ide', price: 0 } // Automatic via Komerce
   ];
 
   const selectedPaymentMethod = paymentMethods.find(method => method.id === formData.paymentMethodId);
