@@ -1,0 +1,12 @@
+{
+    "rewrites": [
+        {
+            "source": "/privacy",
+            "destination": "/privacy.html"
+        },
+        {
+            "source": "/((?!assets|api|privacy|favicon|pwa-|splash-|manifest|sw\\.).*)",
+            "destination": "/index.html"
+        }
+    ]
+}

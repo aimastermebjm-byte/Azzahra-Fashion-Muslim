@@ -555,3 +555,10 @@ function calculateLayout(count, W, H) {
 
     return boxes;
 }
+
+// ============================================================
+// 📦 WHATSAPP BUSINESS API (Cloud Functions)
+// ============================================================
+const whatsapp = require('./whatsapp');
+exports.whatsappWebhook = whatsapp.webhook;
+exports.whatsappBundler = whatsapp.processBuffers;
