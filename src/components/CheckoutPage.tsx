@@ -554,6 +554,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           provinceId: defaultAddr.provinceId || '607', // Default to Banjarmasin if no cityId
           cityId: defaultAddr.cityId || '607' // Default to Banjarmasin city
         }));
+        // 🔥 FIX: Reset calc ref agar ongkir dihitung ulang setelah alamat default terpilih
+        lastShippingCalcRef.current = '';
       }
     }
 
@@ -574,11 +576,16 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       return;
     }
 
+    // 🔥 FIX: Guard - pastikan semua data async sudah selesai loading
+    if (addressesLoading || loading) {
+      return;
+    }
+
     const defaultAddr = getActiveAddress();
     const selectedCourier = shippingOptions.find(opt => opt.id === formData.shippingCourier);
 
     // Skip if missing required data
-    if (!selectedCourier?.code || !defaultAddr || addresses.length === 0) {
+    if (!selectedCourier?.code || !defaultAddr || !addresses.length) {
       return;
     }
 
@@ -606,7 +613,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [formData.shippingCourier, selectedAddressId, addresses.length, cartItems.length, totalPrice, shippingMode]); // 🔥 FIX: Added shippingMode
+  }, [formData.shippingCourier, selectedAddressId, addresses.length, cartItems.length, totalPrice, shippingMode, addressesLoading, loading]); // 🔥 FIX: Added shippingMode + loading guards
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
