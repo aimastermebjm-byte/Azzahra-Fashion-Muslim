@@ -370,9 +370,45 @@ function AppContent() {
             throw new Error(`Stok \"${item.name}\" ${item.variant ? `(${item.variant.size}, ${item.variant.color})` : ''} tidak mencukupi. Tersedia: ${currentStock}, Diminta: ${item.quantity}`);
           }
 
-          // ✅ FIX: Use price from cart item (preserves Flash Sale price)
-          // Cart already has the correct price (Flash Sale / Normal / Reseller)
-          const expectedPrice = item.price || 0;
+          // 🛡️ SECURITY: Server-Side Price Validation
+          // Never trust client price. Calculate from Firestore batch data.
+          const flashSaleConfig = batchDoc.data().flashSaleConfig;
+          const variantKey = (item.variant?.size && item.variant?.color)
+            ? `${item.variant.size}-${item.variant.color}` : null;
+
+          // Step 1: Determine base price from server (variant-specific or global)
+          let officialPrice = 0;
+          const serverVariantPricing = variantKey
+            ? batchProduct.pricesPerVariant?.[variantKey] : null;
+
+          if (serverVariantPricing) {
+            // ✅ Variant-specific pricing exists
+            if (user.role === 'reseller' && Number(serverVariantPricing.reseller) > 0) {
+              officialPrice = Number(serverVariantPricing.reseller);
+            } else {
+              officialPrice = Number(serverVariantPricing.retail || 0);
+            }
+          } else {
+            // Fallback: Global price (no variant-specific pricing)
+            if (user.role === 'reseller' && Number(batchProduct.resellerPrice) > 0) {
+              officialPrice = Number(batchProduct.resellerPrice);
+            } else {
+              officialPrice = Number(batchProduct.retailPrice || 0);
+            }
+          }
+
+          // Step 2: Check Flash Sale override (highest priority)
+          const fsDiscount = (flashSaleConfig?.isActive && flashSaleConfig?.productDiscounts?.[item.productId]) || 0;
+          if (fsDiscount > 0) {
+            // Flash Sale: apply discount to retail price (not reseller)
+            const baseRetail = serverVariantPricing
+              ? Number(serverVariantPricing.retail || batchProduct.retailPrice || 0)
+              : Number(batchProduct.retailPrice || 0);
+            officialPrice = Math.max(baseRetail - fsDiscount, 1000);
+          }
+
+          // Step 3: Use server-validated price
+          const expectedPrice = officialPrice > 0 ? officialPrice : (item.price || 0);
 
           const itemTotal = expectedPrice * item.quantity;
           cartTotal += itemTotal;
