@@ -301,6 +301,18 @@ class OrdersService {
     try {
       console.log('💳 Updating order payment in Firebase Firestore:', orderId);
 
+      // 🛡️ SECURITY: Check if order is expired before accepting payment
+      const expiryCheckRef = doc(db, this.collection, orderId);
+      const expiryCheckDoc = await getDoc(expiryCheckRef);
+      if (expiryCheckDoc.exists()) {
+        const expiryData = expiryCheckDoc.data() as Order;
+        if (expiryData.expiresAt && expiryData.expiresAt < Date.now() && expiryData.status === 'pending') {
+          console.log('⏰ Order expired, auto-cancelling and restoring stock:', orderId);
+          await this.updateOrderStatus(orderId, 'cancelled');
+          throw new Error('Pesanan sudah kadaluarsa dan dibatalkan otomatis. Stok dikembalikan.');
+        }
+      }
+
       let paymentProofName = '';
       let paymentProofData = '';
 
@@ -693,6 +705,13 @@ class OrdersService {
       }
 
       const order = { id: orderDoc.id, ...orderDoc.data() } as Order;
+
+      // 🛡️ SECURITY: Check if order is expired before accepting payment
+      if (order.expiresAt && order.expiresAt < Date.now() && order.status === 'pending') {
+        console.log('⏰ Order expired, auto-cancelling and restoring stock:', orderId);
+        await this.updateOrderStatus(orderId, 'cancelled');
+        return { success: false, message: 'Pesanan sudah kadaluarsa dan dibatalkan otomatis. Stok dikembalikan.' };
+      }
 
       // Validate amount
       if (amount <= 0) {
