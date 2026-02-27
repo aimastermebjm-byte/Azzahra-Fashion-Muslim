@@ -50,7 +50,7 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow read: if true; 
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdminOrOwner()); 
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (
         request.auth.uid == resource.data.userId || 
@@ -113,7 +113,7 @@ service cloud.firestore {
     match /productBatches/{batchId} {
       allow read: if true;
       allow create: if isAdminOrOwner();
-      allow update: if isSignedIn(); // Required for Checkout Stock Deduction
+      allow update: if isSignedIn(); // Required for Checkout Stock Deduction (atomic transaction)
       allow delete: if isOwner();
     }
 
@@ -146,14 +146,14 @@ service cloud.firestore {
     
     // Transactions (Reporting)
     match /transactions/{transactionId} {
-      allow read: if true;
+      allow read: if isAdminOrOwner();
       allow create: if isSignedIn();
       allow update, delete: if isOwner();
     }
 
     // User Data
     match /user_carts/{userId} {
-      allow read: if true;
+      allow read: if isSignedIn() && request.auth.uid == userId;
       allow write: if isSignedIn() && request.auth.uid == userId;
     }
     match /user_addresses/{addressId} {
@@ -237,21 +237,26 @@ service cloud.firestore {
     
     // Shipping Cost Cache (used by api/rajaongkir/cost-cached.js)
     match /shipping_cache/{cacheId} {
-      allow read, write: if true;
+      allow read: if true; // API needs public read for caching
+      allow write: if isAdminOrOwner();
     }
 
     // Address Cache Collections (used by api/address-cached.js)
     match /address_provinces/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdminOrOwner();
     }
     match /address_cities/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdminOrOwner();
     }
     match /address_districts/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdminOrOwner();
     }
     match /address_subdistricts/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdminOrOwner();
     }
 
     // 🧾 Invoice Counters (for generating sequential invoice numbers)
