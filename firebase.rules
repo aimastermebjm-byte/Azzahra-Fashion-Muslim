@@ -157,7 +157,7 @@ service cloud.firestore {
       allow write: if isSignedIn() && request.auth.uid == userId;
     }
     match /user_addresses/{addressId} {
-      allow read: if true;
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdminOrOwner());
       allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
       allow update, delete: if isSignedIn() && request.auth.uid == resource.data.userId;
     }
