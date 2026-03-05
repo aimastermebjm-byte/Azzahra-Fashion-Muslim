@@ -10,7 +10,7 @@ interface FlashSaleShareButtonProps {
 const FlashSaleShareButton: React.FC<FlashSaleShareButtonProps> = ({
     flashSaleProducts,
     user,
-    shopUrl = 'https://azzahrafashion.com'
+    shopUrl = 'https://azzahra-fashion-muslim.vercel.app/?page=flash-sale'
 }) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);

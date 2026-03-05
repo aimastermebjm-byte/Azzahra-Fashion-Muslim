@@ -77,8 +77,12 @@ function AppContent() {
     // Handle URL routing for special pages
     const handleRouting = () => {
       const path = window.location.pathname;
+      const params = new URLSearchParams(window.location.search);
+      const page = params.get('page');
       if (path === '/ongkir-test') {
         setCurrentPage('ongkir-test');
+      } else if (page === 'flash-sale') {
+        setCurrentPage('flash-sale');
       }
     };
 
