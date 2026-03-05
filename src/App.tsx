@@ -50,7 +50,17 @@ import { Banner } from './types/banner';
 type Page = 'home' | 'flash-sale' | 'orders' | 'account' | 'address-management' | 'product-detail' | 'cart' | 'checkout' | 'login' | 'admin-products' | 'admin-orders' | 'admin-reports' | 'admin-users' | 'admin-cache' | 'admin-financials' | 'admin-master' | 'admin-payment-verification' | 'admin-stock-opname' | 'admin-stock-adjustments' | 'admin-voucher' | 'admin-banner' | 'banner-products' | 'ongkir-test';
 
 function AppContent() {
-  const [currentPage, setCurrentPage] = useState<Page>('home');
+  const [currentPage, setCurrentPage] = useState<Page>(() => {
+    // Initial parse to prevent flicker and history push race conditions in PWA
+    const path = window.location.pathname;
+    const hash = window.location.hash;
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get('page');
+
+    if (path === '/ongkir-test') return 'ongkir-test';
+    if (path === '/flash-sale' || hash === '#flash-sale' || page === 'flash-sale') return 'flash-sale';
+    return 'home';
+  });
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
@@ -93,7 +103,7 @@ function AppContent() {
   }, []);
 
   // ✨ NEW: Navigation history stack for hardware back button support
-  const [navigationHistory, setNavigationHistory] = useState<Page[]>(['home']);
+  const [navigationHistory, setNavigationHistory] = useState<Page[]>(() => [currentPage]);
   const [isNavigatingBack, setIsNavigatingBack] = useState(false);
 
   // Parent page mapping for back navigation
