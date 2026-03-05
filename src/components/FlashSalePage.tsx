@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Tag, ArrowLeft, Sparkles, Search, X } from 'lucide-react';
 import FlashSaleCard from './FlashSaleCard';
+import FlashSaleShareButton from './FlashSaleShareButton';
 import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
 import { useUnifiedFlashSale } from '../hooks/useUnifiedFlashSale';
 
@@ -237,6 +238,7 @@ const FlashSalePage: React.FC<FlashSalePageProps> = ({
                         FLASH SALE
                     </h1>
                     <Tag className="w-6 h-6 text-[#997B2C] animate-pulse" />
+                    <FlashSaleShareButton flashSaleProducts={flashSaleProducts} user={user} />
                 </div>
 
                 {/* TIMER: Compact Navy Blue Tiles */}
