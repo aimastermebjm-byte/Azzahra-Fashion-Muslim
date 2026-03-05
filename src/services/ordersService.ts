@@ -552,10 +552,12 @@ class OrdersService {
     }
   }
 
-  // Subscribe to orders (real-time) for PaymentAutoVerifier
-  subscribeToOrders(callback: (orders: Order[]) => void): () => void {
+  // Subscribe to orders (real-time) for PaymentAutoVerifier & OrderExpirationChecker
+  subscribeToOrders(callback: (orders: Order[]) => void, userId?: string): () => void {
     const ordersRef = collection(db, this.collection);
-    const q = query(ordersRef, orderBy('createdAt', 'desc'));
+    const q = userId
+      ? query(ordersRef, where('userId', '==', userId), orderBy('createdAt', 'desc'))
+      : query(ordersRef, orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const orders = snapshot.docs.map(doc => ({

@@ -34,7 +34,7 @@ export default function OrderExpirationChecker({ userId, onOrderExpired }: Order
         // Subscribe to orders
         const unsubscribe = ordersService.subscribeToOrders((orders) => {
             ordersRef.current = orders;
-        });
+        }, userId);
 
         // Check every 30 seconds for better UX
         checkIntervalRef.current = setInterval(() => {
