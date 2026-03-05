@@ -23,7 +23,8 @@ const FlashSaleShareButton: React.FC<FlashSaleShareButtonProps> = ({
 
     // Generate promo text for WhatsApp
     const generatePromoText = (): string => {
-        let text = `🔥 *FLASH SALE AZZAHRA FASHION MUSLIM!*\n\n`;
+        let text = `🔥 *FLASH SALE AZZAHRA FASHION MUSLIM!*\n`;
+        text += `🛒 *Belanja langsung:*\n${shopUrl}\n\n`;
 
         flashSaleProducts.forEach((product, index) => {
             const originalPrice = product.retailPrice || product.price || 0;
@@ -35,7 +36,6 @@ const FlashSaleShareButton: React.FC<FlashSaleShareButtonProps> = ({
             text += `   ~Rp ${originalPrice.toLocaleString('id-ID')}~ → *Rp ${salePrice.toLocaleString('id-ID')}* (HEMAT ${discountPercent}%)\n\n`;
         });
 
-        text += `🛒 *Belanja sekarang:*\n${shopUrl}\n\n`;
         text += `⏰ _Stok terbatas, buruan sebelum habis!_`;
 
         return text;
