@@ -82,12 +82,14 @@ function AppContent() {
       const page = params.get('page');
       if (path === '/ongkir-test') {
         setCurrentPage('ongkir-test');
-      } else if (hash === '#flash-sale' || page === 'flash-sale') {
+      } else if (path === '/flash-sale' || hash === '#flash-sale' || page === 'flash-sale') {
         setCurrentPage('flash-sale');
       }
     };
 
     handleRouting();
+    window.addEventListener('hashchange', handleRouting);
+    return () => window.removeEventListener('hashchange', handleRouting);
   }, []);
 
   // ✨ NEW: Navigation history stack for hardware back button support
