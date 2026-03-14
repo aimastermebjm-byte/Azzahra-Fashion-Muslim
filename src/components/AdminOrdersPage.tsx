@@ -1856,12 +1856,10 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                       const canSelect = !isShipped && ['paid', 'processing', 'pending', 'partially_shipped'].includes(selectedOrder.status);
 
                       const statusBadge: Record<string, { label: string; color: string; icon: string }> = {
-                        ready: { label: 'Siap Kirim', color: 'bg-green-100 text-green-700', icon: '🟢' },
-                        waiting_stock: { label: 'Menunggu Stok', color: 'bg-yellow-100 text-yellow-700', icon: '🟡' },
                         shipped: { label: 'Dikirim', color: 'bg-blue-100 text-blue-700', icon: '📦' },
                         delivered: { label: 'Sampai', color: 'bg-emerald-100 text-emerald-700', icon: '✅' },
                       };
-                      const badge = statusBadge[itemStatus] || statusBadge.ready;
+                      const badge = statusBadge[itemStatus];
 
                       return (
                         <div key={index} className={`flex items-start space-x-3 p-3 rounded-lg border transition-all ${isSelected ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-transparent'}`}>
@@ -1913,7 +1911,8 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                               </div>
                               <p className="font-semibold text-sm whitespace-nowrap">Rp {item.total.toLocaleString('id-ID')}</p>
                             </div>
-                            {/* Status badge */}
+                            {/* Status badge — hanya muncul setelah dikirim */}
+                            {badge && (
                             <div className="flex items-center gap-2 mt-1.5">
                               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${badge.color}`}>
                                 {badge.icon} {badge.label}
@@ -1926,6 +1925,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                                 </span>
                               )}
                             </div>
+                            )}
                             {/* Shipped date */}
                             {isShipped && item.shippedAt && (
                               <p className="text-[10px] text-gray-400 mt-0.5">
