@@ -2018,6 +2018,29 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                               📝 {payment.notes}
                             </p>
                           )}
+                          {/* 🖼️ NEW: Tampilkan bukti bayar per payment */}
+                          {payment.proofData && (
+                            <div className="mt-1">
+                              <img
+                                src={`data:image/*;base64,${payment.proofData}`}
+                                alt={`Bukti ${payment.method}`}
+                                className="w-20 h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => {
+                                  const newWindow = window.open('', '_blank');
+                                  if (newWindow) {
+                                    newWindow.document.write(`
+                                      <html><body style="margin:0;padding:20px;background:#f3f4f6;">
+                                        <img src="data:image/*;base64,${payment.proofData}"
+                                             style="max-width:100%;height:auto;display:block;margin:0 auto;"
+                                             alt="Bukti Pembayaran" />
+                                      </body></html>
+                                    `);
+                                  }
+                                }}
+                              />
+                              <p className="text-[10px] text-gray-400 mt-0.5">Klik untuk perbesar</p>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

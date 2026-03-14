@@ -13,6 +13,7 @@ export interface Payment {
   notes?: string;               // Catatan (optional)
   addedBy?: string;             // User ID yang input (owner/admin)
   addedByName?: string;         // Nama user yang input
+  proofData?: string;           // 🖼️ Base64 bukti bayar per payment (optional)
 }
 
 export interface Order {
@@ -690,7 +691,8 @@ class OrdersService {
     amount: number,
     method: 'cash' | 'transfer',
     notes?: string,
-    addedByName?: string
+    addedByName?: string,
+    proofData?: string  // 🖼️ Optional: bukti bayar per payment (base64)
   ): Promise<{ success: boolean; message: string; newStatus?: string }> {
     try {
       const user = auth.currentUser;
@@ -735,7 +737,8 @@ class OrdersService {
         date: new Date().toISOString(),
         notes: notes || '',
         addedBy: user.uid,
-        addedByName: addedByName || user.displayName || 'Admin'
+        addedByName: addedByName || user.displayName || 'Admin',
+        ...(proofData ? { proofData } : {})  // 🖼️ Simpan bukti bayar jika ada
       };
 
       // Calculate new totals

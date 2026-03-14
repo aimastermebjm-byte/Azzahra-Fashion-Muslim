@@ -387,7 +387,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
     }
   };
 
-  // ✨ NEW: Handle upload bukti payment (manual mode)
+  // ✨ Handle upload bukti payment (manual mode)
+  // 🔧 FIX: Cek partial payment — jangan langsung set awaiting_verification jika belum lunas
   const handleSubmitManualPayment = async () => {
     if (!paymentProof) {
       showToast({ message: '❌ Pilih bukti transfer terlebih dahulu', type: 'error' });
@@ -403,12 +404,21 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       setUploadingProof(true);
       let successCount = 0;
 
-      // Upload bukti for each selected order
       for (const orderId of paymentData.orderIds) {
+        // 🔧 FIX: Cek apakah order ini sudah ada partial payment (belum lunas)
+        const orderData = orders.find(o => o.id === orderId);
+        const totalPaid = (orderData as any)?.totalPaid || 0;
+        const remaining = (orderData as any)?.remainingAmount ?? ((orderData?.finalTotal || 0) - totalPaid);
+        const isPartiallyPaid = totalPaid > 0 && remaining > 0;
+
+        // Jika partial paid → status tetap pending (Belum Lunas)
+        // Jika full / belum ada partial → awaiting_verification seperti biasa
+        const newStatus = isPartiallyPaid ? undefined : 'awaiting_verification';
+
         const success = await ordersService.updateOrderPayment(
           orderId,
           paymentProof,
-          'awaiting_verification'
+          newStatus
         );
         if (success) successCount++;
       }
@@ -857,7 +867,17 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                 💳 Pilih Metode Pembayaran
               </h2>
               <p className="text-sm text-slate-800 font-medium text-center mt-1">
-                Total: Rp {paymentData?.subtotal?.toLocaleString('id-ID') ?? 0}
+                {/* 🔧 FIX: Tampilkan sisa jika partial paid */}
+                {(() => {
+                  const selected = paymentData?.orders || [];
+                  const totalPaid = selected.reduce((sum: number, o: any) => sum + (o.totalPaid || 0), 0);
+                  const subtotal = paymentData?.subtotal || 0;
+                  const remaining = subtotal - totalPaid;
+                  if (totalPaid > 0 && remaining > 0) {
+                    return <>Sisa Tagihan: Rp {remaining.toLocaleString('id-ID')} <span className="text-xs opacity-70">(dari Rp {subtotal.toLocaleString('id-ID')})</span></>;
+                  }
+                  return <>Total: Rp {subtotal.toLocaleString('id-ID')}</>;
+                })()}
               </p>
             </div>
 
@@ -1076,10 +1096,32 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
             <div className="p-4 space-y-4">
               {/* Total Amount - Gold Theme */}
               <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl p-4 border-2 border-[#D4AF37] text-center">
-                <p className="text-xs font-semibold text-[#997B2C] mb-2">Total Transfer:</p>
-                <p className="text-3xl font-bold text-slate-900 mb-3">
-                  Rp {paymentData?.subtotal.toLocaleString('id-ID')}
-                </p>
+                {/* 🔧 FIX: Tampilkan sisa jika partial paid */}
+                {(() => {
+                  const selected = paymentData?.orders || [];
+                  const totalPaid = selected.reduce((sum: number, o: any) => sum + (o.totalPaid || 0), 0);
+                  const subtotal = paymentData?.subtotal || 0;
+                  const remaining = subtotal - totalPaid;
+                  if (totalPaid > 0 && remaining > 0) {
+                    return (
+                      <>
+                        <p className="text-xs font-semibold text-[#997B2C] mb-1">Sisa Tagihan:</p>
+                        <p className="text-3xl font-bold text-red-600 mb-1">
+                          Rp {remaining.toLocaleString('id-ID')}
+                        </p>
+                        <p className="text-[10px] text-green-600 mb-3">Sudah dibayar: Rp {totalPaid.toLocaleString('id-ID')} dari Rp {subtotal.toLocaleString('id-ID')}</p>
+                      </>
+                    );
+                  }
+                  return (
+                    <>
+                      <p className="text-xs font-semibold text-[#997B2C] mb-2">Total Transfer:</p>
+                      <p className="text-3xl font-bold text-slate-900 mb-3">
+                        Rp {subtotal.toLocaleString('id-ID')}
+                      </p>
+                    </>
+                  );
+                })()}
                 <button
                   onClick={() => handleCopy(paymentData?.subtotal.toString() || '', 'Nominal')}
                   className="px-4 py-2.5 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black rounded-lg font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 mx-auto"
@@ -1212,10 +1254,30 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
             <div className="p-4">
               <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-2">Total Pembayaran</p>
-                <p className="text-2xl font-bold text-pink-600">
-                  Rp {selectedOrder.finalTotal.toLocaleString('id-ID')}
-                </p>
+                {/* 🔧 FIX: Tampilkan sisa jika partial paid */}
+                {(() => {
+                  const totalPaid = (selectedOrder as any).totalPaid || 0;
+                  const remaining = (selectedOrder as any).remainingAmount ?? (selectedOrder.finalTotal - totalPaid);
+                  if (totalPaid > 0 && remaining > 0) {
+                    return (
+                      <>
+                        <p className="text-sm text-gray-600 mb-2">Sisa Tagihan</p>
+                        <p className="text-2xl font-bold text-red-600">
+                          Rp {remaining.toLocaleString('id-ID')}
+                        </p>
+                        <p className="text-xs text-green-600 mt-1">Sudah dibayar: Rp {totalPaid.toLocaleString('id-ID')}</p>
+                      </>
+                    );
+                  }
+                  return (
+                    <>
+                      <p className="text-sm text-gray-600 mb-2">Total Pembayaran</p>
+                      <p className="text-2xl font-bold text-pink-600">
+                        Rp {selectedOrder.finalTotal.toLocaleString('id-ID')}
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
 
               <div className="mb-4">
