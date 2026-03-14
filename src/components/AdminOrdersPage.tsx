@@ -1856,7 +1856,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                       const canSelect = !isShipped && ['paid', 'processing', 'pending', 'partially_shipped'].includes(selectedOrder.status);
 
                       const statusBadge: Record<string, { label: string; color: string; icon: string }> = {
-                        ready: { label: 'Ready', color: 'bg-green-100 text-green-700', icon: '🟢' },
+                        ready: { label: 'Siap Kirim', color: 'bg-green-100 text-green-700', icon: '🟢' },
                         waiting_stock: { label: 'Menunggu Stok', color: 'bg-yellow-100 text-yellow-700', icon: '🟡' },
                         shipped: { label: 'Dikirim', color: 'bg-blue-100 text-blue-700', icon: '📦' },
                         delivered: { label: 'Sampai', color: 'bg-emerald-100 text-emerald-700', icon: '✅' },
