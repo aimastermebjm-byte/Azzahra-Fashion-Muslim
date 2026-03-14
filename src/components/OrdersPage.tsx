@@ -495,9 +495,14 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   // Get pending orders for selection
   const pendingOrders = orders.filter(o => o.status === 'pending');
   const selectedCount = selectedOrderIds.length;
+  // 🔧 FIX: Gunakan sisa tagihan (remaining) bukan total full
   const selectedTotal = orders
     .filter(o => selectedOrderIds.includes(o.id))
-    .reduce((sum, o) => sum + o.finalTotal, 0);
+    .reduce((sum, o) => {
+      const totalPaid = (o as any).totalPaid || 0;
+      const remaining = (o as any).remainingAmount ?? (o.finalTotal - totalPaid);
+      return sum + (totalPaid > 0 ? remaining : o.finalTotal);
+    }, 0);
 
   const statusConfig = {
     pending: { label: 'Menunggu Pembayaran', icon: Clock, color: 'text-orange-600 bg-orange-100' },
