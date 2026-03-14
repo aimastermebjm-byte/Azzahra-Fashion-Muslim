@@ -633,10 +633,19 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
-                      <span className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider ${status?.color.replace('text-pink-600', 'text-[#D4AF37]').replace('bg-pink-100', 'bg-yellow-50') || 'text-gray-600 bg-gray-100'
-                        }`}>
-                        {status?.label || order.status}
-                      </span>
+                      {/* 🔧 FIX: Dynamic status label for partial payment */}
+                      {(() => {
+                        const hasPaidPartially = (order.totalPaid || 0) > 0 && (order.remainingAmount ?? (order.finalTotal - (order.totalPaid || 0))) > 0;
+                        const displayLabel = hasPaidPartially && order.status === 'pending' ? 'Belum Lunas' : (status?.label || order.status);
+                        const displayColor = hasPaidPartially && order.status === 'pending'
+                          ? 'text-amber-700 bg-amber-100 border border-amber-200'
+                          : (status?.color.replace('text-pink-600', 'text-[#D4AF37]').replace('bg-pink-100', 'bg-yellow-50') || 'text-gray-600 bg-gray-100');
+                        return (
+                          <span className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider ${displayColor}`}>
+                            {displayLabel}
+                          </span>
+                        );
+                      })()}
                       {/* ✨ NEW: Keep Mode Badge */}
                       {(order as any).shippingMode === 'keep' && !(order as any).shippingConfigured && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100 flex items-center gap-1">
@@ -700,12 +709,33 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                     )}
                   </div>
 
-                  {/* Order Total */}
+                  {/* Order Total - 🔧 FIX: Show remaining if partially paid */}
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100 border-dashed">
-                    <span className="text-xs sm:text-sm font-medium text-gray-500">Total Pesanan</span>
-                    <span className="text-base sm:text-lg font-bold text-[#997B2C]">
-                      Rp {(order.finalTotal || 0).toLocaleString('id-ID')}
-                    </span>
+                    {(() => {
+                      const totalPaid = order.totalPaid || 0;
+                      const remaining = order.remainingAmount ?? (order.finalTotal - totalPaid);
+                      if (totalPaid > 0 && remaining > 0) {
+                        return (
+                          <>
+                            <div>
+                              <span className="text-xs sm:text-sm font-medium text-gray-500">Sisa Tagihan</span>
+                              <p className="text-[10px] text-green-600">Dibayar: Rp {totalPaid.toLocaleString('id-ID')}</p>
+                            </div>
+                            <span className="text-base sm:text-lg font-bold text-red-600">
+                              Rp {remaining.toLocaleString('id-ID')}
+                            </span>
+                          </>
+                        );
+                      }
+                      return (
+                        <>
+                          <span className="text-xs sm:text-sm font-medium text-gray-500">Total Pesanan</span>
+                          <span className="text-base sm:text-lg font-bold text-[#997B2C]">
+                            Rp {(order.finalTotal || 0).toLocaleString('id-ID')}
+                          </span>
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {/* ✨ NEW: Edit Shipping Button for Keep Mode */}

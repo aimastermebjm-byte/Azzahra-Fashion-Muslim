@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Package, Clock, CheckCircle, Truck, XCircle, Eye, Search, Filter, Calendar, Download, X, Upload, CreditCard, MapPin, Phone, Mail, Edit2, Check, User, AlertTriangle, Info, Trash2, Copy, ArrowLeft, Printer } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { useFirebaseAdminOrders } from '../hooks/useFirebaseAdminOrders';
@@ -1600,13 +1600,40 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                           </p>
                         </div>
                         <div className="text-right">
-                          <div className={`inline - flex items - center space - x - 1 px - 3 py - 1 rounded - full text - xs font - medium ${statusInfo.color} `}>
-                            <StatusIcon className="w-3 h-3" />
-                            <span>{statusInfo.label}</span>
-                          </div>
-                          <p className="text-lg font-bold text-[#997B2C] mt-1">
-                            Rp {order.finalTotal.toLocaleString('id-ID')}
-                          </p>
+                          {/* 🔧 FIX: Dynamic status label for partial payment */}
+                          {(() => {
+                            const hasPaidPartially = (order.totalPaid || 0) > 0 && (order.remainingAmount ?? (order.finalTotal - (order.totalPaid || 0))) > 0;
+                            const displayLabel = hasPaidPartially && order.status === 'pending' ? 'Belum Lunas' : statusInfo.label;
+                            const displayColor = hasPaidPartially && order.status === 'pending' ? 'text-amber-700 bg-amber-100 border border-amber-200' : statusInfo.color;
+                            return (
+                              <div className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium ${displayColor}`}>
+                                <StatusIcon className="w-3 h-3" />
+                                <span>{displayLabel}</span>
+                              </div>
+                            );
+                          })()}
+                          {/* 🔧 FIX: Show remaining amount if partially paid */}
+                          {(() => {
+                            const totalPaid = order.totalPaid || 0;
+                            const remaining = order.remainingAmount ?? (order.finalTotal - totalPaid);
+                            if (totalPaid > 0 && remaining > 0) {
+                              return (
+                                <>
+                                  <p className="text-lg font-bold text-red-600 mt-1">
+                                    Sisa: Rp {remaining.toLocaleString('id-ID')}
+                                  </p>
+                                  <p className="text-[10px] text-green-600">
+                                    Dibayar: Rp {totalPaid.toLocaleString('id-ID')}
+                                  </p>
+                                </>
+                              );
+                            }
+                            return (
+                              <p className="text-lg font-bold text-[#997B2C] mt-1">
+                                Rp {order.finalTotal.toLocaleString('id-ID')}
+                              </p>
+                            );
+                          })()}
                         </div>
                       </div>
 
@@ -1966,23 +1993,31 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     </h3>
                     <div className="space-y-2">
                       {selectedOrder.payments.map((payment: any, index: number) => (
-                        <div key={payment.id || index} className="flex justify-between items-center bg-white p-2 rounded-lg border">
-                          <div>
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${payment.method === 'cash'
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-blue-100 text-blue-700'
-                              }`}>
-                              {payment.method === 'cash' ? 'Cash' : 'Transfer'}
-                            </span>
-                            <span className="text-xs text-gray-500 ml-2">
-                              {new Date(payment.date).toLocaleDateString('id-ID', {
-                                day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                              })}
+                        <div key={payment.id || index} className="bg-white p-3 rounded-lg border space-y-1">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${payment.method === 'cash'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-blue-100 text-blue-700'
+                                }`}>
+                                {payment.method === 'cash' ? 'Cash' : 'Transfer'}
+                              </span>
+                              <span className="text-xs text-gray-500 ml-2">
+                                {new Date(payment.date).toLocaleDateString('id-ID', {
+                                  day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                            <span className="font-bold text-gray-800">
+                              Rp {payment.amount.toLocaleString('id-ID')}
                             </span>
                           </div>
-                          <span className="font-bold text-gray-800">
-                            Rp {payment.amount.toLocaleString('id-ID')}
-                          </span>
+                          {/* 🔧 FIX: Tampilkan catatan/keterangan pembayaran */}
+                          {payment.notes && (
+                            <p className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded italic">
+                              📝 {payment.notes}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
