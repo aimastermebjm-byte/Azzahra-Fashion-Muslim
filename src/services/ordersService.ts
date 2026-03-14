@@ -738,7 +738,9 @@ class OrdersService {
         notes: notes || '',
         addedBy: user.uid,
         addedByName: addedByName || user.displayName || 'Admin',
-        ...(proofData ? { proofData } : {})  // 🖼️ Simpan bukti bayar jika ada
+        ...(proofData ? { proofData } : {}),
+        // 🔧 FIX: Pindahkan bukti bayar order-level ke payment record ini
+        ...((!proofData && order.paymentProofData) ? { proofData: order.paymentProofData } : {})
       };
 
       // Calculate new totals
@@ -747,8 +749,10 @@ class OrdersService {
       const newTotalPaid = currentTotalPaid + amount;
       const newRemainingAmount = order.finalTotal - newTotalPaid;
 
-      // Determine new status (paid if fully paid)
-      const newStatus = newRemainingAmount <= 0 ? 'paid' : order.status;
+      // 🔧 FIX: Status logic yang benar untuk partial payment
+      // - Lunas (remaining <= 0) → 'paid'
+      // - Belum lunas (remaining > 0) → 'pending' (agar tampil "Belum Lunas")
+      const newStatus = newRemainingAmount <= 0 ? 'paid' : 'pending';
 
       // Update order
       const updateData: Partial<Order> = {
@@ -756,7 +760,10 @@ class OrdersService {
         totalPaid: newTotalPaid,
         remainingAmount: newRemainingAmount,
         status: newStatus,
-        updatedAt: Timestamp.now() // ✅ FIX: use Timestamp, not string
+        updatedAt: Timestamp.now(),
+        // 🔧 FIX: Clear bukti bayar order-level setelah dipindah ke payment record
+        // Agar upload bukti baru oleh customer tidak overwrite bukti lama
+        ...(order.paymentProofData ? { paymentProofData: '', paymentProof: '' } : {})
       };
 
       await updateDoc(orderRef, updateData);
