@@ -26,7 +26,7 @@ export interface Order {
   paymentMethod: string;
   paymentMethodId?: string | null;
   paymentMethodName?: string | null;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'awaiting_verification' | 'paid';
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'awaiting_verification' | 'paid' | 'partially_shipped';
   totalAmount: number;
   shippingCost: number;
   finalTotal: number;
@@ -793,6 +793,81 @@ class OrdersService {
       console.error('Error adding payment:', error);
       return { success: false, message: 'Gagal menambahkan pembayaran' };
     }
+  }
+
+  // 📦 NEW: Ship selected items (partial shipment)
+  async shipItems(
+    orderId: string,
+    itemIndexes: number[],  // Indexes of items to ship
+    trackingNumber: string,
+    courierName?: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const user = auth.currentUser;
+      if (!user) return { success: false, message: 'User tidak terautentikasi' };
+
+      const orderRef = doc(db, this.collection, orderId);
+      const orderDoc = await getDoc(orderRef);
+      if (!orderDoc.exists()) return { success: false, message: 'Order tidak ditemukan' };
+
+      const order = { id: orderDoc.id, ...orderDoc.data() } as Order;
+      const items = [...order.items];
+      const now = new Date().toISOString();
+
+      // Update selected items
+      for (const idx of itemIndexes) {
+        if (idx >= 0 && idx < items.length) {
+          items[idx] = {
+            ...items[idx],
+            itemStatus: 'shipped',
+            trackingNumber: trackingNumber,
+            courierName: courierName || '',
+            shippedAt: now
+          };
+        }
+      }
+
+      // Auto-derive order status from item statuses
+      const newOrderStatus = this.deriveOrderShipmentStatus(items, order.status);
+
+      await updateDoc(orderRef, {
+        items: items,
+        status: newOrderStatus,
+        updatedAt: Timestamp.now()
+      });
+
+      const shippedCount = items.filter(i => i.itemStatus === 'shipped' || i.itemStatus === 'delivered').length;
+      console.log(`📦 Shipped ${itemIndexes.length} items for order ${orderId}. Total shipped: ${shippedCount}/${items.length}`);
+
+      return {
+        success: true,
+        message: shippedCount === items.length
+          ? '✅ Semua item sudah dikirim!'
+          : `✅ ${itemIndexes.length} item berhasil dikirim. Sisa ${items.length - shippedCount} item.`
+      };
+    } catch (error) {
+      console.error('Error shipping items:', error);
+      return { success: false, message: 'Gagal mengirim item' };
+    }
+  }
+
+  // 📦 Helper: Derive order shipment status from item statuses
+  private deriveOrderShipmentStatus(
+    items: any[],
+    currentStatus: string
+  ): string {
+    // Don't change status if order is cancelled or not yet paid-related
+    if (['cancelled'].includes(currentStatus)) return currentStatus;
+
+    const statuses = items.map(i => i.itemStatus || 'ready');
+    const allShippedOrDelivered = statuses.every(s => s === 'shipped' || s === 'delivered');
+    const someShipped = statuses.some(s => s === 'shipped' || s === 'delivered');
+    const allDelivered = statuses.every(s => s === 'delivered');
+
+    if (allDelivered) return 'delivered';
+    if (allShippedOrDelivered) return 'shipped';
+    if (someShipped) return 'partially_shipped';
+    return currentStatus;
   }
 }
 

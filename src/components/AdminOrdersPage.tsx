@@ -53,6 +53,12 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   const [cashOrder, setCashOrder] = useState<any>(null);
 
   // 💳 NEW: Installment Payment Modal State
+
+  // 📦 NEW: Partial Shipment State
+  const [shipItemIndexes, setShipItemIndexes] = useState<number[]>([]);
+  const [showShipModal, setShowShipModal] = useState(false);
+  const [shipTrackingNumber, setShipTrackingNumber] = useState('');
+  const [shipCourierName, setShipCourierName] = useState('');
   const [showPaymentInputModal, setShowPaymentInputModal] = useState(false);
   const [paymentInputOrder, setPaymentInputOrder] = useState<any>(null);
   const [paymentInputLoading, setPaymentInputLoading] = useState(false);
@@ -239,6 +245,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     awaiting_verification: { label: 'Menunggu Verifikasi', icon: Clock, color: 'text-yellow-600 bg-yellow-100' },
     paid: { label: 'Dibayar', icon: CheckCircle, color: 'text-blue-600 bg-blue-100' },
     processing: { label: 'Diproses', icon: Package, color: 'text-purple-600 bg-purple-100' },
+    partially_shipped: { label: 'Sebagian Dikirim', icon: Truck, color: 'text-amber-700 bg-amber-100 border border-amber-200' },
     shipped: { label: 'Dikirim', icon: Truck, color: 'text-indigo-900 bg-indigo-100 border border-indigo-200' },
     delivered: { label: 'Selesai', icon: CheckCircle, color: 'text-[#997B2C] bg-[#D4AF37]/10 border border-[#D4AF37]/20' },
     cancelled: { label: 'Dibatalkan', icon: XCircle, color: 'text-red-900 bg-red-100 border border-red-200' }
@@ -1768,7 +1775,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     </h3>
                     {/*  Edit Alamat button - DISABLED for paid/completed orders */}
                     {(() => {
-                      const isAddressLocked = ['paid', 'processing', 'shipped', 'delivered'].includes(selectedOrder.status);
+                      const isAddressLocked = ['paid', 'processing', 'shipped', 'delivered', 'partially_shipped'].includes(selectedOrder.status);
                       return (
                         <button
                           onClick={() => {
@@ -1816,51 +1823,135 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   </div>
                 </div>
 
-                {/* Order Items */}
+                {/* Order Items — 📦 Enhanced with Partial Shipment */}
                 <div>
-                  <h3 className="font-semibold text-gray-800 mb-3">Detail Produk</h3>
-                  <div className="space-y-3">
-                    {selectedOrder.items?.map((item: any, index: number) => (
-                      <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                        <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
-                          {(item.productImage || item.image) ? (
-                            <img
-                              src={item.productImage || item.image}
-                              alt={item.productName}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                // Fallback if image fails to load
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                if (target.nextElementSibling) {
-                                  (target.nextElementSibling as HTMLElement).style.display = 'flex';
-                                }
-                              }}
-                            />
-                          ) : null}
-                          <Package className="w-8 h-8 text-gray-400" style={{ display: (item.productImage || item.image) ? 'none' : 'flex' }} />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium">
-                            {item.productName}
-                            {item.selectedVariant?.color && ` - ${item.selectedVariant.color} `}
-                            {item.selectedVariant?.size && ` (${item.selectedVariant.size})`}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Qty: {item.quantity} pcs
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Rp {item.price.toLocaleString('id-ID')} Ã— {item.quantity}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium text-lg">Rp {item.total.toLocaleString('id-ID')}</p>
-                          <p className="text-sm text-gray-600">Subtotal</p>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-800">Detail Produk</h3>
+                    {/* Progress indicator */}
+                    {(() => {
+                      const items = selectedOrder.items || [];
+                      const shippedCount = items.filter((i: any) => i.itemStatus === 'shipped' || i.itemStatus === 'delivered').length;
+                      if (shippedCount > 0 && shippedCount < items.length) {
+                        return (
+                          <span className="text-xs font-semibold px-2 py-1 bg-amber-100 text-amber-700 rounded-full">
+                            📦 {shippedCount}/{items.length} terkirim
+                          </span>
+                        );
+                      }
+                      if (shippedCount === items.length && items.length > 0) {
+                        return (
+                          <span className="text-xs font-semibold px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                            ✅ Semua terkirim
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
+                  <div className="space-y-3">
+                    {selectedOrder.items?.map((item: any, index: number) => {
+                      const itemStatus = item.itemStatus || 'ready';
+                      const isShipped = itemStatus === 'shipped' || itemStatus === 'delivered';
+                      const isSelected = shipItemIndexes.includes(index);
+                      const canSelect = !isShipped && ['paid', 'processing', 'pending', 'partially_shipped'].includes(selectedOrder.status);
+
+                      const statusBadge: Record<string, { label: string; color: string; icon: string }> = {
+                        ready: { label: 'Ready', color: 'bg-green-100 text-green-700', icon: '🟢' },
+                        waiting_stock: { label: 'Menunggu Stok', color: 'bg-yellow-100 text-yellow-700', icon: '🟡' },
+                        shipped: { label: 'Dikirim', color: 'bg-blue-100 text-blue-700', icon: '📦' },
+                        delivered: { label: 'Sampai', color: 'bg-emerald-100 text-emerald-700', icon: '✅' },
+                      };
+                      const badge = statusBadge[itemStatus] || statusBadge.ready;
+
+                      return (
+                        <div key={index} className={`flex items-start space-x-3 p-3 rounded-lg border transition-all ${isSelected ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-transparent'}`}>
+                          {/* Checkbox for shippable items */}
+                          {canSelect && (
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {
+                                setShipItemIndexes(prev =>
+                                  prev.includes(index)
+                                    ? prev.filter(i => i !== index)
+                                    : [...prev, index]
+                                );
+                              }}
+                              className="mt-4 w-4 h-4 accent-blue-600 flex-shrink-0"
+                            />
+                          )}
+                          {/* Product image */}
+                          <div className="w-14 h-14 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {(item.productImage || item.image) ? (
+                              <img
+                                src={item.productImage || item.image}
+                                alt={item.productName}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  if (target.nextElementSibling) {
+                                    (target.nextElementSibling as HTMLElement).style.display = 'flex';
+                                  }
+                                }}
+                              />
+                            ) : null}
+                            <Package className="w-6 h-6 text-gray-400" style={{ display: (item.productImage || item.image) ? 'none' : 'flex' }} />
+                          </div>
+                          {/* Product info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm truncate">
+                                  {item.productName}
+                                  {item.selectedVariant?.color && ` - ${item.selectedVariant.color}`}
+                                  {item.selectedVariant?.size && ` (${item.selectedVariant.size})`}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {item.quantity} pcs × Rp {item.price.toLocaleString('id-ID')}
+                                </p>
+                              </div>
+                              <p className="font-semibold text-sm whitespace-nowrap">Rp {item.total.toLocaleString('id-ID')}</p>
+                            </div>
+                            {/* Status badge */}
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${badge.color}`}>
+                                {badge.icon} {badge.label}
+                              </span>
+                              {/* Tracking info for shipped items */}
+                              {isShipped && item.trackingNumber && (
+                                <span className="text-[10px] text-gray-500 font-mono">
+                                  Resi: {item.trackingNumber}
+                                  {item.courierName && ` (${item.courierName})`}
+                                </span>
+                              )}
+                            </div>
+                            {/* Shipped date */}
+                            {isShipped && item.shippedAt && (
+                              <p className="text-[10px] text-gray-400 mt-0.5">
+                                Dikirim: {new Date(item.shippedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* 📦 Ship Selected Items Button */}
+                  {shipItemIndexes.length > 0 && (
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => setShowShipModal(true)}
+                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all"
+                      >
+                        <Truck className="w-4 h-4" />
+                        Kirim {shipItemIndexes.length} Item Terpilih
+                      </button>
+                    </div>
+                  )}
                 </div>
+
 
                 {/* Payment & Total */}
                 <div className="border-t pt-4">
@@ -2145,6 +2236,117 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           </div >
         )
       }
+
+      {/* 📦 NEW: Ship Items Modal */}
+      {showShipModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-white">📦 Kirim Item Terpilih</h2>
+                <button
+                  onClick={() => {
+                    setShowShipModal(false);
+                    setShipTrackingNumber('');
+                    setShipCourierName('');
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-full transition-all"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {/* Items being shipped */}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs font-semibold text-gray-500 mb-2">Item yang dikirim:</p>
+                {shipItemIndexes.map(idx => {
+                  const item = selectedOrder.items?.[idx];
+                  if (!item) return null;
+                  return (
+                    <div key={idx} className="flex items-center gap-2 py-1">
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      <span className="text-sm font-medium truncate">
+                        {item.productName}
+                        {item.selectedVariant?.color && ` - ${item.selectedVariant.color}`}
+                        {item.selectedVariant?.size && ` (${item.selectedVariant.size})`}
+                      </span>
+                      <span className="text-xs text-gray-400 ml-auto">×{item.quantity}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Courier */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Nama Kurir</label>
+                <select
+                  value={shipCourierName}
+                  onChange={(e) => setShipCourierName(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="">Pilih Kurir...</option>
+                  <option value="JNT">J&T Express</option>
+                  <option value="JNE">JNE</option>
+                  <option value="SiCepat">SiCepat</option>
+                  <option value="AnterAja">AnterAja</option>
+                  <option value="Grab">Grab Express</option>
+                  <option value="GoSend">GoSend</option>
+                  <option value="Kurir Toko">Kurir Toko</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
+              </div>
+
+              {/* Tracking Number */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Nomor Resi</label>
+                <input
+                  type="text"
+                  value={shipTrackingNumber}
+                  onChange={(e) => setShipTrackingNumber(e.target.value)}
+                  placeholder="Masukkan nomor resi..."
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
+              </div>
+
+              {/* Submit */}
+              <button
+                onClick={async () => {
+                  if (!shipTrackingNumber.trim()) {
+                    alert('Masukkan nomor resi');
+                    return;
+                  }
+                  const result = await ordersService.shipItems(
+                    selectedOrder.id,
+                    shipItemIndexes,
+                    shipTrackingNumber.trim(),
+                    shipCourierName
+                  );
+                  if (result.success) {
+                    setShowShipModal(false);
+                    setShipTrackingNumber('');
+                    setShipCourierName('');
+                    setShipItemIndexes([]);
+                    // Refresh detail modal data
+                    const updatedOrders = orders;
+                    const updatedOrder = updatedOrders.find(o => o.id === selectedOrder.id);
+                    if (updatedOrder) setSelectedOrder(updatedOrder);
+                    alert(result.message);
+                  } else {
+                    alert(result.message);
+                  }
+                }}
+                disabled={!shipTrackingNumber.trim()}
+                className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Truck className="w-5 h-5" />
+                Konfirmasi Kirim
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Payment Verification Modal */}
       {

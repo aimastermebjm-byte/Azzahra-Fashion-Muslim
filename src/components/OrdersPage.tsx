@@ -509,6 +509,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
     awaiting_verification: { label: 'Menunggu Verifikasi', icon: Clock, color: 'text-yellow-600 bg-yellow-100' },
     paid: { label: 'Dibayar', icon: CheckCircle, color: 'text-blue-600 bg-blue-100' },
     processing: { label: 'Dikemas', icon: Package, color: 'text-blue-600 bg-blue-100' },
+    partially_shipped: { label: 'Sebagian Dikirim', icon: Truck, color: 'text-amber-700 bg-amber-100' },
     shipped: { label: 'Dikirim', icon: Truck, color: 'text-purple-600 bg-purple-100' },
     delivered: { label: 'Selesai', icon: CheckCircle, color: 'text-green-600 bg-green-100' },
     cancelled: { label: 'Dibatalkan', icon: XCircle, color: 'text-red-600 bg-red-100' }
