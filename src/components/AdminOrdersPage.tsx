@@ -59,6 +59,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   const [showShipModal, setShowShipModal] = useState(false);
   const [shipTrackingNumber, setShipTrackingNumber] = useState('');
   const [shipCourierName, setShipCourierName] = useState('');
+  const [shipSuccess, setShipSuccess] = useState(false); // 🔥 NEW: Track successful partial shipment for printing
   const [showPaymentInputModal, setShowPaymentInputModal] = useState(false);
   const [paymentInputOrder, setPaymentInputOrder] = useState<any>(null);
   const [paymentInputLoading, setPaymentInputLoading] = useState(false);
@@ -467,6 +468,74 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     printWindow.document.close();
   };
 
+  // 📦 NEW: Print Label for Partial Shipment (only selected items)
+  const handlePrintPartialLabel = (order: any, itemIndexes: number[], trackingNumber?: string, courierName?: string) => {
+    const selectedItems = itemIndexes.map(idx => order.items?.[idx]).filter(Boolean);
+    if (selectedItems.length === 0) return;
+
+    const partialOrder = {
+      ...order,
+      items: selectedItems,
+      shippingInfo: {
+        ...order.shippingInfo,
+        courier: courierName || order.shippingInfo?.courier || '',
+      },
+    };
+
+    const fullAddress = [
+      order.shippingInfo?.address,
+      order.shippingInfo?.subdistrict ? `Kel. ${order.shippingInfo.subdistrict}` : '',
+      order.shippingInfo?.district ? `Kec. ${order.shippingInfo.district}` : '',
+      order.shippingInfo?.cityName || '',
+      order.shippingInfo?.provinceName,
+    ].filter(Boolean).join(', ');
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      const itemsText = selectedItems.map((item: any) => {
+        const pName = item.productName.length > 30 ? item.productName.substring(0, 30) + '...' : item.productName;
+        return `${pName} x${item.quantity}`;
+      }).join('\n') || '-';
+
+      const isDropship = order.shippingInfo?.isDropship || order.isDropship;
+      const dName = order.shippingInfo?.dropshipName || (order as any).dropshipName;
+      const headerTitle = isDropship && dName ? dName.toUpperCase().substring(0, 30) : 'AZZAHRA FASHION MUSLIM';
+      const dPhone = order.shippingInfo?.dropshipPhone || (order as any).dropshipPhone;
+      const headerPhone = isDropship && dPhone ? `Telepon: ${dPhone}` : '';
+
+      const notaText = [
+        'PENGIRIM', headerTitle, headerPhone,
+        '--------------------------------',
+        `Kepada : ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
+        `Telepon: ${order.shippingInfo?.phone || '-'}`,
+        `Alamat : ${fullAddress.substring(0, 100)}`,
+        '--------------------------------',
+        `PARSIAL (${selectedItems.length} item)`,
+        itemsText,
+        '--------------------------------',
+        `Ekspedisi: ${(courierName || order.shippingInfo?.courier || 'JNE').toUpperCase()}`,
+        trackingNumber ? `Resi    : ${trackingNumber}` : '',
+        `Invoice : ${order.invoiceNumber || order.id}`
+      ].filter(Boolean).join('\n');
+
+      const base64Data = encodeURIComponent(btoa(notaText));
+      window.location.href = `azzahra-print://print?data=${base64Data}`;
+      showModernAlert('Print', 'Mencetak label parsial...', 'success');
+      return;
+    }
+
+    // Desktop fallback
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showModernAlert('Error', 'Pop-up terblokir.', 'error');
+      return;
+    }
+    const htmlContent = generateShippingLabelHtml([partialOrder], trackingNumber);
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
   //  NEW: Print Label Function (Bulk)
   const handleBulkPrintLabel = async () => {
     const selected = orders.filter(o => selectedOrderIds.includes(o.id));
@@ -568,7 +637,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   };
 
   // Helper to generate Label HTML for 58mm Thermal Printer
-  const generateShippingLabelHtml = (ordersList: any[]) => {
+  const generateShippingLabelHtml = (ordersList: any[], trackingNumber?: string) => {
     return `
       <!DOCTYPE html>
       <html>
@@ -709,6 +778,11 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                 <td class="sep-col">:</td>
                 <td class="value-col">${o.shippingInfo?.courier ? o.shippingInfo.courier.toUpperCase() : 'JNE'}</td>
               </tr>
+              ${trackingNumber ? `<tr>
+                <td class="label-col">Resi</td>
+                <td class="sep-col">:</td>
+                <td class="value-col" style="font-size:14px;letter-spacing:1px">${trackingNumber}</td>
+              </tr>` : ''}
             </table>
 
             ${(o as any).isDropship ? `
@@ -2249,6 +2323,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     setShowShipModal(false);
                     setShipTrackingNumber('');
                     setShipCourierName('');
+                    setShipSuccess(false); // Reset success state
                   }}
                   className="p-2 hover:bg-white/20 rounded-full transition-all"
                 >
@@ -2258,91 +2333,146 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
             </div>
 
             <div className="p-4 space-y-4">
-              {/* Items being shipped */}
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs font-semibold text-gray-500 mb-2">Item yang dikirim:</p>
-                {shipItemIndexes.map(idx => {
-                  const item = selectedOrder.items?.[idx];
-                  if (!item) return null;
-                  return (
-                    <div key={idx} className="flex items-center gap-2 py-1">
-                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <span className="text-sm font-medium truncate">
-                        {item.productName}
-                        {item.selectedVariant?.color && ` - ${item.selectedVariant.color}`}
-                        {item.selectedVariant?.size && ` (${item.selectedVariant.size})`}
-                      </span>
-                      <span className="text-xs text-gray-400 ml-auto">×{item.quantity}</span>
-                    </div>
-                  );
-                })}
-              </div>
+              {shipSuccess ? (
+                // 🟢 Success View with Print Button
+                <div className="text-center py-6 space-y-6">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <CheckCircle className="w-8 h-8 text-green-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">Berhasil Dikirim!</h3>
+                    <p className="text-sm text-gray-500">
+                      Status item telah terupdate. Anda dapat mencetak label pengiriman untuk paket ini sekarang.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-3 pt-4">
+                    <button
+                      onClick={() => handlePrintPartialLabel(selectedOrder, shipItemIndexes, shipTrackingNumber, shipCourierName)}
+                      className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                    >
+                      <Printer className="w-5 h-5" />
+                      Cetak Label Pengiriman
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowShipModal(false);
+                        setShipTrackingNumber('');
+                        setShipCourierName('');
+                        setShipSuccess(false);
+                        setShipItemIndexes([]);
+                      }}
+                      className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all"
+                    >
+                      Selesai & Tutup
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                // 📝 Normal Input View
+                <>
+                  {/* Items being shipped */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs font-semibold text-gray-500 mb-2">Item yang dikirim:</p>
+                    {shipItemIndexes.map(idx => {
+                      const item = selectedOrder.items?.[idx];
+                      if (!item) return null;
+                      return (
+                        <div key={idx} className="flex items-center gap-2 py-1">
+                          <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                          <span className="text-sm font-medium truncate">
+                            {item.productName}
+                            {item.selectedVariant?.color && ` - ${item.selectedVariant.color}`}
+                            {item.selectedVariant?.size && ` (${item.selectedVariant.size})`}
+                          </span>
+                          <span className="text-xs text-gray-400 ml-auto">×{item.quantity}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
 
-              {/* Courier */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Nama Kurir</label>
-                <select
-                  value={shipCourierName}
-                  onChange={(e) => setShipCourierName(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                >
-                  <option value="">Pilih Kurir...</option>
-                  <option value="JNT">J&T Express</option>
-                  <option value="JNE">JNE</option>
-                  <option value="SiCepat">SiCepat</option>
-                  <option value="AnterAja">AnterAja</option>
-                  <option value="Grab">Grab Express</option>
-                  <option value="GoSend">GoSend</option>
-                  <option value="Kurir Toko">Kurir Toko</option>
-                  <option value="Lainnya">Lainnya</option>
-                </select>
-              </div>
+                  {/* Courier */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Nama Kurir</label>
+                    <select
+                      value={shipCourierName}
+                      onChange={(e) => setShipCourierName(e.target.value)}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    >
+                      <option value="">Pilih Kurir...</option>
+                      <option value="JNT">J&T Express</option>
+                      <option value="JNE">JNE</option>
+                      <option value="SiCepat">SiCepat</option>
+                      <option value="AnterAja">AnterAja</option>
+                      <option value="Grab">Grab Express</option>
+                      <option value="GoSend">GoSend</option>
+                      <option value="Kurir Toko">Kurir Toko</option>
+                      <option value="Lainnya">Lainnya</option>
+                    </select>
+                  </div>
 
-              {/* Tracking Number */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Nomor Resi</label>
-                <input
-                  type="text"
-                  value={shipTrackingNumber}
-                  onChange={(e) => setShipTrackingNumber(e.target.value)}
-                  placeholder="Masukkan nomor resi..."
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                />
-              </div>
+                  {/* Tracking Number */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Nomor Resi</label>
+                    <input
+                      type="text"
+                      value={shipTrackingNumber}
+                      onChange={(e) => setShipTrackingNumber(e.target.value)}
+                      placeholder="Masukkan nomor resi..."
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                  </div>
 
-              {/* Submit */}
-              <button
-                onClick={async () => {
-                  if (!shipTrackingNumber.trim()) {
-                    alert('Masukkan nomor resi');
-                    return;
-                  }
-                  const result = await ordersService.shipItems(
-                    selectedOrder.id,
-                    shipItemIndexes,
-                    shipTrackingNumber.trim(),
-                    shipCourierName
-                  );
-                  if (result.success) {
-                    setShowShipModal(false);
-                    setShipTrackingNumber('');
-                    setShipCourierName('');
-                    setShipItemIndexes([]);
-                    // Refresh detail modal data
-                    const updatedOrders = orders;
-                    const updatedOrder = updatedOrders.find(o => o.id === selectedOrder.id);
-                    if (updatedOrder) setSelectedOrder(updatedOrder);
-                    alert(result.message);
-                  } else {
-                    alert(result.message);
-                  }
-                }}
-                disabled={!shipTrackingNumber.trim()}
-                className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <Truck className="w-5 h-5" />
-                Konfirmasi Kirim
-              </button>
+                  {/* Submit */}
+                  <button
+                    onClick={async () => {
+                      if (!shipTrackingNumber.trim()) {
+                        showModernAlert('Peringatan', 'Masukkan nomor resi pengiriman.', 'warning');
+                        return;
+                      }
+                      const result = await ordersService.shipItems(
+                        selectedOrder.id,
+                        shipItemIndexes,
+                        shipTrackingNumber.trim(),
+                        shipCourierName
+                      );
+                      if (result.success) {
+                        // Show success view instead of closing modal immediately
+                        setShipSuccess(true);
+                        
+                        // Patch local state so Print Label button has the latest data
+                        const updatedItems = [...(selectedOrder.items || [])];
+                        shipItemIndexes.forEach(idx => {
+                          if (updatedItems[idx]) {
+                            updatedItems[idx] = {
+                              ...updatedItems[idx],
+                              status: 'shipped',
+                              trackingNumber: shipTrackingNumber.trim(),
+                              courier: shipCourierName,
+                              shippedAt: Date.now()
+                            };
+                          }
+                        });
+                        
+                        setSelectedOrder({
+                          ...selectedOrder,
+                          items: updatedItems,
+                          // Optional: optimistically update overall status if needed, 
+                          // but the Print Label mainly relies on item.trackingNumber
+                        });
+
+                      } else {
+                        showModernAlert('Gagal', result.message, 'error');
+                      }
+                    }}
+                    disabled={!shipTrackingNumber.trim()}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <Truck className="w-5 h-5" />
+                    Konfirmasi Kirim
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
