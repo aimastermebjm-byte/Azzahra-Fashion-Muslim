@@ -1847,29 +1847,18 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         </span>
                       )}
                     </h3>
-                    {/*  Edit Alamat button - DISABLED for paid/completed orders */}
-                    {(() => {
-                      const isAddressLocked = ['paid', 'processing', 'shipped', 'delivered', 'partially_shipped'].includes(selectedOrder.status);
-                      return (
-                        <button
-                          onClick={() => {
-                            if (!isAddressLocked) {
-                              setShowDetailModal(false);
-                              setShippingEditOrder(selectedOrder);
-                            }
-                          }}
-                          disabled={isAddressLocked}
-                          className={`text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 ${isAddressLocked
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-[#D4AF37]/10 text-[#997B2C] hover:bg-[#D4AF37]/20'
-                            }`}
-                          title={isAddressLocked ? 'Alamat tidak bisa diubah setelah pesanan dibayar' : 'Edit alamat pengiriman'}
-                        >
-                          <Edit2 className="w-3 h-3" />
-                          Edit Alamat
-                        </button>
-                      );
-                    })()}
+                    {/*  Edit Alamat button - Always available for admin */}
+                    <button
+                      onClick={() => {
+                        setShowDetailModal(false);
+                        setShippingEditOrder(selectedOrder);
+                      }}
+                      className="text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 bg-[#D4AF37]/10 text-[#997B2C] hover:bg-[#D4AF37]/20"
+                      title="Edit alamat pengiriman"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      Edit Alamat
+                    </button>
                   </div>
                   <div className="space-y-2 text-sm">
                     <div>
@@ -1998,6 +1987,23 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                                   {item.courierName && ` (${item.courierName})`}
                                 </span>
                               )}
+                              {/* 🖨️ Print Label Button — always accessible */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePrintPartialLabel(
+                                    selectedOrder,
+                                    [index],
+                                    item.trackingNumber || '',
+                                    item.courierName || item.courier || ''
+                                  );
+                                }}
+                                className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-700 transition-all flex items-center gap-0.5"
+                                title="Cetak label pengiriman"
+                              >
+                                <Printer className="w-3 h-3" />
+                                Label
+                              </button>
                             </div>
                             )}
                             {/* Shipped date */}
@@ -2413,7 +2419,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
 
                   {/* Tracking Number */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Nomor Resi</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Nomor Resi <span className="text-xs font-normal text-gray-400">(opsional)</span></label>
                     <input
                       type="text"
                       value={shipTrackingNumber}
@@ -2426,10 +2432,6 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   {/* Submit */}
                   <button
                     onClick={async () => {
-                      if (!shipTrackingNumber.trim()) {
-                        showModernAlert('Peringatan', 'Masukkan nomor resi pengiriman.', 'warning');
-                        return;
-                      }
                       const result = await ordersService.shipItems(
                         selectedOrder.id,
                         shipItemIndexes,
@@ -2465,7 +2467,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         showModernAlert('Gagal', result.message, 'error');
                       }
                     }}
-                    disabled={!shipTrackingNumber.trim()}
+
                     className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     <Truck className="w-5 h-5" />

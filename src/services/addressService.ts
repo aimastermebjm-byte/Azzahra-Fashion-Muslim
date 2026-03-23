@@ -362,6 +362,31 @@ class AddressService {
     }
   }
 
+  // 📦 ADMIN: Get addresses by arbitrary userId (for admin editing order address)
+  async getAddressesByUserId(userId: string): Promise<Address[]> {
+    try {
+      const addressesRef = collection(db, this.collection);
+      const q = query(addressesRef, where('userId', '==', userId));
+      const querySnapshot = await getDocs(q);
+
+      const addresses: Address[] = [];
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data() as Omit<Address, 'id'>;
+        addresses.push({
+          ...data,
+          id: docSnap.id,
+          createdAt: data.createdAt || new Date().toISOString(),
+          updatedAt: data.updatedAt || data.createdAt || new Date().toISOString()
+        });
+      });
+
+      return addresses;
+    } catch (error) {
+      console.error('❌ Error getting addresses by userId:', error);
+      return [];
+    }
+  }
+
   private generateId(): string {
     return Date.now().toString(36) + Math.random().toString(36).substring(2);
   }
