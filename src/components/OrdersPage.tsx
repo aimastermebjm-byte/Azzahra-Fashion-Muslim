@@ -718,7 +718,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                           {/* 📦 Partial Shipment: Show item status badge */}
                           {['partially_shipped', 'shipped', 'delivered'].includes(order.status) && (
                             <div className="mt-1">
-                              {item.status === 'shipped' || item.status === 'delivered' ? (
+                              {(item.itemStatus === 'shipped' || item.itemStatus === 'delivered' || item.status === 'shipped' || item.status === 'delivered') ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">
                                   ✅ Dikirim
                                 </span>
