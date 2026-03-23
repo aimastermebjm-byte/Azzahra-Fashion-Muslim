@@ -715,6 +715,20 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                               Rp {(item.price || 0).toLocaleString('id-ID')}
                             </span>
                           </div>
+                          {/* 📦 Partial Shipment: Show item status badge */}
+                          {['partially_shipped', 'shipped', 'delivered'].includes(order.status) && (
+                            <div className="mt-1">
+                              {item.status === 'shipped' || item.status === 'delivered' ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">
+                                  ✅ Dikirim
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                  ⏳ Menunggu pengiriman
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
