@@ -2397,46 +2397,14 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     })}
                   </div>
 
-                  {/* Courier */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Nama Kurir</label>
-                    <select
-                      value={shipCourierName}
-                      onChange={(e) => setShipCourierName(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    >
-                      <option value="">Pilih Kurir...</option>
-                      <option value="JNT">J&T Express</option>
-                      <option value="JNE">JNE</option>
-                      <option value="SiCepat">SiCepat</option>
-                      <option value="AnterAja">AnterAja</option>
-                      <option value="Grab">Grab Express</option>
-                      <option value="GoSend">GoSend</option>
-                      <option value="Kurir Toko">Kurir Toko</option>
-                      <option value="Lainnya">Lainnya</option>
-                    </select>
-                  </div>
-
-                  {/* Tracking Number */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Nomor Resi <span className="text-xs font-normal text-gray-400">(opsional)</span></label>
-                    <input
-                      type="text"
-                      value={shipTrackingNumber}
-                      onChange={(e) => setShipTrackingNumber(e.target.value)}
-                      placeholder="Masukkan nomor resi..."
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    />
-                  </div>
-
-                  {/* Submit */}
+                  {/* Submit — langsung konfirmasi tanpa input kurir/resi */}
                   <button
                     onClick={async () => {
                       const result = await ordersService.shipItems(
                         selectedOrder.id,
                         shipItemIndexes,
-                        shipTrackingNumber.trim(),
-                        shipCourierName
+                        '',
+                        selectedOrder.shippingInfo?.courier || ''
                       );
                       if (result.success) {
                         // Show success view instead of closing modal immediately
