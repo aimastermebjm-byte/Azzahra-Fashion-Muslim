@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Package, Clock, CheckCircle, Truck, XCircle, Eye, Search, Filter, Calendar, Download, X, Upload, CreditCard, MapPin, Phone, Mail, Edit2, Check, User, AlertTriangle, Info, Trash2, Copy, ArrowLeft, Printer } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { useFirebaseAdminOrders } from '../hooks/useFirebaseAdminOrders';
@@ -53,6 +53,13 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   const [cashOrder, setCashOrder] = useState<any>(null);
 
   // 💳 NEW: Installment Payment Modal State
+
+  // 📦 NEW: Partial Shipment State
+  const [shipItemIndexes, setShipItemIndexes] = useState<number[]>([]);
+  const [showShipModal, setShowShipModal] = useState(false);
+  const [shipTrackingNumber, setShipTrackingNumber] = useState('');
+  const [shipCourierName, setShipCourierName] = useState('');
+  const [shipSuccess, setShipSuccess] = useState(false); // 🔥 NEW: Track successful partial shipment for printing
   const [showPaymentInputModal, setShowPaymentInputModal] = useState(false);
   const [paymentInputOrder, setPaymentInputOrder] = useState<any>(null);
   const [paymentInputLoading, setPaymentInputLoading] = useState(false);
@@ -239,6 +246,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     awaiting_verification: { label: 'Menunggu Verifikasi', icon: Clock, color: 'text-yellow-600 bg-yellow-100' },
     paid: { label: 'Dibayar', icon: CheckCircle, color: 'text-blue-600 bg-blue-100' },
     processing: { label: 'Diproses', icon: Package, color: 'text-purple-600 bg-purple-100' },
+    partially_shipped: { label: 'Sebagian Dikirim', icon: Truck, color: 'text-amber-700 bg-amber-100 border border-amber-200' },
     shipped: { label: 'Dikirim', icon: Truck, color: 'text-indigo-900 bg-indigo-100 border border-indigo-200' },
     delivered: { label: 'Selesai', icon: CheckCircle, color: 'text-[#997B2C] bg-[#D4AF37]/10 border border-[#D4AF37]/20' },
     cancelled: { label: 'Dibatalkan', icon: XCircle, color: 'text-red-900 bg-red-100 border border-red-200' }
@@ -460,6 +468,74 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
     printWindow.document.close();
   };
 
+  // 📦 NEW: Print Label for Partial Shipment (only selected items)
+  const handlePrintPartialLabel = (order: any, itemIndexes: number[], trackingNumber?: string, courierName?: string) => {
+    const selectedItems = itemIndexes.map(idx => order.items?.[idx]).filter(Boolean);
+    if (selectedItems.length === 0) return;
+
+    const partialOrder = {
+      ...order,
+      items: selectedItems,
+      shippingInfo: {
+        ...order.shippingInfo,
+        courier: courierName || order.shippingInfo?.courier || '',
+      },
+    };
+
+    const fullAddress = [
+      order.shippingInfo?.address,
+      order.shippingInfo?.subdistrict ? `Kel. ${order.shippingInfo.subdistrict}` : '',
+      order.shippingInfo?.district ? `Kec. ${order.shippingInfo.district}` : '',
+      order.shippingInfo?.cityName || '',
+      order.shippingInfo?.provinceName,
+    ].filter(Boolean).join(', ');
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      const itemsText = selectedItems.map((item: any) => {
+        const pName = item.productName.length > 30 ? item.productName.substring(0, 30) + '...' : item.productName;
+        return `${pName} x${item.quantity}`;
+      }).join('\n') || '-';
+
+      const isDropship = order.shippingInfo?.isDropship || order.isDropship;
+      const dName = order.shippingInfo?.dropshipName || (order as any).dropshipName;
+      const headerTitle = isDropship && dName ? dName.toUpperCase().substring(0, 30) : 'AZZAHRA FASHION MUSLIM';
+      const dPhone = order.shippingInfo?.dropshipPhone || (order as any).dropshipPhone;
+      const headerPhone = isDropship && dPhone ? `Telepon: ${dPhone}` : '';
+
+      const notaText = [
+        'PENGIRIM', headerTitle, headerPhone,
+        '--------------------------------',
+        `Kepada : ${order.shippingInfo?.name?.substring(0, 20) || order.userName?.substring(0, 20) || '-'}`,
+        `Telepon: ${order.shippingInfo?.phone || '-'}`,
+        `Alamat : ${fullAddress.substring(0, 100)}`,
+        '--------------------------------',
+        `PARSIAL (${selectedItems.length} item)`,
+        itemsText,
+        '--------------------------------',
+        `Ekspedisi: ${(courierName || order.shippingInfo?.courier || 'JNE').toUpperCase()}`,
+        trackingNumber ? `Resi    : ${trackingNumber}` : '',
+        `Invoice : ${order.invoiceNumber || order.id}`
+      ].filter(Boolean).join('\n');
+
+      const base64Data = encodeURIComponent(btoa(notaText));
+      window.location.href = `azzahra-print://print?data=${base64Data}`;
+      showModernAlert('Print', 'Mencetak label parsial...', 'success');
+      return;
+    }
+
+    // Desktop fallback
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showModernAlert('Error', 'Pop-up terblokir.', 'error');
+      return;
+    }
+    const htmlContent = generateShippingLabelHtml([partialOrder], trackingNumber);
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
   //  NEW: Print Label Function (Bulk)
   const handleBulkPrintLabel = async () => {
     const selected = orders.filter(o => selectedOrderIds.includes(o.id));
@@ -561,7 +637,7 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
   };
 
   // Helper to generate Label HTML for 58mm Thermal Printer
-  const generateShippingLabelHtml = (ordersList: any[]) => {
+  const generateShippingLabelHtml = (ordersList: any[], trackingNumber?: string) => {
     return `
       <!DOCTYPE html>
       <html>
@@ -702,6 +778,11 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                 <td class="sep-col">:</td>
                 <td class="value-col">${o.shippingInfo?.courier ? o.shippingInfo.courier.toUpperCase() : 'JNE'}</td>
               </tr>
+              ${trackingNumber ? `<tr>
+                <td class="label-col">Resi</td>
+                <td class="sep-col">:</td>
+                <td class="value-col" style="font-size:14px;letter-spacing:1px">${trackingNumber}</td>
+              </tr>` : ''}
             </table>
 
             ${(o as any).isDropship ? `
@@ -1600,13 +1681,40 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                           </p>
                         </div>
                         <div className="text-right">
-                          <div className={`inline - flex items - center space - x - 1 px - 3 py - 1 rounded - full text - xs font - medium ${statusInfo.color} `}>
-                            <StatusIcon className="w-3 h-3" />
-                            <span>{statusInfo.label}</span>
-                          </div>
-                          <p className="text-lg font-bold text-[#997B2C] mt-1">
-                            Rp {order.finalTotal.toLocaleString('id-ID')}
-                          </p>
+                          {/* 🔧 FIX: Dynamic status label for partial payment */}
+                          {(() => {
+                            const hasPaidPartially = (order.totalPaid || 0) > 0 && (order.remainingAmount ?? (order.finalTotal - (order.totalPaid || 0))) > 0;
+                            const displayLabel = hasPaidPartially && order.status === 'pending' ? 'Belum Lunas' : statusInfo.label;
+                            const displayColor = hasPaidPartially && order.status === 'pending' ? 'text-amber-700 bg-amber-100 border border-amber-200' : statusInfo.color;
+                            return (
+                              <div className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium ${displayColor}`}>
+                                <StatusIcon className="w-3 h-3" />
+                                <span>{displayLabel}</span>
+                              </div>
+                            );
+                          })()}
+                          {/* 🔧 FIX: Show remaining amount if partially paid */}
+                          {(() => {
+                            const totalPaid = order.totalPaid || 0;
+                            const remaining = order.remainingAmount ?? (order.finalTotal - totalPaid);
+                            if (totalPaid > 0 && remaining > 0) {
+                              return (
+                                <>
+                                  <p className="text-lg font-bold text-red-600 mt-1">
+                                    Sisa: Rp {remaining.toLocaleString('id-ID')}
+                                  </p>
+                                  <p className="text-[10px] text-green-600">
+                                    Dibayar: Rp {totalPaid.toLocaleString('id-ID')}
+                                  </p>
+                                </>
+                              );
+                            }
+                            return (
+                              <p className="text-lg font-bold text-[#997B2C] mt-1">
+                                Rp {order.finalTotal.toLocaleString('id-ID')}
+                              </p>
+                            );
+                          })()}
                         </div>
                       </div>
 
@@ -1739,29 +1847,18 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                         </span>
                       )}
                     </h3>
-                    {/*  Edit Alamat button - DISABLED for paid/completed orders */}
-                    {(() => {
-                      const isAddressLocked = ['paid', 'processing', 'shipped', 'delivered'].includes(selectedOrder.status);
-                      return (
-                        <button
-                          onClick={() => {
-                            if (!isAddressLocked) {
-                              setShowDetailModal(false);
-                              setShippingEditOrder(selectedOrder);
-                            }
-                          }}
-                          disabled={isAddressLocked}
-                          className={`text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 ${isAddressLocked
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-[#D4AF37]/10 text-[#997B2C] hover:bg-[#D4AF37]/20'
-                            }`}
-                          title={isAddressLocked ? 'Alamat tidak bisa diubah setelah pesanan dibayar' : 'Edit alamat pengiriman'}
-                        >
-                          <Edit2 className="w-3 h-3" />
-                          Edit Alamat
-                        </button>
-                      );
-                    })()}
+                    {/*  Edit Alamat button - Always available for admin */}
+                    <button
+                      onClick={() => {
+                        setShowDetailModal(false);
+                        setShippingEditOrder(selectedOrder);
+                      }}
+                      className="text-xs px-3 py-1 rounded-lg transition flex items-center gap-1 bg-[#D4AF37]/10 text-[#997B2C] hover:bg-[#D4AF37]/20"
+                      title="Edit alamat pengiriman"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      Edit Alamat
+                    </button>
                   </div>
                   <div className="space-y-2 text-sm">
                     <div>
@@ -1789,51 +1886,152 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                   </div>
                 </div>
 
-                {/* Order Items */}
+                {/* Order Items — 📦 Enhanced with Partial Shipment */}
                 <div>
-                  <h3 className="font-semibold text-gray-800 mb-3">Detail Produk</h3>
-                  <div className="space-y-3">
-                    {selectedOrder.items?.map((item: any, index: number) => (
-                      <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                        <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
-                          {(item.productImage || item.image) ? (
-                            <img
-                              src={item.productImage || item.image}
-                              alt={item.productName}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                // Fallback if image fails to load
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                if (target.nextElementSibling) {
-                                  (target.nextElementSibling as HTMLElement).style.display = 'flex';
-                                }
-                              }}
-                            />
-                          ) : null}
-                          <Package className="w-8 h-8 text-gray-400" style={{ display: (item.productImage || item.image) ? 'none' : 'flex' }} />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium">
-                            {item.productName}
-                            {item.selectedVariant?.color && ` - ${item.selectedVariant.color} `}
-                            {item.selectedVariant?.size && ` (${item.selectedVariant.size})`}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Qty: {item.quantity} pcs
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Rp {item.price.toLocaleString('id-ID')} Ã— {item.quantity}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium text-lg">Rp {item.total.toLocaleString('id-ID')}</p>
-                          <p className="text-sm text-gray-600">Subtotal</p>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-800">Detail Produk</h3>
+                    {/* Progress indicator */}
+                    {(() => {
+                      const items = selectedOrder.items || [];
+                      const shippedCount = items.filter((i: any) => i.itemStatus === 'shipped' || i.itemStatus === 'delivered').length;
+                      if (shippedCount > 0 && shippedCount < items.length) {
+                        return (
+                          <span className="text-xs font-semibold px-2 py-1 bg-amber-100 text-amber-700 rounded-full">
+                            📦 {shippedCount}/{items.length} terkirim
+                          </span>
+                        );
+                      }
+                      if (shippedCount === items.length && items.length > 0) {
+                        return (
+                          <span className="text-xs font-semibold px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                            ✅ Semua terkirim
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
+                  <div className="space-y-3">
+                    {selectedOrder.items?.map((item: any, index: number) => {
+                      const itemStatus = item.itemStatus || 'ready';
+                      const isShipped = itemStatus === 'shipped' || itemStatus === 'delivered';
+                      const isSelected = shipItemIndexes.includes(index);
+                      const canSelect = !isShipped && ['paid', 'processing', 'pending', 'partially_shipped'].includes(selectedOrder.status);
+
+                      const statusBadge: Record<string, { label: string; color: string; icon: string }> = {
+                        shipped: { label: 'Dikirim', color: 'bg-blue-100 text-blue-700', icon: '📦' },
+                        delivered: { label: 'Sampai', color: 'bg-emerald-100 text-emerald-700', icon: '✅' },
+                      };
+                      const badge = statusBadge[itemStatus];
+
+                      return (
+                        <div key={index} className={`flex items-start space-x-3 p-3 rounded-lg border transition-all ${isSelected ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-transparent'}`}>
+                          {/* Checkbox for shippable items */}
+                          {canSelect && (
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {
+                                setShipItemIndexes(prev =>
+                                  prev.includes(index)
+                                    ? prev.filter(i => i !== index)
+                                    : [...prev, index]
+                                );
+                              }}
+                              className="mt-4 w-4 h-4 accent-blue-600 flex-shrink-0"
+                            />
+                          )}
+                          {/* Product image */}
+                          <div className="w-14 h-14 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {(item.productImage || item.image) ? (
+                              <img
+                                src={item.productImage || item.image}
+                                alt={item.productName}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  if (target.nextElementSibling) {
+                                    (target.nextElementSibling as HTMLElement).style.display = 'flex';
+                                  }
+                                }}
+                              />
+                            ) : null}
+                            <Package className="w-6 h-6 text-gray-400" style={{ display: (item.productImage || item.image) ? 'none' : 'flex' }} />
+                          </div>
+                          {/* Product info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm truncate">
+                                  {item.productName}
+                                  {item.selectedVariant?.color && ` - ${item.selectedVariant.color}`}
+                                  {item.selectedVariant?.size && ` (${item.selectedVariant.size})`}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {item.quantity} pcs × Rp {item.price.toLocaleString('id-ID')}
+                                </p>
+                              </div>
+                              <p className="font-semibold text-sm whitespace-nowrap">Rp {item.total.toLocaleString('id-ID')}</p>
+                            </div>
+                            {/* Status badge — hanya muncul setelah dikirim */}
+                            {badge && (
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${badge.color}`}>
+                                {badge.icon} {badge.label}
+                              </span>
+                              {/* Tracking info for shipped items */}
+                              {isShipped && item.trackingNumber && (
+                                <span className="text-[10px] text-gray-500 font-mono">
+                                  Resi: {item.trackingNumber}
+                                  {item.courierName && ` (${item.courierName})`}
+                                </span>
+                              )}
+                              {/* 🖨️ Print Label Button — always accessible */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePrintPartialLabel(
+                                    selectedOrder,
+                                    [index],
+                                    item.trackingNumber || '',
+                                    item.courierName || item.courier || ''
+                                  );
+                                }}
+                                className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-700 transition-all flex items-center gap-0.5"
+                                title="Cetak label pengiriman"
+                              >
+                                <Printer className="w-3 h-3" />
+                                Label
+                              </button>
+                            </div>
+                            )}
+                            {/* Shipped date */}
+                            {isShipped && item.shippedAt && (
+                              <p className="text-[10px] text-gray-400 mt-0.5">
+                                Dikirim: {new Date(item.shippedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* 📦 Ship Selected Items Button */}
+                  {shipItemIndexes.length > 0 && (
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => setShowShipModal(true)}
+                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all"
+                      >
+                        <Truck className="w-4 h-4" />
+                        Kirim {shipItemIndexes.length} Item Terpilih
+                      </button>
+                    </div>
+                  )}
                 </div>
+
 
                 {/* Payment & Total */}
                 <div className="border-t pt-4">
@@ -1966,23 +2164,54 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
                     </h3>
                     <div className="space-y-2">
                       {selectedOrder.payments.map((payment: any, index: number) => (
-                        <div key={payment.id || index} className="flex justify-between items-center bg-white p-2 rounded-lg border">
-                          <div>
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${payment.method === 'cash'
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-blue-100 text-blue-700'
-                              }`}>
-                              {payment.method === 'cash' ? 'Cash' : 'Transfer'}
-                            </span>
-                            <span className="text-xs text-gray-500 ml-2">
-                              {new Date(payment.date).toLocaleDateString('id-ID', {
-                                day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                              })}
+                        <div key={payment.id || index} className="bg-white p-3 rounded-lg border space-y-1">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${payment.method === 'cash'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-blue-100 text-blue-700'
+                                }`}>
+                                {payment.method === 'cash' ? 'Cash' : 'Transfer'}
+                              </span>
+                              <span className="text-xs text-gray-500 ml-2">
+                                {new Date(payment.date).toLocaleDateString('id-ID', {
+                                  day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                            <span className="font-bold text-gray-800">
+                              Rp {payment.amount.toLocaleString('id-ID')}
                             </span>
                           </div>
-                          <span className="font-bold text-gray-800">
-                            Rp {payment.amount.toLocaleString('id-ID')}
-                          </span>
+                          {/* 🔧 FIX: Tampilkan catatan/keterangan pembayaran */}
+                          {payment.notes && (
+                            <p className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded italic">
+                              📝 {payment.notes}
+                            </p>
+                          )}
+                          {/* 🖼️ NEW: Tampilkan bukti bayar per payment */}
+                          {payment.proofData && (
+                            <div className="mt-1">
+                              <img
+                                src={`data:image/*;base64,${payment.proofData}`}
+                                alt={`Bukti ${payment.method}`}
+                                className="w-20 h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => {
+                                  const newWindow = window.open('', '_blank');
+                                  if (newWindow) {
+                                    newWindow.document.write(`
+                                      <html><body style="margin:0;padding:20px;background:#f3f4f6;">
+                                        <img src="data:image/*;base64,${payment.proofData}"
+                                             style="max-width:100%;height:auto;display:block;margin:0 auto;"
+                                             alt="Bukti Pembayaran" />
+                                      </body></html>
+                                    `);
+                                  }
+                                }}
+                              />
+                              <p className="text-[10px] text-gray-400 mt-0.5">Klik untuk perbesar</p>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -2087,6 +2316,137 @@ const AdminOrdersPage: React.FC<AdminOrdersPageProps> = ({ onBack, user, onRefre
           </div >
         )
       }
+
+      {/* 📦 NEW: Ship Items Modal */}
+      {showShipModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-white">📦 Kirim Item Terpilih</h2>
+                <button
+                  onClick={() => {
+                    setShowShipModal(false);
+                    setShipTrackingNumber('');
+                    setShipCourierName('');
+                    setShipSuccess(false); // Reset success state
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-full transition-all"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {shipSuccess ? (
+                // 🟢 Success View with Print Button
+                <div className="text-center py-6 space-y-6">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <CheckCircle className="w-8 h-8 text-green-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">Berhasil Dikirim!</h3>
+                    <p className="text-sm text-gray-500">
+                      Status item telah terupdate. Anda dapat mencetak label pengiriman untuk paket ini sekarang.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-3 pt-4">
+                    <button
+                      onClick={() => handlePrintPartialLabel(selectedOrder, shipItemIndexes, shipTrackingNumber, shipCourierName)}
+                      className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                    >
+                      <Printer className="w-5 h-5" />
+                      Cetak Label Pengiriman
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowShipModal(false);
+                        setShipTrackingNumber('');
+                        setShipCourierName('');
+                        setShipSuccess(false);
+                        setShipItemIndexes([]);
+                      }}
+                      className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all"
+                    >
+                      Selesai & Tutup
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                // 📝 Normal Input View
+                <>
+                  {/* Items being shipped */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs font-semibold text-gray-500 mb-2">Item yang dikirim:</p>
+                    {shipItemIndexes.map(idx => {
+                      const item = selectedOrder.items?.[idx];
+                      if (!item) return null;
+                      return (
+                        <div key={idx} className="flex items-center gap-2 py-1">
+                          <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                          <span className="text-sm font-medium truncate">
+                            {item.productName}
+                            {item.selectedVariant?.color && ` - ${item.selectedVariant.color}`}
+                            {item.selectedVariant?.size && ` (${item.selectedVariant.size})`}
+                          </span>
+                          <span className="text-xs text-gray-400 ml-auto">×{item.quantity}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Submit — langsung konfirmasi tanpa input kurir/resi */}
+                  <button
+                    onClick={async () => {
+                      const result = await ordersService.shipItems(
+                        selectedOrder.id,
+                        shipItemIndexes,
+                        '',
+                        selectedOrder.shippingInfo?.courier || ''
+                      );
+                      if (result.success) {
+                        // Show success view instead of closing modal immediately
+                        setShipSuccess(true);
+                        
+                        // Patch local state so Print Label button has the latest data
+                        const updatedItems = [...(selectedOrder.items || [])];
+                        shipItemIndexes.forEach(idx => {
+                          if (updatedItems[idx]) {
+                            updatedItems[idx] = {
+                              ...updatedItems[idx],
+                              status: 'shipped',
+                              trackingNumber: shipTrackingNumber.trim(),
+                              courier: shipCourierName,
+                              shippedAt: Date.now()
+                            };
+                          }
+                        });
+                        
+                        setSelectedOrder({
+                          ...selectedOrder,
+                          items: updatedItems,
+                          // Optional: optimistically update overall status if needed, 
+                          // but the Print Label mainly relies on item.trackingNumber
+                        });
+
+                      } else {
+                        showModernAlert('Gagal', result.message, 'error');
+                      }
+                    }}
+
+                    className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <Truck className="w-5 h-5" />
+                    Konfirmasi Kirim
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Payment Verification Modal */}
       {

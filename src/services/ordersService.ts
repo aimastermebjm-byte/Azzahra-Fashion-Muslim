@@ -13,6 +13,7 @@ export interface Payment {
   notes?: string;               // Catatan (optional)
   addedBy?: string;             // User ID yang input (owner/admin)
   addedByName?: string;         // Nama user yang input
+  proofData?: string;           // 🖼️ Base64 bukti bayar per payment (optional)
 }
 
 export interface Order {
@@ -25,7 +26,7 @@ export interface Order {
   paymentMethod: string;
   paymentMethodId?: string | null;
   paymentMethodName?: string | null;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'awaiting_verification' | 'paid';
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'awaiting_verification' | 'paid' | 'partially_shipped';
   totalAmount: number;
   shippingCost: number;
   finalTotal: number;
@@ -690,7 +691,8 @@ class OrdersService {
     amount: number,
     method: 'cash' | 'transfer',
     notes?: string,
-    addedByName?: string
+    addedByName?: string,
+    proofData?: string  // 🖼️ Optional: bukti bayar per payment (base64)
   ): Promise<{ success: boolean; message: string; newStatus?: string }> {
     try {
       const user = auth.currentUser;
@@ -735,7 +737,10 @@ class OrdersService {
         date: new Date().toISOString(),
         notes: notes || '',
         addedBy: user.uid,
-        addedByName: addedByName || user.displayName || 'Admin'
+        addedByName: addedByName || user.displayName || 'Admin',
+        ...(proofData ? { proofData } : {}),
+        // 🔧 FIX: Pindahkan bukti bayar order-level ke payment record ini
+        ...((!proofData && order.paymentProofData) ? { proofData: order.paymentProofData } : {})
       };
 
       // Calculate new totals
@@ -744,8 +749,10 @@ class OrdersService {
       const newTotalPaid = currentTotalPaid + amount;
       const newRemainingAmount = order.finalTotal - newTotalPaid;
 
-      // Determine new status (paid if fully paid)
-      const newStatus = newRemainingAmount <= 0 ? 'paid' : order.status;
+      // 🔧 FIX: Status logic yang benar untuk partial payment
+      // - Lunas (remaining <= 0) → 'paid'
+      // - Belum lunas (remaining > 0) → 'pending' (agar tampil "Belum Lunas")
+      const newStatus = newRemainingAmount <= 0 ? 'paid' : 'pending';
 
       // Update order
       const updateData: Partial<Order> = {
@@ -753,7 +760,10 @@ class OrdersService {
         totalPaid: newTotalPaid,
         remainingAmount: newRemainingAmount,
         status: newStatus,
-        updatedAt: Timestamp.now() // ✅ FIX: use Timestamp, not string
+        updatedAt: Timestamp.now(),
+        // 🔧 FIX: Clear bukti bayar order-level setelah dipindah ke payment record
+        // Agar upload bukti baru oleh customer tidak overwrite bukti lama
+        ...(order.paymentProofData ? { paymentProofData: '', paymentProof: '' } : {})
       };
 
       await updateDoc(orderRef, updateData);
@@ -783,6 +793,81 @@ class OrdersService {
       console.error('Error adding payment:', error);
       return { success: false, message: 'Gagal menambahkan pembayaran' };
     }
+  }
+
+  // 📦 NEW: Ship selected items (partial shipment)
+  async shipItems(
+    orderId: string,
+    itemIndexes: number[],  // Indexes of items to ship
+    trackingNumber: string,
+    courierName?: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const user = auth.currentUser;
+      if (!user) return { success: false, message: 'User tidak terautentikasi' };
+
+      const orderRef = doc(db, this.collection, orderId);
+      const orderDoc = await getDoc(orderRef);
+      if (!orderDoc.exists()) return { success: false, message: 'Order tidak ditemukan' };
+
+      const order = { id: orderDoc.id, ...orderDoc.data() } as Order;
+      const items = [...order.items];
+      const now = new Date().toISOString();
+
+      // Update selected items
+      for (const idx of itemIndexes) {
+        if (idx >= 0 && idx < items.length) {
+          items[idx] = {
+            ...items[idx],
+            itemStatus: 'shipped',
+            trackingNumber: trackingNumber,
+            courierName: courierName || '',
+            shippedAt: now
+          };
+        }
+      }
+
+      // Auto-derive order status from item statuses
+      const newOrderStatus = this.deriveOrderShipmentStatus(items, order.status);
+
+      await updateDoc(orderRef, {
+        items: items,
+        status: newOrderStatus,
+        updatedAt: Timestamp.now()
+      });
+
+      const shippedCount = items.filter(i => i.itemStatus === 'shipped' || i.itemStatus === 'delivered').length;
+      console.log(`📦 Shipped ${itemIndexes.length} items for order ${orderId}. Total shipped: ${shippedCount}/${items.length}`);
+
+      return {
+        success: true,
+        message: shippedCount === items.length
+          ? '✅ Semua item sudah dikirim!'
+          : `✅ ${itemIndexes.length} item berhasil dikirim. Sisa ${items.length - shippedCount} item.`
+      };
+    } catch (error) {
+      console.error('Error shipping items:', error);
+      return { success: false, message: 'Gagal mengirim item' };
+    }
+  }
+
+  // 📦 Helper: Derive order shipment status from item statuses
+  private deriveOrderShipmentStatus(
+    items: any[],
+    currentStatus: string
+  ): string {
+    // Don't change status if order is cancelled or not yet paid-related
+    if (['cancelled'].includes(currentStatus)) return currentStatus;
+
+    const statuses = items.map(i => i.itemStatus || 'ready');
+    const allShippedOrDelivered = statuses.every(s => s === 'shipped' || s === 'delivered');
+    const someShipped = statuses.some(s => s === 'shipped' || s === 'delivered');
+    const allDelivered = statuses.every(s => s === 'delivered');
+
+    if (allDelivered) return 'delivered';
+    if (allShippedOrDelivered) return 'shipped';
+    if (someShipped) return 'partially_shipped';
+    return currentStatus;
   }
 }
 

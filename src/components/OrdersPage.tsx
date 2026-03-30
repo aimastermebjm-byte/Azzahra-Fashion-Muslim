@@ -387,7 +387,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
     }
   };
 
-  // ✨ NEW: Handle upload bukti payment (manual mode)
+  // ✨ Handle upload bukti payment (manual mode)
+  // 🔧 FIX: Cek partial payment — jangan langsung set awaiting_verification jika belum lunas
   const handleSubmitManualPayment = async () => {
     if (!paymentProof) {
       showToast({ message: '❌ Pilih bukti transfer terlebih dahulu', type: 'error' });
@@ -403,12 +404,21 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
       setUploadingProof(true);
       let successCount = 0;
 
-      // Upload bukti for each selected order
       for (const orderId of paymentData.orderIds) {
+        // 🔧 FIX: Cek apakah order ini sudah ada partial payment (belum lunas)
+        const orderData = orders.find(o => o.id === orderId);
+        const totalPaid = (orderData as any)?.totalPaid || 0;
+        const remaining = (orderData as any)?.remainingAmount ?? ((orderData?.finalTotal || 0) - totalPaid);
+        const isPartiallyPaid = totalPaid > 0 && remaining > 0;
+
+        // Jika partial paid → status tetap pending (Belum Lunas)
+        // Jika full / belum ada partial → awaiting_verification seperti biasa
+        const newStatus = isPartiallyPaid ? undefined : 'awaiting_verification';
+
         const success = await ordersService.updateOrderPayment(
           orderId,
           paymentProof,
-          'awaiting_verification'
+          newStatus
         );
         if (success) successCount++;
       }
@@ -485,15 +495,21 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
   // Get pending orders for selection
   const pendingOrders = orders.filter(o => o.status === 'pending');
   const selectedCount = selectedOrderIds.length;
+  // 🔧 FIX: Gunakan sisa tagihan (remaining) bukan total full
   const selectedTotal = orders
     .filter(o => selectedOrderIds.includes(o.id))
-    .reduce((sum, o) => sum + o.finalTotal, 0);
+    .reduce((sum, o) => {
+      const totalPaid = (o as any).totalPaid || 0;
+      const remaining = (o as any).remainingAmount ?? (o.finalTotal - totalPaid);
+      return sum + (totalPaid > 0 ? remaining : o.finalTotal);
+    }, 0);
 
   const statusConfig = {
     pending: { label: 'Menunggu Pembayaran', icon: Clock, color: 'text-orange-600 bg-orange-100' },
     awaiting_verification: { label: 'Menunggu Verifikasi', icon: Clock, color: 'text-yellow-600 bg-yellow-100' },
     paid: { label: 'Dibayar', icon: CheckCircle, color: 'text-blue-600 bg-blue-100' },
     processing: { label: 'Dikemas', icon: Package, color: 'text-blue-600 bg-blue-100' },
+    partially_shipped: { label: 'Sebagian Dikirim', icon: Truck, color: 'text-amber-700 bg-amber-100' },
     shipped: { label: 'Dikirim', icon: Truck, color: 'text-purple-600 bg-purple-100' },
     delivered: { label: 'Selesai', icon: CheckCircle, color: 'text-green-600 bg-green-100' },
     cancelled: { label: 'Dibatalkan', icon: XCircle, color: 'text-red-600 bg-red-100' }
@@ -633,10 +649,19 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
-                      <span className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider ${status?.color.replace('text-pink-600', 'text-[#D4AF37]').replace('bg-pink-100', 'bg-yellow-50') || 'text-gray-600 bg-gray-100'
-                        }`}>
-                        {status?.label || order.status}
-                      </span>
+                      {/* 🔧 FIX: Dynamic status label for partial payment */}
+                      {(() => {
+                        const hasPaidPartially = (order.totalPaid || 0) > 0 && (order.remainingAmount ?? (order.finalTotal - (order.totalPaid || 0))) > 0;
+                        const displayLabel = hasPaidPartially && order.status === 'pending' ? 'Belum Lunas' : (status?.label || order.status);
+                        const displayColor = hasPaidPartially && order.status === 'pending'
+                          ? 'text-amber-700 bg-amber-100 border border-amber-200'
+                          : (status?.color.replace('text-pink-600', 'text-[#D4AF37]').replace('bg-pink-100', 'bg-yellow-50') || 'text-gray-600 bg-gray-100');
+                        return (
+                          <span className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider ${displayColor}`}>
+                            {displayLabel}
+                          </span>
+                        );
+                      })()}
                       {/* ✨ NEW: Keep Mode Badge */}
                       {(order as any).shippingMode === 'keep' && !(order as any).shippingConfigured && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100 flex items-center gap-1">
@@ -690,6 +715,20 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                               Rp {(item.price || 0).toLocaleString('id-ID')}
                             </span>
                           </div>
+                          {/* 📦 Partial Shipment: Show item status badge */}
+                          {['partially_shipped', 'shipped', 'delivered'].includes(order.status) && (
+                            <div className="mt-1">
+                              {(item.itemStatus === 'shipped' || item.itemStatus === 'delivered' || item.status === 'shipped' || item.status === 'delivered') ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">
+                                  ✅ Dikirim
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                  ⏳ Menunggu pengiriman
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -700,12 +739,33 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                     )}
                   </div>
 
-                  {/* Order Total */}
+                  {/* Order Total - 🔧 FIX: Show remaining if partially paid */}
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100 border-dashed">
-                    <span className="text-xs sm:text-sm font-medium text-gray-500">Total Pesanan</span>
-                    <span className="text-base sm:text-lg font-bold text-[#997B2C]">
-                      Rp {(order.finalTotal || 0).toLocaleString('id-ID')}
-                    </span>
+                    {(() => {
+                      const totalPaid = order.totalPaid || 0;
+                      const remaining = order.remainingAmount ?? (order.finalTotal - totalPaid);
+                      if (totalPaid > 0 && remaining > 0) {
+                        return (
+                          <>
+                            <div>
+                              <span className="text-xs sm:text-sm font-medium text-gray-500">Sisa Tagihan</span>
+                              <p className="text-[10px] text-green-600">Dibayar: Rp {totalPaid.toLocaleString('id-ID')}</p>
+                            </div>
+                            <span className="text-base sm:text-lg font-bold text-red-600">
+                              Rp {remaining.toLocaleString('id-ID')}
+                            </span>
+                          </>
+                        );
+                      }
+                      return (
+                        <>
+                          <span className="text-xs sm:text-sm font-medium text-gray-500">Total Pesanan</span>
+                          <span className="text-base sm:text-lg font-bold text-[#997B2C]">
+                            Rp {(order.finalTotal || 0).toLocaleString('id-ID')}
+                          </span>
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {/* ✨ NEW: Edit Shipping Button for Keep Mode */}
@@ -827,7 +887,17 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
                 💳 Pilih Metode Pembayaran
               </h2>
               <p className="text-sm text-slate-800 font-medium text-center mt-1">
-                Total: Rp {paymentData?.subtotal?.toLocaleString('id-ID') ?? 0}
+                {/* 🔧 FIX: Tampilkan sisa jika partial paid */}
+                {(() => {
+                  const selected = paymentData?.orders || [];
+                  const totalPaid = selected.reduce((sum: number, o: any) => sum + (o.totalPaid || 0), 0);
+                  const subtotal = paymentData?.subtotal || 0;
+                  const remaining = subtotal - totalPaid;
+                  if (totalPaid > 0 && remaining > 0) {
+                    return <>Sisa Tagihan: Rp {remaining.toLocaleString('id-ID')} <span className="text-xs opacity-70">(dari Rp {subtotal.toLocaleString('id-ID')})</span></>;
+                  }
+                  return <>Total: Rp {subtotal.toLocaleString('id-ID')}</>;
+                })()}
               </p>
             </div>
 
@@ -1046,10 +1116,32 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
             <div className="p-4 space-y-4">
               {/* Total Amount - Gold Theme */}
               <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl p-4 border-2 border-[#D4AF37] text-center">
-                <p className="text-xs font-semibold text-[#997B2C] mb-2">Total Transfer:</p>
-                <p className="text-3xl font-bold text-slate-900 mb-3">
-                  Rp {paymentData?.subtotal.toLocaleString('id-ID')}
-                </p>
+                {/* 🔧 FIX: Tampilkan sisa jika partial paid */}
+                {(() => {
+                  const selected = paymentData?.orders || [];
+                  const totalPaid = selected.reduce((sum: number, o: any) => sum + (o.totalPaid || 0), 0);
+                  const subtotal = paymentData?.subtotal || 0;
+                  const remaining = subtotal - totalPaid;
+                  if (totalPaid > 0 && remaining > 0) {
+                    return (
+                      <>
+                        <p className="text-xs font-semibold text-[#997B2C] mb-1">Sisa Tagihan:</p>
+                        <p className="text-3xl font-bold text-red-600 mb-1">
+                          Rp {remaining.toLocaleString('id-ID')}
+                        </p>
+                        <p className="text-[10px] text-green-600 mb-3">Sudah dibayar: Rp {totalPaid.toLocaleString('id-ID')} dari Rp {subtotal.toLocaleString('id-ID')}</p>
+                      </>
+                    );
+                  }
+                  return (
+                    <>
+                      <p className="text-xs font-semibold text-[#997B2C] mb-2">Total Transfer:</p>
+                      <p className="text-3xl font-bold text-slate-900 mb-3">
+                        Rp {subtotal.toLocaleString('id-ID')}
+                      </p>
+                    </>
+                  );
+                })()}
                 <button
                   onClick={() => handleCopy(paymentData?.subtotal.toString() || '', 'Nominal')}
                   className="px-4 py-2.5 bg-gradient-to-r from-[#997B2C] via-[#EDD686] to-[#997B2C] text-black rounded-lg font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 mx-auto"
@@ -1182,10 +1274,30 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user, onBack }) => {
 
             <div className="p-4">
               <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-2">Total Pembayaran</p>
-                <p className="text-2xl font-bold text-pink-600">
-                  Rp {selectedOrder.finalTotal.toLocaleString('id-ID')}
-                </p>
+                {/* 🔧 FIX: Tampilkan sisa jika partial paid */}
+                {(() => {
+                  const totalPaid = (selectedOrder as any).totalPaid || 0;
+                  const remaining = (selectedOrder as any).remainingAmount ?? (selectedOrder.finalTotal - totalPaid);
+                  if (totalPaid > 0 && remaining > 0) {
+                    return (
+                      <>
+                        <p className="text-sm text-gray-600 mb-2">Sisa Tagihan</p>
+                        <p className="text-2xl font-bold text-red-600">
+                          Rp {remaining.toLocaleString('id-ID')}
+                        </p>
+                        <p className="text-xs text-green-600 mt-1">Sudah dibayar: Rp {totalPaid.toLocaleString('id-ID')}</p>
+                      </>
+                    );
+                  }
+                  return (
+                    <>
+                      <p className="text-sm text-gray-600 mb-2">Total Pembayaran</p>
+                      <p className="text-2xl font-bold text-pink-600">
+                        Rp {selectedOrder.finalTotal.toLocaleString('id-ID')}
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
 
               <div className="mb-4">
