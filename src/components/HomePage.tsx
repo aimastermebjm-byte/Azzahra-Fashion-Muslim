@@ -58,7 +58,7 @@ const HomePage: React.FC<HomePageProps> = ({
   const [showSearch, setShowSearch] = useState(false);
 
   // Dynamic categories from master
-  const [categories, setCategories] = useState<Array<{ id: string; name: string; icon: string }>>([
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; icon: string; masterIconPath?: string }>>([
     { id: 'all', name: 'Semua', icon: '🛍️' }
   ]);
 
@@ -227,11 +227,12 @@ const HomePage: React.FC<HomePageProps> = ({
           return icons[name.toLowerCase()] || icons['default'];
         };
 
-        // Map to HomePage format
+        // Map to HomePage format - prioritize icon from Firestore master data
         const mappedCategories = masterCategories.map(cat => ({
           id: cat.name.toLowerCase(),
           name: cat.name,
-          icon: getCategoryIcon(cat.name)
+          icon: getCategoryIcon(cat.name),
+          masterIconPath: cat.icon || undefined // icon path from Firestore (e.g. '/icons/hijab-icon.png')
         }));
 
         setCategories([
@@ -652,7 +653,7 @@ const HomePage: React.FC<HomePageProps> = ({
         <div className="flex space-x-4 overflow-x-auto pb-4 pt-2 scrollbar-none px-1">
           {categories.map((category) => {
             const isSelected = selectedCategory === category.id;
-            const iconPath = getCategoryIconPath(category.name);
+            const iconPath = category.masterIconPath || getCategoryIconPath(category.name);
             const isAllCategory = category.id === 'all';
 
             return (

@@ -193,6 +193,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
 
   // Categories - Load from master
   const [categories, setCategories] = useState<string[]>(['Hijab', 'Gamis', 'Khimar', 'Tunik', 'Aksesoris']);
+  const [showQuickAddCategory, setShowQuickAddCategory] = useState(false);
+  const [quickAddCategoryName, setQuickAddCategoryName] = useState('');
 
   // Load categories from master on mount
   useEffect(() => {
@@ -209,6 +211,28 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
     };
     loadCategories();
   }, []);
+
+  // Quick add category handler
+  const handleQuickAddCategory = async () => {
+    const name = quickAddCategoryName.trim();
+    if (!name) return;
+    try {
+      await productCategoryService.addCategory(name, user?.uid, user?.role);
+      // Reload categories
+      productCategoryService.clearCache();
+      const updated = await productCategoryService.listCategories();
+      const names = updated.map(c => c.name);
+      setCategories(names);
+      // Auto-select the new category
+      setFormData(prev => ({ ...prev, category: name }));
+      setQuickAddCategoryName('');
+      setShowQuickAddCategory(false);
+      console.log('✅ Quick-added category:', name);
+    } catch (err) {
+      console.error('❌ Failed to quick-add category:', err);
+      alert(err instanceof Error ? err.message : 'Gagal menambah kategori');
+    }
+  };
 
   // Initialize Gemini AI Service on mount
   useEffect(() => {
@@ -1591,7 +1615,15 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     <span className="text-sm">Unggulan</span>
                   </button>
 
-                  {/* ⚠️ OWNER ONLY: Flash Sale, Edit Massal, Varian, Diskon */}
+                  <button
+                    onClick={() => setShowBatchModal(true)}
+                    className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
+                  >
+                    <Edit className="w-5 h-5 text-[#997B2C]" />
+                    <span className="text-sm">Edit Massal</span>
+                  </button>
+
+                  {/* ⚠️ OWNER ONLY: Flash Sale, Varian, Diskon */}
                   {user?.role === 'owner' && (
                     <>
                       <button
@@ -1605,14 +1637,6 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                         <Flame className="w-5 h-5 text-[#997B2C]" />
                         <span className="text-sm">Flash Sale</span>
                       </button>
-                      <button
-                        onClick={() => setShowBatchModal(true)}
-                        className="bg-white text-[#997B2C] p-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C] shine-effect"
-                      >
-                        <Edit className="w-5 h-5 text-[#997B2C]" />
-                        <span className="text-sm">Edit Massal</span>
-                      </button>
-
 
                     </>
                   )}
@@ -1895,18 +1919,49 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Kategori *
                     </label>
-                    <select
-                      required
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
-                    >
-                      {categories.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        required
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+                      >
+                        {categories.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setShowQuickAddCategory(!showQuickAddCategory)}
+                        className="px-3 py-2 bg-[#D4AF37] text-white rounded-lg hover:bg-[#997B2C] transition-colors font-bold text-lg leading-none flex-shrink-0"
+                        title="Tambah kategori baru"
+                      >
+                        +
+                      </button>
+                    </div>
+                    {showQuickAddCategory && (
+                      <div className="mt-2 flex gap-2 animate-in slide-in-from-top-1 duration-200">
+                        <input
+                          type="text"
+                          value={quickAddCategoryName}
+                          onChange={(e) => setQuickAddCategoryName(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleQuickAddCategory())}
+                          className="flex-1 px-3 py-1.5 border border-[#D4AF37] rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-transparent"
+                          placeholder="Nama kategori baru..."
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={handleQuickAddCategory}
+                          disabled={!quickAddCategoryName.trim()}
+                          className="px-3 py-1.5 bg-[#D4AF37] text-white rounded-lg text-sm font-bold hover:bg-[#997B2C] transition-colors disabled:opacity-50"
+                        >
+                          Simpan
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -2323,18 +2378,49 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Kategori *
                     </label>
-                    <select
-                      required
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37]"
-                    >
-                      {categories.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        required
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-[#d4af37]"
+                      >
+                        {categories.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setShowQuickAddCategory(!showQuickAddCategory)}
+                        className="px-3 py-2 bg-[#D4AF37] text-white rounded-lg hover:bg-[#997B2C] transition-colors font-bold text-lg leading-none flex-shrink-0"
+                        title="Tambah kategori baru"
+                      >
+                        +
+                      </button>
+                    </div>
+                    {showQuickAddCategory && (
+                      <div className="mt-2 flex gap-2 animate-in slide-in-from-top-1 duration-200">
+                        <input
+                          type="text"
+                          value={quickAddCategoryName}
+                          onChange={(e) => setQuickAddCategoryName(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleQuickAddCategory())}
+                          className="flex-1 px-3 py-1.5 border border-[#D4AF37] rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-transparent"
+                          placeholder="Nama kategori baru..."
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={handleQuickAddCategory}
+                          disabled={!quickAddCategoryName.trim()}
+                          className="px-3 py-1.5 bg-[#D4AF37] text-white rounded-lg text-sm font-bold hover:bg-[#997B2C] transition-colors disabled:opacity-50"
+                        >
+                          Simpan
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -2825,33 +2911,37 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Ubah Harga Jual (Rp)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={batchFormData.retailPrice || ''}
-                      onChange={(e) => setBatchFormData({ ...batchFormData, retailPrice: parseInt(e.target.value) || 0 })}
-                      placeholder="Kosongkan jika tidak ingin mengubah"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
-                    />
-                  </div>
+                  {user?.role === 'owner' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Ubah Harga Jual (Rp)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={batchFormData.retailPrice || ''}
+                          onChange={(e) => setBatchFormData({ ...batchFormData, retailPrice: parseInt(e.target.value) || 0 })}
+                          placeholder="Kosongkan jika tidak ingin mengubah"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+                        />
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Ubah Stok
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={batchFormData.stock || ''}
-                      onChange={(e) => setBatchFormData({ ...batchFormData, stock: parseInt(e.target.value) || 0 })}
-                      placeholder="Kosongkan jika tidak ingin mengubah"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
-                    />
-                  </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Ubah Stok
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={batchFormData.stock || ''}
+                          onChange={(e) => setBatchFormData({ ...batchFormData, stock: parseInt(e.target.value) || 0 })}
+                          placeholder="Kosongkan jika tidak ingin mengubah"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+                        />
+                      </div>
+                    </>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -3190,6 +3280,12 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
             }}
             categories={categories}
             initialState={manualUploadInitialState}
+            onQuickAddCategory={async (name: string) => {
+              await productCategoryService.addCategory(name, user?.uid, user?.role);
+              productCategoryService.clearCache();
+              const updated = await productCategoryService.listCategories();
+              setCategories(updated.map(c => c.name));
+            }}
             onSuccess={async (productData) => {
               try {
                 console.log('Manual Upload product data:', productData);

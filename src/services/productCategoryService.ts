@@ -5,6 +5,7 @@ import {
   addDoc,
   getDocs,
   deleteDoc,
+  updateDoc,
   doc,
   query,
   orderBy,
@@ -14,6 +15,7 @@ import {
 export interface ProductCategory {
   id: string;
   name: string;
+  icon?: string; // path to icon file, e.g. '/icons/hijab-icon.png'
   isActive: boolean;
 }
 
@@ -62,6 +64,7 @@ export const productCategoryService = {
       categories.push({
         id: docSnap.id,
         name: data.name || 'Tanpa nama',
+        icon: data.icon || undefined,
         isActive: data.isActive ?? true
       });
     });
@@ -78,7 +81,8 @@ export const productCategoryService = {
   async addCategory(
     name: string,
     createdBy?: string,
-    createdByRole?: string
+    createdByRole?: string,
+    icon?: string
   ): Promise<ProductCategory> {
     const trimmedName = name.trim();
     if (!trimmedName) {
@@ -95,17 +99,22 @@ export const productCategoryService = {
     }
 
     // Add to Firestore
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+    const docData: any = {
       name: trimmedName,
       isActive: true,
       createdAt: serverTimestamp(),
       createdBy: createdBy || null,
       createdByRole: createdByRole || null
-    });
+    };
+    if (icon) {
+      docData.icon = icon;
+    }
+    const docRef = await addDoc(collection(db, COLLECTION_NAME), docData);
 
     const newCategory: ProductCategory = {
       id: docRef.id,
       name: trimmedName,
+      icon: icon || undefined,
       isActive: true
     };
 
@@ -127,6 +136,26 @@ export const productCategoryService = {
     writeCache(cached.filter((cat) => cat.id !== categoryId));
 
 
+  },
+
+  /**
+   * Update product category (name, icon)
+   */
+  async updateCategory(categoryId: string, updates: { name?: string; icon?: string }): Promise<void> {
+    const updateData: any = {};
+    if (updates.name !== undefined) updateData.name = updates.name.trim();
+    if (updates.icon !== undefined) updateData.icon = updates.icon;
+
+    await updateDoc(doc(db, COLLECTION_NAME, categoryId), updateData);
+
+    // Update cache
+    const cached = readCache() || [];
+    writeCache(cached.map((cat) => {
+      if (cat.id === categoryId) {
+        return { ...cat, ...updates };
+      }
+      return cat;
+    }));
   },
 
   /**

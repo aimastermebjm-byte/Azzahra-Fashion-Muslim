@@ -638,6 +638,14 @@ const AccountPage: React.FC<AccountPageProps> = ({
                   <Users className="w-6 h-6 mx-auto mb-2" style={{ stroke: 'url(#gold-icon-gradient-admin)', fill: 'none' }} />
                   <p className="text-sm font-bold text-slate-900">Pelanggan</p>
                 </button>
+                {/* Data Master - Kategori Produk */}
+                <button
+                  onClick={onNavigateToAdminMaster}
+                  className="p-3 bg-white rounded-xl border-2 border-[#D4AF37] shadow-[0_3px_0_0_#997B2C,0_4px_10px_rgba(153,123,44,0.15)] hover:shadow-[0_2px_0_0_#7a6223,0_3px_15px_rgba(153,123,44,0.25)] hover:-translate-y-0.5 active:shadow-[0_1px_0_0_#7a6223] active:translate-y-0.5 transition-all duration-150"
+                >
+                  <Layers className="w-6 h-6 mx-auto mb-2" style={{ stroke: 'url(#gold-icon-gradient-admin)', fill: 'none' }} />
+                  <p className="text-sm font-bold text-slate-900">Kategori</p>
+                </button>
               </div>
             </div>
 

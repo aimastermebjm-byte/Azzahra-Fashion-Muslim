@@ -8,6 +8,7 @@ interface ManualUploadModalProps {
     onClose: () => void;
     onSuccess: (productData: any) => void;
     categories: string[];
+    onQuickAddCategory?: (name: string) => Promise<void>;
     initialState?: {
         step?: 'upload' | 'details';
         images?: File[];
@@ -67,6 +68,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     onClose,
     onSuccess,
     categories,
+    onQuickAddCategory,
     initialState
 }) => {
     // Brand options - from products + fallback common brands
@@ -78,6 +80,10 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         return combined.sort() as string[];
     }, [products]);
     const [showBrandSuggestions, setShowBrandSuggestions] = useState(false);
+
+    // Quick add category
+    const [showQuickAddCat, setShowQuickAddCat] = useState(false);
+    const [quickAddCatName, setQuickAddCatName] = useState('');
 
     // Step management
     const [step, setStep] = useState<'upload' | 'details' | 'preview'>('upload');
@@ -1056,20 +1062,71 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             />
                                         </div>
 
-                                        {/* Category */}
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                                 Kategori
                                             </label>
-                                            <select
-                                                value={productFormData.category}
-                                                onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }))}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                            >
-                                                {categories.map(cat => (
-                                                    <option key={cat} value={cat}>{cat}</option>
-                                                ))}
-                                            </select>
+                                            <div className="flex gap-1.5">
+                                                <select
+                                                    value={productFormData.category}
+                                                    onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }))}
+                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                                >
+                                                    {categories.map(cat => (
+                                                        <option key={cat} value={cat}>{cat}</option>
+                                                    ))}
+                                                </select>
+                                                {onQuickAddCategory && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowQuickAddCat(!showQuickAddCat)}
+                                                        className="px-2.5 py-2 bg-[#D4AF37] text-white rounded-lg hover:bg-[#997B2C] transition-colors font-bold text-base leading-none flex-shrink-0"
+                                                        title="Tambah kategori baru"
+                                                    >
+                                                        +
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {showQuickAddCat && onQuickAddCategory && (
+                                                <div className="mt-1.5 flex gap-1.5">
+                                                    <input
+                                                        type="text"
+                                                        value={quickAddCatName}
+                                                        onChange={(e) => setQuickAddCatName(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                if (quickAddCatName.trim()) {
+                                                                    onQuickAddCategory(quickAddCatName.trim()).then(() => {
+                                                                        setProductFormData(prev => ({ ...prev, category: quickAddCatName.trim() }));
+                                                                        setQuickAddCatName('');
+                                                                        setShowQuickAddCat(false);
+                                                                    });
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="flex-1 px-2.5 py-1.5 border border-[#D4AF37] rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37]/50"
+                                                        placeholder="Nama kategori baru..."
+                                                        autoFocus
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (quickAddCatName.trim()) {
+                                                                onQuickAddCategory(quickAddCatName.trim()).then(() => {
+                                                                    setProductFormData(prev => ({ ...prev, category: quickAddCatName.trim() }));
+                                                                    setQuickAddCatName('');
+                                                                    setShowQuickAddCat(false);
+                                                                });
+                                                            }
+                                                        }}
+                                                        disabled={!quickAddCatName.trim()}
+                                                        className="px-2.5 py-1.5 bg-[#D4AF37] text-white rounded-lg text-xs font-bold hover:bg-[#997B2C] transition-colors disabled:opacity-50"
+                                                    >
+                                                        Simpan
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -1815,15 +1872,27 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
                                             <label className="block text-xs font-bold text-gray-600 mb-1">Kategori</label>
-                                            <select
-                                                value={productFormData.category}
-                                                onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }))}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
-                                            >
-                                                {categories.map(cat => (
-                                                    <option key={cat} value={cat}>{cat}</option>
-                                                ))}
-                                            </select>
+                                            <div className="flex gap-1">
+                                                <select
+                                                    value={productFormData.category}
+                                                    onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }))}
+                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
+                                                >
+                                                    {categories.map(cat => (
+                                                        <option key={cat} value={cat}>{cat}</option>
+                                                    ))}
+                                                </select>
+                                                {onQuickAddCategory && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowQuickAddCat(!showQuickAddCat)}
+                                                        className="px-2 py-2 bg-[#D4AF37] text-white rounded-lg hover:bg-[#997B2C] transition-colors font-bold text-sm leading-none flex-shrink-0"
+                                                        title="Tambah kategori baru"
+                                                    >
+                                                        +
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="relative">
                                             <label className="block text-xs font-bold text-gray-600 mb-1">Brand</label>

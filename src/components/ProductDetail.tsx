@@ -531,7 +531,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       const message = encodeURIComponent(
         `Halo Admin, saya tertarik dengan produk ${currentProduct.name} dan ingin menanyakan tentang harga reseller. Mohon info lebih lanjut. Terima kasih.`
       );
-      window.open(`https://wa.me/6287815990944?text=${message}`, '_blank');
+      window.open(`https://wa.me/6281952989904?text=${message}`, '_blank');
     }
   };
 
