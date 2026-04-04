@@ -78,6 +78,14 @@ service cloud.firestore {
       allow create: if isAuthenticated();
     }
 
+    // 📦 Product Categories (for product categorization)
+    // Read: All authenticated users (customers need to see categories on HomePage)
+    // Write: Admin & Owner (both can manage product categories)
+    match /product_categories/{categoryId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdminOrOwner();
+    }
+
     // 🧾 Invoice Counters (for generating sequential invoice numbers)
     // Read/Write: Authenticated users (needed during order creation)
     match /invoice_counters/{monthKey} {

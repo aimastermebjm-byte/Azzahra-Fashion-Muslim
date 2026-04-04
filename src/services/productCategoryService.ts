@@ -14,6 +14,7 @@ import {
 export interface ProductCategory {
   id: string;
   name: string;
+  icon?: string; // path to icon file, e.g. '/icons/hijab-icon.png'
   isActive: boolean;
 }
 
@@ -62,6 +63,7 @@ export const productCategoryService = {
       categories.push({
         id: docSnap.id,
         name: data.name || 'Tanpa nama',
+        icon: data.icon || undefined,
         isActive: data.isActive ?? true
       });
     });
@@ -78,7 +80,8 @@ export const productCategoryService = {
   async addCategory(
     name: string,
     createdBy?: string,
-    createdByRole?: string
+    createdByRole?: string,
+    icon?: string
   ): Promise<ProductCategory> {
     const trimmedName = name.trim();
     if (!trimmedName) {
@@ -95,17 +98,22 @@ export const productCategoryService = {
     }
 
     // Add to Firestore
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+    const docData: any = {
       name: trimmedName,
       isActive: true,
       createdAt: serverTimestamp(),
       createdBy: createdBy || null,
       createdByRole: createdByRole || null
-    });
+    };
+    if (icon) {
+      docData.icon = icon;
+    }
+    const docRef = await addDoc(collection(db, COLLECTION_NAME), docData);
 
     const newCategory: ProductCategory = {
       id: docRef.id,
       name: trimmedName,
+      icon: icon || undefined,
       isActive: true
     };
 
