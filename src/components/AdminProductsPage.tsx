@@ -3276,6 +3276,12 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
             }}
             categories={categories}
             initialState={manualUploadInitialState}
+            onQuickAddCategory={async (name: string) => {
+              await productCategoryService.addCategory(name, user?.uid, user?.role);
+              productCategoryService.clearCache();
+              const updated = await productCategoryService.listCategories();
+              setCategories(updated.map(c => c.name));
+            }}
             onSuccess={async (productData) => {
               try {
                 console.log('Manual Upload product data:', productData);
