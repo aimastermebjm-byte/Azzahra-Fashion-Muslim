@@ -49,7 +49,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     const message = encodeURIComponent(
       `Halo Admin, saya tertarik dengan produk ${product.name} dan ingin menanyakan tentang harga reseller. Mohon info lebih lanjut. Terima kasih.`
     );
-    window.open(`https://wa.me/6287815990944?text=${message}`, '_blank');
+    window.open(`https://wa.me/6281952989904?text=${message}`, '_blank');
     setShowResellerMenu(false);
   };
 
@@ -205,13 +205,35 @@ const ProductCard: React.FC<ProductCardProps> = ({
               </div>
             )}
             {user?.role !== 'reseller' && (
-              <button
-                onClick={handleResellerClick}
-                className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#D4AF37] transition-colors"
-              >
-                <span>Info Harga Reseller</span>
-                <ChevronUp className={`w-3 h-3 transition-transform ${showResellerMenu ? 'rotate-180' : ''}`} />
-              </button>
+              <div className="relative">
+                <button
+                  onClick={handleResellerClick}
+                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#D4AF37] transition-colors"
+                >
+                  <span>Info Harga Reseller</span>
+                  <ChevronUp className={`w-3 h-3 transition-transform ${showResellerMenu ? 'rotate-180' : ''}`} />
+                </button>
+                {/* Dropdown Menu for variant pricing */}
+                {showResellerMenu && (
+                  <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-20 overflow-hidden">
+                    <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 text-[10px] text-gray-500 font-medium uppercase tracking-wider">
+                      Harga Member
+                    </div>
+                    <div className="p-3">
+                      <div className="text-sm font-bold text-brand-primary mb-2">
+                        Rp {product.resellerPrice.toLocaleString('id-ID')}
+                      </div>
+                      <button
+                        onClick={handleWhatsAppClick}
+                        className="w-full px-2 py-1.5 text-xs bg-[#25D366] text-white rounded hover:bg-[#20bd5a] transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <MessageCircle className="w-3 h-3" />
+                        <span>Gabung Reseller</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         );
