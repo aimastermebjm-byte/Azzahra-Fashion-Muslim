@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Tags, Plus, Trash2, CreditCard, Layers, Package, Check } from 'lucide-react';
+import { Tags, Plus, Trash2, CreditCard, Layers, Package, Check, Pencil, X } from 'lucide-react';
 import PageHeader from './PageHeader';
 import EmptyState from './ui/EmptyState';
 import { useToast } from './ToastProvider';
@@ -52,6 +52,7 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
   const [newProductCategoryIcon, setNewProductCategoryIcon] = useState('');
   const [showAddProductCategory, setShowAddProductCategory] = useState(false);
   const [deletingProductCategoryId, setDeletingProductCategoryId] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<{ id: string; icon: string } | null>(null);
 
   const isOwner = user?.role === 'owner';
   const isAdmin = user?.role === 'admin';
@@ -201,6 +202,20 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
       toast({ title: 'Gagal hapus kategori produk', description: message, variant: 'destructive' });
     } finally {
       setDeletingProductCategoryId(null);
+    }
+  };
+
+  const handleEditProductCategory = async (categoryId: string, newIcon: string) => {
+    try {
+      await productCategoryService.updateCategory(categoryId, { icon: newIcon });
+      setProductCategories((prev) =>
+        prev.map((cat) => cat.id === categoryId ? { ...cat, icon: newIcon } : cat)
+      );
+      setEditingCategory(null);
+      toast({ message: 'Icon kategori berhasil diubah', type: 'success' });
+    } catch (err) {
+      console.error('Failed to update category icon', err);
+      toast({ message: 'Gagal mengubah icon kategori', type: 'error' });
     }
   };
 
@@ -507,30 +522,89 @@ const AdminMasterDataPage: React.FC<AdminMasterDataPageProps> = ({ onBack, user 
                 ) : (
                   <div className="space-y-2">
                     {productCategories.map((cat) => (
-                      <div key={cat.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">
-                        <div className="flex items-center gap-2.5">
-                          {cat.icon ? (
-                            <img
-                              src={cat.icon}
-                              alt={cat.name}
-                              className="w-7 h-7 object-contain flex-shrink-0"
-                              style={{ mixBlendMode: 'multiply' }}
-                            />
-                          ) : (
-                            <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
-                              <Package className="w-4 h-4 text-slate-400" />
-                            </div>
-                          )}
-                          <span className="text-slate-800 font-medium">{cat.name}</span>
+                      <div key={cat.id} className="rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
+                        <div className="flex items-center justify-between px-3 py-2 text-sm">
+                          <div className="flex items-center gap-2.5">
+                            {cat.icon ? (
+                              <img
+                                src={cat.icon}
+                                alt={cat.name}
+                                className="w-7 h-7 object-contain flex-shrink-0"
+                                style={{ mixBlendMode: 'multiply' }}
+                              />
+                            ) : (
+                              <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                <Package className="w-4 h-4 text-slate-400" />
+                              </div>
+                            )}
+                            <span className="text-slate-800 font-medium">{cat.name}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setEditingCategory(
+                                editingCategory?.id === cat.id ? null : { id: cat.id, icon: cat.icon || '' }
+                              )}
+                              className="inline-flex items-center gap-1 rounded-md border border-[#D4AF37] px-2 py-1 text-xs text-[#997B2C] hover:bg-[#D4AF37]/10 transition-colors"
+                            >
+                              <Pencil className="w-3 h-3" /> Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProductCategory(cat.id)}
+                              disabled={deletingProductCategoryId === cat.id}
+                              className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                            >
+                              <Trash2 className="w-3 h-3" /> Hapus
+                            </button>
+                          </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteProductCategory(cat.id)}
-                          disabled={deletingProductCategoryId === cat.id}
-                          className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
-                        >
-                          <Trash2 className="w-3 h-3" /> Hapus
-                        </button>
+
+                        {/* Inline Edit Icon Picker */}
+                        {editingCategory?.id === cat.id && (
+                          <div className="px-3 pb-3 pt-1 border-t border-slate-100 animate-in slide-in-from-top-1 duration-200">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-[10px] font-semibold text-slate-500 uppercase">Pilih Icon untuk "{cat.name}"</p>
+                              <button
+                                type="button"
+                                onClick={() => setEditingCategory(null)}
+                                className="p-0.5 text-slate-400 hover:text-slate-600"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
+                              {AVAILABLE_ICONS.map((iconItem) => {
+                                const isSelected = editingCategory.icon === iconItem.path;
+                                return (
+                                  <button
+                                    key={iconItem.path}
+                                    type="button"
+                                    onClick={() => handleEditProductCategory(cat.id, iconItem.path)}
+                                    className={`relative flex flex-col items-center gap-0.5 p-1.5 rounded-lg border-2 transition-all duration-200 ${
+                                      isSelected
+                                        ? 'border-[#D4AF37] bg-[#D4AF37]/10 shadow-md ring-2 ring-[#D4AF37]/30'
+                                        : 'border-slate-200 bg-white hover:border-[#D4AF37]/50 hover:bg-slate-50'
+                                    }`}
+                                  >
+                                    {isSelected && (
+                                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#D4AF37] rounded-full flex items-center justify-center shadow-sm">
+                                        <Check className="w-2.5 h-2.5 text-white" />
+                                      </div>
+                                    )}
+                                    <img
+                                      src={iconItem.path}
+                                      alt={iconItem.label}
+                                      className="w-7 h-7 object-contain"
+                                      style={{ mixBlendMode: 'multiply' }}
+                                    />
+                                    <span className="text-[8px] text-slate-500 font-medium leading-tight text-center">{iconItem.label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

@@ -5,6 +5,7 @@ import {
   addDoc,
   getDocs,
   deleteDoc,
+  updateDoc,
   doc,
   query,
   orderBy,
@@ -135,6 +136,26 @@ export const productCategoryService = {
     writeCache(cached.filter((cat) => cat.id !== categoryId));
 
 
+  },
+
+  /**
+   * Update product category (name, icon)
+   */
+  async updateCategory(categoryId: string, updates: { name?: string; icon?: string }): Promise<void> {
+    const updateData: any = {};
+    if (updates.name !== undefined) updateData.name = updates.name.trim();
+    if (updates.icon !== undefined) updateData.icon = updates.icon;
+
+    await updateDoc(doc(db, COLLECTION_NAME, categoryId), updateData);
+
+    // Update cache
+    const cached = readCache() || [];
+    writeCache(cached.map((cat) => {
+      if (cat.id === categoryId) {
+        return { ...cat, ...updates };
+      }
+      return cat;
+    }));
   },
 
   /**
