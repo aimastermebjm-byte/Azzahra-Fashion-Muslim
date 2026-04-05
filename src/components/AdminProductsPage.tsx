@@ -2193,7 +2193,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        💡 Bisa pilih multiple gambar (JPG, PNG, WebP). Maksimal 5MB per gambar.
+                        💡 Bisa pilih multiple gambar (JPG, PNG, WebP). Maks 20MB, dikompres otomatis.
+                      </p>
+                      <p className="text-xs text-amber-600 mt-1 font-medium">
+                        📐 <strong>Tips:</strong> Gunakan foto portrait rasio <strong>3:4</strong> (contoh: 900×1200px) agar tidak terpotong di tampilan produk.
                       </p>
                     </div>
 
@@ -2692,7 +2695,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        💡 Bisa pilih multiple gambar (JPG, PNG, WebP). Maksimal 5MB per gambar.
+                        💡 Bisa pilih multiple gambar (JPG, PNG, WebP). Maks 20MB, dikompres otomatis.
+                      </p>
+                      <p className="text-xs text-amber-600 mt-1 font-medium">
+                        📐 <strong>Tips:</strong> Gunakan foto portrait rasio <strong>3:4</strong> (contoh: 900×1200px) agar tidak terpotong di tampilan produk.
                       </p>
                     </div>
 

@@ -848,7 +848,10 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     <div className="flex flex-col items-center justify-center gap-2">
                                         <Upload className="w-8 h-8 text-purple-500" />
                                         <p className="text-gray-700 font-bold">Tap untuk Upload Gambar</p>
-                                        <p className="text-xs text-gray-400">Banyak gambar (Jpg/Png)</p>
+                                        <p className="text-xs text-gray-400">Banyak gambar (JPG/PNG) · Maks 20MB, dikompres otomatis</p>
+                                        <p className="text-xs text-amber-600 font-medium mt-1">
+                                            📐 Tips: Gunakan foto <strong>portrait rasio 3:4</strong> (contoh: 900×1200px) agar tidak terpotong
+                                        </p>
                                     </div>
                                 </label>
                             </div>
