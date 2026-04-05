@@ -113,7 +113,12 @@ export const useProductCRUD = (): UseProductCRUDResult => {
         // NEW: Per-variant pricing fields
         ...(productData.pricesPerVariant ? { pricesPerVariant: productData.pricesPerVariant } : {}),
         ...(productData.costPricePerSize ? { costPricePerSize: productData.costPricePerSize } : {}),
-        ...(productData.variantNames ? { variantNames: productData.variantNames } : {})
+        ...(productData.variantNames ? { variantNames: productData.variantNames } : {}),
+        // NEW: Save initial stock for PO products (used by Goods Receipt to calculate sold qty)
+        ...((productData.status === 'po' || productData.status === 'PO') ? {
+          initialStock: (typeof productData.variants?.stock === 'object' && productData.variants.stock !== null) ? JSON.parse(JSON.stringify(productData.variants.stock)) : {},
+          initialStockTotal: Number(productData.stock || 0),
+        } : {})
       };
 
       // ATOMIC UPDATE: Use arrayUnion to safely append without reading first

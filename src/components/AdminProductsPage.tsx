@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, Edit, Search, X, Trash2, Clock, Flame, Star, MessageCircle } from 'lucide-react';
+import { Package, Plus, Edit, Search, X, Trash2, Clock, Flame, Star, MessageCircle, PackageCheck, AlertTriangle, CheckCircle } from 'lucide-react';
+import { stockMutationService } from '../services/stockMutationService';
 import { collection, addDoc, updateDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../utils/firebaseClient';
 import PageHeader from './PageHeader';
@@ -106,6 +107,11 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [collectionName, setCollectionName] = useState('');
   const [collectionDescription, setCollectionDescription] = useState('');
+
+  // Goods Receipt Modal (Terima Barang Datang)
+  const [goodsReceiptProduct, setGoodsReceiptProduct] = useState<Product | null>(null);
+  const [goodsReceiptData, setGoodsReceiptData] = useState<Record<string, Record<string, number>>>({});
+  const [goodsReceiptSaving, setGoodsReceiptSaving] = useState(false);
 
   // Stock History Modal
   const [historyModalData, setHistoryModalData] = useState<any>(null);
@@ -657,6 +663,159 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
     } catch (error) {
       console.error('Error updating product:', error);
       alert('Gagal memperbarui produk');
+    }
+  };
+
+  // ==================== GOODS RECEIPT HANDLER ====================
+  const handleOpenGoodsReceipt = (product: Product) => {
+    // Pre-fill with initial stock (original PO quantities)
+    const initialData: Record<string, Record<string, number>> = {};
+    const sizes = product.variants?.sizes || [];
+    const colors = product.variants?.colors || [];
+    const stockMap = product.variants?.stock || {};
+    const initialStockMap = (product as any).initialStock || {};
+
+    for (const size of sizes) {
+      initialData[size] = {};
+      for (const color of colors) {
+        // Use initialStock if available, otherwise use current stock as fallback
+        initialData[size][color] = initialStockMap[size]?.[color] ?? stockMap[size]?.[color] ?? 0;
+      }
+    }
+
+    // For non-variant products
+    if (sizes.length === 0 && colors.length === 0) {
+      initialData['_default'] = { '_default': (product as any).initialStockTotal ?? product.stock ?? 0 };
+    }
+
+    setGoodsReceiptData(initialData);
+    setGoodsReceiptProduct(product);
+  };
+
+  const handleSaveGoodsReceipt = async () => {
+    if (!goodsReceiptProduct) return;
+    setGoodsReceiptSaving(true);
+
+    try {
+      const product = goodsReceiptProduct;
+      const sizes = product.variants?.sizes || [];
+      const colors = product.variants?.colors || [];
+      const currentStockMap = product.variants?.stock || {};
+      const initialStockMap = (product as any).initialStock || {};
+
+      const newStockMap: Record<string, Record<string, number>> = {};
+      let totalNewStock = 0;
+      let hasDeficit = false;
+      const deficitDetails: string[] = [];
+
+      if (sizes.length === 0 && colors.length === 0) {
+        // Non-variant product
+        const arrived = goodsReceiptData['_default']?.['_default'] ?? 0;
+        const originalPO = (product as any).initialStockTotal ?? product.stock ?? 0;
+        const currentRemaining = product.stock ?? 0;
+        const sold = originalPO - currentRemaining;
+        let newStock = arrived - sold;
+
+        if (newStock < 0) {
+          hasDeficit = true;
+          deficitDetails.push(`Kekurangan ${Math.abs(newStock)} pcs, ada pesanan tidak terpenuhi`);
+          newStock = 0;
+        }
+        totalNewStock = newStock;
+      } else {
+        // Variant product
+        for (const size of sizes) {
+          newStockMap[size] = {};
+          for (const color of colors) {
+            const arrived = goodsReceiptData[size]?.[color] ?? 0;
+            const originalPO = initialStockMap[size]?.[color] ?? currentStockMap[size]?.[color] ?? 0;
+            const currentRemaining = currentStockMap[size]?.[color] ?? 0;
+            const sold = originalPO - currentRemaining;
+            let newStock = arrived - sold;
+
+            if (newStock < 0) {
+              hasDeficit = true;
+              deficitDetails.push(`${size}-${color}: kurang ${Math.abs(newStock)} pcs`);
+              newStock = 0;
+            }
+            newStockMap[size][color] = newStock;
+            totalNewStock += newStock;
+          }
+        }
+      }
+
+      // Build update object
+      const updateData: any = {
+        status: 'ready',
+        stock: totalNewStock,
+      };
+
+      if (sizes.length > 0 && colors.length > 0) {
+        updateData.variants = {
+          ...product.variants,
+          stock: newStockMap,
+        };
+      }
+
+      // Save deficit alert if any
+      if (hasDeficit) {
+        updateData.stockDeficitAlert = {
+          message: deficitDetails.join('; '),
+          createdAt: new Date().toISOString(),
+          arrivedData: goodsReceiptData,
+        };
+      }
+
+      // Update product
+      await updateProduct(product.id, updateData);
+
+      // Log to stock mutations
+      if (sizes.length > 0 && colors.length > 0) {
+        for (const size of sizes) {
+          for (const color of colors) {
+            const arrived = goodsReceiptData[size]?.[color] ?? 0;
+            const previousStock = currentStockMap[size]?.[color] ?? 0;
+            const newStock = newStockMap[size]?.[color] ?? 0;
+            if (arrived !== previousStock || previousStock !== newStock) {
+              await stockMutationService.logMutation({
+                productId: product.id,
+                productName: product.name,
+                size,
+                variant: color,
+                previousStock,
+                newStock,
+                change: newStock - previousStock,
+                type: 'restock',
+                referenceId: `goods_receipt_${Date.now()}`,
+                notes: `Penerimaan Barang: datang ${arrived} pcs`,
+                createdBy: user?.uid || 'admin',
+                performedBy: user?.name || user?.email || 'Admin',
+              });
+            }
+          }
+        }
+      }
+
+      alert(hasDeficit
+        ? `⚠️ Barang diterima dengan kekurangan!\n${deficitDetails.join('\n')}\nStatus diubah ke Ready. Segera hubungi konsumen yang terdampak.`
+        : '✅ Barang berhasil diterima! Status diubah ke Ready.'
+      );
+
+      setGoodsReceiptProduct(null);
+      setGoodsReceiptData({});
+    } catch (error) {
+      console.error('Error saving goods receipt:', error);
+      alert('❌ Gagal menyimpan penerimaan barang: ' + (error as Error).message);
+    } finally {
+      setGoodsReceiptSaving(false);
+    }
+  };
+
+  const handleDismissDeficitAlert = async (productId: string) => {
+    try {
+      await updateProduct(productId, { stockDeficitAlert: undefined } as any);
+    } catch (error) {
+      console.error('Error dismissing deficit alert:', error);
     }
   };
 
@@ -1803,6 +1962,28 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                           {product.status === 'ready' ? 'Ready' : 'PO'}
                         </span>
                       </div>
+
+                      {/* 🔴 Deficit Alert on Card */}
+                      {(product as any).stockDeficitAlert && (
+                        <div className="mt-1 bg-red-50 border border-red-200 rounded px-1.5 py-1">
+                          <div className="flex items-start gap-1">
+                            <AlertTriangle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
+                            <p className="text-[7px] text-red-600 leading-tight font-medium">
+                              {(product as any).stockDeficitAlert.message}
+                            </p>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDismissDeficitAlert(product.id);
+                            }}
+                            className="mt-0.5 w-full text-[7px] bg-green-500 text-white rounded py-0.5 font-bold flex items-center justify-center gap-0.5"
+                          >
+                            <CheckCircle className="w-2.5 h-2.5" />
+                            Sudah Ditangani
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Overlay with Edit/Delete - Shows on Tap */}
@@ -1849,6 +2030,21 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                             <Clock className="w-4 h-4" />
                             <span className="text-xs font-bold">Kartu Stok</span>
                           </button>
+
+                          {/* 📥 Terima Barang - Only for PO products */}
+                          {product.status === 'po' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenGoodsReceipt(product);
+                                setTappedProductId(null);
+                              }}
+                              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-2 px-3 rounded-xl shadow-lg flex items-center justify-center gap-2 border-2 border-emerald-700 shadow-[0_3px_0_0_#047857]"
+                            >
+                              <PackageCheck className="w-4 h-4" />
+                              <span className="text-xs font-bold">Terima Barang</span>
+                            </button>
+                          )}
 
                           {user?.role === 'owner' && (
                             <button
@@ -3432,7 +3628,199 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
         onClose={() => setShowCollectionManager(false)}
         products={allProducts}
         onUpdateProduct={handleCollectionUpdateProduct}
-      />
+            />
+
+      {/* ==================== GOODS RECEIPT MODAL ==================== */}
+      {goodsReceiptProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-5 py-4 rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <PackageCheck className="w-5 h-5 text-emerald-600" />
+                  <h2 className="text-lg font-bold text-gray-800">Terima Barang Datang</h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setGoodsReceiptProduct(null);
+                    setGoodsReceiptData({});
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {/* Product Info */}
+              <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
+                <img
+                  src={goodsReceiptProduct.image || goodsReceiptProduct.images?.[0] || '/placeholder-product.jpg'}
+                  alt={goodsReceiptProduct.name}
+                  className="w-14 h-14 rounded-lg object-cover border"
+                />
+                <div>
+                  <h4 className="font-bold text-gray-800 text-sm">{goodsReceiptProduct.name}</h4>
+                  <p className="text-xs text-gray-500">{goodsReceiptProduct.category}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-bold">PO</span>
+                    <span className="text-[10px] text-gray-400">→</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold">Ready</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Info */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-xs text-blue-700">
+                  💡 Masukkan jumlah <strong>barang fisik yang datang</strong> dari supplier per varian. Sistem akan otomatis menghitung stok akhir.
+                </p>
+              </div>
+
+              {/* Stock Input Table */}
+              {(goodsReceiptProduct.variants?.sizes?.length > 0 && goodsReceiptProduct.variants?.colors?.length > 0) ? (
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-bold text-gray-700">Varian</th>
+                        <th className="px-3 py-2 text-center font-bold text-gray-700">Stok Sistem</th>
+                        <th className="px-3 py-2 text-center font-bold text-emerald-700">Barang Datang</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {goodsReceiptProduct.variants.sizes.map(size =>
+                        goodsReceiptProduct.variants.colors.map(color => {
+                          const currentStock = goodsReceiptProduct.variants?.stock?.[size]?.[color] ?? 0;
+                          const arrivedValue = goodsReceiptData[size]?.[color] ?? 0;
+                          return (
+                            <tr key={`${size}-${color}`} className="border-t border-gray-100">
+                              <td className="px-3 py-2 font-medium text-gray-800">{size} - {color}</td>
+                              <td className="px-3 py-2 text-center text-gray-500">{currentStock}</td>
+                              <td className="px-3 py-2 text-center">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={arrivedValue}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value) || 0;
+                                    setGoodsReceiptData(prev => ({
+                                      ...prev,
+                                      [size]: {
+                                        ...prev[size],
+                                        [color]: val
+                                      }
+                                    }));
+                                  }}
+                                  className="w-16 px-2 py-1 border-2 border-emerald-300 rounded-lg text-center font-bold focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                /* Non-variant product */
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Stok Sistem: <span className="text-gray-500">{goodsReceiptProduct.stock ?? 0}</span></p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-bold text-emerald-700">Datang:</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={goodsReceiptData['_default']?.['_default'] ?? 0}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          setGoodsReceiptData({ '_default': { '_default': val } });
+                        }}
+                        className="w-20 px-2 py-1 border-2 border-emerald-300 rounded-lg text-center font-bold focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Preview Calculation */}
+              {(() => {
+                const sizes = goodsReceiptProduct.variants?.sizes || [];
+                const colors = goodsReceiptProduct.variants?.colors || [];
+                const currentStockMap = goodsReceiptProduct.variants?.stock || {};
+                const initialStockMap = (goodsReceiptProduct as any).initialStock || {};
+                const warnings: string[] = [];
+
+                if (sizes.length > 0 && colors.length > 0) {
+                  for (const size of sizes) {
+                    for (const color of colors) {
+                      const arrived = goodsReceiptData[size]?.[color] ?? 0;
+                      const originalPO = initialStockMap[size]?.[color] ?? currentStockMap[size]?.[color] ?? 0;
+                      const currentRemaining = currentStockMap[size]?.[color] ?? 0;
+                      const sold = originalPO - currentRemaining;
+                      const newStock = arrived - sold;
+                      if (newStock < 0) {
+                        warnings.push(`${size}-${color}: kurang ${Math.abs(newStock)} pcs (ada pesanan tidak terpenuhi)`);
+                      }
+                    }
+                  }
+                } else {
+                  const arrived = goodsReceiptData['_default']?.['_default'] ?? 0;
+                  const originalPO = (goodsReceiptProduct as any).initialStockTotal ?? goodsReceiptProduct.stock ?? 0;
+                  const currentRemaining = goodsReceiptProduct.stock ?? 0;
+                  const sold = originalPO - currentRemaining;
+                  const newStock = arrived - sold;
+                  if (newStock < 0) {
+                    warnings.push(`Kurang ${Math.abs(newStock)} pcs (ada pesanan tidak terpenuhi)`);
+                  }
+                }
+
+                if (warnings.length > 0) {
+                  return (
+                    <div className="bg-red-50 border-2 border-red-300 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="w-4 h-4 text-red-500" />
+                        <span className="text-sm font-bold text-red-700">Peringatan Kekurangan!</span>
+                      </div>
+                      <ul className="space-y-1">
+                        {warnings.map((w, i) => (
+                          <li key={i} className="text-xs text-red-600 flex items-start gap-1">
+                            <span>•</span><span>{w}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="text-[10px] text-red-500 mt-2">
+                        Stok akan diset ke 0. Hubungi konsumen yang terdampak via WhatsApp.
+                      </p>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-xs text-green-700">Stok sesuai, tidak ada kekurangan.</span>
+                  </div>
+                );
+              })()}
+
+              {/* Save Button */}
+              <button
+                onClick={handleSaveGoodsReceipt}
+                disabled={goodsReceiptSaving}
+                className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 border-2 border-emerald-700 shadow-[0_3px_0_0_#047857]"
+              >
+                <PackageCheck className="w-5 h-5" />
+                {goodsReceiptSaving ? 'Menyimpan...' : 'Simpan & Jadikan Ready'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
 
     </div >
