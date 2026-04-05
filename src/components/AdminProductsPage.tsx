@@ -631,6 +631,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
       const updateData = {
         ...formData,
         images: allImageUrls,
+        image: allImageUrls[0] || editingProduct.image || '/placeholder-product.jpg', // ← Selalu update field 'image' juga
         // Convert string fields to numbers
         retailPrice: parseInt(formData.retailPrice) || 0,
         resellerPrice: parseInt(formData.resellerPrice) || 0,
@@ -1923,7 +1924,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     <div className="aspect-square bg-gray-100">
                       {product.images?.length > 0 || product.image ? (
                         <img
-                          src={product.image || product.images[0] || '/placeholder-product.jpg'}
+                          src={product.images?.[0] || product.image || '/placeholder-product.jpg'}
                           alt={product.name}
                           className="w-full h-full object-cover"
                           onError={(e) => {
