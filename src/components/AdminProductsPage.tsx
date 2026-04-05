@@ -2348,7 +2348,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                 {/* Variant Management */}
                 <div className="space-y-4">
                   <div>
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-2">
                       <label className="block text-sm font-medium text-gray-700">
                         📏 Ukuran Produk
                       </label>
@@ -2360,6 +2360,46 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                         + Tambah Ukuran
                       </button>
                     </div>
+
+                    {/* Quick-pick size buttons */}
+                    <div className="flex flex-wrap gap-1.5 mb-3 p-2 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                      <p className="w-full text-[10px] text-gray-500 mb-1">⚡ Klik cepat tambah ukuran:</p>
+                      {['Allsize', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'Standar', 'Jumbo'].map((quickSize) => {
+                        const alreadyAdded = formData.variants.sizes.includes(quickSize);
+                        return (
+                          <button
+                            key={quickSize}
+                            type="button"
+                            disabled={alreadyAdded}
+                            onClick={() => {
+                              if (alreadyAdded) return;
+                              const newSizes = [...formData.variants.sizes, quickSize];
+                              const newStock = { ...formData.variants.stock };
+                              newStock[quickSize] = {};
+                              formData.variants.colors.forEach(color => {
+                                newStock[quickSize][color] = 0;
+                              });
+                              setFormData({
+                                ...formData,
+                                variants: {
+                                  ...formData.variants,
+                                  sizes: newSizes,
+                                  stock: newStock
+                                }
+                              });
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${
+                              alreadyAdded
+                                ? 'bg-blue-100 text-blue-700 border-blue-300 opacity-50 cursor-not-allowed'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 cursor-pointer'
+                            }`}
+                          >
+                            {alreadyAdded ? `✓ ${quickSize}` : quickSize}
+                          </button>
+                        );
+                      })}
+                    </div>
+
                     <div className="flex flex-wrap gap-2">
                       {formData.variants.sizes.map((size, index) => (
                         <div key={index} className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
@@ -2398,7 +2438,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                       ))}
                     </div>
                     {formData.variants.sizes.length === 0 && (
-                      <p className="text-sm text-gray-500">Tambahkan ukuran untuk mulai mengelola varian</p>
+                      <p className="text-sm text-gray-500">Tambahkan ukuran di atas untuk mulai mengelola varian</p>
                     )}
                   </div>
 

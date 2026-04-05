@@ -323,7 +323,7 @@ const HomePage: React.FC<HomePageProps> = ({
   const filteredProducts = safeProducts.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || product.category.toLowerCase() === selectedCategory.toLowerCase();
     const matchesStatus = statusFilter === 'all' || product.status === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;
   });
