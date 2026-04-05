@@ -61,7 +61,7 @@ const DEFAULT_PRICING_RULES: PricingRule[] = [
 ];
 
 // Size preset options
-const SIZE_PRESETS = ['All Size', 'S', 'M', 'L', 'XL'];
+const SIZE_PRESETS = ['All Size', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'Standar', 'Jumbo'];
 
 const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     isOpen,
