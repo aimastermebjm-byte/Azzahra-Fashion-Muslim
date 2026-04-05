@@ -229,7 +229,7 @@ const HomePage: React.FC<HomePageProps> = ({
 
         // Map to HomePage format - prioritize icon from Firestore master data
         const mappedCategories = masterCategories.map(cat => ({
-          id: cat.name.toLowerCase(),
+          id: cat.name,  // Pakai nama asli agar konsisten dengan product.category di Firestore
           name: cat.name,
           icon: getCategoryIcon(cat.name),
           masterIconPath: cat.icon || undefined // icon path from Firestore (e.g. '/icons/hijab-icon.png')
@@ -246,10 +246,10 @@ const HomePage: React.FC<HomePageProps> = ({
         // Fallback to default if error
         setCategories([
           { id: 'all', name: 'Semua', icon: '🛍️' },
-          { id: 'hijab', name: 'Hijab', icon: '🧕' },
-          { id: 'gamis', name: 'Gamis', icon: '👗' },
-          { id: 'khimar', name: 'Khimar', icon: '🧕' },
-          { id: 'tunik', name: 'Tunik', icon: '👚' }
+          { id: 'Hijab', name: 'Hijab', icon: '🧕' },
+          { id: 'Gamis', name: 'Gamis', icon: '👗' },
+          { id: 'Khimar', name: 'Khimar', icon: '🧕' },
+          { id: 'Tunik', name: 'Tunik', icon: '👚' }
         ]);
       }
     };
@@ -323,7 +323,7 @@ const HomePage: React.FC<HomePageProps> = ({
   const filteredProducts = safeProducts.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || product.category.toLowerCase() === selectedCategory.toLowerCase();
     const matchesStatus = statusFilter === 'all' || product.status === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;
   });
