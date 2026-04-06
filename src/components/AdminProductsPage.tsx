@@ -1933,7 +1933,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                     <div className="aspect-square bg-gray-100">
                       {product.images?.length > 0 || product.image ? (
                         <img
-                          src={product.images?.[0] || product.image || '/placeholder-product.jpg'}
+                          src={product.image || product.images?.[0] || '/placeholder-product.jpg'}
                           alt={product.name}
                           className="w-full h-full object-cover"
                           onError={(e) => {
