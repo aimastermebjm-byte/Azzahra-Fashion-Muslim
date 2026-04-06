@@ -209,6 +209,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [shippingError, setShippingError] = useState<string>('');
   const [selectedService, setSelectedService] = useState<KomerceCostResult | null>(null);
   const [shippingCost, setShippingCost] = useState<number>(0);
+  const [codCourierName, setCodCourierName] = useState<string>('');
 
   // Calculate total weight of cart items with smart rounding - OPTIMIZED for Firestore data
   const calculateTotalWeight = () => {
@@ -533,7 +534,17 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     { id: 'tiki', name: 'TIKI', code: 'tiki', price: 0 }, // RajaOngkir supported
     { id: 'ojek', name: 'OJEK', code: null, price: 0 }, // Local courier - manual price
     { id: 'lion', name: 'Lion Parcel', code: 'lion', price: 0 }, // Automatic via Komerce
-    { id: 'idexpress', name: 'IDExpress', code: 'ide', price: 0 } // Automatic via Komerce
+    { id: 'idexpress', name: 'IDExpress', code: 'ide', price: 0 }, // Automatic via Komerce
+    // COD Ongkir - hanya untuk reseller/admin/owner
+    ...(isPrivilegedUser ? [{ id: 'cod', name: 'COD Ongkir (Bayar di Tempat)', code: null, price: 0 }] : [])
+  ];
+
+  // Pilihan kurir untuk COD Ongkir
+  const codCourierOptions = [
+    { id: 'tiki', name: 'TIKI' },
+    { id: 'pos', name: 'POS Indonesia' },
+    { id: 'jnt', name: 'J&T Express' },
+    { id: 'idexpress', name: 'IDExpress' },
   ];
 
   const selectedPaymentMethod = paymentMethods.find(method => method.id === formData.paymentMethodId);
@@ -643,6 +654,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setOngkirResults([]);
       setSelectedService(null);
       lastShippingCalcRef.current = ''; // Reset to allow new calculation
+
+      // Reset COD courier ketika pindah dari COD
+      if ((newValue as string) !== 'cod') {
+        setCodCourierName('');
+      }
 
       return; // Exit early to avoid double state update
     }
@@ -780,7 +796,17 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
       // Check if selected courier has valid shipping cost (only for delivery mode)
       // BYPASS if courier is 'pickup'
-      if (formData.shippingCourier !== 'pickup') {
+      // COD Ongkir: validasi kurir COD harus dipilih
+      if (formData.shippingCourier === 'cod') {
+        if (!codCourierName) {
+          showToast({
+            type: 'warning',
+            title: 'Pilih kurir COD',
+            message: 'Silakan pilih kurir untuk pengiriman COD.'
+          });
+          return;
+        }
+      } else if (formData.shippingCourier !== 'pickup') {
         if (supportsAutomatic && (!formData.shippingCost || formData.shippingCost <= 0)) {
           showToast({
             type: 'warning',
@@ -854,9 +880,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           dropshipName: formData.dropshipName,
           dropshipPhone: formData.dropshipPhone,
           courier: formData.shippingCourier,
-          shippingCost: formData.shippingCost > 0 ? formData.shippingCost : null,
-          shippingService: formData.shippingService,
-          shippingETD: formData.shippingETD
+          codCourierName: formData.shippingCourier === 'cod' ? codCourierName : undefined,
+          shippingCost: formData.shippingCourier === 'cod' ? 0 : (formData.shippingCost > 0 ? formData.shippingCost : null),
+          shippingService: formData.shippingCourier === 'cod' ? codCourierName : formData.shippingService,
+          shippingETD: formData.shippingCourier === 'cod' ? 'COD' : formData.shippingETD
         };
       })(),
       // ✨ NEW: Shipping mode fields
@@ -1160,7 +1187,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   )}
 
                   {/* Manual shipping cost input for non-automatic couriers, EXCEPT pickup */}
-                  {!supportsAutomatic && formData.shippingCourier !== 'pickup' && (
+                  {!supportsAutomatic && formData.shippingCourier !== 'pickup' && formData.shippingCourier !== 'cod' && (
                     <div className="mt-4 border-t border-dashed border-slate-200 pt-4">
                       <label className="mb-2 block text-sm font-semibold text-slate-700">
                         Biaya Ongkos Kirim (Rp)
@@ -1307,14 +1334,18 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       >
                         {shippingOptions.map((option) => (
                           <option key={option.id} value={option.id}>
-                            {option.name} {option.code ? '(✓ Otomatis)' : '(Manual)'}
+                            {option.name} {option.id === 'cod' ? '(Ongkir Rp 0)' : option.code ? '(✓ Otomatis)' : '(Manual)'}
                           </option>
                         ))}
                       </select>
 
                       {/* Courier Info */}
                       <div className="mt-2 text-xs text-slate-500">
-                        {supportsAutomatic ? (
+                        {formData.shippingCourier === 'cod' ? (
+                          <div className="text-blue-600 font-medium">
+                            📦 COD - Ongkir Rp 0, pilih kurir pengiriman di bawah
+                          </div>
+                        ) : supportsAutomatic ? (
                           <div className="text-green-600">
                             ✓ Otomatis via RajaOngkir dari Banjarmasin
                           </div>
@@ -1341,6 +1372,54 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         </div>
                       )}
                     </div>
+
+                    {/* COD Courier Sub-Dropdown */}
+                    {formData.shippingCourier === 'cod' && (
+                      <div className="mt-3">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Pilih Kurir COD:
+                        </label>
+                        <select
+                          value={codCourierName}
+                          onChange={(e) => {
+                            const selected = e.target.value;
+                            setCodCourierName(selected);
+                            setFormData(prev => ({
+                              ...prev,
+                              shippingCost: 0,
+                              shippingService: selected,
+                              shippingETD: 'COD'
+                            }));
+                            setShippingCost(0);
+                          }}
+                          className="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                        >
+                          <option value="">-- Pilih Kurir --</option>
+                          {codCourierOptions.map((option) => (
+                            <option key={option.id} value={option.name}>
+                              {option.name}
+                            </option>
+                          ))}
+                        </select>
+
+                        {codCourierName && (
+                          <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 p-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-slate-700">Kurir COD:</span>
+                              <span className="text-sm font-semibold text-blue-700">{codCourierName}</span>
+                            </div>
+                            <div className="flex items-center justify-between mt-1">
+                              <span className="text-sm font-medium text-slate-700">Biaya Ongkir:</span>
+                              <span className="text-sm font-bold text-green-600">Rp 0 (COD)</span>
+                            </div>
+                            <div className="flex items-center justify-between mt-1">
+                              <span className="text-sm font-medium text-slate-700">Berat:</span>
+                              <span className="text-sm text-slate-600">{calculateTotalWeight()} gram</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Shipping Cost Display */}
                     {shippingFee > 0 && (
@@ -1679,6 +1758,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     <span>Biaya Ongkir</span>
                     {shippingMode === 'keep' ? (
                       <span className="font-semibold text-amber-600">Belum dihitung</span>
+                    ) : formData.shippingCourier === 'cod' ? (
+                      <span className="font-semibold text-green-600">Rp 0 (COD)</span>
                     ) : (
                       <span className="font-semibold text-slate-900">Rp {shippingFee.toLocaleString('id-ID')}</span>
                     )}
@@ -1694,7 +1775,10 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   )}
                   {formData.shippingService && (
                     <div className="text-xs text-slate-500">
-                      Kurir: {formData.shippingCourier?.toUpperCase()} · {formData.shippingService} ({formData.shippingETD || 'estimasi cepat'})
+                      {formData.shippingCourier === 'cod'
+                        ? `COD via ${codCourierName} · Ongkir Rp 0`
+                        : `Kurir: ${formData.shippingCourier?.toUpperCase()} · ${formData.shippingService} (${formData.shippingETD || 'estimasi cepat'})`
+                      }
                     </div>
                   )}
                 </div>
