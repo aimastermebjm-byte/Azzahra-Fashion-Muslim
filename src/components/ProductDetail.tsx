@@ -7,6 +7,7 @@ import { useRealTimeCartOptimized } from '../hooks/useRealTimeCartOptimized';
 import VariantSelectionModal from './VariantSelectionModal';
 import { useCollectionDiscount } from '../hooks/useCollectionDiscount';
 import { useWishlist } from '../hooks/useWishlist';
+import { collectionService } from '../services/collectionService';
 
 interface ProductDetailProps {
   currentProduct: Product;
@@ -40,6 +41,20 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const { showToast } = useToast();
+
+  // Initialize selected image to the main image
+  useEffect(() => {
+    if (initialProduct.images && initialProduct.image) {
+      const idx = initialProduct.images.indexOf(initialProduct.image);
+      if (idx !== -1) {
+        setSelectedImageIndex(idx);
+      } else {
+        setSelectedImageIndex(0);
+      }
+    } else {
+      setSelectedImageIndex(0);
+    }
+  }, [initialProduct.id, initialProduct.image, initialProduct.images]);
 
   // Modal state
   const [modalMode, setModalMode] = useState<'addToCart' | 'buyNow' | null>(null);
@@ -242,9 +257,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         // Preserve Flash Sale data from initialProduct (source of truth for Flash Sale)
         isFlashSale: initialProduct.isFlashSale || globalProduct.isFlashSale || false,
         flashSalePrice: initialProduct.flashSalePrice || globalProduct.flashSalePrice || 0,
-      };
+      } as Product;
     }
-    return initialProduct;
+    return initialProduct as Product;
   }, [initialProduct, getProductById]);
 
 

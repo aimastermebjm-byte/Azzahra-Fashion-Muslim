@@ -160,7 +160,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
     status: 'ready' as 'ready' | 'po',
     // NEW: Per-variant pricing and names
     pricesPerVariant: {} as Record<string, { retail: number; reseller: number }>,
-    variantNames: {} as Record<string, string>
+    variantNames: {} as Record<string, string>,
+    mainImageIndex: 0
   });
 
   // Toggle for showing price per variant section in edit modal
@@ -589,7 +590,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
         variants: { sizes: [], colors: [], stock: {} },
         status: 'ready',
         pricesPerVariant: {},
-        variantNames: {}
+        variantNames: {},
+        mainImageIndex: 0
       });
       setShowAddModal(false);
     } catch (error) {
@@ -631,7 +633,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
       const updateData = {
         ...formData,
         images: allImageUrls,
-        image: allImageUrls[0] || editingProduct.image || '/placeholder-product.jpg', // ← Selalu update field 'image' juga
+        image: allImageUrls[formData.mainImageIndex] || allImageUrls[0] || editingProduct.image || '/placeholder-product.jpg', // ← Update field 'image' dengan gambar utama
         // Convert string fields to numbers
         retailPrice: parseInt(formData.retailPrice) || 0,
         resellerPrice: parseInt(formData.resellerPrice) || 0,
@@ -847,7 +849,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
       status: product.status || 'ready',
       // Load existing per-variant pricing and names
       pricesPerVariant: productAny.pricesPerVariant || {},
-      variantNames: productAny.variants?.names || productAny.variantNames || {}
+      variantNames: productAny.variants?.names || productAny.variantNames || {},
+      mainImageIndex: (product.images || []).indexOf(product.image || '') >= 0 ? (product.images || []).indexOf(product.image || '') : 0
     });
     // Show price per variant section if data exists
     setShowPricePerVariant(Object.keys(productAny.pricesPerVariant || {}).length > 0);
@@ -2714,7 +2717,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                             const imageSrc = isFileObject ? (image as any).preview : (image as string);
 
                             return (
-                              <div key={index} className="relative group">
+                              <div key={index} className={`relative group border-2 rounded-lg ${formData.mainImageIndex === index ? 'border-yellow-400 ring-2 ring-yellow-200' : 'border-transparent'}`}>
                                 <img
                                   src={imageSrc}
                                   alt={`Preview ${index + 1} `}
@@ -2730,26 +2733,36 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                                   </div>
                                 )}
                                 <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, mainImageIndex: index })}
+                                    className={`absolute top-1 left-1 p-1 rounded-full shadow transition-opacity z-10 ${formData.mainImageIndex === index ? 'bg-yellow-400 text-white opacity-100' : 'bg-white/90 text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-yellow-100'}`}
+                                    title="Set sebagai gambar utama"
+                                >
+                                    <Star className="w-4 h-4 fill-current" />
+                                </button>
+                                <button
                                   type="button"
                                   onClick={() => {
+                                      const newIndex = formData.mainImageIndex === index ? 0 : formData.mainImageIndex > index ? formData.mainImageIndex - 1 : formData.mainImageIndex;
                                     setFormData({
                                       ...formData,
-                                      images: formData.images.filter((_, i) => i !== index)
+                                      images: formData.images.filter((_, i) => i !== index),
+                                      mainImageIndex: newIndex
                                     });
                                   }}
-                                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                 >
                                   <X className="w-3 h-3" />
                                 </button>
-                                <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-                                  {index + 1}
+                                <div className="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-[10px] px-1.5 py-0.5 rounded shadow">
+                                  {index === formData.mainImageIndex ? 'Utama' : index + 1}
                                 </div>
                               </div>
                             );
                           })}
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          💡 Gambar pertama akan menjadi gambar utama produk
+                        <p className="text-xs text-gray-500 mt-2">
+                          💡 Klik ikon bintang (⭐) untuk mengatur gambar utama produk.
                         </p>
                       </div>
                     )}
@@ -3536,26 +3549,37 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                 // Generate unique productId for storage path
                 const tempProductId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
-                let collageUrl = '';
+                let finalImages: string[] = [];
+                let finalMainImage = '';
 
-                // If collage already exists (from draft), use it. DO NOT RE-UPLOAD if it's already a URL string from firebase storage
-                if (manualUploadInitialState?.collageUrl) { // Check initial state for URL
-                  collageUrl = manualUploadInitialState.collageUrl;
-                  console.log('Using existing collage URL:', collageUrl);
-                } else if (productData.collageFile) {
-                  // Upload collage image to Firebase Storage
-                  const collageFile = productData.collageFile;
-                  const uploadedImages = await uploadMultipleImages([collageFile], tempProductId);
-
+                if (productData.imageUploadMode === 'gallery') {
+                  const uploadedImages = await uploadMultipleImages(productData.galleryFiles, tempProductId);
                   if (uploadedImages.length === 0) {
-                    throw new Error('Failed to upload collage image');
+                    throw new Error('Failed to upload gallery images');
                   }
-                  collageUrl = uploadedImages[0];
+                  finalImages = uploadedImages;
+                  finalMainImage = uploadedImages[productData.mainImageIndex] || uploadedImages[0];
                 } else {
-                  throw new Error('No collage image provided');
+                  let collageUrl = '';
+                  // If collage already exists (from draft), use it. DO NOT RE-UPLOAD if it's already a URL string from firebase storage
+                  if (manualUploadInitialState?.collageUrl) { // Check initial state for URL
+                    collageUrl = manualUploadInitialState.collageUrl;
+                    console.log('Using existing collage URL:', collageUrl);
+                  } else if (productData.collageFile) {
+                    // Upload collage image to Firebase Storage
+                    const collageFile = productData.collageFile;
+                    const uploadedImages = await uploadMultipleImages([collageFile], tempProductId);
+
+                    if (uploadedImages.length === 0) {
+                      throw new Error('Failed to upload collage image');
+                    }
+                    collageUrl = uploadedImages[0];
+                  } else {
+                    throw new Error('No collage image provided');
+                  }
+                  finalImages = [collageUrl];
+                  finalMainImage = collageUrl;
                 }
-
-
 
                 // Create product with all fields
                 const newProduct = {
@@ -3573,8 +3597,8 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                   weight: 1000,
                   stock: productData.totalStock,
                   unit: 'pcs',
-                  images: [collageUrl],
-                  image: collageUrl,
+                  images: finalImages,
+                  image: finalMainImage,
                   variants: productData.variants || {
                     sizes: [productData.sizeName || 'Ukuran 1'],
                     colors: productData.variantLabels,
@@ -3610,7 +3634,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                   await addDoc(collection(db, 'pending_instagram_posts'), {
                     productName: newProduct.name,
                     caption: igCaption,
-                    imageUrl: collageUrl,
+                    imageUrl: finalMainImage,
                     status: 'pending',
                     timestamp: serverTimestamp()
                   });
@@ -3622,7 +3646,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                   await addDoc(collection(db, 'pending_whatsapp_group_posts'), {
                     productName: newProduct.name,
                     caption: waCaption,
-                    imageUrl: collageUrl,
+                    imageUrl: finalMainImage,
                     status: 'pending',
                     timestamp: serverTimestamp()
                   });
