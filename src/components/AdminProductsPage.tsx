@@ -625,9 +625,15 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
         }
       }
 
-      // Also keep existing URLs
-      const existingImageUrls = formData.images.filter(img => typeof img === 'string') as string[];
-      const allImageUrls = [...existingImageUrls, ...imageUrls];
+      // Map to preserve exact array index order! (Strings keep their position, Objects replaced by new uploaded URLs)
+      let uploadedUrlIndex = 0;
+      const allImageUrls = formData.images.map(img => {
+        if (typeof img === 'string') {
+          return img;
+        } else {
+          return imageUrls[uploadedUrlIndex++];
+        }
+      });
 
       // Prepare update data
       const updateData = {
