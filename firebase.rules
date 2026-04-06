@@ -179,7 +179,7 @@ service cloud.firestore {
     }
     match /globalindex/{productId} {
       allow read: if true;
-      allow write, delete: if isOwner();
+      allow write, delete: if isAdminOrOwner();
     }
 
     // Payment Detection

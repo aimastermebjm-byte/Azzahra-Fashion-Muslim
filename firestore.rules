@@ -91,5 +91,14 @@ service cloud.firestore {
     match /invoice_counters/{monthKey} {
       allow read, write: if isAuthenticated();
     }
+
+    // 🌐 Global Index (Used for robust cross-category product searching)
+    match /globalindex/{docId} {
+      allow read: if true;
+      allow write: if isAdminOrOwner();
+    }
+    
+    // Fallback block for missing public reads:
+    // (Ensure we don't accidentally expose sensitive data, so we limit to mostly known safe patterns)
   }
 }

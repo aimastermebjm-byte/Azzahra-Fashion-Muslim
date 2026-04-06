@@ -106,6 +106,10 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     // New: Checkbox state for each image (True = Main Variant/Label A-Z, False = Detail/No Label)
     const [isVariant, setIsVariant] = useState<boolean[]>([]);
 
+    // Upload mode state
+    const [uploadMode, setUploadMode] = useState<'collage' | 'gallery'>('collage');
+    const [mainImageIndex, setMainImageIndex] = useState<number>(0);
+
     // Initialize from initialState when isOpen changes
     React.useEffect(() => {
         if (isOpen && initialState) {
@@ -487,7 +491,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     // Auto-generate collage when images change
     React.useEffect(() => {
         const autoGenerateCollage = async () => {
-            if (images.length === 0) {
+            if (images.length === 0 || uploadMode === 'gallery') {
                 setCollageBlob(null);
                 setCollagePreview('');
                 return;
@@ -630,8 +634,13 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             return;
         }
 
-        if (!collageBlob) {
+        if (uploadMode === 'collage' && !collageBlob) {
             alert('Collage belum dibuat');
+            return;
+        }
+
+        if (uploadMode === 'gallery' && images.length === 0) {
+            alert('Minimal 1 gambar harus diupload');
             return;
         }
 
@@ -714,7 +723,10 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             variantNames, // Custom names for checkout: {A: "Scarf", B: "Khimar", ...}
             variantCount: activeVariantLabels.length,
             collageBlob,
-            collageFile: new File([collageBlob], `collage-${Date.now()}.jpg`, { type: 'image/jpeg' }),
+            collageFile: collageBlob ? new File([collageBlob], `collage-${Date.now()}.jpg`, { type: 'image/jpeg' }) : null,
+            galleryFiles: uploadMode === 'gallery' ? images : null,
+            imageUploadMode: uploadMode,
+            mainImageIndex: uploadMode === 'gallery' ? mainImageIndex : 0,
             uploadMode: 'direct',
             sizeName: selectedSizes.join(', '), // Display all selected sizes
             // New: Include complete variants structure with all selected sizes
@@ -794,6 +806,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         setCollageBlob(null);
         setCollagePreview('');
         setStep('upload');
+        setUploadMode('collage');
+        setMainImageIndex(0);
         setProductFormData({
             name: '',
             brand: '',
@@ -815,7 +829,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                 <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                     <div>
                         <h2 className="text-xl font-bold text-gray-800">
-                            Tambah Produk Manual (Collage)
+                            Tambah Produk Manual ({uploadMode === 'collage' ? 'Collage' : 'Gallery'})
                         </h2>
                         <p className="text-sm text-gray-500">
                             Step: {step === 'upload' ? '1. Upload Gambar' : step === 'details' ? '2. Detail Produk' : '3. Preview'}
@@ -834,6 +848,22 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                     {/* Step 1: Upload Images */}
                     {step === 'upload' && (
                         <div className="space-y-6">
+                            {/* Mode Toggle */}
+                            <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
+                                <button
+                                    onClick={() => setUploadMode('collage')}
+                                    className={`flex-1 py-2 font-bold rounded-lg transition-all shadow-sm ${uploadMode === 'collage' ? 'bg-white text-purple-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'}`}
+                                >
+                                    🖼️ Mode Collage
+                                </button>
+                                <button
+                                    onClick={() => setUploadMode('gallery')}
+                                    className={`flex-1 py-2 font-bold rounded-lg transition-all shadow-sm ${uploadMode === 'gallery' ? 'bg-white text-blue-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'}`}
+                                >
+                                    📸 Mode Gallery
+                                </button>
+                            </div>
+
                             {/* Upload Area (Moved to Top) */}
                             <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-purple-400 transition-colors bg-gray-50">
                                 <input
@@ -861,6 +891,9 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center">
                                         <h4 className="text-sm font-medium text-gray-700">📷 Gambar ({images.length})</h4>
+                                        {uploadMode === 'gallery' && (
+                                            <span className="text-xs text-blue-600 font-medium">⭐ Tap ikon bintang untuk set gambar utama</span>
+                                        )}
                                         {selectedSwapIndex !== null && (
                                             <span className="text-xs text-purple-600 font-medium">🔄 Pilih target swap</span>
                                         )}
@@ -916,9 +949,26 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             )}
 
                                                             {/* Label badge */}
-                                                            <div className="absolute top-1 left-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm">
-                                                                {variantLabels[index]}
-                                                            </div>
+                                                            {uploadMode === 'collage' && (
+                                                                <div className="absolute top-1 left-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm z-20">
+                                                                    {variantLabels[index]}
+                                                                </div>
+                                                            )}
+
+                                                            {/* Main Image Star (Gallery Mode Only) */}
+                                                            {uploadMode === 'gallery' && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setMainImageIndex(index);
+                                                                    }}
+                                                                    className={`absolute top-1 left-1.5 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-colors z-20 ${mainImageIndex === index ? 'bg-yellow-400 text-white' : 'bg-white/90 text-gray-400 hover:bg-yellow-100'}`}
+                                                                    title="Set sebagai gambar utama"
+                                                                >
+                                                                    <svg className="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                                                                </button>
+                                                            )}
 
                                                             {/* Delete button - Fixed Size & Position */}
                                                             <button
@@ -972,7 +1022,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
 
                                     <p className="text-[10px] text-gray-400 text-center">
-                                        Nama varian akan tampil saat checkout. Collage tetap pakai huruf A, B, C...
+                                        Nama varian akan tampil saat checkout. {uploadMode === 'collage' ? 'Collage tetap pakai huruf A, B, C...' : 'Pastikan minimal 1 gambar utama dipilih.'}
                                     </p>
                                 </div>
                             )}
@@ -1781,7 +1831,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
 
                             {/* Auto-Generated Collage Preview (Moved to Bottom) */}
-                            {images.length > 0 && (
+                            {images.length > 0 && uploadMode === 'collage' && (
                                 <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200 mb-6">
                                     <h3 className="font-medium text-purple-700 mb-3 text-center">🖼️ Preview Collage (Auto)</h3>
                                     <div className="aspect-[3/4] w-full max-w-xs mx-auto bg-white rounded-xl overflow-hidden border-2 border-purple-300 shadow-lg">
@@ -1809,11 +1859,11 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                             )}
 
                             {/* Go to Preview Button */}
-                            {images.length > 0 && collageBlob && (
+                            {((uploadMode === 'collage' && images.length > 0 && collageBlob) || (uploadMode === 'gallery' && images.length > 0)) && (
                                 <button
                                     onClick={() => setStep('details')}
                                     disabled={isGeneratingCollage || !productFormData.name}
-                                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50"
+                                    className={`w-full py-3 text-white rounded-xl font-semibold transition-all disabled:opacity-50 ${uploadMode === 'collage' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'}`}
                                 >
                                     {isGeneratingCollage ? (
                                         <span className="flex items-center justify-center gap-2">
@@ -1835,25 +1885,35 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                     {/* Step 2: Details */}
                     {step === 'details' && (
                         <div className="space-y-6">
-                            {/* Collage Preview */}
-                            {/* 1. Large Collage Preview */}
-                            <div className="w-full">
-                                <h3 className="font-medium text-gray-700 mb-2 text-center">Preview Collage</h3>
-                                <div className="aspect-[3/4] w-full max-w-sm mx-auto bg-gray-100 rounded-xl overflow-hidden border border-gray-200 shadow-sm relative">
-                                    {isGeneratingCollage ? (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50">
-                                            <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-                                            <p className="text-sm text-purple-600">Memproses collage...</p>
-                                        </div>
-                                    ) : (
+                            {/* Preview for Step 2 */}
+                            {uploadMode === 'collage' ? (
+                                <div className="w-full">
+                                    <h3 className="font-medium text-gray-700 mb-2">Preview Collage</h3>
+                                    <div className="aspect-[3/4] w-full max-w-sm mx-auto bg-gray-100 rounded-xl overflow-hidden border border-gray-200 shadow-sm relative">
                                         <img
                                             src={collagePreview}
                                             alt="Collage Preview"
                                             className="w-full h-full object-contain"
                                         />
-                                    )}
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="w-full">
+                                    <h3 className="font-medium text-gray-700 mb-2">Preview Gambar Utama</h3>
+                                    <div className="flex gap-4 overflow-x-auto pb-2">
+                                        {imagePreviews.map((preview, idx) => (
+                                            <div key={idx} className={`relative flex-shrink-0 w-24 h-32 rounded-lg overflow-hidden border-2 ${idx === mainImageIndex ? 'border-yellow-400 ring-2 ring-yellow-200' : 'border-gray-200'}`}>
+                                                <img src={preview} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                                                {idx === mainImageIndex && (
+                                                    <div className="absolute top-1 left-1 bg-yellow-400 text-white text-xs px-1.5 py-0.5 rounded font-bold shadow">
+                                                        ⭐ Utama
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* 2. Product Info - Editable */}
                             <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
