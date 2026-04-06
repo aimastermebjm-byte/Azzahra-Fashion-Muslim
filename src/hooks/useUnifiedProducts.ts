@@ -75,7 +75,7 @@ export const useUnifiedProducts = (): UseUnifiedProductsResult => {
               costPrice: Number(data.costPrice) || Number(data.retailPrice || 0) * 0.6,
               stock: calculatedTotalStock,
               images: (data.images || []),
-              image: data.images?.[0] || '/placeholder-product.jpg',
+              image: data.image || data.images?.[0] || '/placeholder-product.jpg',
               variants: variantsData,
               isFeatured: Boolean(data.isFeatured || data.featured),
               isFlashSale: Boolean(data.isFlashSale),
