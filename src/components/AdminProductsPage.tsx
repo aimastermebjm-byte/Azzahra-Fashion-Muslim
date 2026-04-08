@@ -18,11 +18,12 @@ import { hasAPIKeyWithFallback, loadAPIKeyWithFallback } from '../utils/encrypti
 import AIAutoUploadModal from './AIAutoUploadModal';
 import ManualUploadModal from './ManualUploadModal';
 import WhatsAppInboxModal from './WhatsAppInboxModal';
-import InteractiveCropper from './InteractiveCropper';
+import { InteractiveCropper } from './InteractiveCropper';
 import { uploadBytes, getDownloadURL, ref } from 'firebase/storage';
 import { storage } from '../utils/firebaseClient';
 import { collectionService } from '../services/collectionService';
 import CollectionManager from './CollectionManager';
+import StockHistoryModal from './StockHistoryModal';
 
 interface AdminProductsPageProps {
   onBack: () => void;
@@ -430,7 +431,6 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
     setIsRecropping(true);
     try {
       const targetImage = formData.images[recropImageIndex];
-      const sourceUrl = typeof targetImage === 'string' ? targetImage : targetImage.preview;
       const sourceFileOrString = typeof targetImage === 'string' ? targetImage : targetImage.file;
       
       const offset = offsets[0] || { x: 0, y: 0 };
@@ -1345,6 +1345,7 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
       await collectionService.createCollection({
         name: collectionName.trim(),
         description: collectionDescription.trim(),
+        isActive: true,
         productIds: selectedProducts
       });
 
