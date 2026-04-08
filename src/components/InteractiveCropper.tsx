@@ -207,6 +207,9 @@ export const InteractiveCropper: React.FC<InteractiveCropperProps> = ({
     useEffect(() => {
         const onMouseMove = (e: MouseEvent) => handlePointerMove(e, e.clientX, e.clientY);
         const onTouchMove = (e: TouchEvent) => {
+            // Mencegah scroll atau zoom layar browser saat mencubit/geser gambar di dalam editor
+            if (e.cancelable) e.preventDefault();
+
             if (e.touches.length === 1) {
                 handlePointerMove(e, e.touches[0].clientX, e.touches[0].clientY);
             } else if (e.touches.length === 2) {
