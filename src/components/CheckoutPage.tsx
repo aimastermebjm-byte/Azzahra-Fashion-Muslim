@@ -880,7 +880,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
           dropshipName: formData.dropshipName,
           dropshipPhone: formData.dropshipPhone,
           courier: formData.shippingCourier,
-          codCourierName: formData.shippingCourier === 'cod' ? codCourierName : undefined,
+          codCourierName: formData.shippingCourier === 'cod' ? codCourierName : null,
           shippingCost: formData.shippingCourier === 'cod' ? 0 : (formData.shippingCost > 0 ? formData.shippingCost : null),
           shippingService: formData.shippingCourier === 'cod' ? codCourierName : formData.shippingService,
           shippingETD: formData.shippingCourier === 'cod' ? 'COD' : formData.shippingETD
