@@ -18,7 +18,9 @@ import { hasAPIKeyWithFallback, loadAPIKeyWithFallback } from '../utils/encrypti
 import AIAutoUploadModal from './AIAutoUploadModal';
 import ManualUploadModal from './ManualUploadModal';
 import WhatsAppInboxModal from './WhatsAppInboxModal';
-import StockHistoryModal from './StockHistoryModal';
+import InteractiveCropper from './InteractiveCropper';
+import { uploadBytes, getDownloadURL, ref } from 'firebase/storage';
+import { storage } from '../utils/firebaseClient';
 import { collectionService } from '../services/collectionService';
 import CollectionManager from './CollectionManager';
 
@@ -107,6 +109,10 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [collectionName, setCollectionName] = useState('');
   const [collectionDescription, setCollectionDescription] = useState('');
+
+  // Re-Crop Image State
+  const [recropImageIndex, setRecropImageIndex] = useState<number | null>(null);
+  const [isRecropping, setIsRecropping] = useState(false);
 
   // Goods Receipt Modal (Terima Barang Datang)
   const [goodsReceiptProduct, setGoodsReceiptProduct] = useState<Product | null>(null);
@@ -416,6 +422,60 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
 
     // Clear the input value to allow selecting the same file again
     e.target.value = '';
+  };
+
+  const handleSaveReCrop = async (offsets: Record<number, { x: number, y: number }>, scales: Record<number, number>) => {
+    if (recropImageIndex === null) return;
+    
+    setIsRecropping(true);
+    try {
+      const targetImage = formData.images[recropImageIndex];
+      const sourceUrl = typeof targetImage === 'string' ? targetImage : targetImage.preview;
+      const sourceFileOrString = typeof targetImage === 'string' ? targetImage : targetImage.file;
+      
+      const offset = offsets[0] || { x: 0, y: 0 };
+      const scale = scales[0] || 1;
+
+      console.log('🔄 Re-cropping image...', { targetImage, offset, scale });
+      
+      // Gunakan collageService untuk memotong gambar tunggal
+      const blob = await collageService.cropSingleImage(sourceFileOrString, offset, scale, 1500, 2000);
+      
+      let newImageObject: string | { file: File, preview: string, isUploading: boolean };
+
+      // Buat file dari blob
+      const file = new File([blob], `recrop_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      
+      if (typeof targetImage === 'string') {
+        alert('ℹ️ Meng-upload gambar pengganti ke server...');
+        // Jika asalnya string (Firebase URL), kita upload langsung ke storage
+        const storageRef = ref(storage, `products/recrop_${Date.now()}.jpg`);
+        await uploadBytes(storageRef, file);
+        const downloadUrl = await getDownloadURL(storageRef);
+        newImageObject = downloadUrl;
+      } else {
+        // Jika asalnya file local, cukup ganti file objectnya saja
+        newImageObject = {
+          file,
+          preview: URL.createObjectURL(file),
+          isUploading: false
+        };
+      }
+
+      setFormData(prev => {
+        const newImages = [...prev.images];
+        newImages[recropImageIndex] = newImageObject;
+        return { ...prev, images: newImages };
+      });
+
+      console.log('✅ Berhasil re-crop gambar!');
+      setRecropImageIndex(null);
+    } catch (error) {
+      console.error('❌ Gagal melakukan re-crop:', error);
+      alert('Terjadi kesalahan saat memotong ulang gambar. Pastikan koneksi internet lancar.');
+    } finally {
+      setIsRecropping(false);
+    }
   };
 
   // Filter and sort products
@@ -2738,6 +2798,34 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                                     <div className="text-white text-xs">⏳ Uploading...</div>
                                   </div>
                                 )}
+                                <div className="absolute top-1 right-1 flex flex-col gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => setRecropImageIndex(index)}
+                                    className="bg-white/90 text-blue-600 p-1 rounded-full shadow hover:bg-blue-50 transition"
+                                    title="Edit/Geser Gambar"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newImages = [...formData.images];
+                                      newImages.splice(index, 1);
+                                      let newMainIndex = formData.mainImageIndex;
+                                      if (newMainIndex === index) {
+                                        newMainIndex = 0;
+                                      } else if (newMainIndex > index) {
+                                        newMainIndex--;
+                                      }
+                                      setFormData({ ...formData, images: newImages, mainImageIndex: newMainIndex });
+                                    }}
+                                    className="bg-white/90 text-red-600 p-1 rounded-full shadow hover:bg-red-50 transition"
+                                    title="Hapus gambar"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, mainImageIndex: index })}
@@ -2745,20 +2833,6 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                                     title="Set sebagai gambar utama"
                                 >
                                     <Star className="w-4 h-4 fill-current" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                      const newIndex = formData.mainImageIndex === index ? 0 : formData.mainImageIndex > index ? formData.mainImageIndex - 1 : formData.mainImageIndex;
-                                    setFormData({
-                                      ...formData,
-                                      images: formData.images.filter((_, i) => i !== index),
-                                      mainImageIndex: newIndex
-                                    });
-                                  }}
-                                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                >
-                                  <X className="w-3 h-3" />
                                 </button>
                                 <div className="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-[10px] px-1.5 py-0.5 rounded shadow">
                                   {index === formData.mainImageIndex ? 'Utama' : index + 1}
@@ -3104,6 +3178,36 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
           </div>
         )
       }
+
+      {/* RE-CROP MODAL */}
+      {recropImageIndex !== null && (
+        <div className="fixed inset-0 bg-black/90 z-[70] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center text-center">
+              <h3 className="font-bold text-gray-800 flex-1">Geser / Zoom Cerdas</h3>
+              <button 
+                onClick={() => setRecropImageIndex(null)}
+                disabled={isRecropping}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="bg-gray-100 p-4 flex justify-center">
+              <InteractiveCropper
+                images={[typeof formData.images[recropImageIndex] === 'string' ? formData.images[recropImageIndex] as string : (formData.images[recropImageIndex] as any).preview]}
+                layoutBoxes={[{ x: 0, y: 0, w: 300, h: 400 }]} // 3:4 Layout (1500x2000 proporsi)
+                containerWidth={300}
+                containerHeight={400}
+                labels={['Crop Target']}
+                onUploadReady={handleSaveReCrop}
+                readOnly={isRecropping}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Batch Edit Modal */}
       {

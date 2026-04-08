@@ -99,7 +99,7 @@ export class CollageService {
 
   // --- NEW: CROP SINGLE IMAGE FOR GALLERY ---
   async cropSingleImage(
-    image: File,
+    image: File | string,
     offset: { x: number, y: number },
     scale: number,
     W: number = 1500,
@@ -115,7 +115,16 @@ export class CollageService {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, W, H);
 
-    const loadedImg = await this.loadImageWithRetry(await this.compressImage(image, 2));
+    let loadedImg: HTMLImageElement;
+    if (typeof image === 'string') {
+        // Fetch dari URL (Firebase Storage) bypass CORS paint taint
+        const response = await fetch(image);
+        const blob = await response.blob();
+        const file = new File([blob], 'recrop.jpg', { type: blob.type || 'image/jpeg' });
+        loadedImg = await this.loadImageWithRetry(await this.compressImage(file, 2));
+    } else {
+        loadedImg = await this.loadImageWithRetry(await this.compressImage(image, 2));
+    }
 
     ctx.save();
     ctx.beginPath();
