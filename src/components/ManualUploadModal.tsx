@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, Upload, Settings, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { collageService } from '../services/collageService';
+import { InteractiveCropper } from './InteractiveCropper';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
 
 interface ManualUploadModalProps {
@@ -109,6 +110,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     // Upload mode state
     const [uploadMode, setUploadMode] = useState<'collage' | 'gallery'>('collage');
     const [mainImageIndex, setMainImageIndex] = useState<number>(0);
+    const [cropOffsets, setCropOffsets] = useState<Record<number, { x: number, y: number }>>({});
+    const [cropScales, setCropScales] = useState<Record<number, number>>({});
 
     // Initialize from initialState when isOpen changes
     React.useEffect(() => {
@@ -488,30 +491,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         }
     }, [familyMode, familyGroups]);
 
-    // Auto-generate collage when images change
-    React.useEffect(() => {
-        const autoGenerateCollage = async () => {
-            if (images.length === 0 || uploadMode === 'gallery') {
-                setCollageBlob(null);
-                setCollagePreview('');
-                return;
-            }
-
-            setIsGeneratingCollage(true);
-            try {
-                const labels = getCalculatedLabels(images.length, isVariant);
-                const blob = await collageService.generateCollage(images, labels);
-                setCollageBlob(blob);
-                setCollagePreview(URL.createObjectURL(blob));
-            } catch (error) {
-                console.error('Auto collage generation failed:', error);
-            } finally {
-                setIsGeneratingCollage(false);
-            }
-        };
-
-        autoGenerateCollage();
-    }, [images, isVariant]);
+    // autoGenerateCollage has been removed in favor of manual generation upon Submit.
 
     // State for fixed prices (from WhatsApp/Initial State) to prevent auto-calculation override
     const [fixedPrices, setFixedPrices] = useState<{ retail?: number, reseller?: number } | null>(null);
@@ -628,21 +608,38 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
 
     // Handle submit
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!productFormData.name) {
             alert('Nama produk wajib diisi');
             return;
         }
 
-        if (uploadMode === 'collage' && !collageBlob) {
-            alert('Collage belum dibuat');
-            return;
-        }
-
-        if (uploadMode === 'gallery' && images.length === 0) {
+        if (images.length === 0) {
             alert('Minimal 1 gambar harus diupload');
             return;
         }
+
+        let finalCollageBlob: Blob | null = null;
+        let finalGalleryFiles: File[] = images;
+
+        setIsGeneratingCollage(true);
+        try {
+            if (uploadMode === 'collage') {
+                const labels = getCalculatedLabels(images.length, isVariant);
+                finalCollageBlob = await collageService.generateCollage(images, labels, cropOffsets, cropScales);
+            } else if (uploadMode === 'gallery') {
+                const croppedBlobs = await Promise.all(images.map((img, idx) => 
+                     collageService.cropSingleImage(img, cropOffsets[idx] || {x:0, y:0}, cropScales[idx] || 1)
+                ));
+                finalGalleryFiles = croppedBlobs.map((blob, i) => new File([blob], `gallery-${Date.now()}-${i}.jpg`, { type: 'image/jpeg' }));
+            }
+        } catch(e) {
+            console.error('Failed to process crop', e);
+            alert('Gagal memproses gambar crop. Coba lagi.');
+            setIsGeneratingCollage(false);
+            return;
+        }
+        setIsGeneratingCollage(false);
 
         // Calculate total stock from all Size-Varian combinations
         let totalStock = 0;
@@ -722,9 +719,9 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             variantLabels: activeVariantLabels,
             variantNames, // Custom names for checkout: {A: "Scarf", B: "Khimar", ...}
             variantCount: activeVariantLabels.length,
-            collageBlob,
-            collageFile: collageBlob ? new File([collageBlob], `collage-${Date.now()}.jpg`, { type: 'image/jpeg' }) : null,
-            galleryFiles: uploadMode === 'gallery' ? images : null,
+            collageBlob: finalCollageBlob,
+            collageFile: finalCollageBlob ? new File([finalCollageBlob], `collage-${Date.now()}.jpg`, { type: 'image/jpeg' }) : null,
+            galleryFiles: uploadMode === 'gallery' ? finalGalleryFiles : null,
             imageUploadMode: uploadMode,
             mainImageIndex: uploadMode === 'gallery' ? mainImageIndex : 0,
             uploadMode: 'direct',
@@ -1027,7 +1024,60 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 </div>
                             )}
 
-
+                            {/* Live Preview Editor */}
+                            {images.length > 0 && (
+                                <div className="space-y-3 mt-6">
+                                    <h4 className="text-sm font-medium text-gray-700">✂️ {uploadMode === 'collage' ? 'Edit Posisi Collage' : 'Edit Pas Foto (Rasio 3:4)'}</h4>
+                                    <p className="text-xs text-gray-500">Tap dan tahan, lalu geser gambar agar tidak terpotong.</p>
+                                    
+                                    <div className="flex justify-center bg-gray-900 rounded-xl p-4">
+                                        {uploadMode === 'collage' ? (
+                                            <InteractiveCropper 
+                                                images={imagePreviews}
+                                                layoutBoxes={collageService.calculateLayout(images.length, 300, 400)}
+                                                containerWidth={300}
+                                                containerHeight={400}
+                                                labels={variantLabels}
+                                                onChange={(off, sc) => {
+                                                    const ratio = 1500 / 300;
+                                                    const scaledOffsets: Record<number, {x:number,y:number}> = {};
+                                                    const scaledScales: Record<number, number> = {};
+                                                    Object.keys(off).forEach(k => {
+                                                        const idx = Number(k);
+                                                        scaledOffsets[idx] = { x: off[idx].x * ratio, y: off[idx].y * ratio };
+                                                    });
+                                                    Object.keys(sc).forEach(k => {
+                                                        const idx = Number(k);
+                                                        scaledScales[idx] = sc[idx] * ratio;
+                                                    });
+                                                    setCropOffsets(scaledOffsets);
+                                                    setCropScales(scaledScales);
+                                                }}
+                                            />
+                                        ) : (
+                                            <div className="flex overflow-x-auto gap-4 scrollbar-hide pb-2 snap-x w-full">
+                                                {imagePreviews.map((preview, idx) => (
+                                                    <div key={idx} className="snap-center shrink-0">
+                                                        <InteractiveCropper 
+                                                            images={[preview]}
+                                                            layoutBoxes={[{x:0, y:0, w: 240, h: 320}]}
+                                                            containerWidth={240}
+                                                            containerHeight={320}
+                                                            onChange={(off, sc) => {
+                                                                const ratio = 1500 / 240;
+                                                                if (off[0] && sc[0]) {
+                                                                    setCropOffsets(prev => ({...prev, [idx]: { x: off[0].x * ratio, y: off[0].y * ratio }}));
+                                                                    setCropScales(prev => ({...prev, [idx]: sc[0] * ratio }));
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Product Details - After Image Upload, Before Parameter Produk */}
                             {images.length > 0 && (
@@ -2364,10 +2414,14 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 </button>
                                 <button
                                     onClick={handleSubmit}
-                                    className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all flex items-center justify-center gap-2"
+                                    disabled={isGeneratingCollage}
+                                    className={`flex-1 py-3 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${isGeneratingCollage ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'}`}
                                 >
-                                    <Check className="w-5 h-5" />
-                                    Upload Produk
+                                    {isGeneratingCollage ? (
+                                        <>Membuat Pas Foto...</>
+                                    ) : (
+                                        <><Check className="w-5 h-5" /> Upload Produk</>
+                                    )}
                                 </button>
                             </div>
                         </div>
