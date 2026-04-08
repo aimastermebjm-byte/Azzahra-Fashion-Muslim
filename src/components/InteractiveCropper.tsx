@@ -55,13 +55,18 @@ export const InteractiveCropper: React.FC<InteractiveCropperProps> = ({
                     // Initialize Scale and Offsets
                     const box = layoutBoxes[index];
                     if (box && width && height) {
-                        const scale = Math.max(box.w / width, box.h / height);
-                        const scaledW = width * scale;
-                        // Height scaling removed, not used for X clamping anyway
+                        // Zoom 25% lebih besar dari minimum (cover) agar selalu ada ruang geser
+                        // ke SEMUA arah: atas, bawah, kiri, kanan
+                        const baseScale = Math.max(box.w / width, box.h / height);
+                        const scale = baseScale * 1.25;
                         
-                        // Default position: Center X, Top Y (to prevent cutting heads by default)
+                        const scaledW = width * scale;
+                        const scaledH = height * scale;
+                        
+                        // Default position: CENTER X dan Y (ada ruang geser ke semua arah)
+                        // Fashion bias: sedikit ke atas (0.35) agar kepala tidak terpotong
                         const initX = (box.w - scaledW) / 2;
-                        const initY = 0; // Biased to top.
+                        const initY = (box.h - scaledH) * 0.35; // sedikit lebih ke atas dari center
                         
                         setScales(prev => ({ ...prev, [index]: scale }));
                         setOffsets(prev => ({ ...prev, [index]: { x: initX, y: initY } }));
