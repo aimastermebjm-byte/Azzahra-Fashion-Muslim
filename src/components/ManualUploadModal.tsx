@@ -491,7 +491,32 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         }
     }, [familyMode, familyGroups]);
 
-    // autoGenerateCollage has been removed in favor of manual generation upon Submit.
+    // Auto-generate collage preview saat images berubah (untuk preview & agar tombol Lanjut aktif)
+    // Saat submit, akan di-regenerate ulang menggunakan cropOffsets dari InteractiveCropper
+    React.useEffect(() => {
+        const autoGenerateCollage = async () => {
+            if (images.length === 0 || uploadMode === 'gallery') {
+                setCollageBlob(null);
+                setCollagePreview('');
+                return;
+            }
+
+            setIsGeneratingCollage(true);
+            try {
+                const labels = getCalculatedLabels(images.length, isVariant);
+                // Generate dengan posisi default (tanpa offset) untuk preview awal
+                const blob = await collageService.generateCollage(images, labels);
+                setCollageBlob(blob);
+                setCollagePreview(URL.createObjectURL(blob));
+            } catch (error) {
+                console.error('Auto collage generation failed:', error);
+            } finally {
+                setIsGeneratingCollage(false);
+            }
+        };
+
+        autoGenerateCollage();
+    }, [images, isVariant, uploadMode]);
 
     // State for fixed prices (from WhatsApp/Initial State) to prevent auto-calculation override
     const [fixedPrices, setFixedPrices] = useState<{ retail?: number, reseller?: number } | null>(null);
