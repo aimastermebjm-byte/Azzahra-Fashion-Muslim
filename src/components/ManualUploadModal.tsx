@@ -491,33 +491,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         }
     }, [familyMode, familyGroups]);
 
-    // Auto-generate collage preview saat images berubah (untuk preview & agar tombol Lanjut aktif)
-    // Saat submit, akan di-regenerate ulang menggunakan cropOffsets dari InteractiveCropper
-    React.useEffect(() => {
-        const autoGenerateCollage = async () => {
-            if (images.length === 0 || uploadMode === 'gallery') {
-                setCollageBlob(null);
-                setCollagePreview('');
-                return;
-            }
-
-            setIsGeneratingCollage(true);
-            try {
-                const labels = getCalculatedLabels(images.length, isVariant);
-                // Generate dengan posisi default (tanpa offset) untuk preview awal
-                const blob = await collageService.generateCollage(images, labels);
-                setCollageBlob(blob);
-                setCollagePreview(URL.createObjectURL(blob));
-            } catch (error) {
-                console.error('Auto collage generation failed:', error);
-            } finally {
-                setIsGeneratingCollage(false);
-            }
-        };
-
-        autoGenerateCollage();
-    }, [images, isVariant, uploadMode]);
-
+    // Preview generation dipindah ke tombol Lanjut ke Preview agar merender hasil crop manual!
     // State for fixed prices (from WhatsApp/Initial State) to prevent auto-calculation override
     const [fixedPrices, setFixedPrices] = useState<{ retail?: number, reseller?: number } | null>(null);
 
@@ -600,6 +574,9 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         const newPreviews = validFiles.map(file => URL.createObjectURL(file));
 
         setImages(prev => [...prev, ...validFiles]);
+        // Reset offset & scale tracking kalau ganti gambar
+        setCropOffsets({});
+        setCropScales({});
         setImagePreviews(prev => [...prev, ...newPreviews]);
         setIsVariant(prev => [...prev, ...Array(validFiles.length).fill(true)]);
 
@@ -1905,40 +1882,30 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
 
 
-                            {/* Auto-Generated Collage Preview (Moved to Bottom) */}
-                            {images.length > 0 && uploadMode === 'collage' && (
-                                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200 mb-6">
-                                    <h3 className="font-medium text-purple-700 mb-3 text-center">🖼️ Preview Collage (Auto)</h3>
-                                    <div className="aspect-[3/4] w-full max-w-xs mx-auto bg-white rounded-xl overflow-hidden border-2 border-purple-300 shadow-lg">
-                                        {isGeneratingCollage ? (
-                                            <div className="w-full h-full flex items-center justify-center">
-                                                <div className="text-center">
-                                                    <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                                                    <p className="text-sm text-purple-600">Membuat collage...</p>
-                                                </div>
-                                            </div>
-                                        ) : collagePreview ? (
-                                            <img
-                                                src={collagePreview}
-                                                alt="Collage Preview"
-                                                className="w-full h-full object-contain"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                                <X className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                                <p className="text-xs">No preview</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
+                            {/* Auto-Generated Collage Preview HILANG - Diganti total oleh InteractiveCropper */}
 
                             {/* Go to Preview Button */}
-                            {((uploadMode === 'collage' && images.length > 0 && collageBlob) || (uploadMode === 'gallery' && images.length > 0)) && (
+                            {images.length > 0 && (
                                 <button
-                                    onClick={() => setStep('details')}
+                                    onClick={async () => {
+                                        // GENERATE FINAL PREVIEW HERE SO STEP 2 SHOWS EDITED VERSION!
+                                        setIsGeneratingCollage(true);
+                                        try {
+                                            if (uploadMode === 'collage') {
+                                                const labels = getCalculatedLabels(images.length, isVariant);
+                                                const blob = await collageService.generateCollage(images, labels, cropOffsets, cropScales);
+                                                setCollageBlob(blob);
+                                                setCollagePreview(URL.createObjectURL(blob));
+                                            }
+                                        } catch (error) {
+                                            console.error("Gagal buat preview:", error);
+                                        } finally {
+                                            setIsGeneratingCollage(false);
+                                            setStep('details');
+                                        }
+                                    }}
                                     disabled={isGeneratingCollage || !productFormData.name}
-                                    className={`w-full py-3 text-white rounded-xl font-semibold transition-all disabled:opacity-50 ${uploadMode === 'collage' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'}`}
+                                    className={`w-full mt-6 py-3 text-white rounded-xl font-semibold transition-all disabled:opacity-50 ${uploadMode === 'collage' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'}`}
                                 >
                                     {isGeneratingCollage ? (
                                         <span className="flex items-center justify-center gap-2">

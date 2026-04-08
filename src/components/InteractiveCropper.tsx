@@ -38,9 +38,11 @@ export const InteractiveCropper: React.FC<InteractiveCropperProps> = ({
     // x, y represents the translate value. It's stored in actual Canvas-scale pixels.
     const [offsets, setOffsets] = useState<Record<number, { x: number, y: number }>>({});
     const [scales, setScales] = useState<Record<number, number>>({});
+    const [baseScales, setBaseScales] = useState<Record<number, number>>({});
     
     const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
     const lastMousePos = useRef<{ x: number, y: number }>({ x: 0, y: 0 });
+    const lastPinchDist = useRef<number | null>(null);
 
     // Load original image dimensions
     useEffect(() => {
@@ -68,6 +70,7 @@ export const InteractiveCropper: React.FC<InteractiveCropperProps> = ({
                         const initX = (box.w - scaledW) / 2;
                         const initY = (box.h - scaledH) * 0.35; // sedikit lebih ke atas dari center
                         
+                        setBaseScales(prev => ({ ...prev, [index]: baseScale }));
                         setScales(prev => ({ ...prev, [index]: scale }));
                         setOffsets(prev => ({ ...prev, [index]: { x: initX, y: initY } }));
                     }
@@ -90,8 +93,43 @@ export const InteractiveCropper: React.FC<InteractiveCropperProps> = ({
         lastMousePos.current = { x: clientX, y: clientY };
     };
 
-    const handlePointerMove = useCallback((clientX: number, clientY: number) => {
+    const handlePointerMove = useCallback((e: MouseEvent | TouchEvent, clientX: number, clientY: number) => {
         if (draggingIdx === null || readOnly) return;
+
+        // --- Pinch to Zoom ---
+        if (window.TouchEvent && e instanceof window.TouchEvent && e.touches.length === 2) {
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const dist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+
+            if (lastPinchDist.current !== null) {
+                const deltaScale = dist / lastPinchDist.current;
+                
+                setScales(prev => {
+                    const currentScale = prev[draggingIdx] || 1;
+                    const baseS = baseScales[draggingIdx] || 1;
+                    
+                    // Limit zoom out to baseScale (cover), max zoom in to 3x
+                    let newScale = currentScale * deltaScale;
+                    newScale = Math.max(baseS, Math.min(newScale, baseS * 3));
+                    
+                    return { ...prev, [draggingIdx]: newScale };
+                });
+            }
+            lastPinchDist.current = dist;
+            
+            // Adjust lastMousePos to center of pinch to prevent sudden jump after pinch
+            lastMousePos.current = { 
+               x: (touch1.clientX + touch2.clientX) / 2, 
+               y: (touch1.clientY + touch2.clientY) / 2 
+            };
+            return;
+        }
+
+        // --- Drag ---
+        if (window.TouchEvent && e instanceof window.TouchEvent && e.touches.length === 1) {
+            lastPinchDist.current = null; // reset pinch
+        }
 
         const deltaX = clientX - lastMousePos.current.x;
         const deltaY = clientY - lastMousePos.current.y;
@@ -123,16 +161,26 @@ export const InteractiveCropper: React.FC<InteractiveCropperProps> = ({
                 [draggingIdx]: { x: newX, y: newY }
             };
         });
-    }, [draggingIdx, layoutBoxes, metaData, scales, readOnly]);
+    }, [draggingIdx, layoutBoxes, metaData, scales, baseScales, readOnly]);
 
     const handlePointerUp = () => {
         setDraggingIdx(null);
+        lastPinchDist.current = null;
     };
 
     // Global listeners for dragging smoothly
     useEffect(() => {
-        const onMouseMove = (e: MouseEvent) => handlePointerMove(e.clientX, e.clientY);
-        const onTouchMove = (e: TouchEvent) => handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+        const onMouseMove = (e: MouseEvent) => handlePointerMove(e, e.clientX, e.clientY);
+        const onTouchMove = (e: TouchEvent) => {
+            if (e.touches.length === 1) {
+                handlePointerMove(e, e.touches[0].clientX, e.touches[0].clientY);
+            } else if (e.touches.length === 2) {
+                // pass center point for single signature (not used in pinch mode but required)
+                const cx = (e.touches[0].clientX + e.touches[1].clientX)/2;
+                const cy = (e.touches[0].clientY + e.touches[1].clientY)/2;
+                handlePointerMove(e, cx, cy);
+            }
+        };
         
         const onEnd = () => handlePointerUp();
 
