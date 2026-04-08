@@ -291,7 +291,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
         loadAppList();
-        triggerStartServices();
     }
 
     private void initTabs() {
@@ -307,7 +306,12 @@ public class MainActivity extends AppCompatActivity {
         FirebaseFirestore.getInstance().collection("users").document(uid).get()
             .addOnSuccessListener(doc -> {
                 String role = doc.getString("role");
-                if ("admin".equalsIgnoreCase(role)) tabHost.getTabWidget().getChildAt(0).setVisibility(View.GONE);
+                if ("admin".equalsIgnoreCase(role)) {
+                    tabHost.getTabWidget().getChildAt(0).setVisibility(View.GONE);
+                    tabHost.setCurrentTab(1); // Set tab PRINTER sebagai default
+                } else if ("owner".equalsIgnoreCase(role)) {
+                    triggerStartServices(); // Hanya jalankan background service penangkap notif jika "owner"
+                }
             });
     }
 

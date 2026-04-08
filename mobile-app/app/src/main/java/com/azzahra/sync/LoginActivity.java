@@ -94,15 +94,15 @@ public class LoginActivity extends AppCompatActivity {
                         DocumentSnapshot doc = task.getResult();
                         if (doc.exists()) {
                             String role = doc.getString("role");
-                            // HANYA ROLE OWNER YANG DIIZINKAN (ADMIN DIHAPUS)
-                            if ("owner".equalsIgnoreCase(role)) {
+                            // IZINKAN ROLE OWNER ATAU ADMIN
+                            if ("owner".equalsIgnoreCase(role) || "admin".equalsIgnoreCase(role)) {
                                 Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                 startActivity(intent);
                                 finish();
                             } else {
                                 mAuth.signOut();
-                                Toast.makeText(this, "Akses Ditolak: Hanya Owner yang diizinkan masuk", Toast.LENGTH_LONG).show();
+                                Toast.makeText(this, "Akses Ditolak: Hanya Owner / Admin yang diizinkan masuk", Toast.LENGTH_LONG).show();
                             }
                         } else {
                             mAuth.signOut();

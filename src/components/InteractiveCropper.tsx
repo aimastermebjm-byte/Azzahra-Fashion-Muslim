@@ -57,18 +57,19 @@ export const InteractiveCropper: React.FC<InteractiveCropperProps> = ({
                     // Initialize Scale and Offsets
                     const box = layoutBoxes[index];
                     if (box && width && height) {
-                        // Zoom 25% lebih besar dari minimum (cover) agar selalu ada ruang geser
-                        // ke SEMUA arah: atas, bawah, kiri, kanan
+                        // Default: pas (cover) tanpa zoom tambahan agar foto yang sudah bagus
+                        // (misal 3:4) tidak perlu lagi digeser-geser.
                         const baseScale = Math.max(box.w / width, box.h / height);
-                        const scale = baseScale * 1.25;
+                        const scale = baseScale; // Tidak ada zoom 25% default
                         
                         const scaledW = width * scale;
                         const scaledH = height * scale;
                         
-                        // Default position: CENTER X dan Y (ada ruang geser ke semua arah)
-                        // Fashion bias: sedikit ke atas (0.35) agar kepala tidak terpotong
+                        // Default position
                         const initX = (box.w - scaledW) / 2;
-                        const initY = (box.h - scaledH) * 0.35; // sedikit lebih ke atas dari center
+                        // Khusus untuk fashion (gambar terlalu tinggi 9:16), kita posisikan agak ke atas (0.15)
+                        // supaya kepala tidak gampang terpotong, tapi tidak nempel plafon juga
+                        const initY = (box.h - scaledH) * 0.15;
                         
                         setBaseScales(prev => ({ ...prev, [index]: baseScale }));
                         setScales(prev => ({ ...prev, [index]: scale }));
@@ -105,6 +106,9 @@ export const InteractiveCropper: React.FC<InteractiveCropperProps> = ({
             if (lastPinchDist.current !== null) {
                 const deltaScale = dist / lastPinchDist.current;
                 
+                let actualDeltaScale = 1;
+                let nextScale = 1;
+                
                 setScales(prev => {
                     const currentScale = prev[draggingIdx] || 1;
                     const baseS = baseScales[draggingIdx] || 1;
@@ -113,7 +117,38 @@ export const InteractiveCropper: React.FC<InteractiveCropperProps> = ({
                     let newScale = currentScale * deltaScale;
                     newScale = Math.max(baseS, Math.min(newScale, baseS * 3));
                     
+                    actualDeltaScale = newScale / currentScale; // to avoid over-shifting if clamped
+                    nextScale = newScale;
+                    
                     return { ...prev, [draggingIdx]: newScale };
+                });
+                
+                setOffsets(prev => {
+                    const current = prev[draggingIdx] || { x: 0, y: 0 };
+                    const box = layoutBoxes[draggingIdx];
+                    const meta = metaData[draggingIdx];
+                    if (!box || !meta) return prev;
+                    
+                    // Zoom dari tengah box
+                    const fx = box.w / 2;
+                    const fy = box.h / 2;
+                    
+                    let newX = current.x + (fx - current.x) * (1 - actualDeltaScale);
+                    let newY = current.y + (fy - current.y) * (1 - actualDeltaScale);
+                    
+                    // Clamping Rules agar tidak ada space kosong akibat zoom out
+                    const scaledW = meta.width * nextScale;
+                    const scaledH = meta.height * nextScale;
+                    
+                    const minX = box.w - scaledW;
+                    const maxX = 0;
+                    const minY = box.h - scaledH;
+                    const maxY = 0;
+
+                    newX = Math.max(minX, Math.min(maxX, newX));
+                    newY = Math.max(minY, Math.min(maxY, newY));
+                    
+                    return { ...prev, [draggingIdx]: { x: newX, y: newY } };
                 });
             }
             lastPinchDist.current = dist;
@@ -140,9 +175,9 @@ export const InteractiveCropper: React.FC<InteractiveCropperProps> = ({
             const current = prev[draggingIdx] || { x: 0, y: 0 };
             const box = layoutBoxes[draggingIdx];
             const meta = metaData[draggingIdx];
-            const scale = scales[draggingIdx] || 1;
+            const scale = scales[draggingIdx]; // scales are updated async, but drag doesn't change scale so it's fine.
             
-            if (!box || !meta) return prev;
+            if (!box || !meta || scale === undefined) return prev;
 
             const scaledW = meta.width * scale;
             const scaledH = meta.height * scale;
