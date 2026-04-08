@@ -129,19 +129,14 @@ export const InteractiveCropper: React.FC<InteractiveCropperProps> = ({
                     const meta = metaData[draggingIdx];
                     if (!box || !meta) return prev;
                     
-                    // Gunakan titik jari user secara presisi sebagai center zoom!
-                    let fx = box.w / 2;
-                    let fy = box.h / 2;
+                    // Gunakan center of the IMAGE as focal point agar pembesaran 100% simetris
+                    // (Kiri dan Kanan membesar dengan persentase/jarak yang sama persis)
+                    const oldScale = scales[draggingIdx] || 1;
+                    const currentScaledW = meta.width * oldScale;
+                    const currentScaledH = meta.height * oldScale;
                     
-                    if (containerRef.current) {
-                        const rect = containerRef.current.getBoundingClientRect();
-                        const pinchClientX = (touch1.clientX + touch2.clientX) / 2;
-                        const pinchClientY = (touch1.clientY + touch2.clientY) / 2;
-                        
-                        // Menghitung titik pada local koordinat box
-                        fx = (pinchClientX - rect.left) - box.x;
-                        fy = (pinchClientY - rect.top) - box.y;
-                    }
+                    const fx = current.x + currentScaledW / 2;
+                    const fy = current.y + currentScaledH / 2;
                     
                     let newX = current.x + (fx - current.x) * (1 - actualDeltaScale);
                     let newY = current.y + (fy - current.y) * (1 - actualDeltaScale);

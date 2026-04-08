@@ -199,17 +199,11 @@ export class CollageService {
       boxes.push({ x: w, y: 0, w: w, h: H });
     }
     else if (count === 3) {
-      // MAGAZINE LAYOUT (Request: 1 Left Big, 2 Right Stacked)
-      // Left Col
-      const wHalf = W / 2;
-      const hHalf = H / 2;
-
-      // A: Left Full
-      boxes.push({ x: 0, y: 0, w: wHalf, h: H });
-      // B: Right Top
-      boxes.push({ x: wHalf, y: 0, w: wHalf, h: hHalf });
-      // C: Right Bottom
-      boxes.push({ x: wHalf, y: hHalf, w: wHalf, h: hHalf });
+      // Dibagi rata 3 horizontal sejajar
+      const w = W / 3;
+      boxes.push({ x: 0, y: 0, w: w, h: H });
+      boxes.push({ x: w, y: 0, w: w, h: H });
+      boxes.push({ x: w * 2, y: 0, w: w, h: H });
     }
     else if (count === 4) {
       // 2x2 Grid (Perfect 3:4 Aspect)
