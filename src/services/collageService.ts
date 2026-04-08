@@ -13,7 +13,9 @@ interface Rect {
 export class CollageService {
   async generateCollage(
     images: File[],
-    variantLabels: string[]
+    variantLabels: string[],
+    offsets?: Record<number, { x: number, y: number }>,
+    scales?: Record<number, number>
   ): Promise<Blob> {
     const count = images.length;
 
@@ -66,9 +68,12 @@ export class CollageService {
 
       const img = loadedImages[index];
       const label = variantLabels[index];
+      
+      const offsetOverride = offsets?.[index];
+      const scaleOverride = scales?.[index];
 
-      // Draw standard clean cover
-      this.drawImageInBox(ctx, img, box.x, box.y, box.w, box.h);
+      // Draw standard clean cover or overridden
+      this.drawImageInBox(ctx, img, box.x, box.y, box.w, box.h, offsetOverride, scaleOverride);
 
       // Draw Divider/Border
       ctx.strokeStyle = '#ffffff';
@@ -88,6 +93,44 @@ export class CollageService {
         } else {
           reject(new Error('Failed to create blob from canvas'));
         }
+      }, 'image/jpeg', 0.95);
+    });
+  }
+
+  // --- NEW: CROP SINGLE IMAGE FOR GALLERY ---
+  async cropSingleImage(
+    image: File,
+    offset: { x: number, y: number },
+    scale: number,
+    W: number = 1500,
+    H: number = 2000
+  ): Promise<Blob> {
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Failed to get canvas context');
+
+    // White background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+
+    const loadedImg = await this.loadImageWithRetry(await this.compressImage(image, 2));
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, H);
+    ctx.clip();
+
+    const scaledW = loadedImg.width * scale;
+    const scaledH = loadedImg.height * scale;
+    ctx.drawImage(loadedImg, 0, 0, loadedImg.width, loadedImg.height, offset.x, offset.y, scaledW, scaledH);
+    ctx.restore();
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('Failed to crop single image'));
       }, 'image/jpeg', 0.95);
     });
   }
@@ -142,7 +185,8 @@ export class CollageService {
 
 
   // --- LAYOUT ENGINE ---
-  private calculateLayout(count: number, W: number, H: number): Rect[] {
+  // Changed to public so InteractiveCropper can use it to build interactive box grids
+  public calculateLayout(count: number, W: number, H: number): Rect[] {
     const boxes: Rect[] = [];
 
     if (count === 1) {
@@ -286,12 +330,24 @@ export class CollageService {
     x: number,
     y: number,
     w: number,
-    h: number
+    h: number,
+    offsetOverride?: { x: number, y: number },
+    scaleOverride?: number
   ) {
     ctx.save();
     ctx.beginPath();
     ctx.rect(x, y, w, h);
     ctx.clip();
+
+    if (offsetOverride !== undefined && scaleOverride !== undefined) {
+      // Manual interactive mode
+      const scaledW = img.width * scaleOverride;
+      const scaledH = img.height * scaleOverride;
+      // offset.x and offset.y are relative to the top-left of the box
+      ctx.drawImage(img, 0, 0, img.width, img.height, x + offsetOverride.x, y + offsetOverride.y, scaledW, scaledH);
+      ctx.restore();
+      return;
+    }
 
     // CLEAN COVER Logic
     const scale = Math.max(w / img.width, h / img.height);
