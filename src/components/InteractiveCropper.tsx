@@ -16,6 +16,7 @@ interface InteractiveCropperProps {
     labels?: string[]; // E.g. ['A', 'B'] for collage
     onChange?: (offsets: Record<number, { x: number, y: number }>, scales: Record<number, number>) => void;
     readOnly?: boolean;
+    allowZoomOut?: boolean; // If true, minScale can go below baseScale 
 }
 
 interface ImageMeta {
@@ -31,7 +32,8 @@ export const InteractiveCropper: React.FC<InteractiveCropperProps> = ({
     containerHeight,
     labels,
     onChange,
-    readOnly = false
+    readOnly = false,
+    allowZoomOut = false
 }) => {
     const [metaData, setMetaData] = useState<Record<number, ImageMeta>>({});
     
@@ -112,10 +114,10 @@ export const InteractiveCropper: React.FC<InteractiveCropperProps> = ({
                 setScales(prev => {
                     const currentScale = prev[draggingIdx] || 1;
                     const baseS = baseScales[draggingIdx] || 1;
-                    
-                    // Limit zoom out to baseScale (cover), max zoom in to 3x
+                    // Limit zoom out to baseScale (cover), or much lower if allowZoomOut is true
+                    let minScale = allowZoomOut ? baseS * 0.1 : baseS;
                     let newScale = currentScale * deltaScale;
-                    newScale = Math.max(baseS, Math.min(newScale, baseS * 3));
+                    newScale = Math.max(minScale, Math.min(newScale, baseS * 3));
                     
                     actualDeltaScale = newScale / currentScale; // to avoid over-shifting if clamped
                     nextScale = newScale;
@@ -141,14 +143,14 @@ export const InteractiveCropper: React.FC<InteractiveCropperProps> = ({
                     let newX = current.x + (fx - current.x) * (1 - actualDeltaScale);
                     let newY = current.y + (fy - current.y) * (1 - actualDeltaScale);
                     
-                    // Clamping Rules agar tidak ada space kosong akibat zoom out
+                    // Clamping Rules agar tidak ada space kosong akibat zoom out ATAU mengunci di tengah
                     const scaledW = meta.width * nextScale;
                     const scaledH = meta.height * nextScale;
                     
-                    const minX = box.w - scaledW;
-                    const maxX = 0;
-                    const minY = box.h - scaledH;
-                    const maxY = 0;
+                    let minX = Math.min(0, box.w - scaledW);
+                    let maxX = Math.max(0, box.w - scaledW);
+                    let minY = Math.min(0, box.h - scaledH);
+                    let maxY = Math.max(0, box.h - scaledH);
 
                     newX = Math.max(minX, Math.min(maxX, newX));
                     newY = Math.max(minY, Math.min(maxY, newY));
@@ -188,10 +190,10 @@ export const InteractiveCropper: React.FC<InteractiveCropperProps> = ({
             const scaledH = meta.height * scale;
 
             // Clamping rules
-            const minX = box.w - scaledW;
-            const maxX = 0;
-            const minY = box.h - scaledH;
-            const maxY = 0;
+            let minX = Math.min(0, box.w - scaledW);
+            let maxX = Math.max(0, box.w - scaledW);
+            let minY = Math.min(0, box.h - scaledH);
+            let maxY = Math.max(0, box.h - scaledH);
 
             const newX = Math.max(minX, Math.min(maxX, current.x + deltaX));
             const newY = Math.max(minY, Math.min(maxY, current.y + deltaY));

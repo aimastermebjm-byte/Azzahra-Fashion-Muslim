@@ -3202,8 +3202,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                 containerWidth={300}
                 containerHeight={400}
                 labels={['Crop Target']}
-                onUploadReady={handleSaveReCrop}
+                onChange={handleSaveReCrop}
                 readOnly={isRecropping}
+                allowZoomOut={true}
               />
             </div>
           </div>
