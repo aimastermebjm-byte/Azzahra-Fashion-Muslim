@@ -46,18 +46,25 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
 
     // 🔥 NEW: Clean size label (Remove prefix "Mom set Khimar " from "Mom set Khimar S")
     const getCleanSizeLabel = (size: string) => {
-        if (!isGalleryMode || !selectedColor) return size;
+        if (!size) return 'All Size';
+        if (!size.includes(' ')) return size;
 
         const variantName = productAny.variantNames?.[selectedColor] || productAny.variants?.names?.[selectedColor];
-        if (!variantName && size.includes(' ')) {
-            // Fallback: If no explicit variantName, try to take the last word as size
-            const parts = size.split(' ');
-            return parts[parts.length - 1];
+        
+        // Strategy 1: If size starts with variantName, strip it
+        if (variantName && size.toLowerCase().startsWith(variantName.toLowerCase() + ' ')) {
+            const stripped = size.substring(variantName.length).trim();
+            if (stripped) return stripped;
         }
 
-        if (variantName && size.toLowerCase().startsWith(variantName.toLowerCase())) {
-            // Hapus nama varian dari label ukuran
-            return size.substring(variantName.length).trim();
+        // Strategy 2: Aggressive regex-based stripping (strip everything before last space if it matches size pattern)
+        const parts = size.trim().split(' ');
+        if (parts.length > 1) {
+            const lastPart = parts[parts.length - 1];
+            // If the last part looks like a known size pattern
+            if (/^(S|M|L|XL|XXL|XXXL|[0-9]+(-[0-9]+M)?|Standar|Jumbo|All\s*Size)$/i.test(lastPart)) {
+                return lastPart;
+            }
         }
 
         return size;

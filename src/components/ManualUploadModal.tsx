@@ -634,18 +634,25 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     };
 
     const getCleanSize = (size: string) => {
-        if (!familyMode) return size;
+        if (!familyMode && !size.includes(' ')) return size;
+        
+        // Strategy: Forcefully strip everything before the last space if there's a space
+        // e.g. "Mom set Khimar S" -> "S"
+        // "Dad L.panjang XL" -> "XL"
+        const parts = size.trim().split(' ');
+        if (parts.length > 1) {
+            const lastPart = parts[parts.length - 1];
+            // If the last part looks like a size (S, M, L, XL, 2, 4, 6...)
+            if (/^(S|M|L|XL|XXL|XXXL|[0-9]+(-[0-9]+M)?|Standar|Jumbo|All\s*Size)$/i.test(lastPart)) {
+                return lastPart;
+            }
+        }
+        
         let clean = size;
-        // Strip group prefixes (e.g. "Mom set Khimar S" -> "S")
+        // Fallback: Strip known variant names if regex above didn't catch it
         Object.values(variantNames).forEach(name => {
             if (name && clean.startsWith(name + ' ')) {
                 clean = clean.replace(name + ' ', '').trim();
-            }
-        });
-        // Also check if groupName part is in FAMILY_GROUP_PRESETS to be safe
-        FAMILY_GROUP_PRESETS.forEach(preset => {
-            if (clean.startsWith(preset + ' ')) {
-                clean = clean.replace(preset + ' ', '').trim();
             }
         });
         return clean;
@@ -806,18 +813,29 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
         // NEW: Variant to Image Mapping (Gallery Mode ONLY)
         // This is crucial for per-variant image preview in store
-        const variantImageIndices: Record<string, number> = {};
+        const finalVariantImageIndices: Record<string, number> = {};
         if (uploadMode === 'gallery') {
+            // 1. Default: Sequential mapping (A=Image 0, B=Image 1...)
             let activeLabelIdx = 0;
             for (let i = 0; i < images.length; i++) {
                 if (isVariant[i] !== false) {
                     const label = activeVariantLabels[activeLabelIdx];
                     if (label) {
-                        variantImageIndices[label] = i;
+                        finalVariantImageIndices[label] = i;
                         activeLabelIdx++;
                     }
                 }
             }
+
+            // 2. Override with manual group-to-image mapping from state
+            Object.entries(variantImageIndices).forEach(([groupName, imgIdx]) => {
+                // Find which label (A, B, C...) corresponds to this groupName
+                const label = Object.keys(variantNames).find(k => variantNames[k] === groupName);
+                if (label) {
+                    finalVariantImageIndices[label] = imgIdx;
+                    console.log(`🔗 Saving mapped index: Variant ${groupName} (Label ${label}) -> Image ${imgIdx}`);
+                }
+            });
         }
 
         const productData = {
@@ -839,7 +857,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             galleryFiles: uploadMode === 'gallery' ? images : null,
             imageUploadMode: uploadMode,
             mainImageIndex: uploadMode === 'gallery' ? mainImageIndex : 0,
-            variantImageIndices: Object.keys(variantImageIndices).length > 0 ? variantImageIndices : null,
+            variantImageIndices: Object.keys(finalVariantImageIndices).length > 0 ? finalVariantImageIndices : null,
             uploadMode: 'direct',
             sizeName: selectedSizes.join(', '), // Display all selected sizes
             // New: Include complete variants structure with all selected sizes
@@ -1130,18 +1148,50 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             </div>
                                                         </div>
 
-                                                        {/* Editable variant name */}
-                                                        <input
-                                                            type="text"
-                                                            value={variantNames[variantLabels[index]] || ''}
-                                                            onChange={(e) => setVariantNames(prev => ({
-                                                                ...prev,
-                                                                [variantLabels[index]]: e.target.value
-                                                            }))}
-                                                            onFocus={(e) => e.target.select()}
-                                                            placeholder={`${variantLabels[index]}`}
-                                                            className="w-full px-1 py-1 text-[10px] text-center border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 focus:border-purple-500 bg-gray-50"
-                                                        />
+                                                                {/* Editable variant name */}
+                                                                <div className="space-y-1">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={variantNames[variantLabels[index]] || ''}
+                                                                        onChange={(e) => setVariantNames(prev => ({
+                                                                            ...prev,
+                                                                            [variantLabels[index]]: e.target.value
+                                                                        }))}
+                                                                        onFocus={(e) => e.target.select()}
+                                                                        placeholder={`${variantLabels[index]}`}
+                                                                        className="w-full px-1 py-1 text-[10px] text-center border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 focus:border-purple-500 bg-gray-50"
+                                                                    />
+                                                                    
+                                                                    {/* Family Group Quick Assign Buttons */}
+                                                                    {familyMode && Object.keys(familyGroups).length > 0 && variantLabels[index] && (
+                                                                        <div className="flex flex-wrap gap-1 justify-center">
+                                                                            {Object.keys(familyGroups).map(groupName => (
+                                                                                <button
+                                                                                    key={groupName}
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        setVariantNames(prev => ({
+                                                                                            ...prev,
+                                                                                            [variantLabels[index]]: groupName
+                                                                                        }));
+                                                                                        // Also record this index for this group specifically for sync
+                                                                                        setVariantImageIndices(prev => ({
+                                                                                            ...prev,
+                                                                                            [groupName]: index
+                                                                                        }));
+                                                                                    }}
+                                                                                    className={`px-1.5 py-0.5 rounded-[4px] text-[8px] font-bold transition-all ${
+                                                                                        variantNames[variantLabels[index]] === groupName
+                                                                                            ? 'bg-[#997B2C] text-white shadow-sm'
+                                                                                            : 'bg-[#D4AF37]/10 text-[#997B2C] hover:bg-[#D4AF37]/20 border border-[#D4AF37]/20'
+                                                                                    }`}
+                                                                                >
+                                                                                    {groupName.split(' ')[0]} {/* Show only first word to save space */}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                     </div>
                                                 );
                                             })}

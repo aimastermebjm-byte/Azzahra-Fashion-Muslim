@@ -150,18 +150,23 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
   };
 
   const getCleanSize = (size: string, variantName?: string) => {
-    if (!size) return 'Standard';
-    if (!variantName) return size;
+    if (!size) return 'All Size';
+    if (!size.includes(' ')) return size;
     
-    // If size starts with variantName, strip it
-    if (size.toLowerCase().startsWith(variantName.toLowerCase())) {
-      return size.substring(variantName.length).trim() || size;
+    // Strategy 1: If size starts with variantName, strip it
+    if (variantName && size.toLowerCase().startsWith(variantName.toLowerCase() + ' ')) {
+      const stripped = size.substring(variantName.length).trim();
+      if (stripped) return stripped;
     }
     
-    // Fallback: If it's the "Mom set Khimar S" format but variantName is just "A" (unlikely now with recent fixes)
-    if (size.includes(' ')) {
-      const parts = size.split(' ');
-      return parts[parts.length - 1];
+    // Strategy 2: Aggressive regex-based stripping (strip everything before last space if it matches size pattern)
+    const parts = size.trim().split(' ');
+    if (parts.length > 1) {
+      const lastPart = parts[parts.length - 1];
+      // If the last part looks like a known size pattern
+      if (/^(S|M|L|XL|XXL|XXXL|[0-9]+(-[0-9]+M)?|Standar|Jumbo|All\s*Size)$/i.test(lastPart)) {
+        return lastPart;
+      }
     }
     
     return size;
