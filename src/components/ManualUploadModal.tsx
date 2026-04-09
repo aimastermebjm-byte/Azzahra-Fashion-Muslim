@@ -1527,9 +1527,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                     ))}
                                                 </div>
                                             </div>
-                                        </div>
 
-                                            {/* Summary */}
+                                            {/* Summary section moved inside the main family mode div */}
                                             {selectedSizes.length > 0 && (
                                                 <div className="text-xs text-[#997B2C] mt-2 bg-[#D4AF37]/10 p-2 rounded-lg border border-[#D4AF37]/20">
                                                     👨‍👩‍👧‍👦 <strong>Mode Keluarga Aktif:</strong> {Object.keys(familyGroups).join(', ')}
