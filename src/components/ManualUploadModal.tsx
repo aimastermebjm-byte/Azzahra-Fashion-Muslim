@@ -1355,13 +1355,13 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                     <span>{size}</span>
                                                     <button
                                                         type="button"
-                                                        onClick={() => setSelectedSizes(selectedSizes.filter(s => s !== size
+                                                        onClick={() => setSelectedSizes(selectedSizes.filter(s => s !== size))}
                                                         className="text-slate-700 hover:text-red-600 hover:bg-white/50 rounded-full w-5 h-5 flex items-center justify-center transition-colors"
                                                     >
                                                         ×
                                                     </button>
                                                 </div>
-                                            
+                                            ))}
 
                                             {/* Size Management UI */}
                                             <div className="flex flex-wrap gap-2 pt-2 border-t border-[#D4AF37]/20 w-full">
@@ -1470,7 +1470,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                         })}
                                                     </div>
                                                 </div>
-                                            
+                                            ))}
 
                                             {/* Custom Group Adder */}
                                             <div className="mt-4 flex gap-2">
@@ -1522,6 +1522,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             }}
                                                             className="px-2 py-1 border border-[#D4AF37]/30 rounded text-[10px] font-bold text-[#997B2C] hover:bg-[#D4AF37]/10 transition-all"
                                                         >
+                                                            + {groupName}
                                                         </button>
                                                     ))}
                                                 </div>
@@ -1576,7 +1577,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             type="text"
                                             inputMode="numeric"
                                             value={formatThousands(uploadSettings.stockPerVariant)}
-                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, stockPerVariant: parseFormattedNumber(e.target.value) }
+                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, stockPerVariant: parseFormattedNumber(e.target.value) }))}
                                             onFocus={(e) => e.target.select()}
                                             placeholder="Masukkan stok"
                                             className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg font-semibold focus:ring-2 focus:ring-[#D4AF37]"
@@ -1589,7 +1590,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             type="text"
                                             inputMode="numeric"
                                             value={formatThousands(uploadSettings.costPrice)}
-                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }
+                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }))}
                                             onFocus={(e) => e.target.select()}
                                             placeholder="100.000"
                                             className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl text-lg font-bold focus:ring-2 focus:ring-[#D4AF37]"
@@ -1605,7 +1606,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             onChange={(e) => setFixedPrices(prev => ({
                                                 ...prev,
                                                 reseller: parseFormattedNumber(e.target.value)
-                                            }
+                                            }))}
                                             onFocus={(e) => e.target.select()}
                                             className="w-full px-4 py-3 border-2 border-[#D4AF37]/30 rounded-xl text-lg font-bold text-[#997B2C] bg-[#D4AF37]/5 focus:ring-2 focus:ring-[#D4AF37]"
                                         />
@@ -1620,7 +1621,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             onChange={(e) => setFixedPrices(prev => ({
                                                 ...prev,
                                                 retail: parseFormattedNumber(e.target.value)
-                                            }
+                                            }))}
                                             onFocus={(e) => e.target.select()}
                                             className="w-full px-4 py-3 border-2 border-[#D4AF37]/30 rounded-xl text-lg font-bold text-[#997B2C] bg-[#D4AF37]/5 focus:ring-2 focus:ring-[#D4AF37]"
                                         />
@@ -1668,7 +1669,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                 className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
                                                             />
                                                         </div>
-                                                    
+                                                    ))}
                                                 </div>
                                             )}
                                         </div>
@@ -1712,7 +1713,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                 <th className="p-3 text-left border border-[#D4AF37]/20 min-w-[80px] text-slate-900">Size</th>
                                                                 {activeVariantLabels.map(label => (
                                                                     <th key={label} className="p-3 text-center border border-[#D4AF37]/20 min-w-[80px] font-bold text-slate-900">{label}</th>
-                                                                
+                                                                ))}
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -1767,7 +1768,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                         );
                                                                     })}
                                                                 </tr>
-                                                            
+                                                            ))}
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -1787,7 +1788,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                 <th className="p-3 text-left border border-[#997B2C]/20 min-w-[80px] text-slate-900">Size</th>
                                                                 {activeVariantLabels.map(label => (
                                                                     <th key={label} className="p-3 text-center border border-[#997B2C]/20 min-w-[80px] font-bold text-slate-900">{label}</th>
-                                                                
+                                                                ))}
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -1842,7 +1843,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                         );
                                                                     })}
                                                                 </tr>
-                                                            
+                                                            ))}
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -1876,7 +1877,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 type="text"
                                                 inputMode="numeric"
                                                 value={formatThousands(uploadSettings.retailMarkup)}
-                                                onChange={(e) => setUploadSettings(prev => ({ ...prev, retailMarkup: parseFormattedNumber(e.target.value) }
+                                                onChange={(e) => setUploadSettings(prev => ({ ...prev, retailMarkup: parseFormattedNumber(e.target.value) }))}
                                                 onFocus={(e) => e.target.select()}
                                                 className="w-full px-3 py-2 border border-green-300 rounded-lg text-base font-bold text-green-700 focus:ring-1 focus:ring-green-500"
                                             />
@@ -1948,7 +1949,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             />
                                                         </div>
                                                     </div>
-                                                
+                                                ))}
                                             </div>
                                             <button
                                                 type="button"
@@ -2150,7 +2151,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                     </div>
                                                 )}
                                             </div>
-                                        
+                                        ))}
                                     </div>
                                 </div>
                             )}
@@ -2165,7 +2166,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         <input
                                             type="text"
                                             value={productFormData.name}
-                                            onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }
+                                            onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }))}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
                                             placeholder="Nama produk..."
                                         />
@@ -2178,12 +2179,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             <div className="flex gap-1">
                                                 <select
                                                     value={productFormData.category}
-                                                    onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }
+                                                    onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }))}
                                                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
                                                 >
                                                     {categories.map(cat => (
                                                         <option key={cat} value={cat}>{cat}</option>
-                                                    
+                                                    ))}
                                                 </select>
                                                 {onQuickAddCategory && (
                                                     <button
@@ -2246,7 +2247,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         <label className="block text-xs font-bold text-gray-600 mb-1">Deskripsi</label>
                                         <textarea
                                             value={productFormData.description}
-                                            onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }
+                                            onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }))}
                                             rows={3}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white resize-none"
                                             placeholder="Deskripsi produk..."
@@ -2274,7 +2275,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 >
                                                     {size}
                                                 </button>
-                                            
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
@@ -2290,7 +2291,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             type="text"
                                             inputMode="numeric"
                                             value={formatThousands(uploadSettings.costPrice)}
-                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }
+                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }))}
                                             onFocus={(e) => e.target.select()}
                                             className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg font-bold focus:ring-2 focus:ring-purple-500 bg-white"
                                             placeholder="0"
@@ -2326,7 +2327,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                 className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
                                                             />
                                                         </div>
-                                                    
+                                                    ))}
                                                 </div>
                                             )}
                                         </div>
@@ -2337,7 +2338,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             type="text"
                                             inputMode="numeric"
                                             value={formatThousands(retailPrice)}
-                                            onChange={(e) => setFixedPrices(prev => ({ ...prev, retail: parseFormattedNumber(e.target.value) }
+                                            onChange={(e) => setFixedPrices(prev => ({ ...prev, retail: parseFormattedNumber(e.target.value) }))}
                                             onFocus={(e) => e.target.select()}
                                             className="w-full px-4 py-3 border-2 border-[#D4AF37]/50 rounded-xl text-lg font-bold text-[#997B2C] bg-[#D4AF37]/5 focus:ring-2 focus:ring-[#D4AF37]"
                                             placeholder="0"
@@ -2349,7 +2350,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             type="text"
                                             inputMode="numeric"
                                             value={formatThousands(resellerPrice)}
-                                            onChange={(e) => setFixedPrices(prev => ({ ...prev, reseller: parseFormattedNumber(e.target.value) }
+                                            onChange={(e) => setFixedPrices(prev => ({ ...prev, reseller: parseFormattedNumber(e.target.value) }))}
                                             onFocus={(e) => e.target.select()}
                                             className="w-full px-4 py-3 border-2 border-[#D4AF37]/50 rounded-xl text-lg font-bold text-[#997B2C] bg-[#D4AF37]/5 focus:ring-2 focus:ring-[#D4AF37]"
                                             placeholder="0"
@@ -2390,7 +2391,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                         <th className="px-2 py-1 text-left border border-green-100">Size</th>
                                                                         {activeVariantLabels.map(label => (
                                                                             <th key={label} className="px-2 py-1 text-center border border-green-100">{label}</th>
-                                                                        
+                                                                        ))}
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
@@ -2422,7 +2423,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                 );
                                                                             })}
                                                                         </tr>
-                                                                    
+                                                                    ))}
                                                                 </tbody>
                                                             </table>
                                                         </div>
@@ -2438,7 +2439,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                         <th className="px-2 py-2 text-left border border-blue-100 font-bold">Size</th>
                                                                         {activeVariantLabels.map(label => (
                                                                             <th key={label} className="px-2 py-2 text-center border border-blue-100 font-bold min-w-[80px]">{label}</th>
-                                                                        
+                                                                        ))}
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
@@ -2470,7 +2471,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                 );
                                                                             })}
                                                                         </tr>
-                                                                    
+                                                                    ))}
                                                                 </tbody>
                                                             </table>
                                                         </div>
@@ -2518,7 +2519,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                         <th className="px-2 py-1 text-left font-semibold text-purple-800 rounded-tl-lg sticky left-0 z-10 bg-purple-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">Size</th>
                                                         {activeVariantLabels.map((label) => (
                                                             <th key={label} className="px-1 py-1 text-center font-bold text-purple-700 min-w-[35px] text-xs">{label}</th>
-                                                        
+                                                        ))}
                                                         <th className="px-2 py-1 text-center font-semibold text-purple-800 rounded-tr-lg text-xs">Total</th>
                                                     </tr>
                                                 </thead>
@@ -2549,7 +2550,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                         ...prev.stockPerVariant,
                                                                                         [key]: e.target.value
                                                                                     }
-                                                                                }
+                                                                                }))}
                                                                                 onFocus={(e) => e.target.select()}
                                                                                 placeholder="0"
                                                                                 className="w-full px-1 py-1 border border-gray-300 rounded text-center text-sm font-bold focus:ring-1 focus:ring-purple-500 focus:border-purple-500 h-8"
