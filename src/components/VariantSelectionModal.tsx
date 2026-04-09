@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { X, Plus, Minus } from 'lucide-react';
 import { Product } from '../types';
 
@@ -25,6 +25,43 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
     const [selectedColor, setSelectedColor] = useState('');
     const [quantity, setQuantity] = useState(1);
     const [isZoomOpen, setIsZoomOpen] = useState(false);
+
+    const productAny = product as any;
+    const isGalleryMode = !!productAny.variantImageIndices;
+
+    // 🔥 NEW: Filter sizes based on selected variant (For Family/Gallery Mode)
+    const filteredSizes = useMemo(() => {
+        const allSizes = product.variants?.sizes || [];
+        if (!isGalleryMode || !selectedColor) return allSizes;
+
+        const variantName = productAny.variantNames?.[selectedColor] || productAny.variants?.names?.[selectedColor];
+        if (!variantName) return allSizes;
+
+        // Filter: Hanya tampilkan ukuran yang diawali nama varian tersebut
+        const filtered = allSizes.filter(s => s.toLowerCase().startsWith(variantName.toLowerCase()));
+        
+        // Jika hasil filter kosong (mungkin tidak pakai prefix), tampilkan semua
+        return filtered.length > 0 ? filtered : allSizes;
+    }, [product.variants?.sizes, selectedColor, productAny.variantNames, isGalleryMode]);
+
+    // 🔥 NEW: Clean size label (Remove prefix "Mom set Khimar " from "Mom set Khimar S")
+    const getCleanSizeLabel = (size: string) => {
+        if (!isGalleryMode || !selectedColor) return size;
+
+        const variantName = productAny.variantNames?.[selectedColor] || productAny.variants?.names?.[selectedColor];
+        if (!variantName && size.includes(' ')) {
+            // Fallback: If no explicit variantName, try to take the last word as size
+            const parts = size.split(' ');
+            return parts[parts.length - 1];
+        }
+
+        if (variantName && size.toLowerCase().startsWith(variantName.toLowerCase())) {
+            // Hapus nama varian dari label ukuran
+            return size.substring(variantName.length).trim();
+        }
+
+        return size;
+    };
 
     // Stock calculation logic (reused from ProductDetail)
     const getVariantStock = (size: string, color: string): number => {
@@ -100,7 +137,12 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
 
         // 🔥 PRIORITY #5: Role-based default pricing
         return user?.role === 'reseller' ? product.resellerPrice : product.retailPrice;
-    };
+    // Reset selected size if it becomes incompatible with selected variant
+    React.useEffect(() => {
+        if (selectedSize && !filteredSizes.includes(selectedSize)) {
+            setSelectedSize('');
+        }
+    }, [selectedColor, filteredSizes]);
 
     const handleConfirm = () => {
         if (!selectedSize || !selectedColor) return;
@@ -196,11 +238,11 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                     )}
 
                     {/* Size Selector */}
-                    {product.variants?.sizes && product.variants.sizes.length > 0 && (
+                    {filteredSizes.length > 0 && (
                         <div>
                             <h3 className="text-sm font-bold text-gray-800 mb-2">Ukuran</h3>
                             <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-                                {product.variants.sizes.map((size) => {
+                                {filteredSizes.map((size) => {
                                     const sizeTotalStock = selectedColor
                                         ? getVariantStock(size, selectedColor)
                                         : (product.variants?.colors || []).reduce((total, color) => total + getVariantStock(size, color), 0);
@@ -217,7 +259,7 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                                                     : 'bg-white text-gray-700 border-gray-300 hover:border-yellow-500'
                                                 }`}
                                         >
-                                            {size}
+                                            {getCleanSizeLabel(size)}
                                         </button>
                                     );
                                 })}

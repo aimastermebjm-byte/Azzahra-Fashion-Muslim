@@ -146,15 +146,18 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
   // 🔥 NEW: Sync image index with selected variant (Gallery Mode Support)
   useEffect(() => {
-    const productAny = initialProduct as any;
+    const productAny = currentProduct as any;
     if (selectedColor && productAny.variantImageIndices) {
       const variantImageIndex = productAny.variantImageIndices[selectedColor];
       if (variantImageIndex !== undefined && variantImageIndex !== null) {
-        console.log(`🖼️ Variant selected: ${selectedColor}, switching to image index: ${variantImageIndex}`);
-        setSelectedImageIndex(Number(variantImageIndex));
+        const idx = Number(variantImageIndex);
+        if (currentProduct.images?.[idx]) {
+          console.log(`🖼️ Variant selected: ${selectedColor}, switching to image index: ${idx}`);
+          setSelectedImageIndex(idx);
+        }
       }
     }
-  }, [selectedColor, initialProduct.id]);
+  }, [selectedColor, currentProduct.id, currentProduct.variantImageIndices]);
 
   // Zoom handlers
   const handleZoomOpen = useCallback(() => {
