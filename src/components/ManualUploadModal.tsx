@@ -505,21 +505,23 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         }
     }, [familyMode, familyGroups]);
 
-    // 🔥 NEW: Sync family groups to variant names automatically (A, B, C labels)
-    React.useEffect(() => {
-        if (familyMode && Object.keys(familyGroups).length > 0) {
-            const groupNames = Object.keys(familyGroups);
-            setVariantNames(prev => {
-                const next = { ...prev };
-                activeVariantLabels.forEach((label, index) => {
-                    if (groupNames[index]) {
-                        next[label] = groupNames[index];
-                    }
-                });
-                return next;
-            });
-        }
-    }, [familyMode, familyGroups, activeVariantLabels]);
+    // 🔥 NEW: Logic to sync group name to next available variant label (A, B, C...) based on interaction
+    const handleFamilyInteraction = (groupName: string) => {
+        setVariantNames(prev => {
+            // Check if this group is already assigned to ANY label
+            const alreadyAssigned = Object.values(prev).includes(groupName);
+            if (alreadyAssigned) return prev;
+
+            // Find the FIRST label (A, B, C...) that is currently empty
+            const nextLabel = activeVariantLabels.find(label => !prev[label] || prev[label].trim() === '');
+            
+            if (nextLabel) {
+                console.log(`🏷️ Auto-assigning family group "${groupName}" to label ${nextLabel}`);
+                return { ...prev, [nextLabel]: groupName };
+            }
+            return prev;
+        });
+    };
 
     // Auto-reset familyMode when entering collage mode
     React.useEffect(() => {
@@ -1329,13 +1331,9 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     if (selectedSizes.length === 1 && selectedSizes[0] === 'All Size') {
                                                                         setSelectedSizes([]);
                                                                     }
-                                                                    // Initialize default groups if switching to family mode and none exist
+                                                                    // Start with empty groups in family mode, let user add manually
                                                                     if (Object.keys(familyGroups).length === 0) {
-                                                                        const defaults: Record<string, string[]> = {};
-                                                                        ['Mom set Khimar', 'Mom set scarf', 'Gamis Kids', 'Koko Kids', 'Dad L.panjang', 'Dad L.pendek'].forEach(g => {
-                                                                            defaults[g] = [];
-                                                                        });
-                                                                        setFamilyGroups(defaults);
+                                                                        setFamilyGroups({});
                                                                     }
                                                                 } else {
                                                                     setFamilyGroups({});
@@ -1506,6 +1504,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                 ? prev[groupName].filter(s => s !== size)
                                                                                 : [...prev[groupName], size]
                                                                         }));
+                                                                        // Sync name to variant label A, B, C on size selection
+                                                                        handleFamilyInteraction(groupName);
                                                                     }}
                                                                     className={`px-2 py-1 rounded text-xs font-semibold transition-all ${isSelected
                                                                         ? 'bg-[#997B2C] text-white'
@@ -1533,6 +1533,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             const val = (e.target as HTMLInputElement).value.trim();
                                                             if (val && !familyGroups[val]) {
                                                                 setFamilyGroups(prev => ({ ...prev, [val]: [] }));
+                                                                handleFamilyInteraction(val); // Sync custom group
                                                                 (e.target as HTMLInputElement).value = '';
                                                             }
                                                         }
@@ -1545,6 +1546,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                         const val = input.value.trim();
                                                         if (val && !familyGroups[val]) {
                                                             setFamilyGroups(prev => ({ ...prev, [val]: [] }));
+                                                            handleFamilyInteraction(val); // Sync custom group
                                                             input.value = '';
                                                         }
                                                     }}
@@ -1567,6 +1569,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     ...prev,
                                                                     [groupName]: [] // Start with empty sizes
                                                                 }));
+                                                                handleFamilyInteraction(groupName); // Sync preset group
                                                             }}
                                                             className="px-2 py-1 border border-[#D4AF37]/30 rounded text-[10px] font-bold text-[#997B2C] hover:bg-[#D4AF37]/10 transition-all"
                                                         >
