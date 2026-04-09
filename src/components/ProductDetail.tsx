@@ -324,7 +324,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     });
 
     const variant = (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0)
-      ? { size: selectedSize, color: selectedColor }
+      ? { 
+          size: selectedSize, 
+          color: selectedColor,
+          variantName: (currentProduct as any).variantNames?.[selectedColor] || (currentProduct as any).variants?.names?.[selectedColor] || selectedColor
+        }
       : undefined;
 
     console.log('🔍 DEBUG: Final variant object:', variant);
@@ -421,7 +425,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     }
 
     const variant = (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0)
-      ? { size: selectedSize, color: selectedColor }
+      ? { 
+          size: selectedSize, 
+          color: selectedColor,
+          variantName: (currentProduct as any).variantNames?.[selectedColor] || (currentProduct as any).variants?.names?.[selectedColor] || selectedColor
+        }
       : null;
 
     // 🔥 PRIORITY #1: Flash Sale - Calculate from VARIANT price!

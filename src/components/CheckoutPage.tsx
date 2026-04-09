@@ -149,6 +149,24 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   };
 
+  const getCleanSize = (size: string, variantName?: string) => {
+    if (!size) return 'Standard';
+    if (!variantName) return size;
+    
+    // If size starts with variantName, strip it
+    if (size.toLowerCase().startsWith(variantName.toLowerCase())) {
+      return size.substring(variantName.length).trim() || size;
+    }
+    
+    // Fallback: If it's the "Mom set Khimar S" format but variantName is just "A" (unlikely now with recent fixes)
+    if (size.includes(' ')) {
+      const parts = size.split(' ');
+      return parts[parts.length - 1];
+    }
+    
+    return size;
+  };
+
   const updateAddress = async (id: string, updateData: any) => {
     try {
       const updatedAddress = await addressService.updateAddress(id, updateData);
@@ -1297,9 +1315,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           />
                           <div className="flex-1">
                             <h4 className="text-sm font-semibold text-slate-900">{itemName}</h4>
-                            {variant && (variant.size || variant.color) && (
+                             {variant && (variant.size || variant.color) && (
                               <p className="text-xs text-slate-500">
-                                {variant.size || 'Standard'} · {variant.variantName || variant.color || 'Default'}
+                                {getCleanSize(variant.size, variant.variantName)} · {variant.variantName || variant.color || 'Default'}
                               </p>
                             )}
                             <div className="mt-1 flex items-center justify-between">

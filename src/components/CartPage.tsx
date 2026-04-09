@@ -104,6 +104,24 @@ const CartPage: React.FC<CartPageProps> = ({
   const orderSubtotal = totalPrice;
   const formatCurrency = (value: number) => `Rp ${value.toLocaleString('id-ID')}`;
 
+  const getCleanSize = (size: string, variantName?: string) => {
+    if (!size) return 'Standard';
+    if (!variantName) return size;
+    
+    // If size starts with variantName, strip it
+    if (size.toLowerCase().startsWith(variantName.toLowerCase())) {
+      return size.substring(variantName.length).trim() || size;
+    }
+    
+    // Fallback: If it's the "Mom set Khimar S" format but variantName is just "A" (unlikely now with recent fixes)
+    if (size.includes(' ')) {
+      const parts = size.split(' ');
+      return parts[parts.length - 1];
+    }
+    
+    return size;
+  };
+
   const pageHeader = (
     <div className="px-4 pt-4">
       <PageHeader
@@ -248,7 +266,7 @@ const CartPage: React.FC<CartPageProps> = ({
 
                         {variant && (variant.size || variant.color) && (
                           <p className="mb-2 text-sm text-slate-500">
-                            Ukuran: {variant.size || 'Standard'} | Warna: {variant.color || 'Default'}
+                            Ukuran: {getCleanSize(variant.size, variant.variantName)} | Warna: {variant.variantName || variant.color || 'Default'}
                           </p>
                         )}
 

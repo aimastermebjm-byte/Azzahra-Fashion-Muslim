@@ -508,11 +508,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     // 🔥 NEW: Logic to sync group name to next available variant label (A, B, C...) based on interaction
     const handleFamilyInteraction = (groupName: string) => {
         setVariantNames(prev => {
-            // Check if this group is already assigned to ANY label
-            const alreadyAssigned = Object.values(prev).includes(groupName);
-            if (alreadyAssigned) return prev;
+            // 1. Check if this group is already assigned to ANY label
+            const alreadyAssignedLabel = Object.keys(prev).find(key => prev[key] === groupName);
+            if (alreadyAssignedLabel) return prev;
 
-            // Find the FIRST label (A, B, C...) that is currently empty
+            // 2. Find the FIRST label (A, B, C...) that is currently EMPTY
+            // We only look at active labels that don't have a value yet
             const nextLabel = activeVariantLabels.find(label => !prev[label] || prev[label].trim() === '');
             
             if (nextLabel) {
@@ -629,6 +630,24 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
     const parseFormattedNumber = (str: string): number => {
         return parseInt(str.replace(/\./g, '')) || 0;
+    };
+
+    const getCleanSize = (size: string) => {
+        if (!familyMode) return size;
+        let clean = size;
+        // Strip group prefixes (e.g. "Mom set Khimar S" -> "S")
+        Object.values(variantNames).forEach(name => {
+            if (name && clean.startsWith(name + ' ')) {
+                clean = clean.replace(name + ' ', '').trim();
+            }
+        });
+        // Also check if groupName part is in FAMILY_GROUP_PRESETS to be safe
+        FAMILY_GROUP_PRESETS.forEach(preset => {
+            if (clean.startsWith(preset + ' ')) {
+                clean = clean.replace(preset + ' ', '').trim();
+            }
+        });
+        return clean;
     };
 
     // Handle image upload
@@ -1762,12 +1781,6 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             <tr className="bg-[#D4AF37]/10">
                                                                 <th className="p-3 text-left border border-[#D4AF37]/20 min-w-[80px] text-slate-900">Size</th>
                                                                 {activeVariantLabels.map(label => (
-                                                                    <th key={label} className="p-3 text-center border border-[#D4AF37]/20 min-w-[80px] font-bold text-slate-900">{label}</th>
-                                                                ))}
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {selectedSizes.map((size, sizeIndex) => (
                                                                 <tr key={size}>
                                                                     <td className="p-2 font-bold border border-[#D4AF37]/20 bg-slate-50">
                                                                         <input
@@ -1837,7 +1850,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             <tr className="bg-[#997B2C]/10">
                                                                 <th className="p-3 text-left border border-[#997B2C]/20 min-w-[80px] text-slate-900">Size</th>
                                                                 {activeVariantLabels.map(label => (
-                                                                    <th key={label} className="p-3 text-center border border-[#997B2C]/20 min-w-[80px] font-bold text-slate-900">{label}</th>
+                                                                    <th key={label} className="p-3 text-center border border-[#997B2C]/20 min-w-[80px] font-bold text-slate-900">{variantNames[label] || label}</th>
                                                                 ))}
                                                             </tr>
                                                         </thead>
@@ -1845,26 +1858,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             {selectedSizes.map((size, sizeIndex) => (
                                                                 <tr key={size}>
                                                                     <td className="p-2 font-bold border border-[#997B2C]/20 bg-slate-50">
+                                                                        <div className="px-2 py-1 text-xs font-bold text-slate-900">
+                                                                            {getCleanSize(size)}
+                                                                        </div>
                                                                         <input
-                                                                            type="text"
+                                                                            type="hidden"
                                                                             value={size}
-                                                                            onChange={(e) => {
-                                                                                const newSizes = [...selectedSizes];
-                                                                                const oldSize = newSizes[sizeIndex];
-                                                                                const newSize = e.target.value;
-                                                                                newSizes[sizeIndex] = newSize;
-                                                                                setSelectedSizes(newSizes);
-
-                                                                                // Also update pricesPerVariant keys
-                                                                                const updatedPrices: typeof pricesPerVariant = {};
-                                                                                Object.entries(pricesPerVariant).forEach(([key, val]) => {
-                                                                                    const newKey = key.replace(`${oldSize}-`, `${newSize}-`);
-                                                                                    updatedPrices[newKey] = val;
-                                                                                });
-                                                                                setPricesPerVariant(updatedPrices);
-                                                                            }}
-                                                                            onFocus={(e) => e.target.select()}
-                                                                            className="w-full px-2 py-1 text-sm font-bold bg-transparent border-0 focus:ring-2 focus:ring-[#997B2C] rounded min-w-[80px] text-slate-900"
                                                                         />
                                                                     </td>
                                                                     {activeVariantLabels.map(label => {
@@ -2440,14 +2439,14 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     <tr className="bg-[#D4AF37]/20">
                                                                         <th className="px-2 py-1 text-left border border-green-100">Size</th>
                                                                         {activeVariantLabels.map(label => (
-                                                                            <th key={label} className="px-2 py-1 text-center border border-green-100">{label}</th>
+                                                                            <th key={label} className="px-2 py-1 text-center border border-green-100">{variantNames[label] || label}</th>
                                                                         ))}
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
                                                                     {selectedSizes.map(size => (
                                                                         <tr key={size}>
-                                                                            <td className="px-2 py-1 font-bold border border-green-100">{size}</td>
+                                                                            <td className="px-2 py-1 font-bold border border-green-100">{getCleanSize(size)}</td>
                                                                             {activeVariantLabels.map(label => {
                                                                                 const key = `${size}-${label}`;
                                                                                 return (
@@ -2488,14 +2487,14 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     <tr className="bg-[#D4AF37]/20">
                                                                         <th className="px-2 py-2 text-left border border-blue-100 font-bold">Size</th>
                                                                         {activeVariantLabels.map(label => (
-                                                                            <th key={label} className="px-2 py-2 text-center border border-blue-100 font-bold min-w-[80px]">{label}</th>
+                                                                            <th key={label} className="px-2 py-2 text-center border border-blue-100 font-bold min-w-[80px]">{variantNames[label] || label}</th>
                                                                         ))}
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
                                                                     {selectedSizes.map(size => (
                                                                         <tr key={size}>
-                                                                            <td className="px-2 py-2 font-bold border border-blue-100">{size}</td>
+                                                                            <td className="px-2 py-2 font-bold border border-blue-100">{getCleanSize(size)}</td>
                                                                             {activeVariantLabels.map(label => {
                                                                                 const key = `${size}-${label}`;
                                                                                 return (
@@ -2568,7 +2567,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                     <tr className="bg-purple-100">
                                                         <th className="px-2 py-1 text-left font-semibold text-purple-800 rounded-tl-lg sticky left-0 z-10 bg-purple-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">Size</th>
                                                         {activeVariantLabels.map((label) => (
-                                                            <th key={label} className="px-1 py-1 text-center font-bold text-purple-700 min-w-[35px] text-xs">{label}</th>
+                                                            <th key={label} className="px-1 py-1 text-center font-bold text-purple-700 min-w-[35px] text-xs">{variantNames[label] || label}</th>
                                                         ))}
                                                         <th className="px-2 py-1 text-center font-semibold text-purple-800 rounded-tr-lg text-xs">Total</th>
                                                     </tr>
@@ -2582,7 +2581,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
                                                         return (
                                                             <tr key={size} className="border-b border-gray-200">
-                                                                <td className="px-2 py-1 font-semibold text-gray-700 bg-purple-50 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">{size}</td>
+                                                                <td className="px-2 py-1 font-semibold text-gray-700 bg-purple-50 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">{getCleanSize(size)}</td>
                                                                 {activeVariantLabels.map((label) => {
                                                                     const key = `${size}-${label}`;
                                                                     const defaultValue = uploadSettings.stockPerVariant || 0;
