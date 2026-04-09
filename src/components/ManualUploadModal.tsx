@@ -505,6 +505,17 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         }
     }, [familyMode, familyGroups]);
 
+    // Auto-reset familyMode when entering collage mode
+    React.useEffect(() => {
+        if (uploadMode === 'collage' && familyMode) {
+            setFamilyMode(false);
+            setFamilyGroups({});
+            if (selectedSizes.length === 0 || (selectedSizes.length === 1 && selectedSizes[0] !== 'All Size')) {
+                setSelectedSizes(['All Size']);
+            }
+        }
+    }, [uploadMode]);
+
     // Auto-generate collage when images or pan change
     React.useEffect(() => {
         const autoGenerateCollage = async () => {
@@ -755,6 +766,22 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             }
         }
 
+        // NEW: Variant to Image Mapping (Gallery Mode ONLY)
+        // This is crucial for per-variant image preview in store
+        const variantImageIndices: Record<string, number> = {};
+        if (uploadMode === 'gallery') {
+            let activeLabelIdx = 0;
+            for (let i = 0; i < images.length; i++) {
+                if (isVariant[i] !== false) {
+                    const label = activeVariantLabels[activeLabelIdx];
+                    if (label) {
+                        variantImageIndices[label] = i;
+                        activeLabelIdx++;
+                    }
+                }
+            }
+        }
+
         const productData = {
             name: productFormData.name,
             brand: productFormData.brand,
@@ -774,6 +801,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             galleryFiles: uploadMode === 'gallery' ? images : null,
             imageUploadMode: uploadMode,
             mainImageIndex: uploadMode === 'gallery' ? mainImageIndex : 0,
+            variantImageIndices: Object.keys(variantImageIndices).length > 0 ? variantImageIndices : null,
             uploadMode: 'direct',
             sizeName: selectedSizes.join(', '), // Display all selected sizes
             // New: Include complete variants structure with all selected sizes
@@ -1264,6 +1292,9 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 const hasFamilyData = selectedSizes.some(size =>
                                                     familyKeywords.some(kw => size.toLowerCase().includes(kw))
                                                 );
+
+                                                // Hide family mode in collage mode
+                                                if (uploadMode === 'collage') return null;
 
                                                 return (
                                                     <>

@@ -121,6 +121,18 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
+  // 🔥 NEW: Sync image index with selected variant (Gallery Mode Support)
+  useEffect(() => {
+    const productAny = currentProduct as any;
+    if (selectedColor && productAny.variantImageIndices) {
+      const variantImageIndex = productAny.variantImageIndices[selectedColor];
+      if (variantImageIndex !== undefined && variantImageIndex !== null) {
+        console.log(`🖼️ Variant selected: ${selectedColor}, switching to image index: ${variantImageIndex}`);
+        setSelectedImageIndex(Number(variantImageIndex));
+      }
+    }
+  }, [selectedColor, currentProduct.id]);
+
   // Zoom handlers
   const handleZoomOpen = useCallback(() => {
     setIsZoomOpen(true);
@@ -340,9 +352,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       }
     }
 
-    // Pass product with correct price based on Flash Sale > variant pricing > user role
+    // 🔥 NEW: Determine specific variant image for cart/order persistence
+    const productAny = currentProduct as any;
+    let variantImage = currentProduct.image || currentProduct.images?.[0] || '/placeholder-currentProduct.jpg';
+    
+    if (selectedColor && productAny.variantImageIndices) {
+      const idx = productAny.variantImageIndices[selectedColor];
+      if (idx !== undefined && idx !== null && currentProduct.images?.[idx]) {
+        variantImage = currentProduct.images[idx];
+        console.log(`📸 Cart Persistent Image: Using variant image for ${selectedColor}`);
+      }
+    }
+
+    // Pass product with correct price and VARIANT-SPECIFIC IMAGE
     const productWithPrice = {
       ...currentProduct,
+      image: variantImage, // CRITICAL: This ensures the specific variant photo stays with the order
       price: finalPrice > 0 ? finalPrice : getPrice() // Use calculated price or fallback to getPrice()
     };
 
@@ -449,9 +474,21 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       }
     }
 
-    // Pass product with correct price based on Flash Sale > variant pricing > user role
+    // 🔥 NEW: Determine specific variant image for order persistence
+    const productAny = currentProduct as any;
+    let variantImage = currentProduct.image || currentProduct.images?.[0] || '/placeholder-currentProduct.jpg';
+    
+    if (selectedColor && productAny.variantImageIndices) {
+      const idx = productAny.variantImageIndices[selectedColor];
+      if (idx !== undefined && idx !== null && currentProduct.images?.[idx]) {
+        variantImage = currentProduct.images[idx];
+      }
+    }
+
+    // Pass product with correct price and VARIANT-SPECIFIC IMAGE
     const productWithPrice = {
       ...currentProduct,
+      image: variantImage, // CRITICAL: Persistence for Checkout/Order
       price: finalPrice > 0 ? finalPrice : getPrice() // Use calculated price or fallback to getPrice()
     };
 

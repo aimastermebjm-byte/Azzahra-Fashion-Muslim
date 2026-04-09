@@ -110,6 +110,18 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
         onClose();
     };
 
+    // 🔥 NEW: Helper to get current display image based on selection
+    const getDisplayImage = () => {
+        const productAny = product as any;
+        if (selectedColor && productAny.variantImageIndices) {
+            const idx = productAny.variantImageIndices[selectedColor];
+            if (idx !== undefined && idx !== null && product.images?.[idx]) {
+                return product.images[idx];
+            }
+        }
+        return product.image || product.images?.[0];
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -133,7 +145,7 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                     {/* Product Preview */}
                     <div className="flex gap-3 p-3 bg-gray-50 rounded-lg">
                         <img
-                            src={product.image || product.images?.[0]}
+                            src={getDisplayImage()}
                             alt={product.name}
                             className="w-16 h-16 rounded-lg object-cover cursor-zoom-in hover:opacity-80 transition"
                             onClick={(e) => {
@@ -287,7 +299,7 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                         <X className="w-6 h-6" />
                     </button>
                     <img
-                        src={product.image || product.images?.[0]}
+                        src={getDisplayImage()}
                         alt={product.name}
                         className="max-w-[90%] max-h-[90%] object-contain"
                         onClick={(e) => e.stopPropagation()}
