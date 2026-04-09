@@ -144,10 +144,10 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
 
     // Reset selected size if it becomes incompatible with selected variant
     React.useEffect(() => {
-        if (selectedSize && !filteredSizes.includes(selectedSize)) {
+        if (selectedSize && !filteredUniqueSizes.includes(selectedSize)) {
             setSelectedSize('');
         }
-    }, [selectedColor, filteredSizes]);
+    }, [selectedColor, filteredUniqueSizes]);
 
     const handleConfirm = () => {
         if (!selectedSize || !selectedColor) return;
