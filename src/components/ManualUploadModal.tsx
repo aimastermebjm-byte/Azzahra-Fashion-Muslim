@@ -1763,33 +1763,41 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             </button>
                                             {showCostPerSize && (
                                                 <div className="space-y-2 mt-3 pt-3 border-t border-amber-200">
-                                                    {selectedSizes.map((size, sizeIndex) => (
-                                                        <div key={size} className="flex items-center gap-2">
-                                                            <input
-                                                                type="text"
-                                                                value={size}
-                                                                onChange={(e) => {
-                                                                    const newSizes = [...selectedSizes];
-                                                                    newSizes[sizeIndex] = e.target.value;
-                                                                    setSelectedSizes(newSizes);
-                                                                }}
-                                                                onFocus={(e) => e.target.select()}
-                                                                className="w-36 px-2 py-1 text-sm font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded focus:ring-2 focus:ring-amber-500"
-                                                            />
-                                                            <input
-                                                                type="text"
-                                                                inputMode="numeric"
-                                                                value={formatThousands(costPricePerSize[size] || uploadSettings.costPrice)}
-                                                                onChange={(e) => {
-                                                                    const val = parseFormattedNumber(e.target.value);
-                                                                    setCostPricePerSize(prev => ({ ...prev, [size]: val }));
-                                                                }}
-                                                                onFocus={(e) => e.target.select()}
-                                                                placeholder={formatThousands(uploadSettings.costPrice)}
-                                                                className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
-                                                            />
-                                                        </div>
-                                                    ))}
+                                                    {(() => {
+                                                        const distinctSizes = familyMode 
+                                                            ? Array.from(new Set(selectedSizes.map(s => getCleanSize(s))))
+                                                            : selectedSizes;
+                                                        
+                                                        return distinctSizes.map((cleanSizeOrSize) => {
+                                                            const displaySize = cleanSizeOrSize;
+                                                            // For assignment, if familyMode we still need to map it back to a full size name for the state
+                                                            // OR we use the displaySize if it's unique enough.
+                                                            // In Step 1, costPricePerSize keys use the FULL size string.
+                                                            const fullSizeRef = familyMode
+                                                                ? selectedSizes.find(s => getCleanSize(s) === cleanSizeOrSize) || cleanSizeOrSize
+                                                                : cleanSizeOrSize;
+
+                                                            return (
+                                                                <div key={cleanSizeOrSize} className="flex items-center gap-2">
+                                                                    <div className="w-36 px-2 py-1 text-sm font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded truncate">
+                                                                        {displaySize}
+                                                                    </div>
+                                                                    <input
+                                                                        type="text"
+                                                                        inputMode="numeric"
+                                                                        value={formatThousands(costPricePerSize[fullSizeRef] || uploadSettings.costPrice)}
+                                                                        onChange={(e) => {
+                                                                            const val = parseFormattedNumber(e.target.value);
+                                                                            setCostPricePerSize(prev => ({ ...prev, [fullSizeRef]: val }));
+                                                                        }}
+                                                                        onFocus={(e) => e.target.select()}
+                                                                        placeholder={formatThousands(uploadSettings.costPrice)}
+                                                                        className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
+                                                                    />
+                                                                </div>
+                                                            );
+                                                        });
+                                                    })()}
                                                 </div>
                                             )}
                                         </div>
@@ -1797,8 +1805,6 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 </div>
 
                                 {/* Expandable Price per Variant Matrix */}
-                                {/* Show when: multiple sizes OR showPricePerVariant is true (set from draft) */}
-                                {/* Always show container so user can toggle it */}
                                 <div className="mb-5 border border-[#D4AF37]/30 rounded-xl overflow-hidden bg-white shadow-sm">
                                     <button
                                         type="button"
@@ -1837,50 +1843,58 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {selectedSizes.map((size, sizeIndex) => (
-                                                                <tr key={size}>
-                                                                    <td className="p-2 font-bold border border-[#D4AF37]/20 bg-slate-50">
-                                                                        <div className="px-2 py-1 text-xs font-bold text-slate-900">
-                                                                            {getCleanSize(size)}
-                                                                        </div>
-                                                                        <input
-                                                                            type="hidden"
-                                                                            value={size}
-                                                                        />
-                                                                    </td>
-                                                                    {activeVariantLabels.map(label => {
-                                                                        const key = `${size}-${label}`;
-                                                                        return (
-                                                                            <td key={key} className="p-2 border border-[#D4AF37]/20">
-                                                                                <input
-                                                                                    type="text"
-                                                                                    inputMode="numeric"
-                                                                                    value={formatThousands(pricesPerVariant[key]?.retail || retailPrice)}
-                                                                                    onChange={(e) => {
-                                                                                        const val = parseFormattedNumber(e.target.value);
-                                                                                        setPricesPerVariant(prev => ({
-                                                                                            ...prev,
-                                                                                            [key]: {
-                                                                                                ...(prev[key] || { reseller: resellerPrice }),
-                                                                                                retail: val
-                                                                                            }
-                                                                                        }));
-                                                                                    }}
-                                                                                    onFocus={(e) => e.target.select()}
-                                                                                    className="w-full px-2 py-3 text-center bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-[#D4AF37] shadow-sm min-w-[90px] text-slate-900"
-                                                                                    placeholder="0"
-                                                                                />
-                                                                            </td>
-                                                                        );
-                                                                    })}
-                                                                </tr>
-                                                            ))}
+                                                            {(() => {
+                                                                const distinctSizes = familyMode 
+                                                                    ? Array.from(new Set(selectedSizes.map(s => getCleanSize(s))))
+                                                                    : selectedSizes;
+
+                                                                return distinctSizes.map(cleanSize => (
+                                                                    <tr key={cleanSize}>
+                                                                        <td className="p-2 font-bold border border-[#D4AF37]/20 bg-slate-50">
+                                                                            <div className="px-2 py-1 text-xs font-bold text-slate-900">
+                                                                                {cleanSize}
+                                                                            </div>
+                                                                        </td>
+                                                                        {activeVariantLabels.map(label => {
+                                                                            const varName = variantNames[label] || label;
+                                                                            const fullSize = familyMode 
+                                                                                ? selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize)
+                                                                                : cleanSize;
+                                                                            
+                                                                            if (familyMode && !fullSize) return <td key={`${cleanSize}-${label}`} className="p-2 border border-[#D4AF37]/20 bg-gray-50/50"></td>;
+
+                                                                            const key = `${fullSize}-${label}`;
+                                                                            return (
+                                                                                <td key={key} className="p-2 border border-[#D4AF37]/20">
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        inputMode="numeric"
+                                                                                        value={formatThousands(pricesPerVariant[key]?.retail || retailPrice)}
+                                                                                        onChange={(e) => {
+                                                                                            const val = parseFormattedNumber(e.target.value);
+                                                                                            setPricesPerVariant(prev => ({
+                                                                                                ...prev,
+                                                                                                [key]: {
+                                                                                                    ...(prev[key] || { reseller: resellerPrice }),
+                                                                                                    retail: val
+                                                                                                }
+                                                                                            }));
+                                                                                        }}
+                                                                                        onFocus={(e) => e.target.select()}
+                                                                                        className="w-full px-2 py-3 text-center bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-[#D4AF37] shadow-sm min-w-[90px] text-slate-900"
+                                                                                        placeholder="0"
+                                                                                    />
+                                                                                </td>
+                                                                            );
+                                                                        })}
+                                                                    </tr>
+                                                                ));
+                                                            })()}
                                                         </tbody>
                                                     </table>
                                                 </div>
                                             </div>
 
-                                            {/* Reseller Price Matrix */}
                                             {/* Reseller Price Matrix */}
                                             <div>
                                                 <h4 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
@@ -1898,44 +1912,53 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {selectedSizes.map((size, sizeIndex) => (
-                                                                <tr key={size}>
-                                                                    <td className="p-2 font-bold border border-[#997B2C]/20 bg-slate-50">
-                                                                        <div className="px-2 py-1 text-xs font-bold text-slate-900">
-                                                                            {getCleanSize(size)}
-                                                                        </div>
-                                                                        <input
-                                                                            type="hidden"
-                                                                            value={size}
-                                                                        />
-                                                                    </td>
-                                                                    {activeVariantLabels.map(label => {
-                                                                        const key = `${size}-${label}`;
-                                                                        return (
-                                                                            <td key={key} className="p-2 border border-[#997B2C]/20">
-                                                                                <input
-                                                                                    type="text"
-                                                                                    inputMode="numeric"
-                                                                                    value={formatThousands(pricesPerVariant[key]?.reseller || resellerPrice)}
-                                                                                    onChange={(e) => {
-                                                                                        const val = parseFormattedNumber(e.target.value);
-                                                                                        setPricesPerVariant(prev => ({
-                                                                                            ...prev,
-                                                                                            [key]: {
-                                                                                                ...(prev[key] || { retail: retailPrice }),
-                                                                                                reseller: val
-                                                                                            }
-                                                                                        }));
-                                                                                    }}
-                                                                                    onFocus={(e) => e.target.select()}
-                                                                                    className="w-full px-2 py-3 text-center bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-[#997B2C] shadow-sm min-w-[90px] text-slate-900"
-                                                                                    placeholder="0"
-                                                                                />
-                                                                            </td>
-                                                                        );
-                                                                    })}
-                                                                </tr>
-                                                            ))}
+                                                            {(() => {
+                                                                const distinctSizes = familyMode 
+                                                                    ? Array.from(new Set(selectedSizes.map(s => getCleanSize(s))))
+                                                                    : selectedSizes;
+
+                                                                return distinctSizes.map(cleanSize => (
+                                                                    <tr key={cleanSize}>
+                                                                        <td className="p-2 font-bold border border-[#997B2C]/20 bg-slate-50">
+                                                                            <div className="px-2 py-1 text-xs font-bold text-slate-900">
+                                                                                {cleanSize}
+                                                                            </div>
+                                                                        </td>
+                                                                        {activeVariantLabels.map(label => {
+                                                                            const varName = variantNames[label] || label;
+                                                                            const fullSize = familyMode 
+                                                                                ? selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize)
+                                                                                : cleanSize;
+                                                                            
+                                                                            if (familyMode && !fullSize) return <td key={`${cleanSize}-${label}`} className="p-2 border border-[#997B2C]/20 bg-gray-50/50"></td>;
+
+                                                                            const key = `${fullSize}-${label}`;
+                                                                            return (
+                                                                                <td key={key} className="p-2 border border-[#997B2C]/20">
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        inputMode="numeric"
+                                                                                        value={formatThousands(pricesPerVariant[key]?.reseller || resellerPrice)}
+                                                                                        onChange={(e) => {
+                                                                                            const val = parseFormattedNumber(e.target.value);
+                                                                                            setPricesPerVariant(prev => ({
+                                                                                                ...prev,
+                                                                                                [key]: {
+                                                                                                    ...(prev[key] || { retail: retailPrice }),
+                                                                                                    reseller: val
+                                                                                                }
+                                                                                            }));
+                                                                                        }}
+                                                                                        onFocus={(e) => e.target.select()}
+                                                                                        className="w-full px-2 py-3 text-center bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-[#997B2C] shadow-sm min-w-[90px] text-slate-900"
+                                                                                        placeholder="0"
+                                                                                    />
+                                                                                </td>
+                                                                            );
+                                                                        })}
+                                                                    </tr>
+                                                                ));
+                                                            })()}
                                                         </tbody>
                                                     </table>
                                                 </div>

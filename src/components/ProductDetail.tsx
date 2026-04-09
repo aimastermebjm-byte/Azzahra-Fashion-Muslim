@@ -901,6 +901,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             onClose={() => setModalMode(null)}
             product={currentProduct}
             mode={modalMode}
+            externalSelectedColor={selectedColor}
+            onColorChange={(color) => setSelectedColor(color)}
             onConfirm={(variant, qty) => {
               // Update state from modal selection
               setSelectedSize(variant.size);
