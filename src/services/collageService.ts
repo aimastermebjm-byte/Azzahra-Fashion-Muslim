@@ -13,7 +13,8 @@ interface Rect {
 export class CollageService {
   async generateCollage(
     images: File[],
-    variantLabels: string[]
+    variantLabels: string[],
+    panOffsets?: Record<number, number>
   ): Promise<Blob> {
     const count = images.length;
 
@@ -67,8 +68,10 @@ export class CollageService {
       const img = loadedImages[index];
       const label = variantLabels[index];
 
+      const panY = panOffsets ? (panOffsets[index] || 0) : 0;
+      
       // Draw standard clean cover
-      this.drawImageInBox(ctx, img, box.x, box.y, box.w, box.h);
+      this.drawImageInBox(ctx, img, box.x, box.y, box.w, box.h, panY);
 
       // Draw Divider/Border
       ctx.strokeStyle = '#ffffff';
@@ -142,7 +145,7 @@ export class CollageService {
 
 
   // --- LAYOUT ENGINE ---
-  private calculateLayout(count: number, W: number, H: number): Rect[] {
+  calculateLayout(count: number, W: number, H: number): Rect[] {
     const boxes: Rect[] = [];
 
     if (count === 1) {
@@ -286,7 +289,8 @@ export class CollageService {
     x: number,
     y: number,
     w: number,
-    h: number
+    h: number,
+    panY: number = 0
   ) {
     ctx.save();
     ctx.beginPath();
@@ -318,14 +322,10 @@ export class CollageService {
     // If we are cropping vertically (image taller than box relative to width)
     // Shift slightly up to prioritize upper body.
     if (scaledH > h) {
-      // A value of 0 means align top. 
-      // A value of (h - scaledH) / 2 means align center.
-      // Let's use 20% from top (bias top).
-      // dy = y + (h - scaledH) * 0.2; 
-
-      // Actually, pure Top-Center is safest for 5-item top row issue.
-      // Let's use pure Top Anchor if it's potentially cropping head.
-      dy = y;
+      // dy = y + (panY * (h - scaledH))
+      // panY = 0 (Current Default/Top) -> dy = y
+      // panY = 1 (Bottom) -> dy = y + (h - scaledH)
+      dy = y + (panY * (h - scaledH));
     }
 
     ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, scaledW, scaledH);

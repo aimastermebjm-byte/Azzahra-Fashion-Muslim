@@ -109,6 +109,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     // Upload mode state
     const [uploadMode, setUploadMode] = useState<'collage' | 'gallery'>('collage');
     const [mainImageIndex, setMainImageIndex] = useState<number>(0);
+    const [panOffsets, setPanOffsets] = useState<Record<number, number>>({});
 
     // Initialize from initialState when isOpen changes
     React.useEffect(() => {
@@ -139,6 +140,10 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             // Set variant count from draft productData
             if (initialState.productData?.variants?.colors) {
                 setDraftVariantCount(initialState.productData.variants.colors.length);
+            }
+
+            if (initialState.panOffsets) {
+                setPanOffsets(initialState.panOffsets);
             }
 
             if (initialState.productData) {
@@ -488,7 +493,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         }
     }, [familyMode, familyGroups]);
 
-    // Auto-generate collage when images change
+    // Auto-generate collage when images or pan change
     React.useEffect(() => {
         const autoGenerateCollage = async () => {
             if (images.length === 0 || uploadMode === 'gallery') {
@@ -500,8 +505,13 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             setIsGeneratingCollage(true);
             try {
                 const labels = getCalculatedLabels(images.length, isVariant);
-                const blob = await collageService.generateCollage(images, labels);
+                // Use panOffsets in generation
+                const blob = await collageService.generateCollage(images, labels, panOffsets);
                 setCollageBlob(blob);
+                
+                if (collagePreview && !collagePreview.startsWith('http')) {
+                    URL.revokeObjectURL(collagePreview);
+                }
                 setCollagePreview(URL.createObjectURL(blob));
             } catch (error) {
                 console.error('Auto collage generation failed:', error);
@@ -510,8 +520,13 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             }
         };
 
-        autoGenerateCollage();
-    }, [images, isVariant]);
+        // Debounce collage generation when panning
+        const timer = setTimeout(() => {
+            autoGenerateCollage();
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [images, isVariant, panOffsets]);
 
     // State for fixed prices (from WhatsApp/Initial State) to prevent auto-calculation override
     const [fixedPrices, setFixedPrices] = useState<{ retail?: number, reseller?: number } | null>(null);
@@ -610,10 +625,30 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
     // Remove image
     const handleRemoveImage = (index: number) => {
+        const newImages = images.filter((_, i) => i !== index);
+        setImages(newImages);
+        const newPreviews = imagePreviews.filter((_, i) => i !== index);
         URL.revokeObjectURL(imagePreviews[index]);
-        setImages(prev => prev.filter((_, i) => i !== index));
-        setImagePreviews(prev => prev.filter((_, i) => i !== index));
-        setIsVariant(prev => prev.filter((_, i) => i !== index));
+        setImagePreviews(newPreviews);
+
+        const newIsVariantFlags = isVariant.filter((_, i) => i !== index);
+        setIsVariant(newIsVariantFlags);
+
+        // Update panOffsets: shift all indices after the removed one
+        const newPanOffsets: Record<number, number> = {};
+        Object.entries(panOffsets).forEach(([key, val]) => {
+            const idx = parseInt(key);
+            if (idx < index) {
+                newPanOffsets[idx] = val;
+            } else if (idx > index) {
+                newPanOffsets[idx - 1] = val;
+            }
+        });
+        setPanOffsets(newPanOffsets);
+
+        if (mainImageIndex >= newImages.length) {
+            setMainImageIndex(Math.max(0, newImages.length - 1));
+        }
 
         // Re-index stock
         const newStockPerVariant: Record<string, string> = {};
@@ -933,6 +968,14 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     newIsVariant[index] = tempV;
                                                                     setIsVariant(newIsVariant);
                                                                     setImagePreviews(newPreviews);
+                                                                    
+                                                                    // Swap panOffsets
+                                                                    const newPanOffsets = { ...panOffsets };
+                                                                    const tempP = newPanOffsets[fromIdx] || 0;
+                                                                    newPanOffsets[fromIdx] = newPanOffsets[index] || 0;
+                                                                    newPanOffsets[index] = tempP;
+                                                                    setPanOffsets(newPanOffsets);
+
                                                                     setSelectedSwapIndex(null);
                                                                 }
                                                             }}
@@ -1833,13 +1876,92 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                             {/* Auto-Generated Collage Preview (Moved to Bottom) */}
                             {images.length > 0 && uploadMode === 'collage' && (
                                 <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200 mb-6">
-                                    <h3 className="font-medium text-purple-700 mb-3 text-center">🖼️ Preview Collage (Auto)</h3>
-                                    <div className="aspect-[3/4] w-full max-w-xs mx-auto bg-white rounded-xl overflow-hidden border-2 border-purple-300 shadow-lg">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="font-medium text-purple-700 mx-auto">🖼️ Preview Collage (Auto)</h3>
+                                        <button 
+                                            onClick={() => setPanOffsets({})}
+                                            className="text-[10px] text-purple-500 hover:text-purple-700 font-bold border border-purple-200 px-2 py-1 rounded-lg transition-colors"
+                                        >
+                                            Reset Pan
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="aspect-[3/4] w-full max-w-xs mx-auto bg-white rounded-xl overflow-hidden border-2 border-purple-300 shadow-lg relative group">
+                                        {/* INTERACTIVE PAN LAYER */}
+                                        {!isGeneratingCollage && images.length > 0 && (
+                                            <div className="absolute inset-0 z-10 grid pointer-events-none">
+                                                {(() => {
+                                                    const layout = collageService.calculateLayout(images.length, 1500, 2000);
+                                                    return layout.map((box, idx) => {
+                                                        // Scale box to UI container
+                                                        // UI container is aspect 3:4, let's assume W=300, H=400 in relative terms
+                                                        const left = (box.x / 1500) * 100 + '%';
+                                                        const top = (box.y / 2000) * 100 + '%';
+                                                        const width = (box.w / 1500) * 100 + '%';
+                                                        const height = (box.h / 2000) * 100 + '%';
+                                                        
+                                                        return (
+                                                            <div 
+                                                                key={idx}
+                                                                className="absolute cursor-ns-resize pointer-events-auto border border-transparent hover:border-purple-400/50 hover:bg-purple-400/5 transition-colors group/cell"
+                                                                style={{ left, top, width, height }}
+                                                                onMouseDown={(e) => {
+                                                                    const startY = e.clientY;
+                                                                    const startPan = panOffsets[idx] || 0;
+                                                                    
+                                                                    const onMouseMove = (moveEvent: MouseEvent) => {
+                                                                        const deltaY = moveEvent.clientY - startY;
+                                                                        // Sensitivity: 200px height in UI = 1.0 pan range
+                                                                        // Dragging UP (deltaY < 0) should INCREASE panY (show bottom)
+                                                                        const nextPan = Math.max(0, Math.min(1, startPan - (deltaY / 200)));
+                                                                        setPanOffsets(prev => ({ ...prev, [idx]: nextPan }));
+                                                                    };
+                                                                    
+                                                                    const onMouseUp = () => {
+                                                                        window.removeEventListener('mousemove', onMouseMove);
+                                                                        window.removeEventListener('mouseup', onMouseUp);
+                                                                    };
+                                                                    
+                                                                    window.addEventListener('mousemove', onMouseMove);
+                                                                    window.addEventListener('mouseup', onMouseUp);
+                                                                }}
+                                                                onTouchStart={(e) => {
+                                                                    const startY = e.touches[0].clientY;
+                                                                    const startPan = panOffsets[idx] || 0;
+                                                                    
+                                                                    const onTouchMove = (moveEvent: TouchEvent) => {
+                                                                        const deltaY = moveEvent.touches[0].clientY - startY;
+                                                                        const nextPan = Math.max(0, Math.min(1, startPan - (deltaY / 200)));
+                                                                        setPanOffsets(prev => ({ ...prev, [idx]: nextPan }));
+                                                                    };
+                                                                    
+                                                                    const onTouchEnd = () => {
+                                                                        window.removeEventListener('touchmove', onTouchMove);
+                                                                        window.removeEventListener('touchend', onTouchEnd);
+                                                                    };
+                                                                    
+                                                                    window.addEventListener('touchmove', onTouchMove);
+                                                                    window.addEventListener('touchend', onTouchEnd);
+                                                                }}
+                                                            >
+                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity">
+                                                                    <div className="bg-black/40 text-white text-[10px] px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm">
+                                                                        <Settings className="w-3 h-3" />
+                                                                        Geser {variantLabels[idx]}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    });
+                                                })()}
+                                            </div>
+                                        )}
+
                                         {isGeneratingCollage ? (
-                                            <div className="w-full h-full flex items-center justify-center">
+                                            <div className="w-full h-full flex items-center justify-center bg-white">
                                                 <div className="text-center">
                                                     <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                                                    <p className="text-sm text-purple-600">Membuat collage...</p>
+                                                    <p className="text-sm text-purple-600">Memperbarui komposisi...</p>
                                                 </div>
                                             </div>
                                         ) : collagePreview ? (
@@ -1855,6 +1977,9 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             </div>
                                         )}
                                     </div>
+                                    <p className="text-[10px] text-center text-purple-400 mt-2">
+                                        💡 Klik & tahan pada gambar di atas untuk <strong>menggeser posisi (pan)</strong>
+                                    </p>
                                 </div>
                             )}
 
