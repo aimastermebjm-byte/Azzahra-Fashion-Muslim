@@ -1781,28 +1781,20 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             <tr className="bg-[#D4AF37]/10">
                                                                 <th className="p-3 text-left border border-[#D4AF37]/20 min-w-[80px] text-slate-900">Size</th>
                                                                 {activeVariantLabels.map(label => (
+                                                                    <th key={label} className="p-3 text-center border border-[#D4AF37]/20 min-w-[80px] font-bold text-slate-900">{variantNames[label] || label}</th>
+                                                                ))}
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {selectedSizes.map((size, sizeIndex) => (
                                                                 <tr key={size}>
                                                                     <td className="p-2 font-bold border border-[#D4AF37]/20 bg-slate-50">
+                                                                        <div className="px-2 py-1 text-xs font-bold text-slate-900">
+                                                                            {getCleanSize(size)}
+                                                                        </div>
                                                                         <input
-                                                                            type="text"
+                                                                            type="hidden"
                                                                             value={size}
-                                                                            onChange={(e) => {
-                                                                                const newSizes = [...selectedSizes];
-                                                                                const oldSize = newSizes[sizeIndex];
-                                                                                const newSize = e.target.value;
-                                                                                newSizes[sizeIndex] = newSize;
-                                                                                setSelectedSizes(newSizes);
-
-                                                                                // Also update pricesPerVariant keys
-                                                                                const updatedPrices: typeof pricesPerVariant = {};
-                                                                                Object.entries(pricesPerVariant).forEach(([key, val]) => {
-                                                                                    const newKey = key.replace(`${oldSize}-`, `${newSize}-`);
-                                                                                    updatedPrices[newKey] = val;
-                                                                                });
-                                                                                setPricesPerVariant(updatedPrices);
-                                                                            }}
-                                                                            onFocus={(e) => e.target.select()}
-                                                                            className="w-full px-2 py-1 text-sm font-bold bg-transparent border-0 focus:ring-2 focus:ring-[#D4AF37] rounded min-w-[80px] text-slate-900"
                                                                         />
                                                                     </td>
                                                                     {activeVariantLabels.map(label => {
