@@ -137,6 +137,8 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
 
         // 🔥 PRIORITY #5: Role-based default pricing
         return user?.role === 'reseller' ? product.resellerPrice : product.retailPrice;
+    };
+
     // Reset selected size if it becomes incompatible with selected variant
     React.useEffect(() => {
         if (selectedSize && !filteredSizes.includes(selectedSize)) {
