@@ -42,6 +42,29 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const { showToast } = useToast();
 
+  // 🔥 GLOBAL STATE: 0 reads untuk product data
+  const { getProductById } = useGlobalProducts();
+
+  const currentProduct = useMemo(() => {
+    const globalProduct = getProductById(initialProduct.id);
+
+    // 🔥 FIX: Merge global product with initialProduct to preserve Flash Sale data
+    // initialProduct may have isFlashSale=true from FlashSalePage, but global doesn't have it
+    if (globalProduct) {
+      return {
+        ...globalProduct,
+        // 🔥 FIX: Preserve variants/prices if missing in globalProduct but present in initialProduct
+        variants: globalProduct.variants || initialProduct.variants || {},
+        pricesPerVariant: (globalProduct as any).pricesPerVariant || (initialProduct as any).pricesPerVariant || undefined,
+
+        // Preserve Flash Sale data from initialProduct (source of truth for Flash Sale)
+        isFlashSale: initialProduct.isFlashSale || globalProduct.isFlashSale || false,
+        flashSalePrice: initialProduct.flashSalePrice || globalProduct.flashSalePrice || 0,
+      } as Product;
+    }
+    return initialProduct as Product;
+  }, [initialProduct, getProductById]);
+
   // Initialize selected image to the main image
   useEffect(() => {
     if (initialProduct.images && initialProduct.image) {
@@ -123,7 +146,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
   // 🔥 NEW: Sync image index with selected variant (Gallery Mode Support)
   useEffect(() => {
-    const productAny = currentProduct as any;
+    const productAny = initialProduct as any;
     if (selectedColor && productAny.variantImageIndices) {
       const variantImageIndex = productAny.variantImageIndices[selectedColor];
       if (variantImageIndex !== undefined && variantImageIndex !== null) {
@@ -131,7 +154,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         setSelectedImageIndex(Number(variantImageIndex));
       }
     }
-  }, [selectedColor, currentProduct.id]);
+  }, [selectedColor, initialProduct.id]);
 
   // Zoom handlers
   const handleZoomOpen = useCallback(() => {
@@ -251,28 +274,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     }
   }, []);
 
-  // 🔥 GLOBAL STATE: 0 reads untuk product data
-  const { getProductById } = useGlobalProducts();
-
-  const currentProduct = useMemo(() => {
-    const globalProduct = getProductById(initialProduct.id);
-
-    // 🔥 FIX: Merge global product with initialProduct to preserve Flash Sale data
-    // initialProduct may have isFlashSale=true from FlashSalePage, but global doesn't have it
-    if (globalProduct) {
-      return {
-        ...globalProduct,
-        // 🔥 FIX: Preserve variants/prices if missing in globalProduct but present in initialProduct
-        variants: globalProduct.variants || initialProduct.variants || {},
-        pricesPerVariant: (globalProduct as any).pricesPerVariant || (initialProduct as any).pricesPerVariant || undefined,
-
-        // Preserve Flash Sale data from initialProduct (source of truth for Flash Sale)
-        isFlashSale: initialProduct.isFlashSale || globalProduct.isFlashSale || false,
-        flashSalePrice: initialProduct.flashSalePrice || globalProduct.flashSalePrice || 0,
-      } as Product;
-    }
-    return initialProduct as Product;
-  }, [initialProduct, getProductById]);
 
 
   const handleAddToCart = () => {
