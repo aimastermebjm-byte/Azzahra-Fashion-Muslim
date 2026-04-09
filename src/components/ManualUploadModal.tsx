@@ -120,15 +120,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     const [mainImageIndex, setMainImageIndex] = useState<number>(0);
     const [panOffsets, setPanOffsets] = useState<Record<number, number>>({});
 
-    // Mode Keluarga State
-    const [familyMode, setFamilyMode] = useState(false);
-    const [familyGroups, setFamilyGroups] = useState<Record<string, string[]>>({});
-
-    // Custom Variant Naming (Gallery Mode)
-    const [variantNames, setVariantNames] = useState<Record<string, string>>({});
-
-    // Dynamic Sizes Management
-    const [availableSizes, setAvailableSizes] = useState<string[]>(DEFAULT_SIZE_PRESETS);
+    // Initial State handling...
 
     // Initialize from initialState when isOpen changes
     React.useEffect(() => {
@@ -1078,7 +1070,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             onChange={(e) => setVariantNames(prev => ({
                                                                 ...prev,
                                                                 [variantLabels[index]]: e.target.value
-                                                            }
+                                                            }))}
                                                             onFocus={(e) => e.target.select()}
                                                             placeholder={`${variantLabels[index]}`}
                                                             className="w-full px-1 py-1 text-[10px] text-center border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 focus:border-purple-500 bg-gray-50"
@@ -1110,7 +1102,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             </label>
                                             <textarea
                                                 value={productFormData.name}
-                                                onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }
+                                                onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }))}
                                                 onClick={() => handleAutoPaste('name')}
                                                 placeholder="Contoh: Gamis Syari Premium (Tap untuk memperbesar)"
                                                 rows={1}
@@ -1155,7 +1147,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             >
                                                                 {brand}
                                                             </div>
-                                                        
+                                                        ))}
 
                                                         {/* Create new option - hanya jika brand belum ada */}
                                                         {productFormData.brand && !brandOptions.some(b => b.toLowerCase() === productFormData.brand.toLowerCase()) && (
@@ -1177,7 +1169,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             </label>
                                             <textarea
                                                 value={productFormData.description}
-                                                onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }
+                                                onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }))}
                                                 onClick={() => handleAutoPaste('description')}
                                                 placeholder="Deskripsi produk... (Tap untuk memperbesar)"
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[80px] h-[80px] focus:h-48 transition-[height] duration-300 ease-in-out resize-none"
@@ -1191,12 +1183,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             <div className="flex gap-1.5">
                                                 <select
                                                     value={productFormData.category}
-                                                    onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }
+                                                    onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }))}
                                                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                                                 >
                                                     {categories.map(cat => (
                                                         <option key={cat} value={cat}>{cat}</option>
-                                                    
+                                                    ))}
                                                 </select>
                                                 {onQuickAddCategory && (
                                                     <button
@@ -1530,13 +1522,11 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             }}
                                                             className="px-2 py-1 border border-[#D4AF37]/30 rounded text-[10px] font-bold text-[#997B2C] hover:bg-[#D4AF37]/10 transition-all"
                                                         >
-                                                            + {groupName}
                                                         </button>
-                                                    
+                                                    ))}
                                                 </div>
                                             </div>
-                                               
-                                            </div>
+                                        </div>
 
                                             {/* Summary */}
                                             {selectedSizes.length > 0 && (
@@ -1564,12 +1554,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                         <input
                                                             type="text"
                                                             value={variantNames[label] || ''}
-                                                            onChange={(e) => setVariantNames(prev => ({ ...prev, [label]: e.target.value }
+                                                            onChange={(e) => setVariantNames(prev => ({ ...prev, [label]: e.target.value }))}
                                                             placeholder={`Nama varian ${label}...`}
                                                             className="flex-1 px-3 py-1.5 border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                                         />
                                                     </div>
-                                                
+                                                ))}
                                             </div>
                                             <p className="text-[10px] text-blue-500 mt-2 italic text-center">
                                                 Note: Nama ini akan muncul di tombol pilihan pesanan dan laporan.
