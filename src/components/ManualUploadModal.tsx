@@ -858,8 +858,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center sm:p-4 overflow-hidden">
+            <div className="bg-white sm:rounded-xl w-full max-w-4xl h-full sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
                 {/* Header */}
                 <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                     <div>
@@ -1886,34 +1886,41 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         </button>
                                     </div>
                                     
-                                    <div className="aspect-[3/4] w-full max-w-xs mx-auto bg-white rounded-xl overflow-hidden border-2 border-purple-300 shadow-lg relative group">
-                                        {/* INTERACTIVE PAN LAYER */}
-                                        {!isGeneratingCollage && images.length > 0 && (
-                                            <div className="absolute inset-0 z-10 grid pointer-events-none">
+                                    <div className="aspect-[3/4] w-full max-w-xs mx-auto bg-white rounded-xl overflow-hidden border-2 border-purple-300 shadow-xl relative group touch-none select-none">
+                                        {/* CSS PROXY VISUAL LAYER + INTERACTIVE PAN LAYER */}
+                                        {images.length > 0 && (
+                                            <div className="absolute inset-0 z-10">
                                                 {(() => {
                                                     const layout = collageService.calculateLayout(images.length, 1500, 2000);
                                                     return layout.map((box, idx) => {
-                                                        // Scale box to UI container
-                                                        // UI container is aspect 3:4, let's assume W=300, H=400 in relative terms
                                                         const left = (box.x / 1500) * 100 + '%';
                                                         const top = (box.y / 2000) * 100 + '%';
                                                         const width = (box.w / 1500) * 100 + '%';
                                                         const height = (box.h / 2000) * 100 + '%';
+                                                        const panY = panOffsets[idx] || 0;
                                                         
                                                         return (
                                                             <div 
                                                                 key={idx}
-                                                                className="absolute cursor-ns-resize pointer-events-auto border border-transparent hover:border-purple-400/50 hover:bg-purple-400/5 transition-colors group/cell"
-                                                                style={{ left, top, width, height }}
+                                                                className="absolute cursor-ns-resize border border-white/20 hover:border-purple-400 active:border-purple-600 active:ring-2 active:ring-purple-300 transition-all group/cell overflow-hidden bg-gray-100"
+                                                                style={{ 
+                                                                    left, top, width, height, 
+                                                                    backgroundImage: `url(${imagePreviews[idx]})`,
+                                                                    backgroundSize: 'cover',
+                                                                    backgroundPosition: `center ${panY * 100}%`,
+                                                                    backgroundRepeat: 'no-repeat',
+                                                                    touchAction: 'none'
+                                                                }}
                                                                 onMouseDown={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
                                                                     const startY = e.clientY;
                                                                     const startPan = panOffsets[idx] || 0;
                                                                     
                                                                     const onMouseMove = (moveEvent: MouseEvent) => {
                                                                         const deltaY = moveEvent.clientY - startY;
-                                                                        // Sensitivity: 200px height in UI = 1.0 pan range
-                                                                        // Dragging UP (deltaY < 0) should INCREASE panY (show bottom)
-                                                                        const nextPan = Math.max(0, Math.min(1, startPan - (deltaY / 200)));
+                                                                        // Dragging UP (deltaY < 0) should INCREASE panY (show more bottom)
+                                                                        const nextPan = Math.max(0, Math.min(1, startPan - (deltaY / 250)));
                                                                         setPanOffsets(prev => ({ ...prev, [idx]: nextPan }));
                                                                     };
                                                                     
@@ -1926,12 +1933,14 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     window.addEventListener('mouseup', onMouseUp);
                                                                 }}
                                                                 onTouchStart={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
                                                                     const startY = e.touches[0].clientY;
                                                                     const startPan = panOffsets[idx] || 0;
                                                                     
                                                                     const onTouchMove = (moveEvent: TouchEvent) => {
                                                                         const deltaY = moveEvent.touches[0].clientY - startY;
-                                                                        const nextPan = Math.max(0, Math.min(1, startPan - (deltaY / 200)));
+                                                                        const nextPan = Math.max(0, Math.min(1, startPan - (deltaY / 250)));
                                                                         setPanOffsets(prev => ({ ...prev, [idx]: nextPan }));
                                                                     };
                                                                     
@@ -1944,12 +1953,26 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     window.addEventListener('touchend', onTouchEnd);
                                                                 }}
                                                             >
-                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity">
-                                                                    <div className="bg-black/40 text-white text-[10px] px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm">
-                                                                        <Settings className="w-3 h-3" />
-                                                                        Geser {variantLabels[idx]}
+                                                                {/* Grid Hint / Variant Label */}
+                                                                <div className="absolute top-1 left-1 bg-black/40 text-[10px] text-white px-1.5 py-0.5 rounded backdrop-blur-sm opacity-60 group-hover/cell:opacity-100 transition-opacity">
+                                                                    {variantLabels[idx]}
+                                                                </div>
+
+                                                                {/* Hover Guide */}
+                                                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/40 to-transparent h-8 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity">
+                                                                    <div className="text-white text-[10px] flex items-center gap-1 font-bold">
+                                                                        <ChevronUp className="w-3 h-3" />
+                                                                        GESER
+                                                                        <ChevronDown className="w-3 h-3" />
                                                                     </div>
                                                                 </div>
+
+                                                                {/* Loading Overlay (When Regenerating Main Canvas) */}
+                                                                {isGeneratingCollage && (
+                                                                    <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px] flex items-center justify-center">
+                                                                        <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         );
                                                     });
@@ -1957,29 +1980,19 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             </div>
                                         )}
 
-                                        {isGeneratingCollage ? (
-                                            <div className="w-full h-full flex items-center justify-center bg-white">
-                                                <div className="text-center">
-                                                    <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                                                    <p className="text-sm text-purple-600">Memperbarui komposisi...</p>
-                                                </div>
-                                            </div>
-                                        ) : collagePreview ? (
-                                            <img
-                                                src={collagePreview}
-                                                alt="Collage Preview"
-                                                className="w-full h-full object-contain"
-                                            />
-                                        ) : (
+                                        {/* Main images fallback if layout fails */}
+                                        {images.length === 0 && (
                                             <div className="w-full h-full flex items-center justify-center text-gray-400">
                                                 <X className="w-8 h-8 mx-auto mb-2 opacity-50" />
                                                 <p className="text-xs">No preview</p>
                                             </div>
                                         )}
                                     </div>
-                                    <p className="text-[10px] text-center text-purple-400 mt-2">
-                                        💡 Klik & tahan pada gambar di atas untuk <strong>menggeser posisi (pan)</strong>
+                                    <p className="text-[10px] text-center text-purple-400 mt-2 font-medium">
+                                        💡 Klik & tahan pada gambar di atas untuk <strong>menggeser (pan)</strong> posisi
                                     </p>
+                                </div>
+                            )}
                                 </div>
                             )}
 
