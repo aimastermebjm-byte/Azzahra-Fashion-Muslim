@@ -1299,7 +1299,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                             <h4 className="text-sm font-semibold text-slate-900">{itemName}</h4>
                             {variant && (variant.size || variant.color) && (
                               <p className="text-xs text-slate-500">
-                                {variant.size || 'Standard'} · {variant.color || 'Default'}
+                                {variant.size || 'Standard'} · {variant.variantName || variant.color || 'Default'}
                               </p>
                             )}
                             <div className="mt-1 flex items-center justify-between">

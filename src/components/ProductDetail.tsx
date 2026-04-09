@@ -887,11 +887,18 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                 console.log('💰 VariantModal: Using Collection discount price:', discountedPrice);
               }
 
+              // Find Custom Variant Name
+              const customName = (currentProduct as any).variants?.names?.[variant.color] || (currentProduct as any).variantNames?.[variant.color];
+              const variantWithAlias = {
+                ...variant,
+                variantName: customName || variant.color // Store the alias
+              };
+
               // Execute the appropriate action
               if (modalMode === 'addToCart') {
-                onAddToCart(productWithPrice, variant, qty);
+                onAddToCart(productWithPrice, variantWithAlias, qty);
               } else {
-                onBuyNow(productWithPrice, variant, qty);
+                onBuyNow(productWithPrice, variantWithAlias, qty);
               }
 
               // Close modal

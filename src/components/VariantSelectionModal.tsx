@@ -158,6 +158,10 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                                     const colorStock = selectedSize
                                         ? getVariantStock(selectedSize, color)
                                         : (product.variants?.sizes || []).reduce((total, size) => total + getVariantStock(size, color), 0);
+                                    
+                                    // Custom Name Logic
+                                    const customName = (product as any).variants?.names?.[color] || (product as any).variantNames?.[color];
+                                    const displayName = customName ? `${color} (${customName})` : color;
 
                                     return (
                                         <button
@@ -171,7 +175,7 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                                                     : 'bg-white text-gray-700 border-gray-300 hover:border-yellow-500'
                                                 }`}
                                         >
-                                            {color}
+                                            {displayName}
                                         </button>
                                     );
                                 })}

@@ -61,7 +61,16 @@ const DEFAULT_PRICING_RULES: PricingRule[] = [
 ];
 
 // Size preset options
-const SIZE_PRESETS = ['All Size', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'Standar', 'Jumbo'];
+const DEFAULT_SIZE_PRESETS = ['All Size', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'Standar', 'Jumbo'];
+
+const FAMILY_DEFAULTS = [
+    { id: 'mom_khimar', name: 'Mom set Khimar', sizes: ['S', 'M', 'L', 'XL', 'XXL'] },
+    { id: 'mom_scarf', name: 'Mom set scarf', sizes: ['S', 'M', 'L', 'XL', 'XXL'] },
+    { id: 'kids_gamis', name: 'Gamis Kids', sizes: ['S', 'M', 'L', 'XL'] },
+    { id: 'kids_koko', name: 'Koko Kids', sizes: ['S', 'M', 'L', 'XL'] },
+    { id: 'dad_panjang', name: 'Dad L.panjang', sizes: ['M', 'L', 'XL', 'XXL'] },
+    { id: 'dad_pendek', name: 'Dad L.pendek', sizes: ['M', 'L', 'XL', 'XXL'] }
+];
 
 const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     isOpen,
@@ -110,6 +119,16 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     const [uploadMode, setUploadMode] = useState<'collage' | 'gallery'>('collage');
     const [mainImageIndex, setMainImageIndex] = useState<number>(0);
     const [panOffsets, setPanOffsets] = useState<Record<number, number>>({});
+
+    // Mode Keluarga State
+    const [familyMode, setFamilyMode] = useState(false);
+    const [familyGroups, setFamilyGroups] = useState<Record<string, string[]>>({});
+
+    // Custom Variant Naming (Gallery Mode)
+    const [variantNames, setVariantNames] = useState<Record<string, string>>({});
+
+    // Dynamic Sizes Management
+    const [availableSizes, setAvailableSizes] = useState<string[]>(DEFAULT_SIZE_PRESETS);
 
     // Initialize from initialState when isOpen changes
     React.useEffect(() => {
@@ -476,7 +495,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         baby: ['0-6M', '6-12M', '12-18M', '18-24M'],
     };
     // Preset group names
-    const FAMILY_GROUP_PRESETS = ['Mom Dress', 'Mom Set Khimar', 'Mom Set Scarf', 'Dad Koko', 'Kid Dress', 'Kid Set', 'Baby Romper'];
+    const FAMILY_GROUP_PRESETS = ['Mom set Khimar', 'Mom set scarf', 'Gamis Kids', 'Koko Kids', 'Dad L.panjang', 'Dad L.pendek'];
 
     // Generate flat selectedSizes from familyGroups
     React.useEffect(() => {
@@ -853,6 +872,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         setCostPricePerSize({});
         setFamilyMode(false);
         setFamilyGroups({});
+        setVariantNames({});
     };
 
     if (!isOpen) return null;
@@ -886,16 +906,22 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                             {/* Mode Toggle */}
                             <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
                                 <button
-                                    onClick={() => setUploadMode('collage')}
+                                    onClick={() => {
+                                        setUploadMode('collage');
+                                        setFamilyMode(false);
+                                    }}
                                     className={`flex-1 py-2 font-bold rounded-lg transition-all shadow-sm ${uploadMode === 'collage' ? 'bg-white text-purple-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'}`}
                                 >
-                                    🖼️ Mode Collage
+                                    🖼️ Collage
                                 </button>
                                 <button
-                                    onClick={() => setUploadMode('gallery')}
+                                    onClick={() => {
+                                        setUploadMode('gallery');
+                                        setFamilyMode(false);
+                                    }}
                                     className={`flex-1 py-2 font-bold rounded-lg transition-all shadow-sm ${uploadMode === 'gallery' ? 'bg-white text-blue-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'}`}
                                 >
-                                    📸 Mode Gallery
+                                    📸 Gallery
                                 </button>
                             </div>
 
@@ -1052,7 +1078,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             onChange={(e) => setVariantNames(prev => ({
                                                                 ...prev,
                                                                 [variantLabels[index]]: e.target.value
-                                                            }))}
+                                                            }
                                                             onFocus={(e) => e.target.select()}
                                                             placeholder={`${variantLabels[index]}`}
                                                             className="w-full px-1 py-1 text-[10px] text-center border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 focus:border-purple-500 bg-gray-50"
@@ -1084,7 +1110,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             </label>
                                             <textarea
                                                 value={productFormData.name}
-                                                onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }))}
+                                                onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }
                                                 onClick={() => handleAutoPaste('name')}
                                                 placeholder="Contoh: Gamis Syari Premium (Tap untuk memperbesar)"
                                                 rows={1}
@@ -1129,7 +1155,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             >
                                                                 {brand}
                                                             </div>
-                                                        ))}
+                                                        
 
                                                         {/* Create new option - hanya jika brand belum ada */}
                                                         {productFormData.brand && !brandOptions.some(b => b.toLowerCase() === productFormData.brand.toLowerCase()) && (
@@ -1151,7 +1177,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             </label>
                                             <textarea
                                                 value={productFormData.description}
-                                                onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }))}
+                                                onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }
                                                 onClick={() => handleAutoPaste('description')}
                                                 placeholder="Deskripsi produk... (Tap untuk memperbesar)"
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 min-h-[80px] h-[80px] focus:h-48 transition-[height] duration-300 ease-in-out resize-none"
@@ -1165,12 +1191,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             <div className="flex gap-1.5">
                                                 <select
                                                     value={productFormData.category}
-                                                    onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }))}
+                                                    onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }
                                                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                                                 >
                                                     {categories.map(cat => (
                                                         <option key={cat} value={cat}>{cat}</option>
-                                                    ))}
+                                                    
                                                 </select>
                                                 {onQuickAddCategory && (
                                                     <button
@@ -1239,57 +1265,63 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 <div className="mb-5">
                                     <div className="flex items-center justify-between mb-2">
                                         <label className="block text-sm font-medium text-gray-700">Pilih Ukuran</label>
-                                        {/* Family Mode Toggle - Hide if family data already detected */}
-                                        {(() => {
-                                            // Check if sizes contain family patterns (auto-detected)
-                                            const familyKeywords = ['dad', 'mom', 'boy', 'girl', 'ayah', 'bunda', 'ibu'];
-                                            const hasFamilyData = selectedSizes.some(size =>
-                                                familyKeywords.some(kw => size.toLowerCase().includes(kw))
-                                            );
-
-                                            // DON'T auto-set familyMode - let user keep normal SIZE_PRESETS visible
-                                            // Family sizes will show as Custom Sizes instead
-
-                                            // Show indicator if family data detected, but keep as clickable toggle
-                                            if (hasFamilyData) {
-                                                return (
-                                                    <span className="px-3 py-1 rounded-lg text-xs font-medium bg-green-600 text-white">
-                                                        ✅ Keluarga Terdeteksi
-                                                    </span>
+                                        <div className="flex items-center gap-2">
+                                            {(() => {
+                                                const familyKeywords = ['dad', 'mom', 'boy', 'girl', 'ayah', 'bunda', 'ibu'];
+                                                const hasFamilyData = selectedSizes.some(size =>
+                                                    familyKeywords.some(kw => size.toLowerCase().includes(kw))
                                                 );
-                                            }
 
-                                            return (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const newFamilyMode = !familyMode;
-                                                        setFamilyMode(newFamilyMode);
+                                                return (
+                                                    <>
+                                                        {hasFamilyData && !familyMode && (
+                                                            <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-green-100 text-green-700 animate-pulse">
+                                                                ✨ Tekan Mode Keluarga
+                                                            </span>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newFamilyMode = !familyMode;
+                                                                setFamilyMode(newFamilyMode);
 
-                                                        if (newFamilyMode && selectedSizes.length === 1 && selectedSizes[0] === 'All Size') {
-                                                            setSelectedSizes([]);
-                                                        } else if (!newFamilyMode) {
-                                                            setFamilyGroups({});
-                                                            if (selectedSizes.length === 0) {
-                                                                setSelectedSizes(['All Size']);
-                                                            }
-                                                        }
-                                                    }}
-                                                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${familyMode
-                                                        ? 'bg-[#997B2C] text-white'
-                                                        : 'bg-gray-100 text-gray-600 hover:bg-[#D4AF37]/10 hover:text-[#997B2C]'
-                                                        }`}
-                                                >
-                                                    👨‍👩‍👧‍👦 Mode Keluarga
-                                                </button>
-                                            );
-                                        })()}
+                                                                if (newFamilyMode) {
+                                                                    if (selectedSizes.length === 1 && selectedSizes[0] === 'All Size') {
+                                                                        setSelectedSizes([]);
+                                                                    }
+                                                                    // Initialize default groups if switching to family mode and none exist
+                                                                    if (Object.keys(familyGroups).length === 0) {
+                                                                        const defaults: Record<string, string[]> = {};
+                                                                        ['Mom set Khimar', 'Mom set scarf', 'Gamis Kids', 'Koko Kids', 'Dad L.panjang', 'Dad L.pendek'].forEach(g => {
+                                                                            defaults[g] = [];
+                                                                        });
+                                                                        setFamilyGroups(defaults);
+                                                                    }
+                                                                } else {
+                                                                    setFamilyGroups({});
+                                                                    if (selectedSizes.length === 0) {
+                                                                        setSelectedSizes(['All Size']);
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${familyMode
+                                                                ? 'bg-[#997B2C] text-white shadow-md'
+                                                                : 'bg-gray-100 text-gray-600 hover:bg-[#D4AF37]/10 hover:text-[#997B2C]'
+                                                                }`}
+                                                        >
+                                                            <span>{familyMode ? '✅' : '👨‍👩‍👧‍👦'}</span>
+                                                            Mode Keluarga {familyMode ? 'Aktif' : ''}
+                                                        </button>
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
                                     </div>
 
                                     {!familyMode ? (
                                         /* Normal Size Mode */
                                         <div className="flex flex-wrap gap-2">
-                                            {SIZE_PRESETS.map((size) => {
+                                            {availableSizes.map((size) => {
                                                 const isSelected = selectedSizes.includes(size);
                                                 return (
                                                     <button
@@ -1322,8 +1354,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 );
                                             })}
 
-                                            {/* Custom Sizes - Only × removes, not the whole button */}
-                                            {selectedSizes.filter(s => !SIZE_PRESETS.includes(s)).map((size) => (
+                                            {/* Custom Sizes outside availableSizes */}
+                                            {selectedSizes.filter(s => !availableSizes.includes(s)).map((size) => (
                                                 <div
                                                     key={size}
                                                     className="px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-br from-[#EDD686] to-[#D4AF37] text-slate-900 shadow-md flex items-center gap-2"
@@ -1331,64 +1363,82 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                     <span>{size}</span>
                                                     <button
                                                         type="button"
-                                                        onClick={() => setSelectedSizes(selectedSizes.filter(s => s !== size))}
+                                                        onClick={() => setSelectedSizes(selectedSizes.filter(s => s !== size
                                                         className="text-slate-700 hover:text-red-600 hover:bg-white/50 rounded-full w-5 h-5 flex items-center justify-center transition-colors"
                                                     >
                                                         ×
                                                     </button>
                                                 </div>
-                                            ))}
+                                            
 
-                                            {/* Custom Size Input with Add Button */}
-                                            <div className="flex items-center gap-1">
-                                                <input
-                                                    type="text"
-                                                    value={customSizeInput}
-                                                    onChange={(e) => setCustomSizeInput(e.target.value)}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            e.preventDefault();
+                                            {/* Size Management UI */}
+                                            <div className="flex flex-wrap gap-2 pt-2 border-t border-[#D4AF37]/20 w-full">
+                                                <div className="flex items-center gap-1">
+                                                    <input
+                                                        type="text"
+                                                        value={customSizeInput}
+                                                        onChange={(e) => setCustomSizeInput(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                const val = customSizeInput.trim();
+                                                                if (val && !availableSizes.includes(val)) {
+                                                                    setAvailableSizes(prev => [...prev, val]);
+                                                                    setSelectedSizes(prev => {
+                                                                        const sizesWithoutAllSize = prev.filter(s => s !== 'All Size');
+                                                                        return [...sizesWithoutAllSize, val];
+                                                                    });
+                                                                    setCustomSizeInput('');
+                                                                }
+                                                            }
+                                                        }}
+                                                        placeholder="Tambah size kustom..."
+                                                        className="px-3 py-1.5 border border-dashed border-[#D4AF37] rounded-lg text-xs focus:ring-2 focus:ring-[#D4AF37] w-32 focus:w-48 transition-all font-medium"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
                                                             const val = customSizeInput.trim();
-                                                            if (val && !selectedSizes.includes(val)) {
+                                                            if (val && !availableSizes.includes(val)) {
+                                                                setAvailableSizes(prev => [...prev, val]);
                                                                 setSelectedSizes(prev => {
                                                                     const sizesWithoutAllSize = prev.filter(s => s !== 'All Size');
                                                                     return [...sizesWithoutAllSize, val];
                                                                 });
                                                                 setCustomSizeInput('');
                                                             }
-                                                        }
-                                                    }}
-                                                    placeholder="Tambah size..."
-                                                    className="px-3 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] w-28 focus:w-40 transition-all font-medium"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const val = customSizeInput.trim();
-                                                        if (val && !selectedSizes.includes(val)) {
-                                                            setSelectedSizes(prev => {
-                                                                const sizesWithoutAllSize = prev.filter(s => s !== 'All Size');
-                                                                return [...sizesWithoutAllSize, val];
-                                                            });
-                                                            setCustomSizeInput('');
-                                                        }
-                                                    }}
-                                                    className="px-3 py-2 bg-[#997B2C] text-white rounded-lg text-sm font-bold hover:bg-[#D4AF37] transition-colors"
-                                                >
-                                                    +
-                                                </button>
+                                                        }}
+                                                        className="px-3 py-1.5 bg-[#997B2C] text-white rounded-lg text-xs font-bold hover:bg-[#D4AF37] transition-colors"
+                                                    >
+                                                        + Tambah Size
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     ) : (
                                         /* Family Mode - Group Editor */
                                         <div className="space-y-3 p-3 bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-xl">
-                                            <p className="text-xs text-[#997B2C]">Tambah grup ukuran untuk setiap anggota keluarga</p>
-
-                                            {/* Existing Groups */}
+                                                                              {/* Existing Groups */}
                                             {Object.entries(familyGroups).map(([groupName, sizes]) => (
-                                                <div key={groupName} className="bg-white rounded-lg p-3 border border-pink-100">
+                                                <div key={groupName} className="bg-white rounded-lg p-3 border border-[#D4AF37]/20 shadow-sm">
                                                     <div className="flex items-center justify-between mb-2">
-                                                        <span className="font-semibold text-[#997B2C]">{groupName}</span>
+                                                        <div className="flex items-center gap-2 flex-1 mr-2">
+                                                            <input
+                                                                type="text"
+                                                                value={groupName}
+                                                                onChange={(e) => {
+                                                                    const newName = e.target.value;
+                                                                    if (newName && !familyGroups[newName]) {
+                                                                        const newGroups = { ...familyGroups };
+                                                                        newGroups[newName] = sizes;
+                                                                        delete newGroups[groupName];
+                                                                        setFamilyGroups(newGroups);
+                                                                    }
+                                                                }}
+                                                                className="text-sm font-bold text-[#997B2C] bg-transparent border-0 focus:ring-2 focus:ring-[#D4AF37] rounded px-1 flex-1"
+                                                            />
+                                                            <span className="text-[10px] text-slate-400 capitalize">Mode Edit</span>
+                                                        </div>
                                                         <button
                                                             type="button"
                                                             onClick={() => {
@@ -1396,19 +1446,14 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                 delete newGroups[groupName];
                                                                 setFamilyGroups(newGroups);
                                                             }}
-                                                            className="text-red-500 hover:text-red-700 text-xs"
+                                                            className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
+                                                            title="Hapus grup"
                                                         >
-                                                            Hapus
+                                                            <X className="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                     <div className="flex flex-wrap gap-1">
-                                                        {/* Size preset buttons based on group type */}
-                                                        {(groupName.toLowerCase().includes('kid') || groupName.toLowerCase().includes('anak')
-                                                            ? FAMILY_SIZE_PRESETS.kid
-                                                            : groupName.toLowerCase().includes('baby') || groupName.toLowerCase().includes('bayi')
-                                                                ? FAMILY_SIZE_PRESETS.baby
-                                                                : FAMILY_SIZE_PRESETS.adult
-                                                        ).map(size => {
+                                                        {['S', 'M', 'L', 'XL', 'XXL', 'XXXL', '2', '4', '6', '8', '10', '12'].map(size => {
                                                             const isSelected = sizes.includes(size);
                                                             return (
                                                                 <button
@@ -1422,7 +1467,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                 : [...prev[groupName], size]
                                                                         }));
                                                                     }}
-                                                                    className={`px-2 py-1 rounded text-xs font-medium transition-all ${isSelected
+                                                                    className={`px-2 py-1 rounded text-xs font-semibold transition-all ${isSelected
                                                                         ? 'bg-[#997B2C] text-white'
                                                                         : 'bg-[#D4AF37]/10 text-[#997B2C] hover:bg-[#D4AF37]/20'
                                                                         }`}
@@ -1433,33 +1478,102 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                         })}
                                                     </div>
                                                 </div>
-                                            ))}
+                                            
 
-                                            {/* Add New Group */}
-                                            <div className="flex flex-wrap gap-2">
-                                                {FAMILY_GROUP_PRESETS.filter(g => !familyGroups[g]).map(groupName => (
-                                                    <button
-                                                        key={groupName}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setFamilyGroups(prev => ({
-                                                                ...prev,
-                                                                [groupName]: [] // Start with empty sizes, user picks
-                                                            }));
-                                                        }}
-                                                        className="px-3 py-2 border-2 border-dashed border-[#D4AF37]/40 rounded-lg text-xs font-bold text-[#997B2C] hover:bg-[#D4AF37]/10 transition-all"
-                                                    >
-                                                        + {groupName}
-                                                    </button>
-                                                ))}
+                                            {/* Custom Group Adder */}
+                                            <div className="mt-4 flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Nama grup baru (cth: Abang)..."
+                                                    id="custom-group-input"
+                                                    className="flex-1 px-3 py-2 border border-[#D4AF37]/50 rounded-lg text-sm bg-white focus:ring-2 focus:ring-[#D4AF37]"
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            const val = (e.target as HTMLInputElement).value.trim();
+                                                            if (val && !familyGroups[val]) {
+                                                                setFamilyGroups(prev => ({ ...prev, [val]: [] }));
+                                                                (e.target as HTMLInputElement).value = '';
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const input = document.getElementById('custom-group-input') as HTMLInputElement;
+                                                        const val = input.value.trim();
+                                                        if (val && !familyGroups[val]) {
+                                                            setFamilyGroups(prev => ({ ...prev, [val]: [] }));
+                                                            input.value = '';
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 bg-[#997B2C] text-white rounded-lg text-sm font-bold hover:bg-[#D4AF37] transition-colors"
+                                                >
+                                                    + Tambah
+                                                </button>
+                                            </div>
+
+                                            {/* Presets Gallery */}
+                                            <div className="pt-3 border-t border-[#D4AF37]/10">
+                                                <p className="text-[10px] text-slate-400 mb-2">Preset Cepat:</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {FAMILY_GROUP_PRESETS.filter(g => !familyGroups[g]).map(groupName => (
+                                                        <button
+                                                            key={groupName}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setFamilyGroups(prev => ({
+                                                                    ...prev,
+                                                                    [groupName]: [] // Start with empty sizes
+                                                                }));
+                                                            }}
+                                                            className="px-2 py-1 border border-[#D4AF37]/30 rounded text-[10px] font-bold text-[#997B2C] hover:bg-[#D4AF37]/10 transition-all"
+                                                        >
+                                                            + {groupName}
+                                                        </button>
+                                                    
+                                                </div>
+                                            </div>
+                                               
                                             </div>
 
                                             {/* Summary */}
                                             {selectedSizes.length > 0 && (
-                                                <div className="text-xs text-[#997B2C] mt-2">
-                                                    📦 Total varian: <strong>{selectedSizes.length} size × {activeVariantLabels.length} warna = {selectedSizes.length * activeVariantLabels.length} kombinasi</strong>
+                                                <div className="text-xs text-[#997B2C] mt-2 bg-[#D4AF37]/10 p-2 rounded-lg border border-[#D4AF37]/20">
+                                                    👨‍👩‍👧‍👦 <strong>Mode Keluarga Aktif:</strong> {Object.keys(familyGroups).join(', ')}
+                                                    <br/>
+                                                    📦 Total varian: <strong>{selectedSizes.length} kombinasi (Grup × Size)</strong>
                                                 </div>
                                             )}
+                                        </div>
+                                    )}
+
+                                    {/* Variant Naming Section (Gallery Mode Only) */}
+                                    {uploadMode === 'gallery' && (
+                                        <div className="mt-6 p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
+                                            <h4 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
+                                                🏷️ Beri Nama Varian (Warna/Model)
+                                            </h4>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {activeVariantLabels.map((label) => (
+                                                    <div key={label} className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded-lg font-bold text-xs">
+                                                            {label}
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={variantNames[label] || ''}
+                                                            onChange={(e) => setVariantNames(prev => ({ ...prev, [label]: e.target.value }
+                                                            placeholder={`Nama varian ${label}...`}
+                                                            className="flex-1 px-3 py-1.5 border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                
+                                            </div>
+                                            <p className="text-[10px] text-blue-500 mt-2 italic text-center">
+                                                Note: Nama ini akan muncul di tombol pilihan pesanan dan laporan.
+                                            </p>
                                         </div>
                                     )}
                                 </div>
@@ -1472,7 +1586,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             type="text"
                                             inputMode="numeric"
                                             value={formatThousands(uploadSettings.stockPerVariant)}
-                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, stockPerVariant: parseFormattedNumber(e.target.value) }))}
+                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, stockPerVariant: parseFormattedNumber(e.target.value) }
                                             onFocus={(e) => e.target.select()}
                                             placeholder="Masukkan stok"
                                             className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg font-semibold focus:ring-2 focus:ring-[#D4AF37]"
@@ -1485,7 +1599,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             type="text"
                                             inputMode="numeric"
                                             value={formatThousands(uploadSettings.costPrice)}
-                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }))}
+                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }
                                             onFocus={(e) => e.target.select()}
                                             placeholder="100.000"
                                             className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl text-lg font-bold focus:ring-2 focus:ring-[#D4AF37]"
@@ -1501,7 +1615,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             onChange={(e) => setFixedPrices(prev => ({
                                                 ...prev,
                                                 reseller: parseFormattedNumber(e.target.value)
-                                            }))}
+                                            }
                                             onFocus={(e) => e.target.select()}
                                             className="w-full px-4 py-3 border-2 border-[#D4AF37]/30 rounded-xl text-lg font-bold text-[#997B2C] bg-[#D4AF37]/5 focus:ring-2 focus:ring-[#D4AF37]"
                                         />
@@ -1516,7 +1630,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             onChange={(e) => setFixedPrices(prev => ({
                                                 ...prev,
                                                 retail: parseFormattedNumber(e.target.value)
-                                            }))}
+                                            }
                                             onFocus={(e) => e.target.select()}
                                             className="w-full px-4 py-3 border-2 border-[#D4AF37]/30 rounded-xl text-lg font-bold text-[#997B2C] bg-[#D4AF37]/5 focus:ring-2 focus:ring-[#D4AF37]"
                                         />
@@ -1564,7 +1678,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                 className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
                                                             />
                                                         </div>
-                                                    ))}
+                                                    
                                                 </div>
                                             )}
                                         </div>
@@ -1608,7 +1722,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                 <th className="p-3 text-left border border-[#D4AF37]/20 min-w-[80px] text-slate-900">Size</th>
                                                                 {activeVariantLabels.map(label => (
                                                                     <th key={label} className="p-3 text-center border border-[#D4AF37]/20 min-w-[80px] font-bold text-slate-900">{label}</th>
-                                                                ))}
+                                                                
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -1663,7 +1777,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                         );
                                                                     })}
                                                                 </tr>
-                                                            ))}
+                                                            
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -1683,7 +1797,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                 <th className="p-3 text-left border border-[#997B2C]/20 min-w-[80px] text-slate-900">Size</th>
                                                                 {activeVariantLabels.map(label => (
                                                                     <th key={label} className="p-3 text-center border border-[#997B2C]/20 min-w-[80px] font-bold text-slate-900">{label}</th>
-                                                                ))}
+                                                                
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -1738,7 +1852,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                         );
                                                                     })}
                                                                 </tr>
-                                                            ))}
+                                                            
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -1772,7 +1886,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 type="text"
                                                 inputMode="numeric"
                                                 value={formatThousands(uploadSettings.retailMarkup)}
-                                                onChange={(e) => setUploadSettings(prev => ({ ...prev, retailMarkup: parseFormattedNumber(e.target.value) }))}
+                                                onChange={(e) => setUploadSettings(prev => ({ ...prev, retailMarkup: parseFormattedNumber(e.target.value) }
                                                 onFocus={(e) => e.target.select()}
                                                 className="w-full px-3 py-2 border border-green-300 rounded-lg text-base font-bold text-green-700 focus:ring-1 focus:ring-green-500"
                                             />
@@ -1844,7 +1958,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             />
                                                         </div>
                                                     </div>
-                                                ))}
+                                                
                                             </div>
                                             <button
                                                 type="button"
@@ -2046,7 +2160,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                     </div>
                                                 )}
                                             </div>
-                                        ))}
+                                        
                                     </div>
                                 </div>
                             )}
@@ -2061,7 +2175,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         <input
                                             type="text"
                                             value={productFormData.name}
-                                            onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }))}
+                                            onChange={(e) => setProductFormData(prev => ({ ...prev, name: e.target.value }
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
                                             placeholder="Nama produk..."
                                         />
@@ -2074,12 +2188,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             <div className="flex gap-1">
                                                 <select
                                                     value={productFormData.category}
-                                                    onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }))}
+                                                    onChange={(e) => setProductFormData(prev => ({ ...prev, category: e.target.value }
                                                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white"
                                                 >
                                                     {categories.map(cat => (
                                                         <option key={cat} value={cat}>{cat}</option>
-                                                    ))}
+                                                    
                                                 </select>
                                                 {onQuickAddCategory && (
                                                     <button
@@ -2142,7 +2256,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                         <label className="block text-xs font-bold text-gray-600 mb-1">Deskripsi</label>
                                         <textarea
                                             value={productFormData.description}
-                                            onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }))}
+                                            onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }
                                             rows={3}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 bg-white resize-none"
                                             placeholder="Deskripsi produk..."
@@ -2170,7 +2284,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 >
                                                     {size}
                                                 </button>
-                                            ))}
+                                            
                                         </div>
                                     </div>
                                 </div>
@@ -2186,7 +2300,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             type="text"
                                             inputMode="numeric"
                                             value={formatThousands(uploadSettings.costPrice)}
-                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }))}
+                                            onChange={(e) => setUploadSettings(prev => ({ ...prev, costPrice: parseFormattedNumber(e.target.value) }
                                             onFocus={(e) => e.target.select()}
                                             className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg font-bold focus:ring-2 focus:ring-purple-500 bg-white"
                                             placeholder="0"
@@ -2222,7 +2336,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                 className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
                                                             />
                                                         </div>
-                                                    ))}
+                                                    
                                                 </div>
                                             )}
                                         </div>
@@ -2233,7 +2347,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             type="text"
                                             inputMode="numeric"
                                             value={formatThousands(retailPrice)}
-                                            onChange={(e) => setFixedPrices(prev => ({ ...prev, retail: parseFormattedNumber(e.target.value) }))}
+                                            onChange={(e) => setFixedPrices(prev => ({ ...prev, retail: parseFormattedNumber(e.target.value) }
                                             onFocus={(e) => e.target.select()}
                                             className="w-full px-4 py-3 border-2 border-[#D4AF37]/50 rounded-xl text-lg font-bold text-[#997B2C] bg-[#D4AF37]/5 focus:ring-2 focus:ring-[#D4AF37]"
                                             placeholder="0"
@@ -2245,7 +2359,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             type="text"
                                             inputMode="numeric"
                                             value={formatThousands(resellerPrice)}
-                                            onChange={(e) => setFixedPrices(prev => ({ ...prev, reseller: parseFormattedNumber(e.target.value) }))}
+                                            onChange={(e) => setFixedPrices(prev => ({ ...prev, reseller: parseFormattedNumber(e.target.value) }
                                             onFocus={(e) => e.target.select()}
                                             className="w-full px-4 py-3 border-2 border-[#D4AF37]/50 rounded-xl text-lg font-bold text-[#997B2C] bg-[#D4AF37]/5 focus:ring-2 focus:ring-[#D4AF37]"
                                             placeholder="0"
@@ -2286,7 +2400,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                         <th className="px-2 py-1 text-left border border-green-100">Size</th>
                                                                         {activeVariantLabels.map(label => (
                                                                             <th key={label} className="px-2 py-1 text-center border border-green-100">{label}</th>
-                                                                        ))}
+                                                                        
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
@@ -2318,7 +2432,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                 );
                                                                             })}
                                                                         </tr>
-                                                                    ))}
+                                                                    
                                                                 </tbody>
                                                             </table>
                                                         </div>
@@ -2334,7 +2448,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                         <th className="px-2 py-2 text-left border border-blue-100 font-bold">Size</th>
                                                                         {activeVariantLabels.map(label => (
                                                                             <th key={label} className="px-2 py-2 text-center border border-blue-100 font-bold min-w-[80px]">{label}</th>
-                                                                        ))}
+                                                                        
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
@@ -2366,7 +2480,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                 );
                                                                             })}
                                                                         </tr>
-                                                                    ))}
+                                                                    
                                                                 </tbody>
                                                             </table>
                                                         </div>
@@ -2414,7 +2528,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                         <th className="px-2 py-1 text-left font-semibold text-purple-800 rounded-tl-lg sticky left-0 z-10 bg-purple-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">Size</th>
                                                         {activeVariantLabels.map((label) => (
                                                             <th key={label} className="px-1 py-1 text-center font-bold text-purple-700 min-w-[35px] text-xs">{label}</th>
-                                                        ))}
+                                                        
                                                         <th className="px-2 py-1 text-center font-semibold text-purple-800 rounded-tr-lg text-xs">Total</th>
                                                     </tr>
                                                 </thead>
@@ -2445,7 +2559,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                         ...prev.stockPerVariant,
                                                                                         [key]: e.target.value
                                                                                     }
-                                                                                }))}
+                                                                                }
                                                                                 onFocus={(e) => e.target.select()}
                                                                                 placeholder="0"
                                                                                 className="w-full px-1 py-1 border border-gray-300 rounded text-center text-sm font-bold focus:ring-1 focus:ring-purple-500 focus:border-purple-500 h-8"
