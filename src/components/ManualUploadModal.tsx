@@ -1993,8 +1993,6 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     </p>
                                 </div>
                             )}
-                                </div>
-                            )}
 
                             {/* Go to Preview Button */}
                             {((uploadMode === 'collage' && images.length > 0 && collageBlob) || (uploadMode === 'gallery' && images.length > 0)) && (
@@ -2511,8 +2509,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                         </div>
                     )}
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 };
 
