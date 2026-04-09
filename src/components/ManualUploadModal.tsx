@@ -505,6 +505,22 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         }
     }, [familyMode, familyGroups]);
 
+    // 🔥 NEW: Sync family groups to variant names automatically (A, B, C labels)
+    React.useEffect(() => {
+        if (familyMode && Object.keys(familyGroups).length > 0) {
+            const groupNames = Object.keys(familyGroups);
+            setVariantNames(prev => {
+                const next = { ...prev };
+                activeVariantLabels.forEach((label, index) => {
+                    if (groupNames[index]) {
+                        next[label] = groupNames[index];
+                    }
+                });
+                return next;
+            });
+        }
+    }, [familyMode, familyGroups, activeVariantLabels]);
+
     // Auto-reset familyMode when entering collage mode
     React.useEffect(() => {
         if (uploadMode === 'collage' && familyMode) {
