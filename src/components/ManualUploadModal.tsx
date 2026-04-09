@@ -112,6 +112,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     // Selected image index for tap-to-swap reordering
     const [selectedSwapIndex, setSelectedSwapIndex] = useState<number | null>(null);
     const [customSizeInput, setCustomSizeInput] = useState('');
+    const [availableSizes, setAvailableSizes] = useState<string[]>(DEFAULT_SIZE_PRESETS);
     // New: Checkbox state for each image (True = Main Variant/Label A-Z, False = Detail/No Label)
     const [isVariant, setIsVariant] = useState<boolean[]>([]);
 
@@ -2257,7 +2258,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     <div>
                                         <label className="block text-xs font-bold text-gray-600 mb-1">Size</label>
                                         <div className="flex flex-wrap gap-2">
-                                            {SIZE_PRESETS.map(size => (
+                                            {availableSizes.map(size => (
                                                 <button
                                                     key={size}
                                                     onClick={() => {
