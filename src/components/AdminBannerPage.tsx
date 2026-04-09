@@ -649,7 +649,7 @@ const AdminBannerPage: React.FC<AdminBannerPageProps> = ({ onBack, user }) => {
                                         <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition group-hover:bg-gray-100">
                                             <ImageIcon className="w-10 h-10 text-gray-400 mb-2" />
                                             <span className="text-sm font-medium text-gray-600">Klik untuk upload manual</span>
-                                            <span className="text-xs text-gray-400 mt-1">Rekomendasi: 1200 x 400 px</span>
+                                            <span className="text-xs text-gray-400 mt-1">Rekomendasi: 1200 x 600 px</span>
 
                                             <label className="cursor-pointer absolute inset-0 w-full h-full">
                                                 <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
