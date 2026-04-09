@@ -142,6 +142,8 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
         return user?.role === 'reseller' ? product.resellerPrice : product.retailPrice;
     };
 
+    const finalPrice = getPrice() - collectionDiscount;
+
     // Reset selected size if it becomes incompatible with selected variant
     React.useEffect(() => {
         if (selectedSize && !filteredUniqueSizes.includes(selectedSize)) {
