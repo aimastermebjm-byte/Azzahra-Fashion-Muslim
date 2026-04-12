@@ -69,7 +69,10 @@ const FAMILY_DEFAULTS = [
     { id: 'kids_gamis', name: 'Gamis Kids', sizes: ['S', 'M', 'L', 'XL'] },
     { id: 'kids_koko', name: 'Koko Kids', sizes: ['S', 'M', 'L', 'XL'] },
     { id: 'dad_panjang', name: 'Dad L.panjang', sizes: ['M', 'L', 'XL', 'XXL'] },
-    { id: 'dad_pendek', name: 'Dad L.pendek', sizes: ['M', 'L', 'XL', 'XXL'] }
+    { id: 'dad_pendek', name: 'Dad L.pendek', sizes: ['M', 'L', 'XL', 'XXL'] },
+    { id: 'dress_only', name: 'Dress Only', sizes: ['S', 'M', 'L', 'XL', 'XXL'] },
+    { id: 'jilbab_only', name: 'Jilbab Only', sizes: ['S', 'M', 'L', 'XL'] },
+    { id: 'outher_only', name: 'Outher Only', sizes: ['S', 'M', 'L', 'XL', 'XXL'] }
 ];
 
 const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
@@ -484,12 +487,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     const [familyGroups, setFamilyGroups] = useState<Record<string, string[]>>({});
     // Preset size options for family groups
     const FAMILY_SIZE_PRESETS = {
-        adult: ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+        adult: ['S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'Allsize', 'Jumbo'],
         kid: ['2', '4', '6', '8', '10', '12'],
         baby: ['0-6M', '6-12M', '12-18M', '18-24M'],
     };
     // Preset group names
-    const FAMILY_GROUP_PRESETS = ['Mom set Khimar', 'Mom set scarf', 'Gamis Kids', 'Koko Kids', 'Dad L.panjang', 'Dad L.pendek'];
+    const FAMILY_GROUP_PRESETS = ['Mom set Khimar', 'Mom set scarf', 'Gamis Kids', 'Koko Kids', 'Dad L.panjang', 'Dad L.pendek', 'Dress Only', 'Jilbab Only', 'Outher Only'];
 
     // Generate flat selectedSizes from familyGroups
     React.useEffect(() => {
@@ -1763,41 +1766,96 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             </button>
                                             {showCostPerSize && (
                                                 <div className="space-y-2 mt-3 pt-3 border-t border-amber-200">
-                                                    {(() => {
-                                                        const distinctSizes = familyMode 
-                                                            ? Array.from(new Set(selectedSizes.map(s => getCleanSize(s))))
-                                                            : selectedSizes;
-                                                        
-                                                        return distinctSizes.map((cleanSizeOrSize) => {
-                                                            const displaySize = cleanSizeOrSize;
-                                                            // For assignment, if familyMode we still need to map it back to a full size name for the state
-                                                            // OR we use the displaySize if it's unique enough.
-                                                            // In Step 1, costPricePerSize keys use the FULL size string.
-                                                            const fullSizeRef = familyMode
-                                                                ? selectedSizes.find(s => getCleanSize(s) === cleanSizeOrSize) || cleanSizeOrSize
-                                                                : cleanSizeOrSize;
+                                                    {activeVariantLabels.length > 1 ? (
+                                                        <div className="overflow-x-auto pb-2">
+                                                            <table className="w-full mb-2">
+                                                                <thead>
+                                                                    <tr className="bg-amber-100">
+                                                                        <th className="p-3 text-left border border-amber-200 min-w-[80px] text-amber-900">Size</th>
+                                                                        {activeVariantLabels.map(label => (
+                                                                            <th key={label} className="p-3 text-center border border-amber-200 min-w-[80px] font-bold text-amber-900">{variantNames[label] || label}</th>
+                                                                        ))}
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {(() => {
+                                                                        const distinctSizes = familyMode 
+                                                                            ? Array.from(new Set(selectedSizes.map(s => getCleanSize(s))))
+                                                                            : selectedSizes;
 
-                                                            return (
-                                                                <div key={cleanSizeOrSize} className="flex items-center gap-2">
-                                                                    <div className="w-36 px-2 py-1 text-sm font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded truncate">
-                                                                        {displaySize}
+                                                                        return distinctSizes.map(cleanSize => (
+                                                                            <tr key={cleanSize}>
+                                                                                <td className="p-2 font-bold border border-amber-200 bg-amber-50/50">
+                                                                                    <div className="px-2 py-1 text-xs font-bold text-amber-900">
+                                                                                        {cleanSize}
+                                                                                    </div>
+                                                                                </td>
+                                                                                {activeVariantLabels.map(label => {
+                                                                                    const varName = variantNames[label] || label;
+                                                                                    const fullSize = familyMode 
+                                                                                        ? selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize)
+                                                                                        : cleanSize;
+                                                                                    
+                                                                                    if (familyMode && !fullSize) return <td key={`${cleanSize}-${label}`} className="p-2 border border-amber-200 bg-gray-50/50"></td>;
+
+                                                                                    const key = `${fullSize}-${label}`;
+                                                                                    return (
+                                                                                        <td key={key} className="p-2 border border-amber-200">
+                                                                                            <input
+                                                                                                type="text"
+                                                                                                inputMode="numeric"
+                                                                                                value={formatThousands(costPricePerSize[key] || uploadSettings.costPrice)}
+                                                                                                onChange={(e) => {
+                                                                                                    const val = parseFormattedNumber(e.target.value);
+                                                                                                    setCostPricePerSize(prev => ({ ...prev, [key]: val }));
+                                                                                                }}
+                                                                                                onFocus={(e) => e.target.select()}
+                                                                                                className="w-full px-2 py-3 text-center bg-white border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500 shadow-sm min-w-[90px] text-amber-900"
+                                                                                                placeholder={formatThousands(uploadSettings.costPrice)}
+                                                                                            />
+                                                                                        </td>
+                                                                                    );
+                                                                                })}
+                                                                            </tr>
+                                                                        ));
+                                                                    })()}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    ) : (
+                                                        (() => {
+                                                            const distinctSizes = familyMode 
+                                                                ? Array.from(new Set(selectedSizes.map(s => getCleanSize(s))))
+                                                                : selectedSizes;
+                                                            
+                                                            return distinctSizes.map((cleanSizeOrSize) => {
+                                                                const displaySize = cleanSizeOrSize;
+                                                                const fullSizeRef = familyMode
+                                                                    ? selectedSizes.find(s => getCleanSize(s) === cleanSizeOrSize) || cleanSizeOrSize
+                                                                    : cleanSizeOrSize;
+
+                                                                return (
+                                                                    <div key={cleanSizeOrSize} className="flex items-center gap-2">
+                                                                        <div className="w-36 px-2 py-1 text-sm font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded truncate">
+                                                                            {displaySize}
+                                                                        </div>
+                                                                        <input
+                                                                            type="text"
+                                                                            inputMode="numeric"
+                                                                            value={formatThousands(costPricePerSize[fullSizeRef] || uploadSettings.costPrice)}
+                                                                            onChange={(e) => {
+                                                                                const val = parseFormattedNumber(e.target.value);
+                                                                                setCostPricePerSize(prev => ({ ...prev, [fullSizeRef]: val }));
+                                                                            }}
+                                                                            onFocus={(e) => e.target.select()}
+                                                                            placeholder={formatThousands(uploadSettings.costPrice)}
+                                                                            className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
+                                                                        />
                                                                     </div>
-                                                                    <input
-                                                                        type="text"
-                                                                        inputMode="numeric"
-                                                                        value={formatThousands(costPricePerSize[fullSizeRef] || uploadSettings.costPrice)}
-                                                                        onChange={(e) => {
-                                                                            const val = parseFormattedNumber(e.target.value);
-                                                                            setCostPricePerSize(prev => ({ ...prev, [fullSizeRef]: val }));
-                                                                        }}
-                                                                        onFocus={(e) => e.target.select()}
-                                                                        placeholder={formatThousands(uploadSettings.costPrice)}
-                                                                        className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
-                                                                    />
-                                                                </div>
-                                                            );
-                                                        });
-                                                    })()}
+                                                                );
+                                                            });
+                                                        })()
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
