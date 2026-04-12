@@ -605,7 +605,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     }, [resellerPrice, uploadSettings.retailMarkup, fixedPrices]);
 
     // Auto-initialize pricesPerVariant when sizes, variants, or base prices change
-    // UPDATED: Always sync with current retailPrice/resellerPrice (don't keep old draft values)
+    // FIX: Only fill cells that don't have values yet — preserve user-entered values
     React.useEffect(() => {
         setPricesPerVariant(prev => {
             const next: typeof prev = {};
@@ -613,12 +613,16 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             selectedSizes.forEach(size => {
                 activeVariantLabels.forEach(label => {
                     const key = `${size}-${label}`;
-                    // Always use current retailPrice/resellerPrice as default
-                    // This ensures matrix follows global price set above
-                    next[key] = {
-                        retail: retailPrice,
-                        reseller: resellerPrice
-                    };
+                    if (prev[key] && (prev[key].retail !== 0 || prev[key].reseller !== 0)) {
+                        // Keep existing user-entered value
+                        next[key] = prev[key];
+                    } else {
+                        // Initialize with global price only if not yet set
+                        next[key] = {
+                            retail: retailPrice,
+                            reseller: resellerPrice
+                        };
+                    }
                 });
             });
 
