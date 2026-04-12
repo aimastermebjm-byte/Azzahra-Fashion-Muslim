@@ -604,31 +604,31 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         return resellerPrice + uploadSettings.retailMarkup;
     }, [resellerPrice, uploadSettings.retailMarkup, fixedPrices]);
 
-    // Auto-initialize pricesPerVariant when sizes, variants, or base prices change
-    // FIX: Only fill cells that don't have values yet — preserve user-entered values
+    // Cleanup pricesPerVariant when sizes or variants are removed
     React.useEffect(() => {
         setPricesPerVariant(prev => {
+            if (Object.keys(prev).length === 0) return prev;
+            
             const next: typeof prev = {};
-
+            const validKeys = new Set();
             selectedSizes.forEach(size => {
                 activeVariantLabels.forEach(label => {
-                    const key = `${size}-${label}`;
-                    if (prev[key] && (prev[key].retail !== 0 || prev[key].reseller !== 0)) {
-                        // Keep existing user-entered value
-                        next[key] = prev[key];
-                    } else {
-                        // Initialize with global price only if not yet set
-                        next[key] = {
-                            retail: retailPrice,
-                            reseller: resellerPrice
-                        };
-                    }
+                    validKeys.add(`${size}-${label}`);
                 });
             });
 
-            return next;
+            let hasChanges = false;
+            Object.keys(prev).forEach(key => {
+                if (validKeys.has(key)) {
+                    next[key] = prev[key];
+                } else {
+                    hasChanges = true; // A key was removed
+                }
+            });
+
+            return hasChanges ? next : prev;
         });
-    }, [selectedSizes, activeVariantLabels, retailPrice, resellerPrice]);
+    }, [selectedSizes, activeVariantLabels]);
 
     // Helper untuk format angka ribuan
     const formatThousands = (num: number): string => {
@@ -2652,10 +2652,11 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                 <td className="px-2 py-1 font-bold border border-green-100">{cleanSize}</td>
                                                                                 {activeVariantLabels.map(label => {
                                                                                     const varName = variantNames[label] || label;
-                                                                                    // Find original full size (e.g. "Mom S")
-                                                                                    const fullSize = selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize);
+                                                                                    const fullSize = familyMode
+                                                                                        ? selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize)
+                                                                                        : cleanSize;
                                                                                     
-                                                                                    if (!fullSize) return <td key={`${cleanSize}-${label}`} className="px-2 py-2 border border-green-100 bg-gray-50/50"></td>;
+                                                                                    if (familyMode && !fullSize) return <td key={`${cleanSize}-${label}`} className="px-2 py-2 border border-green-100 bg-gray-50/50"></td>;
                                                                                     
                                                                                     const key = `${fullSize}-${label}`;
                                                                                     return (
@@ -2709,9 +2710,11 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                 <td className="px-2 py-2 font-bold border border-blue-100">{cleanSize}</td>
                                                                                 {activeVariantLabels.map(label => {
                                                                                     const varName = variantNames[label] || label;
-                                                                                    const fullSize = selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize);
+                                                                                    const fullSize = familyMode
+                                                                                        ? selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize)
+                                                                                        : cleanSize;
                                                                                     
-                                                                                    if (!fullSize) return <td key={`${cleanSize}-${label}`} className="px-1 py-1 border border-blue-100 bg-gray-50/50"></td>;
+                                                                                    if (familyMode && !fullSize) return <td key={`${cleanSize}-${label}`} className="px-1 py-1 border border-blue-100 bg-gray-50/50"></td>;
                                                                                     
                                                                                     const key = `${fullSize}-${label}`;
                                                                                     return (
@@ -2798,9 +2801,11 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                 <td className="px-2 py-1 font-semibold text-gray-700 bg-purple-50 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">{cleanSize}</td>
                                                                 {activeVariantLabels.map((label) => {
                                                                     const varName = variantNames[label] || label;
-                                                                    const fullSize = selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize);
+                                                                    const fullSize = familyMode
+                                                                        ? selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize)
+                                                                        : cleanSize;
                                                                     
-                                                                    if (!fullSize) return <td key={`${cleanSize}-${label}`} className="px-0 py-1 border border-purple-50 bg-gray-50/50"></td>;
+                                                                    if (familyMode && !fullSize) return <td key={`${cleanSize}-${label}`} className="px-0 py-1 border border-purple-50 bg-gray-50/50"></td>;
 
                                                                     const key = `${fullSize}-${label}`;
                                                                     const defaultValue = uploadSettings.stockPerVariant || 0;
