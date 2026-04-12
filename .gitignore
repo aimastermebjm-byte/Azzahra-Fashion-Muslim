@@ -8,9 +8,21 @@ service-account.json
 .wwebjs_auth/
 .wwebjs_cache/
 .vercel
+node_modules/
+dist/
+.vercel
+service-account.json
+.env
+.wwebjs_auth
+.wwebjs_cache
+.wwebjs_auth/
+.wwebjs_cache/
+.vercel
 .env*.local
 
 # Backups
 *.backup
 *.backup.*
 scripts/backups/
+# Android build files
+mobile-app/app/build/

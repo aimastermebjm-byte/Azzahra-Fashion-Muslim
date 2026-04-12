@@ -241,17 +241,36 @@ class ReportsService {
             ? item.productId.trim()
             : (typeof product?.id === 'string' ? product.id : undefined);
 
-          // Get modal/costPrice from batch data with sensible fallbacks
-          const costPrice = Number(
-            item.modal ??
-            item.costPrice ??
-            product?.costPrice ??
-            product?.purchasePrice ??
-            product?.modal ??
-            product?.wholesalePrice ??
-            product?.resellerPrice ??
-            0
-          ) || Number(item.price || 0) * 0.6; // fallback 60%
+          // Resolve precise cost based on variant/size if available
+          const itemSize = item.variant?.size || item.size || '';
+          const itemColor = item.variant?.color || item.color || '';
+          const costPricePerSize = product?.costPricePerSize;
+
+          let costPrice = Number(item.modal ?? item.costPrice ?? 0);
+
+          if (!costPrice && costPricePerSize) {
+            // Priority 1: Matrix format: "Size-VariantLabel"
+            const sizeColorKey = `${itemSize}-${itemColor}`;
+            if (costPricePerSize[sizeColorKey]) {
+                costPrice = Number(costPricePerSize[sizeColorKey]);
+            } 
+            // Priority 2: Flat format: "Size"
+            else if (costPricePerSize[itemSize]) {
+                costPrice = Number(costPricePerSize[itemSize]);
+            }
+          }
+
+          // Fallback to global product cost prices
+          if (!costPrice) {
+            costPrice = Number(
+                product?.costPrice ??
+                product?.purchasePrice ??
+                product?.modal ??
+                product?.wholesalePrice ??
+                product?.resellerPrice ??
+                0
+            ) || Number(item.price || 0) * 0.6; // fallback 60%
+          }
 
           const unitPrice = Number(item.price ?? product?.retailPrice ?? product?.price ?? 0);
           const quantity = Number(item.quantity || 1);

@@ -149,6 +149,29 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   };
 
+  const getCleanSize = (size: string, variantName?: string) => {
+    if (!size) return 'All Size';
+    if (!size.includes(' ')) return size;
+    
+    // Strategy 1: If size starts with variantName, strip it
+    if (variantName && size.toLowerCase().startsWith(variantName.toLowerCase() + ' ')) {
+      const stripped = size.substring(variantName.length).trim();
+      if (stripped) return stripped;
+    }
+    
+    // Strategy 2: Aggressive regex-based stripping (strip everything before last space if it matches size pattern)
+    const parts = size.trim().split(' ');
+    if (parts.length > 1) {
+      const lastPart = parts[parts.length - 1];
+      // If the last part looks like a known size pattern
+      if (/^(S|M|L|XL|XXL|XXXL|[0-9]+(-[0-9]+M)?|Standar|Jumbo|All\s*Size)$/i.test(lastPart)) {
+        return lastPart;
+      }
+    }
+    
+    return size;
+  };
+
   const updateAddress = async (id: string, updateData: any) => {
     try {
       const updatedAddress = await addressService.updateAddress(id, updateData);
@@ -1297,9 +1320,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           />
                           <div className="flex-1">
                             <h4 className="text-sm font-semibold text-slate-900">{itemName}</h4>
-                            {variant && (variant.size || variant.color) && (
+                             {variant && (variant.size || variant.color) && (
                               <p className="text-xs text-slate-500">
-                                {variant.size || 'Standard'} · {variant.color || 'Default'}
+                                {getCleanSize(variant.size, variant.variantName)} · {variant.variantName || variant.color || 'Default'}
                               </p>
                             )}
                             <div className="mt-1 flex items-center justify-between">

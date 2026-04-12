@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { X, Upload, Settings, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { collageService } from '../services/collageService';
-import { InteractiveCropper } from './InteractiveCropper';
 import { useGlobalProducts } from '../hooks/useGlobalProducts';
 
 interface ManualUploadModalProps {
@@ -62,7 +61,19 @@ const DEFAULT_PRICING_RULES: PricingRule[] = [
 ];
 
 // Size preset options
-const SIZE_PRESETS = ['All Size', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'Standar', 'Jumbo'];
+const DEFAULT_SIZE_PRESETS = ['All Size', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'Standar', 'Jumbo'];
+
+const FAMILY_DEFAULTS = [
+    { id: 'mom_khimar', name: 'Mom set Khimar', sizes: ['S', 'M', 'L', 'XL', 'XXL'] },
+    { id: 'mom_scarf', name: 'Mom set scarf', sizes: ['S', 'M', 'L', 'XL', 'XXL'] },
+    { id: 'kids_gamis', name: 'Gamis Kids', sizes: ['S', 'M', 'L', 'XL'] },
+    { id: 'kids_koko', name: 'Koko Kids', sizes: ['S', 'M', 'L', 'XL'] },
+    { id: 'dad_panjang', name: 'Dad L.panjang', sizes: ['M', 'L', 'XL', 'XXL'] },
+    { id: 'dad_pendek', name: 'Dad L.pendek', sizes: ['M', 'L', 'XL', 'XXL'] },
+    { id: 'dress_only', name: 'Dress Only', sizes: ['S', 'M', 'L', 'XL', 'XXL'] },
+    { id: 'jilbab_only', name: 'Jilbab Only', sizes: ['S', 'M', 'L', 'XL'] },
+    { id: 'outher_only', name: 'Outher Only', sizes: ['S', 'M', 'L', 'XL', 'XXL'] }
+];
 
 const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     isOpen,
@@ -104,14 +115,16 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     // Selected image index for tap-to-swap reordering
     const [selectedSwapIndex, setSelectedSwapIndex] = useState<number | null>(null);
     const [customSizeInput, setCustomSizeInput] = useState('');
+    const [availableSizes, setAvailableSizes] = useState<string[]>(DEFAULT_SIZE_PRESETS);
     // New: Checkbox state for each image (True = Main Variant/Label A-Z, False = Detail/No Label)
     const [isVariant, setIsVariant] = useState<boolean[]>([]);
 
     // Upload mode state
     const [uploadMode, setUploadMode] = useState<'collage' | 'gallery'>('collage');
     const [mainImageIndex, setMainImageIndex] = useState<number>(0);
-    const [cropOffsets, setCropOffsets] = useState<Record<number, { x: number, y: number }>>({});
-    const [cropScales, setCropScales] = useState<Record<number, number>>({});
+    const [panOffsets, setPanOffsets] = useState<Record<number, number>>({});
+
+    // Initial State handling...
 
     // Initialize from initialState when isOpen changes
     React.useEffect(() => {
@@ -142,6 +155,10 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             // Set variant count from draft productData
             if (initialState.productData?.variants?.colors) {
                 setDraftVariantCount(initialState.productData.variants.colors.length);
+            }
+
+            if (initialState.panOffsets) {
+                setPanOffsets(initialState.panOffsets);
             }
 
             if (initialState.productData) {
@@ -455,6 +472,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     const [showCostPerSize, setShowCostPerSize] = useState(false);
     // Show stock matrix (expandable) - collapsed by default in step 2
     const [showStockMatrix, setShowStockMatrix] = useState(false);
+    const [variantImageIndices, setVariantImageIndices] = useState<Record<string, number>>({});
     // Key format: "Size-Label" (e.g., "S-A", "XL-B")
     const [pricesPerVariant, setPricesPerVariant] = useState<Record<string, { retail: number, reseller: number }>>({});
     // Editable variant names: key is label (A, B, C), value is custom name for checkout
@@ -469,12 +487,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
     const [familyGroups, setFamilyGroups] = useState<Record<string, string[]>>({});
     // Preset size options for family groups
     const FAMILY_SIZE_PRESETS = {
-        adult: ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+        adult: ['S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'Allsize', 'Jumbo'],
         kid: ['2', '4', '6', '8', '10', '12'],
         baby: ['0-6M', '6-12M', '12-18M', '18-24M'],
     };
     // Preset group names
-    const FAMILY_GROUP_PRESETS = ['Mom Dress', 'Mom Set Khimar', 'Mom Set Scarf', 'Dad Koko', 'Kid Dress', 'Kid Set', 'Baby Romper'];
+    const FAMILY_GROUP_PRESETS = ['Mom set Khimar', 'Mom set scarf', 'Gamis Kids', 'Koko Kids', 'Dad L.panjang', 'Dad L.pendek', 'Dress Only', 'Jilbab Only', 'Outher Only'];
 
     // Generate flat selectedSizes from familyGroups
     React.useEffect(() => {
@@ -491,7 +509,71 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         }
     }, [familyMode, familyGroups]);
 
-    // Preview generation dipindah ke tombol Lanjut ke Preview agar merender hasil crop manual!
+    // 🔥 NEW: Logic to sync group name to next available variant label (A, B, C...) based on interaction
+    const handleFamilyInteraction = (groupName: string) => {
+        setVariantNames(prev => {
+            // 1. Check if this group is already assigned to ANY label
+            const alreadyAssignedLabel = Object.keys(prev).find(key => prev[key] === groupName);
+            if (alreadyAssignedLabel) return prev;
+
+            // 2. Find the FIRST label (A, B, C...) that is currently EMPTY
+            // We only look at active labels that don't have a value yet
+            const nextLabel = activeVariantLabels.find(label => !prev[label] || prev[label].trim() === '');
+            
+            if (nextLabel) {
+                console.log(`🏷️ Auto-assigning family group "${groupName}" to label ${nextLabel}`);
+                return { ...prev, [nextLabel]: groupName };
+            }
+            return prev;
+        });
+    };
+
+    // Auto-reset familyMode when entering collage mode
+    React.useEffect(() => {
+        if (uploadMode === 'collage' && familyMode) {
+            setFamilyMode(false);
+            setFamilyGroups({});
+            if (selectedSizes.length === 0 || (selectedSizes.length === 1 && selectedSizes[0] !== 'All Size')) {
+                setSelectedSizes(['All Size']);
+            }
+        }
+    }, [uploadMode]);
+
+    // Auto-generate collage when images or pan change
+    React.useEffect(() => {
+        const autoGenerateCollage = async () => {
+            if (images.length === 0 || uploadMode === 'gallery') {
+                setCollageBlob(null);
+                setCollagePreview('');
+                return;
+            }
+
+            setIsGeneratingCollage(true);
+            try {
+                const labels = getCalculatedLabels(images.length, isVariant);
+                // Use panOffsets in generation
+                const blob = await collageService.generateCollage(images, labels, panOffsets);
+                setCollageBlob(blob);
+                
+                if (collagePreview && !collagePreview.startsWith('http')) {
+                    URL.revokeObjectURL(collagePreview);
+                }
+                setCollagePreview(URL.createObjectURL(blob));
+            } catch (error) {
+                console.error('Auto collage generation failed:', error);
+            } finally {
+                setIsGeneratingCollage(false);
+            }
+        };
+
+        // Debounce collage generation when panning
+        const timer = setTimeout(() => {
+            autoGenerateCollage();
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [images, isVariant, panOffsets]);
+
     // State for fixed prices (from WhatsApp/Initial State) to prevent auto-calculation override
     const [fixedPrices, setFixedPrices] = useState<{ retail?: number, reseller?: number } | null>(null);
 
@@ -522,27 +604,31 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         return resellerPrice + uploadSettings.retailMarkup;
     }, [resellerPrice, uploadSettings.retailMarkup, fixedPrices]);
 
-    // Auto-initialize pricesPerVariant when sizes, variants, or base prices change
-    // UPDATED: Always sync with current retailPrice/resellerPrice (don't keep old draft values)
+    // Cleanup pricesPerVariant when sizes or variants are removed
     React.useEffect(() => {
         setPricesPerVariant(prev => {
+            if (Object.keys(prev).length === 0) return prev;
+            
             const next: typeof prev = {};
-
+            const validKeys = new Set();
             selectedSizes.forEach(size => {
                 activeVariantLabels.forEach(label => {
-                    const key = `${size}-${label}`;
-                    // Always use current retailPrice/resellerPrice as default
-                    // This ensures matrix follows global price set above
-                    next[key] = {
-                        retail: retailPrice,
-                        reseller: resellerPrice
-                    };
+                    validKeys.add(`${size}-${label}`);
                 });
             });
 
-            return next;
+            let hasChanges = false;
+            Object.keys(prev).forEach(key => {
+                if (validKeys.has(key)) {
+                    next[key] = prev[key];
+                } else {
+                    hasChanges = true; // A key was removed
+                }
+            });
+
+            return hasChanges ? next : prev;
         });
-    }, [selectedSizes, activeVariantLabels, retailPrice, resellerPrice]);
+    }, [selectedSizes, activeVariantLabels]);
 
     // Helper untuk format angka ribuan
     const formatThousands = (num: number): string => {
@@ -552,6 +638,31 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
     const parseFormattedNumber = (str: string): number => {
         return parseInt(str.replace(/\./g, '')) || 0;
+    };
+
+    const getCleanSize = (size: string) => {
+        if (!familyMode && !size.includes(' ')) return size;
+        
+        // Strategy: Forcefully strip everything before the last space if there's a space
+        // e.g. "Mom set Khimar S" -> "S"
+        // "Dad L.panjang XL" -> "XL"
+        const parts = size.trim().split(' ');
+        if (parts.length > 1) {
+            const lastPart = parts[parts.length - 1];
+            // If the last part looks like a size (S, M, L, XL, 2, 4, 6...)
+            if (/^(S|M|L|XL|XXL|XXXL|[0-9]+(-[0-9]+M)?|Standar|Jumbo|All\s*Size)$/i.test(lastPart)) {
+                return lastPart;
+            }
+        }
+        
+        let clean = size;
+        // Fallback: Strip known variant names if regex above didn't catch it
+        Object.values(variantNames).forEach(name => {
+            if (name && clean.startsWith(name + ' ')) {
+                clean = clean.replace(name + ' ', '').trim();
+            }
+        });
+        return clean;
     };
 
     // Handle image upload
@@ -574,9 +685,6 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         const newPreviews = validFiles.map(file => URL.createObjectURL(file));
 
         setImages(prev => [...prev, ...validFiles]);
-        // Reset offset & scale tracking kalau ganti gambar
-        setCropOffsets({});
-        setCropScales({});
         setImagePreviews(prev => [...prev, ...newPreviews]);
         setIsVariant(prev => [...prev, ...Array(validFiles.length).fill(true)]);
 
@@ -592,10 +700,30 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
     // Remove image
     const handleRemoveImage = (index: number) => {
+        const newImages = images.filter((_, i) => i !== index);
+        setImages(newImages);
+        const newPreviews = imagePreviews.filter((_, i) => i !== index);
         URL.revokeObjectURL(imagePreviews[index]);
-        setImages(prev => prev.filter((_, i) => i !== index));
-        setImagePreviews(prev => prev.filter((_, i) => i !== index));
-        setIsVariant(prev => prev.filter((_, i) => i !== index));
+        setImagePreviews(newPreviews);
+
+        const newIsVariantFlags = isVariant.filter((_, i) => i !== index);
+        setIsVariant(newIsVariantFlags);
+
+        // Update panOffsets: shift all indices after the removed one
+        const newPanOffsets: Record<number, number> = {};
+        Object.entries(panOffsets).forEach(([key, val]) => {
+            const idx = parseInt(key);
+            if (idx < index) {
+                newPanOffsets[idx] = val;
+            } else if (idx > index) {
+                newPanOffsets[idx - 1] = val;
+            }
+        });
+        setPanOffsets(newPanOffsets);
+
+        if (mainImageIndex >= newImages.length) {
+            setMainImageIndex(Math.max(0, newImages.length - 1));
+        }
 
         // Re-index stock
         const newStockPerVariant: Record<string, string> = {};
@@ -610,38 +738,21 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
 
     // Handle submit
-    const handleSubmit = async () => {
+    const handleSubmit = () => {
         if (!productFormData.name) {
             alert('Nama produk wajib diisi');
             return;
         }
 
-        if (images.length === 0) {
+        if (uploadMode === 'collage' && !collageBlob) {
+            alert('Collage belum dibuat');
+            return;
+        }
+
+        if (uploadMode === 'gallery' && images.length === 0) {
             alert('Minimal 1 gambar harus diupload');
             return;
         }
-
-        let finalCollageBlob: Blob | null = null;
-        let finalGalleryFiles: File[] = images;
-
-        setIsGeneratingCollage(true);
-        try {
-            if (uploadMode === 'collage') {
-                const labels = getCalculatedLabels(images.length, isVariant);
-                finalCollageBlob = await collageService.generateCollage(images, labels, cropOffsets, cropScales);
-            } else if (uploadMode === 'gallery') {
-                const croppedBlobs = await Promise.all(images.map((img, idx) => 
-                     collageService.cropSingleImage(img, cropOffsets[idx] || {x:0, y:0}, cropScales[idx] || 1)
-                ));
-                finalGalleryFiles = croppedBlobs.map((blob, i) => new File([blob], `gallery-${Date.now()}-${i}.jpg`, { type: 'image/jpeg' }));
-            }
-        } catch(e) {
-            console.error('Failed to process crop', e);
-            alert('Gagal memproses gambar crop. Coba lagi.');
-            setIsGeneratingCollage(false);
-            return;
-        }
-        setIsGeneratingCollage(false);
 
         // Calculate total stock from all Size-Varian combinations
         let totalStock = 0;
@@ -664,9 +775,16 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
         // Build stock matrix for all size × variant combinations using user-edited values
         const stockMatrix: Record<string, Record<string, number>> = {};
-        selectedSizes.forEach((size) => {
+        selectedSizes.forEach(size => {
             stockMatrix[size] = {};
             activeVariantLabels.forEach((label) => {
+                const varName = variantNames[label] || label;
+                // If Family Mode, the size MUST start with the variant name to be valid
+                if (familyMode && !size.startsWith(varName)) {
+                    // Invalid combination for Family Mode, skip
+                    return;
+                }
+
                 // Use key format "Size-Varian" (e.g., "S-A", "M-B")
                 const key = `${size}-${label}`;
                 const defaultStock = uploadSettings.stockPerVariant || 0;
@@ -707,6 +825,33 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             }
         }
 
+        // NEW: Variant to Image Mapping (Gallery Mode ONLY)
+        // This is crucial for per-variant image preview in store
+        const finalVariantImageIndices: Record<string, number> = {};
+        if (uploadMode === 'gallery') {
+            // 1. Default: Sequential mapping (A=Image 0, B=Image 1...)
+            let activeLabelIdx = 0;
+            for (let i = 0; i < images.length; i++) {
+                if (isVariant[i] !== false) {
+                    const label = activeVariantLabels[activeLabelIdx];
+                    if (label) {
+                        finalVariantImageIndices[label] = i;
+                        activeLabelIdx++;
+                    }
+                }
+            }
+
+            // 2. Override with manual group-to-image mapping from state
+            Object.entries(variantImageIndices).forEach(([groupName, imgIdx]) => {
+                // Find which label (A, B, C...) corresponds to this groupName
+                const label = Object.keys(variantNames).find(k => variantNames[k] === groupName);
+                if (label) {
+                    finalVariantImageIndices[label] = imgIdx;
+                    console.log(`🔗 Saving mapped index: Variant ${groupName} (Label ${label}) -> Image ${imgIdx}`);
+                }
+            });
+        }
+
         const productData = {
             name: productFormData.name,
             brand: productFormData.brand,
@@ -721,11 +866,12 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
             variantLabels: activeVariantLabels,
             variantNames, // Custom names for checkout: {A: "Scarf", B: "Khimar", ...}
             variantCount: activeVariantLabels.length,
-            collageBlob: finalCollageBlob,
-            collageFile: finalCollageBlob ? new File([finalCollageBlob], `collage-${Date.now()}.jpg`, { type: 'image/jpeg' }) : null,
-            galleryFiles: uploadMode === 'gallery' ? finalGalleryFiles : null,
+            collageBlob,
+            collageFile: collageBlob ? new File([collageBlob], `collage-${Date.now()}.jpg`, { type: 'image/jpeg' }) : null,
+            galleryFiles: uploadMode === 'gallery' ? images : null,
             imageUploadMode: uploadMode,
             mainImageIndex: uploadMode === 'gallery' ? mainImageIndex : 0,
+            variantImageIndices: Object.keys(finalVariantImageIndices).length > 0 ? finalVariantImageIndices : null,
             uploadMode: 'direct',
             sizeName: selectedSizes.join(', '), // Display all selected sizes
             // New: Include complete variants structure with all selected sizes
@@ -737,41 +883,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                 prices: Object.keys(pricesPerVariant).length > 0 ? pricesPerVariant : null,
                 names: variantNames // Custom names for checkout
             },
-            // Build pricesPerVariant with CORRECT keys matching activeVariantLabels
-            // This ensures ProductDetail can find the price using "Size-Color" key
-            pricesPerVariant: (() => {
-                if (Object.keys(pricesPerVariant).length === 0) return null;
-
-                // Re-build with correct keys: Size-ActiveLabel
-                const correctedPrices: Record<string, { retail: number; reseller: number }> = {};
-
-                // Get unique sizes from existing keys
-                const existingSizes = [...new Set(Object.keys(pricesPerVariant).map(k => k.split('-')[0]))];
-
-                // For each size, map the prices to activeVariantLabels
-                selectedSizes.forEach(size => {
-                    // Find matching prices for this size from original data
-                    const sizeEntry = existingSizes.find(s => s === size);
-
-                    activeVariantLabels.forEach((label, idx) => {
-                        const newKey = `${size}-${label}`;
-
-                        // Try to find existing price by size + index position (A=0, B=1, etc)
-                        const alphabet = 'ABCDEFGHIJ';
-                        const originalKey = `${size}-${alphabet[idx] || alphabet[0]}`;
-
-                        if (pricesPerVariant[originalKey]) {
-                            correctedPrices[newKey] = pricesPerVariant[originalKey];
-                        } else if (pricesPerVariant[`${size}-A`]) {
-                            // Fallback: use first variant price for this size
-                            correctedPrices[newKey] = pricesPerVariant[`${size}-A`];
-                        }
-                    });
-                });
-
-                console.log('🔄 Corrected pricesPerVariant keys:', correctedPrices);
-                return Object.keys(correctedPrices).length > 0 ? correctedPrices : null;
-            })()
+            // Include per-variant pricing if data exists (not just based on UI toggle)
+            pricesPerVariant: Object.keys(pricesPerVariant).length > 0 ? pricesPerVariant : null
         };
 
         onSuccess(productData);
@@ -817,13 +930,14 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
         setCostPricePerSize({});
         setFamilyMode(false);
         setFamilyGroups({});
+        setVariantNames({});
     };
 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center sm:p-4 overflow-hidden">
+            <div className="bg-white sm:rounded-xl w-full max-w-4xl h-full sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
                 {/* Header */}
                 <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                     <div>
@@ -850,16 +964,22 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                             {/* Mode Toggle */}
                             <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
                                 <button
-                                    onClick={() => setUploadMode('collage')}
+                                    onClick={() => {
+                                        setUploadMode('collage');
+                                        setFamilyMode(false);
+                                    }}
                                     className={`flex-1 py-2 font-bold rounded-lg transition-all shadow-sm ${uploadMode === 'collage' ? 'bg-white text-purple-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'}`}
                                 >
-                                    🖼️ Mode Collage
+                                    🖼️ Collage
                                 </button>
                                 <button
-                                    onClick={() => setUploadMode('gallery')}
+                                    onClick={() => {
+                                        setUploadMode('gallery');
+                                        setFamilyMode(false);
+                                    }}
                                     className={`flex-1 py-2 font-bold rounded-lg transition-all shadow-sm ${uploadMode === 'gallery' ? 'bg-white text-blue-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'}`}
                                 >
-                                    📸 Mode Gallery
+                                    📸 Gallery
                                 </button>
                             </div>
 
@@ -932,6 +1052,14 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     newIsVariant[index] = tempV;
                                                                     setIsVariant(newIsVariant);
                                                                     setImagePreviews(newPreviews);
+                                                                    
+                                                                    // Swap panOffsets
+                                                                    const newPanOffsets = { ...panOffsets };
+                                                                    const tempP = newPanOffsets[fromIdx] || 0;
+                                                                    newPanOffsets[fromIdx] = newPanOffsets[index] || 0;
+                                                                    newPanOffsets[index] = tempP;
+                                                                    setPanOffsets(newPanOffsets);
+
                                                                     setSelectedSwapIndex(null);
                                                                 }
                                                             }}
@@ -1001,18 +1129,50 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             </div>
                                                         </div>
 
-                                                        {/* Editable variant name */}
-                                                        <input
-                                                            type="text"
-                                                            value={variantNames[variantLabels[index]] || ''}
-                                                            onChange={(e) => setVariantNames(prev => ({
-                                                                ...prev,
-                                                                [variantLabels[index]]: e.target.value
-                                                            }))}
-                                                            onFocus={(e) => e.target.select()}
-                                                            placeholder={`${variantLabels[index]}`}
-                                                            className="w-full px-1 py-1 text-[10px] text-center border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 focus:border-purple-500 bg-gray-50"
-                                                        />
+                                                                {/* Editable variant name */}
+                                                                <div className="space-y-1">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={variantNames[variantLabels[index]] || ''}
+                                                                        onChange={(e) => setVariantNames(prev => ({
+                                                                            ...prev,
+                                                                            [variantLabels[index]]: e.target.value
+                                                                        }))}
+                                                                        onFocus={(e) => e.target.select()}
+                                                                        placeholder={`${variantLabels[index]}`}
+                                                                        className="w-full px-1 py-1 text-[10px] text-center border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 focus:border-purple-500 bg-gray-50"
+                                                                    />
+                                                                    
+                                                                    {/* Family Group Quick Assign Buttons */}
+                                                                    {familyMode && Object.keys(familyGroups).length > 0 && variantLabels[index] && (
+                                                                        <div className="flex flex-wrap gap-1 justify-center">
+                                                                            {Object.keys(familyGroups).map(groupName => (
+                                                                                <button
+                                                                                    key={groupName}
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        setVariantNames(prev => ({
+                                                                                            ...prev,
+                                                                                            [variantLabels[index]]: groupName
+                                                                                        }));
+                                                                                        // Also record this index for this group specifically for sync
+                                                                                        setVariantImageIndices(prev => ({
+                                                                                            ...prev,
+                                                                                            [groupName]: index
+                                                                                        }));
+                                                                                    }}
+                                                                                    className={`px-1.5 py-0.5 rounded-[4px] text-[8px] font-bold transition-all ${
+                                                                                        variantNames[variantLabels[index]] === groupName
+                                                                                            ? 'bg-[#997B2C] text-white shadow-sm'
+                                                                                            : 'bg-[#D4AF37]/10 text-[#997B2C] hover:bg-[#D4AF37]/20 border border-[#D4AF37]/20'
+                                                                                    }`}
+                                                                                >
+                                                                                    {groupName.split(' ')[0]} {/* Show only first word to save space */}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                     </div>
                                                 );
                                             })}
@@ -1026,60 +1186,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 </div>
                             )}
 
-                            {/* Live Preview Editor */}
-                            {images.length > 0 && (
-                                <div className="space-y-3 mt-6">
-                                    <h4 className="text-sm font-medium text-gray-700">✂️ {uploadMode === 'collage' ? 'Edit Posisi Collage' : 'Edit Pas Foto (Rasio 3:4)'}</h4>
-                                    <p className="text-xs text-gray-500">Tap dan tahan, lalu geser gambar agar tidak terpotong.</p>
-                                    
-                                    <div className="flex justify-center bg-gray-900 rounded-xl p-4">
-                                        {uploadMode === 'collage' ? (
-                                            <InteractiveCropper 
-                                                images={imagePreviews}
-                                                layoutBoxes={collageService.calculateLayout(images.length, 300, 400)}
-                                                containerWidth={300}
-                                                containerHeight={400}
-                                                labels={variantLabels}
-                                                onChange={(off, sc) => {
-                                                    const ratio = 1500 / 300;
-                                                    const scaledOffsets: Record<number, {x:number,y:number}> = {};
-                                                    const scaledScales: Record<number, number> = {};
-                                                    Object.keys(off).forEach(k => {
-                                                        const idx = Number(k);
-                                                        scaledOffsets[idx] = { x: off[idx].x * ratio, y: off[idx].y * ratio };
-                                                    });
-                                                    Object.keys(sc).forEach(k => {
-                                                        const idx = Number(k);
-                                                        scaledScales[idx] = sc[idx] * ratio;
-                                                    });
-                                                    setCropOffsets(scaledOffsets);
-                                                    setCropScales(scaledScales);
-                                                }}
-                                            />
-                                        ) : (
-                                            <div className="flex overflow-x-auto gap-4 scrollbar-hide pb-2 snap-x w-full">
-                                                {imagePreviews.map((preview, idx) => (
-                                                    <div key={idx} className="snap-center shrink-0">
-                                                        <InteractiveCropper 
-                                                            images={[preview]}
-                                                            layoutBoxes={[{x:0, y:0, w: 240, h: 320}]}
-                                                            containerWidth={240}
-                                                            containerHeight={320}
-                                                            onChange={(off, sc) => {
-                                                                const ratio = 1500 / 240;
-                                                                if (off[0] && sc[0]) {
-                                                                    setCropOffsets(prev => ({...prev, [idx]: { x: off[0].x * ratio, y: off[0].y * ratio }}));
-                                                                    setCropScales(prev => ({...prev, [idx]: sc[0] * ratio }));
-                                                                }
-                                                            }}
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
+
 
                             {/* Product Details - After Image Upload, Before Parameter Produk */}
                             {images.length > 0 && (
@@ -1248,57 +1355,62 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 <div className="mb-5">
                                     <div className="flex items-center justify-between mb-2">
                                         <label className="block text-sm font-medium text-gray-700">Pilih Ukuran</label>
-                                        {/* Family Mode Toggle - Hide if family data already detected */}
-                                        {(() => {
-                                            // Check if sizes contain family patterns (auto-detected)
-                                            const familyKeywords = ['dad', 'mom', 'boy', 'girl', 'ayah', 'bunda', 'ibu'];
-                                            const hasFamilyData = selectedSizes.some(size =>
-                                                familyKeywords.some(kw => size.toLowerCase().includes(kw))
-                                            );
-
-                                            // DON'T auto-set familyMode - let user keep normal SIZE_PRESETS visible
-                                            // Family sizes will show as Custom Sizes instead
-
-                                            // Show indicator if family data detected, but keep as clickable toggle
-                                            if (hasFamilyData) {
-                                                return (
-                                                    <span className="px-3 py-1 rounded-lg text-xs font-medium bg-green-600 text-white">
-                                                        ✅ Keluarga Terdeteksi
-                                                    </span>
+                                        <div className="flex items-center gap-2">
+                                            {(() => {
+                                                const familyKeywords = ['dad', 'mom', 'boy', 'girl', 'ayah', 'bunda', 'ibu'];
+                                                const hasFamilyData = selectedSizes.some(size =>
+                                                    familyKeywords.some(kw => size.toLowerCase().includes(kw))
                                                 );
-                                            }
 
-                                            return (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const newFamilyMode = !familyMode;
-                                                        setFamilyMode(newFamilyMode);
+                                                // Hide family mode in collage mode
+                                                if (uploadMode === 'collage') return null;
 
-                                                        if (newFamilyMode && selectedSizes.length === 1 && selectedSizes[0] === 'All Size') {
-                                                            setSelectedSizes([]);
-                                                        } else if (!newFamilyMode) {
-                                                            setFamilyGroups({});
-                                                            if (selectedSizes.length === 0) {
-                                                                setSelectedSizes(['All Size']);
-                                                            }
-                                                        }
-                                                    }}
-                                                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${familyMode
-                                                        ? 'bg-[#997B2C] text-white'
-                                                        : 'bg-gray-100 text-gray-600 hover:bg-[#D4AF37]/10 hover:text-[#997B2C]'
-                                                        }`}
-                                                >
-                                                    👨‍👩‍👧‍👦 Mode Keluarga
-                                                </button>
-                                            );
-                                        })()}
+                                                return (
+                                                    <>
+                                                        {hasFamilyData && !familyMode && (
+                                                            <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-green-100 text-green-700 animate-pulse">
+                                                                ✨ Tekan Mode Keluarga
+                                                            </span>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newFamilyMode = !familyMode;
+                                                                setFamilyMode(newFamilyMode);
+
+                                                                if (newFamilyMode) {
+                                                                    if (selectedSizes.length === 1 && selectedSizes[0] === 'All Size') {
+                                                                        setSelectedSizes([]);
+                                                                    }
+                                                                    // Start with empty groups in family mode, let user add manually
+                                                                    if (Object.keys(familyGroups).length === 0) {
+                                                                        setFamilyGroups({});
+                                                                    }
+                                                                } else {
+                                                                    setFamilyGroups({});
+                                                                    if (selectedSizes.length === 0) {
+                                                                        setSelectedSizes(['All Size']);
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${familyMode
+                                                                ? 'bg-[#997B2C] text-white shadow-md'
+                                                                : 'bg-gray-100 text-gray-600 hover:bg-[#D4AF37]/10 hover:text-[#997B2C]'
+                                                                }`}
+                                                        >
+                                                            <span>{familyMode ? '✅' : '👨‍👩‍👧‍👦'}</span>
+                                                            Mode Keluarga {familyMode ? 'Aktif' : ''}
+                                                        </button>
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
                                     </div>
 
                                     {!familyMode ? (
                                         /* Normal Size Mode */
                                         <div className="flex flex-wrap gap-2">
-                                            {SIZE_PRESETS.map((size) => {
+                                            {availableSizes.map((size) => {
                                                 const isSelected = selectedSizes.includes(size);
                                                 return (
                                                     <button
@@ -1331,8 +1443,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 );
                                             })}
 
-                                            {/* Custom Sizes - Only × removes, not the whole button */}
-                                            {selectedSizes.filter(s => !SIZE_PRESETS.includes(s)).map((size) => (
+                                            {/* Custom Sizes outside availableSizes */}
+                                            {selectedSizes.filter(s => !availableSizes.includes(s)).map((size) => (
                                                 <div
                                                     key={size}
                                                     className="px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-br from-[#EDD686] to-[#D4AF37] text-slate-900 shadow-md flex items-center gap-2"
@@ -1348,56 +1460,74 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 </div>
                                             ))}
 
-                                            {/* Custom Size Input with Add Button */}
-                                            <div className="flex items-center gap-1">
-                                                <input
-                                                    type="text"
-                                                    value={customSizeInput}
-                                                    onChange={(e) => setCustomSizeInput(e.target.value)}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            e.preventDefault();
+                                            {/* Size Management UI */}
+                                            <div className="flex flex-wrap gap-2 pt-2 border-t border-[#D4AF37]/20 w-full">
+                                                <div className="flex items-center gap-1">
+                                                    <input
+                                                        type="text"
+                                                        value={customSizeInput}
+                                                        onChange={(e) => setCustomSizeInput(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                const val = customSizeInput.trim();
+                                                                if (val && !availableSizes.includes(val)) {
+                                                                    setAvailableSizes(prev => [...prev, val]);
+                                                                    setSelectedSizes(prev => {
+                                                                        const sizesWithoutAllSize = prev.filter(s => s !== 'All Size');
+                                                                        return [...sizesWithoutAllSize, val];
+                                                                    });
+                                                                    setCustomSizeInput('');
+                                                                }
+                                                            }
+                                                        }}
+                                                        placeholder="Tambah size kustom..."
+                                                        className="px-3 py-1.5 border border-dashed border-[#D4AF37] rounded-lg text-xs focus:ring-2 focus:ring-[#D4AF37] w-32 focus:w-48 transition-all font-medium"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
                                                             const val = customSizeInput.trim();
-                                                            if (val && !selectedSizes.includes(val)) {
+                                                            if (val && !availableSizes.includes(val)) {
+                                                                setAvailableSizes(prev => [...prev, val]);
                                                                 setSelectedSizes(prev => {
                                                                     const sizesWithoutAllSize = prev.filter(s => s !== 'All Size');
                                                                     return [...sizesWithoutAllSize, val];
                                                                 });
                                                                 setCustomSizeInput('');
                                                             }
-                                                        }
-                                                    }}
-                                                    placeholder="Tambah size..."
-                                                    className="px-3 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] w-28 focus:w-40 transition-all font-medium"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const val = customSizeInput.trim();
-                                                        if (val && !selectedSizes.includes(val)) {
-                                                            setSelectedSizes(prev => {
-                                                                const sizesWithoutAllSize = prev.filter(s => s !== 'All Size');
-                                                                return [...sizesWithoutAllSize, val];
-                                                            });
-                                                            setCustomSizeInput('');
-                                                        }
-                                                    }}
-                                                    className="px-3 py-2 bg-[#997B2C] text-white rounded-lg text-sm font-bold hover:bg-[#D4AF37] transition-colors"
-                                                >
-                                                    +
-                                                </button>
+                                                        }}
+                                                        className="px-3 py-1.5 bg-[#997B2C] text-white rounded-lg text-xs font-bold hover:bg-[#D4AF37] transition-colors"
+                                                    >
+                                                        + Tambah Size
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     ) : (
                                         /* Family Mode - Group Editor */
                                         <div className="space-y-3 p-3 bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-xl">
-                                            <p className="text-xs text-[#997B2C]">Tambah grup ukuran untuk setiap anggota keluarga</p>
-
-                                            {/* Existing Groups */}
+                                                                              {/* Existing Groups */}
                                             {Object.entries(familyGroups).map(([groupName, sizes]) => (
-                                                <div key={groupName} className="bg-white rounded-lg p-3 border border-pink-100">
+                                                <div key={groupName} className="bg-white rounded-lg p-3 border border-[#D4AF37]/20 shadow-sm">
                                                     <div className="flex items-center justify-between mb-2">
-                                                        <span className="font-semibold text-[#997B2C]">{groupName}</span>
+                                                        <div className="flex items-center gap-2 flex-1 mr-2">
+                                                            <input
+                                                                type="text"
+                                                                value={groupName}
+                                                                onChange={(e) => {
+                                                                    const newName = e.target.value;
+                                                                    if (newName && !familyGroups[newName]) {
+                                                                        const newGroups = { ...familyGroups };
+                                                                        newGroups[newName] = sizes;
+                                                                        delete newGroups[groupName];
+                                                                        setFamilyGroups(newGroups);
+                                                                    }
+                                                                }}
+                                                                className="text-sm font-bold text-[#997B2C] bg-transparent border-0 focus:ring-2 focus:ring-[#D4AF37] rounded px-1 flex-1"
+                                                            />
+                                                            <span className="text-[10px] text-slate-400 capitalize">Mode Edit</span>
+                                                        </div>
                                                         <button
                                                             type="button"
                                                             onClick={() => {
@@ -1405,19 +1535,14 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                 delete newGroups[groupName];
                                                                 setFamilyGroups(newGroups);
                                                             }}
-                                                            className="text-red-500 hover:text-red-700 text-xs"
+                                                            className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
+                                                            title="Hapus grup"
                                                         >
-                                                            Hapus
+                                                            <X className="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                     <div className="flex flex-wrap gap-1">
-                                                        {/* Size preset buttons based on group type */}
-                                                        {(groupName.toLowerCase().includes('kid') || groupName.toLowerCase().includes('anak')
-                                                            ? FAMILY_SIZE_PRESETS.kid
-                                                            : groupName.toLowerCase().includes('baby') || groupName.toLowerCase().includes('bayi')
-                                                                ? FAMILY_SIZE_PRESETS.baby
-                                                                : FAMILY_SIZE_PRESETS.adult
-                                                        ).map(size => {
+                                                        {['S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'Allsize', 'Jumbo', '2', '4', '6', '8', '10', '12'].map(size => {
                                                             const isSelected = sizes.includes(size);
                                                             return (
                                                                 <button
@@ -1430,8 +1555,10 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                                 ? prev[groupName].filter(s => s !== size)
                                                                                 : [...prev[groupName], size]
                                                                         }));
+                                                                        // Sync name to variant label A, B, C on size selection
+                                                                        handleFamilyInteraction(groupName);
                                                                     }}
-                                                                    className={`px-2 py-1 rounded text-xs font-medium transition-all ${isSelected
+                                                                    className={`px-2 py-1 rounded text-xs font-semibold transition-all ${isSelected
                                                                         ? 'bg-[#997B2C] text-white'
                                                                         : 'bg-[#D4AF37]/10 text-[#997B2C] hover:bg-[#D4AF37]/20'
                                                                         }`}
@@ -1444,31 +1571,101 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                 </div>
                                             ))}
 
-                                            {/* Add New Group */}
-                                            <div className="flex flex-wrap gap-2">
-                                                {FAMILY_GROUP_PRESETS.filter(g => !familyGroups[g]).map(groupName => (
-                                                    <button
-                                                        key={groupName}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setFamilyGroups(prev => ({
-                                                                ...prev,
-                                                                [groupName]: [] // Start with empty sizes, user picks
-                                                            }));
-                                                        }}
-                                                        className="px-3 py-2 border-2 border-dashed border-[#D4AF37]/40 rounded-lg text-xs font-bold text-[#997B2C] hover:bg-[#D4AF37]/10 transition-all"
-                                                    >
-                                                        + {groupName}
-                                                    </button>
-                                                ))}
+                                            {/* Custom Group Adder */}
+                                            <div className="mt-4 flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Nama grup baru (cth: Abang)..."
+                                                    id="custom-group-input"
+                                                    className="flex-1 px-3 py-2 border border-[#D4AF37]/50 rounded-lg text-sm bg-white focus:ring-2 focus:ring-[#D4AF37]"
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            const val = (e.target as HTMLInputElement).value.trim();
+                                                            if (val && !familyGroups[val]) {
+                                                                setFamilyGroups(prev => ({ ...prev, [val]: [] }));
+                                                                handleFamilyInteraction(val); // Sync custom group
+                                                                (e.target as HTMLInputElement).value = '';
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const input = document.getElementById('custom-group-input') as HTMLInputElement;
+                                                        const val = input.value.trim();
+                                                        if (val && !familyGroups[val]) {
+                                                            setFamilyGroups(prev => ({ ...prev, [val]: [] }));
+                                                            handleFamilyInteraction(val); // Sync custom group
+                                                            input.value = '';
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 bg-[#997B2C] text-white rounded-lg text-sm font-bold hover:bg-[#D4AF37] transition-colors"
+                                                >
+                                                    + Tambah
+                                                </button>
                                             </div>
 
-                                            {/* Summary */}
+                                            {/* Presets Gallery */}
+                                            <div className="pt-3 border-t border-[#D4AF37]/10">
+                                                <p className="text-[10px] text-slate-400 mb-2">Preset Cepat:</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {FAMILY_GROUP_PRESETS.filter(g => !familyGroups[g]).map(groupName => (
+                                                        <button
+                                                            key={groupName}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setFamilyGroups(prev => ({
+                                                                    ...prev,
+                                                                    [groupName]: [] // Start with empty sizes
+                                                                }));
+                                                                handleFamilyInteraction(groupName); // Sync preset group
+                                                            }}
+                                                            className="px-2 py-1 border border-[#D4AF37]/30 rounded text-[10px] font-bold text-[#997B2C] hover:bg-[#D4AF37]/10 transition-all"
+                                                        >
+                                                            + {groupName}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Summary section moved inside the main family mode div */}
                                             {selectedSizes.length > 0 && (
-                                                <div className="text-xs text-[#997B2C] mt-2">
-                                                    📦 Total varian: <strong>{selectedSizes.length} size × {activeVariantLabels.length} warna = {selectedSizes.length * activeVariantLabels.length} kombinasi</strong>
+                                                <div className="text-xs text-[#997B2C] mt-2 bg-[#D4AF37]/10 p-2 rounded-lg border border-[#D4AF37]/20">
+                                                    👨‍👩‍👧‍👦 <strong>Mode Keluarga Aktif:</strong> {Object.keys(familyGroups).join(', ')}
+                                                    <br/>
+                                                    📦 Total varian: <strong>{selectedSizes.length} kombinasi (Grup × Size)</strong>
                                                 </div>
                                             )}
+                                        </div>
+                                    )}
+
+                                    {/* Variant Naming Section (Gallery Mode Only) */}
+                                    {uploadMode === 'gallery' && (
+                                        <div className="mt-6 p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
+                                            <h4 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
+                                                🏷️ Beri Nama Varian (Warna/Model)
+                                            </h4>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {activeVariantLabels.map((label) => (
+                                                    <div key={label} className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded-lg font-bold text-xs">
+                                                            {label}
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={variantNames[label] || ''}
+                                                            onChange={(e) => setVariantNames(prev => ({ ...prev, [label]: e.target.value }))}
+                                                            placeholder={`Nama varian ${label}...`}
+                                                            className="flex-1 px-3 py-1.5 border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <p className="text-[10px] text-blue-500 mt-2 italic text-center">
+                                                Note: Nama ini akan muncul di tombol pilihan pesanan dan laporan.
+                                            </p>
                                         </div>
                                     )}
                                 </div>
@@ -1547,33 +1744,96 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             </button>
                                             {showCostPerSize && (
                                                 <div className="space-y-2 mt-3 pt-3 border-t border-amber-200">
-                                                    {selectedSizes.map((size, sizeIndex) => (
-                                                        <div key={size} className="flex items-center gap-2">
-                                                            <input
-                                                                type="text"
-                                                                value={size}
-                                                                onChange={(e) => {
-                                                                    const newSizes = [...selectedSizes];
-                                                                    newSizes[sizeIndex] = e.target.value;
-                                                                    setSelectedSizes(newSizes);
-                                                                }}
-                                                                onFocus={(e) => e.target.select()}
-                                                                className="w-36 px-2 py-1 text-sm font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded focus:ring-2 focus:ring-amber-500"
-                                                            />
-                                                            <input
-                                                                type="text"
-                                                                inputMode="numeric"
-                                                                value={formatThousands(costPricePerSize[size] || uploadSettings.costPrice)}
-                                                                onChange={(e) => {
-                                                                    const val = parseFormattedNumber(e.target.value);
-                                                                    setCostPricePerSize(prev => ({ ...prev, [size]: val }));
-                                                                }}
-                                                                onFocus={(e) => e.target.select()}
-                                                                placeholder={formatThousands(uploadSettings.costPrice)}
-                                                                className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
-                                                            />
+                                                    {activeVariantLabels.length > 1 ? (
+                                                        <div className="overflow-x-auto pb-2">
+                                                            <table className="w-full mb-2">
+                                                                <thead>
+                                                                    <tr className="bg-amber-100">
+                                                                        <th className="p-3 text-left border border-amber-200 min-w-[80px] text-amber-900">Size</th>
+                                                                        {activeVariantLabels.map(label => (
+                                                                            <th key={label} className="p-3 text-center border border-amber-200 min-w-[80px] font-bold text-amber-900">{variantNames[label] || label}</th>
+                                                                        ))}
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {(() => {
+                                                                        const distinctSizes = familyMode 
+                                                                            ? Array.from(new Set(selectedSizes.map(s => getCleanSize(s))))
+                                                                            : selectedSizes;
+
+                                                                        return distinctSizes.map(cleanSize => (
+                                                                            <tr key={cleanSize}>
+                                                                                <td className="p-2 font-bold border border-amber-200 bg-amber-50/50">
+                                                                                    <div className="px-2 py-1 text-xs font-bold text-amber-900">
+                                                                                        {cleanSize}
+                                                                                    </div>
+                                                                                </td>
+                                                                                {activeVariantLabels.map(label => {
+                                                                                    const varName = variantNames[label] || label;
+                                                                                    const fullSize = familyMode 
+                                                                                        ? selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize)
+                                                                                        : cleanSize;
+                                                                                    
+                                                                                    if (familyMode && !fullSize) return <td key={`${cleanSize}-${label}`} className="p-2 border border-amber-200 bg-gray-50/50"></td>;
+
+                                                                                    const key = `${fullSize}-${label}`;
+                                                                                    return (
+                                                                                        <td key={key} className="p-2 border border-amber-200">
+                                                                                            <input
+                                                                                                type="text"
+                                                                                                inputMode="numeric"
+                                                                                                value={formatThousands(costPricePerSize[key] || uploadSettings.costPrice)}
+                                                                                                onChange={(e) => {
+                                                                                                    const val = parseFormattedNumber(e.target.value);
+                                                                                                    setCostPricePerSize(prev => ({ ...prev, [key]: val }));
+                                                                                                }}
+                                                                                                onFocus={(e) => e.target.select()}
+                                                                                                className="w-full px-2 py-3 text-center bg-white border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500 shadow-sm min-w-[90px] text-amber-900"
+                                                                                                placeholder={formatThousands(uploadSettings.costPrice)}
+                                                                                            />
+                                                                                        </td>
+                                                                                    );
+                                                                                })}
+                                                                            </tr>
+                                                                        ));
+                                                                    })()}
+                                                                </tbody>
+                                                            </table>
                                                         </div>
-                                                    ))}
+                                                    ) : (
+                                                        (() => {
+                                                            const distinctSizes = familyMode 
+                                                                ? Array.from(new Set(selectedSizes.map(s => getCleanSize(s))))
+                                                                : selectedSizes;
+                                                            
+                                                            return distinctSizes.map((cleanSizeOrSize) => {
+                                                                const displaySize = cleanSizeOrSize;
+                                                                const fullSizeRef = familyMode
+                                                                    ? selectedSizes.find(s => getCleanSize(s) === cleanSizeOrSize) || cleanSizeOrSize
+                                                                    : cleanSizeOrSize;
+
+                                                                return (
+                                                                    <div key={cleanSizeOrSize} className="flex items-center gap-2">
+                                                                        <div className="w-36 px-2 py-1 text-sm font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded truncate">
+                                                                            {displaySize}
+                                                                        </div>
+                                                                        <input
+                                                                            type="text"
+                                                                            inputMode="numeric"
+                                                                            value={formatThousands(costPricePerSize[fullSizeRef] || uploadSettings.costPrice)}
+                                                                            onChange={(e) => {
+                                                                                const val = parseFormattedNumber(e.target.value);
+                                                                                setCostPricePerSize(prev => ({ ...prev, [fullSizeRef]: val }));
+                                                                            }}
+                                                                            onFocus={(e) => e.target.select()}
+                                                                            placeholder={formatThousands(uploadSettings.costPrice)}
+                                                                            className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            });
+                                                        })()
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -1581,8 +1841,6 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 </div>
 
                                 {/* Expandable Price per Variant Matrix */}
-                                {/* Show when: multiple sizes OR showPricePerVariant is true (set from draft) */}
-                                {/* Always show container so user can toggle it */}
                                 <div className="mb-5 border border-[#D4AF37]/30 rounded-xl overflow-hidden bg-white shadow-sm">
                                     <button
                                         type="button"
@@ -1616,69 +1874,63 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             <tr className="bg-[#D4AF37]/10">
                                                                 <th className="p-3 text-left border border-[#D4AF37]/20 min-w-[80px] text-slate-900">Size</th>
                                                                 {activeVariantLabels.map(label => (
-                                                                    <th key={label} className="p-3 text-center border border-[#D4AF37]/20 min-w-[80px] font-bold text-slate-900">{label}</th>
+                                                                    <th key={label} className="p-3 text-center border border-[#D4AF37]/20 min-w-[80px] font-bold text-slate-900">{variantNames[label] || label}</th>
                                                                 ))}
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {selectedSizes.map((size, sizeIndex) => (
-                                                                <tr key={size}>
-                                                                    <td className="p-2 font-bold border border-[#D4AF37]/20 bg-slate-50">
-                                                                        <input
-                                                                            type="text"
-                                                                            value={size}
-                                                                            onChange={(e) => {
-                                                                                const newSizes = [...selectedSizes];
-                                                                                const oldSize = newSizes[sizeIndex];
-                                                                                const newSize = e.target.value;
-                                                                                newSizes[sizeIndex] = newSize;
-                                                                                setSelectedSizes(newSizes);
+                                                            {(() => {
+                                                                const distinctSizes = familyMode 
+                                                                    ? Array.from(new Set(selectedSizes.map(s => getCleanSize(s))))
+                                                                    : selectedSizes;
 
-                                                                                // Also update pricesPerVariant keys
-                                                                                const updatedPrices: typeof pricesPerVariant = {};
-                                                                                Object.entries(pricesPerVariant).forEach(([key, val]) => {
-                                                                                    const newKey = key.replace(`${oldSize}-`, `${newSize}-`);
-                                                                                    updatedPrices[newKey] = val;
-                                                                                });
-                                                                                setPricesPerVariant(updatedPrices);
-                                                                            }}
-                                                                            onFocus={(e) => e.target.select()}
-                                                                            className="w-full px-2 py-1 text-sm font-bold bg-transparent border-0 focus:ring-2 focus:ring-[#D4AF37] rounded min-w-[80px] text-slate-900"
-                                                                        />
-                                                                    </td>
-                                                                    {activeVariantLabels.map(label => {
-                                                                        const key = `${size}-${label}`;
-                                                                        return (
-                                                                            <td key={key} className="p-2 border border-[#D4AF37]/20">
-                                                                                <input
-                                                                                    type="text"
-                                                                                    inputMode="numeric"
-                                                                                    value={formatThousands(pricesPerVariant[key]?.retail || retailPrice)}
-                                                                                    onChange={(e) => {
-                                                                                        const val = parseFormattedNumber(e.target.value);
-                                                                                        setPricesPerVariant(prev => ({
-                                                                                            ...prev,
-                                                                                            [key]: {
-                                                                                                ...(prev[key] || { reseller: resellerPrice }),
-                                                                                                retail: val
-                                                                                            }
-                                                                                        }));
-                                                                                    }}
-                                                                                    onFocus={(e) => e.target.select()}
-                                                                                    className="w-full px-2 py-3 text-center bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-[#D4AF37] shadow-sm min-w-[90px] text-slate-900"
-                                                                                    placeholder="0"
-                                                                                />
-                                                                            </td>
-                                                                        );
-                                                                    })}
-                                                                </tr>
-                                                            ))}
+                                                                return distinctSizes.map(cleanSize => (
+                                                                    <tr key={cleanSize}>
+                                                                        <td className="p-2 font-bold border border-[#D4AF37]/20 bg-slate-50">
+                                                                            <div className="px-2 py-1 text-xs font-bold text-slate-900">
+                                                                                {cleanSize}
+                                                                            </div>
+                                                                        </td>
+                                                                        {activeVariantLabels.map(label => {
+                                                                            const varName = variantNames[label] || label;
+                                                                            const fullSize = familyMode 
+                                                                                ? selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize)
+                                                                                : cleanSize;
+                                                                            
+                                                                            if (familyMode && !fullSize) return <td key={`${cleanSize}-${label}`} className="p-2 border border-[#D4AF37]/20 bg-gray-50/50"></td>;
+
+                                                                            const key = `${fullSize}-${label}`;
+                                                                            return (
+                                                                                <td key={key} className="p-2 border border-[#D4AF37]/20">
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        inputMode="numeric"
+                                                                                        value={formatThousands(pricesPerVariant[key]?.retail || retailPrice)}
+                                                                                        onChange={(e) => {
+                                                                                            const val = parseFormattedNumber(e.target.value);
+                                                                                            setPricesPerVariant(prev => ({
+                                                                                                ...prev,
+                                                                                                [key]: {
+                                                                                                    ...(prev[key] || { reseller: resellerPrice }),
+                                                                                                    retail: val
+                                                                                                }
+                                                                                            }));
+                                                                                        }}
+                                                                                        onFocus={(e) => e.target.select()}
+                                                                                        className="w-full px-2 py-3 text-center bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-[#D4AF37] shadow-sm min-w-[90px] text-slate-900"
+                                                                                        placeholder="0"
+                                                                                    />
+                                                                                </td>
+                                                                            );
+                                                                        })}
+                                                                    </tr>
+                                                                ));
+                                                            })()}
                                                         </tbody>
                                                     </table>
                                                 </div>
                                             </div>
 
-                                            {/* Reseller Price Matrix */}
                                             {/* Reseller Price Matrix */}
                                             <div>
                                                 <h4 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
@@ -1691,63 +1943,58 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                             <tr className="bg-[#997B2C]/10">
                                                                 <th className="p-3 text-left border border-[#997B2C]/20 min-w-[80px] text-slate-900">Size</th>
                                                                 {activeVariantLabels.map(label => (
-                                                                    <th key={label} className="p-3 text-center border border-[#997B2C]/20 min-w-[80px] font-bold text-slate-900">{label}</th>
+                                                                    <th key={label} className="p-3 text-center border border-[#997B2C]/20 min-w-[80px] font-bold text-slate-900">{variantNames[label] || label}</th>
                                                                 ))}
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {selectedSizes.map((size, sizeIndex) => (
-                                                                <tr key={size}>
-                                                                    <td className="p-2 font-bold border border-[#997B2C]/20 bg-slate-50">
-                                                                        <input
-                                                                            type="text"
-                                                                            value={size}
-                                                                            onChange={(e) => {
-                                                                                const newSizes = [...selectedSizes];
-                                                                                const oldSize = newSizes[sizeIndex];
-                                                                                const newSize = e.target.value;
-                                                                                newSizes[sizeIndex] = newSize;
-                                                                                setSelectedSizes(newSizes);
+                                                            {(() => {
+                                                                const distinctSizes = familyMode 
+                                                                    ? Array.from(new Set(selectedSizes.map(s => getCleanSize(s))))
+                                                                    : selectedSizes;
 
-                                                                                // Also update pricesPerVariant keys
-                                                                                const updatedPrices: typeof pricesPerVariant = {};
-                                                                                Object.entries(pricesPerVariant).forEach(([key, val]) => {
-                                                                                    const newKey = key.replace(`${oldSize}-`, `${newSize}-`);
-                                                                                    updatedPrices[newKey] = val;
-                                                                                });
-                                                                                setPricesPerVariant(updatedPrices);
-                                                                            }}
-                                                                            onFocus={(e) => e.target.select()}
-                                                                            className="w-full px-2 py-1 text-sm font-bold bg-transparent border-0 focus:ring-2 focus:ring-[#997B2C] rounded min-w-[80px] text-slate-900"
-                                                                        />
-                                                                    </td>
-                                                                    {activeVariantLabels.map(label => {
-                                                                        const key = `${size}-${label}`;
-                                                                        return (
-                                                                            <td key={key} className="p-2 border border-[#997B2C]/20">
-                                                                                <input
-                                                                                    type="text"
-                                                                                    inputMode="numeric"
-                                                                                    value={formatThousands(pricesPerVariant[key]?.reseller || resellerPrice)}
-                                                                                    onChange={(e) => {
-                                                                                        const val = parseFormattedNumber(e.target.value);
-                                                                                        setPricesPerVariant(prev => ({
-                                                                                            ...prev,
-                                                                                            [key]: {
-                                                                                                ...(prev[key] || { retail: retailPrice }),
-                                                                                                reseller: val
-                                                                                            }
-                                                                                        }));
-                                                                                    }}
-                                                                                    onFocus={(e) => e.target.select()}
-                                                                                    className="w-full px-2 py-3 text-center bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-[#997B2C] shadow-sm min-w-[90px] text-slate-900"
-                                                                                    placeholder="0"
-                                                                                />
-                                                                            </td>
-                                                                        );
-                                                                    })}
-                                                                </tr>
-                                                            ))}
+                                                                return distinctSizes.map(cleanSize => (
+                                                                    <tr key={cleanSize}>
+                                                                        <td className="p-2 font-bold border border-[#997B2C]/20 bg-slate-50">
+                                                                            <div className="px-2 py-1 text-xs font-bold text-slate-900">
+                                                                                {cleanSize}
+                                                                            </div>
+                                                                        </td>
+                                                                        {activeVariantLabels.map(label => {
+                                                                            const varName = variantNames[label] || label;
+                                                                            const fullSize = familyMode 
+                                                                                ? selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize)
+                                                                                : cleanSize;
+                                                                            
+                                                                            if (familyMode && !fullSize) return <td key={`${cleanSize}-${label}`} className="p-2 border border-[#997B2C]/20 bg-gray-50/50"></td>;
+
+                                                                            const key = `${fullSize}-${label}`;
+                                                                            return (
+                                                                                <td key={key} className="p-2 border border-[#997B2C]/20">
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        inputMode="numeric"
+                                                                                        value={formatThousands(pricesPerVariant[key]?.reseller || resellerPrice)}
+                                                                                        onChange={(e) => {
+                                                                                            const val = parseFormattedNumber(e.target.value);
+                                                                                            setPricesPerVariant(prev => ({
+                                                                                                ...prev,
+                                                                                                [key]: {
+                                                                                                    ...(prev[key] || { retail: retailPrice }),
+                                                                                                    reseller: val
+                                                                                                }
+                                                                                            }));
+                                                                                        }}
+                                                                                        onFocus={(e) => e.target.select()}
+                                                                                        className="w-full px-2 py-3 text-center bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-[#997B2C] shadow-sm min-w-[90px] text-slate-900"
+                                                                                        placeholder="0"
+                                                                                    />
+                                                                                </td>
+                                                                            );
+                                                                        })}
+                                                                    </tr>
+                                                                ));
+                                                            })()}
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -1882,30 +2129,133 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
 
 
-                            {/* Auto-Generated Collage Preview HILANG - Diganti total oleh InteractiveCropper */}
+                            {/* Auto-Generated Collage Preview (Moved to Bottom) */}
+                            {images.length > 0 && uploadMode === 'collage' && (
+                                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200 mb-6">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="font-medium text-purple-700 mx-auto">🖼️ Preview Collage (Auto)</h3>
+                                        <button 
+                                            onClick={() => setPanOffsets({})}
+                                            className="text-[10px] text-purple-500 hover:text-purple-700 font-bold border border-purple-200 px-2 py-1 rounded-lg transition-colors"
+                                        >
+                                            Reset Pan
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="aspect-[3/4] w-full max-w-xs mx-auto bg-white rounded-xl overflow-hidden border-2 border-purple-300 shadow-xl relative group touch-none select-none">
+                                        {/* CSS PROXY VISUAL LAYER + INTERACTIVE PAN LAYER */}
+                                        {images.length > 0 && (
+                                            <div className="absolute inset-0 z-10">
+                                                {(() => {
+                                                    const layout = collageService.calculateLayout(images.length, 1500, 2000);
+                                                    return layout.map((box, idx) => {
+                                                        const left = (box.x / 1500) * 100 + '%';
+                                                        const top = (box.y / 2000) * 100 + '%';
+                                                        const width = (box.w / 1500) * 100 + '%';
+                                                        const height = (box.h / 2000) * 100 + '%';
+                                                        const panY = panOffsets[idx] || 0;
+                                                        
+                                                        return (
+                                                            <div 
+                                                                key={idx}
+                                                                className="absolute cursor-ns-resize border border-white/20 hover:border-purple-400 active:border-purple-600 active:ring-2 active:ring-purple-300 transition-all group/cell overflow-hidden bg-gray-100"
+                                                                style={{ 
+                                                                    left, top, width, height, 
+                                                                    backgroundImage: `url(${imagePreviews[idx]})`,
+                                                                    backgroundSize: 'cover',
+                                                                    backgroundPosition: `center ${panY * 100}%`,
+                                                                    backgroundRepeat: 'no-repeat',
+                                                                    touchAction: 'none'
+                                                                }}
+                                                                onMouseDown={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    const startY = e.clientY;
+                                                                    const startPan = panOffsets[idx] || 0;
+                                                                    
+                                                                    const onMouseMove = (moveEvent: MouseEvent) => {
+                                                                        const deltaY = moveEvent.clientY - startY;
+                                                                        // Dragging UP (deltaY < 0) should INCREASE panY (show more bottom)
+                                                                        const nextPan = Math.max(0, Math.min(1, startPan - (deltaY / 250)));
+                                                                        setPanOffsets(prev => ({ ...prev, [idx]: nextPan }));
+                                                                    };
+                                                                    
+                                                                    const onMouseUp = () => {
+                                                                        window.removeEventListener('mousemove', onMouseMove);
+                                                                        window.removeEventListener('mouseup', onMouseUp);
+                                                                    };
+                                                                    
+                                                                    window.addEventListener('mousemove', onMouseMove);
+                                                                    window.addEventListener('mouseup', onMouseUp);
+                                                                }}
+                                                                onTouchStart={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    const startY = e.touches[0].clientY;
+                                                                    const startPan = panOffsets[idx] || 0;
+                                                                    
+                                                                    const onTouchMove = (moveEvent: TouchEvent) => {
+                                                                        const deltaY = moveEvent.touches[0].clientY - startY;
+                                                                        const nextPan = Math.max(0, Math.min(1, startPan - (deltaY / 250)));
+                                                                        setPanOffsets(prev => ({ ...prev, [idx]: nextPan }));
+                                                                    };
+                                                                    
+                                                                    const onTouchEnd = () => {
+                                                                        window.removeEventListener('touchmove', onTouchMove);
+                                                                        window.removeEventListener('touchend', onTouchEnd);
+                                                                    };
+                                                                    
+                                                                    window.addEventListener('touchmove', onTouchMove);
+                                                                    window.addEventListener('touchend', onTouchEnd);
+                                                                }}
+                                                            >
+                                                                {/* Grid Hint / Variant Label */}
+                                                                <div className="absolute top-1 left-1 bg-black/40 text-[10px] text-white px-1.5 py-0.5 rounded backdrop-blur-sm opacity-60 group-hover/cell:opacity-100 transition-opacity">
+                                                                    {variantLabels[idx]}
+                                                                </div>
+
+                                                                {/* Hover Guide */}
+                                                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/40 to-transparent h-8 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity">
+                                                                    <div className="text-white text-[10px] flex items-center gap-1 font-bold">
+                                                                        <ChevronUp className="w-3 h-3" />
+                                                                        GESER
+                                                                        <ChevronDown className="w-3 h-3" />
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Loading Overlay (When Regenerating Main Canvas) */}
+                                                                {isGeneratingCollage && (
+                                                                    <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px] flex items-center justify-center">
+                                                                        <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    });
+                                                })()}
+                                            </div>
+                                        )}
+
+                                        {/* Main images fallback if layout fails */}
+                                        {images.length === 0 && (
+                                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                <X className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                                <p className="text-xs">No preview</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p className="text-[10px] text-center text-purple-400 mt-2 font-medium">
+                                        💡 Klik & tahan pada gambar di atas untuk <strong>menggeser (pan)</strong> posisi
+                                    </p>
+                                </div>
+                            )}
 
                             {/* Go to Preview Button */}
-                            {images.length > 0 && (
+                            {((uploadMode === 'collage' && images.length > 0 && collageBlob) || (uploadMode === 'gallery' && images.length > 0)) && (
                                 <button
-                                    onClick={async () => {
-                                        // GENERATE FINAL PREVIEW HERE SO STEP 2 SHOWS EDITED VERSION!
-                                        setIsGeneratingCollage(true);
-                                        try {
-                                            if (uploadMode === 'collage') {
-                                                const labels = getCalculatedLabels(images.length, isVariant);
-                                                const blob = await collageService.generateCollage(images, labels, cropOffsets, cropScales);
-                                                setCollageBlob(blob);
-                                                setCollagePreview(URL.createObjectURL(blob));
-                                            }
-                                        } catch (error) {
-                                            console.error("Gagal buat preview:", error);
-                                        } finally {
-                                            setIsGeneratingCollage(false);
-                                            setStep('details');
-                                        }
-                                    }}
+                                    onClick={() => setStep('details')}
                                     disabled={isGeneratingCollage || !productFormData.name}
-                                    className={`w-full mt-6 py-3 text-white rounded-xl font-semibold transition-all disabled:opacity-50 ${uploadMode === 'collage' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'}`}
+                                    className={`w-full py-3 text-white rounded-xl font-semibold transition-all disabled:opacity-50 ${uploadMode === 'collage' ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'}`}
                                 >
                                     {isGeneratingCollage ? (
                                         <span className="flex items-center justify-center gap-2">
@@ -2059,7 +2409,7 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                     <div>
                                         <label className="block text-xs font-bold text-gray-600 mb-1">Size</label>
                                         <div className="flex flex-wrap gap-2">
-                                            {SIZE_PRESETS.map(size => (
+                                            {availableSizes.map(size => (
                                                 <button
                                                     key={size}
                                                     onClick={() => {
@@ -2112,23 +2462,96 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                             </button>
                                             {showCostPerSize && (
                                                 <div className="space-y-2 mt-3 pt-3 border-t border-amber-200">
-                                                    {selectedSizes.map(size => (
-                                                        <div key={size} className="flex items-center gap-2">
-                                                            <span className="text-sm font-medium text-amber-700 w-28 truncate">{size}:</span>
-                                                            <input
-                                                                type="text"
-                                                                inputMode="numeric"
-                                                                value={formatThousands(costPricePerSize[size] || uploadSettings.costPrice)}
-                                                                onChange={(e) => {
-                                                                    const val = parseFormattedNumber(e.target.value);
-                                                                    setCostPricePerSize(prev => ({ ...prev, [size]: val }));
-                                                                }}
-                                                                onFocus={(e) => e.target.select()}
-                                                                placeholder={formatThousands(uploadSettings.costPrice)}
-                                                                className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
-                                                            />
+                                                    {activeVariantLabels.length > 1 ? (
+                                                        <div className="overflow-x-auto pb-2">
+                                                            <table className="w-full mb-2">
+                                                                <thead>
+                                                                    <tr className="bg-amber-100">
+                                                                        <th className="p-3 text-left border border-amber-200 min-w-[80px] text-amber-900">Size</th>
+                                                                        {activeVariantLabels.map(label => (
+                                                                            <th key={label} className="p-3 text-center border border-amber-200 min-w-[80px] font-bold text-amber-900">{variantNames[label] || label}</th>
+                                                                        ))}
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {(() => {
+                                                                        const distinctSizes = familyMode 
+                                                                            ? Array.from(new Set(selectedSizes.map(s => getCleanSize(s))))
+                                                                            : selectedSizes;
+
+                                                                        return distinctSizes.map(cleanSize => (
+                                                                            <tr key={cleanSize}>
+                                                                                <td className="p-2 font-bold border border-amber-200 bg-amber-50/50">
+                                                                                    <div className="px-2 py-1 text-xs font-bold text-amber-900">
+                                                                                        {cleanSize}
+                                                                                    </div>
+                                                                                </td>
+                                                                                {activeVariantLabels.map(label => {
+                                                                                    const varName = variantNames[label] || label;
+                                                                                    const fullSize = familyMode 
+                                                                                        ? selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize)
+                                                                                        : cleanSize;
+                                                                                    
+                                                                                    if (familyMode && !fullSize) return <td key={`${cleanSize}-${label}`} className="p-2 border border-amber-200 bg-gray-50/50"></td>;
+
+                                                                                    const key = `${fullSize}-${label}`;
+                                                                                    return (
+                                                                                        <td key={key} className="p-2 border border-amber-200">
+                                                                                            <input
+                                                                                                type="text"
+                                                                                                inputMode="numeric"
+                                                                                                value={formatThousands(costPricePerSize[key] || uploadSettings.costPrice)}
+                                                                                                onChange={(e) => {
+                                                                                                    const val = parseFormattedNumber(e.target.value);
+                                                                                                    setCostPricePerSize(prev => ({ ...prev, [key]: val }));
+                                                                                                }}
+                                                                                                onFocus={(e) => e.target.select()}
+                                                                                                className="w-full px-2 py-3 text-center bg-white border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500 shadow-sm min-w-[90px] text-amber-900"
+                                                                                                placeholder={formatThousands(uploadSettings.costPrice)}
+                                                                                            />
+                                                                                        </td>
+                                                                                    );
+                                                                                })}
+                                                                            </tr>
+                                                                        ));
+                                                                    })()}
+                                                                </tbody>
+                                                            </table>
                                                         </div>
-                                                    ))}
+                                                    ) : (
+                                                        (() => {
+                                                            const distinctSizes = familyMode 
+                                                                ? Array.from(new Set(selectedSizes.map(s => getCleanSize(s))))
+                                                                : selectedSizes;
+                                                            
+                                                            return distinctSizes.map((cleanSizeOrSize) => {
+                                                                const displaySize = cleanSizeOrSize;
+                                                                const fullSizeRef = familyMode
+                                                                    ? selectedSizes.find(s => getCleanSize(s) === cleanSizeOrSize) || cleanSizeOrSize
+                                                                    : cleanSizeOrSize;
+
+                                                                return (
+                                                                    <div key={cleanSizeOrSize} className="flex items-center gap-2">
+                                                                        <div className="w-36 px-2 py-1 text-sm font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded truncate">
+                                                                            {displaySize}
+                                                                        </div>
+                                                                        <input
+                                                                            type="text"
+                                                                            inputMode="numeric"
+                                                                            value={formatThousands(costPricePerSize[fullSizeRef] || uploadSettings.costPrice)}
+                                                                            onChange={(e) => {
+                                                                                const val = parseFormattedNumber(e.target.value);
+                                                                                setCostPricePerSize(prev => ({ ...prev, [fullSizeRef]: val }));
+                                                                            }}
+                                                                            onFocus={(e) => e.target.select()}
+                                                                            placeholder={formatThousands(uploadSettings.costPrice)}
+                                                                            className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            });
+                                                        })()
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -2191,40 +2614,50 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     <tr className="bg-[#D4AF37]/20">
                                                                         <th className="px-2 py-1 text-left border border-green-100">Size</th>
                                                                         {activeVariantLabels.map(label => (
-                                                                            <th key={label} className="px-2 py-1 text-center border border-green-100">{label}</th>
+                                                                            <th key={label} className="px-2 py-1 text-center border border-green-100">{variantNames[label] || label}</th>
                                                                         ))}
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
-                                                                    {selectedSizes.map(size => (
-                                                                        <tr key={size}>
-                                                                            <td className="px-2 py-1 font-bold border border-green-100">{size}</td>
-                                                                            {activeVariantLabels.map(label => {
-                                                                                const key = `${size}-${label}`;
-                                                                                return (
-                                                                                    <td key={key} className="px-2 py-2 border border-green-100 min-w-[95px]">
-                                                                                        <input
-                                                                                            type="text"
-                                                                                            inputMode="numeric"
-                                                                                            value={formatThousands(pricesPerVariant[key]?.retail || retailPrice)}
-                                                                                            onChange={(e) => {
-                                                                                                const val = parseFormattedNumber(e.target.value);
-                                                                                                setPricesPerVariant(prev => ({
-                                                                                                    ...prev,
-                                                                                                    [key]: {
-                                                                                                        ...(prev[key] || { reseller: resellerPrice }),
-                                                                                                        retail: val
-                                                                                                    }
-                                                                                                }));
-                                                                                            }}
-                                                                                            onFocus={(e) => e.target.select()}
-                                                                                            className="w-full px-2 py-2 text-center bg-white border border-[#D4AF37]/30 rounded text-sm font-medium focus:ring-2 focus:ring-[#D4AF37]"
-                                                                                        />
-                                                                                    </td>
-                                                                                );
-                                                                            })}
-                                                                        </tr>
-                                                                    ))}
+                                                                    {(() => {
+                                                                        const uniqueSizes = Array.from(new Set(selectedSizes.map(s => getCleanSize(s))));
+                                                                        return uniqueSizes.map(cleanSize => (
+                                                                            <tr key={cleanSize}>
+                                                                                <td className="px-2 py-1 font-bold border border-green-100">{cleanSize}</td>
+                                                                                {activeVariantLabels.map(label => {
+                                                                                    const varName = variantNames[label] || label;
+                                                                                    const fullSize = familyMode
+                                                                                        ? selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize)
+                                                                                        : cleanSize;
+                                                                                    
+                                                                                    if (familyMode && !fullSize) return <td key={`${cleanSize}-${label}`} className="px-2 py-2 border border-green-100 bg-gray-50/50"></td>;
+                                                                                    
+                                                                                    const key = `${fullSize}-${label}`;
+                                                                                    return (
+                                                                                        <td key={key} className="px-2 py-2 border border-green-100 min-w-[95px]">
+                                                                                            <input
+                                                                                                type="text"
+                                                                                                inputMode="numeric"
+                                                                                                value={formatThousands(pricesPerVariant[key]?.retail || retailPrice)}
+                                                                                                onChange={(e) => {
+                                                                                                    const val = parseFormattedNumber(e.target.value);
+                                                                                                    setPricesPerVariant(prev => ({
+                                                                                                        ...prev,
+                                                                                                        [key]: {
+                                                                                                            ...(prev[key] || { reseller: resellerPrice }),
+                                                                                                            retail: val
+                                                                                                        }
+                                                                                                    }));
+                                                                                                }}
+                                                                                                onFocus={(e) => e.target.select()}
+                                                                                                className="w-full px-2 py-2 text-center bg-white border border-[#D4AF37]/30 rounded text-sm font-medium focus:ring-2 focus:ring-[#D4AF37]"
+                                                                                            />
+                                                                                        </td>
+                                                                                    );
+                                                                                })}
+                                                                            </tr>
+                                                                        ));
+                                                                    })()}
                                                                 </tbody>
                                                             </table>
                                                         </div>
@@ -2239,40 +2672,50 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     <tr className="bg-[#D4AF37]/20">
                                                                         <th className="px-2 py-2 text-left border border-blue-100 font-bold">Size</th>
                                                                         {activeVariantLabels.map(label => (
-                                                                            <th key={label} className="px-2 py-2 text-center border border-blue-100 font-bold min-w-[80px]">{label}</th>
+                                                                            <th key={label} className="px-2 py-2 text-center border border-blue-100 font-bold min-w-[80px]">{variantNames[label] || label}</th>
                                                                         ))}
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
-                                                                    {selectedSizes.map(size => (
-                                                                        <tr key={size}>
-                                                                            <td className="px-2 py-2 font-bold border border-blue-100">{size}</td>
-                                                                            {activeVariantLabels.map(label => {
-                                                                                const key = `${size}-${label}`;
-                                                                                return (
-                                                                                    <td key={key} className="px-2 py-2 border border-blue-100 min-w-[95px]">
-                                                                                        <input
-                                                                                            type="text"
-                                                                                            inputMode="numeric"
-                                                                                            value={formatThousands(pricesPerVariant[key]?.reseller || resellerPrice)}
-                                                                                            onChange={(e) => {
-                                                                                                const val = parseFormattedNumber(e.target.value);
-                                                                                                setPricesPerVariant(prev => ({
-                                                                                                    ...prev,
-                                                                                                    [key]: {
-                                                                                                        ...(prev[key] || { retail: retailPrice }),
-                                                                                                        reseller: val
-                                                                                                    }
-                                                                                                }));
-                                                                                            }}
-                                                                                            onFocus={(e) => e.target.select()}
-                                                                                            className="w-full px-2 py-2 text-center bg-white border border-[#D4AF37]/30 rounded text-sm font-medium focus:ring-2 focus:ring-[#D4AF37]"
-                                                                                        />
-                                                                                    </td>
-                                                                                );
-                                                                            })}
-                                                                        </tr>
-                                                                    ))}
+                                                                    {(() => {
+                                                                        const uniqueSizes = Array.from(new Set(selectedSizes.map(s => getCleanSize(s))));
+                                                                        return uniqueSizes.map(cleanSize => (
+                                                                            <tr key={cleanSize}>
+                                                                                <td className="px-2 py-2 font-bold border border-blue-100">{cleanSize}</td>
+                                                                                {activeVariantLabels.map(label => {
+                                                                                    const varName = variantNames[label] || label;
+                                                                                    const fullSize = familyMode
+                                                                                        ? selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize)
+                                                                                        : cleanSize;
+                                                                                    
+                                                                                    if (familyMode && !fullSize) return <td key={`${cleanSize}-${label}`} className="px-1 py-1 border border-blue-100 bg-gray-50/50"></td>;
+                                                                                    
+                                                                                    const key = `${fullSize}-${label}`;
+                                                                                    return (
+                                                                                        <td key={key} className="px-2 py-2 border border-blue-100 min-w-[95px]">
+                                                                                            <input
+                                                                                                type="text"
+                                                                                                inputMode="numeric"
+                                                                                                value={formatThousands(pricesPerVariant[key]?.reseller || resellerPrice)}
+                                                                                                onChange={(e) => {
+                                                                                                    const val = parseFormattedNumber(e.target.value);
+                                                                                                    setPricesPerVariant(prev => ({
+                                                                                                        ...prev,
+                                                                                                        [key]: {
+                                                                                                            ...(prev[key] || { retail: retailPrice }),
+                                                                                                            reseller: val
+                                                                                                        }
+                                                                                                    }));
+                                                                                                }}
+                                                                                                onFocus={(e) => e.target.select()}
+                                                                                                className="w-full px-2 py-2 text-center bg-white border border-[#D4AF37]/30 rounded text-sm font-medium focus:ring-2 focus:ring-[#D4AF37]"
+                                                                                            />
+                                                                                        </td>
+                                                                                    );
+                                                                                })}
+                                                                            </tr>
+                                                                        ));
+                                                                    })()}
                                                                 </tbody>
                                                             </table>
                                                         </div>
@@ -2319,23 +2762,26 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                     <tr className="bg-purple-100">
                                                         <th className="px-2 py-1 text-left font-semibold text-purple-800 rounded-tl-lg sticky left-0 z-10 bg-purple-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">Size</th>
                                                         {activeVariantLabels.map((label) => (
-                                                            <th key={label} className="px-1 py-1 text-center font-bold text-purple-700 min-w-[35px] text-xs">{label}</th>
+                                                            <th key={label} className="px-1 py-1 text-center font-bold text-purple-700 min-w-[35px] text-xs">{variantNames[label] || label}</th>
                                                         ))}
                                                         <th className="px-2 py-1 text-center font-semibold text-purple-800 rounded-tr-lg text-xs">Total</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {selectedSizes.map((size) => {
-                                                        const sizeTotal = activeVariantLabels.reduce((sum, label) => {
-                                                            const key = `${size}-${label}`;
-                                                            return sum + parseInt(productFormData.stockPerVariant[key] || String(uploadSettings.stockPerVariant) || '0');
-                                                        }, 0);
-
-                                                        return (
-                                                            <tr key={size} className="border-b border-gray-200">
-                                                                <td className="px-2 py-1 font-semibold text-gray-700 bg-purple-50 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">{size}</td>
+                                                    {(() => {
+                                                        const uniqueSizes = Array.from(new Set(selectedSizes.map(s => getCleanSize(s))));
+                                                        return uniqueSizes.map(cleanSize => (
+                                                            <tr key={cleanSize} className="border-b border-gray-200">
+                                                                <td className="px-2 py-1 font-semibold text-gray-700 bg-purple-50 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-xs">{cleanSize}</td>
                                                                 {activeVariantLabels.map((label) => {
-                                                                    const key = `${size}-${label}`;
+                                                                    const varName = variantNames[label] || label;
+                                                                    const fullSize = familyMode
+                                                                        ? selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize)
+                                                                        : cleanSize;
+                                                                    
+                                                                    if (familyMode && !fullSize) return <td key={`${cleanSize}-${label}`} className="px-0 py-1 border border-purple-50 bg-gray-50/50"></td>;
+
+                                                                    const key = `${fullSize}-${label}`;
                                                                     const defaultValue = uploadSettings.stockPerVariant || 0;
                                                                     const currentValue = productFormData.stockPerVariant[key];
 
@@ -2360,11 +2806,17 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                                                     );
                                                                 })}
                                                                 <td className="px-3 py-2 text-center font-bold text-purple-700 bg-purple-50">
-                                                                    {sizeTotal}
+                                                                    {activeVariantLabels.reduce((sum, label) => {
+                                                                        const varName = variantNames[label] || label;
+                                                                        const fullSize = selectedSizes.find(s => s.startsWith(varName) && getCleanSize(s) === cleanSize);
+                                                                        if (!fullSize) return sum;
+                                                                        const key = `${fullSize}-${label}`;
+                                                                        return sum + parseInt(productFormData.stockPerVariant[key] || String(uploadSettings.stockPerVariant) || '0');
+                                                                    }, 0)}
                                                                 </td>
                                                             </tr>
-                                                        );
-                                                    })}
+                                                        ));
+                                                    })()}
                                                 </tbody>
                                                 <tfoot>
                                                     <tr className="bg-green-100">
@@ -2406,21 +2858,17 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                                 </button>
                                 <button
                                     onClick={handleSubmit}
-                                    disabled={isGeneratingCollage}
-                                    className={`flex-1 py-3 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${isGeneratingCollage ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'}`}
+                                    className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all flex items-center justify-center gap-2"
                                 >
-                                    {isGeneratingCollage ? (
-                                        <>Membuat Pas Foto...</>
-                                    ) : (
-                                        <><Check className="w-5 h-5" /> Upload Produk</>
-                                    )}
+                                    <Check className="w-5 h-5" />
+                                    Upload Produk
                                 </button>
                             </div>
                         </div>
                     )}
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 };
 

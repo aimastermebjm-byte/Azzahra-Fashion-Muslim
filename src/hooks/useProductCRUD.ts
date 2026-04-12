@@ -114,6 +114,8 @@ export const useProductCRUD = (): UseProductCRUDResult => {
         ...(productData.pricesPerVariant ? { pricesPerVariant: productData.pricesPerVariant } : {}),
         ...(productData.costPricePerSize ? { costPricePerSize: productData.costPricePerSize } : {}),
         ...(productData.variantNames ? { variantNames: productData.variantNames } : {}),
+        // NEW: Gallery Mode variant-to-image mapping
+        ...(productData.variantImageIndices ? { variantImageIndices: productData.variantImageIndices } : {}),
         // NEW: Save initial stock for PO products (used by Goods Receipt to calculate sold qty)
         ...((productData.status === 'po' || productData.status === 'PO') ? {
           initialStock: (typeof productData.variants?.stock === 'object' && productData.variants.stock !== null) ? JSON.parse(JSON.stringify(productData.variants.stock)) : {},

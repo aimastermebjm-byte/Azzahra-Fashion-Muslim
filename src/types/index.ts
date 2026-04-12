@@ -48,6 +48,9 @@ export interface Product {
 
   // Virtual Discount System
   collectionId?: string; // ID of collection this product belongs to (for virtual discount)
+
+  // Gallery Mode: Mapping variant label → image index (e.g. { "A": 0, "B": 1 })
+  variantImageIndices?: Record<string, number>;
 };
 
 // Product interface untuk produk individual (legacy - digunakan jika perlu

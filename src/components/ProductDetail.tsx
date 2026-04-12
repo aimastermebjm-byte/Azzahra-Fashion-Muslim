@@ -42,6 +42,29 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const { showToast } = useToast();
 
+  // 🔥 GLOBAL STATE: 0 reads untuk product data
+  const { getProductById } = useGlobalProducts();
+
+  const currentProduct = useMemo(() => {
+    const globalProduct = getProductById(initialProduct.id);
+
+    // 🔥 FIX: Merge global product with initialProduct to preserve Flash Sale data
+    // initialProduct may have isFlashSale=true from FlashSalePage, but global doesn't have it
+    if (globalProduct) {
+      return {
+        ...globalProduct,
+        // 🔥 FIX: Preserve variants/prices if missing in globalProduct but present in initialProduct
+        variants: globalProduct.variants || initialProduct.variants || {},
+        pricesPerVariant: (globalProduct as any).pricesPerVariant || (initialProduct as any).pricesPerVariant || undefined,
+
+        // Preserve Flash Sale data from initialProduct (source of truth for Flash Sale)
+        isFlashSale: initialProduct.isFlashSale || globalProduct.isFlashSale || false,
+        flashSalePrice: initialProduct.flashSalePrice || globalProduct.flashSalePrice || 0,
+      } as Product;
+    }
+    return initialProduct as Product;
+  }, [initialProduct, getProductById]);
+
   // Initialize selected image to the main image
   useEffect(() => {
     if (initialProduct.images && initialProduct.image) {
@@ -120,6 +143,45 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
+
+  // 🔥 ROBUST: Compute effective image indices with fallback
+  const effectiveImageIndices = useMemo(() => {
+    const productAny = currentProduct as any;
+    // Priority 1: Use saved variantImageIndices
+    if (productAny.variantImageIndices) return productAny.variantImageIndices;
+
+    // Priority 2: Fallback - compute from variants.colors + images
+    const hasNames = productAny.variants?.names || productAny.variantNames;
+    if (!hasNames || !currentProduct.images || currentProduct.images.length <= 1) return null;
+
+    const colors = currentProduct.variants?.colors || [];
+    if (colors.length === 0) return null;
+
+    const mapping: Record<string, number> = {};
+    colors.forEach((color: string, idx: number) => {
+      if (currentProduct.images.length === colors.length) {
+        mapping[color] = idx;
+      } else {
+        mapping[color] = Math.min(idx + 1, currentProduct.images.length - 1);
+      }
+    });
+
+    return Object.keys(mapping).length > 0 ? mapping : null;
+  }, [currentProduct]);
+
+  // 🔥 Sync image index with selected variant (Gallery Mode Support)
+  useEffect(() => {
+    if (selectedColor && effectiveImageIndices) {
+      const variantImageIndex = effectiveImageIndices[selectedColor];
+      if (variantImageIndex !== undefined && variantImageIndex !== null) {
+        const idx = Number(variantImageIndex);
+        if (currentProduct.images?.[idx]) {
+          console.log(`🖼️ Variant selected: ${selectedColor}, switching to image index: ${idx}`);
+          setSelectedImageIndex(idx);
+        }
+      }
+    }
+  }, [selectedColor, effectiveImageIndices]);
 
   // Zoom handlers
   const handleZoomOpen = useCallback(() => {
@@ -239,28 +301,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     }
   }, []);
 
-  // 🔥 GLOBAL STATE: 0 reads untuk product data
-  const { getProductById } = useGlobalProducts();
-
-  const currentProduct = useMemo(() => {
-    const globalProduct = getProductById(initialProduct.id);
-
-    // 🔥 FIX: Merge global product with initialProduct to preserve Flash Sale data
-    // initialProduct may have isFlashSale=true from FlashSalePage, but global doesn't have it
-    if (globalProduct) {
-      return {
-        ...globalProduct,
-        // 🔥 FIX: Preserve variants/prices if missing in globalProduct but present in initialProduct
-        variants: globalProduct.variants || initialProduct.variants || {},
-        pricesPerVariant: (globalProduct as any).pricesPerVariant || (initialProduct as any).pricesPerVariant || undefined,
-
-        // Preserve Flash Sale data from initialProduct (source of truth for Flash Sale)
-        isFlashSale: initialProduct.isFlashSale || globalProduct.isFlashSale || false,
-        flashSalePrice: initialProduct.flashSalePrice || globalProduct.flashSalePrice || 0,
-      } as Product;
-    }
-    return initialProduct as Product;
-  }, [initialProduct, getProductById]);
 
 
   const handleAddToCart = () => {
@@ -308,7 +348,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     });
 
     const variant = (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0)
-      ? { size: selectedSize, color: selectedColor }
+      ? { 
+          size: selectedSize, 
+          color: selectedColor,
+          variantName: (currentProduct as any).variantNames?.[selectedColor] || (currentProduct as any).variants?.names?.[selectedColor] || selectedColor
+        }
       : undefined;
 
     console.log('🔍 DEBUG: Final variant object:', variant);
@@ -340,9 +384,21 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       }
     }
 
-    // Pass product with correct price based on Flash Sale > variant pricing > user role
+    // 🔥 Determine specific variant image for cart/order persistence
+    let variantImage = currentProduct.image || currentProduct.images?.[0] || '/placeholder-currentProduct.jpg';
+    
+    if (selectedColor && effectiveImageIndices) {
+      const idx = effectiveImageIndices[selectedColor];
+      if (idx !== undefined && idx !== null && currentProduct.images?.[idx]) {
+        variantImage = currentProduct.images[idx];
+        console.log(`📸 Cart Persistent Image: Using variant image for ${selectedColor}`);
+      }
+    }
+
+    // Pass product with correct price and VARIANT-SPECIFIC IMAGE
     const productWithPrice = {
       ...currentProduct,
+      image: variantImage, // CRITICAL: This ensures the specific variant photo stays with the order
       price: finalPrice > 0 ? finalPrice : getPrice() // Use calculated price or fallback to getPrice()
     };
 
@@ -392,7 +448,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     }
 
     const variant = (currentProduct.variants?.sizes && currentProduct.variants.sizes.length > 0)
-      ? { size: selectedSize, color: selectedColor }
+      ? { 
+          size: selectedSize, 
+          color: selectedColor,
+          variantName: (currentProduct as any).variantNames?.[selectedColor] || (currentProduct as any).variants?.names?.[selectedColor] || selectedColor
+        }
       : null;
 
     // 🔥 PRIORITY #1: Flash Sale - Calculate from VARIANT price!
@@ -449,9 +509,20 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       }
     }
 
-    // Pass product with correct price based on Flash Sale > variant pricing > user role
+    // 🔥 Determine specific variant image for order persistence
+    let variantImage = currentProduct.image || currentProduct.images?.[0] || '/placeholder-currentProduct.jpg';
+    
+    if (selectedColor && effectiveImageIndices) {
+      const idx = effectiveImageIndices[selectedColor];
+      if (idx !== undefined && idx !== null && currentProduct.images?.[idx]) {
+        variantImage = currentProduct.images[idx];
+      }
+    }
+
+    // Pass product with correct price and VARIANT-SPECIFIC IMAGE
     const productWithPrice = {
       ...currentProduct,
+      image: variantImage, // CRITICAL: Persistence for Checkout/Order
       price: finalPrice > 0 ? finalPrice : getPrice() // Use calculated price or fallback to getPrice()
     };
 
@@ -852,6 +923,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             onClose={() => setModalMode(null)}
             product={currentProduct}
             mode={modalMode}
+            externalSelectedColor={selectedColor}
+            onColorChange={(color) => setSelectedColor(color)}
             onConfirm={(variant, qty) => {
               // Update state from modal selection
               setSelectedSize(variant.size);
@@ -887,11 +960,18 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                 console.log('💰 VariantModal: Using Collection discount price:', discountedPrice);
               }
 
+              // Find Custom Variant Name
+              const customName = (currentProduct as any).variants?.names?.[variant.color] || (currentProduct as any).variantNames?.[variant.color];
+              const variantWithAlias = {
+                ...variant,
+                variantName: customName || variant.color // Store the alias
+              };
+
               // Execute the appropriate action
               if (modalMode === 'addToCart') {
-                onAddToCart(productWithPrice, variant, qty);
+                onAddToCart(productWithPrice, variantWithAlias, qty);
               } else {
-                onBuyNow(productWithPrice, variant, qty);
+                onBuyNow(productWithPrice, variantWithAlias, qty);
               }
 
               // Close modal

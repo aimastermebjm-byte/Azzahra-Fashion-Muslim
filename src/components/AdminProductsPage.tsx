@@ -3729,7 +3729,9 @@ const AdminProductsPage: React.FC<AdminProductsPageProps> = ({ onBack, user, onN
                   isFlashSale: false,
                   flashSalePrice: parseInt(productData.retailPrice) || 0,
                   condition: 'baru',
-                  uploadMode: 'manual'
+                  uploadMode: 'manual',
+                  // Gallery Mode: variant-to-image mapping
+                  ...(productData.variantImageIndices ? { variantImageIndices: productData.variantImageIndices } : {}),
                 };
 
                 console.log('💾 Saving Manual Upload product:', newProduct);

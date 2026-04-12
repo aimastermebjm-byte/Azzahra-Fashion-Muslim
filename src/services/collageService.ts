@@ -14,8 +14,7 @@ export class CollageService {
   async generateCollage(
     images: File[],
     variantLabels: string[],
-    offsets?: Record<number, { x: number, y: number }>,
-    scales?: Record<number, number>
+    panOffsets?: Record<number, number>
   ): Promise<Blob> {
     const count = images.length;
 
@@ -68,12 +67,11 @@ export class CollageService {
 
       const img = loadedImages[index];
       const label = variantLabels[index];
-      
-      const offsetOverride = offsets?.[index];
-      const scaleOverride = scales?.[index];
 
-      // Draw standard clean cover or overridden
-      this.drawImageInBox(ctx, img, box.x, box.y, box.w, box.h, offsetOverride, scaleOverride);
+      const panY = panOffsets ? (panOffsets[index] || 0) : 0;
+      
+      // Draw standard clean cover
+      this.drawImageInBox(ctx, img, box.x, box.y, box.w, box.h, panY);
 
       // Draw Divider/Border
       ctx.strokeStyle = '#ffffff';
@@ -93,53 +91,6 @@ export class CollageService {
         } else {
           reject(new Error('Failed to create blob from canvas'));
         }
-      }, 'image/jpeg', 0.95);
-    });
-  }
-
-  // --- NEW: CROP SINGLE IMAGE FOR GALLERY ---
-  async cropSingleImage(
-    image: File | string,
-    offset: { x: number, y: number },
-    scale: number,
-    W: number = 1500,
-    H: number = 2000
-  ): Promise<Blob> {
-    const canvas = document.createElement('canvas');
-    canvas.width = W;
-    canvas.height = H;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Failed to get canvas context');
-
-    // White background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, W, H);
-
-    let loadedImg: HTMLImageElement;
-    if (typeof image === 'string') {
-        // Fetch dari URL (Firebase Storage) bypass CORS paint taint
-        const response = await fetch(image);
-        const blob = await response.blob();
-        const file = new File([blob], 'recrop.jpg', { type: blob.type || 'image/jpeg' });
-        loadedImg = await this.loadImageWithRetry(await this.compressImage(file, 2));
-    } else {
-        loadedImg = await this.loadImageWithRetry(await this.compressImage(image, 2));
-    }
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, 0, W, H);
-    ctx.clip();
-
-    const scaledW = loadedImg.width * scale;
-    const scaledH = loadedImg.height * scale;
-    ctx.drawImage(loadedImg, 0, 0, loadedImg.width, loadedImg.height, offset.x, offset.y, scaledW, scaledH);
-    ctx.restore();
-
-    return new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error('Failed to crop single image'));
       }, 'image/jpeg', 0.95);
     });
   }
@@ -194,8 +145,7 @@ export class CollageService {
 
 
   // --- LAYOUT ENGINE ---
-  // Changed to public so InteractiveCropper can use it to build interactive box grids
-  public calculateLayout(count: number, W: number, H: number): Rect[] {
+  calculateLayout(count: number, W: number, H: number): Rect[] {
     const boxes: Rect[] = [];
 
     if (count === 1) {
@@ -208,11 +158,17 @@ export class CollageService {
       boxes.push({ x: w, y: 0, w: w, h: H });
     }
     else if (count === 3) {
-      // Dibagi rata 3 horizontal sejajar
-      const w = W / 3;
-      boxes.push({ x: 0, y: 0, w: w, h: H });
-      boxes.push({ x: w, y: 0, w: w, h: H });
-      boxes.push({ x: w * 2, y: 0, w: w, h: H });
+      // MAGAZINE LAYOUT (Request: 1 Left Big, 2 Right Stacked)
+      // Left Col
+      const wHalf = W / 2;
+      const hHalf = H / 2;
+
+      // A: Left Full
+      boxes.push({ x: 0, y: 0, w: wHalf, h: H });
+      // B: Right Top
+      boxes.push({ x: wHalf, y: 0, w: wHalf, h: hHalf });
+      // C: Right Bottom
+      boxes.push({ x: wHalf, y: hHalf, w: wHalf, h: hHalf });
     }
     else if (count === 4) {
       // 2x2 Grid (Perfect 3:4 Aspect)
@@ -334,23 +290,12 @@ export class CollageService {
     y: number,
     w: number,
     h: number,
-    offsetOverride?: { x: number, y: number },
-    scaleOverride?: number
+    panY: number = 0
   ) {
     ctx.save();
     ctx.beginPath();
     ctx.rect(x, y, w, h);
     ctx.clip();
-
-    if (offsetOverride !== undefined && scaleOverride !== undefined) {
-      // Manual interactive mode
-      const scaledW = img.width * scaleOverride;
-      const scaledH = img.height * scaleOverride;
-      // offset.x and offset.y are relative to the top-left of the box
-      ctx.drawImage(img, 0, 0, img.width, img.height, x + offsetOverride.x, y + offsetOverride.y, scaledW, scaledH);
-      ctx.restore();
-      return;
-    }
 
     // CLEAN COVER Logic
     const scale = Math.max(w / img.width, h / img.height);
@@ -377,14 +322,10 @@ export class CollageService {
     // If we are cropping vertically (image taller than box relative to width)
     // Shift slightly up to prioritize upper body.
     if (scaledH > h) {
-      // A value of 0 means align top. 
-      // A value of (h - scaledH) / 2 means align center.
-      // Let's use 20% from top (bias top).
-      // dy = y + (h - scaledH) * 0.2; 
-
-      // Actually, pure Top-Center is safest for 5-item top row issue.
-      // Let's use pure Top Anchor if it's potentially cropping head.
-      dy = y;
+      // dy = y + (panY * (h - scaledH))
+      // panY = 0 (Current Default/Top) -> dy = y
+      // panY = 1 (Bottom) -> dy = y + (h - scaledH)
+      dy = y + (panY * (h - scaledH));
     }
 
     ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, scaledW, scaledH);

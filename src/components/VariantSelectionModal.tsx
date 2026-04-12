@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { X, Plus, Minus } from 'lucide-react';
 import { Product } from '../types';
 
@@ -10,6 +10,9 @@ interface VariantSelectionModalProps {
     onConfirm: (variant: { size: string; color: string }, quantity: number) => void;
     user: any;
     collectionDiscount?: number;
+    // 🔥 NEW: External sync for image switching
+    externalSelectedColor?: string;
+    onColorChange?: (color: string) => void;
 }
 
 const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
@@ -19,14 +22,113 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
     mode,
     onConfirm,
     user,
-    collectionDiscount = 0
+    collectionDiscount = 0,
+    externalSelectedColor,
+    onColorChange
 }) => {
-    const [selectedSize, setSelectedSize] = useState('');
-    const [selectedColor, setSelectedColor] = useState('');
+    const [internalSize, setInternalSize] = useState('');
+    const [internalColor, setInternalColor] = useState('');
     const [quantity, setQuantity] = useState(1);
     const [isZoomOpen, setIsZoomOpen] = useState(false);
 
-    // Stock calculation logic (reused from ProductDetail)
+    // Sync with external color if provided
+    const selectedColor = externalSelectedColor !== undefined ? externalSelectedColor : internalColor;
+    const setSelectedColor = (color: string) => {
+        if (onColorChange) onColorChange(color);
+        setInternalColor(color);
+    };
+
+    // Size selection is always internal to modal until confirm
+    const [selectedSize, setSelectedSize] = useState('');
+
+    const productAny = product as any;
+
+    // 🔥 ROBUST Gallery Mode Detection: Multiple signals
+    // Signal 1: variantImageIndices exists (new products)
+    // Signal 2: variants.names exists AND product has multiple images (fallback for old products)
+    // Signal 3: sizes contain variant name prefixes (e.g. "Mom set Khimar S")
+    const isGalleryMode = useMemo(() => {
+        if (productAny.variantImageIndices) return true;
+        if (productAny.variants?.names && product.images && product.images.length > 1) return true;
+        if (productAny.variantNames && product.images && product.images.length > 1) return true;
+        return false;
+    }, [productAny.variantImageIndices, productAny.variants?.names, productAny.variantNames, product.images]);
+
+    // 🔥 Computed image indices: use saved data OR fallback to sequential mapping
+    const effectiveImageIndices = useMemo(() => {
+        // Priority 1: Use saved variantImageIndices
+        if (productAny.variantImageIndices) return productAny.variantImageIndices;
+
+        // Priority 2: Fallback - compute sequential mapping from variants.colors + images
+        if (!isGalleryMode || !product.images || product.images.length <= 1) return null;
+
+        const colors = product.variants?.colors || [];
+        if (colors.length === 0) return null;
+
+        const mapping: Record<string, number> = {};
+        colors.forEach((color: string, idx: number) => {
+            // If images count matches colors, direct 1:1 mapping
+            if (product.images.length === colors.length) {
+                mapping[color] = idx;
+            } else {
+                // More images than colors: skip index 0 (main image), variants start at 1
+                mapping[color] = Math.min(idx + 1, product.images.length - 1);
+            }
+        });
+
+        console.log('🔄 Fallback image mapping computed:', mapping);
+        return Object.keys(mapping).length > 0 ? mapping : null;
+    }, [productAny.variantImageIndices, isGalleryMode, product.images, product.variants?.colors]);
+
+    // 🔥 Filter sizes based on selected variant (For Family/Gallery Mode)
+    const filteredUniqueSizes = useMemo(() => {
+        const allSizes = product.variants?.sizes || [];
+        if (!isGalleryMode || !selectedColor) return allSizes;
+
+        const variantName = productAny.variantNames?.[selectedColor] || productAny.variants?.names?.[selectedColor];
+        if (!variantName) return allSizes;
+
+        // 1. Get sizes that belong to this variant
+        const relevantSizes = allSizes.filter((s: string) => s.toLowerCase().startsWith(variantName.toLowerCase()));
+        
+        // 2. Deduplicate by clean label
+        const seenClean = new Set<string>();
+        const result: string[] = [];
+        
+        relevantSizes.forEach((size: string) => {
+            const clean = getCleanSizeLabel(size);
+            if (!seenClean.has(clean)) {
+                seenClean.add(clean);
+                result.push(size);
+            }
+        });
+
+        return result.length > 0 ? result : allSizes;
+    }, [product.variants?.sizes, selectedColor, productAny.variantNames, isGalleryMode]);
+
+    // 🔥 NEW: Clean size label
+    function getCleanSizeLabel(size: string) {
+        if (!size) return 'All Size';
+        
+        const variantName = productAny.variantNames?.[selectedColor] || productAny.variants?.names?.[selectedColor];
+        
+        if (variantName && size.toLowerCase().startsWith(variantName.toLowerCase() + ' ')) {
+            const stripped = size.substring(variantName.length).trim();
+            if (stripped) return stripped;
+        }
+
+        const parts = size.trim().split(' ');
+        if (parts.length > 1) {
+            const lastPart = parts[parts.length - 1];
+            if (/^(S|M|L|XL|XXL|XXXL|[0-9]+(-[0-9]+M)?|Standar|Jumbo|All\s*Size)$/i.test(lastPart)) {
+                return lastPart;
+            }
+        }
+
+        return size;
+    };
+
+    // Stock calculation logic
     const getVariantStock = (size: string, color: string): number => {
         if (!product.variants?.stock) return 0;
         return Number(product.variants.stock[size]?.[color] || 0);
@@ -37,16 +139,13 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
         return getVariantStock(selectedSize, selectedColor);
     };
 
-    // Price calculation (same as ProductDetail)
+    // Price calculation
     const getPrice = () => {
         const productAny = product as any;
 
-        // 🔥 PRIORITY #1: Flash Sale - Calculate from VARIANT price!
         if (product.isFlashSale) {
             const discount = productAny.flashSaleDiscount || 0;
-
             if (discount > 0) {
-                // Get variant-specific price FIRST
                 let basePrice = 0;
                 if (productAny.pricesPerVariant && selectedSize && selectedColor) {
                     const variantKey = `${selectedSize}-${selectedColor}`;
@@ -57,26 +156,13 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                             : Number(variantPricing.retail);
                     }
                 }
-
-                // Fallback to global price if no variant selected
                 if (basePrice === 0) {
-                    basePrice = user?.role === 'reseller'
-                        ? product.resellerPrice
-                        : product.retailPrice;
+                    basePrice = user?.role === 'reseller' ? product.resellerPrice : product.retailPrice;
                 }
-
-                // Apply flash sale discount to actual price
-                return Math.max(basePrice - discount, 1000);
+                return Math.max(0, basePrice - (basePrice * (discount / 100)));
             }
         }
 
-        // 🔥 PRIORITY #2: Collection discount
-        if (collectionDiscount > 0) {
-            const baseRetail = product.originalRetailPrice || product.retailPrice;
-            return Math.max(0, baseRetail - collectionDiscount);
-        }
-
-        // 🔥 PRIORITY #3: Variant-specific pricing (when variant selected)
         if (productAny.pricesPerVariant && selectedSize && selectedColor) {
             const variantKey = `${selectedSize}-${selectedColor}`;
             const variantPricing = productAny.pricesPerVariant[variantKey];
@@ -87,20 +173,17 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
             }
         }
 
-        // 🔥 PRIORITY #4: Minimum variant price (Shopee-style - when variant NOT selected)
-        if (productAny.pricesPerVariant && (!selectedSize || !selectedColor)) {
-            const prices = Object.values(productAny.pricesPerVariant).map((p: any) =>
-                user?.role === 'reseller' && p.reseller ? Number(p.reseller) : Number(p.retail)
-            ).filter(p => p > 0);
-
-            if (prices.length > 0) {
-                return Math.min(...prices);
-            }
-        }
-
-        // 🔥 PRIORITY #5: Role-based default pricing
         return user?.role === 'reseller' ? product.resellerPrice : product.retailPrice;
     };
+
+    const finalPrice = getPrice() - collectionDiscount;
+
+    // Reset selected size if it becomes incompatible with selected variant
+    React.useEffect(() => {
+        if (selectedSize && !filteredUniqueSizes.includes(selectedSize)) {
+            setSelectedSize('');
+        }
+    }, [selectedColor, filteredUniqueSizes]);
 
     const handleConfirm = () => {
         if (!selectedSize || !selectedColor) return;
@@ -108,6 +191,17 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
 
         onConfirm({ size: selectedSize, color: selectedColor }, quantity);
         onClose();
+    };
+
+    // 🔥 Helper to get current display image based on selection (uses fallback)
+    const getDisplayImage = () => {
+        if (selectedColor && effectiveImageIndices) {
+            const idx = effectiveImageIndices[selectedColor];
+            if (idx !== undefined && idx !== null && product.images?.[idx]) {
+                return product.images[idx];
+            }
+        }
+        return product.image || product.images?.[0];
     };
 
     if (!isOpen) return null;
@@ -130,34 +224,36 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                 </div>
 
                 <div className="p-4 space-y-5 pb-safe">
-                    {/* Product Preview */}
-                    <div className="flex gap-3 p-3 bg-gray-50 rounded-lg">
-                        <img
-                            src={product.image || product.images?.[0]}
-                            alt={product.name}
-                            className="w-16 h-16 rounded-lg object-cover cursor-zoom-in hover:opacity-80 transition"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setIsZoomOpen(true);
-                            }}
-                        />
+                    {/* Product Quick Info */}
+                    <div className="flex gap-4 p-3 bg-gray-50 rounded-xl border border-gray-100 items-start">
+                        <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border bg-white">
+                            {(() => {
+                                let displayImg = product.image || product.images?.[0];
+                                // 🔥 Image sync using effectiveImageIndices (with fallback)
+                                if (isGalleryMode && selectedColor && effectiveImageIndices) {
+                                    const idx = effectiveImageIndices[selectedColor];
+                                    if (idx !== undefined && idx !== null && product.images?.[idx]) {
+                                        displayImg = product.images[idx];
+                                    }
+                                }
+                                return <img src={displayImg} alt={product.name} className="w-full h-full object-cover" />;
+                            })()}
+                        </div>
                         <div className="flex-1">
-                            <h3 className="font-semibold text-sm text-gray-900 line-clamp-2">{product.name}</h3>
-                            <p className="text-lg font-bold text-yellow-600 mt-1">
-                                Rp {getPrice().toLocaleString('id-ID')}
-                            </p>
+                            <h3 className="text-sm font-bold text-gray-800 leading-tight mb-1">{product.name}</h3>
+                            <p className="text-[#997B2C] font-black text-lg">Rp {finalPrice.toLocaleString('id-ID')}</p>
                         </div>
                     </div>
 
-                    {/* Varian Selector */}
+                    {/* Variant Selector */}
                     {product.variants?.colors && product.variants.colors.length > 0 && (
                         <div>
                             <h3 className="text-sm font-bold text-gray-800 mb-2">Varian</h3>
                             <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
                                 {product.variants.colors.map((color) => {
-                                    const colorStock = selectedSize
-                                        ? getVariantStock(selectedSize, color)
-                                        : (product.variants?.sizes || []).reduce((total, size) => total + getVariantStock(size, color), 0);
+                                    const colorSizes = product.variants?.sizes || [];
+                                    const colorStock = colorSizes.reduce((total, size) => total + getVariantStock(size, color), 0);
+                                    const displayName = productAny.variantNames?.[color] || productAny.variants?.names?.[color] || color;
 
                                     return (
                                         <button
@@ -171,7 +267,7 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                                                     : 'bg-white text-gray-700 border-gray-300 hover:border-yellow-500'
                                                 }`}
                                         >
-                                            {color}
+                                            {displayName}
                                         </button>
                                     );
                                 })}
@@ -180,11 +276,11 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                     )}
 
                     {/* Size Selector */}
-                    {product.variants?.sizes && product.variants.sizes.length > 0 && (
+                    {filteredUniqueSizes.length > 0 && (
                         <div>
                             <h3 className="text-sm font-bold text-gray-800 mb-2">Ukuran</h3>
                             <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-                                {product.variants.sizes.map((size) => {
+                                {filteredUniqueSizes.map((size) => {
                                     const sizeTotalStock = selectedColor
                                         ? getVariantStock(size, selectedColor)
                                         : (product.variants?.colors || []).reduce((total, color) => total + getVariantStock(size, color), 0);
@@ -201,7 +297,7 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                                                     : 'bg-white text-gray-700 border-gray-300 hover:border-yellow-500'
                                                 }`}
                                         >
-                                            {size}
+                                            {getCleanSizeLabel(size)}
                                         </button>
                                     );
                                 })}
@@ -283,7 +379,7 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                         <X className="w-6 h-6" />
                     </button>
                     <img
-                        src={product.image || product.images?.[0]}
+                        src={getDisplayImage()}
                         alt={product.name}
                         className="max-w-[90%] max-h-[90%] object-contain"
                         onClick={(e) => e.stopPropagation()}
