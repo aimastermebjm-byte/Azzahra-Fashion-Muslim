@@ -775,9 +775,16 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
 
         // Build stock matrix for all size × variant combinations using user-edited values
         const stockMatrix: Record<string, Record<string, number>> = {};
-        selectedSizes.forEach((size) => {
+        selectedSizes.forEach(size => {
             stockMatrix[size] = {};
             activeVariantLabels.forEach((label) => {
+                const varName = variantNames[label] || label;
+                // If Family Mode, the size MUST start with the variant name to be valid
+                if (familyMode && !size.startsWith(varName)) {
+                    // Invalid combination for Family Mode, skip
+                    return;
+                }
+
                 // Use key format "Size-Varian" (e.g., "S-A", "M-B")
                 const key = `${size}-${label}`;
                 const defaultStock = uploadSettings.stockPerVariant || 0;
@@ -876,41 +883,8 @@ const ManualUploadModal: React.FC<ManualUploadModalProps> = ({
                 prices: Object.keys(pricesPerVariant).length > 0 ? pricesPerVariant : null,
                 names: variantNames // Custom names for checkout
             },
-            // Build pricesPerVariant with CORRECT keys matching activeVariantLabels
-            // This ensures ProductDetail can find the price using "Size-Color" key
-            pricesPerVariant: (() => {
-                if (Object.keys(pricesPerVariant).length === 0) return null;
-
-                // Re-build with correct keys: Size-ActiveLabel
-                const correctedPrices: Record<string, { retail: number; reseller: number }> = {};
-
-                // Get unique sizes from existing keys
-                const existingSizes = [...new Set(Object.keys(pricesPerVariant).map(k => k.split('-')[0]))];
-
-                // For each size, map the prices to activeVariantLabels
-                selectedSizes.forEach(size => {
-                    // Find matching prices for this size from original data
-                    const sizeEntry = existingSizes.find(s => s === size);
-
-                    activeVariantLabels.forEach((label, idx) => {
-                        const newKey = `${size}-${label}`;
-
-                        // Try to find existing price by size + index position (A=0, B=1, etc)
-                        const alphabet = 'ABCDEFGHIJ';
-                        const originalKey = `${size}-${alphabet[idx] || alphabet[0]}`;
-
-                        if (pricesPerVariant[originalKey]) {
-                            correctedPrices[newKey] = pricesPerVariant[originalKey];
-                        } else if (pricesPerVariant[`${size}-A`]) {
-                            // Fallback: use first variant price for this size
-                            correctedPrices[newKey] = pricesPerVariant[`${size}-A`];
-                        }
-                    });
-                });
-
-                console.log('🔄 Corrected pricesPerVariant keys:', correctedPrices);
-                return Object.keys(correctedPrices).length > 0 ? correctedPrices : null;
-            })()
+            // Include per-variant pricing if data exists (not just based on UI toggle)
+            pricesPerVariant: Object.keys(pricesPerVariant).length > 0 ? pricesPerVariant : null
         };
 
         onSuccess(productData);
