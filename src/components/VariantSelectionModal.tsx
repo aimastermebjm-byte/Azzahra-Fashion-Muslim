@@ -42,10 +42,45 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
     const [selectedSize, setSelectedSize] = useState('');
 
     const productAny = product as any;
-    const isGalleryMode = !!productAny.variantImageIndices;
 
-    // 🔥 NEW: Filter sizes based on selected variant (For Family/Gallery Mode)
-    // AND Ensure uniqueness of clean labels to prevent "S M S M"
+    // 🔥 ROBUST Gallery Mode Detection: Multiple signals
+    // Signal 1: variantImageIndices exists (new products)
+    // Signal 2: variants.names exists AND product has multiple images (fallback for old products)
+    // Signal 3: sizes contain variant name prefixes (e.g. "Mom set Khimar S")
+    const isGalleryMode = useMemo(() => {
+        if (productAny.variantImageIndices) return true;
+        if (productAny.variants?.names && product.images && product.images.length > 1) return true;
+        if (productAny.variantNames && product.images && product.images.length > 1) return true;
+        return false;
+    }, [productAny.variantImageIndices, productAny.variants?.names, productAny.variantNames, product.images]);
+
+    // 🔥 Computed image indices: use saved data OR fallback to sequential mapping
+    const effectiveImageIndices = useMemo(() => {
+        // Priority 1: Use saved variantImageIndices
+        if (productAny.variantImageIndices) return productAny.variantImageIndices;
+
+        // Priority 2: Fallback - compute sequential mapping from variants.colors + images
+        if (!isGalleryMode || !product.images || product.images.length <= 1) return null;
+
+        const colors = product.variants?.colors || [];
+        if (colors.length === 0) return null;
+
+        const mapping: Record<string, number> = {};
+        colors.forEach((color: string, idx: number) => {
+            // If images count matches colors, direct 1:1 mapping
+            if (product.images.length === colors.length) {
+                mapping[color] = idx;
+            } else {
+                // More images than colors: skip index 0 (main image), variants start at 1
+                mapping[color] = Math.min(idx + 1, product.images.length - 1);
+            }
+        });
+
+        console.log('🔄 Fallback image mapping computed:', mapping);
+        return Object.keys(mapping).length > 0 ? mapping : null;
+    }, [productAny.variantImageIndices, isGalleryMode, product.images, product.variants?.colors]);
+
+    // 🔥 Filter sizes based on selected variant (For Family/Gallery Mode)
     const filteredUniqueSizes = useMemo(() => {
         const allSizes = product.variants?.sizes || [];
         if (!isGalleryMode || !selectedColor) return allSizes;
@@ -53,15 +88,14 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
         const variantName = productAny.variantNames?.[selectedColor] || productAny.variants?.names?.[selectedColor];
         if (!variantName) return allSizes;
 
-        // 1. Get sizes that belong to this variant (startsWith prefix)
-        const relevantSizes = allSizes.filter(s => s.toLowerCase().startsWith(variantName.toLowerCase()));
+        // 1. Get sizes that belong to this variant
+        const relevantSizes = allSizes.filter((s: string) => s.toLowerCase().startsWith(variantName.toLowerCase()));
         
-        // 2. Map to clean labels but keep track of original full size
-        // We want to show "S", "M" etc but they must be unique
+        // 2. Deduplicate by clean label
         const seenClean = new Set<string>();
         const result: string[] = [];
         
-        relevantSizes.forEach(size => {
+        relevantSizes.forEach((size: string) => {
             const clean = getCleanSizeLabel(size);
             if (!seenClean.has(clean)) {
                 seenClean.add(clean);
@@ -159,11 +193,10 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
         onClose();
     };
 
-    // 🔥 NEW: Helper to get current display image based on selection
+    // 🔥 Helper to get current display image based on selection (uses fallback)
     const getDisplayImage = () => {
-        const productAny = product as any;
-        if (selectedColor && productAny.variantImageIndices) {
-            const idx = productAny.variantImageIndices[selectedColor];
+        if (selectedColor && effectiveImageIndices) {
+            const idx = effectiveImageIndices[selectedColor];
             if (idx !== undefined && idx !== null && product.images?.[idx]) {
                 return product.images[idx];
             }
@@ -196,9 +229,9 @@ const VariantSelectionModal: React.FC<VariantSelectionModalProps> = ({
                         <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border bg-white">
                             {(() => {
                                 let displayImg = product.image || product.images?.[0];
-                                // 🔥 NEW: Modal specific image sync
-                                if (isGalleryMode && selectedColor && productAny.variantImageIndices) {
-                                    const idx = productAny.variantImageIndices[selectedColor];
+                                // 🔥 Image sync using effectiveImageIndices (with fallback)
+                                if (isGalleryMode && selectedColor && effectiveImageIndices) {
+                                    const idx = effectiveImageIndices[selectedColor];
                                     if (idx !== undefined && idx !== null && product.images?.[idx]) {
                                         displayImg = product.images[idx];
                                     }

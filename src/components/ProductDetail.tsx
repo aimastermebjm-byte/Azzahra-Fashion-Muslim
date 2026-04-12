@@ -144,11 +144,35 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  // 🔥 NEW: Sync image index with selected variant (Gallery Mode Support)
-  useEffect(() => {
+  // 🔥 ROBUST: Compute effective image indices with fallback
+  const effectiveImageIndices = useMemo(() => {
     const productAny = currentProduct as any;
-    if (selectedColor && productAny.variantImageIndices) {
-      const variantImageIndex = productAny.variantImageIndices[selectedColor];
+    // Priority 1: Use saved variantImageIndices
+    if (productAny.variantImageIndices) return productAny.variantImageIndices;
+
+    // Priority 2: Fallback - compute from variants.colors + images
+    const hasNames = productAny.variants?.names || productAny.variantNames;
+    if (!hasNames || !currentProduct.images || currentProduct.images.length <= 1) return null;
+
+    const colors = currentProduct.variants?.colors || [];
+    if (colors.length === 0) return null;
+
+    const mapping: Record<string, number> = {};
+    colors.forEach((color: string, idx: number) => {
+      if (currentProduct.images.length === colors.length) {
+        mapping[color] = idx;
+      } else {
+        mapping[color] = Math.min(idx + 1, currentProduct.images.length - 1);
+      }
+    });
+
+    return Object.keys(mapping).length > 0 ? mapping : null;
+  }, [currentProduct]);
+
+  // 🔥 Sync image index with selected variant (Gallery Mode Support)
+  useEffect(() => {
+    if (selectedColor && effectiveImageIndices) {
+      const variantImageIndex = effectiveImageIndices[selectedColor];
       if (variantImageIndex !== undefined && variantImageIndex !== null) {
         const idx = Number(variantImageIndex);
         if (currentProduct.images?.[idx]) {
@@ -157,7 +181,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         }
       }
     }
-  }, [selectedColor, currentProduct.id, currentProduct.variantImageIndices]);
+  }, [selectedColor, effectiveImageIndices]);
 
   // Zoom handlers
   const handleZoomOpen = useCallback(() => {
@@ -360,12 +384,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       }
     }
 
-    // 🔥 NEW: Determine specific variant image for cart/order persistence
-    const productAny = currentProduct as any;
+    // 🔥 Determine specific variant image for cart/order persistence
     let variantImage = currentProduct.image || currentProduct.images?.[0] || '/placeholder-currentProduct.jpg';
     
-    if (selectedColor && productAny.variantImageIndices) {
-      const idx = productAny.variantImageIndices[selectedColor];
+    if (selectedColor && effectiveImageIndices) {
+      const idx = effectiveImageIndices[selectedColor];
       if (idx !== undefined && idx !== null && currentProduct.images?.[idx]) {
         variantImage = currentProduct.images[idx];
         console.log(`📸 Cart Persistent Image: Using variant image for ${selectedColor}`);
@@ -486,12 +509,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       }
     }
 
-    // 🔥 NEW: Determine specific variant image for order persistence
-    const productAny = currentProduct as any;
+    // 🔥 Determine specific variant image for order persistence
     let variantImage = currentProduct.image || currentProduct.images?.[0] || '/placeholder-currentProduct.jpg';
     
-    if (selectedColor && productAny.variantImageIndices) {
-      const idx = productAny.variantImageIndices[selectedColor];
+    if (selectedColor && effectiveImageIndices) {
+      const idx = effectiveImageIndices[selectedColor];
       if (idx !== undefined && idx !== null && currentProduct.images?.[idx]) {
         variantImage = currentProduct.images[idx];
       }
